@@ -44,7 +44,7 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 #endif
 
 
-#include "CLIcore.h"
+#include "CommandLineInterface/CLIcore.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -157,10 +157,26 @@ int_fast8_t COREMOD_TOOLS_statusStat_cli()
 /** @name Module initialization */
 
 
+void __attribute__ ((constructor)) libinit_COREMOD_tools()
+{
+	init_COREMOD_tools();
+	
+	if(data.progStatus>0)
+	{
+		printf("  Found unloaded shared object in ./libs/ -> LOADING module %s\n", __FILE__);
+		fflush(stdout);
+	}	
+
+}
+
+
+
+
 int init_COREMOD_tools()
 {
     strcpy(data.module[data.NBmodule].name, __FILE__);
-    strcpy(data.module[data.NBmodule].info, "image information and statistics");
+    strcpy(data.module[data.NBmodule].package, "milk");
+    strcpy(data.module[data.NBmodule].info, "Image information and statistics");
     data.NBmodule++;
 
 
