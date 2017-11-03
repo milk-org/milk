@@ -32,7 +32,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "CLIcore.h"
+#include "CommandLineInterface/CLIcore.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -110,11 +110,19 @@ int_fast8_t arith_image_merge3D_cli(){
 
 
 
+void __attribute__ ((constructor)) libinit_COREMOD_arith()
+{
+	init_COREMOD_arith();
+//	printf(" ...... Loading module %s\n", __FILE__);
+}
+
+
+
 int init_COREMOD_arith()
 {
   
   strcpy(data.module[data.NBmodule].name, __FILE__);
-  strcpy(data.module[data.NBmodule].info, "image arithmetic operations");
+  strcpy(data.module[data.NBmodule].info, "milk    - Image arithmetic operations");
   data.NBmodule++;
 
 
