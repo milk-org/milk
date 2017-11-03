@@ -69,7 +69,7 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 #include "ImageStreamIO/ImageStruct.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "CLIcore.h"
+#include "CommandLineInterface/CLIcore.h"
 #include "info/info.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
