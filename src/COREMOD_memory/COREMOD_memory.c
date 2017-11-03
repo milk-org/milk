@@ -67,9 +67,9 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 #include <fitsio.h>
 
-#include "ImageStruct.h"
+#include "ImageStreamIO/ImageStruct.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "CLIcore.h"
+#include "CommandLineInterface/CLIcore.h"
 #include "info/info.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -1031,13 +1031,25 @@ int_fast8_t COREMOD_MEMORY_sharedMem_2Dim_log_cli()
 
 
 
+void __attribute__ ((constructor)) libinit_COREMOD_memory()
+{
+	init_COREMOD_memory();
+
+	if(data.progStatus>0)
+	{
+		printf("  Found unloaded shared object in ./libs/ -> LOADING module %s\n", __FILE__);
+		fflush(stdout);
+	}	
+}
+
 
 
 
 int_fast8_t init_COREMOD_memory()
 {
-    strcpy(data.module[data.NBmodule].name,__FILE__);
-    strcpy(data.module[data.NBmodule].info,"memory management for images and variables");
+    strcpy(data.module[data.NBmodule].name, __FILE__);
+    strcpy(data.module[data.NBmodule].package, "milk");
+    strcpy(data.module[data.NBmodule].info, "Memory management for images and variables");
     data.NBmodule++;
 
 
@@ -3165,7 +3177,7 @@ int_fast8_t list_image_ID_ofp(FILE *fo)
 	minfo = mallinfo();
 
     clock_gettime(CLOCK_REALTIME, &timenow);
-	fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
+	//fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
  
     
 
@@ -3308,7 +3320,7 @@ int_fast8_t list_image_ID_ofp_simple(FILE *fo)
 int_fast8_t list_image_ID()
 {
     list_image_ID_ofp(stdout);
-	malloc_stats();
+	//malloc_stats();
     return 0;
 }
 
@@ -5837,9 +5849,10 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 
     schedpar.sched_priority = RT_priority;
     #ifndef __MACH__
-    // r = seteuid(euid_called); //This goes up to maximum privileges
+    int r;
+    r = seteuid(data.euid); //This goes up to maximum privileges
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-    // r = seteuid(euid_real);//Go back to normal privileges
+    r = seteuid(data.ruid);//Go back to normal privileges
     #endif
 
     // create TCP socket
@@ -6723,9 +6736,10 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     schedpar.sched_priority = RT_priority;
 #ifndef __MACH__
-    // r = seteuid(euid_called); //This goes up to maximum privileges
+	int r;
+    r = seteuid(data.euid); //This goes up to maximum privileges
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-    // r = seteuid(euid_real);//Go back to normal privileges
+    r = seteuid(data.ruid);//Go back to normal privileges
 #endif
 
 
