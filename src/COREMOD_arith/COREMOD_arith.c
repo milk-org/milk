@@ -32,7 +32,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "CLIcore.h"
+#include "CommandLineInterface/CLIcore.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
