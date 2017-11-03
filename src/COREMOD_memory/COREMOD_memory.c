@@ -1031,6 +1031,12 @@ int_fast8_t COREMOD_MEMORY_sharedMem_2Dim_log_cli()
 
 
 
+void __attribute__ ((constructor)) libinit_COREMOD_memory()
+{
+	init_COREMOD_memory();
+	printf(" ...... Loading module %s\n", __FILE__);
+}
+
 
 
 
@@ -5837,9 +5843,10 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 
     schedpar.sched_priority = RT_priority;
     #ifndef __MACH__
-    // r = seteuid(euid_called); //This goes up to maximum privileges
+    int r;
+    r = seteuid(data.euid); //This goes up to maximum privileges
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-    // r = seteuid(euid_real);//Go back to normal privileges
+    r = seteuid(data.ruid);//Go back to normal privileges
     #endif
 
     // create TCP socket
@@ -6723,9 +6730,10 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     schedpar.sched_priority = RT_priority;
 #ifndef __MACH__
-    // r = seteuid(euid_called); //This goes up to maximum privileges
+	int r;
+    r = seteuid(data.euid); //This goes up to maximum privileges
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-    // r = seteuid(euid_real);//Go back to normal privileges
+    r = seteuid(data.ruid);//Go back to normal privileges
 #endif
 
 
