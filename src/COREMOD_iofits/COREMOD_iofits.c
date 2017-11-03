@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 
-#include "CLIcore.h"
+#include "CommandLineInterface/CLIcore.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -157,6 +157,14 @@ int_fast8_t images_to_cube_cli()
 
 
 
+
+
+
+void __attribute__ ((constructor)) libinit_COREMOD_iofits()
+{
+	init_COREMOD_iofits();
+	printf(" ...... Loading module %s\n", __FILE__);
+}
 
 
 
