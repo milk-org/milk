@@ -67,7 +67,7 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 #include <fitsio.h>
 
-#include "ImageStruct.h"
+#include "ImageStreamIO/ImageStruct.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "CLIcore.h"
 #include "info/info.h"
