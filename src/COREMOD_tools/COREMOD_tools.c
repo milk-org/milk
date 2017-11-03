@@ -157,6 +157,15 @@ int_fast8_t COREMOD_TOOLS_statusStat_cli()
 /** @name Module initialization */
 
 
+void __attribute__ ((constructor)) libinit_COREMOD_tools()
+{
+	init_COREMOD_tools();
+	printf(" ...... Loading module %s\n", __FILE__);
+}
+
+
+
+
 int init_COREMOD_tools()
 {
     strcpy(data.module[data.NBmodule].name, __FILE__);
