@@ -62,7 +62,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "calc_bison.y" /* yacc.c:339  */
+#line 1 "CommandLineInterface/calc_bison.y" /* yacc.c:339  */
 
 #include <math.h>  /* For math functions, cos(), sin(), etc. */
 #include <stdio.h>
@@ -93,7 +93,7 @@ extern DATA data;
 
   
 
-#line 97 "calc_bison.c" /* yacc.c:339  */
+#line 97 "CommandLineInterface/calc_bison.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -113,8 +113,8 @@ extern DATA data;
 
 /* In a future release of Bison, this section will be replaced
    by #include "y.tab.h".  */
-#ifndef YY_YY_CALC_BISON_H_INCLUDED
-# define YY_YY_CALC_BISON_H_INCLUDED
+#ifndef YY_YY_COMMANDLINEINTERFACE_CALC_BISON_H_INCLUDED
+# define YY_YY_COMMANDLINEINTERFACE_CALC_BISON_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -163,7 +163,7 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 31 "calc_bison.y" /* yacc.c:355  */
+#line 31 "CommandLineInterface/calc_bison.y" /* yacc.c:355  */
 
   long     val_l;  /* long */  
   float    val_f;  /* float */
@@ -171,7 +171,7 @@ union YYSTYPE
   char  *string;   /* For returning strings (variables, images)  */
   double (*fnctptr)();    /* pointer to function -> double */
 
-#line 175 "calc_bison.c" /* yacc.c:355  */
+#line 175 "CommandLineInterface/calc_bison.c" /* yacc.c:355  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -182,11 +182,11 @@ extern YYSTYPE yylval;
 
 int yyparse (void);
 
-#endif /* !YY_YY_CALC_BISON_H_INCLUDED  */
+#endif /* !YY_YY_COMMANDLINEINTERFACE_CALC_BISON_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 190 "calc_bison.c" /* yacc.c:358  */
+#line 190 "CommandLineInterface/calc_bison.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1470,510 +1470,510 @@ yyreduce:
   switch (yyn)
     {
         case 5:
-#line 72 "calc_bison.y" /* yacc.c:1646  */
+#line 72 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { 
 printf("\t double: %.10g\n", (yyvsp[-1].val_d)); 
 data.cmdargtoken[data.cmdNBarg].type = 1; 
 data.cmdargtoken[data.cmdNBarg].val.numf = (yyvsp[-1].val_d);
 }
-#line 1480 "calc_bison.c" /* yacc.c:1646  */
+#line 1480 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 77 "calc_bison.y" /* yacc.c:1646  */
+#line 77 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { 
 printf("\t long:   %ld\n", (yyvsp[-1].val_l)); 
 data.cmdargtoken[data.cmdNBarg].type = 2; 
 data.cmdargtoken[data.cmdNBarg].val.numl = (yyvsp[-1].val_l);
 }
-#line 1490 "calc_bison.c" /* yacc.c:1646  */
+#line 1490 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 82 "calc_bison.y" /* yacc.c:1646  */
+#line 82 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { if(data.Debug>0) {printf("\t string: %s\n", (yyvsp[-1].string));}
     //data.cmdargtoken[data.cmdNBarg].type = 3;
 sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", (yyvsp[-1].string));
 }
-#line 1499 "calc_bison.c" /* yacc.c:1646  */
+#line 1499 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 86 "calc_bison.y" /* yacc.c:1646  */
+#line 86 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { yyerrok;                  }
-#line 1505 "calc_bison.c" /* yacc.c:1646  */
+#line 1505 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 89 "calc_bison.y" /* yacc.c:1646  */
+#line 89 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = (yyvsp[0].val_l);        if(data.Debug>0){printf("this is a long\n");}}
-#line 1511 "calc_bison.c" /* yacc.c:1646  */
+#line 1511 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 90 "calc_bison.y" /* yacc.c:1646  */
+#line 90 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = (yyvsp[-2].val_l) + (yyvsp[0].val_l);   if(data.Debug>0){printf("long + long\n");}}
-#line 1517 "calc_bison.c" /* yacc.c:1646  */
+#line 1517 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 91 "calc_bison.y" /* yacc.c:1646  */
+#line 91 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = (yyvsp[-2].val_l) - (yyvsp[0].val_l);   if(data.Debug>0){printf("long - long\n");}}
-#line 1523 "calc_bison.c" /* yacc.c:1646  */
+#line 1523 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 92 "calc_bison.y" /* yacc.c:1646  */
+#line 92 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = (yyvsp[-2].val_l) * (yyvsp[0].val_l);   if(data.Debug>0){printf("long * long\n");}}
-#line 1529 "calc_bison.c" /* yacc.c:1646  */
+#line 1529 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 93 "calc_bison.y" /* yacc.c:1646  */
+#line 93 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = -(yyvsp[0].val_l);       if(data.Debug>0){printf("-long\n");}}
-#line 1535 "calc_bison.c" /* yacc.c:1646  */
+#line 1535 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 94 "calc_bison.y" /* yacc.c:1646  */
+#line 94 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = (long) pow ((yyvsp[-2].val_l),(yyvsp[0].val_l));  if(data.Debug>0){printf("long ^ long\n");}}
-#line 1541 "calc_bison.c" /* yacc.c:1646  */
+#line 1541 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 95 "calc_bison.y" /* yacc.c:1646  */
+#line 95 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_l) = (yyvsp[-1].val_l); }
-#line 1547 "calc_bison.c" /* yacc.c:1646  */
+#line 1547 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 98 "calc_bison.y" /* yacc.c:1646  */
+#line 98 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[0].val_d);        if(data.Debug>0){printf("this is a double\n");}}
-#line 1553 "calc_bison.c" /* yacc.c:1646  */
+#line 1553 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 99 "calc_bison.y" /* yacc.c:1646  */
+#line 99 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = data.variable[variable_ID((yyvsp[0].string))].value.f;   }
-#line 1559 "calc_bison.c" /* yacc.c:1646  */
+#line 1559 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 100 "calc_bison.y" /* yacc.c:1646  */
+#line 100 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[0].val_l); create_variable_ID((yyvsp[-2].string), (yyvsp[0].val_l));  }
-#line 1565 "calc_bison.c" /* yacc.c:1646  */
+#line 1565 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 101 "calc_bison.y" /* yacc.c:1646  */
+#line 101 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[0].val_d); create_variable_ID((yyvsp[-2].string), (yyvsp[0].val_d));  }
-#line 1571 "calc_bison.c" /* yacc.c:1646  */
+#line 1571 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 102 "calc_bison.y" /* yacc.c:1646  */
+#line 102 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[0].val_l); create_variable_ID((yyvsp[-2].string), (yyvsp[0].val_l));  if(data.Debug>0){printf("creating long\n");}}
-#line 1577 "calc_bison.c" /* yacc.c:1646  */
+#line 1577 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 103 "calc_bison.y" /* yacc.c:1646  */
+#line 103 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[0].val_d); create_variable_ID((yyvsp[-2].string), (yyvsp[0].val_d));  if(data.Debug>0){printf("creating double\n");}}
-#line 1583 "calc_bison.c" /* yacc.c:1646  */
+#line 1583 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 104 "calc_bison.y" /* yacc.c:1646  */
+#line 104 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_l) + (yyvsp[0].val_d);   if(data.Debug>0){printf("long + double\n");}}
-#line 1589 "calc_bison.c" /* yacc.c:1646  */
+#line 1589 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 105 "calc_bison.y" /* yacc.c:1646  */
+#line 105 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) + (yyvsp[0].val_l);   if(data.Debug>0){printf("double + long\n");}}
-#line 1595 "calc_bison.c" /* yacc.c:1646  */
+#line 1595 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 106 "calc_bison.y" /* yacc.c:1646  */
+#line 106 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) + (yyvsp[0].val_d);   if(data.Debug>0){printf("double + double\n");}}
-#line 1601 "calc_bison.c" /* yacc.c:1646  */
+#line 1601 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 107 "calc_bison.y" /* yacc.c:1646  */
+#line 107 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_l) - (yyvsp[0].val_d);   if(data.Debug>0){printf("long - double\n");}}
-#line 1607 "calc_bison.c" /* yacc.c:1646  */
+#line 1607 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 108 "calc_bison.y" /* yacc.c:1646  */
+#line 108 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) - (yyvsp[0].val_l);   if(data.Debug>0){printf("double - long\n");}}
-#line 1613 "calc_bison.c" /* yacc.c:1646  */
+#line 1613 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 109 "calc_bison.y" /* yacc.c:1646  */
+#line 109 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) - (yyvsp[0].val_d);   if(data.Debug>0){printf("double - double\n");}}
-#line 1619 "calc_bison.c" /* yacc.c:1646  */
+#line 1619 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 110 "calc_bison.y" /* yacc.c:1646  */
+#line 110 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (double) (yyvsp[-2].val_l) * (yyvsp[0].val_d);   if(data.Debug>0){printf("long * double\n");}}
-#line 1625 "calc_bison.c" /* yacc.c:1646  */
+#line 1625 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 111 "calc_bison.y" /* yacc.c:1646  */
+#line 111 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) * (yyvsp[0].val_l);   if(data.Debug>0){printf("double * long\n");}}
-#line 1631 "calc_bison.c" /* yacc.c:1646  */
+#line 1631 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 112 "calc_bison.y" /* yacc.c:1646  */
+#line 112 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) * (yyvsp[0].val_d);   if(data.Debug>0){printf("double * double\n");}}
-#line 1637 "calc_bison.c" /* yacc.c:1646  */
+#line 1637 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 113 "calc_bison.y" /* yacc.c:1646  */
+#line 113 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (double) (yyvsp[-2].val_l) / (yyvsp[0].val_l);   if(data.Debug>0){printf("long / long\n");}}
-#line 1643 "calc_bison.c" /* yacc.c:1646  */
+#line 1643 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 114 "calc_bison.y" /* yacc.c:1646  */
+#line 114 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (double) (yyvsp[-2].val_l) / (yyvsp[0].val_d);   if(data.Debug>0){printf("long / double\n");}}
-#line 1649 "calc_bison.c" /* yacc.c:1646  */
+#line 1649 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 115 "calc_bison.y" /* yacc.c:1646  */
+#line 115 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) / (yyvsp[0].val_l);   if(data.Debug>0){printf("double / long\n");}}
-#line 1655 "calc_bison.c" /* yacc.c:1646  */
+#line 1655 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 116 "calc_bison.y" /* yacc.c:1646  */
+#line 116 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].val_d) / (yyvsp[0].val_d);   if(data.Debug>0){printf("double / double\n");}}
-#line 1661 "calc_bison.c" /* yacc.c:1646  */
+#line 1661 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 117 "calc_bison.y" /* yacc.c:1646  */
+#line 117 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = -(yyvsp[0].val_d);       if(data.Debug>0){printf("-double\n");}}
-#line 1667 "calc_bison.c" /* yacc.c:1646  */
+#line 1667 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 118 "calc_bison.y" /* yacc.c:1646  */
+#line 118 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = pow ((double) (yyvsp[-2].val_l),(yyvsp[0].val_d));  if(data.Debug>0){printf("long ^ double\n");}}
-#line 1673 "calc_bison.c" /* yacc.c:1646  */
+#line 1673 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 119 "calc_bison.y" /* yacc.c:1646  */
+#line 119 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = pow ((yyvsp[-2].val_d),(double) (yyvsp[0].val_l));  if(data.Debug>0){printf("double ^ long\n");}}
-#line 1679 "calc_bison.c" /* yacc.c:1646  */
+#line 1679 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 120 "calc_bison.y" /* yacc.c:1646  */
+#line 120 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = pow ((yyvsp[-2].val_d),(yyvsp[0].val_d));  if(data.Debug>0){printf("double ^ double\n");}}
-#line 1685 "calc_bison.c" /* yacc.c:1646  */
+#line 1685 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 121 "calc_bison.y" /* yacc.c:1646  */
+#line 121 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].fnctptr)((yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(double)\n");}}
-#line 1691 "calc_bison.c" /* yacc.c:1646  */
+#line 1691 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 122 "calc_bison.y" /* yacc.c:1646  */
+#line 122 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].fnctptr)((double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(double)\n");}}
-#line 1697 "calc_bison.c" /* yacc.c:1646  */
+#line 1697 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 123 "calc_bison.y" /* yacc.c:1646  */
+#line 123 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-4].fnctptr)((yyvsp[-3].val_d),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(double,double)\n");}}
-#line 1703 "calc_bison.c" /* yacc.c:1646  */
+#line 1703 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 124 "calc_bison.y" /* yacc.c:1646  */
+#line 124 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-4].fnctptr)((double) (yyvsp[-3].val_l),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(long->double,double)\n");}}
-#line 1709 "calc_bison.c" /* yacc.c:1646  */
+#line 1709 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 125 "calc_bison.y" /* yacc.c:1646  */
+#line 125 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-4].fnctptr)((yyvsp[-3].val_d),(double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(double,long->double)\n");}}
-#line 1715 "calc_bison.c" /* yacc.c:1646  */
+#line 1715 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 126 "calc_bison.y" /* yacc.c:1646  */
+#line 126 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-4].fnctptr)((double) (yyvsp[-3].val_l),(double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(long->double,long->double)\n");}}
-#line 1721 "calc_bison.c" /* yacc.c:1646  */
+#line 1721 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 127 "calc_bison.y" /* yacc.c:1646  */
+#line 127 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((yyvsp[-5].val_d),(yyvsp[-3].val_d),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(double,double,double)\n");}}
-#line 1727 "calc_bison.c" /* yacc.c:1646  */
+#line 1727 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 128 "calc_bison.y" /* yacc.c:1646  */
+#line 128 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((double) (yyvsp[-5].val_l),(yyvsp[-3].val_d),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(long->double,double,double)\n");}}
-#line 1733 "calc_bison.c" /* yacc.c:1646  */
+#line 1733 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 129 "calc_bison.y" /* yacc.c:1646  */
+#line 129 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((yyvsp[-5].val_d),(double) (yyvsp[-3].val_l),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(double,long->double,double)\n");}}
-#line 1739 "calc_bison.c" /* yacc.c:1646  */
+#line 1739 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 130 "calc_bison.y" /* yacc.c:1646  */
+#line 130 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((double) (yyvsp[-5].val_l),(double) (yyvsp[-3].val_l),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(long->double,long->double,double)\n");}}
-#line 1745 "calc_bison.c" /* yacc.c:1646  */
+#line 1745 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 131 "calc_bison.y" /* yacc.c:1646  */
+#line 131 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((yyvsp[-5].val_d),(yyvsp[-3].val_d),(double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(double,double,long->double)\n");}}
-#line 1751 "calc_bison.c" /* yacc.c:1646  */
+#line 1751 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 132 "calc_bison.y" /* yacc.c:1646  */
+#line 132 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((double) (yyvsp[-5].val_l),(yyvsp[-3].val_d),(double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(long->double,double,long->double)\n");}}
-#line 1757 "calc_bison.c" /* yacc.c:1646  */
+#line 1757 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 133 "calc_bison.y" /* yacc.c:1646  */
+#line 133 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((yyvsp[-5].val_d),(double) (yyvsp[-3].val_l),(double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(double,long->double,long->double)\n");}}
-#line 1763 "calc_bison.c" /* yacc.c:1646  */
+#line 1763 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 134 "calc_bison.y" /* yacc.c:1646  */
+#line 134 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-6].fnctptr)((double) (yyvsp[-5].val_l),(double) (yyvsp[-3].val_l),(double) (yyvsp[-1].val_l));  if(data.Debug>0){printf("double=func(long->double,long->double,long->double)\n");}}
-#line 1769 "calc_bison.c" /* yacc.c:1646  */
+#line 1769 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 135 "calc_bison.y" /* yacc.c:1646  */
+#line 135 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-2].fnctptr)((yyvsp[-1].string));  if(data.Debug>0){printf("double=func(image)\n");}}
-#line 1775 "calc_bison.c" /* yacc.c:1646  */
+#line 1775 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 136 "calc_bison.y" /* yacc.c:1646  */
+#line 136 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-4].fnctptr)((yyvsp[-3].string),(yyvsp[-1].val_d));  if(data.Debug>0){printf("double=func(image,double)\n");}}
-#line 1781 "calc_bison.c" /* yacc.c:1646  */
+#line 1781 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 137 "calc_bison.y" /* yacc.c:1646  */
+#line 137 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.val_d) = (yyvsp[-1].val_d);                         }
-#line 1787 "calc_bison.c" /* yacc.c:1646  */
+#line 1787 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 141 "calc_bison.y" /* yacc.c:1646  */
+#line 141 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {(yyval.string) = strdup((yyvsp[0].string));        data.cmdargtoken[data.cmdNBarg].type = 3; if(data.Debug>0){printf("this is a string (new variable/image)\n");}}
-#line 1793 "calc_bison.c" /* yacc.c:1646  */
+#line 1793 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 142 "calc_bison.y" /* yacc.c:1646  */
+#line 142 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {(yyval.string) = strdup((yyvsp[0].string));        data.cmdargtoken[data.cmdNBarg].type = 4; if(data.Debug>0){printf("this is a string (existing image)\n");}}
-#line 1799 "calc_bison.c" /* yacc.c:1646  */
+#line 1799 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 143 "calc_bison.y" /* yacc.c:1646  */
+#line 143 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {(yyval.string) = strdup((yyvsp[0].string));        data.cmdargtoken[data.cmdNBarg].type = 5; if(data.Debug>0){printf("this is a string (command)\n");}}
-#line 1805 "calc_bison.c" /* yacc.c:1646  */
+#line 1805 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 59:
-#line 144 "calc_bison.y" /* yacc.c:1646  */
+#line 144 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {(yyval.string) = strdup((yyvsp[-2].string));        delete_image_ID((yyvsp[-2].string)); chname_image_ID((yyvsp[0].string),(yyvsp[-2].string)); if(data.Debug>0){printf("changing name\n");}}
-#line 1811 "calc_bison.c" /* yacc.c:1646  */
+#line 1811 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 60:
-#line 145 "calc_bison.y" /* yacc.c:1646  */
+#line 145 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {(yyval.string) = strdup((yyvsp[-2].string));        chname_image_ID((yyvsp[0].string),(yyvsp[-2].string)); if(data.Debug>0){printf("changing name\n");}}
-#line 1817 "calc_bison.c" /* yacc.c:1646  */
+#line 1817 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 146 "calc_bison.y" /* yacc.c:1646  */
+#line 146 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_add((yyvsp[-2].string), (yyvsp[0].string), calctmpimname); (yyval.string) = strdup(calctmpimname); if(data.Debug>0){printf("image + image\n");}}
-#line 1823 "calc_bison.c" /* yacc.c:1646  */
+#line 1823 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 147 "calc_bison.y" /* yacc.c:1646  */
+#line 147 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd((yyvsp[-2].string),(double) (yyvsp[0].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname);  if(data.Debug>0){printf("image + double\n");}}
-#line 1829 "calc_bison.c" /* yacc.c:1646  */
+#line 1829 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 148 "calc_bison.y" /* yacc.c:1646  */
+#line 148 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd((yyvsp[-2].string),(double) (yyvsp[0].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image + long\n");}}
-#line 1835 "calc_bison.c" /* yacc.c:1646  */
+#line 1835 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 149 "calc_bison.y" /* yacc.c:1646  */
+#line 149 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd((yyvsp[0].string),(double) (yyvsp[-2].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double + image\n");}}
-#line 1841 "calc_bison.c" /* yacc.c:1646  */
+#line 1841 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 150 "calc_bison.y" /* yacc.c:1646  */
+#line 150 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd((yyvsp[0].string),(double) (yyvsp[-2].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("long + image\n");}}
-#line 1847 "calc_bison.c" /* yacc.c:1646  */
+#line 1847 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 151 "calc_bison.y" /* yacc.c:1646  */
+#line 151 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_sub((yyvsp[-2].string), (yyvsp[0].string), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image + image\n");}}
-#line 1853 "calc_bison.c" /* yacc.c:1646  */
+#line 1853 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 152 "calc_bison.y" /* yacc.c:1646  */
+#line 152 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd((yyvsp[-2].string),(double) -(yyvsp[0].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image - double\n");}}
-#line 1859 "calc_bison.c" /* yacc.c:1646  */
+#line 1859 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 153 "calc_bison.y" /* yacc.c:1646  */
+#line 153 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd((yyvsp[-2].string),(double) -(yyvsp[0].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image - long\n");}}
-#line 1865 "calc_bison.c" /* yacc.c:1646  */
+#line 1865 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 154 "calc_bison.y" /* yacc.c:1646  */
+#line 154 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstsubm((yyvsp[0].string),(double) (yyvsp[-2].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double - image\n");}}
-#line 1871 "calc_bison.c" /* yacc.c:1646  */
+#line 1871 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 155 "calc_bison.y" /* yacc.c:1646  */
+#line 155 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstsubm((yyvsp[0].string),(double) (yyvsp[-2].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("long - image\n");}}
-#line 1877 "calc_bison.c" /* yacc.c:1646  */
+#line 1877 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 71:
-#line 156 "calc_bison.y" /* yacc.c:1646  */
+#line 156 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_mult((yyvsp[-2].string), (yyvsp[0].string), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image * image\n");}}
-#line 1883 "calc_bison.c" /* yacc.c:1646  */
+#line 1883 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 72:
-#line 157 "calc_bison.y" /* yacc.c:1646  */
+#line 157 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult((yyvsp[-2].string),(double) (yyvsp[0].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image * double\n");}}
-#line 1889 "calc_bison.c" /* yacc.c:1646  */
+#line 1889 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 73:
-#line 158 "calc_bison.y" /* yacc.c:1646  */
+#line 158 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult((yyvsp[-2].string),(double) (yyvsp[0].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image * long\n");}}
-#line 1895 "calc_bison.c" /* yacc.c:1646  */
+#line 1895 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 74:
-#line 159 "calc_bison.y" /* yacc.c:1646  */
+#line 159 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult((yyvsp[0].string),(double) (yyvsp[-2].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double * image\n");}}
-#line 1901 "calc_bison.c" /* yacc.c:1646  */
+#line 1901 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 75:
-#line 160 "calc_bison.y" /* yacc.c:1646  */
+#line 160 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult((yyvsp[0].string),(double) (yyvsp[-2].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("long * image\n");}}
-#line 1907 "calc_bison.c" /* yacc.c:1646  */
+#line 1907 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 76:
-#line 161 "calc_bison.y" /* yacc.c:1646  */
+#line 161 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_div((yyvsp[-2].string), (yyvsp[0].string), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image / image\n");}}
-#line 1913 "calc_bison.c" /* yacc.c:1646  */
+#line 1913 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 77:
-#line 162 "calc_bison.y" /* yacc.c:1646  */
+#line 162 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv((yyvsp[-2].string),(double) (yyvsp[0].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image - double\n");}}
-#line 1919 "calc_bison.c" /* yacc.c:1646  */
+#line 1919 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 78:
-#line 163 "calc_bison.y" /* yacc.c:1646  */
+#line 163 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv((yyvsp[-2].string),(double) (yyvsp[0].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image - long\n");}}
-#line 1925 "calc_bison.c" /* yacc.c:1646  */
+#line 1925 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 79:
-#line 164 "calc_bison.y" /* yacc.c:1646  */
+#line 164 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv((yyvsp[0].string),(double) (yyvsp[-2].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double - image\n");}}
-#line 1931 "calc_bison.c" /* yacc.c:1646  */
+#line 1931 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 80:
-#line 165 "calc_bison.y" /* yacc.c:1646  */
+#line 165 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv((yyvsp[0].string),(double) (yyvsp[-2].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("long - image\n");}}
-#line 1937 "calc_bison.c" /* yacc.c:1646  */
+#line 1937 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 81:
-#line 166 "calc_bison.y" /* yacc.c:1646  */
+#line 166 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstpow((yyvsp[-2].string),(double) (yyvsp[0].val_l), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image^long\n");}}
-#line 1943 "calc_bison.c" /* yacc.c:1646  */
+#line 1943 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 82:
-#line 167 "calc_bison.y" /* yacc.c:1646  */
+#line 167 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstpow((yyvsp[-2].string),(double) (yyvsp[0].val_d), calctmpimname); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("image^double\n");}}
-#line 1949 "calc_bison.c" /* yacc.c:1646  */
+#line 1949 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 83:
-#line 168 "calc_bison.y" /* yacc.c:1646  */
+#line 168 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_im_im__d_d((yyvsp[-1].string), calctmpimname, (yyvsp[-2].fnctptr)); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double_func(double)\n");}}
-#line 1955 "calc_bison.c" /* yacc.c:1646  */
+#line 1955 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 84:
-#line 169 "calc_bison.y" /* yacc.c:1646  */
+#line 169 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_imd_im__dd_d((yyvsp[-3].string), (double) (yyvsp[-1].val_d), calctmpimname, (yyvsp[-4].fnctptr)); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double_func(double, double)\n");}}
-#line 1961 "calc_bison.c" /* yacc.c:1646  */
+#line 1961 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 85:
-#line 170 "calc_bison.y" /* yacc.c:1646  */
+#line 170 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_imdd_im__ddd_d((yyvsp[-5].string), (double) (yyvsp[-3].val_d), (double) (yyvsp[-1].val_d), calctmpimname, (yyvsp[-6].fnctptr)); (yyval.string)=strdup(calctmpimname); if(data.Debug>0){printf("double_func(double, double, double)\n");}}
-#line 1967 "calc_bison.c" /* yacc.c:1646  */
+#line 1967 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
   case 86:
-#line 171 "calc_bison.y" /* yacc.c:1646  */
+#line 171 "CommandLineInterface/calc_bison.y" /* yacc.c:1646  */
     { (yyval.string) = strdup((yyvsp[-1].string));                         }
-#line 1973 "calc_bison.c" /* yacc.c:1646  */
+#line 1973 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
     break;
 
 
-#line 1977 "calc_bison.c" /* yacc.c:1646  */
+#line 1977 "CommandLineInterface/calc_bison.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2201,7 +2201,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 176 "calc_bison.y" /* yacc.c:1906  */
+#line 176 "CommandLineInterface/calc_bison.y" /* yacc.c:1906  */
 
 
 
