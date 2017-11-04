@@ -30,8 +30,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_CALC_BISON_H_INCLUDED
-# define YY_YY_CALC_BISON_H_INCLUDED
+#ifndef YY_YY_COMMANDLINEINTERFACE_CALC_BISON_H_INCLUDED
+# define YY_YY_COMMANDLINEINTERFACE_CALC_BISON_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -80,7 +80,7 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 31 "calc_bison.y" /* yacc.c:1909  */
+#line 31 "CommandLineInterface/calc_bison.y" /* yacc.c:1909  */
 
   long     val_l;  /* long */  
   float    val_f;  /* float */
@@ -88,7 +88,7 @@ union YYSTYPE
   char  *string;   /* For returning strings (variables, images)  */
   double (*fnctptr)();    /* pointer to function -> double */
 
-#line 92 "calc_bison.h" /* yacc.c:1909  */
+#line 92 "CommandLineInterface/calc_bison.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -99,4 +99,4 @@ extern YYSTYPE yylval;
 
 int yyparse (void);
 
-#endif /* !YY_YY_CALC_BISON_H_INCLUDED  */
+#endif /* !YY_YY_COMMANDLINEINTERFACE_CALC_BISON_H_INCLUDED  */
