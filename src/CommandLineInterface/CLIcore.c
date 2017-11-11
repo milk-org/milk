@@ -11,6 +11,17 @@
 
 
 
+/*
+ * Exit code
+ * 	- 0: no error
+ * 	- 1: error (non-specific)
+ * 	- 2: error loading libraries
+ * 	- 3: missing file required to proceed
+ * 	- 4: system call error
+ */
+
+
+
 #define _GNU_SOURCE
 
 
@@ -107,7 +118,15 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 
 
-
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
+#define KRES  "\033[0m"
 
 
 
@@ -202,6 +221,7 @@ int command_line( int argc, char **argv);
 static int_fast8_t exitCLI();
 static int_fast8_t help();
 
+
 static int_fast8_t list_commands();
 static int_fast8_t list_commands_module(char *modulename);
 static int_fast8_t load_module_shared(char *modulename);
@@ -290,7 +310,7 @@ int_fast8_t exitCLI()
         if(system("rm imlist.txt")==-1)
         {
             printERROR(__FILE__,__func__,__LINE__,"system() error");
-            exit(0);
+            exit(4);
         }
     }
 
@@ -313,8 +333,8 @@ static int_fast8_t printInfo()
 
 
     printf("--------------- GENERAL ----------------------\n");
-    printf("%s VERSION   %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
-    printf("%s BUILT   %s %s\n", __FILE__,__DATE__,__TIME__);
+    printf("%s  %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
+    printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
     if(data.precision==0)
@@ -366,15 +386,14 @@ static int_fast8_t help()
 {
   char command[200];
 
-  sprintf(command, "more %s/doc/help.txt", ABSSRCTOPDIR);
+  sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", ABSSRCTOPDIR);
   if(system(command) != 0)
     {
       printERROR(__FILE__,__func__,__LINE__,"system call error");
-      exit(1);
+      exit(4);
     }
   return 0;
 }
-
 
 
 static int_fast8_t helpreadline()
@@ -382,11 +401,11 @@ static int_fast8_t helpreadline()
   char command[200];
   int r;
 
-  sprintf(command, "more %s/doc/helpreadline.txt", ABSSRCTOPDIR);
+  sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", ABSSRCTOPDIR);
   if(system(command) != 0)
     {
-      printERROR(__FILE__,__func__,__LINE__,"system call error");
-      exit(1);
+      printERROR(__FILE__, __func__, __LINE__, "system call error");
+      exit(4);
     }
   
   return 0;
@@ -414,9 +433,13 @@ static int_fast8_t help_module()
     else
     {
 		long i;
-		
+		printf("\n");
+		printf("%6s  %36s    %s\n", "Index", "Module name", "Package - Module description");
+		printf("-------------------------------------------------------------------------------------------------------\n");
         for(i=0; i<data.NBmodule; i++)
-            printf("%5ld  %20s    %s\n", i, data.module[i].name, data.module[i].info);
+            printf("%6ld  %36s    %s\n", i, data.module[i].name, data.module[i].info);
+		printf("-------------------------------------------------------------------------------------------------------\n");
+        printf("\n");
     }
 
     return 0;
@@ -492,7 +515,7 @@ static int_fast8_t CLI_execute_line()
         if(system(line) != 0)
         {
             printERROR(__FILE__,__func__,__LINE__,"system call error");
-            exit(1);
+            exit(4);
         }
         data.CMDexecuted = 1;
     }
@@ -678,7 +701,7 @@ uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CL
  */
 
 
-int_fast8_t runCLI(int argc, char *argv[])
+int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 {
     long i, j;
     int quiet=0;
@@ -719,8 +742,7 @@ int_fast8_t runCLI(int argc, char *argv[])
     int cliwaitus=100;
     struct timeval tv;   // sleep 100 us after reading FIFO
 
-
-
+		
     strcpy(data.processname, argv[0]);
 
 
@@ -815,13 +837,22 @@ int_fast8_t runCLI(int argc, char *argv[])
     CLIPID = getpid();
 
     //    sprintf(promptname, "%s", data.processname);
-    sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
+    
+    if(strlen(promptstring)>0)
+		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, promptstring, 0x1B, 0);
+    else
+		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
     //sprintf(prompt, "%s> ", PACKAGE_NAME);
 
-    printf("type \"help\" for instructions\n");
+	printf("\n");
+	printf("        %s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+	printf("        GNU General Public License v3.0\n");
+	printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
+    printf("        Type \"help\" for instructions\n");
+	printf("        \n");
 
 # ifdef _OPENMP
-    printf("Running with openMP, max threads = %d  (defined by environment variable OMP_NUM_THREADS)\n", omp_get_max_threads());
+    printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # endif
 
 
@@ -894,7 +925,7 @@ int_fast8_t runCLI(int argc, char *argv[])
         if( (fp=fopen( "STOPCLI", "r" )) != NULL ) {
             fprintf(stdout, "STOPCLI FILE FOUND. Exiting...\n");
             fclose(fp);
-            exit(1);
+            exit(3);
         }
 
         if(Listimfile==1) {
@@ -913,7 +944,7 @@ int_fast8_t runCLI(int argc, char *argv[])
         {
             fprintf(stderr,"%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            exit(0);
+            exit(1);
         }
 
         compute_image_memory(data);
@@ -1191,7 +1222,7 @@ void main_init()
   data.image           = (IMAGE*) calloc(data.NB_MAX_IMAGE, sizeof(IMAGE));
   if(data.image==NULL)  {
     printERROR(__FILE__,__func__,__LINE__,"Allocation of data.image has failed - exiting program");
-    exit(0);
+    exit(1);
   }
   if(data.Debug>0)
     {
@@ -1208,7 +1239,7 @@ void main_init()
   data.variable = (VARIABLE*) calloc(data.NB_MAX_VARIABLE, sizeof(VARIABLE));
   if(data.variable==NULL)  {
     printERROR(__FILE__,__func__,__LINE__,"Allocation of data.variable has failed - exiting program");       
-    exit(0);
+    exit(1);
   }
   
   data.image[0].used   = 0;
@@ -1226,7 +1257,7 @@ void main_init()
   
   if (data.variable == NULL)   {
     printERROR(__FILE__,__func__,__LINE__, "Reallocation of data.variable has failed - exiting program");
-    exit(0);
+    exit(1);
   }
   
   
@@ -1384,8 +1415,8 @@ void main_init()
 
 //  init_modules();
 
-  printf("LOADED: %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
-  
+  printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
+	printf("        \n");
 }
 
 
@@ -1575,16 +1606,17 @@ int command_line( int argc, char **argv)
         {"listimf", no_argument,       &Listimfile, 1},
         /* These options don't set a flag.
         We distinguish them by their indices. */
-        {"help",       no_argument,       0, 'h'},
-        {"info",       no_argument,       0, 'i'},
-        {"overwrite",  no_argument,       0, 'o'},
-        {"idle",       no_argument,       0, 'e'}, 
-        {"debug",      required_argument, 0, 'd'},
-        {"mmon",      required_argument, 0, 'm'},
-        {"pname",     required_argument, 0, 'n'},
-        {"priority",     required_argument, 0, 'p'},
-        {"fifo",      required_argument, 0, 'f'},
-        {"startup",   required_argument, 0, 's'},
+        {"help",        no_argument,       0, 'h'},
+        {"version",     no_argument,       0, 'v'},
+        {"info",        no_argument,       0, 'i'},
+        {"overwrite",   no_argument,       0, 'o'},
+        {"idle",        no_argument,       0, 'e'}, 
+        {"debug",       required_argument, 0, 'd'},
+        {"mmon",        required_argument, 0, 'm'},
+        {"pname",       required_argument, 0, 'n'},
+        {"priority",    required_argument, 0, 'p'},
+        {"fifo",        required_argument, 0, 'f'},
+        {"startup",     required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
 
@@ -1596,7 +1628,7 @@ int command_line( int argc, char **argv)
     {
 		int c;
 		
-        c = getopt_long (argc, argv, "hidoe:m:n:p:f:s:",
+        c = getopt_long (argc, argv, "hvidoe:m:n:p:f:s:",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -1617,6 +1649,11 @@ int command_line( int argc, char **argv)
 
         case 'h':
             help();
+            exit(0);
+            break;
+
+        case 'v':
+             printf("%s   %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
             exit(0);
             break;
 
@@ -1863,7 +1900,7 @@ static int_fast8_t load_module_shared_ALL()
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
-						fprintf(stderr, "Pass # %d   %s\n", iter, dlerror());
+						fprintf(stderr, KMAG "        WARNING: linker pass # %d, module # %d\n          %s\n" KRES, iter, DLib_index, dlerror());
 						//exit(EXIT_FAILURE);
 						loopOK = 0;
 					}
@@ -1880,13 +1917,19 @@ static int_fast8_t load_module_shared_ALL()
 
 		closedir(d);
 		}
-		if(loopOK == 1)
-			printf("Pass #%d successful\n", iter);
+		if(iter>0)
+			if(loopOK == 1)
+				printf(KGRN "        Linker pass #%d successful\n" KRES, iter);
 		iter++;
 	}
 
-	if(loopOK==1)
-		printf("All libraries successfully loaded\n");
+	if(loopOK!=1)
+	{
+		printf("Some libraries could not be loaded -> EXITING\n");
+		exit(2); 
+	}
+		
+		//printf("All libraries successfully loaded\n");
 
 
     return 0;
