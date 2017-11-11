@@ -4,6 +4,7 @@ Command Line Interface (CLI) for MILK and its packages that use it.
 
 <details>
   <summary>CLI files</summary>
+  
   lots of details
   
   more details
@@ -12,3 +13,5 @@ Command Line Interface (CLI) for MILK and its packages that use it.
   
   even more details
 </details>
+
+
