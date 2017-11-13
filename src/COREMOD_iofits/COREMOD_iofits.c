@@ -163,7 +163,7 @@ int_fast8_t images_to_cube_cli()
 void __attribute__ ((constructor)) libinit_COREMOD_iofits()
 {
 	init_COREMOD_iofits();
-	printf(" ...... Loading module %s\n", __FILE__);
+//	printf(" ...... Loading module %s\n", __FILE__);
 }
 
 
