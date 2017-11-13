@@ -213,6 +213,7 @@ int command_line( int argc, char **argv);
 static int_fast8_t exitCLI();
 static int_fast8_t help();
 
+
 static int_fast8_t list_commands();
 static int_fast8_t list_commands_module(char *modulename);
 static int_fast8_t load_module_shared(char *modulename);
@@ -324,8 +325,8 @@ static int_fast8_t printInfo()
 
 
     printf("--------------- GENERAL ----------------------\n");
-    printf("%s VERSION   %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
-    printf("%s BUILT   %s %s\n", __FILE__,__DATE__,__TIME__);
+    printf("%s  %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
+    printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
     if(data.precision==0)
@@ -377,7 +378,7 @@ static int_fast8_t help()
 {
   char command[200];
 
-  sprintf(command, "more %s/doc/help.txt", ABSSRCTOPDIR);
+  sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", ABSSRCTOPDIR);
   if(system(command) != 0)
     {
       printERROR(__FILE__,__func__,__LINE__,"system call error");
@@ -387,13 +388,12 @@ static int_fast8_t help()
 }
 
 
-
 static int_fast8_t helpreadline()
 {
   char command[200];
   int r;
 
-  sprintf(command, "more %s/doc/helpreadline.txt", ABSSRCTOPDIR);
+  sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", ABSSRCTOPDIR);
   if(system(command) != 0)
     {
       printERROR(__FILE__, __func__, __LINE__, "system call error");
@@ -1589,16 +1589,17 @@ int command_line( int argc, char **argv)
         {"listimf", no_argument,       &Listimfile, 1},
         /* These options don't set a flag.
         We distinguish them by their indices. */
-        {"help",       no_argument,       0, 'h'},
-        {"info",       no_argument,       0, 'i'},
-        {"overwrite",  no_argument,       0, 'o'},
-        {"idle",       no_argument,       0, 'e'}, 
-        {"debug",      required_argument, 0, 'd'},
-        {"mmon",      required_argument, 0, 'm'},
-        {"pname",     required_argument, 0, 'n'},
-        {"priority",     required_argument, 0, 'p'},
-        {"fifo",      required_argument, 0, 'f'},
-        {"startup",   required_argument, 0, 's'},
+        {"help",        no_argument,       0, 'h'},
+        {"version",     no_argument,       0, 'v'},
+        {"info",        no_argument,       0, 'i'},
+        {"overwrite",   no_argument,       0, 'o'},
+        {"idle",        no_argument,       0, 'e'}, 
+        {"debug",       required_argument, 0, 'd'},
+        {"mmon",        required_argument, 0, 'm'},
+        {"pname",       required_argument, 0, 'n'},
+        {"priority",    required_argument, 0, 'p'},
+        {"fifo",        required_argument, 0, 'f'},
+        {"startup",     required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
 
@@ -1610,7 +1611,7 @@ int command_line( int argc, char **argv)
     {
 		int c;
 		
-        c = getopt_long (argc, argv, "hidoe:m:n:p:f:s:",
+        c = getopt_long (argc, argv, "hvidoe:m:n:p:f:s:",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -1631,6 +1632,11 @@ int command_line( int argc, char **argv)
 
         case 'h':
             help();
+            exit(0);
+            break;
+
+        case 'v':
+             printf("%s   %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
             exit(0);
             break;
 

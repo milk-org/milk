@@ -233,7 +233,9 @@ int templatemodule_examplefunc00(int mode)
 {
     // CODING STANDARD NOTE: pointer qualifier '*' with variable rather than with the type
     float *farray;
-
+	
+	int return_value;
+	
     // CODING STANDARD NOTE: choose human-readable variable names
     // CODING STANDARD NOTE: unrelated declarations should be on separate lines
     long iipix, jjpix; // pixel coordinates
@@ -244,7 +246,8 @@ int templatemodule_examplefunc00(int mode)
 	FILE *fp_test;
 	
 
-	if( (farray = (float*) malloc(sizeof(float)*10)) == NULL)
+	farray = (float*) malloc(sizeof(float)*10);
+	if(farray == NULL)
 		printERROR(__FILE__, __func__, __LINE__, "malloc returns zero value");
 	
 	
@@ -256,7 +259,8 @@ int templatemodule_examplefunc00(int mode)
     }
 	free(farray);
 
-	if((fp_test=fopen("testfile.log", "w"))==NULL)
+	fp_test = fopen("testfile.log", "w");
+	if(fp_test == NULL)
 		printERROR(__FILE__, __func__, __LINE__, "Cannot open file testfile.log");
 	fclose(fp_test);
 
@@ -280,7 +284,8 @@ int templatemodule_examplefunc00(int mode)
             printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
     }
 
-	if((fp_test=fopen("testfile.log", "r"))==NULL)
+	fp_test = fopen("testfile.log", "r");
+	if(fp_test == NULL)
 		printERROR(__FILE__, __func__, __LINE__, "Cannot Read file testfile.log");
 
 	// CODING STANDARD NOTE: include field width limits in fscanf and sscanf calls
@@ -368,16 +373,20 @@ int templatemodule_examplefunc01(float val1, int n1, float *farray)
 	int RT_priority = 95; //any number from 0-99. Higher number = higher priority
 	struct sched_param schedpar;
 	
+	int retval;
 	
 	schedpar.sched_priority = RT_priority;
 
+
     #ifndef __MACH__ // Do not run code below if OS-X 
-    if(seteuid(euid_called) != 0) //This goes up to maximum privileges
+    iretval = seteuid(euid_called); //This goes up to maximum privileges
+	if(retval != 0)
 		printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
 		
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster    
 
-    if(seteuid(euid_real) != 0) //Go back to normal privileges
+    retval = seteuid(euid_real); //Go back to normal privileges
+	if(retval != 0)
 		printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
 	#endif
 	
