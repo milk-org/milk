@@ -1034,7 +1034,7 @@ int_fast8_t COREMOD_MEMORY_sharedMem_2Dim_log_cli()
 void __attribute__ ((constructor)) libinit_COREMOD_memory()
 {
 	init_COREMOD_memory();
-	printf(" ...... Loading module %s\n", __FILE__);
+//	printf(" ...... Loading module %s\n", __FILE__);
 }
 
 
