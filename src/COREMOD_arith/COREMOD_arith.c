@@ -113,7 +113,7 @@ int_fast8_t arith_image_merge3D_cli(){
 void __attribute__ ((constructor)) libinit_COREMOD_arith()
 {
 	init_COREMOD_arith();
-	printf(" ...... Loading module %s\n", __FILE__);
+//	printf(" ...... Loading module %s\n", __FILE__);
 }
 
 
