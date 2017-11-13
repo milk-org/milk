@@ -163,7 +163,12 @@ int_fast8_t images_to_cube_cli()
 void __attribute__ ((constructor)) libinit_COREMOD_iofits()
 {
 	init_COREMOD_iofits();
-	printf(" ...... Loading module %s\n", __FILE__);
+	
+	if(data.progStatus>0)
+	{
+		printf("  Found unloaded shared object in ./libs/ -> LOADING module %s\n", __FILE__);
+		fflush(stdout);
+	}	
 }
 
 
@@ -174,6 +179,7 @@ int init_COREMOD_iofits()
 {
 
   strcpy(data.module[data.NBmodule].name, __FILE__);
+  strcpy(data.module[data.NBmodule].package, "milk");
   strcpy(data.module[data.NBmodule].info, "FITS format input/output");
   data.NBmodule++;
   
