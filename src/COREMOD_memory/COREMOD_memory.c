@@ -3171,7 +3171,7 @@ int_fast8_t list_image_ID_ofp(FILE *fo)
 	minfo = mallinfo();
 
     clock_gettime(CLOCK_REALTIME, &timenow);
-	fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
+	//fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
  
     
 
@@ -3314,7 +3314,7 @@ int_fast8_t list_image_ID_ofp_simple(FILE *fo)
 int_fast8_t list_image_ID()
 {
     list_image_ID_ofp(stdout);
-	malloc_stats();
+	//malloc_stats();
     return 0;
 }
 
