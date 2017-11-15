@@ -832,10 +832,15 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
     //sprintf(prompt, "%s> ", PACKAGE_NAME);
 
-    printf("type \"help\" for instructions\n");
+	printf("\n");
+	printf("        %s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+	printf("        GNU General Public License v3.0\n");
+	printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
+    printf("        Type \"help\" for instructions\n");
+	printf("        \n");
 
 # ifdef _OPENMP
-    printf("Running with openMP, max threads = %d  (defined by environment variable OMP_NUM_THREADS)\n", omp_get_max_threads());
+    printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # endif
 
 
@@ -1398,8 +1403,8 @@ void main_init()
 
 //  init_modules();
 
-  printf("LOADED: %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
-  
+  printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
+	printf("        \n");
 }
 
 
