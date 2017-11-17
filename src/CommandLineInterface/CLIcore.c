@@ -427,7 +427,7 @@ static int_fast8_t help_module()
 		long i;
 		
         for(i=0; i<data.NBmodule; i++)
-            printf("%5ld  %20s    %s\n", i, data.module[i].name, data.module[i].info);
+            printf("%5ld  %36s    %s\n", i, data.module[i].name, data.module[i].info);
     }
 
     return 0;
