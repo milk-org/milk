@@ -169,7 +169,7 @@ void __attribute__ ((constructor)) libinit_COREMOD_tools()
 int init_COREMOD_tools()
 {
     strcpy(data.module[data.NBmodule].name, __FILE__);
-    strcpy(data.module[data.NBmodule].info, "image information and statistics");
+    strcpy(data.module[data.NBmodule].info, "milk    - Image information and statistics");
     data.NBmodule++;
 
 
