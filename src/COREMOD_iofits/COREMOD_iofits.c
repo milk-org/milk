@@ -174,7 +174,7 @@ int init_COREMOD_iofits()
 {
 
   strcpy(data.module[data.NBmodule].name, __FILE__);
-  strcpy(data.module[data.NBmodule].info, "FITS format input/output");
+  strcpy(data.module[data.NBmodule].info, "milk    - FITS format input/output");
   data.NBmodule++;
   
   
