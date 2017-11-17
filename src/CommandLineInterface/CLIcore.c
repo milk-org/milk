@@ -1896,7 +1896,7 @@ static int_fast8_t load_module_shared_ALL()
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
-						fprintf(stderr, KMAG "        WARNING: linker pass # %d   %s\n" KRES, iter, dlerror());
+						fprintf(stderr, KMAG "        WARNING: linker pass # %d, module # %d\n          %s\n" KRES, iter, Dlib_index, dlerror());
 						//exit(EXIT_FAILURE);
 						loopOK = 0;
 					}
