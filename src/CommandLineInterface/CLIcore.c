@@ -1888,7 +1888,7 @@ static int_fast8_t load_module_shared_ALL()
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
-						fprintf(stderr, "Pass # %d   %s\n", iter, dlerror());
+						fprintf(stderr, "       WARNING: linker pass # %d   %s\n", iter, dlerror());
 						//exit(EXIT_FAILURE);
 						loopOK = 0;
 					}
@@ -1907,7 +1907,7 @@ static int_fast8_t load_module_shared_ALL()
 		}
 		if(iter>0)
 			if(loopOK == 1)
-				printf("Retry -> Pass #%d successful\n", iter);
+				printf("       Linker pass #%d successful\n", iter);
 		iter++;
 	}
 
