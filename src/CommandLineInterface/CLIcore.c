@@ -118,7 +118,15 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 
 
-
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
+#define KRES  "\033[0m"
 
 
 
@@ -1888,7 +1896,7 @@ static int_fast8_t load_module_shared_ALL()
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
-						fprintf(stderr, "       WARNING: linker pass # %d   %s\n", iter, dlerror());
+						fprintf(stderr, KMAG "        WARNING: linker pass # %d   %s\n" KRES, iter, dlerror());
 						//exit(EXIT_FAILURE);
 						loopOK = 0;
 					}
@@ -1907,7 +1915,7 @@ static int_fast8_t load_module_shared_ALL()
 		}
 		if(iter>0)
 			if(loopOK == 1)
-				printf("       Linker pass #%d successful\n", iter);
+				printf(KGRN "        Linker pass #%d successful\n" KRES, iter);
 		iter++;
 	}
 
