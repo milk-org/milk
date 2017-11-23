@@ -434,10 +434,10 @@ static int_fast8_t help_module()
     {
 		long i;
 		printf("\n");
-		printf("%6s  %36s    %s\n", "Index", "Module name", "Package - Module description");
+		printf("%6s  %36s  %10s  %s\n", "Index", "Module name", "Package", "Module description");
 		printf("-------------------------------------------------------------------------------------------------------\n");
         for(i=0; i<data.NBmodule; i++)
-            printf("%6ld  %36s    %s\n", i, data.module[i].name, data.module[i].info);
+            printf("%6ld  %36s  %10s  %s\n", i, data.module[i].name, data.module[i].package, data.module[i].info);
 		printf("-------------------------------------------------------------------------------------------------------\n");
         printf("\n");
     }

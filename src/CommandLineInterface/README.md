@@ -1,5 +1,8 @@
 # Module CommandLineInterface  {#page_module_CommandLineInterface}
 
-Command Line Interface (CLI) for MILK and its packages that use it.
+Command Line Interface (CLI) for MILK
+
+Uses GNU Bison (parser generator) and Flex (lexical analysis).
+
 
 
