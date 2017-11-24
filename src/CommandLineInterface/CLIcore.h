@@ -112,8 +112,9 @@ typedef struct {
 
 
 typedef struct {
-    char name[50];   // module name
-    char info[1000]; // short description
+    char name[50];    // module name
+    char package[50]; // package to which module belongs
+    char info[1000];  // short description
 } MODULE;
 
 
