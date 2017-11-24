@@ -122,7 +122,8 @@ int init_COREMOD_arith()
 {
   
   strcpy(data.module[data.NBmodule].name, __FILE__);
-  strcpy(data.module[data.NBmodule].info, "milk    - Image arithmetic operations");
+  strcpy(data.module[data.NBmodule].package, "milk");
+  strcpy(data.module[data.NBmodule].info, "Image arithmetic operations");
   data.NBmodule++;
 
 
