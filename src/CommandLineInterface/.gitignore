@@ -14,3 +14,7 @@ CACAO-calc_bison\.o
 CACAO-calc_flex\.o
 
 CACAO-CLIcore\.o
+
+*.o
+
+*.Po
