@@ -45,3 +45,21 @@ When updating master, it's good practice to also issue a git tag
 	git tag -a v0.1.23 -m "Version 0.1.23"
 	git push origin v0.1.23
 
+
+
+
+## Documentation
+
+Documentation tree can be locally built on dev branch with doxygen from main directory and pushed by :
+
+	git checkout dev
+	doxygen
+	git add html
+	git commit -am 'updated doxygen documentation'
+	git push
+
+Same should be done on branch master.
+
+When switching branches, you may get an error message "The following untracked working tree files would be overwritten by checkout" preventing branch switch. If the error only lists files in the html directory, you can safely use the -f option to force branch change.
+
+
