@@ -877,7 +877,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     //    v1 = gsl_rng_uniform (data.rndgen);
 
 
-	data.progStatus = 1;
+	data.progStatus = 0;
 
 	// LOAD MODULES
 	printf("Loading modules\n");//TEST
