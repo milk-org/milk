@@ -113,24 +113,13 @@ int_fast8_t arith_image_merge3D_cli(){
 void __attribute__ ((constructor)) libinit_COREMOD_arith()
 {
 	init_COREMOD_arith();
-
-	if(data.progStatus>0)
-	{
-		printf("  Found unloaded shared object in ./libs/ -> LOADING module %s\n", __FILE__);
-		fflush(stdout);
-	}
+	RegisterModule(__FILE__, "milk", "Image arithmetic operations");
 }
 
 
 
 int init_COREMOD_arith()
 {
-  
-  strcpy(data.module[data.NBmodule].name, __FILE__);
-  strcpy(data.module[data.NBmodule].package, "milk");
-  strcpy(data.module[data.NBmodule].info, "Image arithmetic operations");
-  data.NBmodule++;
-
 
   strcpy(data.cmd[data.NBcmd].key,"extractim");
   strcpy(data.cmd[data.NBcmd].module,__FILE__);
