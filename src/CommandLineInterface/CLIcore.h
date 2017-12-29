@@ -282,6 +282,8 @@ typedef struct
 
 void sig_handler(int signo);
 
+int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString);
+
 uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CLIfptr)(), char *CLIinfo, char *CLIsyntax, char *CLIexample, char *CLICcall);
 
 int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
