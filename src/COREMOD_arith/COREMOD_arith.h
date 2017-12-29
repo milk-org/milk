@@ -2,6 +2,8 @@
 #define _ARITH_H
 
 
+void __attribute__ ((constructor)) libinit_COREMOD_arith();
+
 int init_COREMOD_arith();
 
 

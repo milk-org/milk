@@ -43,6 +43,8 @@
 
 extern DATA data;
 
+static int INITSTATUS_COREMOD_arith = 0;
+
 static char errmsg_arith[SBUFFERSIZE];
 
 
@@ -112,8 +114,12 @@ int_fast8_t arith_image_merge3D_cli(){
 
 void __attribute__ ((constructor)) libinit_COREMOD_arith()
 {
-	init_COREMOD_arith();
-	RegisterModule(__FILE__, "milk", "Image arithmetic operations");
+	if ( INITSTATUS_COREMOD_arith == 0 )
+	{
+		init_COREMOD_arith();
+		RegisterModule(__FILE__, "milk", "Image arithmetic operations");
+		INITSTATUS_COREMOD_arith = 1;
+	}
 }
 
 
