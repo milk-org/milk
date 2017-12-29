@@ -1900,7 +1900,7 @@ static int_fast8_t load_module_shared_ALL()
 			if (dot && !strcmp(dot, ".so"))
 				{
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
-					printf("LOADING shared object  %40s -> %s\n", dir->d_name, libname);//TEST
+					printf("%02ld   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
 					fflush(stdout);
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
