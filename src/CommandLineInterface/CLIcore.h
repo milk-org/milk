@@ -197,6 +197,10 @@ typedef struct
     int signal_HUP;
     int signal_PIPE;
     
+    int progStatus;  // main program status
+    // 0: before automatic loading of shared objects
+    // 1: after automatic loading of shared objects
+    
     uid_t ruid; // Real UID (= user launching process at startup)
 	uid_t euid; // Effective UID (= owner of executable at startup)
 	uid_t suid; // Saved UID (= owner of executable at startup)
