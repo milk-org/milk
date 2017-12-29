@@ -669,21 +669,32 @@ void rl_cb(char* linein)
 
 int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 {
+	int OK = 0;
+	
+	
 	strcpy(data.module[data.NBmodule].name, FileName);
 	strcpy(data.module[data.NBmodule].package, PackageName);
 	strcpy(data.module[data.NBmodule].info, InfoString);
 	
 	if(data.progStatus==0)
 	{
+		OK = 1;
 		printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
 		fflush(stdout);
 	}		
 	
 	if(data.progStatus==1)
 	{
+		OK = 1;
 		printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
 		fflush(stdout);
 	}	
+	
+	if ( OK == 0 )
+	{
+		printf("  %02ld  ERROR: module load requested outside of normal step -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+		fflush(stdout);
+	}
 	
 	data.NBmodule++;
 	
