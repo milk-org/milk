@@ -1034,12 +1034,7 @@ int_fast8_t COREMOD_MEMORY_sharedMem_2Dim_log_cli()
 void __attribute__ ((constructor)) libinit_COREMOD_memory()
 {
 	init_COREMOD_memory();
-
-	if(data.progStatus>0)
-	{
-		printf("  Found unloaded shared object in ./libs/ -> LOADING module %s\n", __FILE__);
-		fflush(stdout);
-	}	
+	RegisterModule(__FILE__, "milk", "Memory management for images and variables");
 }
 
 
@@ -1047,11 +1042,6 @@ void __attribute__ ((constructor)) libinit_COREMOD_memory()
 
 int_fast8_t init_COREMOD_memory()
 {
-    strcpy(data.module[data.NBmodule].name, __FILE__);
-    strcpy(data.module[data.NBmodule].package, "milk");
-    strcpy(data.module[data.NBmodule].info, "Memory management for images and variables");
-    data.NBmodule++;
-
 
 
 /* =============================================================================================== */
