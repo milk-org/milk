@@ -29,6 +29,8 @@
 
 extern DATA data;
 
+static int INITSTATUS_COREMOD_iofits = 0;
+
 static char errormessage_iofits[SBUFFERSIZE];
 
 
@@ -162,8 +164,12 @@ int_fast8_t images_to_cube_cli()
 
 void __attribute__ ((constructor)) libinit_COREMOD_iofits()
 {
-	init_COREMOD_iofits();
-	RegisterModule(__FILE__, "milk", "FITS format input/output");
+	if ( INITSTATUS_COREMOD_iofits == 0 )
+	{
+		init_COREMOD_iofits();
+		RegisterModule(__FILE__, "milk", "FITS format input/output");
+		INITSTATUS_COREMOD_iofits = 1;
+	}
 }
 
 
