@@ -878,9 +878,13 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 	data.progStatus = 1;
-	// LOAD MODULES
-	load_module_shared_ALL();
 
+	// LOAD MODULES
+	printf("Loading modules\n");//TEST
+	fflush(stdout);
+	load_module_shared_ALL();
+	printf("done\n");//TEST
+	fflush(stdout);
 
     /*--------------------------------------------------
     |  Check command-line arguements
@@ -1896,8 +1900,8 @@ static int_fast8_t load_module_shared_ALL()
 			if (dot && !strcmp(dot, ".so"))
 				{
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
-					//printf("LOADING shared object  %40s -> %s\n", dir->d_name, libname);
-					//fflush(stdout);
+					printf("%02ld   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
+					fflush(stdout);
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
