@@ -46,6 +46,8 @@ There is the fitsio.h in it. Move it to usr :
 
 ## 1.3 GPU acceleration (optional, but highly recommended)
 
+Required libraries:
+
 - install **NVIDIA driver**
 - install **CUDA**
 - install **MAGMA**, version 2.x

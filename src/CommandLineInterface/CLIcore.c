@@ -764,6 +764,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
     atexit(fnExit1);
 
+	data.progStatus = 0;
 
     data.Debug = 0;
     data.overwrite = 0;
@@ -876,7 +877,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     //    v1 = gsl_rng_uniform (data.rndgen);
 
 
-
+	data.progStatus = 1;
 	// LOAD MODULES
 	load_module_shared_ALL();
 
@@ -1896,11 +1897,12 @@ static int_fast8_t load_module_shared_ALL()
 				{
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
 					//printf("LOADING shared object  %40s -> %s\n", dir->d_name, libname);
-				
+					//fflush(stdout);
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
 						fprintf(stderr, KMAG "        WARNING: linker pass # %d, module # %d\n          %s\n" KRES, iter, DLib_index, dlerror());
+						fflush(stderr);
 						//exit(EXIT_FAILURE);
 						loopOK = 0;
 					}
