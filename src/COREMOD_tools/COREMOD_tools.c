@@ -66,7 +66,7 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 extern DATA data;
 
-
+static int INITSTATUS_COREMOD_tools = 0;
 
 
 
@@ -159,8 +159,12 @@ int_fast8_t COREMOD_TOOLS_statusStat_cli()
 
 void __attribute__ ((constructor)) libinit_COREMOD_tools()
 {
-	init_COREMOD_tools();
-	RegisterModule(__FILE__, "milk", "Misc utils");
+	if ( INITSTATUS_COREMOD_tools == 0 )
+	{
+		init_COREMOD_tools();
+		RegisterModule(__FILE__, "milk", "Misc utils");
+		INITSTATUS_COREMOD_tools = 1;
+	}
 }
 
 
