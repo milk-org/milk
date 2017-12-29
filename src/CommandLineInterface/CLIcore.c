@@ -878,9 +878,13 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 	data.progStatus = 1;
-	// LOAD MODULES
-	load_module_shared_ALL();
 
+	// LOAD MODULES
+	printf("Loading modules\n");
+	fflush(stdout);
+	load_module_shared_ALL();
+	printf("done\n");
+	fflush(stdout);
 
     /*--------------------------------------------------
     |  Check command-line arguements
