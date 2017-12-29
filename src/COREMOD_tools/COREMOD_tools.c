@@ -160,13 +160,7 @@ int_fast8_t COREMOD_TOOLS_statusStat_cli()
 void __attribute__ ((constructor)) libinit_COREMOD_tools()
 {
 	init_COREMOD_tools();
-	
-	if(data.progStatus>0)
-	{
-		printf("  Found unloaded shared object in ./libs/ -> LOADING module %s\n", __FILE__);
-		fflush(stdout);
-	}	
-
+	RegisterModule(__FILE__, "milk", "Misc utils");
 }
 
 
@@ -174,12 +168,6 @@ void __attribute__ ((constructor)) libinit_COREMOD_tools()
 
 int init_COREMOD_tools()
 {
-    strcpy(data.module[data.NBmodule].name, __FILE__);
-    strcpy(data.module[data.NBmodule].package, "milk");
-    strcpy(data.module[data.NBmodule].info, "Image information and statistics");
-    data.NBmodule++;
-
-
     strcpy(data.cmd[data.NBcmd].key,"csetpmove");
     strcpy(data.cmd[data.NBcmd].module,__FILE__);
     data.cmd[data.NBcmd].fp = COREMOD_TOOLS_mvProcCPUset_cli;
