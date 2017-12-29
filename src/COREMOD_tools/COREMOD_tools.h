@@ -2,7 +2,7 @@
 #define _TOOLS_H
 
 
-
+void __attribute__ ((constructor)) libinit_COREMOD_tools();
 int init_COREMOD_tools();
 
 
