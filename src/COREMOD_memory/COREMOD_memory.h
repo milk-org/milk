@@ -53,7 +53,7 @@ typedef struct
 
 
 
-
+void __attribute__ ((constructor)) libinit_COREMOD_memory();
 int_fast8_t init_COREMOD_memory();
 
 

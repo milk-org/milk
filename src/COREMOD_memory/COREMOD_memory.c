@@ -109,6 +109,7 @@ static int listim_scr_wcol;
 
 extern DATA data;
 
+static int INITSTATUS_COREMOD_memory = 0;
 
 static char errmsg_memory[SBUFFERSIZE];
 
@@ -1033,8 +1034,12 @@ int_fast8_t COREMOD_MEMORY_sharedMem_2Dim_log_cli()
 
 void __attribute__ ((constructor)) libinit_COREMOD_memory()
 {
-	init_COREMOD_memory();
-	RegisterModule(__FILE__, "milk", "Memory management for images and variables");
+	if ( INITSTATUS_COREMOD_memory == 0 )
+	{
+		init_COREMOD_memory();
+		RegisterModule(__FILE__, "milk", "Memory management for images and variables");
+		INITSTATUS_COREMOD_memory = 1;
+	}
 }
 
 
