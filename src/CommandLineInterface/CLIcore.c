@@ -672,21 +672,21 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 	strcpy(data.module[data.NBmodule].name, FileName);
 	strcpy(data.module[data.NBmodule].package, PackageName);
 	strcpy(data.module[data.NBmodule].info, InfoString);
-	data.NBmodule++;
-	
-	
 	
 	if(data.progStatus==0)
 	{
-		printf("  %02ld  LOADING %10s  module %20s\n", data.NBmodule, PackageName, FileName);
+		printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
 		fflush(stdout);
 	}		
 	
 	if(data.progStatus==1)
 	{
-		printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %20s\n", data.NBmodule, PackageName, FileName);
+		printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
 		fflush(stdout);
 	}	
+	
+	data.NBmodule++;
+	
 	
 	return 0;
 }
@@ -1922,8 +1922,8 @@ static int_fast8_t load_module_shared_ALL()
 			if (dot && !strcmp(dot, ".so"))
 				{
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
-					printf("%02d   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
-					fflush(stdout);
+//					printf("%02d   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
+//					fflush(stdout);
 				
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
