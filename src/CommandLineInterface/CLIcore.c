@@ -213,7 +213,8 @@ void *xmalloc (int);
 
 
 
-static int memory_re_alloc();
+int memory_re_alloc();
+
 int command_line( int argc, char **argv);
 
 
