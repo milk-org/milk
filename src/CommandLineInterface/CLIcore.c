@@ -213,7 +213,8 @@ void *xmalloc (int);
 
 
 
-int re_alloc();
+static int memory_re_alloc();
+
 int command_line( int argc, char **argv);
 
 
@@ -678,8 +679,9 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 	if(data.progStatus==0)
 	{
 		OKmsg = 1;
-		printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
-		fflush(stdout);
+		printf(".");
+		//printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+		//fflush(stdout);
 	}		
 	
 	if(data.progStatus==1)
@@ -922,20 +924,13 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-    /* Initialize data control block */
-    printf("Initialize data control block\n"); //TEST
-    fflush(stdout);
-    
+    /* Initialize data control block */  
     main_init();
 
     // initialize readline
-    printf("Initialize readline\n");//TEST
-    fflush(stdout);
     rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &rl_cb);
 
     // fifo
-    printf("Initialize fifo\n");//TEST
-    fflush(stdout);
     fdmax = fileno(stdin);
     //   printf("FIFO = %d\n", data.fifoON);
     if(data.fifoON == 1)
@@ -960,7 +955,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     for (;;) {
         FILE *fp;
 
-
         data.CMDexecuted = 0;
 
         if( (fp=fopen( "STOPCLI", "r" )) != NULL ) {
@@ -975,18 +969,19 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fclose(fp);
         }
 
+
         /* Keep the number of image addresses available
          *  NB_IMAGES_BUFFER above the number of used images
          *
          *  Keep the number of variables addresses available
          *  NB_VARIABLES_BUFFER above the number of used variables
          */
-        if( re_alloc() != 0 )
+       if( memory_re_alloc() != 0 )
         {
             fprintf(stderr,"%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
             exit(1);
-        }
+		}
 
         compute_image_memory(data);
         compute_nb_image(data);
@@ -1515,7 +1510,7 @@ void fnExit1 (void)
 
 /*^-----------------------------------------------------------------------------
 |
-|  re_alloc    : keep the number of images addresses available
+|  memory_re_alloc    : keep the number of images addresses available
 | 		 NB_IMAGES_BUFFER above the number of used images
 |
 |                keep the number of variables addresses available
@@ -1524,17 +1519,16 @@ void fnExit1 (void)
 | NOTE:  this should probably be renamed and put in the module/memory/memory.c
 |
 +-----------------------------------------------------------------------------*/
-int re_alloc()
+static int memory_re_alloc()
 {
-    int i;
-    long  tmplong;
-    IMAGE *ptrtmp;
-
     /* keeps the number of images addresses available
      *  NB_IMAGES_BUFFER above the number of used images
      */
     if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
     {
+		long tmplong;
+		IMAGE *ptrtmp;
+        
         if(data.Debug>0)
         {
             printf("%p IMAGE STRUCT SIZE = %ld\n", data.image, (long) sizeof(IMAGE));
@@ -1559,6 +1553,8 @@ int re_alloc()
             printf("REALLOCATION DONE\n");
             fflush(stdout);
         }
+        
+        int i;
         for(i=tmplong; i<data.NB_MAX_IMAGE; i++)   {
             data.image[i].used = 0;
             data.image[i].shmfd = -1;
@@ -1568,13 +1564,13 @@ int re_alloc()
         }
     }
 
-
-
     /* keeps the number of variables addresses available
      *  NB_VARIABLES_BUFFER above the number of used variables
      */
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
+		long tmplong;
+		
         if(data.Debug>0)
         {
             printf("REALLOCATING VARIABLE DATA BUFFER\n");
@@ -1589,12 +1585,11 @@ int re_alloc()
             return -1;   // exit(0);
         }
         
+        int i;
         for(i=tmplong; i<data.NB_MAX_VARIABLE; i++)   {
             data.variable[i].used = 0;
             data.variable[i].type = -1;
         }
-
-
     }
 
     return 0;
