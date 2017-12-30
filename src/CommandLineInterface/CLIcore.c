@@ -992,11 +992,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
          */
        if( re_alloc() != 0 )
         {
-       /*
             fprintf(stderr,"%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
             exit(1);
-        */
 		}
 		printf("compute memory in data\n");//TEST
 		fflush(stdout);
@@ -1543,7 +1541,7 @@ int re_alloc()
 {
     int i;
     long  tmplong;
-    IMAGE *ptrtmp;
+
 
 	printf("re_alloc line %d\n", __LINE__);//TEST
 	fflush(stdout);
@@ -1553,6 +1551,8 @@ int re_alloc()
      */
     if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
     {
+		IMAGE *ptrtmp;
+        
         if(data.Debug>0)
         {
             printf("%p IMAGE STRUCT SIZE = %ld\n", data.image, (long) sizeof(IMAGE));
