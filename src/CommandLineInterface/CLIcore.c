@@ -213,7 +213,7 @@ void *xmalloc (int);
 
 
 
-int re_alloc();
+static int memory_re_alloc();
 int command_line( int argc, char **argv);
 
 
@@ -990,7 +990,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
          *  Keep the number of variables addresses available
          *  NB_VARIABLES_BUFFER above the number of used variables
          */
-       if( re_alloc() != 0 )
+       if( memory_re_alloc() != 0 )
         {
             fprintf(stderr,"%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
@@ -1528,7 +1528,7 @@ void fnExit1 (void)
 
 /*^-----------------------------------------------------------------------------
 |
-|  re_alloc    : keep the number of images addresses available
+|  memory_re_alloc    : keep the number of images addresses available
 | 		 NB_IMAGES_BUFFER above the number of used images
 |
 |                keep the number of variables addresses available
@@ -1537,11 +1537,8 @@ void fnExit1 (void)
 | NOTE:  this should probably be renamed and put in the module/memory/memory.c
 |
 +-----------------------------------------------------------------------------*/
-int re_alloc()
+int memory_re_alloc()
 {
-    int i;
-    long  tmplong;
-
 
 	printf("re_alloc line %d\n", __LINE__);//TEST
 	fflush(stdout);
@@ -1551,6 +1548,7 @@ int re_alloc()
      */
     if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
     {
+		long tmplong;
 		IMAGE *ptrtmp;
         
         if(data.Debug>0)
@@ -1577,6 +1575,8 @@ int re_alloc()
             printf("REALLOCATION DONE\n");
             fflush(stdout);
         }
+        
+        int i;
         for(i=tmplong; i<data.NB_MAX_IMAGE; i++)   {
             data.image[i].used = 0;
             data.image[i].shmfd = -1;
@@ -1594,6 +1594,8 @@ int re_alloc()
      */
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
+		long tmplong;
+		
         if(data.Debug>0)
         {
             printf("REALLOCATING VARIABLE DATA BUFFER\n");
@@ -1608,6 +1610,7 @@ int re_alloc()
             return -1;   // exit(0);
         }
         
+        int i;
         for(i=tmplong; i<data.NB_MAX_VARIABLE; i++)   {
             data.variable[i].used = 0;
             data.variable[i].type = -1;
