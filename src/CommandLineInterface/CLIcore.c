@@ -1551,6 +1551,9 @@ int memory_re_alloc()
 		long tmplong;
 		IMAGE *ptrtmp;
         
+		printf("re_alloc line %d\n", __LINE__);//TEST
+		fflush(stdout);
+        
         if(data.Debug>0)
         {
             printf("%p IMAGE STRUCT SIZE = %ld\n", data.image, (long) sizeof(IMAGE));
@@ -1595,6 +1598,9 @@ int memory_re_alloc()
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
 		long tmplong;
+
+		printf("re_alloc line %d\n", __LINE__);//TEST
+		fflush(stdout);
 		
         if(data.Debug>0)
         {
@@ -1615,8 +1621,6 @@ int memory_re_alloc()
             data.variable[i].used = 0;
             data.variable[i].type = -1;
         }
-
-
     }
 
 	printf("re_alloc line %d\n", __LINE__);//TEST
