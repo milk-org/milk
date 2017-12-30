@@ -960,6 +960,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     for (;;) {
         FILE *fp;
 
+    printf("Enter loop\n");//TEST
+    fflush(stdout);
 
         data.CMDexecuted = 0;
 
@@ -988,6 +990,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             exit(1);
         }
 
+		printf("compute memory in data\n");//TEST
+		fflush(stdout);
+
         compute_image_memory(data);
         compute_nb_image(data);
 
@@ -1007,6 +1012,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         // -------------------------------------------------------------
         //                 get user input
         // -------------------------------------------------------------
+        printf("Get user input\n");//TEST
+		fflush(stdout);
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
         FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
