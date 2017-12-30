@@ -1540,6 +1540,9 @@ void fnExit1 (void)
 int memory_re_alloc()
 {
 	IMAGE *ptrtmp;
+	long tmplong;
+	int i;
+
 
 	printf("re_alloc line %d\n", __LINE__);//TEST
 	fflush(stdout);
@@ -1549,7 +1552,7 @@ int memory_re_alloc()
      */
     if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
     {
-		long tmplong;
+		//long tmplong;
 		//IMAGE *ptrtmp;
         
 		printf("re_alloc line %d\n", __LINE__);//TEST
@@ -1580,7 +1583,7 @@ int memory_re_alloc()
             fflush(stdout);
         }
         
-        int i;
+        //int i;
         for(i=tmplong; i<data.NB_MAX_IMAGE; i++)   {
             data.image[i].used = 0;
             data.image[i].shmfd = -1;
@@ -1598,7 +1601,7 @@ int memory_re_alloc()
      */
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
-		long tmplong;
+		//long tmplong;
 
 		printf("re_alloc line %d\n", __LINE__);//TEST
 		fflush(stdout);
@@ -1617,7 +1620,7 @@ int memory_re_alloc()
             return -1;   // exit(0);
         }
         
-        int i;
+        //int i;
         for(i=tmplong; i<data.NB_MAX_VARIABLE; i++)   {
             data.variable[i].used = 0;
             data.variable[i].type = -1;
