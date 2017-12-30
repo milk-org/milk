@@ -1539,6 +1539,7 @@ void fnExit1 (void)
 +-----------------------------------------------------------------------------*/
 int memory_re_alloc()
 {
+	IMAGE *ptrtmp;
 
 	printf("re_alloc line %d\n", __LINE__);//TEST
 	fflush(stdout);
@@ -1549,7 +1550,7 @@ int memory_re_alloc()
     if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
     {
 		long tmplong;
-		IMAGE *ptrtmp;
+		//IMAGE *ptrtmp;
         
 		printf("re_alloc line %d\n", __LINE__);//TEST
 		fflush(stdout);
