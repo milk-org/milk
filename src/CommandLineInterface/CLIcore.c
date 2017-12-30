@@ -981,7 +981,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         }
 
 
-		printf("Loop line %d\n", __LINE__);//TEST
+		printf("Loop - line %d\n", __LINE__);//TEST
 		fflush(stdout);
 
         /* Keep the number of image addresses available
