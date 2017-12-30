@@ -1584,7 +1584,7 @@ static int memory_re_alloc()
             return -1;   // exit(0);
         }
         
-        //int i;
+        int i;
         for(i=tmplong; i<data.NB_MAX_VARIABLE; i++)   {
             data.variable[i].used = 0;
             data.variable[i].type = -1;
