@@ -676,12 +676,12 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 	strcpy(data.module[data.NBmodule].package, PackageName);
 	strcpy(data.module[data.NBmodule].info, InfoString);
 	
-	if(data.progStatus==0)
+	/*if(data.progStatus==0)
 	{
 		OKmsg = 1;
 		printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
 		fflush(stdout);
-	}		
+	}*/		
 	
 	if(data.progStatus==1)
 	{
