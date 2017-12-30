@@ -1544,6 +1544,9 @@ int re_alloc()
     long  tmplong;
     IMAGE *ptrtmp;
 
+	printf("re_alloc line %d\n", __LINE__);//TEST
+	fflush(stdout);
+
     /* keeps the number of images addresses available
      *  NB_IMAGES_BUFFER above the number of used images
      */
@@ -1582,7 +1585,8 @@ int re_alloc()
         }
     }
 
-
+	printf("re_alloc line %d\n", __LINE__);//TEST
+	fflush(stdout);
 
     /* keeps the number of variables addresses available
      *  NB_VARIABLES_BUFFER above the number of used variables
@@ -1610,6 +1614,10 @@ int re_alloc()
 
 
     }
+
+	printf("re_alloc line %d\n", __LINE__);//TEST
+	fflush(stdout);
+
 
     return 0;
 }
