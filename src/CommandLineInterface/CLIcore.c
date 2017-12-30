@@ -912,11 +912,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 	data.progStatus = 1;
 
 	// LOAD MODULES
-	printf("Loading modules\n");//TEST
-	fflush(stdout);
 	load_module_shared_ALL();
-	printf("done\n");//TEST
-	fflush(stdout);
+
 
     /*--------------------------------------------------
     |  Check command-line arguements
@@ -926,12 +923,19 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
     /* Initialize data control block */
+    printf("Initialize data control block\n"); //TEST
+    fflush(stdout);
+    
     main_init();
 
     // initialize readline
+    printf("Initialize readline\n");//TEST
+    fflush(stdout);
     rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &rl_cb);
 
     // fifo
+    printf("Initialize fifo\n");//TEST
+    fflush(stdout);
     fdmax = fileno(stdin);
     //   printf("FIFO = %d\n", data.fifoON);
     if(data.fifoON == 1)
