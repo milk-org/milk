@@ -213,7 +213,7 @@ void *xmalloc (int);
 
 
 
-int memory_re_alloc();
+static int memory_re_alloc();
 
 int command_line( int argc, char **argv);
 
@@ -923,20 +923,13 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-    /* Initialize data control block */
-    printf("Initialize data control block\n"); //TEST
-    fflush(stdout);
-    
+    /* Initialize data control block */  
     main_init();
 
     // initialize readline
-    printf("Initialize readline\n");//TEST
-    fflush(stdout);
     rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &rl_cb);
 
     // fifo
-    printf("Initialize fifo\n");//TEST
-    fflush(stdout);
     fdmax = fileno(stdin);
     //   printf("FIFO = %d\n", data.fifoON);
     if(data.fifoON == 1)
@@ -961,9 +954,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     for (;;) {
         FILE *fp;
 
-		printf("Enter loop\n");//TEST
-		fflush(stdout);
-
         data.CMDexecuted = 0;
 
         if( (fp=fopen( "STOPCLI", "r" )) != NULL ) {
@@ -971,9 +961,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fclose(fp);
             exit(3);
         }
-		
-		printf("Loop line %d\n", __LINE__);//TEST
-		fflush(stdout);
 
         if(Listimfile==1) {
             fp = fopen("imlist.txt", "w");
@@ -981,9 +968,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fclose(fp);
         }
 
-
-		printf("Loop - line %d\n", __LINE__);//TEST
-		fflush(stdout);
 
         /* Keep the number of image addresses available
          *  NB_IMAGES_BUFFER above the number of used images
@@ -997,8 +981,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
             exit(1);
 		}
-		printf("compute memory in data\n");//TEST
-		fflush(stdout);
 
         compute_image_memory(data);
         compute_nb_image(data);
@@ -1019,8 +1001,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         // -------------------------------------------------------------
         //                 get user input
         // -------------------------------------------------------------
-        printf("Get user input\n");//TEST
-		fflush(stdout);
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
         FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
@@ -1538,26 +1518,15 @@ void fnExit1 (void)
 | NOTE:  this should probably be renamed and put in the module/memory/memory.c
 |
 +-----------------------------------------------------------------------------*/
-int memory_re_alloc()
+static int memory_re_alloc()
 {
-	IMAGE *ptrtmp;
-	long tmplong;
-	int i;
-
-
-	printf("re_alloc line %d\n", __LINE__);//TEST
-	fflush(stdout);
-
     /* keeps the number of images addresses available
      *  NB_IMAGES_BUFFER above the number of used images
      */
     if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
     {
-		//long tmplong;
-		//IMAGE *ptrtmp;
-        
-		printf("re_alloc line %d\n", __LINE__);//TEST
-		fflush(stdout);
+		long tmplong;
+		IMAGE *ptrtmp;
         
         if(data.Debug>0)
         {
@@ -1584,7 +1553,7 @@ int memory_re_alloc()
             fflush(stdout);
         }
         
-        //int i;
+        int i;
         for(i=tmplong; i<data.NB_MAX_IMAGE; i++)   {
             data.image[i].used = 0;
             data.image[i].shmfd = -1;
@@ -1594,18 +1563,12 @@ int memory_re_alloc()
         }
     }
 
-	printf("re_alloc line %d\n", __LINE__);//TEST
-	fflush(stdout);
-
     /* keeps the number of variables addresses available
      *  NB_VARIABLES_BUFFER above the number of used variables
      */
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
-		//long tmplong;
-
-		printf("re_alloc line %d\n", __LINE__);//TEST
-		fflush(stdout);
+		long tmplong;
 		
         if(data.Debug>0)
         {
@@ -1627,10 +1590,6 @@ int memory_re_alloc()
             data.variable[i].type = -1;
         }
     }
-
-	printf("re_alloc line %d\n", __LINE__);//TEST
-	fflush(stdout);
-
 
     return 0;
 }
