@@ -960,8 +960,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     for (;;) {
         FILE *fp;
 
-    printf("Enter loop\n");//TEST
-    fflush(stdout);
+		printf("Enter loop\n");//TEST
+		fflush(stdout);
 
         data.CMDexecuted = 0;
 
@@ -970,12 +970,19 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fclose(fp);
             exit(3);
         }
+		
+		printf("Loop line %d\n", __LINE__);//TEST
+		fflush(stdout);
 
         if(Listimfile==1) {
             fp = fopen("imlist.txt", "w");
             list_image_ID_ofp_simple(fp);
             fclose(fp);
         }
+
+
+		printf("Loop line %d\n", __LINE__);//TEST
+		fflush(stdout);
 
         /* Keep the number of image addresses available
          *  NB_IMAGES_BUFFER above the number of used images
