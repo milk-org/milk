@@ -990,12 +990,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
          *  Keep the number of variables addresses available
          *  NB_VARIABLES_BUFFER above the number of used variables
          */
-        if( re_alloc() != 0 )
+       /* if( re_alloc() != 0 )
         {
             fprintf(stderr,"%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
             exit(1);
-        }
+        }*/
 
 		printf("compute memory in data\n");//TEST
 		fflush(stdout);
