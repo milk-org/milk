@@ -1,0 +1,18 @@
+#! /bin/bash
+
+EXPECTED_ARGS=2
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo
+  echo " ---------- write shared memory to FITS file ----------- "
+  echo
+  echo " Usage:  $0 <shm stream> <FITS file>"
+  echo 
+fi
+
+pname=$0
+milk -n $pname << EOF
+readshmim $1
+savefits $1 "!$2"
+exit
+EOF
