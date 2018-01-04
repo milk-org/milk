@@ -63,7 +63,9 @@ Two options:
 
 
 
-# 2 Compilation from git clone (recommended for developers)
+
+
+# 2 Compilation from git clone (recommended)
 
 ## 2.1 Additional libraries
 
@@ -88,17 +90,14 @@ The source code follows the standard GNU build process:
 		make install
 
 
-# 3 Compilation from tarball
+
+# 3 Troubleshooting and FAQs
 
 
-Unpack
+## Configure error: "No package 'magma' found"
 
-		gunzip <package>.tar.gz
-		tar -xvf <package>.tar
+configure script uses pkg-config to find the package. You need to add in .bashrc :
 
-The source code follows the standard GNU build process:
+	export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
 
-		./configure
-		make
-		sudo make install
 
