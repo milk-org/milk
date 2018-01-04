@@ -1,0 +1,5 @@
+while [ ! -f "$1" ]
+do
+	echo "WAITING for file $1"
+	inotifywait -qqt 2 -e create -e moved_to "$(dirname $1)"
+done

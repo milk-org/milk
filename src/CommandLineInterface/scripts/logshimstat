@@ -1,0 +1,25 @@
+#! /bin/bash
+
+EXPECTED_ARGS=1
+
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo
+  echo "-------- LOG SHARED MEMORY DATA STREAM STATUS ---------"
+ echo " "
+ echo "Usage: $0 <data stream name>"
+ echo " "
+ echo "  INPUT <data stream name>   : shared memory stream name. Actual file is /tmp/<stream name>.im.shm"
+ echo " "
+ echo "EXAMPLE :  $0 ircam2"
+ echo " "
+ exit
+fi
+
+pname="logshimstat-$1"
+echo "$pname"
+
+milk -n $pname << EOF
+shmimslogstat $1
+exit
+EOF

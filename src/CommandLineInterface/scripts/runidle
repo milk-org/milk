@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# this script suspends a process unless X session is idle
+# used to run non time-critical intensive processes whenever X session is idle
+#
+# pre-requisites:  xprintidle
+#
+
+PID=$1
+
+tidle=2000 # 2 sec
+
+while [ 1 ];
+do
+
+if ps -p $PID > /dev/null
+then
+#  echo "$PID is running"
+  if [ `xprintidle` -gt "$tidle" ];
+  then
+    echo "idle for more than $tidle ms -> continue process $PID"
+    kill -CONT $PID
+  else
+    echo "stopping process $PID"
+    kill -STOP $PID
+  fi
+else
+ echo "$PID is not running -> exit runidle"
+ exit
+fi
+
+sleep 1
+
+done
