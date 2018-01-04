@@ -3,143 +3,15 @@
 import pygame, sys
 from pygame.locals import *
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-#import pyfits as pf
-import pdb
-import threading
-import mmap
-import struct 
 import os
-#import Image
 import time
 from PIL import Image
 
-
-
-
-
-
-class shm:
-    ''' -------------------------------------------------------------
-    Shared memory data structure for images and volt maps for SCExAO
-    ------------------------------------------------------------- '''
-
-    def __init__(self, fname=None, verbose=True):
-        if fname == None:
-            print("No shared memory file name provided")
-            return(None)
-        try:
-            self.fd = os.open(fname, os.O_RDWR)
-        except:
-            print("File %s is not a shared memory file" % (fname,))
-            return(None)
-
-        fsz = os.path.getsize(fname)
-        #print ("file %s size = %d bytes" % (fname, fsz))
-        self.buf = mmap.mmap(self.fd, 0, mmap.MAP_SHARED)
-        self.read_meta_data(verbose=verbose)
-
-
-    def close(self,):
-        self.buf.close()
-        os.close(self.fd)
-
-
-    def read_meta_data(self, verbose=True):
-        buf = self.buf
-        self.imname  = str(buf[0:80]).strip('\x00')       # image name
-        self.naxis,  = struct.unpack('l',   buf[80:88])   # array dimension
-        self.size    = struct.unpack('lll', buf[88:112])  # array size
-        self.nel,    = struct.unpack('l',   buf[112:120]) # nb. elements
-        self.idtype, = struct.unpack('l',   buf[120:128]) # image dtype
-        self.crtime, = struct.unpack('d',   buf[128:136]) # creation time
-        self.latime, = struct.unpack('d',   buf[136:144]) # last access time
-
-        self.shared, = struct.unpack('i',   buf[164:168]) # flag
-        self.write,  = struct.unpack('i',   buf[168:172]) # flag
-
-        self.status, = struct.unpack('i',   buf[172:176])   
-        self.cnt0,   = struct.unpack('l',   buf[176:184]) # counter
-        self.cnt1,   = struct.unpack('l',   buf[184:192]) # counter
-        self.nbkw    = struct.unpack('l',   buf[192:200]) # nb of keywords
-
-        self.naxis = 2
-        self.size = (self.size[0], self.size[1], 0)
-	self.nel = self.size[0]*self.size[1]
-        self.elt_sz = 2
-        self.ddtype = np.int32
-
-        if self.idtype == 1: # C-char
-            self.elt_sz = 1
-            self.ddtype = np.str
-
-        if self.idtype == 2: # C-long
-            self.elt_sz = 4
-            self.ddtype = np.int32
-                
-        if self.idtype == 3: # C-float
-            self.elt_sz = 4 
-            self.ddtype = np.float32
-
-        if self.idtype == 4: # C-double
-            self.elt_sz= 8
-            self.ddtype = np.float64
-
-        if self.idtype == 7: # C-ushort
-            self.elt_sz= 2
-            self.ddtype = np.ushort
-
-        if verbose:
-            print("imname = %s"             % (self.imname,))
-            print("naxis = %d"              % (self.naxis,))
-            print("xs, ys, zs = %d, %d, %d" %  self.size)
-            print("image data type %d"      % (self.idtype,))
-            print("image counter = %d"      % (self.cnt0,))
-            print("SHARED %d"               % (self.shared,))
-
-    # ------
-    def get_data(self,check=False,reform=True):
-        if check:
-            cnt, = struct.unpack('l',   self.buf[176:184]) # current counter val
-            while (cnt <= self.cnt0):
-                time.sleep(0.001)
-                cnt, = struct.unpack('l',   self.buf[168:176])
-            self.cnt0 = cnt
-            
-        data = np.fromstring(
-            self.buf[200:200+self.nel*self.elt_sz], dtype=self.ddtype)
-
-        if reform:
-            data = data.reshape(self.size[:self.naxis][::-1])
-
-        return(data)
-
-    # ------
-    def get_counter(self):
-        self.cnt0,   = struct.unpack('l',   self.buf[176:184]) # counter
-        return self.cnt0
-
-    # ------
-    def set_data(self, data):
-        aa = array.array('f', (np.hstack(data.astype('f'))).tolist())
-        try:
-            self.buf[200:200+self.nel*self.elt_sz] = aa.tostring()
-            counter, = struct.unpack('l',   self.buf[176:184])
-            counter += 1
-            self.buf[176:184] = struct.pack('l', counter)
-        except:
-            print("Failed to write buffer to shared mem structure")
-        return(True)
-
-
-
-
-
-
-
-
-
+home = os.getenv('HOME')
+sys.path.append(home+'/src/lib/python/')
+import colormaps as cmaps
+from   scexao_shm   import shm
 
 
 
@@ -297,7 +169,7 @@ while True: # the main game loop
 
     mycmap = cm.gray
     if clr_scale:
-        mycmap = cm.jet
+        mycmap = cmaps.inferno
 
     # read image
     temp      = get_img_data()
