@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <signal.h> 
@@ -1873,7 +1874,7 @@ void *save_fits_function( void *ptr )
 	}
 	for(k=0;k<tmsg->cubesize;k++)
 		{
-			fprintf(fp, "%5ld   %8lu  %8lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+			fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
 		}
 	fclose(fp);
 
@@ -6885,6 +6886,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
         if(VERBOSE==1)
             printf("%5d  Entering wait loop   index = %ld %d\n", __LINE__, index, noframe);
+
 
         if(likely(use_semlog==1))
         {
