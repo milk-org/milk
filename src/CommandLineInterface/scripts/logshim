@@ -5,7 +5,7 @@
 NBARGS=3
 
 
-pname="$0-$1"
+pname="logshim-$1"
 
 
 
