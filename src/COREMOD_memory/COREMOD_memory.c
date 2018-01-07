@@ -6662,8 +6662,7 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
 long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name)
 {
 	// WAIT time. If no new frame during this time, save existing cube
-	int WaitSec = 5; 
-	
+	int WaitSec = 5; 	
 	
     long ID;
     uint32_t xsize, ysize;
@@ -7131,6 +7130,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         /// wOK==0 && index>0  : partial
         if(  (index>zsize-1)  ||  ((wOK==0)&&(index>0)) )
         {
+			long NBframemissing;
+			
             /// save image
             if(VERBOSE > 0)
                 printf("%5d  Save image   index = %ld  wOK = %d\n", __LINE__, index, wOK);
@@ -7189,8 +7190,18 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
             //  fclose(fp);
 
+			// Wait for save thread to complete to launch next one
             if(tOK == 1)
-                pthread_join(thread_savefits, NULL); //(void**)&thread_savefits);
+            {
+                if(pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
+                {
+					if(VERBOSE > 0)
+					{
+						printf("save thread not terminated -> waiting\n");
+					}
+					pthread_join(thread_savefits, NULL);
+				}
+			}
             
 
             COREMOD_MEMORY_image_set_sempost_byID(IDb, -1);
@@ -7204,11 +7215,14 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
             
-            
-            printf("--- Number of missed frames = %8ld  / %8ld  / %8ld\n", (array_cnt0[index-1]-array_cnt0[0])-(index-1), index, (long) zsize );
-			if( (array_cnt0[index-1]-array_cnt0[0])-(index-1) < 0 )
+            NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - (index-1);
+
+            printf("   Number of missed frames = %8ld  / %8ld  / %8ld\n", NBframemissing, index, (long) zsize );
+			fflush(stdout);
+			if( NBframemissing < 0 )
 			{
 				printf(".... ERROR\n");
+				fflush(stdout);
 				exit(0);
 			}
 
@@ -7228,7 +7242,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             tOK = 1;
             if(iret_savefits)
             {
-                fprintf(stderr,"Error - pthread_create() return code: %d\n", iret_savefits);
+                fprintf(stderr, "Error - pthread_create() return code: %d\n", iret_savefits);
                 exit(EXIT_FAILURE);
             }
 
