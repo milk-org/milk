@@ -6726,7 +6726,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     int semval;
 
 
-    int VERBOSE = 0;
+    int VERBOSE = 1;
 
 	// convert wait time into number of couunter steps (counter mode only)
 	cntwaitlim = (long) (WaitSec*1000000/waitdelayus);
@@ -6946,13 +6946,13 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         noframe = 0;
         wOK = 1;
 
-        if(VERBOSE==1)
+        if(VERBOSE > 1)
             printf("%5d  Entering wait loop   index = %ld %d\n", __LINE__, index, noframe);
 
 
         if(likely(use_semlog==1))
         {
-            if(VERBOSE==1)
+            if(VERBOSE > 1)
                 printf("%5d  Waiting for semaphore\n", __LINE__);
 
 			if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
@@ -6966,7 +6966,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 				if (errno == ETIMEDOUT)
 					printf("sem_timedwait() timed out -> save (%ld)\n", index);
 				
-				if(VERBOSE==1)
+				if(VERBOSE > 0)
                     printf("%5d  sem time elapsed -> Save current cube (%ld)\n", __LINE__, index);
 
                 strcpy(tmsg->iname, iname);
@@ -7022,25 +7022,25 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         }
         else
         {
-            if(VERBOSE==1)
+            if(VERBOSE > 1)
                 printf("%5d  Not using semaphore, watching counter\n", __LINE__);
 
             while(((cnt==data.image[ID].md[0].cnt0)||(logshimconf[0].on == 0))&&(wOK==1))
             {
-                if(VERBOSE==1)
+                if(VERBOSE > 1)
                     printf("%5d  waiting time step\n", __LINE__);
 
                 usleep(waitdelayus);
                 cntwait++;
 
-                if(VERBOSE==1) {
+                if(VERBOSE > 1) {
                     printf("%5d  cntwait = %lld\n", __LINE__, cntwait);
                     fflush(stdout);
                 }
 
                 if(cntwait>cntwaitlim) // save current cube
                 {
-                    if(VERBOSE==1)
+                    if(VERBOSE > 0)
                         printf("%5d  cnt time elapsed -> Save current cube\n", __LINE__);
 
 
@@ -7070,7 +7070,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
         if(index==0)
         {
-            if(VERBOSE==1)
+            if(VERBOSE > 0)
                 printf("%5d  Setting cube start time\n", __LINE__);
 
             /// measure time
@@ -7083,7 +7083,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         }
 
 
-		if(VERBOSE==1)
+		if(VERBOSE > 1)
             printf("%5d  logshimconf[0].on = %d\n", __LINE__, logshimconf[0].on);
 
 
@@ -7091,7 +7091,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         {
             if(likely(wOK==1)) // normal step: a frame has arrived
             {
-                if(VERBOSE==1)
+                if(VERBOSE > 1)
                     printf("%5d  Frame has arrived index = %ld\n", __LINE__, index);
 
                 /// measure time
@@ -7153,7 +7153,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 		}
 
 
-		if(VERBOSE==1)
+		if(VERBOSE > 1)
             printf("%5d  index = %ld  wOK = %d\n", __LINE__, index, wOK);
 
         /// cases:
@@ -7162,7 +7162,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         if(  (index>zsize-1)  ||  ((wOK==0)&&(index>0)) )
         {
             /// save image
-            if(VERBOSE==1)
+            if(VERBOSE > 0)
                 printf("%5d  Save image   index = %ld  wOK = %d\n", __LINE__, index, wOK);
             
             sprintf(iname, "%s_logbuff%d", IDname, buffer);
@@ -7172,7 +7172,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 IDb = IDb1;
 
 
-				if(VERBOSE==1)
+				if(VERBOSE > 0)
 				{
 					printf("%5d  Building file name: ascii\n", __LINE__);
 					fflush(stdout);
@@ -7181,7 +7181,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
                 
                 
-				if(VERBOSE==1)
+				if(VERBOSE > 0)
 				{
 					printf("%5d  Building file name: fits\n", __LINE__);
 					fflush(stdout);
@@ -7199,7 +7199,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             if(wOK==1) // full cube
             {
                 tmsg->partial = 0; // full cube           
-				if(VERBOSE==1)
+				if(VERBOSE > 0)
 				{
 					printf("%5d  FULL CUBE\n", __LINE__);
 					fflush(stdout);
@@ -7209,7 +7209,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             else // partial cube
             {
 				tmsg->partial = 1; // partial cube           
-				if(VERBOSE==1)
+				if(VERBOSE > 0)
 				{
 					printf("%5d  PARTIAL CUBE\n", __LINE__);
 					fflush(stdout);
@@ -7232,7 +7232,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
-			if(VERBOSE==1)
+			if(VERBOSE > 0)
 				{
 					printf("%5d  Starting thread\n", __LINE__);
 					fflush(stdout);
