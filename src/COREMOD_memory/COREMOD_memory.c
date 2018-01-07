@@ -1762,17 +1762,17 @@ void *save_fits_function( void *ptr )
     FILE *fp;
 
 
-//    int RT_priority = 20; 
-//    struct sched_param schedpar;
+    int RT_priority = 20; 
+    struct sched_param schedpar;
 
 
-//    schedpar.sched_priority = RT_priority;
-//#ifndef __MACH__
-//	int r;
-//    r = seteuid(data.euid); 
-//    sched_setscheduler(0, SCHED_FIFO, &schedpar);
-//    r = seteuid(data.ruid);
-//#endif
+    schedpar.sched_priority = RT_priority;
+#ifndef __MACH__
+	int r;
+    r = seteuid(data.euid); 
+    sched_setscheduler(0, SCHED_FIFO, &schedpar);
+    r = seteuid(data.ruid);
+#endif
 
 
 
