@@ -6726,7 +6726,10 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     int semval;
 
 
-    int VERBOSE = 2;
+    int VERBOSE = 0;
+    // 0: don't print 
+    // 1: print statements outside fast loop
+    // 2: print everything
 
 	// convert wait time into number of couunter steps (counter mode only)
 	cntwaitlim = (long) (WaitSec*1000000/waitdelayus);
