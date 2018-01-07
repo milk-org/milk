@@ -1762,17 +1762,17 @@ void *save_fits_function( void *ptr )
     FILE *fp;
 
 
-    int RT_priority = 20; //any number from 0-99
-    struct sched_param schedpar;
+//    int RT_priority = 20; 
+//    struct sched_param schedpar;
 
 
-    schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
-	int r;
-    r = seteuid(data.euid); //This goes up to maximum privileges
-    sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-    r = seteuid(data.ruid);//Go back to normal privileges
-#endif
+//    schedpar.sched_priority = RT_priority;
+//#ifndef __MACH__
+//	int r;
+//    r = seteuid(data.euid); 
+//    sched_setscheduler(0, SCHED_FIFO, &schedpar);
+//    r = seteuid(data.ruid);
+//#endif
 
 
 
