@@ -7108,10 +7108,18 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
                 if(is3Dcube==1)
                     ptr0 = ptr0_0 + framesize*data.image[ID].md[0].cnt1;
+                else
+					prt0 = ptr0_0;
 
-                ptr1 = ptr1_0 +framesize*index;
+                ptr1 = ptr1_0 + framesize*index;
+
+				if(VERBOSE > 1)
+                    printf("%5d  memcpy framesize = %ld\n", __LINE__, framesize);
 
                 memcpy((void *) ptr1, (void *) ptr0, framesize);
+
+				if(VERBOSE > 1)
+                    printf("%5d  memcpy done\n", __LINE__);
 
 
                 //                fprintf(fp, "%02d:%02d:%02ld.%09ld ", uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
