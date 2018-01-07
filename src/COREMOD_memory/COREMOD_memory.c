@@ -6982,10 +6982,21 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             ret = sem_timedwait(data.image[ID].semlog, &ts);
 			if (ret == -1) { 
 				if (errno == ETIMEDOUT)
-					printf("sem_timedwait() timed out (%d sec) -> save (%ld)\n", WaitSec, index);
-				
-				if(VERBOSE > 0)
-                    printf("%5d  sem time elapsed -> Save current cube (%ld)\n", __LINE__, index);
+					{
+						printf("sem_timedwait() timed out (%d sec) -> save (%ld)\n", WaitSec, index);
+						if(VERBOSE > 0)
+							printf("%5d  sem time elapsed -> Save current cube (%ld)\n", __LINE__, index);
+					}
+				if (errno == EINTR)
+					printf("sem_timedwait: The call was interrupted by a signal handler\n");
+
+				if (errno == EINVAL){
+					printf("sem_timedwait: Not a valid semaphore\n");
+					printf("               The value of abs_timeout.tv_nsecs is less than 0, or greater than or equal to 1000 million\n");	
+				}
+
+				if (errno == EAGAIN)
+					printf("sem_timedwait: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n");
 
                 strcpy(tmsg->iname, iname);
                 strcpy(tmsg->fname, fname);
