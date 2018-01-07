@@ -6980,12 +6980,33 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 			ts.tv_sec += WaitSec;
 
             ret = sem_timedwait(data.image[ID].semlog, &ts);
-			if (ret == -1) { 
+			if (ret == -1) 
+			{ 
 				if (errno == ETIMEDOUT)
 					{
 						printf("sem_timedwait() timed out (%d sec) -> save (%ld)\n", WaitSec, index);
 						if(VERBOSE > 0)
 							printf("%5d  sem time elapsed -> Save current cube (%ld)\n", __LINE__, index);
+					
+		                strcpy(tmsg->iname, iname);
+						strcpy(tmsg->fname, fname);
+						tmsg->partial = 1; // partial cube
+						tmsg->cubesize = index;
+                
+						memcpy(array_time_cp, array_time, sizeof(double)*index);
+						memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
+						memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
+
+						tmsg->arraycnt0 = array_cnt0_cp;
+						tmsg->arraycnt1 = array_cnt1_cp;
+						tmsg->arraytime = array_time_cp;
+                
+						wOK=0;
+						if(index==0)
+							noframe = 1;
+						else
+							noframe = 0;
+					
 					}
 				if (errno == EINTR)
 					printf("sem_timedwait: The call was interrupted by a signal handler\n");
@@ -6996,28 +7017,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 				}
 
 				if (errno == EAGAIN)
-					printf("sem_timedwait: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n");
-
-                strcpy(tmsg->iname, iname);
-                strcpy(tmsg->fname, fname);
-                tmsg->partial = 1; // partial cube
-                tmsg->cubesize = index;
-                
-                memcpy(array_time_cp, array_time, sizeof(double)*index);
-                memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
-                memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
-
-                tmsg->arraycnt0 = array_cnt0_cp;
-                tmsg->arraycnt1 = array_cnt1_cp;
-                tmsg->arraytime = array_time_cp;
-                
-				wOK=0;
-                if(index==0)
-                    noframe = 1;
-                else
-                    noframe = 0;
-               
-				}
+					printf("sem_timedwait: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n");               
+			}
         }
         else
         {
