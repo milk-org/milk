@@ -7232,16 +7232,21 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
             if(tOK == 1)
                 pthread_join(thread_savefits, NULL); //(void**)&thread_savefits);
+            
 
             COREMOD_MEMORY_image_set_sempost_byID(IDb, -1);
             data.image[IDb].md[0].cnt0++;
             data.image[IDb].md[0].write = 0;
-
+            
+            
             tmsg->cubesize = index;
             strcpy(tmsg->iname, iname);
             memcpy(array_time_cp, array_time, sizeof(double)*index);
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
+            
+            
+            printf("Number of missed frames = %ld\n", (array_cn0[index-1]-array_cnt0[0])-index );
 
 			if(VERBOSE > 0)
 				{
