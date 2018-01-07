@@ -7206,6 +7206,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             
             
             printf("Number of missed frames = %8ld  / %8ld  / %8ld\n", (array_cnt0[index-1]-array_cnt0[0])-(index-1), index, (long) zsize );
+			if( array_cnt0[index-1]-array_cnt0[0] < 0 )
+				exit(0);
 
 			if(VERBOSE > 0)
 				{
