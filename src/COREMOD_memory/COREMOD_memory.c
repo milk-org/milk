@@ -1762,6 +1762,22 @@ void *save_fits_function( void *ptr )
     FILE *fp;
 
 
+    int RT_priority = 20; //any number from 0-99
+    struct sched_param schedpar;
+
+
+    schedpar.sched_priority = RT_priority;
+#ifndef __MACH__
+	int r;
+    r = seteuid(data.euid); //This goes up to maximum privileges
+    sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
+    r = seteuid(data.ruid);//Go back to normal privileges
+#endif
+
+
+
+
+
     imsizearray = (uint32_t*) malloc(sizeof(uint32_t)*3);
 
     tmsg = (struct savethreadmsg*) ptr;
@@ -6992,36 +7008,6 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     noframe = 0;
                
 				}
-
-
-//            if(VERBOSE==1)
- //               printf("%5d  Image arrived  cntwait = %lld\n", __LINE__, cntwait);
-
-        /*    cntwait++;
-            if(cntwait>cntwaitlim) // save current cube
-            {
-                if(VERBOSE==1)
-                    printf("%5d  ime elapsed -> Save current cube\n", __LINE__);
-
-                strcpy(tmsg->iname, iname);
-                strcpy(tmsg->fname, fname);
-                tmsg->partial = 1; // partial cube
-                tmsg->cubesize = index;
-
-                memcpy(array_time_cp, array_time, sizeof(double)*index);
-                memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
-                memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
-
-                tmsg->arraycnt0 = array_cnt0_cp;
-                tmsg->arraycnt1 = array_cnt1_cp;
-                tmsg->arraytime = array_time_cp;
-
-                wOK=0;
-                if(index==0)
-                    noframe = 1;
-                else
-                    noframe = 0;
-            }*/
         }
         else
         {
@@ -7103,11 +7089,6 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
                 clock_gettime(CLOCK_REALTIME, &timenow);
 
-                /*           if(index==0)
-                               fp = fopen(fname_asciilog, "w");
-                */
-
-
 
                 if(is3Dcube==1)
                     ptr0 = ptr0_0 + framesize*data.image[ID].md[0].cnt1;
@@ -7124,34 +7105,10 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 				if(VERBOSE > 1)
                     printf("%5d  memcpy done\n", __LINE__);
 
-
-                //                fprintf(fp, "%02d:%02d:%02ld.%09ld ", uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
                 array_cnt0[index] = data.image[ID].md[0].cnt0;
                 array_cnt1[index] = data.image[ID].md[0].cnt1;
                 array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
 
-                /*                if(unlikely(IDlogdata!=-1))
-                                {
-
-                                    fprintf(fp, "%8ld", data.image[IDlogdata].md[0].cnt0);
-                                    for(i=0; i<data.image[IDlogdata].md[0].nelement; i++)
-                                        fprintf(fp, "  %f", data.image[IDlogdata].array.F[i]);
-                                }
-                */
-                /*
-                                for(kw=0; kw<data.image[ID].md[0].NBkw; kw++)
-                                {
-                                    switch (data.image[ID].kw[kw].type) {
-                                    case 'D' :
-                                        fprintf(fp, " %f", data.image[ID].kw[kw].value.numf);
-                                        break;
-                                    case 'L' :
-                                        fprintf(fp, " %ld", data.image[ID].kw[kw].value.numl);
-                                        break;
-                                    }
-                                }
-                                fprintf(fp, "\n");
-                */
                 index++;
             }
         }
@@ -7167,6 +7124,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 		if(VERBOSE > 1)
             printf("%5d  index = %ld  wOK = %d\n", __LINE__, index, wOK);
 
+
+		// SAVE CUBE TO DISK
         /// cases:
         /// index>zsize-1  buffer full
         /// wOK==0 && index>0  : partial
@@ -7246,7 +7205,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
             
             
-            printf("Number of missed frames = %ld\n", (array_cnt0[index-1]-array_cnt0[0])-index );
+            printf("Number of missed frames = %ld\n", (array_cnt0[index-1]-array_cnt0[0])-(index-1) );
 
 			if(VERBOSE > 0)
 				{
