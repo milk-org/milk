@@ -6960,6 +6960,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     while( (logshimconf[0].filecnt != NBfiles) && (logshimconf[0].logexit==0) )
     {
+		int timeout; // 1 if timeout has occurred 
+		
         cntwait = 0;
         noframe = 0;
         wOK = 1;
@@ -6967,7 +6969,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         if(VERBOSE > 1)
             printf("%5d  Entering wait loop   index = %ld %d\n", __LINE__, index, noframe);
 
-
+		timeout = 0;
         if(likely(use_semlog==1))
         {
             if(VERBOSE > 1)
@@ -7000,6 +7002,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     tmsg->arraycnt0 = array_cnt0_cp;
                     tmsg->arraycnt1 = array_cnt1_cp;
                     tmsg->arraytime = array_time_cp;
+                
+					timeout = 1;
                 }
                 if (errno == EINTR)
                     printf("sem_timedwait [index %ld]: The call was interrupted by a signal handler\n", index);
@@ -7140,14 +7144,14 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         // SAVE CUBE TO DISK
         /// cases:
         /// index>zsize-1  buffer full
-        /// wOK==0 && index>0  : partial
-        if(  (index>zsize-1)  ||  ((wOK==0)&&(index>0)) )
+        /// timeout==1 && index>0  : partial
+        if(  (index>zsize-1)  ||  ((timeout==1)&&(index>0)) )
         {
             long NBframemissing;
 
             /// save image
             if(VERBOSE > 0)
-                printf("%5ld  Save image   [index  %ld]  [wOK %d] [zsize %ld]\n", __LINE__, index, wOK, zsize);
+                printf("%5ld  Save image   [index  %ld]  [timeout %d] [zsize %ld]\n", __LINE__, index, timeout, zsize);
 
             sprintf(iname, "%s_logbuff%d", IDname, buffer);
             if(buffer==0)
