@@ -7227,16 +7227,9 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
             
-            NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - (index-1);
+            NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - index;
 
             printf("   Number of missed frames = %8ld  / %8ld  / %8ld\n", NBframemissing, index, (long) zsize );
-			fflush(stdout);
-			if( NBframemissing < 0 )
-			{
-				printf(".... ERROR\n");
-				fflush(stdout);
-				exit(0);
-			}
 
 			if(VERBOSE > 0)
 				{
