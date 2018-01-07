@@ -1762,6 +1762,22 @@ void *save_fits_function( void *ptr )
     FILE *fp;
 
 
+    int RT_priority = 20; 
+    struct sched_param schedpar;
+
+
+    schedpar.sched_priority = RT_priority;
+#ifndef __MACH__
+	int r;
+    r = seteuid(data.euid); 
+    sched_setscheduler(0, SCHED_FIFO, &schedpar);
+    r = seteuid(data.ruid);
+#endif
+
+
+
+
+
     imsizearray = (uint32_t*) malloc(sizeof(uint32_t)*3);
 
     tmsg = (struct savethreadmsg*) ptr;
@@ -6632,9 +6648,20 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
 }
 
 
+/*
+ 7079  Setting cube start time [index 0]
+sem_timedwait [index 10]: The call was interrupted by a signal handler
+sem_timedwait [index 10]: The call was interrupted by a signal handler
+sem_timedwait() timed out (5 sec) -> save (10)
+ 6991  sem time elapsed -> Save current cube [index 10]
+ 7154  Save image   [index  10]  [timeout 1] [zsize 100000]
+ 7165  Building file name: ascii
+ 7174  Building file name: fits
+ 7202  PARTIAL CUBE
+   Number of missed frames =      -10  /       10  /   100000
+ 7241  Starting thread
 
-
-
+*/
 
 
 /** logs a shared memory stream onto disk
@@ -6645,10 +6672,9 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
  */
 long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name)
 {
-	// WAIT time. If no new frame during this time, save existing cube
-	int WaitSec = 5; 
-	
-	
+    // WAIT time. If no new frame during this time, save existing cube
+    int WaitSec = 5;
+
     long ID;
     uint32_t xsize, ysize;
     long ii;
@@ -6668,11 +6694,14 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     struct timespec timenow;
     struct timespec timenowStart;
     long kw;
-	int ret;
+    int ret;
     long IDlogdata;
 
-    char *ptr0; // source image data
-    char *ptr1; // destination image data
+    char *ptr0_0; // source image data
+    char *ptr1_0; // destination image data
+    char *ptr0; // source image data, after offset
+    char *ptr1; // destination image data, after offset
+
     long framesize; // in bytes
 
     char *arraytime_ptr;
@@ -6716,23 +6745,26 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     uint64_t *array_cnt1;
     uint64_t *array_cnt1_cp;
 
-    int RT_priority = 60; //any number from 0-99
+    int RT_priority = 80; //any number from 0-99
     struct sched_param schedpar;
 
     int use_semlog;
     int semval;
 
 
-    int VERBOSE = 0;
+    int VERBOSE = 1;
+    // 0: don't print
+    // 1: print statements outside fast loop
+    // 2: print everything
 
-	// convert wait time into number of couunter steps (counter mode only)
-	cntwaitlim = (long) (WaitSec*1000000/waitdelayus);
-	
+    // convert wait time into number of couunter steps (counter mode only)
+    cntwaitlim = (long) (WaitSec*1000000/waitdelayus);
+
 
 
     schedpar.sched_priority = RT_priority;
 #ifndef __MACH__
-	int r;
+    int r;
     r = seteuid(data.euid); //This goes up to maximum privileges
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
     r = seteuid(data.ruid);//Go back to normal privileges
@@ -6803,43 +6835,53 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     case _DATATYPE_FLOAT:
         framesize = SIZEOF_DATATYPE_FLOAT*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.F;
         break;
 
     case _DATATYPE_INT8:
         framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.SI8;
         break;
 
     case _DATATYPE_UINT8:
         framesize = SIZEOF_DATATYPE_UINT8*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.UI8;
         break;
 
     case _DATATYPE_INT16:
         framesize = SIZEOF_DATATYPE_INT16*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.SI16;
         break;
 
     case _DATATYPE_UINT16:
         framesize = SIZEOF_DATATYPE_UINT16*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.UI16;
         break;
 
     case _DATATYPE_INT32:
         framesize = SIZEOF_DATATYPE_INT32*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.SI32;
         break;
 
     case _DATATYPE_UINT32:
         framesize = SIZEOF_DATATYPE_UINT32*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.UI32;
         break;
 
     case _DATATYPE_INT64:
         framesize = SIZEOF_DATATYPE_INT64*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.SI64;
         break;
 
     case _DATATYPE_UINT64:
         framesize = SIZEOF_DATATYPE_UINT64*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.UI64;
         break;
 
 
     case _DATATYPE_DOUBLE:
         framesize = SIZEOF_DATATYPE_DOUBLE*xsize*ysize;
+        ptr0_0 = (char*) data.image[ID].array.D;
         break;
 
     default:
@@ -6847,6 +6889,55 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         exit(0);
         break;
     }
+
+
+
+    switch ( atype ) {
+
+    case _DATATYPE_FLOAT:
+        ptr1_0 = (char*) data.image[IDb].array.F;
+        break;
+
+    case _DATATYPE_INT8:
+        ptr1_0 = (char*) data.image[IDb].array.SI8;
+        break;
+
+    case _DATATYPE_UINT8:
+        ptr1_0 = (char*) data.image[IDb].array.UI8;
+        break;
+
+    case _DATATYPE_INT16:
+        ptr1_0 = (char*) data.image[IDb].array.SI16;
+        break;
+
+    case _DATATYPE_UINT16:
+        ptr1_0 = (char*) data.image[IDb].array.UI16;
+        break;
+
+    case _DATATYPE_INT32:
+        ptr1_0 = (char*) data.image[IDb].array.SI32;
+        break;
+
+    case _DATATYPE_UINT32:
+        ptr1_0 = (char*) data.image[IDb].array.UI32;
+        break;
+
+    case _DATATYPE_INT64:
+        ptr1_0 = (char*) data.image[IDb].array.SI64;
+        break;
+
+    case _DATATYPE_UINT64:
+        ptr1_0 = (char*) data.image[IDb].array.UI64;
+        break;
+
+    case _DATATYPE_DOUBLE:
+        ptr1_0 = (char*) data.image[IDb].array.D;
+        break;
+
+    }
+
+
+
 
     cnt = data.image[ID].md[0].cnt0 - 1;
 
@@ -6866,119 +6957,106 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         use_semlog = 1;
         sem_getvalue(data.image[ID].semlog, &semval);
 
-		// bring semaphore value to 1 to only save 1 frame
-       while(semval>1)
-           {
-			   sem_wait(data.image[ID].semlog);
-				sem_getvalue(data.image[ID].semlog, &semval);
-		   }
-		if(semval==0)
-			sem_post(data.image[ID].semlog);
+        // bring semaphore value to 1 to only save 1 frame
+        while(semval>1)
+        {
+            sem_wait(data.image[ID].semlog);
+            sem_getvalue(data.image[ID].semlog, &semval);
+        }
+        if(semval==0)
+            sem_post(data.image[ID].semlog);
     }
 
 
 
     while( (logshimconf[0].filecnt != NBfiles) && (logshimconf[0].logexit==0) )
     {
+		int timeout; // 1 if timeout has occurred 
+		
         cntwait = 0;
         noframe = 0;
         wOK = 1;
 
-        if(VERBOSE==1)
+        if(VERBOSE > 1)
             printf("%5d  Entering wait loop   index = %ld %d\n", __LINE__, index, noframe);
 
-
+		timeout = 0;
         if(likely(use_semlog==1))
         {
-            if(VERBOSE==1)
+            if(VERBOSE > 1)
                 printf("%5d  Waiting for semaphore\n", __LINE__);
 
-			if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+            if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }
-			ts.tv_sec += WaitSec;
+            ts.tv_sec += WaitSec;
 
             ret = sem_timedwait(data.image[ID].semlog, &ts);
-			if (ret == -1) { 
-				if (errno == ETIMEDOUT)
-					printf("sem_timedwait() timed out -> save (%ld)\n", index);
-				
-				if(VERBOSE==1)
-                    printf("%5d  sem time elapsed -> Save current cube (%ld)\n", __LINE__, index);
-
-                strcpy(tmsg->iname, iname);
-                strcpy(tmsg->fname, fname);
-                tmsg->partial = 1; // partial cube
-                tmsg->cubesize = index;
-                
-                memcpy(array_time_cp, array_time, sizeof(double)*index);
-                memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
-                memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
-
-                tmsg->arraycnt0 = array_cnt0_cp;
-                tmsg->arraycnt1 = array_cnt1_cp;
-                tmsg->arraytime = array_time_cp;
-                
-				wOK=0;
-                if(index==0)
-                    noframe = 1;
-                else
-                    noframe = 0;
-               
-				}
-
-
-//            if(VERBOSE==1)
- //               printf("%5d  Image arrived  cntwait = %lld\n", __LINE__, cntwait);
-
-        /*    cntwait++;
-            if(cntwait>cntwaitlim) // save current cube
+            if (ret == -1)
             {
-                if(VERBOSE==1)
-                    printf("%5d  ime elapsed -> Save current cube\n", __LINE__);
+                if (errno == ETIMEDOUT)
+                {
+                    printf("%5d  sem_timedwait() timed out (%d sec) -[index %ld]\n", __LINE__, WaitSec, index);
+                    if(VERBOSE > 0)
+                        printf("%5d  sem time elapsed -> Save current cube [index %ld]\n", __LINE__, index);
 
-                strcpy(tmsg->iname, iname);
-                strcpy(tmsg->fname, fname);
-                tmsg->partial = 1; // partial cube
-                tmsg->cubesize = index;
+                    strcpy(tmsg->iname, iname);
+                    strcpy(tmsg->fname, fname);
+                    tmsg->partial = 1; // partial cube
+                    tmsg->cubesize = index;
 
-                memcpy(array_time_cp, array_time, sizeof(double)*index);
-                memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
-                memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
+                    memcpy(array_time_cp, array_time, sizeof(double)*index);
+                    memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
+                    memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
-                tmsg->arraycnt0 = array_cnt0_cp;
-                tmsg->arraycnt1 = array_cnt1_cp;
-                tmsg->arraytime = array_time_cp;
+                    tmsg->arraycnt0 = array_cnt0_cp;
+                    tmsg->arraycnt1 = array_cnt1_cp;
+                    tmsg->arraytime = array_time_cp;
+                
+					timeout = 1;
+                }
+                if (errno == EINTR)
+                    printf("%5d  sem_timedwait [index %ld]: The call was interrupted by a signal handler\n", __LINE__, index);
 
-                wOK=0;
-                if(index==0)
-                    noframe = 1;
-                else
-                    noframe = 0;
-            }*/
+                if (errno == EINVAL) {
+                    printf("%5d  sem_timedwait [index %ld]: Not a valid semaphore\n", __LINE__, index);
+                    printf("               The value of abs_timeout.tv_nsecs is less than 0, or greater than or equal to 1000 million\n");
+                }
+
+                if (errno == EAGAIN)
+                    printf("%5d  sem_timedwait [index %ld]: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n", __LINE__, index);
+     
+            
+				wOK=0;
+                    if(index==0)
+                        noframe = 1;
+                    else
+                        noframe = 0;
+			}
+
         }
         else
         {
-            if(VERBOSE==1)
+            if(VERBOSE > 1)
                 printf("%5d  Not using semaphore, watching counter\n", __LINE__);
 
             while(((cnt==data.image[ID].md[0].cnt0)||(logshimconf[0].on == 0))&&(wOK==1))
             {
-                if(VERBOSE==1)
+                if(VERBOSE > 1)
                     printf("%5d  waiting time step\n", __LINE__);
 
                 usleep(waitdelayus);
                 cntwait++;
 
-                if(VERBOSE==1) {
+                if(VERBOSE > 1) {
                     printf("%5d  cntwait = %lld\n", __LINE__, cntwait);
                     fflush(stdout);
                 }
 
                 if(cntwait>cntwaitlim) // save current cube
                 {
-                    if(VERBOSE==1)
+                    if(VERBOSE > 0)
                         printf("%5d  cnt time elapsed -> Save current cube\n", __LINE__);
 
 
@@ -7008,8 +7086,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
         if(index==0)
         {
-            if(VERBOSE==1)
-                printf("%5d  Setting cube start time\n", __LINE__);
+            if(VERBOSE > 0)
+                printf("%5d  Setting cube start time [index %ld]\n", __LINE__, index);
 
             /// measure time
             t = time(NULL);
@@ -7021,7 +7099,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         }
 
 
-		if(VERBOSE==1)
+        if(VERBOSE > 1)
             printf("%5d  logshimconf[0].on = %d\n", __LINE__, logshimconf[0].on);
 
 
@@ -7029,8 +7107,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
         {
             if(likely(wOK==1)) // normal step: a frame has arrived
             {
-                if(VERBOSE==1)
-                    printf("%5d  Frame has arrived index = %ld\n", __LINE__, index);
+                if(VERBOSE > 1)
+                    printf("%5d  Frame has arrived [index %ld]\n", __LINE__, index);
 
                 /// measure time
                 t = time(NULL);
@@ -7038,124 +7116,54 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
                 clock_gettime(CLOCK_REALTIME, &timenow);
 
-                /*           if(index==0)
-                               fp = fopen(fname_asciilog, "w");
-                */
-
-                switch ( atype ) {
-
-                case _DATATYPE_FLOAT:
-                    ptr0 = (char*) data.image[ID].array.F;
-                    ptr1 = (char*) data.image[IDb].array.F;
-                    break;
-
-                case _DATATYPE_INT8:
-                    ptr0 = (char*) data.image[ID].array.SI8;
-                    ptr1 = (char*) data.image[IDb].array.SI8;
-                    break;
-
-                case _DATATYPE_UINT8:
-                    ptr0 = (char*) data.image[ID].array.UI8;
-                    ptr1 = (char*) data.image[IDb].array.UI8;
-                    break;
-
-                case _DATATYPE_INT16:
-                    ptr0 = (char*) data.image[ID].array.SI16;
-                    ptr1 = (char*) data.image[IDb].array.SI16;
-                    break;
-
-                case _DATATYPE_UINT16:
-                    ptr0 = (char*) data.image[ID].array.UI16;
-                    ptr1 = (char*) data.image[IDb].array.UI16;
-                    break;
-
-                case _DATATYPE_INT32:
-                    ptr0 = (char*) data.image[ID].array.SI32;
-                    ptr1 = (char*) data.image[IDb].array.SI32;
-                    break;
-
-                case _DATATYPE_UINT32:
-                    ptr0 = (char*) data.image[ID].array.UI32;
-                    ptr1 = (char*) data.image[IDb].array.UI32;
-                    break;
-
-                case _DATATYPE_INT64:
-                    ptr0 = (char*) data.image[ID].array.SI64;
-                    ptr1 = (char*) data.image[IDb].array.SI64;
-                    break;
-
-                case _DATATYPE_UINT64:
-                    ptr0 = (char*) data.image[ID].array.UI64;
-                    ptr1 = (char*) data.image[IDb].array.UI64;
-                    break;
-
-                case _DATATYPE_DOUBLE:
-                    ptr0 = (char*) data.image[ID].array.D;
-                    ptr1 = (char*) data.image[IDb].array.D;
-                    break;
-
-                }
-
 
                 if(is3Dcube==1)
-                    ptr0 += framesize*data.image[ID].md[0].cnt1;
+                    ptr0 = ptr0_0 + framesize*data.image[ID].md[0].cnt1;
+                else
+                    ptr0 = ptr0_0;
 
-                ptr1 += framesize*index;
+                ptr1 = ptr1_0 + framesize*index;
+
+                if(VERBOSE > 1)
+                    printf("%5d  memcpy framesize = %ld\n", __LINE__, framesize);
 
                 memcpy((void *) ptr1, (void *) ptr0, framesize);
 
+                if(VERBOSE > 1)
+                    printf("%5d  memcpy done\n", __LINE__);
 
-                //                fprintf(fp, "%02d:%02d:%02ld.%09ld ", uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
                 array_cnt0[index] = data.image[ID].md[0].cnt0;
                 array_cnt1[index] = data.image[ID].md[0].cnt1;
                 array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
 
-                /*                if(unlikely(IDlogdata!=-1))
-                                {
-
-                                    fprintf(fp, "%8ld", data.image[IDlogdata].md[0].cnt0);
-                                    for(i=0; i<data.image[IDlogdata].md[0].nelement; i++)
-                                        fprintf(fp, "  %f", data.image[IDlogdata].array.F[i]);
-                                }
-                */
-                /*
-                                for(kw=0; kw<data.image[ID].md[0].NBkw; kw++)
-                                {
-                                    switch (data.image[ID].kw[kw].type) {
-                                    case 'D' :
-                                        fprintf(fp, " %f", data.image[ID].kw[kw].value.numf);
-                                        break;
-                                    case 'L' :
-                                        fprintf(fp, " %ld", data.image[ID].kw[kw].value.numl);
-                                        break;
-                                    }
-                                }
-                                fprintf(fp, "\n");
-                */
                 index++;
             }
         }
         else
         {
-			// save partial if possible
-			//if(index>0)
-			wOK = 0;
-				
-		}
+            // save partial if possible
+            //if(index>0)
+            wOK = 0;
+
+        }
 
 
-		if(VERBOSE==1)
+        if(VERBOSE > 1)
             printf("%5d  index = %ld  wOK = %d\n", __LINE__, index, wOK);
 
+
+        // SAVE CUBE TO DISK
         /// cases:
         /// index>zsize-1  buffer full
-        /// wOK==0 && index>0  : partial
-        if(  (index>zsize-1)  ||  ((wOK==0)&&(index>0)) )
+        /// timeout==1 && index>0  : partial
+        if(  (index>zsize-1)  ||  ((timeout==1)&&(index>0)) )
         {
+            long NBframemissing;
+
             /// save image
-            if(VERBOSE==1)
-                printf("%5d  Save image   index = %ld  wOK = %d\n", __LINE__, index, wOK);
-            
+            if(VERBOSE > 0)
+                printf("%5ld  Save image   [index  %ld]  [timeout %d] [zsize %ld]\n", __LINE__, index, timeout, zsize);
+
             sprintf(iname, "%s_logbuff%d", IDname, buffer);
             if(buffer==0)
                 IDb = IDb0;
@@ -7163,59 +7171,80 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 IDb = IDb1;
 
 
-				if(VERBOSE==1)
-				{
-					printf("%5d  Building file name: ascii\n", __LINE__);
-					fflush(stdout);
-				}
-				
-                sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
-                
-                
-				if(VERBOSE==1)
-				{
-					printf("%5d  Building file name: fits\n", __LINE__);
-					fflush(stdout);
-				}
-                sprintf(fname,"!%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname, uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
-				
-				
-				
-                strcpy(tmsg->iname, iname);
-                strcpy(tmsg->fname, fname);
-                strcpy(tmsg->fnameascii, fnameascii);
+            if(VERBOSE > 0)
+            {
+                printf("%5d  Building file name: ascii\n", __LINE__);
+                fflush(stdout);
+            }
+
+            sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
+
+
+            if(VERBOSE > 0)
+            {
+                printf("%5d  Building file name: fits\n", __LINE__);
+                fflush(stdout);
+            }
+            sprintf(fname,"!%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname, uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60, timenowStart.tv_nsec);
+
+
+
+            strcpy(tmsg->iname, iname);
+            strcpy(tmsg->fname, fname);
+            strcpy(tmsg->fnameascii, fnameascii);
 
 
 
             if(wOK==1) // full cube
             {
-                tmsg->partial = 0; // full cube           
-				if(VERBOSE==1)
-				{
-					printf("%5d  FULL CUBE\n", __LINE__);
-					fflush(stdout);
-				}
-				
+                tmsg->partial = 0; // full cube
+                if(VERBOSE > 0)
+                {
+                    printf("%5d  SAVING FULL CUBE\n", __LINE__);
+                    fflush(stdout);
+                }
+
             }
             else // partial cube
             {
-				tmsg->partial = 1; // partial cube           
-				if(VERBOSE==1)
-				{
-					printf("%5d  PARTIAL CUBE\n", __LINE__);
-					fflush(stdout);
-				}
-			}
-            
+                tmsg->partial = 1; // partial cube
+                if(VERBOSE > 0)
+                {
+                    printf("%5d  SAVING PARTIAL CUBE\n", __LINE__);
+                    fflush(stdout);
+                }
+            }
+
 
             //  fclose(fp);
 
+            // Wait for save thread to complete to launch next one
             if(tOK == 1)
-                pthread_join(thread_savefits, NULL); //(void**)&thread_savefits);
+            {
+                if(pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
+                {
+                    if(VERBOSE > 0)
+                    {
+                        printf("%5d  PREVIOUS SAVE THREAD NOT TERMINATED -> waiting\n", __LINE__);
+                    }
+                    pthread_join(thread_savefits, NULL);
+                    if(VERBOSE > 0)
+                    {
+                        printf("%5d  PREVIOUS SAVE THREAD NOW COMPLETED -> continuing\n", __LINE__);
+                    }
+                }
+                else
+                if(VERBOSE > 0)
+                    {
+                        printf("%5d  PREVIOUS SAVE THREAD ALREADY COMPLETED -> OK\n", __LINE__);
+                    }
+            }
+
 
             COREMOD_MEMORY_image_set_sempost_byID(IDb, -1);
             data.image[IDb].md[0].cnt0++;
             data.image[IDb].md[0].write = 0;
+
 
             tmsg->cubesize = index;
             strcpy(tmsg->iname, iname);
@@ -7223,11 +7252,15 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
-			if(VERBOSE==1)
-				{
-					printf("%5d  Starting thread\n", __LINE__);
-					fflush(stdout);
-				}			
+            NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - (index-1);
+
+            printf("===== CUBE %8ld   Number of missed frames = %8ld  / %8ld  / %8ld ====\n", logshimconf[0].filecnt, NBframemissing, index, (long) zsize );
+
+            if(VERBOSE > 0)
+            {
+                printf("%5d  Starting image save thread\n", __LINE__);
+                fflush(stdout);
+            }
 
             tmsg->arraycnt0 = array_cnt0_cp;
             tmsg->arraycnt1 = array_cnt1_cp;
@@ -7239,7 +7272,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             tOK = 1;
             if(iret_savefits)
             {
-                fprintf(stderr,"Error - pthread_create() return code: %d\n", iret_savefits);
+                fprintf(stderr, "Error - pthread_create() return code: %d\n", iret_savefits);
                 exit(EXIT_FAILURE);
             }
 
@@ -7253,6 +7286,51 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 IDb = IDb0;
             else
                 IDb = IDb1;
+
+            switch ( atype ) {
+
+            case _DATATYPE_FLOAT:
+                ptr1_0 = (char*) data.image[IDb].array.F;
+                break;
+
+            case _DATATYPE_INT8:
+                ptr1_0 = (char*) data.image[IDb].array.SI8;
+                break;
+
+            case _DATATYPE_UINT8:
+                ptr1_0 = (char*) data.image[IDb].array.UI8;
+                break;
+
+            case _DATATYPE_INT16:
+                ptr1_0 = (char*) data.image[IDb].array.SI16;
+                break;
+
+            case _DATATYPE_UINT16:
+                ptr1_0 = (char*) data.image[IDb].array.UI16;
+                break;
+
+            case _DATATYPE_INT32:
+                ptr1_0 = (char*) data.image[IDb].array.SI32;
+                break;
+
+            case _DATATYPE_UINT32:
+                ptr1_0 = (char*) data.image[IDb].array.UI32;
+                break;
+
+            case _DATATYPE_INT64:
+                ptr1_0 = (char*) data.image[IDb].array.SI64;
+                break;
+
+            case _DATATYPE_UINT64:
+                ptr1_0 = (char*) data.image[IDb].array.UI64;
+                break;
+
+            case _DATATYPE_DOUBLE:
+                ptr1_0 = (char*) data.image[IDb].array.D;
+                break;
+
+            }
+
             data.image[IDb].md[0].write = 1;
             logshimconf[0].filecnt ++;
         }
@@ -7274,6 +7352,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     return(0);
 }
+
 
 
 
