@@ -7000,13 +7000,6 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     tmsg->arraycnt0 = array_cnt0_cp;
                     tmsg->arraycnt1 = array_cnt1_cp;
                     tmsg->arraytime = array_time_cp;
-
-                    wOK=0;
-                    if(index==0)
-                        noframe = 1;
-                    else
-                        noframe = 0;
-
                 }
                 if (errno == EINTR)
                     printf("sem_timedwait [index %ld]: The call was interrupted by a signal handler\n", index);
@@ -7019,6 +7012,12 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 if (errno == EAGAIN)
                     printf("sem_timedwait [index %ld]: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n", index);
             }
+            
+            wOK=0;
+                    if(index==0)
+                        noframe = 1;
+                    else
+                        noframe = 0;
         }
         else
         {
