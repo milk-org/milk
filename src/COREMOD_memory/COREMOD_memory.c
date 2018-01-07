@@ -7011,13 +7011,15 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
                 if (errno == EAGAIN)
                     printf("sem_timedwait [index %ld]: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n", index);
-            }
+     
             
-            wOK=0;
+				wOK=0;
                     if(index==0)
                         noframe = 1;
                     else
                         noframe = 0;
+			}
+
         }
         else
         {
