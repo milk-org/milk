@@ -7109,7 +7109,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 if(is3Dcube==1)
                     ptr0 = ptr0_0 + framesize*data.image[ID].md[0].cnt1;
                 else
-					prt0 = ptr0_0;
+					ptr0 = ptr0_0;
 
                 ptr1 = ptr1_0 + framesize*index;
 
