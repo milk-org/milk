@@ -6648,9 +6648,20 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
 }
 
 
+/*
+ 7079  Setting cube start time [index 0]
+sem_timedwait [index 10]: The call was interrupted by a signal handler
+sem_timedwait [index 10]: The call was interrupted by a signal handler
+sem_timedwait() timed out (5 sec) -> save (10)
+ 6991  sem time elapsed -> Save current cube [index 10]
+ 7154  Save image   [index  10]  [timeout 1] [zsize 100000]
+ 7165  Building file name: ascii
+ 7174  Building file name: fits
+ 7202  PARTIAL CUBE
+   Number of missed frames =      -10  /       10  /   100000
+ 7241  Starting thread
 
-
-
+*/
 
 
 /** logs a shared memory stream onto disk
@@ -7232,9 +7243,9 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
             memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
-            NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - index;
+            NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - (index-1);
 
-            printf("   Number of missed frames = %8ld  / %8ld  / %8ld\n", NBframemissing, index, (long) zsize );
+            printf("===== CUBE %8ld   Number of missed frames = %8ld  / %8ld  / %8ld ====\n", logshimconf[0].filecnt, NBframemissing, index, (long) zsize );
 
             if(VERBOSE > 0)
             {
