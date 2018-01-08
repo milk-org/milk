@@ -6997,7 +6997,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             {
                 if (errno == ETIMEDOUT)
                 {
-                    printf("sem_timedwait() timed out (%d sec) -> save (%ld)\n", WaitSec, index);
+                    printf("%5d  sem_timedwait() timed out (%d sec) -[index %ld]\n", __LINE__, WaitSec, index);
                     if(VERBOSE > 0)
                         printf("%5d  sem time elapsed -> Save current cube [index %ld]\n", __LINE__, index);
 
@@ -7017,15 +7017,15 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 					timeout = 1;
                 }
                 if (errno == EINTR)
-                    printf("sem_timedwait [index %ld]: The call was interrupted by a signal handler\n", index);
+                    printf("%5d  sem_timedwait [index %ld]: The call was interrupted by a signal handler\n", __LINE__, index);
 
                 if (errno == EINVAL) {
-                    printf("sem_timedwait [index %ld]: Not a valid semaphore\n", index);
+                    printf("%5d  sem_timedwait [index %ld]: Not a valid semaphore\n", __LINE__, index);
                     printf("               The value of abs_timeout.tv_nsecs is less than 0, or greater than or equal to 1000 million\n");
                 }
 
                 if (errno == EAGAIN)
-                    printf("sem_timedwait [index %ld]: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n", index);
+                    printf("%5d  sem_timedwait [index %ld]: The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n", __LINE__, index);
      
             
 				wOK=0;
@@ -7200,7 +7200,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 tmsg->partial = 0; // full cube
                 if(VERBOSE > 0)
                 {
-                    printf("%5d  FULL CUBE\n", __LINE__);
+                    printf("%5d  SAVING FULL CUBE\n", __LINE__);
                     fflush(stdout);
                 }
 
@@ -7210,7 +7210,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 tmsg->partial = 1; // partial cube
                 if(VERBOSE > 0)
                 {
-                    printf("%5d  PARTIAL CUBE\n", __LINE__);
+                    printf("%5d  SAVING PARTIAL CUBE\n", __LINE__);
                     fflush(stdout);
                 }
             }
@@ -7225,10 +7225,19 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 {
                     if(VERBOSE > 0)
                     {
-                        printf("save thread not terminated -> waiting\n");
+                        printf("%5d  PREVIOUS SAVE THREAD NOT TERMINATED -> waiting\n", __LINE__);
                     }
                     pthread_join(thread_savefits, NULL);
+                    if(VERBOSE > 0)
+                    {
+                        printf("%5d  PREVIOUS SAVE THREAD NOW COMPLETED -> continuing\n", __LINE__);
+                    }
                 }
+                else
+                if(VERBOSE > 0)
+                    {
+                        printf("%5d  PREVIOUS SAVE THREAD ALREADY COMPLETED -> OK\n", __LINE__);
+                    }
             }
 
 
@@ -7249,7 +7258,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
             if(VERBOSE > 0)
             {
-                printf("%5d  Starting thread\n", __LINE__);
+                printf("%5d  Starting image save thread\n", __LINE__);
                 fflush(stdout);
             }
 
