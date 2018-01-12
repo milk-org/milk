@@ -30,7 +30,7 @@ echo "     <blocksize>         Number of slices in each data cube saved"
 echo "     <directory>         Destination directory"
 echo ""
 echo " $(tput bold)EXAMPLE:$(tput sgr0)"
-echo "     $0 ircam2 10000 /media/data/20150222/ircamlog/"
+echo "     logshim ircam2 10000 /media/data/20150222/ircamlog/"
 echo ""
 echo "------------------------------------------------------------------------"
 }
