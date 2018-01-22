@@ -2,10 +2,25 @@
  * @file    templatemodule.c
  * @brief   template module
  *
- * Follow this template to write your C dode
+ * Follow this template to write your C code
+ * The template includes examples of frequently used coding practices
+ * and doxygen-based documentation
+ * 
+ * Source code includes notes (comments):
+ * - CODING STANDARD NOTE : note about coding practices and standards
+ * - DOCUMENTATION NOTE : how to document code
+ * 
+ * 
+ * ## Other files of interest
+ * Each module should include :
+ * - souce code (.c file)
+ * - header file (.h file)
  *
+ * ## Change log
+ * - 20180120  Guyon   Added mode documentation    
+ * 
  * @author  O. Guyon
- * @date    Aug 2, 2017
+ * @date    Jan 20, 2018
  *
  * @bug No known bugs.
  *
@@ -16,7 +31,10 @@
 
 
 
-// CODING STANDARD NOTE: code indeted by : bash -c "astyle --indent-classes -Y"
+
+
+
+/// CODING STANDARD NOTE: code indented by : bash -c "astyle --indent-classes -Y"
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -27,11 +45,9 @@
 #include <math.h>
 #include <stdio.h>
 
-// CODING STANDARD NOTE: document any unusual head file include
-//
-// module strangefile does strange things, which we need in this module
-//
-#include <strangefile.h>
+/// CODING STANDARD NOTE: document any unusual head file include
+
+#include <strangefile.h>     // module strangefile does strange things, which we need in this module
 
 
 // frequently included
@@ -67,7 +83,7 @@
 
 // CODING STANDARD NOTE: list function macros after defines
 // CODING STANDARD NOTE: function macro start with module name when specific to current module
-#define ABS(x)           (((x) < 0) ? -(x) : (x))
+#define ABS(x)                         (((x) < 0) ? -(x) : (x))
 #define EXAMPLEMODULE_MAX(a,b)         ((a < b) ?  (b) : (a))
 
 // CODING STANDARD NOTE: list typedefs after function macros
@@ -271,7 +287,7 @@ int templatemodule_examplefunc00(int mode)
         char imagename[NAME_STRING_MAXSIZE];
         char command[COMMAND_STRING_MAXSIZE];
 
-        // CODING STANDARD NOTE: Test return value of std functions
+        // CODING STANDARD NOTE: Always test return value of std functions
         // CODING STANDARD NOTE: Use functions in 00CORE.h :
         // CODING STANDARD NOTE: 		printERROR(const char *file, const char *func, int line, char *errmessage)
         // CODING STANDARD NOTE: 		printWARNING(const char *file, const char *func, int line, char *warnmessage)
@@ -320,6 +336,10 @@ int templatemodule_examplefunc00(int mode)
 
 
 
+// DOCUMENTATION NOTE: put @brief statement in .h
+// DOCUMENTATION NOTE: put short argument description in .h
+// DOCUMENTATION NOTE: put detailed function documentation in .c
+
 
 /**
  * ## Purpose
@@ -329,17 +349,8 @@ int templatemodule_examplefunc00(int mode)
  * 
  * ## Arguments
  * 
- * @param[in]
- * val1		FLOAT
- * 			this parameter does this and that
- * 
- * @param[in]
- * n1		INT
- * 			number of that
- * 
- * @param[out]
- * farray	FLOAT*
- * 			output array
+ * Brief description of arguments is in .h file \n
+ * A more detailed description of arguments in provided here \n
  * 
  * 
  * 
@@ -366,17 +377,25 @@ int templatemodule_examplefunc00(int mode)
  * 
  * \ingroup RTfunctions
  */
-int templatemodule_examplefunc01(float val1, int n1, float *farray)
+int templatemodule_examplefunc01(
+		float val1, 
+		int n1, 
+		float *farray
+		)
 {
+	/// ---
+	/// # Code Description
+	///
 	int Niteration;
 	
-	int RT_priority = 95; //any number from 0-99. Higher number = higher priority
+	int RT_priority = 95; // any number from 0-99. Higher number = higher priority
 	struct sched_param schedpar;
 	
 	int retval;
 	
 	schedpar.sched_priority = RT_priority;
 
+	/// ## Set up priviledges
 
     #ifndef __MACH__ // Do not run code below if OS-X 
     iretval = seteuid(euid_called); //This goes up to maximum privileges
@@ -390,14 +409,14 @@ int templatemodule_examplefunc01(float val1, int n1, float *farray)
 		printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
 	#endif
 	
-	
+	/// ## Execute loop
 	
 	// code here
 	for(;;) // preferred way to write infinite loop
 	{
 	}
 	
-	
+	/// ---	
 	return(Niteration);
 }
 
