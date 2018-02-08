@@ -1,6 +1,49 @@
 
 # Documenting Code {#page_DocumentingCode}
 
+Instructions to build locally documentation and push it to repo.
+
+## Setting up documentation 
+
+Documentation is built by doxygen in the ./dochtml/html directory. To set it up on you local repo, 
+follow these steps AFTER you have cloned the repo
+	
+	git push
+	mkdir dochtml
+	mkdir dochtml/html
+	cd dochtml/html
+	git clone https://github.com/<reponame> .
+	git checkout gh-pages
+	# remove other branch(es)
+	git branch -d master
+	cd ../..
+
+For initial setup (creating gh-pages branch for the first time)
+
+		
+	git push
+	mkdir dochtml
+	mkdir dochtml/html
+	# exclude dochtml from repo
+	echo "dochtml/" >> .gitignore
+	git commit -am "added dochtml to gitignore"
+	cd dochtml/html
+	git clone https://github.com/<reponame> .
+	git checkout -b gh-pages
+	# remove other branch(es)
+	git branch -d master
+	# remove files to start from clean state. Change file list as needed
+	git rm -r src doc config configure.ac LICENSE Makefile.am 
+	cd ../..
+
+
+## Updating documentation
+
+	doxygen
+
+
+
+
 
 ## Github documentation
 
