@@ -64,7 +64,7 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 
 
-extern DATA data;
+//extern DATA data;
 
 static int INITSTATUS_COREMOD_tools = 0;
 
