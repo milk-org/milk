@@ -41,7 +41,8 @@
 #include <fcntl.h> // for open
 #include <unistd.h> // for close
 
-
+#include <time.h>
+#include <sys/time.h>
 
 
 
@@ -7190,7 +7191,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
             /// save image
             if(VERBOSE > 0)
-                printf("%5ld  Save image   [index  %ld]  [timeout %d] [zsize %ld]\n", __LINE__, index, timeout, zsize);
+                printf("%5d  Save image   [index  %ld]  [timeout %d] [zsize %ld]\n", __LINE__, index, timeout, (long) zsize);
 
             sprintf(iname, "%s_logbuff%d", IDname, buffer);
             if(buffer==0)
@@ -7282,7 +7283,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
             NBframemissing = (array_cnt0[index-1]-array_cnt0[0]) - (index-1);
 
-            printf("===== CUBE %8ld   Number of missed frames = %8ld  / %8ld  / %8ld ====\n", logshimconf[0].filecnt, NBframemissing, index, (long) zsize );
+            printf("===== CUBE %8lld   Number of missed frames = %8ld  / %ld  / %8ld ====\n", logshimconf[0].filecnt, NBframemissing, index, (long) zsize );
 
             if(VERBOSE > 0)
             {
