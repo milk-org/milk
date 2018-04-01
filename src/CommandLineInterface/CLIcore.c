@@ -11,6 +11,7 @@
 
 
 
+
 /*
  * Exit code
  * 	- 0: no error
@@ -171,7 +172,6 @@ int C_ERRNO;
 
 int Verbose = 0; 
 int Listimfile = 0;
-DATA data;
 
 
 char *line;
@@ -740,11 +740,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     long i, j;
     int quiet=0;
     long tmplong;
-    //  FILE *fp;
     const gsl_rng_type * rndgenType;
 
     char prompt[200];
-  //  int terminate = 0;
     char str[200];
     char command[200];
     int nbtk;
@@ -927,6 +925,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     /* Initialize data control block */  
     main_init();
 
+//printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
+
     // initialize readline
     rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &rl_cb);
 
@@ -950,8 +950,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     tmplong = data.NB_MAX_VARIABLE;
     C_ERRNO = 0; // initialize C error variable to 0 (no error)
 
-//    terminate = 0;
- //   while(terminate==0)
+
+
+
     for (;;) {
         FILE *fp;
 
@@ -969,6 +970,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fclose(fp);
         }
 
+//printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
         /* Keep the number of image addresses available
          *  NB_IMAGES_BUFFER above the number of used images
@@ -982,10 +984,10 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
             exit(1);
 		}
+//printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
         compute_image_memory(data);
-        compute_nb_image(data);
-
+		compute_nb_image(data);
 
         /** If fifo is on and file CLIstatup.txt exists, load it */
         if(initstartup == 0)
@@ -1008,6 +1010,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         if(data.fifoON==1)
             FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
         FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+        
+        
+        
 
 
         while(CLIexecuteCMDready == 0)
@@ -1223,15 +1228,15 @@ void main_init()
 {
 
   long tmplong;
-  int i;
+//  int i;
   struct timeval t1;
 
    
   /* initialization of the data structure 
    */
   data.quiet           = 1;
-  data.NB_MAX_IMAGE    = 5000;
-  data.NB_MAX_VARIABLE = 5000;
+  data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
+  data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
   data.INVRANDMAX      = 1.0/RAND_MAX;
   
 
@@ -1255,6 +1260,12 @@ void main_init()
   data.cmdNBarg = 0;
 
   // Allocate data.image
+  
+  #ifdef DATA_STATIC_ALLOC
+  // image static allocation mode
+  data.NB_MAX_IMAGE = STATIC_NB_MAX_IMAGE;
+	printf("STATIC ALLOCATION mode: set data.NB_MAX_IMAGE      = %5ld\n", data.NB_MAX_IMAGE);
+  #else
   data.image           = (IMAGE*) calloc(data.NB_MAX_IMAGE, sizeof(IMAGE));
   if(data.image==NULL)  {
     printERROR(__FILE__,__func__,__LINE__,"Allocation of data.image has failed - exiting program");
@@ -1265,6 +1276,14 @@ void main_init()
       printf("Allocation of data.image completed %p\n", data.image);
       fflush(stdout);
     }
+  #endif
+
+	for(long i=0; i<data.NB_MAX_IMAGE; i++)
+		data.image[i].used = 0;
+	
+//printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+
+
 
 
 
@@ -1272,6 +1291,12 @@ void main_init()
 
 
   // Allocate data.variable
+  
+  #ifdef DATA_STATIC_ALLOC
+  // variable static allocation mode 
+  data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
+	printf("STATIC ALLOCATION mode: set data.NB_MAX_VARIABLE   = %5ld\n", data.NB_MAX_VARIABLE);
+  #else
   data.variable = (VARIABLE*) calloc(data.NB_MAX_VARIABLE, sizeof(VARIABLE));
   if(data.variable==NULL)  {
     printERROR(__FILE__,__func__,__LINE__,"Allocation of data.variable has failed - exiting program");       
@@ -1283,23 +1308,21 @@ void main_init()
   tmplong              = data.NB_MAX_VARIABLE;
   data.NB_MAX_VARIABLE = data.NB_MAX_VARIABLE + NB_VARIABLES_BUFFER_REALLOC ;
   
-  // 
+  
   data.variable = (VARIABLE *) realloc(data.variable, data.NB_MAX_VARIABLE*sizeof(VARIABLE));
-  for(i=tmplong;i<data.NB_MAX_VARIABLE;i++)
+  for(long i = tmplong; i < data.NB_MAX_VARIABLE; i++)
 	{
 		data.variable[i].used = 0;
 		data.variable[i].type = 0; /** defaults to floating point type */
 	}
   
-  if (data.variable == NULL)   {
+	if (data.variable == NULL)   {
     printERROR(__FILE__,__func__,__LINE__, "Reallocation of data.variable has failed - exiting program");
     exit(1);
   }
+  #endif  
   
   
-  
- 
-
 
   create_variable_ID("_PI",3.14159265358979323846264338328);
   create_variable_ID("_e",exp(1));
@@ -1312,14 +1335,10 @@ void main_init()
   create_variable_ID("_AU",1.4959787066e11);
 
 
-
-
 	gettimeofday(&t1, NULL);
 	srand(t1.tv_usec * t1.tv_sec);
 //	printf("RAND: %ld\n", t1.tv_usec * t1.tv_sec);
 //  srand(time(NULL));
-
-
 
 
 
@@ -1447,20 +1466,24 @@ void main_init()
   strcpy(data.cmd[data.NBcmd].Ccall,"usleep(long tus)");
   data.NBcmd++;
 
-  
 
 //  init_modules();
-
-  printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
+ // printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
+  
+	printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
 	printf("        \n");
 }
 
 
+
+
 void main_free()
 {
+	#ifndef DATA_STATIC_ALLOC
   // Free 
   free(data.image);
   free(data.variable);
+  #endif
 //  free(data.cmd);
   gsl_rng_free (data.rndgen);
   
@@ -1524,12 +1547,16 @@ static int memory_re_alloc()
     /* keeps the number of images addresses available
      *  NB_IMAGES_BUFFER above the number of used images
      */
-    if((compute_nb_image(data)+NB_IMAGES_BUFFER)>data.NB_MAX_IMAGE)
+     
+     #ifdef DATA_STATIC_ALLOC
+    // image static allocation mode
+    #else
+    if( (compute_nb_image(data)+NB_IMAGES_BUFFER) > data.NB_MAX_IMAGE)
     {
 		long tmplong;
 		IMAGE *ptrtmp;
         
-        if(data.Debug>0)
+       if(data.Debug>0)
         {
             printf("%p IMAGE STRUCT SIZE = %ld\n", data.image, (long) sizeof(IMAGE));
             printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n", data.NB_MAX_IMAGE, data.NB_MAX_IMAGE + NB_IMAGES_BUFFER_REALLOC);
@@ -1563,10 +1590,15 @@ static int memory_re_alloc()
             data.image[i].semlog = NULL;
         }
     }
+    #endif
+
 
     /* keeps the number of variables addresses available
      *  NB_VARIABLES_BUFFER above the number of used variables
      */
+     #ifdef DATA_STATIC_ALLOC
+     // variable static allocation mode 
+     #else
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
 		long tmplong;
@@ -1591,6 +1623,7 @@ static int memory_re_alloc()
             data.variable[i].type = -1;
         }
     }
+    #endif
 
     return 0;
 }

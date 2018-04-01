@@ -10,7 +10,8 @@ from PIL import Image
 
 home = os.getenv('HOME')
 sys.path.append(home+'/src/lib/python/')
-import colormaps as cmaps
+import matplotlib.colors as cmaps
+#import colormaps as cmaps
 from   scexao_shm   import shm
 
 

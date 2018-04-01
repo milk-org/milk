@@ -564,7 +564,7 @@ char *yytext;
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "info/info.h"
-extern DATA data;
+//extern DATA data;
 
 long i;
 #line 571 "calc_flex.c"

@@ -17,7 +17,7 @@ int yylex();
 int yyerror(char *);
 
 
-extern DATA data;
+//extern DATA data;
 
 
 // NOTATIONS
