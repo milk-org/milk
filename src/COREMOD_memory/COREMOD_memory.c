@@ -68,9 +68,9 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 #include <fitsio.h>
 
+#include "CommandLineInterface/CLIcore.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "CommandLineInterface/CLIcore.h"
 #include "info/info.h"
 #include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -108,7 +108,7 @@ static int listim_scr_wrow;
 static int listim_scr_wcol;
 
 
-extern DATA data;
+//extern struct DATA data;
 
 static int INITSTATUS_COREMOD_memory = 0;
 
@@ -1354,18 +1354,30 @@ long compute_nb_variable()
     return(total);
 }
 
+
+
 long long compute_image_memory()
 {
     long i;
     long long total=0;
 
+//	printf("Computing num images\n");
+//	fflush(stdout);
+	
     for(i=0; i<data.NB_MAX_IMAGE; i++)
     {
+		//printf("%5ld / %5ld  %d\n", i, data.NB_MAX_IMAGE, data.image[i].used);
+	//	fflush(stdout);
+		
         if(data.image[i].used==1)
-            total += data.image[i].md[0].nelement*TYPESIZE[data.image[i].md[0].atype];
+            total += data.image[i].md[0].nelement * TYPESIZE[data.image[i].md[0].atype];
     }
+    
+    
     return(total);
 }
+
+
 
 long compute_variable_memory()
 {
@@ -1399,7 +1411,7 @@ long image_ID(const char *name) /* ID number corresponding to a name */
     {
         if(data.image[i].used == 1)
         {
-            if((strncmp(name,data.image[i].name,strlen(name))==0)&&(data.image[i].name[strlen(name)]=='\0'))
+            if((strncmp(name, data.image[i].name, strlen(name))==0) && (data.image[i].name[strlen(name)]=='\0'))
             {
                 found = 1;
                 tmp = i;
@@ -1418,6 +1430,7 @@ long image_ID(const char *name) /* ID number corresponding to a name */
 
     return(tmp);
 }
+
 
 
 long image_ID_noaccessupdate(const char *name) /* ID number corresponding to a name */
@@ -1457,18 +1470,25 @@ long variable_ID(const char *name) /* ID number corresponding to a name */
     int found;
     long tmp = -1;
 
+//printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
     i = 0;
     found = 0;
     while(found == 0)
     {
+
+//printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
+
         if(data.variable[i].used == 1)
         {
+			//printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
+
             if((strncmp(name,data.variable[i].name,strlen(name))==0)&&(data.variable[i].name[strlen(name)]=='\0'))
             {
                 found = 1;
                 tmp = i;
             }
         }
+        
         i++;
         if(i == data.NB_MAX_VARIABLE)
         {
@@ -2517,9 +2537,17 @@ long create_variable_ID(const char *name, double value)
     long ID;
     long i1,i2;
 
+//printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+
     ID = -1;
+//printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+
     i1 = image_ID(name);
+//printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+
+
     i2 = variable_ID(name);
+//    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
 
     if(i1!=-1)
     {
@@ -2541,7 +2569,7 @@ long create_variable_ID(const char *name, double value)
         data.variable[ID].value.f = value;
 
     }
-
+//    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
     return(ID);
 }
 
