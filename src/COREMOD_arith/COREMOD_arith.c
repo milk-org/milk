@@ -41,7 +41,7 @@
 
 #define SBUFFERSIZE 1000
 
-extern DATA data;
+//extern DATA data;
 
 static int INITSTATUS_COREMOD_arith = 0;
 
