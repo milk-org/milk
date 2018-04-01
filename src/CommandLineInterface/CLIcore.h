@@ -41,7 +41,7 @@
 extern pid_t CLIPID;
 extern char DocDir[200];		// location of documentation
 extern char SrcDir[200];		// location of source
-extern char BuildFile[200];	// file name for source
+extern char BuildFile[200];		// file name for source
 extern char BuildDate[200];
 extern char BuildTime[200];
 
@@ -78,6 +78,11 @@ typedef uint_fast8_t BOOL;
 #define DATA_NB_MAX_COMMAND 1000
 #define DATA_NB_MAX_MODULE 100
 
+// In STATIC allocation mode, IMAGE and VARIABLE arrays are allocated statically
+
+//#define DATA_STATIC_ALLOC // comment if DYNAMIC
+#define STATIC_NB_MAX_IMAGE 5020
+#define STATIC_NB_MAX_VARIABLE 5030
 
 
 //Need to install process with setuid.  Then, so you aren't running privileged all the time do this:
@@ -183,7 +188,7 @@ typedef struct
 
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
-typedef struct
+struct DATA
 {
     struct sigaction sigact; 
     // signals toggle flags
@@ -249,17 +254,20 @@ typedef struct
 
     // images, variables
     long NB_MAX_IMAGE;
-    IMAGE *image;
-
+    #ifdef DATA_STATIC_ALLOC
+    IMAGE image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
+	#else
+	IMAGE *image;
+	#endif
+	
     long NB_MAX_VARIABLE;
-    VARIABLE *variable;
-    /*
-      long NB_MAX_VARIABLELONG;
-      VARIABLELONG *variablelong;
+    #ifdef DATA_STATIC_ALLOC
+    VARIABLE variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
+	#else
+	VARIABLE *variable;
+	#endif
+	
 
-      long NB_MAX_VARIABLESTRING;
-      VARIABLESTRING *variablestring;
-      */
 
     float FLOATARRAY[1000];	// array to store temporary variables
     double DOUBLEARRAY[1000];    // for convenience
@@ -268,14 +276,12 @@ typedef struct
     // status counter (used for profiling)
     int status0;
     int status1;
-} DATA;
+};
+
+extern struct DATA data;
 
 
 
-
-
-
-#define MAX_NB_FRAMES 500
 #define MAX_NB_FRAMENAME_CHAR 500
 #define MAX_NB_EXCLUSIONS 40
 
