@@ -825,6 +825,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     data.signal_HUP = 0;
     data.signal_PIPE = 0;
 
+	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
+	fflush(stdout);
+
     // if (signal(SIGINT, sig_handler) == SIG_ERR)
     //   printf("\ncan't catch SIGINT\n");
     if (sigaction(SIGUSR1, &data.sigact, NULL) == -1)
@@ -834,7 +837,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-
+	
 
     // to take advantage of kernel priority:
     // owner=root mode=4755
@@ -845,13 +848,17 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     r = seteuid(data.ruid);
 #endif
 
-
+	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
+	fflush(stdout);
 
     // initialize readline
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
     rl_initialize ();
 
+	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
+	fflush(stdout);
+	
     // Get command-line options
     command_line( argc, argv );
 
@@ -888,7 +895,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # endif
 
-
+	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
+	fflush(stdout);
 
     //    sprintf(DocDir,"%s",DOCDIR);
     //   sprintf(SrcDir,"%s",SOURCEDIR);
