@@ -849,6 +849,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 	fflush(stdout);
 	getresuid(&data.ruid, &data.euid, &data.suid);
     //This sets it to the privileges of the normal user
+    printf("Setting euid to %d\n", (int) data.euid);
+    
     printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
 	fflush(stdout);
     r = seteuid(data.ruid);
