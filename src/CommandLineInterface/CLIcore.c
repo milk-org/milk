@@ -887,9 +887,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # endif
 
-	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
-
     //    sprintf(DocDir,"%s",DOCDIR);
     //   sprintf(SrcDir,"%s",SOURCEDIR);
     //  sprintf(BuildFile,"%s",__FILE__);
