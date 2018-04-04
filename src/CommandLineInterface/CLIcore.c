@@ -837,6 +837,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
+	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
+	fflush(stdout);
 	
 
     // to take advantage of kernel priority:
