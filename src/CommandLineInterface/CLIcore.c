@@ -825,8 +825,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     data.signal_HUP = 0;
     data.signal_PIPE = 0;
 
-	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
 
     // if (signal(SIGINT, sig_handler) == SIG_ERR)
     //   printf("\ncan't catch SIGINT\n");
@@ -835,39 +833,23 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     if (sigaction(SIGUSR2, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGUSR2\n");
 
-
-
-	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
-	
-
     // to take advantage of kernel priority:
     // owner=root mode=4755
 
 #ifndef __MACH__
-    printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
 	getresuid(&data.ruid, &data.euid, &data.suid);
     //This sets it to the privileges of the normal user
     printf("Setting euid to %d\n", (int) data.euid);
-    
-    printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
+ 
     r = seteuid(data.ruid);
-    printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);  
 #endif
 
-	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
 
     // initialize readline
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
     rl_initialize ();
 
-	printf("TEST  file %s   line %d\n", __FILE__, __LINE__);
-	fflush(stdout);
 	
     // Get command-line options
     command_line( argc, argv );
