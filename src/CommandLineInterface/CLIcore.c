@@ -839,8 +839,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 #ifndef __MACH__
 	getresuid(&data.ruid, &data.euid, &data.suid);
     //This sets it to the privileges of the normal user
-    printf("Setting euid to %d\n", (int) data.euid);
- 
     r = seteuid(data.ruid);
 #endif
 
