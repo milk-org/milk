@@ -5329,8 +5329,8 @@ long COREMOD_MEMORY_streamDelay(
 			fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
-			for(ii=0;ii<xysize;ii++)
-				data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
+		//	for(ii=0;ii<xysize;ii++)
+			//	data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
 			
 			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 			data.image[IDout].md[0].cnt0++;
