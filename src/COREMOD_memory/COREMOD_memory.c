@@ -5222,7 +5222,12 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
  * 
  */ 
 
-long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, long delayus, long dtus)
+long COREMOD_MEMORY_streamDelay(
+		const char *IDin_name, 
+		const char *IDout_name, 
+		long delayus, 
+		long dtus
+		)
 {
 	long IDimc;
 	long IDin, IDout;
@@ -5274,7 +5279,8 @@ long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, l
 	for(kk=0;kk<zsize;kk++)
 		t0array[kk] = tnow;
 		
-	
+	printf("TEST Entering loop\n");
+	fflush(stdout);
 	while(1)
 	{
 		// has new frame arrived ?
