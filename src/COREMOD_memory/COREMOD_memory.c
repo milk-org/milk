@@ -2242,7 +2242,14 @@ long read_sharedmem_image(const char *name)
 
 /* creates an image ID */
 /* all images should be created by this function */
-long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t atype, int shared, int NBkw)
+long create_image_ID(
+		const char *name, 
+		long naxis, 
+		uint32_t *size, 
+		uint8_t atype, 
+		int shared, 
+		int NBkw
+		)
 {
     long ID;
     long i,ii;
