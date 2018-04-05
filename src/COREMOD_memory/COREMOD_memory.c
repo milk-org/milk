@@ -5290,6 +5290,9 @@ long COREMOD_MEMORY_streamDelay(
 		cnt0 = data.image[IDin].md[0].cnt0;
 		if(cnt0!=cnt0old)
 		{
+			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
+			fflush(stdout);
+			
 			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 			for(ii=0;ii<xysize;ii++)
 				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
@@ -5297,6 +5300,7 @@ long COREMOD_MEMORY_streamDelay(
 			if(kkin==zsize)
 				kkin = 0;
 			cnt0old = cnt0;		
+			
 			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
 			fflush(stdout);
 		}
@@ -5329,8 +5333,8 @@ long COREMOD_MEMORY_streamDelay(
 			fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
-		//	for(ii=0;ii<xysize;ii++)
-			//	data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
 			
 			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 			data.image[IDout].md[0].cnt0++;
