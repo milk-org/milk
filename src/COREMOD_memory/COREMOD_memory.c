@@ -5295,7 +5295,7 @@ long COREMOD_MEMORY_streamDelay(
 			
 			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 
-			printf("TEST line %ld\n", __LINE__); fflush(stdout);
+			printf("TEST line %ld ... size = %ld\n", __LINE__, xysize); fflush(stdout);
 
 			for(ii=0;ii<xysize;ii++)
 				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
