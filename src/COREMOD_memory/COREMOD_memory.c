@@ -5305,8 +5305,8 @@ long COREMOD_MEMORY_streamDelay(
 		tdiff = info_time_diff(t0array[kkout], tnow);
         tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 		
-	//	printf("tdiff = %f us   ", tdiffv*1e6);
-	//	fflush(stdout);
+		printf("tdiff = %f us   ", tdiffv*1e6);
+		fflush(stdout);
 		while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
 			{
 				cntskip++;				
@@ -5316,12 +5316,13 @@ long COREMOD_MEMORY_streamDelay(
 				tdiff = info_time_diff(t0array[kkout], tnow);
 				tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 			}
-	//	printf("cntskip = %ld\n", cntskip);
-	//	fflush(stdout);
+		printf("cntskip = %ld\n", cntskip);
+		fflush(stdout);
 		
 		if(cntskip>0)
 		{
-		//	printf("Updating %s  %ld\n", IDout_name, IDout);
+			printf("Updating %s  %ld\n", IDout_name, IDout);
+			fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
 			for(ii=0;ii<xysize;ii++)
