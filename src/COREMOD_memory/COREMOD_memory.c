@@ -5325,14 +5325,14 @@ long COREMOD_MEMORY_streamDelay(
 		if(cntskip>0)
 		{
 			list_image_ID();
-			printf("Updating %s  %ld   %ld %ld", IDout_name, IDout, xysize, kkout);
+			printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
 			fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
 			for(ii=0;ii<xysize;ii++)
 				data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
 			
-			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);;
+			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 			data.image[IDout].md[0].cnt0++;
 			data.image[IDout].md[0].write = 0;
 			printf(" ... done\n");
