@@ -5257,7 +5257,7 @@ long COREMOD_MEMORY_streamDelay(
 	
 	IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
 	
-	list_image_ID();
+	
 	
 	IDout = image_ID(IDout_name);
     if(IDout==-1) // CREATE IT
@@ -5278,6 +5278,9 @@ long COREMOD_MEMORY_streamDelay(
 	clock_gettime(CLOCK_REALTIME, &tnow);
 	for(kk=0;kk<zsize;kk++)
 		t0array[kk] = tnow;
+	
+	
+	list_image_ID();
 		
 	printf("TEST Entering loop\n");
 	fflush(stdout);
@@ -5321,7 +5324,8 @@ long COREMOD_MEMORY_streamDelay(
 		
 		if(cntskip>0)
 		{
-			printf("Updating %s  %ld\n", IDout_name, IDout);
+			list_image_ID();
+			printf("Updating %s  %ld   %ld %ld", IDout_name, IDout, xysize, kkout);
 			fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
@@ -5331,6 +5335,8 @@ long COREMOD_MEMORY_streamDelay(
 			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);;
 			data.image[IDout].md[0].cnt0++;
 			data.image[IDout].md[0].write = 0;
+			printf(" ... done\n");
+			fflush(stdout);
 		}
 		
 	
