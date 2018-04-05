@@ -5222,7 +5222,12 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
  * 
  */ 
 
-long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, long delayus, long dtus)
+long COREMOD_MEMORY_streamDelay(
+		const char *IDin_name, 
+		const char *IDout_name, 
+		long delayus, 
+		long dtus
+		)
 {
 	long IDimc;
 	long IDin, IDout;
@@ -5252,7 +5257,7 @@ long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, l
 	
 	IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
 	
-	list_image_ID();
+	
 	
 	IDout = image_ID(IDout_name);
     if(IDout==-1) // CREATE IT
@@ -5273,21 +5278,35 @@ long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, l
 	clock_gettime(CLOCK_REALTIME, &tnow);
 	for(kk=0;kk<zsize;kk++)
 		t0array[kk] = tnow;
-		
 	
+	
+	list_image_ID();
+		
+	printf("TEST Entering loop\n");
+	fflush(stdout);
 	while(1)
 	{
 		// has new frame arrived ?
 		cnt0 = data.image[IDin].md[0].cnt0;
 		if(cnt0!=cnt0old)
 		{
+			printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
+			fflush(stdout);
+			
 			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
+
+			printf("TEST line %ld ... size = %ld\n", __LINE__, xysize); fflush(stdout);
+
 			for(ii=0;ii<xysize;ii++)
 				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
+
 			kkin++;
+			printf("TEST line %ld\n", __LINE__); fflush(stdout);
+			
 			if(kkin==zsize)
 				kkin = 0;
 			cnt0old = cnt0;		
+			
 			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
 			fflush(stdout);
 		}
@@ -5299,8 +5318,8 @@ long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, l
 		tdiff = info_time_diff(t0array[kkout], tnow);
         tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 		
-	//	printf("tdiff = %f us   ", tdiffv*1e6);
-	//	fflush(stdout);
+		printf("tdiff = %f us   ", tdiffv*1e6);
+		fflush(stdout);
 		while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
 			{
 				cntskip++;				
@@ -5310,20 +5329,24 @@ long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, l
 				tdiff = info_time_diff(t0array[kkout], tnow);
 				tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 			}
-	//	printf("cntskip = %ld\n", cntskip);
-	//	fflush(stdout);
+		printf("cntskip = %ld\n", cntskip);
+		fflush(stdout);
 		
 		if(cntskip>0)
 		{
-		//	printf("Updating %s  %ld\n", IDout_name, IDout);
+			list_image_ID();
+			printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
+			fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
 			for(ii=0;ii<xysize;ii++)
 				data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
 			
-			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);;
+			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 			data.image[IDout].md[0].cnt0++;
 			data.image[IDout].md[0].write = 0;
+			printf(" ... done\n");
+			fflush(stdout);
 		}
 		
 	
