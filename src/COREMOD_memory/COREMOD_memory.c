@@ -5283,8 +5283,8 @@ long COREMOD_MEMORY_streamDelay(
 	cnt0old = data.image[IDin].md[0].cnt0;
 
 	clock_gettime(CLOCK_REALTIME, &tnow);
-	for(kk=0;kk<zsize;kk++)
-		t0array[kk] = tnow;
+	//for(kk=0;kk<zsize;kk++)
+	//	t0array[kk] = tnow;
 	
 	
 	list_image_ID();
