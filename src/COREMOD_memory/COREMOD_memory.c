@@ -5251,6 +5251,7 @@ long COREMOD_MEMORY_streamDelay(
 	long cntskip = 0;
 	long kkout;
 	long kk;
+
 	  
 	IDin = image_ID(IDin_name);
 	xsize = data.image[IDin].md[0].size[0];
