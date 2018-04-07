@@ -5266,8 +5266,8 @@ long COREMOD_MEMORY_streamDelay(
 	
 	
 	
-	IDout = image_ID(IDout_name);
-    if(IDout==-1) // CREATE IT
+//	IDout = image_ID(IDout_name);
+/*    if(IDout==-1) // CREATE IT
     {
 		arraytmp = (uint32_t*) malloc(sizeof(uint32_t)*2);
 		arraytmp[0] = xsize;
@@ -5275,12 +5275,12 @@ long COREMOD_MEMORY_streamDelay(
         IDout = create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
         COREMOD_MEMORY_image_set_createsem(IDout_name, 10);
 		free(arraytmp);
-    }
+    }*/
     
     
 	kkin = 0;
-	kkout = 0;
-	cnt0old = data.image[IDin].md[0].cnt0;
+//	kkout = 0;
+//	cnt0old = data.image[IDin].md[0].cnt0;
 
 	clock_gettime(CLOCK_REALTIME, &tnow);
 	//for(kk=0;kk<zsize;kk++)
@@ -5294,9 +5294,9 @@ long COREMOD_MEMORY_streamDelay(
 	while(1)
 	{
 		// has new frame arrived ?
-		cnt0 = data.image[IDin].md[0].cnt0;
-		//if(cnt0!=cnt0old)
-		//{
+//		cnt0 = data.image[IDin].md[0].cnt0;
+//		if(cnt0!=cnt0old)
+//		{
 			printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
 			fflush(stdout);
 			
@@ -5317,7 +5317,7 @@ long COREMOD_MEMORY_streamDelay(
 			
 //			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
 //			fflush(stdout);
-		//}
+//		}
 		printf("GOT HERE----------------\n");
 		exit(0);//TEST
 		 
