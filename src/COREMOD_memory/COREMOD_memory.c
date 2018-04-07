@@ -5290,16 +5290,16 @@ long COREMOD_MEMORY_streamDelay(
 	
 //	list_image_ID();
 		
-	printf("TEST Entering loop\n");
-	fflush(stdout);
-	while(1)
-	{
+//	printf("TEST Entering loop\n");
+//	fflush(stdout);
+//	while(1)
+//	{
 		// has new frame arrived ?
 //		cnt0 = data.image[IDin].md[0].cnt0;
 //		if(cnt0!=cnt0old)
 //		{
-			printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
-			fflush(stdout);
+		//	printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
+		//	fflush(stdout);
 			
 //			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 
@@ -5363,7 +5363,7 @@ long COREMOD_MEMORY_streamDelay(
 		
 	
 		usleep(dtus);*/
-	}
+//	}
 	
 //	delete_image_ID("_tmpc");
 	
