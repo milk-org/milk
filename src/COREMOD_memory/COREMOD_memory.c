@@ -5295,8 +5295,8 @@ long COREMOD_MEMORY_streamDelay(
 	{
 		// has new frame arrived ?
 		cnt0 = data.image[IDin].md[0].cnt0;
-		if(cnt0!=cnt0old)
-		{
+		//if(cnt0!=cnt0old)
+		//{
 			printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
 			fflush(stdout);
 			
@@ -5305,7 +5305,7 @@ long COREMOD_MEMORY_streamDelay(
 			printf("TEST line %ld ... size = %ld  %ld/%ld\n", __LINE__, xysize, kkin, zsize); fflush(stdout);
 
 			for(ii=0;ii<xysize;ii++)
-				data.image[IDimc].array.F[kkin*xysize+ii] = 0.0; //data.image[IDin].array.F[ii];
+				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
 
 			kkin++;
 			printf("TEST line %ld\n", __LINE__); fflush(stdout);
@@ -5316,7 +5316,9 @@ long COREMOD_MEMORY_streamDelay(
 			
 			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
 			fflush(stdout);
-		}
+		//}
+		printf("GOT HERE----------------\n");
+		exit(0);//TEST
 		
 		clock_gettime(CLOCK_REALTIME, &tnow);
 		
