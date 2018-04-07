@@ -5321,13 +5321,13 @@ long COREMOD_MEMORY_streamDelay(
 		printf("GOT HERE----------------\n");
 		exit(0);//TEST
 		 
-		clock_gettime(CLOCK_REALTIME, &tnow);
+//		clock_gettime(CLOCK_REALTIME, &tnow);
 		
 		
 		cntskip = 0;
-		tdiff = info_time_diff(t0array[kkout], tnow);
-        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		
+//		tdiff = info_time_diff(t0array[kkout], tnow);
+//        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+/*		
 		printf("tdiff = %f us   ", tdiffv*1e6);
 		fflush(stdout);
 		while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
@@ -5360,12 +5360,12 @@ long COREMOD_MEMORY_streamDelay(
 		}
 		
 	
-		usleep(dtus);
+		usleep(dtus);*/
 	}
 	
-	delete_image_ID("_tmpc");
+//	delete_image_ID("_tmpc");
 	
-	free(t0array);
+//	free(t0array);
 	
 	return(0);
 }
