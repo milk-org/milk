@@ -5310,15 +5310,15 @@ long COREMOD_MEMORY_streamDelay(
 				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
 			}
 
-			kkin++;
-			printf("TEST line %ld\n", __LINE__); fflush(stdout);
+//			kkin++;
+//			printf("TEST line %ld\n", __LINE__); fflush(stdout);
 			
-			if(kkin==zsize)
-				kkin = 0;
-			cnt0old = cnt0;		
+//			if(kkin==zsize)
+//				kkin = 0;
+//			cnt0old = cnt0;		
 			
-			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
-			fflush(stdout);
+//			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
+//			fflush(stdout);
 		//}
 		printf("GOT HERE----------------\n");
 		exit(0);//TEST
