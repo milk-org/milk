@@ -5251,6 +5251,7 @@ long COREMOD_MEMORY_streamDelay(
 	long cntskip = 0;
 	long kkout;
 	long kk;
+
 	  
 	IDin = image_ID(IDin_name);
 	xsize = data.image[IDin].md[0].size[0];
@@ -5260,14 +5261,14 @@ long COREMOD_MEMORY_streamDelay(
 		zsize = 1;
 	xysize = xsize*ysize;
 	
-	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
+//	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
 	
 	IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
 	
 	
 	
-	IDout = image_ID(IDout_name);
-    if(IDout==-1) // CREATE IT
+//	IDout = image_ID(IDout_name);
+/*    if(IDout==-1) // CREATE IT
     {
 		arraytmp = (uint32_t*) malloc(sizeof(uint32_t)*2);
 		arraytmp[0] = xsize;
@@ -5275,56 +5276,60 @@ long COREMOD_MEMORY_streamDelay(
         IDout = create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
         COREMOD_MEMORY_image_set_createsem(IDout_name, 10);
 		free(arraytmp);
-    }
+    }*/
     
     
 	kkin = 0;
-	kkout = 0;
-	cnt0old = data.image[IDin].md[0].cnt0;
+//	kkout = 0;
+//	cnt0old = data.image[IDin].md[0].cnt0;
 
-	clock_gettime(CLOCK_REALTIME, &tnow);
-	for(kk=0;kk<zsize;kk++)
-		t0array[kk] = tnow;
+//	clock_gettime(CLOCK_REALTIME, &tnow);
+	//for(kk=0;kk<zsize;kk++)
+	//	t0array[kk] = tnow;
 	
 	
-	list_image_ID();
+//	list_image_ID();
 		
-	printf("TEST Entering loop\n");
-	fflush(stdout);
-	while(1)
-	{
+//	printf("TEST Entering loop\n");
+//	fflush(stdout);
+//	while(1)
+//	{
 		// has new frame arrived ?
-		cnt0 = data.image[IDin].md[0].cnt0;
-		if(cnt0!=cnt0old)
-		{
-			printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
-			fflush(stdout);
+//		cnt0 = data.image[IDin].md[0].cnt0;
+//		if(cnt0!=cnt0old)
+//		{
+		//	printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
+		//	fflush(stdout);
 			
-			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
+//			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 
-			printf("TEST line %ld ... size = %ld\n", __LINE__, xysize); fflush(stdout);
+			printf("TEST line %ld ... size = %ld  %ld/%ld\n", __LINE__, xysize, kkin, zsize); fflush(stdout);
 
-			for(ii=0;ii<xysize;ii++)
-				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
+			for(ii=0;ii<xysize;ii++){
+				data.image[IDimc].array.F[ii] = data.image[IDin].array.F[ii];
+				//data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
+			}
 
-			kkin++;
-			printf("TEST line %ld\n", __LINE__); fflush(stdout);
+//			kkin++;
+//			printf("TEST line %ld\n", __LINE__); fflush(stdout);
 			
-			if(kkin==zsize)
-				kkin = 0;
-			cnt0old = cnt0;		
+//			if(kkin==zsize)
+//				kkin = 0;
+//			cnt0old = cnt0;		
 			
-			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
-			fflush(stdout);
-		}
-		
-		clock_gettime(CLOCK_REALTIME, &tnow);
+//			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
+//			fflush(stdout);
+//		}
+		printf("GOT HERE----------------\n");
+		exit(0);//TEST
+		 
+//		clock_gettime(CLOCK_REALTIME, &tnow);
 		
 		
 		cntskip = 0;
-		tdiff = info_time_diff(t0array[kkout], tnow);
-        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		
+//		tdiff = info_time_diff(t0array[kkout], tnow);
+//        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+/*		
 		printf("tdiff = %f us   ", tdiffv*1e6);
 		fflush(stdout);
 		while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
@@ -5357,12 +5362,12 @@ long COREMOD_MEMORY_streamDelay(
 		}
 		
 	
-		usleep(dtus);
-	}
+		usleep(dtus);*/
+//	}
 	
-	delete_image_ID("_tmpc");
+//	delete_image_ID("_tmpc");
 	
-	free(t0array);
+//	free(t0array);
 	
 	return(0);
 }
