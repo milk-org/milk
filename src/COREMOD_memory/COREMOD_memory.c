@@ -1300,7 +1300,7 @@ int_fast8_t init_COREMOD_memory()
 /**
  * 
  * Test function aimed at creating unsolved seg fault bug
- * Will generate bug iff IDin is shared memory and -O3 gcc compilation flag
+ * Will generate bug if -O3 or -Ofast gcc compilation flag
  * 
  */
 int_fast8_t COREMOD_MEMORY_testfunc()
