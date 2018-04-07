@@ -65,6 +65,8 @@ int_fast8_t init_COREMOD_memory();
 //int ImageCreate(IMAGE *image, const char *name, long naxis, uint32_t *size, uint8_t atype, int shared, int NBkw);
 
 
+int_fast8_t COREMOD_MEMORY_testfunc();
+
 
 /* =============================================================================================== */
 /* =============================================================================================== */

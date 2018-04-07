@@ -1050,6 +1050,7 @@ void __attribute__ ((constructor)) libinit_COREMOD_memory()
 int_fast8_t init_COREMOD_memory()
 {
 
+	RegisterCLIcommand("cmemtestf", __FILE__, COREMOD_MEMORY_testfunc, "testfunc", "no arg", "cmemtestf", "COREMOD_MEMORY_testfunc()");
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -1293,6 +1294,49 @@ int_fast8_t init_COREMOD_memory()
 
 
 
+
+
+
+/**
+ * 
+ * Test function aimed at creating unsolved seg fault bug
+ * Will generate bug iff IDin is shared memory and -O3 gcc compilation flag
+ * 
+ */
+int_fast8_t COREMOD_MEMORY_testfunc()
+{
+	long IDin;
+	long IDimc;
+	uint32_t xsize, ysize, xysize;
+	long ii;
+	uint32_t *imsize;
+	
+	printf("Entering test function\n");
+	fflush(stdout);
+	
+	imsize = (uint32_t*) malloc(sizeof(uint32_t)*2);
+	imsize[0] = 50;
+	imsize[1] = 50;
+	
+	IDin = create_image_ID("testimshm", 2, imsize, _DATATYPE_FLOAT, 1, 0);
+	xsize = data.image[IDin].md[0].size[0];
+	ysize = data.image[IDin].md[0].size[1];
+	xysize = xsize*ysize;
+	
+	IDimc = create_2Dimage_ID("_tmpc", xsize, ysize); 
+	list_image_ID();
+	
+	for(ii=0; ii<xysize; ii++){
+		data.image[IDimc].array.F[ii] = data.image[IDin].array.F[ii];
+	}
+
+	free(imsize);
+
+	printf("No bug... clean exit\n");
+	fflush(stdout);
+	
+	return(0);
+}
 
 
 
@@ -2244,11 +2288,11 @@ long read_sharedmem_image(const char *name)
 /* all images should be created by this function */
 long create_image_ID(
 		const char *name, 
-		long naxis, 
-		uint32_t *size, 
-		uint8_t atype, 
-		int shared, 
-		int NBkw
+		long        naxis, 
+		uint32_t   *size, 
+		uint8_t     atype, 
+		int         shared, 
+		int         NBkw
 		)
 {
     long ID;
@@ -2474,31 +2518,47 @@ long create_3Dimage_ID_double(const char *ID_name, uint32_t xsize, uint32_t ysiz
 
 
 /* 3D image, default precision */
-long create_3Dimage_ID(const char *ID_name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
+long create_3Dimage_ID(
+		const char *ID_name, 
+		uint32_t xsize, 
+		uint32_t ysize, 
+		uint32_t zsize
+		)
 {
     long ID = -1;
     long naxis = 3;
-    uint32_t naxes[3];
+    uint32_t *naxes;
 
+
+	naxes = (uint32_t*) malloc(sizeof(uint32_t)*3);
     naxes[0] = xsize;
     naxes[1] = ysize;
     naxes[2] = zsize;
 
     if(data.precision == 0)
-        ID = create_image_ID(ID_name,naxis,naxes, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT); // single precision
+        ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT); // single precision
     if(data.precision == 1)
-        ID = create_image_ID(ID_name,naxis,naxes, _DATATYPE_DOUBLE, data.SHARED_DFT, data.NBKEWORD_DFT); // double precision
+        ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT, data.NBKEWORD_DFT); // double precision
+	
+	free(naxes);
 
     return(ID);
 }
 
 /* 3D complex image */
-long create_3DCimage_ID(const char *ID_name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
+long create_3DCimage_ID(
+		const char *ID_name, 
+		uint32_t xsize, 
+		uint32_t ysize, 
+		uint32_t zsize
+		)
 {
     long ID = -1;
     long naxis = 3;
-    uint32_t naxes[3];
+    uint32_t *naxes;
 
+	
+	naxes = (uint32_t*) malloc(sizeof(uint32_t)*3);
     naxes[0] = xsize;
     naxes[1] = ysize;
     naxes[2] = zsize;
@@ -2507,6 +2567,8 @@ long create_3DCimage_ID(const char *ID_name, uint32_t xsize, uint32_t ysize, uin
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT); // single precision
     if(data.precision == 1)
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE, data.SHARED_DFT, data.NBKEWORD_DFT); // double precision
+
+	free(naxes);
 
     return(ID);
 }
@@ -5223,6 +5285,7 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 
 
 
+
 /** 
  * 
  * IDout_name is a time-delayed copy of IDin_name
@@ -5239,7 +5302,7 @@ long COREMOD_MEMORY_streamDelay(
 	long IDimc;
 	long IDin, IDout;
 	uint32_t xsize, ysize, xysize;
-	long zsize;
+	uint32_t zsize;
 	long kkin;
 	long cnt0, cnt0old;
 	long ii;
@@ -5252,23 +5315,22 @@ long COREMOD_MEMORY_streamDelay(
 	long kkout;
 	long kk;
 
-	  
 	IDin = image_ID(IDin_name);
 	xsize = data.image[IDin].md[0].size[0];
 	ysize = data.image[IDin].md[0].size[1];
-	zsize = (long) (delayus/dtus);
+	zsize = (uint32_t) (delayus/dtus);
 	if(zsize<1)
 		zsize = 1;
 	xysize = xsize*ysize;
 	
-//	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
+	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
 	
 	IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
 	
 	
 	
-//	IDout = image_ID(IDout_name);
-/*    if(IDout==-1) // CREATE IT
+	IDout = image_ID(IDout_name);
+    if(IDout==-1) // CREATE IT
     {
 		arraytmp = (uint32_t*) malloc(sizeof(uint32_t)*2);
 		arraytmp[0] = xsize;
@@ -5276,62 +5338,45 @@ long COREMOD_MEMORY_streamDelay(
         IDout = create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
         COREMOD_MEMORY_image_set_createsem(IDout_name, 10);
 		free(arraytmp);
-    }*/
+    }
     
     
 	kkin = 0;
-//	kkout = 0;
-//	cnt0old = data.image[IDin].md[0].cnt0;
+	kkout = 0;
+	cnt0old = data.image[IDin].md[0].cnt0;
 
-//	clock_gettime(CLOCK_REALTIME, &tnow);
-	//for(kk=0;kk<zsize;kk++)
-	//	t0array[kk] = tnow;
+	clock_gettime(CLOCK_REALTIME, &tnow);
+	for(kk=0;kk<zsize;kk++)
+		t0array[kk] = tnow;
 	
 	
-//	list_image_ID();
-		
-//	printf("TEST Entering loop\n");
-//	fflush(stdout);
-//	while(1)
-//	{
+	while(1)
+	{
 		// has new frame arrived ?
-//		cnt0 = data.image[IDin].md[0].cnt0;
-//		if(cnt0!=cnt0old)
-//		{
-		//	printf("New frame detected: ID %ld->%ld    %ld  %ld/%ld\n", IDin, IDimc, cnt0, kkin, zsize);
-		//	fflush(stdout);
-			
-//			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
+		cnt0 = data.image[IDin].md[0].cnt0;
+		if(cnt0!=cnt0old)
+		{
+			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 
-			printf("TEST line %ld ... size = %ld  %ld/%ld\n", __LINE__, xysize, kkin, zsize); fflush(stdout);
-
-			for(ii=0;ii<xysize;ii++){
-				data.image[IDimc].array.F[ii] = data.image[IDin].array.F[ii];
-				//data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
+			for(ii=0; ii<xysize; ii++){
+				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
 			}
-
-//			kkin++;
-//			printf("TEST line %ld\n", __LINE__); fflush(stdout);
+			kkin++;
 			
-//			if(kkin==zsize)
-//				kkin = 0;
-//			cnt0old = cnt0;		
-			
-//			printf("New frame detected: %ld  ->  %ld\n", cnt0, kkin);
-//			fflush(stdout);
-//		}
-		printf("GOT HERE----------------\n");
-		exit(0);//TEST
-		 
-//		clock_gettime(CLOCK_REALTIME, &tnow);
+			if(kkin==zsize)
+				kkin = 0;
+			cnt0old = cnt0;					
+		}
+		
+		clock_gettime(CLOCK_REALTIME, &tnow);
 		
 		
 		cntskip = 0;
-//		tdiff = info_time_diff(t0array[kkout], tnow);
-//        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-/*		
-		printf("tdiff = %f us   ", tdiffv*1e6);
-		fflush(stdout);
+		tdiff = info_time_diff(t0array[kkout], tnow);
+        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		
+//		printf("tdiff = %f us   ", tdiffv*1e6);
+//		fflush(stdout);
 		while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
 			{
 				cntskip++;				
@@ -5341,14 +5386,14 @@ long COREMOD_MEMORY_streamDelay(
 				tdiff = info_time_diff(t0array[kkout], tnow);
 				tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 			}
-		printf("cntskip = %ld\n", cntskip);
-		fflush(stdout);
+//		printf("cntskip = %ld\n", cntskip);
+//		fflush(stdout);
 		
 		if(cntskip>0)
 		{
-			list_image_ID();
-			printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
-			fflush(stdout);
+			//list_image_ID();
+			//printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
+			//fflush(stdout);
 			
 			data.image[IDout].md[0].write = 1;
 			for(ii=0;ii<xysize;ii++)
@@ -5357,17 +5402,17 @@ long COREMOD_MEMORY_streamDelay(
 			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 			data.image[IDout].md[0].cnt0++;
 			data.image[IDout].md[0].write = 0;
-			printf(" ... done\n");
-			fflush(stdout);
+			//printf(" ... done\n");
+			//fflush(stdout);
 		}
 		
 	
-		usleep(dtus);*/
-//	}
+		usleep(dtus);
+	}
 	
-//	delete_image_ID("_tmpc");
+	delete_image_ID("_tmpc");
 	
-//	free(t0array);
+	free(t0array);
 	
 	return(0);
 }
