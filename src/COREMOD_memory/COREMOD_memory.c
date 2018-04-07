@@ -5287,7 +5287,7 @@ long COREMOD_MEMORY_streamDelay(
 	//	t0array[kk] = tnow;
 	
 	
-	list_image_ID();
+//	list_image_ID();
 		
 	printf("TEST Entering loop\n");
 	fflush(stdout);
