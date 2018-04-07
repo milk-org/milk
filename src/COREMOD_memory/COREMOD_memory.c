@@ -5260,7 +5260,7 @@ long COREMOD_MEMORY_streamDelay(
 		zsize = 1;
 	xysize = xsize*ysize;
 	
-	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
+//	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
 	
 	IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
 	
