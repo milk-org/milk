@@ -17,10 +17,10 @@
  * - header file (.h file)
  *
  * ## Change log
- * - 20180120  Guyon   Added mode documentation    
+ * - 20180120  Guyon   Added mode documentation
+ * - 20170813  Guyon   Added some documentation
  * 
  * @author  O. Guyon
- * @date    Jan 20, 2018
  *
  * @bug No known bugs.
  *
@@ -42,6 +42,7 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+// System includes
 #include <math.h>
 #include <stdio.h>
 
@@ -205,7 +206,7 @@ int_fast8_t init_templatemodule()
 
 /* =============================================================================================== */
 /* =============================================================================================== */
-/*                                    FUNCTIONS SOURCE CODE                                        */
+/*                                    FUNCTION(S) SOURCE CODE                                      */
 /* =============================================================================================== */
 /* =============================================================================================== */
 /** @name TEMPLATEMODULE functions */
@@ -378,9 +379,10 @@ int templatemodule_examplefunc00(int mode)
  * \ingroup RTfunctions
  */
 int templatemodule_examplefunc01(
-		float val1, 
-		int n1, 
-		float *farray
+		const char*           namein, 
+		      float           val1, 
+		      int             n1, 
+		      float* restrict farray
 		)
 {
 	/// ---

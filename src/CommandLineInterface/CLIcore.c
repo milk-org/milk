@@ -90,6 +90,10 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 #define OMP_NELEMENT_LIMIT 1000000
 # endif
 
+#ifdef _OPENACC
+#include <openacc.h>
+#endif
+
 
 
 #include <gsl/gsl_rng.h> // for random numbers
@@ -888,6 +892,10 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # endif
 
+# ifdef _OPENACC
+	int openACC_devtype = acc_get_device_type();
+    printf("        Running with openACC version %d.  %d device(s), type %d\n", _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
+# endif
 
 
     //    sprintf(DocDir,"%s",DOCDIR);
