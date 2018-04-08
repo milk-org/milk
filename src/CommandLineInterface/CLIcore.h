@@ -188,7 +188,7 @@ typedef struct
 
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
-struct DATA
+typedef struct
 {
     struct sigaction sigact; 
     // signals toggle flags
@@ -276,9 +276,9 @@ struct DATA
     // status counter (used for profiling)
     int status0;
     int status1;
-};
+} DATA;
 
-extern struct DATA data;
+extern DATA data;
 
 
 

@@ -829,16 +829,13 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     data.signal_HUP = 0;
     data.signal_PIPE = 0;
 
+
     // if (signal(SIGINT, sig_handler) == SIG_ERR)
     //   printf("\ncan't catch SIGINT\n");
     if (sigaction(SIGUSR1, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGUSR1\n");
     if (sigaction(SIGUSR2, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGUSR2\n");
-
-
-
-
 
     // to take advantage of kernel priority:
     // owner=root mode=4755
@@ -850,12 +847,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 #endif
 
 
-
     // initialize readline
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
     rl_initialize ();
 
+	
     // Get command-line options
     command_line( argc, argv );
 
@@ -896,6 +893,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 	int openACC_devtype = acc_get_device_type();
     printf("        Running with openACC version %d.  %d device(s), type %d\n", _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
 # endif
+
 
 
     //    sprintf(DocDir,"%s",DOCDIR);
