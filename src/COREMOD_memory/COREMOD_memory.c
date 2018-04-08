@@ -1300,35 +1300,50 @@ int_fast8_t init_COREMOD_memory()
 /**
  * 
  * Test function aimed at creating unsolved seg fault bug
- * Will generate bug if -O3 or -Ofast gcc compilation flag
+ * Will crash under gcc-7 if -O3 or -Ofast gcc compilation flag
  * 
  */
 int_fast8_t COREMOD_MEMORY_testfunc()
 {
-	long IDin;
+	long ID;
 	long IDimc;
 	uint32_t xsize, ysize, xysize;
-	long ii;
+	uint32_t ii;
 	uint32_t *imsize;
+	IMAGE testimage_in;
+	IMAGE testimage_out;
+	
+	
 	
 	printf("Entering test function\n");
 	fflush(stdout);
 	
+	xsize = 50;
+	ysize = 50;
 	imsize = (uint32_t*) malloc(sizeof(uint32_t)*2);
-	imsize[0] = 50;
-	imsize[1] = 50;
-	
-	IDin = create_image_ID("testimshm", 2, imsize, _DATATYPE_FLOAT, 1, 0);
-	xsize = data.image[IDin].md[0].size[0];
-	ysize = data.image[IDin].md[0].size[1];
+	imsize[0] = xsize;
+	imsize[1] = ysize;
 	xysize = xsize*ysize;
 	
-	IDimc = create_2Dimage_ID("_tmpc", xsize, ysize); 
-	list_image_ID();
+	// create image (shared memory)   
+	ImageStreamIO_createIm(&testimage_in, "testimshm", 2, imsize, _DATATYPE_UINT32, 1, 0);
 	
+	// create image (local memory only)
+	ImageStreamIO_createIm(&testimage_out, "testimout", 2, imsize, _DATATYPE_UINT32, 0, 0);
+
+
+	// crashes with seg fault with gcc-7.3.0 -O3
+	// tested with float (.F) -> crashes
+	// tested with uint32 (.UI32) -> crashes
+	// no crash with gcc-6.3.0 -O3
+	// crashes with gcc-7.2.0 -O3
 	for(ii=0; ii<xysize; ii++){
-		data.image[IDimc].array.F[ii] = data.image[IDin].array.F[ii];
+		testimage_out.array.UI32[ii] = testimage_in.array.UI32[ii];
 	}
+
+	// no seg fault with gcc-7.3.0 -O3
+	//memcpy(testimage_out.array.UI32, testimage_in.array.UI32, SIZEOF_DATATYPE_UINT32*xysize);
+
 
 	free(imsize);
 
