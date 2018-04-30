@@ -229,6 +229,7 @@ static int_fast8_t help();
 
 static int_fast8_t list_commands();
 static int_fast8_t list_commands_module(char *modulename);
+static int_fast8_t load_sharedobj(char *libname);
 static int_fast8_t load_module_shared(char *modulename);
 static int_fast8_t load_module_shared_ALL();
 static int_fast8_t help_command(char *cmdkey);
@@ -449,6 +450,15 @@ static int_fast8_t help_module()
 
     return 0;
 }
+
+
+
+static int_fast8_t load_so()
+{
+   load_sharedobj(data.cmdargtoken[1].val.string);
+}
+
+
 
 
 static int_fast8_t load_module()
@@ -1426,6 +1436,16 @@ void main_init()
   data.NBcmd++;
 
 
+  strcpy(data.cmd[data.NBcmd].key,"soload");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = load_so;
+  strcpy(data.cmd[data.NBcmd].info,"load shared object");
+  strcpy(data.cmd[data.NBcmd].syntax,"shared object name");
+  strcpy(data.cmd[data.NBcmd].example,"soload mysharedobj.so");
+  strcpy(data.cmd[data.NBcmd].Ccall,"int load_sharedobj(char *libname)");
+  data.NBcmd++;
+
+
   strcpy(data.cmd[data.NBcmd].key,"mload");
   strcpy(data.cmd[data.NBcmd].module,__FILE__);
   data.cmd[data.NBcmd].fp = load_module;
@@ -1895,6 +1915,32 @@ static int_fast8_t list_commands_module(char *modulename)
 
 
 
+static int_fast8_t load_sharedobj(char *libname)
+{
+    int n;
+    int (*libinitfunc) ();
+    char *error;
+    char initfuncname[200];
+    
+    printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+
+    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
+    if (!DLib_handle[DLib_index]) {
+        fprintf(stderr, "%s\n", dlerror());
+        //exit(EXIT_FAILURE);
+    }
+	else
+	{
+		dlerror();
+		// increment number of libs dynamically loaded
+		DLib_index ++;
+	}
+	
+    return 0;
+}
+
+
+
 
 static int_fast8_t load_module_shared(char *modulename)
 {
@@ -1902,9 +1948,9 @@ static int_fast8_t load_module_shared(char *modulename)
     char modulenameLC[200];
     char c;
     int n;
-    int (*libinitfunc) ();
-    char *error;
-    char initfuncname[200];
+//    int (*libinitfunc) ();
+//    char *error;
+//    char initfuncname[200];
     
 
     sprintf(modulenameLC, "%s", modulename);
@@ -1920,19 +1966,8 @@ static int_fast8_t load_module_shared(char *modulename)
 
 
     printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
-
-
-    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
-    if (!DLib_handle[DLib_index]) {
-        fprintf(stderr, "%s\n", dlerror());
-        //exit(EXIT_FAILURE);
-    }
-	else
-	{
-		dlerror();
-		// increment number of libs dynamically loaded
-		DLib_index ++;
-	}
+	
+	load_sharedobj(libname);
 	
     return 0;
 }
@@ -1972,7 +2007,8 @@ static int_fast8_t load_module_shared_ALL()
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
 //					printf("%02d   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
 //					fflush(stdout);
-				
+					
+					//printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
 						fprintf(stderr, KMAG "        WARNING: linker pass # %d, module # %d\n          %s\n" KRES, iter, DLib_index, dlerror());
