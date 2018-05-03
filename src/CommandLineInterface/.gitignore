@@ -18,3 +18,10 @@ CACAO-CLIcore\.o
 *.o
 
 *.Po
+
+calc_bison.c
+
+calc_bison.h
+
+calc_flex.c
+
