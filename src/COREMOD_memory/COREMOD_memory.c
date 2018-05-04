@@ -3532,7 +3532,7 @@ int_fast8_t list_variable_ID()
 
     for (i=0; i<data.NB_MAX_VARIABLE; i++)
         if(data.variable[i].used == 1)
-            printf("%4ld %16s %25.18g\n",i, data.variable[i].name,data.variable[i].value.f);
+            printf("%4ld %16s %25.18g\n", i, data.variable[i].name, data.variable[i].value.f);
 
     return(0);
 }
