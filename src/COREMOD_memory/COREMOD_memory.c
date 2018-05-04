@@ -5725,7 +5725,6 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     switch ( data.image[ID].md[0].atype ) {
 
-
     case _DATATYPE_INT8:
         framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
         break;
@@ -5853,7 +5852,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     printf("sem = %d\n", data.image[ID].md[0].sem);
     fflush(stdout);
     
-    sockOK = 0; // TEST
+
     while(sockOK==1)
     {
         if((data.image[ID].md[0].sem==0)||(mode==1))
@@ -5902,7 +5901,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 slice = oldslice+1;
             if(NBslices>1)
                 if(oldslice==NBslices-1)
-                    slice = 0;;
+                    slice = 0;
 
        //     printf("[%ld -> %ld] ", oldslice, slice); // TEST
             frame_md[0].cnt1 = slice;
@@ -5935,7 +5934,13 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 fflush(stdout);
             }*/
         
-        if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
+        if( (data.signal_INT == 1) || \
+        (data.signal_TERM == 1) || \
+        (data.signal_ABRT==1) || \
+        (data.signal_BUS==1) || \
+        (data.signal_SEGV==1) || \
+        (data.signal_HUP==1) || \
+        (data.signal_PIPE==1) )
             sockOK = 0;
 
 		printf("sockOK = %d\n", sockOK);
