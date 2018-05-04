@@ -282,7 +282,8 @@ void sig_handler(int signo)
            data.signal_ABRT = 1;
         break;
         case SIGSEGV:
-             printf("received SIGSEGV\n");
+             if(data.signal_SEGV == 0)
+				printf("received SIGSEGV\n");
            data.signal_SEGV = 1;
         break;
         case SIGHUP:
@@ -932,7 +933,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
     /*--------------------------------------------------
-    |  Check command-line arguements
+    |  Check command-line arguments
     +-------------------------------------------------*/
 
 
@@ -2005,8 +2006,8 @@ static int_fast8_t load_module_shared_ALL()
 			if (dot && !strcmp(dot, ".so"))
 				{
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
-//					printf("%02d   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
-//					fflush(stdout);
+					//printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
+					//fflush(stdout);
 					
 					//printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
