@@ -895,7 +895,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 # endif
 
 
-
     //    sprintf(DocDir,"%s",DOCDIR);
     //   sprintf(SrcDir,"%s",SOURCEDIR);
     //  sprintf(BuildFile,"%s",__FILE__);
