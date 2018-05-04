@@ -5926,7 +5926,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             if(NBslices>1)
                 if(oldslice==NBslices-1)
                     slice = 0;
-             
+             if(slice>NBslices-1)
+				slice = 0;
 
        //     printf("[%ld -> %ld] ", oldslice, slice); // TEST
             frame_md[0].cnt1 = slice;
