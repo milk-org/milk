@@ -5927,12 +5927,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             }
             oldslice = slice;
         } 
-        
-       /* else//TEST
-            {
-                printf("semr = %d\n", semr);
-                fflush(stdout);
-            }*/
+
         
         if( (data.signal_INT == 1) || \
         (data.signal_TERM == 1) || \
