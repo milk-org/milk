@@ -5667,7 +5667,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 
 
-
+	printf("Starting function %s\n", __func__);
 
 
     schedpar.sched_priority = RT_priority;
