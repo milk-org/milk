@@ -687,7 +687,7 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 {
 	int OKmsg = 0;
 	
-	strcpy(data.module[data.NBmodule].name, FileName);
+	strcpy(data.module[data.NBmodule].name, basename(FileName));
 	strcpy(data.module[data.NBmodule].package, PackageName);
 	strcpy(data.module[data.NBmodule].info, InfoString);
 	
