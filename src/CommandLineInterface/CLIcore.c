@@ -229,6 +229,7 @@ static int_fast8_t help();
 
 static int_fast8_t list_commands();
 static int_fast8_t list_commands_module(char *modulename);
+static int_fast8_t load_sharedobj(char *libname);
 static int_fast8_t load_module_shared(char *modulename);
 static int_fast8_t load_module_shared_ALL();
 static int_fast8_t help_command(char *cmdkey);
@@ -281,7 +282,8 @@ void sig_handler(int signo)
            data.signal_ABRT = 1;
         break;
         case SIGSEGV:
-             printf("received SIGSEGV\n");
+             if(data.signal_SEGV == 0)
+				printf("received SIGSEGV\n");
            data.signal_SEGV = 1;
         break;
         case SIGHUP:
@@ -449,6 +451,15 @@ static int_fast8_t help_module()
 
     return 0;
 }
+
+
+
+static int_fast8_t load_so()
+{
+   load_sharedobj(data.cmdargtoken[1].val.string);
+}
+
+
 
 
 static int_fast8_t load_module()
@@ -676,7 +687,7 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 {
 	int OKmsg = 0;
 	
-	strcpy(data.module[data.NBmodule].name, FileName);
+	strcpy(data.module[data.NBmodule].name, basename(FileName));
 	strcpy(data.module[data.NBmodule].package, PackageName);
 	strcpy(data.module[data.NBmodule].info, InfoString);
 	
@@ -921,7 +932,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
     /*--------------------------------------------------
-    |  Check command-line arguements
+    |  Check command-line arguments
     +-------------------------------------------------*/
 
 
@@ -1425,6 +1436,16 @@ void main_init()
   data.NBcmd++;
 
 
+  strcpy(data.cmd[data.NBcmd].key,"soload");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = load_so;
+  strcpy(data.cmd[data.NBcmd].info,"load shared object");
+  strcpy(data.cmd[data.NBcmd].syntax,"shared object name");
+  strcpy(data.cmd[data.NBcmd].example,"soload mysharedobj.so");
+  strcpy(data.cmd[data.NBcmd].Ccall,"int load_sharedobj(char *libname)");
+  data.NBcmd++;
+
+
   strcpy(data.cmd[data.NBcmd].key,"mload");
   strcpy(data.cmd[data.NBcmd].module,__FILE__);
   data.cmd[data.NBcmd].fp = load_module;
@@ -1856,13 +1877,18 @@ static int_fast8_t list_commands_module(char *modulename)
     {
         for(i=0; i<data.NBcmd; i++)
         {
-            //  printf(" %s %s\n", modulename, data.cmd[i].module);
-            if(strcmp(modulename, data.cmd[i].module)==0)
+            char cmpstring[200];
+			sprintf(cmpstring, "%s", basename(data.cmd[i].module));
+            
+            if(strcmp(modulename, cmpstring)==0)
             {
                 if(mOK==0)
                     printf("---- MODULE %s: LIST OF COMMANDS ---------\n", modulename);
+                    
+                    
+                
                 strncpy(cmdinfoshort, data.cmd[i].info, 38);
-                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
+                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -1875,12 +1901,15 @@ static int_fast8_t list_commands_module(char *modulename)
 
         for(i=0; i<data.NBcmd; i++)
         {
-            if(strncmp(modulename, data.cmd[i].module, strlen(modulename))==0)
+			char cmpstring[200];
+			sprintf(cmpstring, "%s", basename(data.cmd[i].module));
+			
+            if(strncmp(modulename, cmpstring, strlen(modulename))==0)
             {
                 if(mOK==0)
                     printf("---- MODULES %s* commands  ---------\n", modulename);
                 strncpy(cmdinfoshort, data.cmd[i].info, 38);
-                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
+                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, basename(data.cmd[i].module), cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -1894,6 +1923,32 @@ static int_fast8_t list_commands_module(char *modulename)
 
 
 
+static int_fast8_t load_sharedobj(char *libname)
+{
+    int n;
+    int (*libinitfunc) ();
+    char *error;
+    char initfuncname[200];
+    
+    printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+
+    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
+    if (!DLib_handle[DLib_index]) {
+        fprintf(stderr, "%s\n", dlerror());
+        //exit(EXIT_FAILURE);
+    }
+	else
+	{
+		dlerror();
+		// increment number of libs dynamically loaded
+		DLib_index ++;
+	}
+	
+    return 0;
+}
+
+
+
 
 static int_fast8_t load_module_shared(char *modulename)
 {
@@ -1901,9 +1956,9 @@ static int_fast8_t load_module_shared(char *modulename)
     char modulenameLC[200];
     char c;
     int n;
-    int (*libinitfunc) ();
-    char *error;
-    char initfuncname[200];
+//    int (*libinitfunc) ();
+//    char *error;
+//    char initfuncname[200];
     
 
     sprintf(modulenameLC, "%s", modulename);
@@ -1919,19 +1974,8 @@ static int_fast8_t load_module_shared(char *modulename)
 
 
     printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
-
-
-    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
-    if (!DLib_handle[DLib_index]) {
-        fprintf(stderr, "%s\n", dlerror());
-        //exit(EXIT_FAILURE);
-    }
-	else
-	{
-		dlerror();
-		// increment number of libs dynamically loaded
-		DLib_index ++;
-	}
+	
+	load_sharedobj(libname);
 	
     return 0;
 }
@@ -1969,9 +2013,10 @@ static int_fast8_t load_module_shared_ALL()
 			if (dot && !strcmp(dot, ".so"))
 				{
 					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
-//					printf("%02d   LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);//TEST
-//					fflush(stdout);
-				
+					//printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
+					//fflush(stdout);
+					
+					//printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 					DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY|RTLD_GLOBAL);
 					if (!DLib_handle[DLib_index]) {
 						fprintf(stderr, KMAG "        WARNING: linker pass # %d, module # %d\n          %s\n" KRES, iter, DLib_index, dlerror());
