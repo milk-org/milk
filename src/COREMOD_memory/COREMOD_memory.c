@@ -5665,11 +5665,6 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     long framesize1; // pixel data + metadata
     char *buff; // transmit buffer
 
-	int TESTMODE = 1;
-
-	if(TESTMODE==1)
-		printf("Starting function %s\n", __func__);
-
 
     schedpar.sched_priority = RT_priority;
     #ifndef __MACH__
@@ -5855,14 +5850,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     
 
     while(sockOK==1)
-    {
-		if(TESTMODE==1)
-		{
-			printf("%s  %ld\n", __func__, __LINE__);
-			fflush(stdout);
-		}
-		
-		
+    {		
         if((data.image[ID].md[0].sem==0)||(mode==1))
         {
             while(data.image[ID].md[0].cnt0==cnt) // test if new frame exists
@@ -5896,25 +5884,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 fflush(stdout);
             }
         }
-        
-        if(TESTMODE==1)
-		{
-			printf("%s  %ld\n", __func__, __LINE__);
-			fflush(stdout);
-		}
-		
 
-        
         if(semr==0)
-        {
-			
-			if(TESTMODE==1)
-			{
-				printf("%s  %ld\n", __func__, __LINE__);
-				fflush(stdout);
-			}
-			
-			
+        {	
             frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
             frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
             /*printf("counters    %8ld  %8ld\n", frame_md[0].cnt0, frame_md[0].cnt1); //TEST
@@ -5937,31 +5909,13 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 fflush(stdout);
             }*/
 
-			if(TESTMODE==1)
-			{
-				printf("%s  %ld\n", __func__, __LINE__);
-				printf("%d %d\n", slice, NBslices);
-				fflush(stdout);
-			}
 
             ptr1 = ptr0 + framesize*slice; //data.image[ID].md[0].cnt1; // frame that was just written
             memcpy(buff, ptr1, framesize);
             
             memcpy(buff+framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
-			if(TESTMODE==1)
-			{
-				printf("%s  %ld\n", __func__, __LINE__);
-				fflush(stdout);
-			}
-
             rs = send(fds_client, buff, framesize1, 0);
-
-			if(TESTMODE==1)
-			{
-				printf("%s  %ld\n", __func__, __LINE__);
-				fflush(stdout);
-			}
 
             if ( rs != framesize1)
             {
@@ -5972,16 +5926,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 sockOK = 0;
             }
             oldslice = slice;
-        }
-        
-        if(TESTMODE==1)
-		{
-			printf("%s  %ld\n", __func__, __LINE__);
-			fflush(stdout);
-		}
-		
-
-        
+        } 
         
        /* else//TEST
             {
@@ -5997,14 +5942,6 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
         (data.signal_HUP==1) || \
         (data.signal_PIPE==1) )
             sockOK = 0;
-
-		printf("sockOK = %d\n", sockOK);
-
-        if(TESTMODE==1)
-		{
-			printf("%s  %ld\n", __func__, __LINE__);
-			fflush(stdout);
-		}
 
         iter++;
     }
