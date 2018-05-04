@@ -5907,6 +5907,14 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
         
         if(semr==0)
         {
+			
+			if(TESTMODE==1)
+			{
+				printf("%s  %ld\n", __func__, __LINE__);
+				fflush(stdout);
+			}
+			
+			
             frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
             frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
             /*printf("counters    %8ld  %8ld\n", frame_md[0].cnt0, frame_md[0].cnt1); //TEST
@@ -5927,12 +5935,30 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 fflush(stdout);
             }*/
 
+			if(TESTMODE==1)
+			{
+				printf("%s  %ld\n", __func__, __LINE__);
+				fflush(stdout);
+			}
+
             ptr1 = ptr0 + framesize*slice; //data.image[ID].md[0].cnt1; // frame that was just written
             memcpy(buff, ptr1, framesize);
             
             memcpy(buff+framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
+			if(TESTMODE==1)
+			{
+				printf("%s  %ld\n", __func__, __LINE__);
+				fflush(stdout);
+			}
+
             rs = send(fds_client, buff, framesize1, 0);
+
+			if(TESTMODE==1)
+			{
+				printf("%s  %ld\n", __func__, __LINE__);
+				fflush(stdout);
+			}
 
             if ( rs != framesize1)
             {
