@@ -5853,6 +5853,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     printf("sem = %d\n", data.image[ID].md[0].sem);
     fflush(stdout);
     
+    sockOK = 0; // TEST
     while(sockOK==1)
     {
         if((data.image[ID].md[0].sem==0)||(mode==1))
