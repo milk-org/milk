@@ -5632,7 +5632,13 @@ long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, l
  */
 
 
-long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode, int RT_priority)
+long COREMOD_MEMORY_image_NETWORKtransmit(
+	const char *IDname, 
+	const char *IPaddr, 
+	int port, 
+	int mode, 
+	int RT_priority
+	)
 {
     long ID;
     struct sockaddr_in sock_server;
@@ -5658,10 +5664,6 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
     TCP_BUFFER_METADATA *frame_md;
     long framesize1; // pixel data + metadata
     char *buff; // transmit buffer
-
-
-
-
 
 
     schedpar.sched_priority = RT_priority;
@@ -5718,7 +5720,6 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
             
 
     switch ( data.image[ID].md[0].atype ) {
-
 
     case _DATATYPE_INT8:
         framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
@@ -5847,8 +5848,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
     printf("sem = %d\n", data.image[ID].md[0].sem);
     fflush(stdout);
     
+
     while(sockOK==1)
-    {
+    {		
         if((data.image[ID].md[0].sem==0)||(mode==1))
         {
             while(data.image[ID].md[0].cnt0==cnt) // test if new frame exists
@@ -5882,9 +5884,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
                 fflush(stdout);
             }
         }
-        
+
         if(semr==0)
-        {
+        {	
             frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
             frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
             /*printf("counters    %8ld  %8ld\n", frame_md[0].cnt0, frame_md[0].cnt1); //TEST
@@ -5895,7 +5897,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
                 slice = oldslice+1;
             if(NBslices>1)
                 if(oldslice==NBslices-1)
-                    slice = 0;;
+                    slice = 0;
+             if(slice>NBslices-1)
+				slice = 0;
 
        //     printf("[%ld -> %ld] ", oldslice, slice); // TEST
             frame_md[0].cnt1 = slice;
@@ -5904,6 +5908,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
                 printf("\n");
                 fflush(stdout);
             }*/
+
 
             ptr1 = ptr0 + framesize*slice; //data.image[ID].md[0].cnt1; // frame that was just written
             memcpy(buff, ptr1, framesize);
@@ -5921,16 +5926,17 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
                 sockOK = 0;
             }
             oldslice = slice;
-        }
-       /* else//TEST
-            {
-                printf("semr = %d\n", semr);
-                fflush(stdout);
-            }*/
-        
-        if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
-            sockOK = 0;
+        } 
 
+        
+        if( (data.signal_INT == 1) || \
+        (data.signal_TERM == 1) || \
+        (data.signal_ABRT==1) || \
+        (data.signal_BUS==1) || \
+        (data.signal_SEGV==1) || \
+        (data.signal_HUP==1) || \
+        (data.signal_PIPE==1) )
+            sockOK = 0;
 
         iter++;
     }
