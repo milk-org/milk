@@ -5665,9 +5665,10 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     long framesize1; // pixel data + metadata
     char *buff; // transmit buffer
 
+	int TESTMODE = 1;
 
-
-	printf("Starting function %s\n", __func__);
+	if(TESTMODE==1)
+		printf("Starting function %s\n", __func__);
 
 
     schedpar.sched_priority = RT_priority;
@@ -5855,6 +5856,13 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     while(sockOK==1)
     {
+		if(TESTMODE==1)
+		{
+			printf("%s  %ld\n", __func__, __LINE__);
+			fflush(stdout);
+		}
+		
+		
         if((data.image[ID].md[0].sem==0)||(mode==1))
         {
             while(data.image[ID].md[0].cnt0==cnt) // test if new frame exists
@@ -5888,6 +5896,14 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 fflush(stdout);
             }
         }
+        
+        if(TESTMODE==1)
+		{
+			printf("%s  %ld\n", __func__, __LINE__);
+			fflush(stdout);
+		}
+		
+
         
         if(semr==0)
         {
@@ -5928,6 +5944,16 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             }
             oldslice = slice;
         }
+        
+        if(TESTMODE==1)
+		{
+			printf("%s  %ld\n", __func__, __LINE__);
+			fflush(stdout);
+		}
+		
+
+        
+        
        /* else//TEST
             {
                 printf("semr = %d\n", semr);
@@ -5944,6 +5970,12 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             sockOK = 0;
 
 		printf("sockOK = %d\n", sockOK);
+
+        if(TESTMODE==1)
+		{
+			printf("%s  %ld\n", __func__, __LINE__);
+			fflush(stdout);
+		}
 
         iter++;
     }
