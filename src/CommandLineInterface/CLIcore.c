@@ -1878,13 +1878,18 @@ static int_fast8_t list_commands_module(char *modulename)
     {
         for(i=0; i<data.NBcmd; i++)
         {
-            //  printf(" %s %s\n", modulename, data.cmd[i].module);
-            if(strcmp(modulename, data.cmd[i].module)==0)
+            char cmpstring[200];
+			sprintf(cmpstring, "%s", basename(data.cmd[i].module));
+            
+            if(strcmp(modulename, cmpstring)==0)
             {
                 if(mOK==0)
                     printf("---- MODULE %s: LIST OF COMMANDS ---------\n", modulename);
+                    
+                    
+                
                 strncpy(cmdinfoshort, data.cmd[i].info, 38);
-                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
+                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -1899,6 +1904,7 @@ static int_fast8_t list_commands_module(char *modulename)
         {
 			char cmpstring[200];
 			sprintf(cmpstring, "%s", basename(data.cmd[i].module));
+			
             if(strncmp(modulename, cmpstring, strlen(modulename))==0)
             {
                 if(mOK==0)
