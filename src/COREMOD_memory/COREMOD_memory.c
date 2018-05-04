@@ -5632,7 +5632,13 @@ long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, l
  */
 
 
-long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode, int RT_priority)
+long COREMOD_MEMORY_image_NETWORKtransmit(
+	const char *IDname, 
+	const char *IPaddr, 
+	int port, 
+	int mode, 
+	int RT_priority
+	)
 {
     long ID;
     struct sockaddr_in sock_server;
@@ -5931,6 +5937,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr
         if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
             sockOK = 0;
 
+		printf("sockOK = %d\n", sockOK);
 
         iter++;
     }
