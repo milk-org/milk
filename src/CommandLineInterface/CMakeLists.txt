@@ -6,7 +6,7 @@ project (CLIcore C)
 
 find_package(BISON)
 find_package(FLEX)
-#find_package(Curses REQUIRED)
+find_package(Curses REQUIRED)
 find_package (Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(GSL QUIET REQUIRED)
