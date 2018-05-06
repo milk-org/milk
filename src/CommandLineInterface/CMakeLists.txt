@@ -6,7 +6,7 @@ project (CLIcore C)
 
 find_package(BISON)
 find_package(FLEX)
-find_package(Curses REQUIRED)
+#find_package(Curses REQUIRED)
 find_package (Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(GSL QUIET REQUIRED)
@@ -37,7 +37,8 @@ ${CURSES_INCLUDE_DIR}
 target_compile_options(CLIcore PUBLIC 
 ${FFTW_CFLAGS_OTHER}
 ${FFTWF_CFLAGS_OTHER}
--fopenmp)
+${OpenMP_C_FLAGS}
+)
 
 set_target_properties(CLIcore PROPERTIES COMPILE_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DPACKAGE_VERSION=\\\"0.0.0\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"me@me.com\\\"" )
 
