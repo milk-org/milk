@@ -340,7 +340,7 @@ static int_fast8_t printInfo()
 
 
     printf("--------------- GENERAL ----------------------\n");
-    printf("%s  %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
+    printf("%s  %s\n",  data.package_name, data.package_version );
     printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
@@ -367,7 +367,7 @@ static int_fast8_t printInfo()
 	printf("sizeof(IMAGE)                  = %4ld bit\n", sizeof(IMAGE)*8);
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
-    printf("READLINE : version %x\n",RL_READLINE_VERSION);
+    printf("READLINE : version %x\n", RL_READLINE_VERSION);
 # ifdef _OPENMP
     printf("OPENMP   : Compiled by an OpenMP-compliant implementation.\n");
 # endif
@@ -375,8 +375,8 @@ static int_fast8_t printInfo()
     printf("\n");
     
     printf("--------------- DIRECTORIES ------------------\n");
-    printf("CONFIGDIR = %s\n", CONFIGDIR);
-    printf("SOURCEDIR = %s\n", SOURCEDIR);
+    printf("CONFIGDIR = %s\n", data.configdir);
+    printf("SOURCEDIR = %s\n", data.sourcedir);
     printf("\n");
     
 	printf("--------------- MALLOC INFO ------------------\n");
@@ -393,7 +393,7 @@ static int_fast8_t help()
 {
   char command[200];
 
-  sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", ABSSRCTOPDIR);
+  sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", data.sourcedir);
   if(system(command) != 0)
     {
       printERROR(__FILE__,__func__,__LINE__,"system call error");
@@ -408,7 +408,7 @@ static int_fast8_t helpreadline()
   char command[200];
   int r;
 
-  sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", ABSSRCTOPDIR);
+  sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", data.sourcedir);
   if(system(command) != 0)
     {
       printERROR(__FILE__, __func__, __LINE__, "system call error");
@@ -695,8 +695,8 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 	{
 		OKmsg = 1;
 		printf(".");
-		//printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
-		//fflush(stdout);
+	//	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+	//	fflush(stdout);
 	}		
 	
 	if(data.progStatus==1)
@@ -887,14 +887,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, promptstring, 0x1B, 0);
     else
 		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
-    //sprintf(prompt, "%s> ", PACKAGE_NAME);
 
-	printf("\n");
-	printf("        %s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
-	printf("        GNU General Public License v3.0\n");
-	printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
-    printf("        Type \"help\" for instructions\n");
-	printf("        \n");
+
 
 # ifdef _OPENMP
     printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
@@ -1748,7 +1742,7 @@ int command_line( int argc, char **argv)
             break;
 
         case 'v':
-             printf("%s   %s\n",  PACKAGE_NAME, PACKAGE_VERSION );
+             printf("%s   %s\n",  data.package_name, data.package_version );
             exit(0);
             break;
 
@@ -1969,7 +1963,7 @@ static int_fast8_t load_module_shared(char *modulename)
         modulenameLC[n] = tolower(c);
     }
 
-    sprintf(libname, "%s/../lib/lib%s.so", SOURCEDIR, modulenameLC);
+    sprintf(libname, "%s/../lib/lib%s.so", data.sourcedir, modulenameLC);
     printf("libname = %s\n", libname);
 
 
@@ -1995,7 +1989,7 @@ static int_fast8_t load_module_shared_ALL()
     int loopOK;
     int itermax;
     
-    sprintf(dirname, "%s/../lib", SOURCEDIR);
+    sprintf(dirname, "%s/../lib", data.sourcedir);
 	
 
     loopOK = 0;
@@ -2012,7 +2006,7 @@ static int_fast8_t load_module_shared_ALL()
 			char *dot = strrchr(dir->d_name, '.');
 			if (dot && !strcmp(dot, ".so"))
 				{
-					sprintf(libname, "%s/../lib/%s", SOURCEDIR, dir->d_name);
+					sprintf(libname, "%s/../lib/%s", data.sourcedir, dir->d_name);
 					//printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
 					//fflush(stdout);
 					

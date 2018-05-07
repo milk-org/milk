@@ -1,6 +1,3 @@
-# run from _cmakebuild directory :
-# cmake .. -DCMAKE_INSTALL_PREFIX=../_install
-
 cmake_minimum_required (VERSION 3.1)
 project (CLIcore C)
 
@@ -40,7 +37,7 @@ ${FFTWF_CFLAGS_OTHER}
 ${OpenMP_C_FLAGS}
 )
 
-set_target_properties(CLIcore PROPERTIES COMPILE_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DPACKAGE_VERSION=\\\"0.0.0\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"me@me.com\\\"" )
+#set_target_properties(CLIcore PROPERTIES COMPILE_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DPACKAGE_VERSION=\\\"0.0.0\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"me@me.com\\\"" )
 
 target_link_libraries (CLIcore PUBLIC
 m

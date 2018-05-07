@@ -190,6 +190,12 @@ typedef struct
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
 {
+	char package_name[100];
+	char package_version[100];
+	char configdir[100];
+	char sourcedir[100];
+	
+	
     struct sigaction sigact; 
     // signals toggle flags
     int signal_USR1;
