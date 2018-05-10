@@ -56,7 +56,7 @@ int_fast8_t load_fits_cli()
 
 int_fast8_t save_fl_fits_cli()
 {
-  char fname[200];
+  char fname[500];
   
   switch(data.cmdNBarg){
   case 3:
@@ -72,9 +72,10 @@ int_fast8_t save_fl_fits_cli()
 
 
 
+
 int_fast8_t save_db_fits_cli()
 {
-  char fname[200];
+  char fname[500];
   
   switch(data.cmdNBarg){
   case 3:
@@ -89,9 +90,11 @@ int_fast8_t save_db_fits_cli()
   return 0;
 }
 
+
+
 int_fast8_t save_sh_fits_cli()
 {
-  char fname[200];
+  char fname[500];
   
   switch(data.cmdNBarg){
   case 3:
@@ -107,9 +110,11 @@ int_fast8_t save_sh_fits_cli()
 }
 
 
+
+
 int_fast8_t save_fits_cli()
 {
-  char fname[200];
+  char fname[500];
   
   switch(data.cmdNBarg){
   case 3:
@@ -123,6 +128,7 @@ int_fast8_t save_fits_cli()
   
   return 0;
 }
+
 
 
 
