@@ -1980,7 +1980,7 @@ static int_fast8_t load_module_shared(char *modulename)
 
 static int_fast8_t load_module_shared_ALL()
 {
-    char libname[200];
+    char libname[500];
     char *error;
     char dirname[200];
     DIR           *d;
