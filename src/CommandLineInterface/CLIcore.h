@@ -106,7 +106,7 @@ extern uid_t suid;
 
 typedef struct {
     char key[100];            // command keyword
-    char module[50];          // module name
+    char module[200];          // module name
     int_fast8_t (* fp) ();    // command function pointer
     char info   [1000];       // short description/help
     char syntax [1000];       // command syntax
