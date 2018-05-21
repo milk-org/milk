@@ -42,7 +42,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <dirent.h> 
-
+#include <stddef.h> // offsetof()
 
 //#include <pthread_np.h>
 
@@ -363,8 +363,39 @@ static int_fast8_t printInfo()
 	printf("sizeof(EVENT_UI8_UI8_UI16_UI8) = %4ld bit\n", sizeof(EVENT_UI8_UI8_UI16_UI8)*8);
 	printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD)*8);
 	printf("sizeof(TIMESPECFIXED)          = %4ld bit\n", sizeof(TIMESPECFIXED)*8);
-	printf("sizeof(IMAGE_METADATA)         = %4ld bit\n", sizeof(IMAGE_METADATA)*8);
+	
+	printf("sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte\n", sizeof(IMAGE_METADATA)*8, sizeof(IMAGE_METADATA));
+	printf("   name                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, name), offsetof(IMAGE_METADATA, name));
+	printf("   naxis                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, naxis), offsetof(IMAGE_METADATA, naxis));
+	printf("   size                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, size), offsetof(IMAGE_METADATA, size));
+	printf("   nelement                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, nelement), offsetof(IMAGE_METADATA, nelement));
+	printf("   atype                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atype), offsetof(IMAGE_METADATA, atype));
+	printf("   creation_time               = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, creation_time), offsetof(IMAGE_METADATA, creation_time));
+	printf("   last_access                 = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, last_access), offsetof(IMAGE_METADATA, last_access));		
+	printf("   atime.ts                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.ts), offsetof(IMAGE_METADATA, atime.ts));
+	printf("   atime.tsfixed               = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.tsfixed), offsetof(IMAGE_METADATA, atime.tsfixed));
+	printf("   shared                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, shared), offsetof(IMAGE_METADATA, shared));
+	printf("   status                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, status), offsetof(IMAGE_METADATA, status));
+	printf("   logflag                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, logflag), offsetof(IMAGE_METADATA, logflag));
+	printf("   sem                         = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, sem), offsetof(IMAGE_METADATA, sem));
+	printf("   cnt0                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, cnt0), offsetof(IMAGE_METADATA, cnt0));
+	printf("   cnt1                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, cnt1), offsetof(IMAGE_METADATA, cnt1));
+	printf("   cnt2                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, cnt2), offsetof(IMAGE_METADATA, cnt2));
+	printf("   write                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, write), offsetof(IMAGE_METADATA, write));
+	printf("   NBkw                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, NBkw), offsetof(IMAGE_METADATA, NBkw));
+	
 	printf("sizeof(IMAGE)                  = %4ld bit\n", sizeof(IMAGE)*8);
+	printf("   name                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, name), offsetof(IMAGE, name));
+	printf("   used                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, used), offsetof(IMAGE, used));
+	printf("   shmfd                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, shmfd), offsetof(IMAGE, shmfd));
+	printf("   memsize                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, memsize), offsetof(IMAGE, memsize));
+	printf("   semlog                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semlog), offsetof(IMAGE, semlog));
+	printf("   md                          = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, md), offsetof(IMAGE, md));
+	printf("   array                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, array), offsetof(IMAGE, array));
+	printf("   semptr                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semptr), offsetof(IMAGE, semptr));
+	printf("   kw                          = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, kw), offsetof(IMAGE, kw));
+	
+	
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
     printf("READLINE : version %x\n", RL_READLINE_VERSION);
