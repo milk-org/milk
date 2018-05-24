@@ -56,7 +56,7 @@ int_fast8_t load_fits_cli()
 
 int_fast8_t save_fl_fits_cli()
 {
-  char fname[500];
+  char fname[1000];
   
   switch(data.cmdNBarg){
   case 3:
@@ -75,7 +75,7 @@ int_fast8_t save_fl_fits_cli()
 
 int_fast8_t save_db_fits_cli()
 {
-  char fname[500];
+  char fname[1000];
   
   switch(data.cmdNBarg){
   case 3:
@@ -94,7 +94,7 @@ int_fast8_t save_db_fits_cli()
 
 int_fast8_t save_sh_fits_cli()
 {
-  char fname[500];
+  char fname[1000];
   
   switch(data.cmdNBarg){
   case 3:
@@ -114,7 +114,7 @@ int_fast8_t save_sh_fits_cli()
 
 int_fast8_t save_fits_cli()
 {
-  char fname[500];
+  char fname[1000];
   
   switch(data.cmdNBarg){
   case 3:
@@ -1598,9 +1598,12 @@ int save_fits_atomic(const char *ID_name, const char *file_name)
         case _DATATYPE_UINT16:
             save_ush_fits(ID_name, savename);
             break;
+
         case _DATATYPE_INT16:
             save_sh_fits(ID_name, savename);
-            break;            
+            break;    
+            
+                    
         // TBD: i32 and i64     
         case _DATATYPE_FLOAT:
             save_fl_fits(ID_name, savename);
@@ -1625,8 +1628,8 @@ int save_fits_atomic(const char *ID_name, const char *file_name)
 int saveall_fits(const char *savedirname)
 {
     long i;
-    char fname[200];
-    char command[200];
+    char fname[1000];
+    char command[1000];
     
     if(sprintf(command, "mkdir -p %s", savedirname) < 1)
 		printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
