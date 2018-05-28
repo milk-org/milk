@@ -1598,9 +1598,12 @@ int save_fits_atomic(const char *ID_name, const char *file_name)
         case _DATATYPE_UINT16:
             save_ush_fits(ID_name, savename);
             break;
+
         case _DATATYPE_INT16:
             save_sh_fits(ID_name, savename);
-            break;            
+            break;    
+            
+                    
         // TBD: i32 and i64     
         case _DATATYPE_FLOAT:
             save_fl_fits(ID_name, savename);
