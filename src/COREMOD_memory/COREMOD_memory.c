@@ -2034,6 +2034,8 @@ long image_write_keyword_L(const char *IDname, const char *kname, long value, co
     return(kw0);
 }
 
+
+
 long image_write_keyword_D(const char *IDname, const char *kname, double value, const char *comment)
 {
     long ID;
