@@ -242,7 +242,7 @@ static int FITSIO_status = 0;
  
 // set print to 0 if error message should not be printed to stderr
 // set print to 1 if error message should be printed to stderr
-int check_FITSIO_status(const char *cfile, const char *cfunc, long cline, int print)
+int check_FITSIO_status(const char * restrict cfile, const char * restrict cfunc, long cline, int print)
 {
     int Ferr = 0;
 
@@ -262,7 +262,7 @@ int check_FITSIO_status(const char *cfile, const char *cfunc, long cline, int pr
 }
 
 
-int file_exists(const char *file_name)
+int file_exists(const char * restrict file_name)
 {
     FILE *fp;
     int exists = 1;
@@ -282,7 +282,7 @@ int file_exists(const char *file_name)
 
 
 
-int is_fits_file(const char *file_name)
+int is_fits_file(const char * restrict file_name)
 {
     int value=0;
     fitsfile *fptr;
@@ -308,7 +308,7 @@ int is_fits_file(const char *file_name)
 
 
 
-int read_keyword(const char* file_name, const char* KEYWORD, char* content)
+int read_keyword(const char * restrict file_name, const char * restrict KEYWORD, char * restrict content)
 {
     fitsfile *fptr;         /* FITS file pointer, defined in fitsio.h */
     int exists = 0;
@@ -352,7 +352,7 @@ int read_keyword(const char* file_name, const char* KEYWORD, char* content)
 
 
 
-int read_keyword_alone(const char* file_name, const char* KEYWORD)
+int read_keyword_alone(const char * restrict file_name, const char * restrict KEYWORD)
 {
 	char *content = (char*) malloc(sizeof(char)*SBUFFERSIZE); 
  
@@ -421,7 +421,7 @@ int data_type_code(int bitpix)
 /// errcode = 1: print error, continue
 /// errcode = 2: exit program at error
 /// errcode = 3: do not show error message, try = 1, no wait
-long load_fits(const char *file_name, const char *ID_name, int errcode)
+long load_fits(const char * restrict file_name, const char * restrict ID_name, int errcode)
 {
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
     int nulval, anynul;
@@ -831,7 +831,7 @@ long load_fits(const char *file_name, const char *ID_name, int errcode)
 
 /* saves an image in a double format */
 
-int save_db_fits(const char *ID_name, const char *file_name)
+int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
 {
     fitsfile *fptr;
     long nelements;
@@ -1013,7 +1013,7 @@ int save_db_fits(const char *ID_name, const char *file_name)
 
 /* saves an image in a float format */
 
-int save_fl_fits(const char *ID_name, const char *file_name)
+int save_fl_fits(const char * restrict ID_name, const char * restrict file_name)
 {
     fitsfile *fptr;
     long  naxis, nelements;
@@ -1195,7 +1195,7 @@ int save_fl_fits(const char *ID_name, const char *file_name)
 
 /* saves an image in a short int format */
 
-int save_sh_fits(const char *ID_name, const char *file_name)
+int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
 {
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
@@ -1372,7 +1372,7 @@ int save_sh_fits(const char *ID_name, const char *file_name)
 
 /* saves an image in a unsigned short int format */
 
-int save_ush_fits(const char *ID_name, const char *file_name)
+int save_ush_fits(const char * restrict ID_name, const char * restrict file_name)
 {
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
@@ -1551,7 +1551,7 @@ int save_ush_fits(const char *ID_name, const char *file_name)
 
 
 
-int save_fits(const char *ID_name, const char *file_name)
+int save_fits(const char * restrict ID_name, const char * restrict file_name)
 {
     char savename[1000];
     if (file_name[0] == '!')
@@ -1565,7 +1565,7 @@ int save_fits(const char *ID_name, const char *file_name)
 
 
 
-int save_fits_atomic(const char *ID_name, const char *file_name)
+int save_fits_atomic(const char * restrict ID_name, const char * restrict file_name)
 {
     long ID;
     uint8_t atype;
@@ -1625,7 +1625,7 @@ int save_fits_atomic(const char *ID_name, const char *file_name)
 
 
 
-int saveall_fits(const char *savedirname)
+int saveall_fits(const char * restrict savedirname)
 {
     long i;
     char fname[1000];
@@ -1667,7 +1667,7 @@ int saveall_fits(const char *savedirname)
 /* =============================================================================================== */
 
 
-int break_cube(const char *ID_name)
+int break_cube(const char * restrict ID_name)
 {
     long ID;
     uint32_t naxes[3];
@@ -1707,7 +1707,7 @@ int break_cube(const char *ID_name)
 
 
 
-int images_to_cube(const char *img_name, long nbframes, const char *cube_name)
+int images_to_cube(const char * restrict img_name, long nbframes, const char * restrict cube_name)
 {
     long ID,ID1;
     long frame;
