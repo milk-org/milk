@@ -395,6 +395,11 @@ static int_fast8_t printInfo()
 	printf("   semptr                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semptr), offsetof(IMAGE, semptr));
 	printf("   kw                          = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, kw), offsetof(IMAGE, kw));
 	
+	printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD)*8);
+	printf("   name                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
+	printf("   type                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
+	printf("   value                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
+	printf("   comment                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
 	
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
@@ -923,6 +928,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 # ifdef _OPENMP
     printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
+# else
+	printf("        Compiled without openMP\n");
 # endif
 
 # ifdef _OPENACC
