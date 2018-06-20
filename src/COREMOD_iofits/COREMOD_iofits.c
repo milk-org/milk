@@ -683,13 +683,6 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
             // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_UINT16, data.SHARED_DFT, data.NBKEWORD_DFT);
 
-            /* sarray = (unsigned short*) malloc(sizeof(unsigned short)*nelements);
-             if(sarray==NULL)
-             {
-                 printERROR(__FILE__, __func__, __LINE__, "malloc error");
-                 exit(0);
-             }*/
-
             //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
             fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[ID].array.UI16, &anynul, &FITSIO_status);
             if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
