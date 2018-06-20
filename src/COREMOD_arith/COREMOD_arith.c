@@ -887,6 +887,11 @@ double arith_image_total(const char *ID_name)
         for (ii = 0; ii < nelement; ii++)
             value += (long double) data.image[ID].array.UI16[ii];
     }
+    else if(atype==_DATATYPE_INT16)
+    {
+        for (ii = 0; ii < nelement; ii++)
+            value += (long double) data.image[ID].array.SI16[ii];
+    }
     else
     {
         printERROR(__FILE__,__func__,__LINE__,"invalid data type");
