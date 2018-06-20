@@ -1334,8 +1334,8 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
             list_image_ID();
         }
 
-        if(atype==_DATATYPE_UINT16)
-            fits_write_img(fptr, TSHORT, fpixel, nelements, data.image[ID].array.UI16, &FITSIO_status);
+        if(atype==_DATATYPE_INT16)
+            fits_write_img(fptr, TSHORT, fpixel, nelements, data.image[ID].array.SI16, &FITSIO_status);
         else
         {    
 			fits_write_img(fptr, TSHORT, fpixel, nelements, array, &FITSIO_status);
