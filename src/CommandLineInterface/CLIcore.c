@@ -2001,7 +2001,7 @@ static int_fast8_t load_module_shared(char *modulename)
         modulenameLC[n] = tolower(c);
     }
 
-    sprintf(libname, "%s/../lib/lib%s.so", data.sourcedir, modulenameLC);
+    sprintf(libname, "%s/lib/lib%s.so", data.sourcedir, modulenameLC);
     printf("libname = %s\n", libname);
 
 
