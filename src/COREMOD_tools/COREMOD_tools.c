@@ -240,7 +240,7 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
     
     r = seteuid(data.euid); //This goes up to maximum privileges
 
-    sprintf(command, "sudo -n cset proc -m -p %d -t %s\n", pid, csetname);
+    sprintf(command, "cset proc -m -p %d -t %s\n", pid, csetname);
 	printf("Executing command: %s\n", command);
 
     if(system(command) != 0)
