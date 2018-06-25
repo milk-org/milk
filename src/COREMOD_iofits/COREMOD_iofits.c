@@ -1202,6 +1202,10 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
     char file_name1[SBUFFERSIZE];
     int n;
 
+//TEST
+printf("STEP %s  %d  -> %s\n", __FILE__, __LINE__, file_name);
+fflush(stdout);
+
 
     if((data.overwrite == 1)&&(file_name[0]!='!')&&(file_exists(file_name)==1))
     {
@@ -1239,6 +1243,11 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
             
         if (atype != _DATATYPE_INT16) // data conversion required
 		{
+			
+			printf("Data conversion required\n"); //TEST
+			fflush(stdout);
+			
+			
 			array = (int16_t*) malloc(SIZEOF_DATATYPE_INT16*nelements);
 			if(array==NULL)
             {
@@ -1302,6 +1311,12 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
 				break;				
 			}            
 		}    
+		else
+		{
+			printf("No data conversion required\n"); //TEST
+			fflush(stdout);
+		}
+		
 
         fits_create_file(&fptr, file_name1, &FITSIO_status);
         if(check_FITSIO_status(__FILE__,__func__,__LINE__,1)!=0)
@@ -1318,6 +1333,8 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
                 list_image_ID();
             }
         }
+        
+        
         //    16          short integer, I        21        TSHORT
         fits_create_img(fptr, SHORT_IMG, naxis, naxesl, &FITSIO_status);
         if(check_FITSIO_status(__FILE__,__func__,__LINE__,1)!=0)
@@ -1328,7 +1345,12 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
         }
 
         if(atype==_DATATYPE_INT16)
+        {
+			printf("Direct copy --- \n");
+			fflush(stdout);
+			
             fits_write_img(fptr, TSHORT, fpixel, nelements, data.image[ID].array.SI16, &FITSIO_status);
+        }
         else
         {    
 			fits_write_img(fptr, TSHORT, fpixel, nelements, array, &FITSIO_status);
@@ -1354,6 +1376,13 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
     }
     else
         fprintf(stderr,"%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n", (char) 27, 1, 31, ID_name, (char) 27, 0);
+
+
+//TEST
+printf("STEP %s  %d\n", __FILE__, __LINE__);
+fflush(stdout);
+
+
 
     return(0);
 }
