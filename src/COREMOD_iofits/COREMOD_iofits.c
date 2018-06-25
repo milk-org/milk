@@ -1202,6 +1202,10 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
     char file_name1[SBUFFERSIZE];
     int n;
 
+//TEST
+printf("STEP %s  %d\n", __FILE__, __LINE__);
+fflush(stdout);
+
 
     if((data.overwrite == 1)&&(file_name[0]!='!')&&(file_exists(file_name)==1))
     {
@@ -1261,6 +1265,11 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
 				case _DATATYPE_UINT16 :
 				for (ii = 0; ii < nelements; ii++)
 					array[ii] = (int16_t) data.image[ID].array.UI16[ii];
+				break;
+
+				case _DATATYPE_INT16 :
+				for (ii = 0; ii < nelements; ii++)
+					array[ii] = (int16_t) data.image[ID].array.SI16[ii];
 				break;
 				
 				case _DATATYPE_UINT32 :
@@ -1354,6 +1363,13 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
     }
     else
         fprintf(stderr,"%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n", (char) 27, 1, 31, ID_name, (char) 27, 0);
+
+
+//TEST
+printf("STEP %s  %d\n", __FILE__, __LINE__);
+fflush(stdout);
+
+
 
     return(0);
 }
