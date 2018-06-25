@@ -1203,7 +1203,7 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
     int n;
 
 //TEST
-printf("STEP %s  %d\n", __FILE__, __LINE__);
+printf("STEP %s  %d  -> %s\n", __FILE__, __LINE__, file_name);
 fflush(stdout);
 
 
@@ -1243,6 +1243,11 @@ fflush(stdout);
             
         if (atype != _DATATYPE_INT16) // data conversion required
 		{
+			
+			printf("Data conversion required\n"); //TEST
+			fflush(stdout);
+			
+			
 			array = (int16_t*) malloc(SIZEOF_DATATYPE_INT16*nelements);
 			if(array==NULL)
             {
@@ -1265,11 +1270,6 @@ fflush(stdout);
 				case _DATATYPE_UINT16 :
 				for (ii = 0; ii < nelements; ii++)
 					array[ii] = (int16_t) data.image[ID].array.UI16[ii];
-				break;
-
-				case _DATATYPE_INT16 :
-				for (ii = 0; ii < nelements; ii++)
-					array[ii] = (int16_t) data.image[ID].array.SI16[ii];
 				break;
 				
 				case _DATATYPE_UINT32 :
@@ -1311,6 +1311,12 @@ fflush(stdout);
 				break;				
 			}            
 		}    
+		else
+		{
+			printf("No data conversion required\n"); //TEST
+			fflush(stdout);
+		}
+		
 
         fits_create_file(&fptr, file_name1, &FITSIO_status);
         if(check_FITSIO_status(__FILE__,__func__,__LINE__,1)!=0)
@@ -1327,6 +1333,8 @@ fflush(stdout);
                 list_image_ID();
             }
         }
+        
+        
         //    16          short integer, I        21        TSHORT
         fits_create_img(fptr, SHORT_IMG, naxis, naxesl, &FITSIO_status);
         if(check_FITSIO_status(__FILE__,__func__,__LINE__,1)!=0)
@@ -1337,7 +1345,12 @@ fflush(stdout);
         }
 
         if(atype==_DATATYPE_INT16)
+        {
+			printf("Direct copy --- \n");
+			fflush(stdout);
+			
             fits_write_img(fptr, TSHORT, fpixel, nelements, data.image[ID].array.SI16, &FITSIO_status);
+        }
         else
         {    
 			fits_write_img(fptr, TSHORT, fpixel, nelements, array, &FITSIO_status);
