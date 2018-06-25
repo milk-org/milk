@@ -232,12 +232,21 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 {
     int pid;
     char command[200];
+	int r;
 
     pid = getpid();
+    
+    #ifndef __MACH__
+    
+    r = seteuid(data.euid); //This goes up to maximum privileges
+    
     sprintf(command, "sudo -n cset proc -m -p %d -t %s\n", pid, csetname);
 
     if(system(command) != 0)
         printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+    
+    r = seteuid(data.ruid);//Go back to normal privileges
+	#endif
 
     return(0);
 }
