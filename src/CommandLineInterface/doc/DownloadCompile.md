@@ -80,7 +80,7 @@ Install Development tools, use the command bellow. This will search the yum repo
 		sudo apt-get install autoconf libtool git
 
 
-## 2.2 Compilation
+## 2.2 Compilation (autotools)
 
 The source code follows the standard GNU build process:
 
@@ -88,6 +88,29 @@ The source code follows the standard GNU build process:
 		./configure
 		make
 		make install
+
+## 2.3 Compilation (cmake)
+
+Use cmake version 3.xx.
+
+To install cmake on centOS system (cmake executable will be cmake3):
+
+	sudo yum install cmake3
+	
+To compile using cmake
+
+	cd cacao
+	mkdir _build
+	cd _build
+	cmake ..
+
+You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
+
+	echo "/usr/local/lib" > usrlocal.conf
+	sudo mv usrlocal.conf /etc/ld.so.conf.d/
+	sudo ldconfig -v
+
+
 
 
 
