@@ -5343,9 +5343,21 @@ long COREMOD_MEMORY_streamDelay(
 	long kk;
 
 	IDin = image_ID(IDin_name);
+	
+	// ERROR HANDLING
 	if(IDin == -1)
 	{
-		fprintf(stderr, "[%s %s %d] Input stream %s does not exist, cannot proceed\n", __FILE__, __FUNCTION__, __LINE__, IDin_name);
+		struct timespec errtime; 
+		clock_gettime(CLOCK_REALTIME, &errtime); 
+		
+	fprintf(stderr, 
+			"%8ld.%09ld  ERROR [%s %s %d] Input stream %s does not exist, cannot proceed\n", 
+			errtime.tv_sec, 
+			errtime.tv_nsec,
+			__FILE__, 
+			__FUNCTION__, 
+			__LINE__, 
+			IDin_name);
 		return 1;
 	}
 	
