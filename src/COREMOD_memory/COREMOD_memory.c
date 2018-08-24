@@ -4876,7 +4876,17 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
  * 
  *
  */
-long COREMOD_MEMORY_image_streamupdateloop(const char *IDinname, const char *IDoutname, long usperiod, long NBcubes, long period, long offsetus, const char *IDsync_name, int semtrig, int timingmode)
+long COREMOD_MEMORY_image_streamupdateloop(
+	const char *IDinname, 
+	const char *IDoutname, 
+	long usperiod, 
+	long NBcubes, 
+	long period, 
+	long offsetus, 
+	const char *IDsync_name, 
+	int semtrig, 
+	int timingmode
+	)
 {
     long *IDin;
     long cubeindex;
@@ -5333,6 +5343,12 @@ long COREMOD_MEMORY_streamDelay(
 	long kk;
 
 	IDin = image_ID(IDin_name);
+	if(IDin == -1)
+	{
+		fprintf(stderr, "[%s %s %d] Input stream %s does not exist, cannot proceed\n", __FILE__, __FUNCTION__, __LINE__, IDin_name);
+		return 1;
+	}
+	
 	xsize = data.image[IDin].md[0].size[0];
 	ysize = data.image[IDin].md[0].size[1];
 	zsize = (uint32_t) (delayus/dtus);
@@ -5761,6 +5777,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     default:
         printf("ERROR: WRONG DATA TYPE\n");
+        printf("data type = %d\n", data.image[ID].md[0].atype);
         exit(0);
         break;
     }
@@ -5959,7 +5976,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 
 
-
+/** continuously receives 2D image through TCP link
+ * mode = 1, force counter to be used for synchronization, ignore semaphores if they exist
+ */
 
 
 long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
@@ -6285,6 +6304,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                     memcpy(ptr0+framesize*frame_md[0].cnt1, buff, framesize);
                 else
                      memcpy(ptr0, buff, framesize);
+                     
                 data.image[ID].md[0].cnt0++;
                 for(semnb=0;semnb<data.image[ID].md[0].sem ; semnb++)
                 {
@@ -6292,6 +6312,10 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                     if(semval<SEMAPHORE_MAXVAL)
                         sem_post(data.image[ID].semptr[semnb]);
                 }
+                
+                
+                
+                
                 
             }
         if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
