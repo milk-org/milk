@@ -5348,11 +5348,16 @@ long COREMOD_MEMORY_streamDelay(
 	if(IDin == -1)
 	{
 		struct timespec errtime; 
-		clock_gettime(CLOCK_REALTIME, &errtime); 
+		struct tm *errtm;
 		
-	fprintf(stderr, 
-			"%8ld.%09ld  ERROR [%s %s %d] Input stream %s does not exist, cannot proceed\n", 
-			errtime.tv_sec, 
+		clock_gettime(CLOCK_REALTIME, &errtime); 
+		errtm = gmtime(&errtime.tv_sec);
+		
+		fprintf(stderr, 
+			"%02d:%02d:%02d.%09ld  ERROR [%s %s %d] Input stream %s does not exist, cannot proceed\n", 
+			errtm->tm_hour,
+			errtm->tm_min,
+			errtm->tm_sec, 
 			errtime.tv_nsec,
 			__FILE__, 
 			__FUNCTION__, 
