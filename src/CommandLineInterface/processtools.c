@@ -367,7 +367,7 @@ int processinfo_CTRLscreen()
 
                     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
                     // Does file exist ?
-                    if(stat(SM_name, &sts) == -1 && errno == ENOENT)
+                    if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
                     {
                         pinfolist->active[pindex] = 0;
                     }
