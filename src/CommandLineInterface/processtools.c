@@ -159,7 +159,7 @@ long processinfo_shm_list_create()
             exit(0);
         }
         
-        while((pinfolist->active[pindex] == 1)&&(pindex<PROCESSINFOLISTSIZE))
+        while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
 	}
 
@@ -386,7 +386,7 @@ int processinfo_CTRLscreen()
                     }
 
                     printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
-                    munmap(pinfoarray[pindex],file_stat.st_size);
+                    munmap(pinfoarray[pindex], file_stat.st_size);
 
                 }
             }
