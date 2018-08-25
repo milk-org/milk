@@ -331,7 +331,8 @@ int processinfo_CTRLscreen()
 
 	int NBpinfodisp = wrow-2;
 	pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
-
+	for(pindex=0; pindex<NBpinfodisp; pindex++)
+		pinfodisp[pindex].updatecnt = 0;
 
     int loopOK = 1;
     int freeze = 0;
