@@ -279,6 +279,13 @@ int processinfo_CTRLscreen()
 {
     long pindex;
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+	
+	pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
+
+
+	// Display fields
+	
+
 
     float frequ = 20.0; // 20 Hz
     char monstring[200];
@@ -310,7 +317,7 @@ int processinfo_CTRLscreen()
     long cnt = 0;
     int MonMode = 0;
     
-    
+    // Create / read process list
     processinfo_shm_list_create();
     
     
@@ -345,9 +352,7 @@ int processinfo_CTRLscreen()
 
 
         if(freeze==0)
-        {
-
-            // Create / read process list           
+        {       
 			clear();
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
             {
@@ -366,8 +371,8 @@ int processinfo_CTRLscreen()
                     pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(SM_fd);
-                        fprintf(stderr, "Error mmapping file %s\n", SM_fname);
-                        sleep(3);
+                        endwin();
+                        fprintf(stderr, "Error mmapping file %s\n", SM_fname);                        
                         pinfolist->active[pindex] = 3;
                     }
 
@@ -381,6 +386,7 @@ int processinfo_CTRLscreen()
                     }
 
                     printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+                    munmap(pinfoarray[pindex],file_stat.st_size);
 
                 }
             }
