@@ -267,7 +267,7 @@ int processinfo_CTRLscreen()
 			sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
             SM_fd = open(SM_fname, O_RDWR);
             fstat(SM_fd, &file_stat);
-            printf("[%d] pindex=%6d  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
+            printf("[%d] pindex=%06ld  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
             fflush(stdout);
 
             pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
