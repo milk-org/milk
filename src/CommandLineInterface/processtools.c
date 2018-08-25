@@ -303,7 +303,7 @@ int processinfo_CTRLscreen()
         updatearray[pindex] = 1; // initialize: load all
 
 
-    float frequ = 2.0; // 20 Hz
+    float frequ = 2.0; // Hz
     char monstring[200];
 
     // INITIALIZE ncurses
@@ -454,7 +454,7 @@ int processinfo_CTRLscreen()
             
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				printw("%5ld  %d", pindex, pinfodisp[pindex].active);
+				printw("%5ld  %d", pindex, pinfolist->active[pindex]);
 				if(pinfolist->active[pindex] != 0)
 				{
 					printw("  %6d", pinfodisp[pindex].PID);
