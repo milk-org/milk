@@ -471,9 +471,9 @@ int processinfo_CTRLscreen()
 
 				if(pinfolist->active[pindex] == 1)
 				{
-					attron(COLOR_PAIR(1));
-					printw(" ACTIVE");
-					attroff(COLOR_PAIR(1));
+					attron(COLOR_PAIR(3));
+					printw("  ACTIVE");
+					attroff(COLOR_PAIR(3));
 				}
 
 				if(pinfolist->active[pindex] == 2)
