@@ -283,7 +283,16 @@ int processinfo_CTRLscreen()
                 exit(0);
             }
             
-            printf("%5ld  %1d  %6d  \"%40s\" \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+            // Does process still exist ?
+            struct stat sts;
+            char procfname[200];
+            sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+			if (stat(procfname, &sts) == -1 && errno == ENOENT) {
+				// process doesn't exist -> flag as crashed
+				pinfolist->active[pindex] = 2;
+			}
+            
+            printf("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
 
         }
     }
