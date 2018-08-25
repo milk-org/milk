@@ -36,6 +36,10 @@
 
 #include <sys/stat.h>
 
+#include <ncurses.h>
+#include <fcntl.h> 
+
+
 #include <CommandLineInterface/CLIcore.h>
 
 
@@ -60,7 +64,7 @@
 
 static PROCESSINFOLIST *pinfolist;
 
-
+static int wrow, wcol;
 
 
 
@@ -251,53 +255,139 @@ int processinfo_shm_rm(char *pname)
 
 
 
+static int print_header(const char *str, char c)
+{
+    long n;
+    long i;
+
+    attron(A_BOLD);
+    n = strlen(str);
+    for(i=0; i<(wcol-n)/2; i++)
+        printw("%c",c);
+    printw("%s", str);
+    for(i=0; i<(wcol-n)/2-1; i++)
+        printw("%c",c);
+    printw("\n");
+    attroff(A_BOLD);
+
+    return(0);
+}
+
+
 
 int processinfo_CTRLscreen()
 {
     long pindex;
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
 
+    float frequ = 20.0; // 20 Hz
+    char monstring[200];
+
+    // INITIALIZE ncurses
+    
+    if ( initscr() == NULL ) {
+        fprintf(stderr, "Error initialising ncurses.\n");
+        exit(EXIT_FAILURE);
+    }
+    getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
+    cbreak();
+    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
+    nodelay(stdscr, TRUE);
+    curs_set(0);
+    noecho();			/* Don't echo() while we do getch */
+
+    start_color();
+    init_pair(1, COLOR_BLACK, COLOR_WHITE);
+    init_pair(2, COLOR_BLACK, COLOR_RED);
+    init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(5, COLOR_RED, COLOR_BLACK);
+    init_pair(6, COLOR_BLACK, COLOR_RED);
 
 
-    // Create / read process list
-    processinfo_shm_list_create();
-
-    for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+    int loopOK = 1;
+    int freeze = 0;
+    long cnt = 0;
+    int MonMode = 0;
+    
+    while( loopOK == 1 )
     {
-        if(pinfolist->active[pindex] != 0)
-        {            
-            int SM_fd;
-            struct stat file_stat;
-            char SM_fname[200];
-            
-			sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-            SM_fd = open(SM_fname, O_RDWR);
-            fstat(SM_fd, &file_stat);
-            //  printf("[%d] pindex=%06ld  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
-            fflush(stdout);
 
-            pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-            if (pinfoarray[pindex] == MAP_FAILED) {
-                close(SM_fd);
-                fprintf(stderr, "Error mmapping the file");
-                exit(0);
+        usleep((long) (1000000.0/frequ));
+        int ch = getch();
+
+
+        if(freeze==0)
+        {
+            attron(A_BOLD);
+            sprintf(monstring, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
+            print_header(monstring, '-');
+            attroff(A_BOLD);
+        }
+
+        switch (ch)
+        {
+        case 'f':
+            if(freeze==0)
+                freeze = 1;
+            else
+                freeze = 0;
+            break;
+
+        case 'x':
+            loopOK=0;
+            break;
+        }
+
+
+        if(freeze==0)
+        {
+
+            // Create / read process list
+            processinfo_shm_list_create();
+
+            for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+            {
+                if(pinfolist->active[pindex] != 0)
+                {
+                    int SM_fd;
+                    struct stat file_stat;
+                    char SM_fname[200];
+
+                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                    SM_fd = open(SM_fname, O_RDWR);
+                    fstat(SM_fd, &file_stat);
+                    //  printf("[%d] pindex=%06ld  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
+                    fflush(stdout);
+
+                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                    if (pinfoarray[pindex] == MAP_FAILED) {
+                        close(SM_fd);
+                        fprintf(stderr, "Error mmapping the file");
+                        exit(0);
+                    }
+
+                    // Does process still exist ?
+                    struct stat sts;
+                    char procfname[200];
+                    sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+                    if (stat(procfname, &sts) == -1 && errno == ENOENT) {
+                        // process doesn't exist -> flag as crashed
+                        pinfolist->active[pindex] = 2;
+                    }
+
+                    printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+
+                }
             }
-            
-            // Does process still exist ?
-            struct stat sts;
-            char procfname[200];
-            sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
-			if (stat(procfname, &sts) == -1 && errno == ENOENT) {
-				// process doesn't exist -> flag as crashed
-				pinfolist->active[pindex] = 2;
-			}
-            
-            printf("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+            refresh();
+
+            cnt++;
 
         }
+
     }
-
-
-
+    endwin();
+    
     return 0;
 }
