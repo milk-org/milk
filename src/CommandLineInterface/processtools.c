@@ -55,7 +55,7 @@ typedef struct
 {
 	int           active;
 	pid_t         PID;
-	char          name[32];
+	char          name[40];
 	long          updatecnt;
 	
 } PROCESSINFODISP;
@@ -466,7 +466,9 @@ int processinfo_CTRLscreen()
             
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				printw("%5ld %3ld   %d", pindex, pinfodisp[pindex].updatecnt, pinfolist->active[pindex]);
+				printw("%5ld %3ld  %d", pindex, pinfodisp[pindex].updatecnt, pinfolist->active[pindex]);
+
+//				printw("%5ld %d", pindex, pinfolist->active[pindex]);
 				if(pinfolist->active[pindex] != 0)
 				{
 					printw("  %6d", pinfolist->PIDarray[pindex]);
