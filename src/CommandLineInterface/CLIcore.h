@@ -37,6 +37,9 @@
 /// Size of array CLICOREVARRAY
 #define SZ_CLICOREVARRAY 1000
 
+
+#define PROCESSINFOLISTSIZE 1000
+
 /// important directories and info
 extern pid_t CLIPID;
 extern char DocDir[200];		// location of documentation
@@ -301,10 +304,11 @@ extern DATA data;
 //
 typedef struct 
 {
-	char   name[200];             // process name provided by user
-
-	pid_t  PID;                     // process ID
-	struct timespec createtime;    // time at which pinfo was created
+	char   name[200];             // process name
+	pid_t  PID;                   // process ID
+	// file name is /tmp/proc.PID.shm
+	
+	struct timespec createtime;   // time at which pinfo was created
 
 	long   cnt;                   // counter, useful for loop processes to monitor activity
 	int    CTRLval;               // control value to be externally written. Default 0. 1: pause, 2: kill
@@ -317,7 +321,16 @@ typedef struct
 } PROCESSINFO;
 
 
-
+//
+// This structure maintains a list of active processes
+// It is used to quickly build (without scanning directory) an array of PROCESSINFO
+//
+typedef struct
+{
+	pid_t         PIDarray[PROCESSINFOLISTSIZE];
+	int           active[PROCESSINFOLISTSIZE];
+	
+} PROCESSINFOLIST;
 
 
 
