@@ -58,12 +58,15 @@ typedef struct
 	char          name[40];
 	long          updatecnt;
 
-	long          cnt;
+	long          loopcnt;
 	
 	int           createtime_hr;
 	int           createtime_min;
 	int           createtime_sec;
 	long          createtime_ns;
+	
+	char          statusmsg[200];
+	char          tmuxname[80];
 
 } PROCESSINFODISP;
 
@@ -295,8 +298,7 @@ static int print_header(const char *str, char c)
 
 
 
-
-int processinfo_CTRLscreen()
+int_fast8_t processinfo_CTRLscreen()
 {
     long pindex;
     PROCESSINFO *pinfo;
@@ -515,8 +517,9 @@ int processinfo_CTRLscreen()
                     pinfodisp[pindex].createtime_hr = createtm->tm_hour;
                     pinfodisp[pindex].createtime_min = createtm->tm_min;
                     pinfodisp[pindex].createtime_sec = createtm->tm_sec;
-                    
 					pinfodisp[pindex].createtime_ns = pinfo->createtime.tv_nsec;
+					
+					pinfodisp[pindex].loopcnt = pinfo->loopcnt;
 
                     munmap(pinfo, file_stat.st_size);
                     pinfodisp[pindex].updatecnt ++;
@@ -562,6 +565,7 @@ int processinfo_CTRLscreen()
 					
                     printw("  %6d", pinfolist->PIDarray[pindex]);
                     printw("  %40s", pinfodisp[pindex].name);
+                    printw("  %8ld", pinfodisp[pindex].loopcnt);
                 }
                 printw("\n");
                 

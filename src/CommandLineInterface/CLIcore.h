@@ -312,9 +312,9 @@ typedef struct
 	
 	struct timespec createtime;   // time at which pinfo was created
 
-	long   cnt;                   // counter, useful for loop processes to monitor activity
+	long   loopcnt;               // counter, useful for loop processes to monitor activity
 	int    CTRLval;               // control value to be externally written. Default 0. 1: pause, 2: kill
-	char   tmuxname[200];         // name of tmux session in which process is running, or "NULL"
+	char   tmuxname[80];          // name of tmux session in which process is running, or "NULL"
 	int    loopstat;              // 0: initialization (before loop), 1: in loop, 2: after loop
 
 	char   statusmsg[200];        // status message
@@ -364,6 +364,6 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
 
 PROCESSINFO* processinfo_shm_create(char *pname);
 
-int processinfo_CTRLscreen();
+int_fast8_t processinfo_CTRLscreen();
 
 #endif
