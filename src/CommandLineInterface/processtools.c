@@ -353,6 +353,7 @@ int processinfo_CTRLscreen()
 
     while( loopOK == 1 )
     {
+		int pid;
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
@@ -392,12 +393,32 @@ int processinfo_CTRLscreen()
 				pindexActiveSelected = NBpindexActive-1;
 			pindexSelected = pindexActive[pindexActiveSelected];
 			break;
+			
+		case 'T':
+			pid = pinfolist->PIDarray[pindexSelected];
+			kill(pid, SIGTERM);
+			break;
+			
+		case 'K':
+			pid = pinfolist->PIDarray[pindexSelected];
+			kill(pid, SIGKILL);
+			break;
+						
+		case 'I':
+			pid = pinfolist->PIDarray[pindexSelected];
+			kill(pid, SIGINT);
+			break;
+			
+		break;
         }
 
 
         if(freeze==0)
         {
             clear();
+            
+            printw("E(x)it   SIG(T)ERM  SIG(K)ILL  SIG(I)NT\n");
+            
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
 
