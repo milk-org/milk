@@ -59,6 +59,7 @@ typedef struct
 	long          updatecnt;
 
 	long          loopcnt;
+	int           loopstat;
 	
 	int           createtime_hr;
 	int           createtime_min;
@@ -298,6 +299,9 @@ static int print_header(const char *str, char c)
 
 
 
+
+
+
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
@@ -345,12 +349,14 @@ int_fast8_t processinfo_CTRLscreen()
 
     start_color();
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_BLACK, COLOR_RED);
+    init_pair(2, COLOR_BLACK, COLOR_RED);   
     init_pair(3, COLOR_BLACK, COLOR_GREEN);
-    init_pair(4, COLOR_GREEN, COLOR_BLACK);
-    init_pair(5, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(6, COLOR_RED, COLOR_BLACK);
-    init_pair(7, COLOR_BLACK, COLOR_RED);
+    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
+    
+    init_pair(5, COLOR_GREEN, COLOR_BLACK);
+    init_pair(6, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(7, COLOR_RED, COLOR_BLACK);
+    init_pair(8, COLOR_BLACK, COLOR_RED);
 
     int NBpinfodisp = wrow-2;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
@@ -507,11 +513,8 @@ int_fast8_t processinfo_CTRLscreen()
                     char procfname[200];
                     sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
-                        // process doesn't exist -> flag as crashed
-                        pinfolist->active[pindex] = 2;
-
-                        //						updatearray[pindex] = 0;
-                        //						PIDarray[pindex] = 0;
+                        // process doesn't exist -> flag as inactive
+                        pinfolist->active[pindex] = 2;                     
                     }
                 }
 
@@ -583,11 +586,20 @@ int_fast8_t processinfo_CTRLscreen()
                     attroff(COLOR_PAIR(3));
                 }
 
-                if(pinfolist->active[pindex] == 2)
+                if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
                 {
+					if(pinfoarray[pindex]->loopstat == 3) // clean exit
+					{
+						attron(COLOR_PAIR(4));
+                    printw(" STOPPED");
+                    attroff(COLOR_PAIR(4));
+					}
+					else
+					{					
                     attron(COLOR_PAIR(2));
                     printw(" CRASHED");
                     attroff(COLOR_PAIR(2));
+					}
                 }
 
 
