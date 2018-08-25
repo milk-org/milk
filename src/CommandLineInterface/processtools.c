@@ -56,6 +56,8 @@ typedef struct
 	int           active;
 	pid_t         PID;
 	char          name[32];
+	long          updatecnt;
+	
 } PROCESSINFODISP;
 
 
@@ -422,8 +424,8 @@ int processinfo_CTRLscreen()
                         // process doesn't exist -> flag as crashed
                         pinfolist->active[pindex] = 2;
                     
-						updatearray[pindex] = 0;
-						PIDarray[pindex] = 0;
+//						updatearray[pindex] = 0;
+//						PIDarray[pindex] = 0;
 					}
                 }
 
@@ -454,13 +456,16 @@ int processinfo_CTRLscreen()
 
                    // printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
                     munmap(pinfo, file_stat.st_size);
+                    
+                    pinfodisp[pindex].updatecnt ++;
+                    
                 }
             }
             
             
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				printw("%5ld  %d", pindex, pinfolist->active[pindex]);
+				printw("%5ld %3ld   %d", pindex, pinfodisp[pindex].updatecnt, pinfolist->active[pindex]);
 				if(pinfolist->active[pindex] != 0)
 				{
 					printw("  %6d", pinfolist->PIDarray[pindex]);
