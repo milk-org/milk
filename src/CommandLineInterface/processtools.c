@@ -155,9 +155,12 @@ long processinfo_shm_list_create()
 	}
 
 	printf("pindex = %ld\n", pindex);
-	
+	pinfolist->active[pindex] = 1;
+		
     return pindex;
 }
+
+
 
 
 
