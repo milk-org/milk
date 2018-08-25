@@ -362,7 +362,7 @@ int_fast8_t processinfo_CTRLscreen()
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
-
+pinfoarray[pindex]->loopstat
     int loopOK = 1;
     int freeze = 0;
     long cnt = 0;
@@ -527,23 +527,22 @@ int_fast8_t processinfo_CTRLscreen()
                     // (RE)LOAD
                     struct stat file_stat;
 
-                    fdarray[pindex] = open(SM_fname, O_RDWR);
-                    fstat(fdarray[pindex], &file_stat);
-
                     // if already mmapped, first unmap
                     if(pinfommapped[pindex] == 1)
                     {
+						fstat(fdarray[pindex], &file_stat);
                         munmap(pinfoarray[pindex], file_stat.st_size);
                         close(fdarray[pindex]);
                         pinfommapped[pindex] == 0;
                     }
 
-
+					fdarray[pindex] = open(SM_fname, O_RDWR);
+					fstat(fdarray[pindex], &file_stat);
                     pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdarray[pindex], 0);
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(fdarray[pindex]);
                         endwin();
-                        fprintf(stderr, "Error mmapping file %s\n", SM_fname);
+                        fprintf(stderr, "[%d] Error mmapping file %s\n", __FILE__, SM_fname);
                         pinfolist->active[pindex] = 3;
                     }
                     else
