@@ -345,7 +345,7 @@ int processinfo_CTRLscreen()
 
             // Create / read process list
             processinfo_shm_list_create();
-
+			clear();
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
             {
                 if(pinfolist->active[pindex] != 0)
