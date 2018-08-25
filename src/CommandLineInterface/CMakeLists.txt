@@ -18,6 +18,7 @@ ADD_FLEX_BISON_DEPENDENCY(MilkFlex MilkBison)
 add_library(CLIcore SHARED
 CLIcore.c 
 CLIcore.h 
+processtools.c
 calc.h
 ${BISON_MilkBison_OUTPUTS}
 ${FLEX_MilkFlex_OUTPUTS})

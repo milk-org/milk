@@ -238,11 +238,10 @@ int_fast8_t init_templatemodule()
  * 
  * ## Arguments
  * 
- * @param[in]
- * mode		INT
- * 			mode sets up what function does
- * -		does nothing
- * -		also does nothing
+ * @param[in]	mode
+ * 		mode sets up what function does
+ * -	does nothing
+ * -	also does nothing
  * 
  */
 // CODING STANDARD NOTE: function name start with module name

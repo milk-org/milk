@@ -187,6 +187,9 @@ typedef struct
 
 
 
+
+
+
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
 {
@@ -284,7 +287,40 @@ typedef struct
     int status1;
 } DATA;
 
+
 extern DATA data;
+
+
+
+
+
+
+//
+// This structure hold process information and hooks required for basic monitoring and control
+// Unlike the larger DATA structure above, it is meant to be stored in shared memory for fast access by other processes
+//
+typedef struct 
+{
+	char   name[200];             // process name provided by user
+
+	pid_t  PID;                   // process ID
+	struct timespec starttime;    // time at which function was started
+
+	long   cnt;                   // counter, useful for loop processes to monitor activity
+	int    CTRLval;               // control value to be externally written. Default 0. 1: pause, 2: kill
+	char   tmuxname[200];         // name of tmux session in which process is running, or "NULL"
+	int    loopstat;              // 0: initialization (before loop), 1: in loop, 2: after loop
+
+	char   statusmsg[200];        // status message
+	int    statuscode;            // status code 
+
+} PROCESSINFO;
+
+
+
+
+
+
 
 
 
@@ -299,5 +335,11 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString);
 uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CLIfptr)(), char *CLIinfo, char *CLIsyntax, char *CLIexample, char *CLICcall);
 
 int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
+
+
+
+
+PROCESSINFO* processinfo_shm_create(char *pname);
+
 
 #endif
