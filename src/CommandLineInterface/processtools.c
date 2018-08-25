@@ -345,7 +345,8 @@ int processinfo_CTRLscreen()
     int freeze = 0;
     long cnt = 0;
     int MonMode = 0;
-
+	pindexActiveSelected = 0;
+    
     // Create / read process list
     processinfo_shm_list_create();
 
@@ -378,17 +379,19 @@ int processinfo_CTRLscreen()
             loopOK=0;
             break;
             
-        case 'KEY_UP':
+        case KEY_UP:
             pindexActiveSelected --;				
             if(pindexActiveSelected<0)
 				pindexActiveSelected = 0;
+            pindexSelected = pindexActive[pindexActiveSelected];
             break;
                 
-         case 'KEY_DOWN':
+         case KEY_DOWN:
 			pindexActiveSelected ++;
             if(pindexActiveSelected>NBpindexActive-1)
 				pindexActiveSelected = NBpindexActive-1;
-				    break;
+			pindexSelected = pindexActive[pindexActiveSelected];
+			break;
         }
 
 
@@ -488,7 +491,9 @@ int processinfo_CTRLscreen()
 			NBpindexActive = 0;
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				
+				if(pindex == pindexSelected)
+					attron(A_REVERSE);
+					
                 printw("%5ld %3ld  ", pindex, pinfodisp[pindex].updatecnt);
 
                 if(pinfolist->active[pindex] == 1)
@@ -515,6 +520,9 @@ int processinfo_CTRLscreen()
                 }
                 printw("\n");
                 
+                if(pindex == pindexSelected)
+					attroff(A_REVERSE);
+					
                 if(pinfolist->active[pindex] != 0)
                 {
 					pindexActive[NBpindexActive] = pindex;
