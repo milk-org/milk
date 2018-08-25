@@ -226,7 +226,7 @@ PROCESSINFO* processinfo_shm_create(char *pname)
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
 	clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
-	
+	strcpy(pinfo->name, pname);
 
     return pinfo;
 }
@@ -273,7 +273,7 @@ int processinfo_CTRLscreen()
 			sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
             SM_fd = open(SM_fname, O_RDWR);
             fstat(SM_fd, &file_stat);
-            printf("[%d] pindex=%06ld  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
+            //  printf("[%d] pindex=%06ld  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
             fflush(stdout);
 
             pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
@@ -283,7 +283,7 @@ int processinfo_CTRLscreen()
                 exit(0);
             }
             
-            printf("%5ld  %1d  %6d  %40s\n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+            printf("%5ld  %1d  %6d  \"%40s\" \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
 
         }
     }
