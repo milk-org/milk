@@ -117,6 +117,7 @@ PROCESSINFO* processinfo_shm_create(char *pname)
         exit(0);
     }
 
+	printf("created processinfe entry at %s\n", SM_fname);
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
 
