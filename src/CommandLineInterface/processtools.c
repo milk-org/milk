@@ -301,7 +301,7 @@ static int print_header(const char *str, char c)
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex;
-    PROCESSINFO *pinfo;
+    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
 
     pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
     int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
@@ -500,8 +500,8 @@ int_fast8_t processinfo_CTRLscreen()
                     fstat(SM_fd, &file_stat);
 
 
-                    pinfo = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-                    if (pinfo == MAP_FAILED) {
+                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                    if (pinfoarray[pindex] == MAP_FAILED) {
                         close(SM_fd);
                         endwin();
                         fprintf(stderr, "Error mmapping file %s\n", SM_fname);
@@ -510,18 +510,18 @@ int_fast8_t processinfo_CTRLscreen()
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-                    strncpy(pinfodisp[pindex].name, pinfo->name, 40-1);
+                    strncpy(pinfodisp[pindex].name, pinfoarray[pindex]->name, 40-1);
                     
                     struct tm *createtm;
-                    createtm      = gmtime(&pinfo->createtime.tv_sec);
+                    createtm      = gmtime(&pinfoarray[pindex]->createtime.tv_sec);
                     pinfodisp[pindex].createtime_hr = createtm->tm_hour;
                     pinfodisp[pindex].createtime_min = createtm->tm_min;
                     pinfodisp[pindex].createtime_sec = createtm->tm_sec;
-					pinfodisp[pindex].createtime_ns = pinfo->createtime.tv_nsec;
+					pinfodisp[pindex].createtime_ns = pinfoarray[pindex]->createtime.tv_nsec;
 					
-					pinfodisp[pindex].loopcnt = pinfo->loopcnt;
+					pinfodisp[pindex].loopcnt = pinfoarray[pindex]->loopcnt;
 
-                    munmap(pinfo, file_stat.st_size);
+                    munmap(pinfoarray[pindex], file_stat.st_size);
                     pinfodisp[pindex].updatecnt ++;
 
                 }
