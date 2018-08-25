@@ -126,7 +126,7 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 	printf("created processinfe entry at %s\n", SM_fname);
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
-	clock_gettime(CLOCK_REALTIME, &pinfo->ctreatetime);
+	clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
 	
 
     return pinfo;
