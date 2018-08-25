@@ -29,6 +29,8 @@
 #include <malloc.h>
 #include <sys/mman.h> // mmap()
 
+#include <time.h>
+
 #include <unistd.h>    // getpid()
 #include <sys/types.h>
 
@@ -80,14 +82,18 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 {
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
-    PROCESSINFO *map;
+    PROCESSINFO *pinfo;
     
     
     sharedsize = sizeof(PROCESSINFO);
 
 	char  SM_fname[200];
     pid_t PID;
+
+    
     PID = getpid();
+
+    
     sprintf(SM_fname, "%s/%s.%d.proc.shm", SHAREDMEMDIR, pname, (int) PID);    
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (SM_fd == -1) {
@@ -110,8 +116,8 @@ PROCESSINFO* processinfo_shm_create(char *pname)
         exit(0);
     }
 
-    map = (PROCESSINFO*) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if (map == MAP_FAILED) {
+    pinfo = (PROCESSINFO*) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+    if (pinfo == MAP_FAILED) {
         close(SM_fd);
         perror("Error mmapping the file");
         exit(0);
@@ -120,8 +126,10 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 	printf("created processinfe entry at %s\n", SM_fname);
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
+	clock_gettime(CLOCK_REALTIME, &pinfo->ctreatetime);
+	
 
-    return map;
+    return pinfo;
 }
 
 

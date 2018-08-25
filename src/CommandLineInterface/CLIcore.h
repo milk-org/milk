@@ -303,8 +303,8 @@ typedef struct
 {
 	char   name[200];             // process name provided by user
 
-	pid_t  PID;                   // process ID
-	struct timespec starttime;    // time at which function was started
+	pid_t  PID;                     // process ID
+	struct timespec ctreatetime;    // time at which pinfo was created
 
 	long   cnt;                   // counter, useful for loop processes to monitor activity
 	int    CTRLval;               // control value to be externally written. Default 0. 1: pause, 2: kill
