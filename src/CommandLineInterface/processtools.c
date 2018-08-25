@@ -305,7 +305,7 @@ int processinfo_CTRLscreen()
         updatearray[pindex] = 1; // initialize: load all
 
 
-    float frequ = 2.0; // Hz
+    float frequ = 20.0; // Hz
     char monstring[200];
 
     // INITIALIZE ncurses
