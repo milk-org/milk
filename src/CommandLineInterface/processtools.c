@@ -57,7 +57,11 @@ typedef struct
 	pid_t         PID;
 	char          name[40];
 	long          updatecnt;
-	
+
+	long          cnt;
+	struct tm     *createtm;
+	long          createtime_ns;
+
 } PROCESSINFODISP;
 
 
@@ -418,7 +422,7 @@ int processinfo_CTRLscreen()
             clear();
             
             printw("E(x)it   SIG(T)ERM  SIG(K)ILL  SIG(I)NT\n");
-            
+            printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
 
@@ -502,6 +506,9 @@ int processinfo_CTRLscreen()
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
                     strncpy(pinfodisp[pindex].name, pinfo->name, 40-1);
+                    
+                    pinfodisp[pindex].createtm      = gmtime(&pinfo->createtime.tv_sec);
+					pinfodisp[pindex].createtime_ns = pinfo->createtime.tv_nsec;
 
                     munmap(pinfo, file_stat.st_size);
                     pinfodisp[pindex].updatecnt ++;
@@ -517,6 +524,8 @@ int processinfo_CTRLscreen()
 					
                 printw("%5ld %3ld  ", pindex, pinfodisp[pindex].updatecnt);
 
+
+
                 if(pinfolist->active[pindex] == 1)
                 {
                     attron(COLOR_PAIR(3));
@@ -530,7 +539,13 @@ int processinfo_CTRLscreen()
                     printw(" CRASHED");
                     attroff(COLOR_PAIR(2));
                 }
+                
 
+				printw(" %02d:%02d:%02d.%09ld", 
+					pinfodisp[pindex].createtm->tm_hour, 
+					pinfodisp[pindex].createtm->tm_min, 
+					pinfodisp[pindex].createtm->tm_sec,
+					pinfodisp[pindex].createtime_ns);
 
 
                 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
