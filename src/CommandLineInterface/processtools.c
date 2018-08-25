@@ -185,7 +185,7 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 
 	long pindex;
     pindex = processinfo_shm_list_create();
-    
+    pinfolist->PIDarray[pindex] = PID;
     
     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) PID);    
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
@@ -248,18 +248,40 @@ int processinfo_shm_rm(char *pname)
 
 int processinfo_CTRLscreen()
 {
-	long pindex;
-	
-	// Create / read process list
-	processinfo_shm_list_create();
-	
-	for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
-	{
-		if(pinfolist->active[pindex] != 0)
-		{
-			printf("%5ld  %1d  %6d\n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex]);
-		}
-	}
-	
-	return 0;
+    long pindex;
+    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+
+
+
+    // Create / read process list
+    processinfo_shm_list_create();
+
+    for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+    {
+        if(pinfolist->active[pindex] != 0)
+        {            
+            int SM_fd;
+            struct stat file_stat;
+            char SM_fname[200];
+            
+			sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+            SM_fd = open(SM_fname, O_RDWR);
+            fstat(SM_fd, &file_stat);
+            printf("[%d] File %s size: %zd\n", __LINE__, SM_fname, file_stat.st_size);
+
+            pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+            if (pinfoarray[pindex] == MAP_FAILED) {
+                close(SM_fd);
+                fprintf(stderr, "Error mmapping the file");
+                exit(0);
+            }
+            
+            printf("%5ld  %1d  %6d  %40s\n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+
+        }
+    }
+
+
+
+    return 0;
 }
