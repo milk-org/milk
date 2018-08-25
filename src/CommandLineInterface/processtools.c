@@ -275,23 +275,26 @@ static int print_header(const char *str, char c)
 
 
 
+
+
+
 int processinfo_CTRLscreen()
 {
     long pindex;
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
-	
-	pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
+
+    pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
 
 
-	// Display fields
-	
+    // Display fields
+
 
 
     float frequ = 20.0; // 20 Hz
     char monstring[200];
 
     // INITIALIZE ncurses
-    
+
     if ( initscr() == NULL ) {
         fprintf(stderr, "Error initialising ncurses.\n");
         exit(EXIT_FAILURE);
@@ -316,11 +319,11 @@ int processinfo_CTRLscreen()
     int freeze = 0;
     long cnt = 0;
     int MonMode = 0;
-    
+
     // Create / read process list
     processinfo_shm_list_create();
-    
-    
+
+
     while( loopOK == 1 )
     {
 
@@ -352,8 +355,8 @@ int processinfo_CTRLscreen()
 
 
         if(freeze==0)
-        {       
-			clear();
+        {
+            clear();
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
             {
                 if(pinfolist->active[pindex] != 0)
@@ -363,30 +366,38 @@ int processinfo_CTRLscreen()
                     char SM_fname[200];
 
                     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-                    SM_fd = open(SM_fname, O_RDWR);
-                    fstat(SM_fd, &file_stat);
-                    //  printf("[%d] pindex=%06ld  active=%d       File %s size: %zd\n", __LINE__, pindex, pinfolist->active[pindex], SM_fname, file_stat.st_size);
-                    fflush(stdout);
-
-                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-                    if (pinfoarray[pindex] == MAP_FAILED) {
-                        close(SM_fd);
-                        endwin();
-                        fprintf(stderr, "Error mmapping file %s\n", SM_fname);                        
-                        pinfolist->active[pindex] = 3;
+                    // Does file exist ?
+                    if(stat(SM_name, &sts) == -1 && errno == ENOENT)
+                    {
+                        pinfolist->active[pindex] = 0;
                     }
+                    else
+                    {
 
-                    // Does process still exist ?
-                    struct stat sts;
-                    char procfname[200];
-                    sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
-                    if (stat(procfname, &sts) == -1 && errno == ENOENT) {
-                        // process doesn't exist -> flag as crashed
-                        pinfolist->active[pindex] = 2;
+                        SM_fd = open(SM_fname, O_RDWR);
+                        fstat(SM_fd, &file_stat);
+
+
+                        pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                        if (pinfoarray[pindex] == MAP_FAILED) {
+                            close(SM_fd);
+                            endwin();
+                            fprintf(stderr, "Error mmapping file %s\n", SM_fname);
+                            pinfolist->active[pindex] = 3;
+                        }
+
+                        // Does process still exist ?
+                        struct stat sts;
+                        char procfname[200];
+                        sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+                        if (stat(procfname, &sts) == -1 && errno == ENOENT) {
+                            // process doesn't exist -> flag as crashed
+                            pinfolist->active[pindex] = 2;
+                        }
+
+                        printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+                        munmap(pinfoarray[pindex], file_stat.st_size);
                     }
-
-                    printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
-                    munmap(pinfoarray[pindex], file_stat.st_size);
 
                 }
             }
@@ -398,6 +409,6 @@ int processinfo_CTRLscreen()
 
     }
     endwin();
-    
+
     return 0;
 }
