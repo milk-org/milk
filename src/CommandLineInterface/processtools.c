@@ -425,6 +425,16 @@ int_fast8_t processinfo_CTRLscreen()
             kill(pid, SIGINT);
             break;
 
+        case 'r':
+			pindex = pindexSelected;
+            if(pinfolist->active[pindex]!=1)
+            {
+				char SM_fname[200];
+				sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+				remove(SM_fname);
+			}
+            break;
+
             break;
         }
 
@@ -433,7 +443,7 @@ int_fast8_t processinfo_CTRLscreen()
         {
             clear();
 
-            printw("E(x)it   SIG(T)ERM  SIG(K)ILL  SIG(I)NT\n");
+            printw("E(x)it   SIG(T)ERM  SIG(K)ILL  SIG(I)NT    (r)emove  (R)emoveall\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
