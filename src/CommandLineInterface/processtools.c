@@ -307,8 +307,9 @@ int_fast8_t processinfo_CTRLscreen()
 
     pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
     int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
-	int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
-	
+    int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
+	long loopcntarray[PROCESSINFOLISTSIZE];
+
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
@@ -578,8 +579,25 @@ int_fast8_t processinfo_CTRLscreen()
                            pinfodisp[pindex].createtime_ns);
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
+
+                    attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
-                    printw("  %8ld", pinfoarray[pindex]->loopcnt);
+                    attroff(A_BOLD);
+                    
+                    if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
+                    { // loopcnt has not changed
+						printw("  %8ld", pinfoarray[pindex]->loopcnt);
+					}
+					else
+					{ // loopcnt has changed
+						attron(COLOR_PAIR(3));
+						printw("  %8ld", pinfoarray[pindex]->loopcnt);
+						attroff(COLOR_PAIR(3));
+					}
+                    
+                    loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+                    
+                    
                     printw("  %40s", pinfoarray[pindex]->statusmsg);
                 }
                 printw("\n");
@@ -608,11 +626,11 @@ int_fast8_t processinfo_CTRLscreen()
     {
         if(pinfommapped[pindex] == 1)
         {
-//            char SM_fname[200];
+            //            char SM_fname[200];
             struct stat file_stat;
 
-//            sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-//            SM_fd = open(SM_fname, O_RDWR);
+            //            sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+            //            SM_fd = open(SM_fname, O_RDWR);
             fstat(fdarray[pindex], &file_stat);
 
             munmap(pinfoarray[pindex], file_stat.st_size);
