@@ -549,16 +549,17 @@ int processinfo_CTRLscreen()
                 }
                 
 
-				printw(" %02d:%02d:%02d.%09ld", 
-					pinfodisp[pindex].createtime_hr, 
-					pinfodisp[pindex].createtime_min, 
-					pinfodisp[pindex].createtime_sec,
-					pinfodisp[pindex].createtime_ns);
-
 
                 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                 if(pinfolist->active[pindex] != 0)
                 {
+					
+					printw(" %02d:%02d:%02d.%09ld", 
+						pinfodisp[pindex].createtime_hr, 
+						pinfodisp[pindex].createtime_min, 
+						pinfodisp[pindex].createtime_sec,
+						pinfodisp[pindex].createtime_ns);
+					
                     printw("  %6d", pinfolist->PIDarray[pindex]);
                     printw("  %40s", pinfodisp[pindex].name);
                 }
