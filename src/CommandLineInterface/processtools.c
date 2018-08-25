@@ -141,16 +141,16 @@ long processinfo_shm_list_create()
 		
 		SM_fd = open(SM_fname, O_RDWR);
 		fstat(SM_fd, &file_stat);
-        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
+        printf("[%ld] File %s size: %zd\n", __LINE__, SM_fname, file_stat.st_size);
 
         pinfolist = (PROCESSINFOLIST*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
         if (pinfolist == MAP_FAILED) {
             close(SM_fd);
-            perror("Error mmapping the file");
+            fprintf(stderr, "Error mmapping the file");
             exit(0);
         }
         
-        while(pinfolist->active[pindex] == 1)
+        while((pinfolist->active[pindex] == 1)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
 	}
 
