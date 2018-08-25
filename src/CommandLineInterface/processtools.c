@@ -194,7 +194,7 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 	long pindex;
     pindex = processinfo_shm_list_create();
     pinfolist->PIDarray[pindex] = PID;
-    pinfolist->active[pindex] = 1;
+    
     
     
     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) PID);    
@@ -231,6 +231,8 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 
 	clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
 	strcpy(pinfo->name, pname);
+
+	pinfolist->active[pindex] = 1;
 
     return pinfo;
 }
@@ -373,7 +375,6 @@ int processinfo_CTRLscreen()
                     }
                     else
                     {
-
                         SM_fd = open(SM_fname, O_RDWR);
                         fstat(SM_fd, &file_stat);
 
