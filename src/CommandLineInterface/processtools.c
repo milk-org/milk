@@ -300,7 +300,7 @@ static int print_header(const char *str, char c)
 
 int_fast8_t processinfo_CTRLscreen()
 {
-    long pindex;
+    long pindex, index;
 
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
     int pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
@@ -308,7 +308,7 @@ int_fast8_t processinfo_CTRLscreen()
     pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
     int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
     int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
-	long loopcntarray[PROCESSINFOLISTSIZE];
+    long loopcntarray[PROCESSINFOLISTSIZE];
 
     // Display fields
     PROCESSINFODISP *pinfodisp;
@@ -426,13 +426,27 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'r':
-			pindex = pindexSelected;
+            pindex = pindexSelected;
             if(pinfolist->active[pindex]!=1)
             {
-				char SM_fname[200];
-				sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-				remove(SM_fname);
-			}
+                char SM_fname[200];
+                sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                remove(SM_fname);
+            }
+            break;
+
+        case 'R':
+
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(pinfolist->active[pindex]!=1)
+                {
+                    char SM_fname[200];
+                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                    remove(SM_fname);
+                }
+            }
             break;
 
             break;
@@ -593,21 +607,21 @@ int_fast8_t processinfo_CTRLscreen()
                     attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
                     attroff(A_BOLD);
-                    
+
                     if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
-                    { // loopcnt has not changed
-						printw("  %8ld", pinfoarray[pindex]->loopcnt);
-					}
-					else
-					{ // loopcnt has changed
-						attron(COLOR_PAIR(3));
-						printw("  %8ld", pinfoarray[pindex]->loopcnt);
-						attroff(COLOR_PAIR(3));
-					}
-                    
+                    {   // loopcnt has not changed
+                        printw("  %8ld", pinfoarray[pindex]->loopcnt);
+                    }
+                    else
+                    {   // loopcnt has changed
+                        attron(COLOR_PAIR(3));
+                        printw("  %8ld", pinfoarray[pindex]->loopcnt);
+                        attroff(COLOR_PAIR(3));
+                    }
+
                     loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
-                    
-                    
+
+
                     printw("  %40s", pinfoarray[pindex]->statusmsg);
                 }
                 printw("\n");
