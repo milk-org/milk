@@ -411,6 +411,20 @@ int processinfo_CTRLscreen()
                         updatearray[pindex] = 0;
                     }
                 }
+                
+                if(pinfolist->active[pindex] == 1)
+                {
+					// check if process still exists
+					struct stat sts;
+                    char procfname[200];
+                    sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+                    if (stat(procfname, &sts) == -1 && errno == ENOENT) {
+                        // process doesn't exist -> flag as crashed
+                        pinfolist->active[pindex] = 2;
+                    }
+                    updatearray[pindex] = 0;
+                    PIDarray[pindex] = 0;
+                }
 
 
                 if(updatearray[pindex] == 1)
@@ -431,15 +445,6 @@ int processinfo_CTRLscreen()
                         endwin();
                         fprintf(stderr, "Error mmapping file %s\n", SM_fname);
                         pinfolist->active[pindex] = 3;
-                    }
-
-                    // Does process still exist ?
-                    struct stat sts;
-                    char procfname[200];
-                    sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
-                    if (stat(procfname, &sts) == -1 && errno == ENOENT) {
-                        // process doesn't exist -> flag as crashed
-                        pinfolist->active[pindex] = 2;
                     }
                     
                     pinfodisp[pindex].active = pinfolist->active[pindex];
