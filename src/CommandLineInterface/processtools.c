@@ -51,6 +51,13 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+typedef struct
+{
+	int           active;
+	pid_t         PID;
+	char          name[32];
+} PROCESSINFODISP;
+
 
 
 
@@ -283,13 +290,13 @@ static int print_header(const char *str, char c)
 int processinfo_CTRLscreen()
 {
     long pindex;
-    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+    PROCESSINFO *pinfo;
 
     pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
     int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
 
     // Display fields
-
+	PROCESSINFODISP *pinfodisp;
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -319,6 +326,9 @@ int processinfo_CTRLscreen()
     init_pair(4, COLOR_YELLOW, COLOR_BLACK);
     init_pair(5, COLOR_RED, COLOR_BLACK);
     init_pair(6, COLOR_BLACK, COLOR_RED);
+
+	int NBpinfodisp = wrow-2;
+	pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
 
 
     int loopOK = 1;
@@ -363,7 +373,7 @@ int processinfo_CTRLscreen()
         if(freeze==0)
         {
             clear();
-            for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+            for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
 
                 // SHOULD WE (RE)LOAD ?
@@ -415,8 +425,8 @@ int processinfo_CTRLscreen()
                     fstat(SM_fd, &file_stat);
 
 
-                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-                    if (pinfoarray[pindex] == MAP_FAILED) {
+                    pinfo = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                    if (pinfo == MAP_FAILED) {
                         close(SM_fd);
                         endwin();
                         fprintf(stderr, "Error mmapping file %s\n", SM_fname);
@@ -431,11 +441,28 @@ int processinfo_CTRLscreen()
                         // process doesn't exist -> flag as crashed
                         pinfolist->active[pindex] = 2;
                     }
+                    
+                    pinfodisp[pindex].active = pinfolist->active[pindex];
+                    pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
+                    strncpy(pinfodisp[pindex].name, pinfo->name, 40-1);
 
-                    printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
-                    munmap(pinfoarray[pindex], file_stat.st_size);
+                   // printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+                    munmap(pinfo, file_stat.st_size);
                 }
             }
+            
+            
+            for(pindex=0; pindex<NBpinfodisp; pindex++)
+            {
+				printw("%5ld  %d", pindex, pinfodisp[pindex].active);
+				if(pinfolist->active[pindex] != 0)
+				{
+					printw("  %6d", pinfodisp[pindex].PID);
+					printw("  %40s", pinfodisp[pindex].name);
+				}
+				printw("\n");
+			}
+            
             refresh();
 
             cnt++;
@@ -444,6 +471,8 @@ int processinfo_CTRLscreen()
 
     }
     endwin();
+
+	free(pinfodisp);
 
     return 0;
 }

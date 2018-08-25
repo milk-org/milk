@@ -297,6 +297,8 @@ extern DATA data;
 
 
 
+// --------------------- MANAGING PROCESSES -------------------------------
+
 
 //
 // This structure hold process information and hooks required for basic monitoring and control
@@ -331,6 +333,14 @@ typedef struct
 	int           active[PROCESSINFOLISTSIZE];
 	
 } PROCESSINFOLIST;
+
+
+
+
+
+
+
+
 
 
 
