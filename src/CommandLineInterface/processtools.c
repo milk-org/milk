@@ -512,6 +512,9 @@ int processinfo_CTRLscreen()
                     
                     struct tm *createtm;
                     createtm      = gmtime(&pinfo->createtime.tv_sec);
+                    pinfodisp[pindex].createtime_hr = createtm->tm_hour;
+                    pinfodisp[pindex].createtime_min = createtm->tm_min;
+                    pinfodisp[pindex].createtime_sec = createtm->tm_sec;
                     
 					pinfodisp[pindex].createtime_ns = pinfo->createtime.tv_nsec;
 
