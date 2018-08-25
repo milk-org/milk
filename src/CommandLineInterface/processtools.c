@@ -607,6 +607,8 @@ int_fast8_t processinfo_CTRLscreen()
                 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                 if(pinfolist->active[pindex] != 0)
                 {
+					
+					printw(" ls=%d", pinfoarray[pindex]->loopstat );
 
                     printw(" %02d:%02d:%02d.%09ld",
                            pinfodisp[pindex].createtime_hr,
