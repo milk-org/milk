@@ -132,6 +132,11 @@ long processinfo_shm_list_create()
             perror("Error mmapping the file");
             exit(0);
         }
+        
+        
+        for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+			pinfolist->active[pindex] = 0;
+
         pindex = 0;
     }
     else
