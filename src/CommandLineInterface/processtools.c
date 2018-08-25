@@ -96,7 +96,7 @@ long processinfo_shm_list_create()
     struct stat buffer;
     int exists = stat(SM_fname, &buffer);
 
-    if(exists == 0)
+    if(exists == -1)
     {
 		printf("CREATING PROCESSINFO LIST\n");
 		
