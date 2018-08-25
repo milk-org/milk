@@ -286,13 +286,17 @@ int processinfo_CTRLscreen()
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
 
     pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
-
+    int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
 
     // Display fields
 
 
 
-    float frequ = 20.0; // 20 Hz
+    for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+        updatearray[pindex] = 1; // initialize: load all
+
+
+    float frequ = 2.0; // 20 Hz
     char monstring[200];
 
     // INITIALIZE ncurses
@@ -361,45 +365,75 @@ int processinfo_CTRLscreen()
             clear();
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
             {
-                if(pinfolist->active[pindex] != 0)
-                {
-                    int SM_fd;
-                    struct stat file_stat;
-                    char SM_fname[200];
 
+                // SHOULD WE (RE)LOAD ?
+                if(pinfolist->active[pindex] == 0) // inactive
+                    updatearray[pindex] = 0;
+
+                if(pinfolist->active[pindex] == 1) // active
+                {
+                    if(pinfolist->PIDarray[pindex] == PIDarray[pindex] ) // don't reload if PID same as before
+                        updatearray[pindex] = 0;
+                    else
+                    {
+                        updatearray[pindex] = 1;
+						PIDarray[pindex] = pinfolist->PIDarray[pindex];
+					}
+                }
+                if(pinfolist->active[pindex] == 2) // mmap crashed
+                    updatearray[pindex] = 0;
+                if(pinfolist->active[pindex] == 3) // file has gone away
+                    updatearray[pindex] = 0;
+
+
+                char SM_fname[200];
+
+                if(updatearray[pindex] == 1)
+                {
+                    struct stat file_stat;
                     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+
                     // Does file exist ?
                     if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
                     {
+                        // if not, don't (re)load
                         pinfolist->active[pindex] = 0;
+                        updatearray[pindex] = 0;
                     }
-                    else
-                    {
-                        SM_fd = open(SM_fname, O_RDWR);
-                        fstat(SM_fd, &file_stat);
+                }
 
 
-                        pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-                        if (pinfoarray[pindex] == MAP_FAILED) {
-                            close(SM_fd);
-                            endwin();
-                            fprintf(stderr, "Error mmapping file %s\n", SM_fname);
-                            pinfolist->active[pindex] = 3;
-                        }
+                if(updatearray[pindex] == 1)
+                {
+                    // (RE)LOAD
 
-                        // Does process still exist ?
-                        struct stat sts;
-                        char procfname[200];
-                        sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
-                        if (stat(procfname, &sts) == -1 && errno == ENOENT) {
-                            // process doesn't exist -> flag as crashed
-                            pinfolist->active[pindex] = 2;
-                        }
+                    int SM_fd;
+                    struct stat file_stat;
 
-                        printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
-                        munmap(pinfoarray[pindex], file_stat.st_size);
+
+                    SM_fd = open(SM_fname, O_RDWR);
+                    fstat(SM_fd, &file_stat);
+
+
+                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                    if (pinfoarray[pindex] == MAP_FAILED) {
+                        close(SM_fd);
+                        endwin();
+                        fprintf(stderr, "Error mmapping file %s\n", SM_fname);
+                        pinfolist->active[pindex] = 3;
                     }
 
+                    // Does process still exist ?
+                    struct stat sts;
+                    char procfname[200];
+                    sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+                    if (stat(procfname, &sts) == -1 && errno == ENOENT) {
+                        // process doesn't exist -> flag as crashed
+                        pinfolist->active[pindex] = 2;
+                    }
+
+                    printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
+                    munmap(pinfoarray[pindex], file_stat.st_size);
                 }
             }
             refresh();
