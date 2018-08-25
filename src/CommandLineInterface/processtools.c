@@ -467,8 +467,24 @@ int processinfo_CTRLscreen()
             
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				printw("%5ld %3ld  %d", pindex, pinfodisp[pindex].updatecnt, pinfolist->active[pindex]);
+				printw("%5ld %3ld  ", pindex, pinfodisp[pindex].updatecnt);
 
+				if(pinfolist->active[pindex] == 1)
+				{
+					attron(COLOR_PAIR(1));
+					printw(" ACTIVE");
+					attroff(COLOR_PAIR(1));
+				}
+
+				if(pinfolist->active[pindex] == 2)
+				{
+					attron(COLOR_PAIR(2));
+					printw(" CRASHED");
+					attroff(COLOR_PAIR(2));
+				}
+				
+				
+				
 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
 				if(pinfolist->active[pindex] != 0)
 				{
