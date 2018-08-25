@@ -59,7 +59,10 @@ typedef struct
 	long          updatecnt;
 
 	long          cnt;
-	struct tm     *createtm;
+	
+	int           createtime_hr;
+	int           createtime_min;
+	int           createtime_sec;
 	long          createtime_ns;
 
 } PROCESSINFODISP;
@@ -507,7 +510,9 @@ int processinfo_CTRLscreen()
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
                     strncpy(pinfodisp[pindex].name, pinfo->name, 40-1);
                     
-                    pinfodisp[pindex].createtm      = gmtime(&pinfo->createtime.tv_sec);
+                    struct tm *createtm;
+                    createtm      = gmtime(&pinfo->createtime.tv_sec);
+                    
 					pinfodisp[pindex].createtime_ns = pinfo->createtime.tv_nsec;
 
                     munmap(pinfo, file_stat.st_size);
@@ -542,9 +547,9 @@ int processinfo_CTRLscreen()
                 
 
 				printw(" %02d:%02d:%02d.%09ld", 
-					pinfodisp[pindex].createtm->tm_hour, 
-					pinfodisp[pindex].createtm->tm_min, 
-					pinfodisp[pindex].createtm->tm_sec,
+					pinfodisp[pindex].createtime_hr, 
+					pinfodisp[pindex].createtime_min, 
+					pinfodisp[pindex].createtime_sec,
 					pinfodisp[pindex].createtime_ns);
 
 
