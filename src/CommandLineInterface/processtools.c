@@ -403,19 +403,21 @@ int processinfo_CTRLscreen()
 
                 char SM_fname[200];
 
-                if(updatearray[pindex] == 1)
-                {
+//                if(updatearray[pindex] == 1)
+//                {
+					// check if process info file exists
+					
                     struct stat file_stat;
                     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
 
                     // Does file exist ?
                     if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
                     {
-                        // if not, don't (re)load
+                        // if not, don't (re)load and remove from process info list
                         pinfolist->active[pindex] = 0;
                         updatearray[pindex] = 0;
                     }
-                }
+//                }
                 
                 if(pinfolist->active[pindex] == 1)
                 {
@@ -431,6 +433,9 @@ int processinfo_CTRLscreen()
 //						PIDarray[pindex] = 0;
 					}
                 }
+                
+                
+                
 
 
                 if(updatearray[pindex] == 1)
