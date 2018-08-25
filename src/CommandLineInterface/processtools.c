@@ -542,7 +542,7 @@ pinfoarray[pindex]->loopstat
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(fdarray[pindex]);
                         endwin();
-                        fprintf(stderr, "[%d] Error mmapping file %s\n", __FILE__, SM_fname);
+                        fprintf(stderr, "[%d] Error mmapping file %s\n", __LINE__, SM_fname);
                         pinfolist->active[pindex] = 3;
                     }
                     else
