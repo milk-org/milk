@@ -298,7 +298,7 @@ int processinfo_CTRLscreen()
     int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
 
     // Display fields
-	PROCESSINFODISP *pinfodisp;
+    PROCESSINFODISP *pinfodisp;
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -307,6 +307,12 @@ int processinfo_CTRLscreen()
 
     float frequ = 20.0; // Hz
     char monstring[200];
+
+	// list of active indices
+	int pindexActiveSelected;
+	int pindexSelected;
+	int pindexActive[PROCESSINFOLISTSIZE];
+	int NBpindexActive;
 
     // INITIALIZE ncurses
 
@@ -330,10 +336,10 @@ int processinfo_CTRLscreen()
     init_pair(6, COLOR_RED, COLOR_BLACK);
     init_pair(7, COLOR_BLACK, COLOR_RED);
 
-	int NBpinfodisp = wrow-2;
-	pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
-	for(pindex=0; pindex<NBpinfodisp; pindex++)
-		pinfodisp[pindex].updatecnt = 0;
+    int NBpinfodisp = wrow-2;
+    pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
+    for(pindex=0; pindex<NBpinfodisp; pindex++)
+        pinfodisp[pindex].updatecnt = 0;
 
     int loopOK = 1;
     int freeze = 0;
@@ -371,6 +377,18 @@ int processinfo_CTRLscreen()
         case 'x':
             loopOK=0;
             break;
+            
+        case 'KEY_UP':
+            pindexActiveSelected --;				
+            if(pindexActiveSelected<0)
+				pindexActiveSelected = 0;
+            break;
+                
+         case 'KEY_DOWN':
+			pindexActiveSelected ++;
+            if(pindexActiveSelected>NBpindexActive-1)
+				pindexActiveSelected = NBpindexActive-1;
+				    break;
         }
 
 
@@ -391,51 +409,50 @@ int processinfo_CTRLscreen()
                     else
                     {
                         updatearray[pindex] = 1;
-						PIDarray[pindex] = pinfolist->PIDarray[pindex];
-					}
+                        PIDarray[pindex] = pinfolist->PIDarray[pindex];
+                    }
                 }
-            //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
-            //        updatearray[pindex] = 1;
-                    
+                //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
+                //        updatearray[pindex] = 1;
+
                 if(pinfolist->active[pindex] == 3) // file has gone away
                     updatearray[pindex] = 0;
 
 
                 char SM_fname[200];
 
-//                if(updatearray[pindex] == 1)
-//                {
-					// check if process info file exists
-					
-                    struct stat file_stat;
-                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
 
-                    // Does file exist ?
-                    if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
-                    {
-                        // if not, don't (re)load and remove from process info list
-                        pinfolist->active[pindex] = 0;
-                        updatearray[pindex] = 0;
-                    }
-//                }
-                
+                // check if process info file exists
+
+                struct stat file_stat;
+                sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+
+                // Does file exist ?
+                if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
+                {
+                    // if not, don't (re)load and remove from process info list
+                    pinfolist->active[pindex] = 0;
+                    updatearray[pindex] = 0;
+                }
+
+
                 if(pinfolist->active[pindex] == 1)
                 {
-					// check if process still exists
-					struct stat sts;
+                    // check if process still exists
+                    struct stat sts;
                     char procfname[200];
                     sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as crashed
                         pinfolist->active[pindex] = 2;
-                    
-//						updatearray[pindex] = 0;
-//						PIDarray[pindex] = 0;
-					}
+
+                        //						updatearray[pindex] = 0;
+                        //						PIDarray[pindex] = 0;
+                    }
                 }
-                
-                
-                
+
+
+
 
 
                 if(updatearray[pindex] == 1)
@@ -457,49 +474,54 @@ int processinfo_CTRLscreen()
                         fprintf(stderr, "Error mmapping file %s\n", SM_fname);
                         pinfolist->active[pindex] = 3;
                     }
-                    
+
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
                     strncpy(pinfodisp[pindex].name, pinfo->name, 40-1);
 
-                   // printw("%5ld  %1d  %6d  %32s \n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex], pinfoarray[pindex]->name);
                     munmap(pinfo, file_stat.st_size);
-                    
                     pinfodisp[pindex].updatecnt ++;
-                    
+
                 }
             }
-            
-            
+
+			NBpindexActive = 0;
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				printw("%5ld %3ld  ", pindex, pinfodisp[pindex].updatecnt);
+				
+                printw("%5ld %3ld  ", pindex, pinfodisp[pindex].updatecnt);
 
-				if(pinfolist->active[pindex] == 1)
-				{
-					attron(COLOR_PAIR(3));
-					printw("  ACTIVE");
-					attroff(COLOR_PAIR(3));
-				}
+                if(pinfolist->active[pindex] == 1)
+                {
+                    attron(COLOR_PAIR(3));
+                    printw("  ACTIVE");
+                    attroff(COLOR_PAIR(3));
+                }
 
-				if(pinfolist->active[pindex] == 2)
-				{
-					attron(COLOR_PAIR(2));
-					printw(" CRASHED");
-					attroff(COLOR_PAIR(2));
+                if(pinfolist->active[pindex] == 2)
+                {
+                    attron(COLOR_PAIR(2));
+                    printw(" CRASHED");
+                    attroff(COLOR_PAIR(2));
+                }
+
+
+
+                //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
+                if(pinfolist->active[pindex] != 0)
+                {
+                    printw("  %6d", pinfolist->PIDarray[pindex]);
+                    printw("  %40s", pinfodisp[pindex].name);
+                }
+                printw("\n");
+                
+                if(pinfolist->active[pindex] != 0)
+                {
+					pindexActive[NBpindexActive] = pindex;
+					NBpindexActive++;
 				}
-				
-				
-				
-//				printw("%5ld %d", pindex, pinfolist->active[pindex]);
-				if(pinfolist->active[pindex] != 0)
-				{
-					printw("  %6d", pinfolist->PIDarray[pindex]);
-					printw("  %40s", pinfodisp[pindex].name);
-				}
-				printw("\n");
-			}
-            
+            }
+
             refresh();
 
             cnt++;
@@ -509,7 +531,7 @@ int processinfo_CTRLscreen()
     }
     endwin();
 
-	free(pinfodisp);
+    free(pinfodisp);
 
     return 0;
 }
