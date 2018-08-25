@@ -354,5 +354,6 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
 
 PROCESSINFO* processinfo_shm_create(char *pname);
 
+int processinfo_CTRLscreen();
 
 #endif

@@ -141,7 +141,7 @@ long processinfo_shm_list_create()
 		
 		SM_fd = open(SM_fname, O_RDWR);
 		fstat(SM_fd, &file_stat);
-        printf("[%ld] File %s size: %zd\n", __LINE__, SM_fname, file_stat.st_size);
+        printf("[%d] File %s size: %zd\n", __LINE__, SM_fname, file_stat.st_size);
 
         pinfolist = (PROCESSINFOLIST*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
         if (pinfolist == MAP_FAILED) {
@@ -235,5 +235,31 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 //
 int processinfo_shm_rm(char *pname)
 {
+	
+	return 0;
+}
+
+
+
+
+
+
+
+
+int processinfo_CTRLscreen()
+{
+	long pindex;
+	
+	// Create / read process list
+	processinfo_shm_list_create();
+	
+	for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+	{
+		if(pinfolist->active[pindex] != 0)
+		{
+			printf("%5ld  %1d  %6d\n", pindex, pinfolist->active[pindex], (int) pinfolist->PIDarray[pindex]);
+		}
+	}
+	
 	return 0;
 }
