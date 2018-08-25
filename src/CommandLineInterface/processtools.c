@@ -301,27 +301,33 @@ static int print_header(const char *str, char c)
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex;
+
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+    int pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
 
     pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
     int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
-
+	int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
+	
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+    {
         updatearray[pindex] = 1; // initialize: load all
+        pinfommapped[pindex] = 0;
+    }
 
 
     float frequ = 20.0; // Hz
     char monstring[200];
 
-	// list of active indices
-	int pindexActiveSelected;
-	int pindexSelected;
-	int pindexActive[PROCESSINFOLISTSIZE];
-	int NBpindexActive;
+    // list of active indices
+    int pindexActiveSelected;
+    int pindexSelected;
+    int pindexActive[PROCESSINFOLISTSIZE];
+    int NBpindexActive;
 
     // INITIALIZE ncurses
 
@@ -354,15 +360,15 @@ int_fast8_t processinfo_CTRLscreen()
     int freeze = 0;
     long cnt = 0;
     int MonMode = 0;
-	pindexActiveSelected = 0;
-    
+    pindexActiveSelected = 0;
+
     // Create / read process list
     processinfo_shm_list_create();
 
 
     while( loopOK == 1 )
     {
-		int pid;
+        int pid;
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
@@ -388,44 +394,44 @@ int_fast8_t processinfo_CTRLscreen()
         case 'x':
             loopOK=0;
             break;
-            
+
         case KEY_UP:
-            pindexActiveSelected --;				
+            pindexActiveSelected --;
             if(pindexActiveSelected<0)
-				pindexActiveSelected = 0;
+                pindexActiveSelected = 0;
             pindexSelected = pindexActive[pindexActiveSelected];
             break;
-                
-         case KEY_DOWN:
-			pindexActiveSelected ++;
+
+        case KEY_DOWN:
+            pindexActiveSelected ++;
             if(pindexActiveSelected>NBpindexActive-1)
-				pindexActiveSelected = NBpindexActive-1;
-			pindexSelected = pindexActive[pindexActiveSelected];
-			break;
-			
-		case 'T':
-			pid = pinfolist->PIDarray[pindexSelected];
-			kill(pid, SIGTERM);
-			break;
-			
-		case 'K':
-			pid = pinfolist->PIDarray[pindexSelected];
-			kill(pid, SIGKILL);
-			break;
-						
-		case 'I':
-			pid = pinfolist->PIDarray[pindexSelected];
-			kill(pid, SIGINT);
-			break;
-			
-		break;
+                pindexActiveSelected = NBpindexActive-1;
+            pindexSelected = pindexActive[pindexActiveSelected];
+            break;
+
+        case 'T':
+            pid = pinfolist->PIDarray[pindexSelected];
+            kill(pid, SIGTERM);
+            break;
+
+        case 'K':
+            pid = pinfolist->PIDarray[pindexSelected];
+            kill(pid, SIGKILL);
+            break;
+
+        case 'I':
+            pid = pinfolist->PIDarray[pindexSelected];
+            kill(pid, SIGINT);
+            break;
+
+            break;
         }
 
 
         if(freeze==0)
         {
             clear();
-            
+
             printw("E(x)it   SIG(T)ERM  SIG(K)ILL  SIG(I)NT\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
@@ -491,48 +497,56 @@ int_fast8_t processinfo_CTRLscreen()
                 if(updatearray[pindex] == 1)
                 {
                     // (RE)LOAD
-
-                    int SM_fd;
                     struct stat file_stat;
 
+                    fdarray[pindex] = open(SM_fname, O_RDWR);
+                    fstat(fdarray[pindex], &file_stat);
 
-                    SM_fd = open(SM_fname, O_RDWR);
-                    fstat(SM_fd, &file_stat);
+                    // if already mmapped, first unmap
+                    if(pinfommapped[pindex] == 1)
+                    {
+                        munmap(pinfoarray[pindex], file_stat.st_size);
+                        close(fdarray[pindex]);
+                        pinfommapped[pindex] == 0;
+                    }
 
 
-                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                    pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdarray[pindex], 0);
                     if (pinfoarray[pindex] == MAP_FAILED) {
-                        close(SM_fd);
+                        close(fdarray[pindex]);
                         endwin();
                         fprintf(stderr, "Error mmapping file %s\n", SM_fname);
                         pinfolist->active[pindex] = 3;
                     }
+                    else
+                    {
+                        pinfommapped[pindex] = 1;
+                        strncpy(pinfodisp[pindex].name, pinfoarray[pindex]->name, 40-1);
+
+                        struct tm *createtm;
+                        createtm      = gmtime(&pinfoarray[pindex]->createtime.tv_sec);
+                        pinfodisp[pindex].createtime_hr = createtm->tm_hour;
+                        pinfodisp[pindex].createtime_min = createtm->tm_min;
+                        pinfodisp[pindex].createtime_sec = createtm->tm_sec;
+                        pinfodisp[pindex].createtime_ns = pinfoarray[pindex]->createtime.tv_nsec;
+
+                        pinfodisp[pindex].loopcnt = pinfoarray[pindex]->loopcnt;
+                    }
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-                    strncpy(pinfodisp[pindex].name, pinfoarray[pindex]->name, 40-1);
-                    
-                    struct tm *createtm;
-                    createtm      = gmtime(&pinfoarray[pindex]->createtime.tv_sec);
-                    pinfodisp[pindex].createtime_hr = createtm->tm_hour;
-                    pinfodisp[pindex].createtime_min = createtm->tm_min;
-                    pinfodisp[pindex].createtime_sec = createtm->tm_sec;
-					pinfodisp[pindex].createtime_ns = pinfoarray[pindex]->createtime.tv_nsec;
-					
-					pinfodisp[pindex].loopcnt = pinfoarray[pindex]->loopcnt;
 
-                    munmap(pinfoarray[pindex], file_stat.st_size);
                     pinfodisp[pindex].updatecnt ++;
 
                 }
             }
 
-			NBpindexActive = 0;
+            NBpindexActive = 0;
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				if(pindex == pindexSelected)
-					attron(A_REVERSE);
-					
+                if(pindex == pindexSelected)
+                    attron(A_REVERSE);
+
                 printw("%5ld %3ld  ", pindex, pinfodisp[pindex].updatecnt);
 
 
@@ -550,33 +564,33 @@ int_fast8_t processinfo_CTRLscreen()
                     printw(" CRASHED");
                     attroff(COLOR_PAIR(2));
                 }
-                
+
 
 
                 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                 if(pinfolist->active[pindex] != 0)
                 {
-					
-					printw(" %02d:%02d:%02d.%09ld", 
-						pinfodisp[pindex].createtime_hr, 
-						pinfodisp[pindex].createtime_min, 
-						pinfodisp[pindex].createtime_sec,
-						pinfodisp[pindex].createtime_ns);
-					
+
+                    printw(" %02d:%02d:%02d.%09ld",
+                           pinfodisp[pindex].createtime_hr,
+                           pinfodisp[pindex].createtime_min,
+                           pinfodisp[pindex].createtime_sec,
+                           pinfodisp[pindex].createtime_ns);
+
                     printw("  %6d", pinfolist->PIDarray[pindex]);
                     printw("  %40s", pinfodisp[pindex].name);
-                    printw("  %8ld", pinfodisp[pindex].loopcnt);
+                    printw("  %8ld", pinfoarray[pindex]->loopcnt);
                 }
                 printw("\n");
-                
+
                 if(pindex == pindexSelected)
-					attroff(A_REVERSE);
-					
+                    attroff(A_REVERSE);
+
                 if(pinfolist->active[pindex] != 0)
                 {
-					pindexActive[NBpindexActive] = pindex;
-					NBpindexActive++;
-				}
+                    pindexActive[NBpindexActive] = pindex;
+                    NBpindexActive++;
+                }
             }
 
             refresh();
@@ -587,6 +601,25 @@ int_fast8_t processinfo_CTRLscreen()
 
     }
     endwin();
+
+    // cleanup
+    for(pindex=0; pindex<NBpinfodisp; pindex++)
+    {
+        if(pinfommapped[pindex] == 1)
+        {
+//            char SM_fname[200];
+            struct stat file_stat;
+
+//            sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+//            SM_fd = open(SM_fname, O_RDWR);
+            fstat(fdarray[pindex], &file_stat);
+
+            munmap(pinfoarray[pindex], file_stat.st_size);
+            pinfommapped[pindex] == 0;
+            close(fdarray[pindex]);
+        }
+
+    }
 
     free(pinfodisp);
 
