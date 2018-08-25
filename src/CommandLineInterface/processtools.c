@@ -160,7 +160,6 @@ long processinfo_shm_list_create()
 	}
 
 	printf("pindex = %ld\n", pindex);
-	pinfolist->active[pindex] = 1;
 		
     return pindex;
 }
@@ -191,6 +190,8 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 	long pindex;
     pindex = processinfo_shm_list_create();
     pinfolist->PIDarray[pindex] = PID;
+    pinfolist->active[pindex] = 1;
+    
     
     sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) PID);    
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
