@@ -1515,6 +1515,18 @@ void main_init()
   strcpy(data.cmd[data.NBcmd].Ccall,"data.precision = 1");
   data.NBcmd++;
 
+
+  strcpy(data.cmd[data.NBcmd].key,"procCTRL");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = processinfo_CTRLscreen;
+  strcpy(data.cmd[data.NBcmd].info,"processes control screen");
+  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
+  strcpy(data.cmd[data.NBcmd].example,"procCTRL");
+  strcpy(data.cmd[data.NBcmd].Ccall,"processinfo_CTRLscreen()");
+  data.NBcmd++;
+
+
+
   strcpy(data.cmd[data.NBcmd].key,"usleep");
   strcpy(data.cmd[data.NBcmd].module,__FILE__);
   data.cmd[data.NBcmd].fp = cfits_usleep_cli;

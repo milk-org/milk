@@ -297,6 +297,8 @@ extern DATA data;
 
 
 
+// --------------------- MANAGING PROCESSES -------------------------------
+
 
 //
 // This structure hold process information and hooks required for basic monitoring and control
@@ -310,10 +312,10 @@ typedef struct
 	
 	struct timespec createtime;   // time at which pinfo was created
 
-	long   cnt;                   // counter, useful for loop processes to monitor activity
+	long   loopcnt;               // counter, useful for loop processes to monitor activity
 	int    CTRLval;               // control value to be externally written. Default 0. 1: pause, 2: kill
-	char   tmuxname[200];         // name of tmux session in which process is running, or "NULL"
-	int    loopstat;              // 0: initialization (before loop), 1: in loop, 2: after loop
+	char   tmuxname[80];          // name of tmux session in which process is running, or "NULL"
+	int    loopstat;              // 0: initialization (before loop), 1: in loop, 2: paused, 3: terminated (clean exit)
 
 	char   statusmsg[200];        // status message
 	int    statuscode;            // status code 
@@ -337,6 +339,14 @@ typedef struct
 
 
 
+
+
+
+
+
+
+
+
 #define MAX_NB_FRAMENAME_CHAR 500
 #define MAX_NB_EXCLUSIONS 40
 
@@ -354,5 +364,6 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
 
 PROCESSINFO* processinfo_shm_create(char *pname);
 
+int_fast8_t processinfo_CTRLscreen();
 
 #endif
