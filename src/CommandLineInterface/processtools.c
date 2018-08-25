@@ -366,7 +366,8 @@ int processinfo_CTRLscreen()
                     pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(SM_fd);
-                        fprintf(stderr, "Error mmapping the file");
+                        fprintf(stderr, "Error mmapping file %s\n", SM_fname);
+                        endwin();
                         exit(0);
                     }
 
