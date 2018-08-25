@@ -580,6 +580,7 @@ int_fast8_t processinfo_CTRLscreen()
                     printw("  %6d", pinfolist->PIDarray[pindex]);
                     printw("  %40s", pinfodisp[pindex].name);
                     printw("  %8ld", pinfoarray[pindex]->loopcnt);
+                    printw("  %40s", pinfoarray[pindex]->statusmsg);
                 }
                 printw("\n");
 
