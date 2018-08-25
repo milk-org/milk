@@ -367,8 +367,8 @@ int processinfo_CTRLscreen()
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(SM_fd);
                         fprintf(stderr, "Error mmapping file %s\n", SM_fname);
-                        endwin();
-                        exit(0);
+                        sleep(3);
+                        pinfolist->active[pindex] = 3;
                     }
 
                     // Does process still exist ?
