@@ -421,9 +421,10 @@ int processinfo_CTRLscreen()
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as crashed
                         pinfolist->active[pindex] = 2;
-                    }
-                    updatearray[pindex] = 0;
-                    PIDarray[pindex] = 0;
+                    
+						updatearray[pindex] = 0;
+						PIDarray[pindex] = 0;
+					}
                 }
 
 
