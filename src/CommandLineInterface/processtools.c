@@ -362,7 +362,7 @@ int_fast8_t processinfo_CTRLscreen()
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
-pinfoarray[pindex]->loopstat
+
     int loopOK = 1;
     int freeze = 0;
     long cnt = 0;
