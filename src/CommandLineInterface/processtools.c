@@ -383,7 +383,7 @@ int processinfo_CTRLscreen()
                 if(pinfolist->active[pindex] == 0) // inactive
                     updatearray[pindex] = 0;
 
-                if(pinfolist->active[pindex] == 1) // active
+                if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
                 {
                     if(pinfolist->PIDarray[pindex] == PIDarray[pindex] ) // don't reload if PID same as before
                         updatearray[pindex] = 0;
@@ -393,8 +393,9 @@ int processinfo_CTRLscreen()
 						PIDarray[pindex] = pinfolist->PIDarray[pindex];
 					}
                 }
-                if(pinfolist->active[pindex] == 2) // mmap crashed
-                    updatearray[pindex] = 0;
+            //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
+            //        updatearray[pindex] = 1;
+                    
                 if(pinfolist->active[pindex] == 3) // file has gone away
                     updatearray[pindex] = 0;
 
