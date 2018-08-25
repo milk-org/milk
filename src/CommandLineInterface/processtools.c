@@ -310,6 +310,10 @@ int processinfo_CTRLscreen()
     long cnt = 0;
     int MonMode = 0;
     
+    
+    processinfo_shm_list_create();
+    
+    
     while( loopOK == 1 )
     {
 
@@ -343,8 +347,7 @@ int processinfo_CTRLscreen()
         if(freeze==0)
         {
 
-            // Create / read process list
-            processinfo_shm_list_create();
+            // Create / read process list           
 			clear();
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
             {
