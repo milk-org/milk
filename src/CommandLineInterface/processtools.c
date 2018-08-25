@@ -463,7 +463,7 @@ int processinfo_CTRLscreen()
 				printw("%5ld  %d", pindex, pinfolist->active[pindex]);
 				if(pinfolist->active[pindex] != 0)
 				{
-					printw("  %6d", pinfodisp[pindex].PID);
+					printw("  %6d", pinfolist->PIDarray[pindex]);
 					printw("  %40s", pinfodisp[pindex].name);
 				}
 				printw("\n");
