@@ -674,7 +674,7 @@ int_fast8_t processinfo_CTRLscreen()
             // compute time-sorted list
             NBpindexActive = 0;
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
-                if(pinfolist->active[pindex] == 1)
+                if(pinfolist->active[pindex] != 0)
                 {
                     pindexActive[NBpindexActive] = pindex;
                     NBpindexActive++;
