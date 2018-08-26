@@ -624,8 +624,28 @@ int_fast8_t processinfo_CTRLscreen()
                 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                 if(pinfolist->active[pindex] != 0)
                 {
-					
-					printw(" ls=%d", pinfoarray[pindex]->loopstat );
+					switch (pinfoarray[pindex]->loopstat)
+					{
+						case 0:
+						printw("INIT");
+						 break;
+						 
+						 case 1:
+						 printw(" RUN");
+						 break;
+						 
+						 case 2:
+						 printw("PAUS");
+						 break;
+						 
+						 case 3:
+						 printw("TERM");
+						 break;
+						 
+						 default:
+						 printw(" ?? ");
+					 }
+//					printw(" ls=%d", pinfoarray[pindex]->loopstat );
 
                     printw(" %02d:%02d:%02d.%09ld",
                            pinfodisp[pindex].createtime_hr,
