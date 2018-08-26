@@ -254,6 +254,21 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 
 	pinfolist->active[pindex] = 1;
 
+	char tmuxname[80];
+	FILE *fpout;	
+	fpout = popen ("tmuxsessionname", "r");
+	if(fpout==NULL)
+	{
+		printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+	}
+	else
+	{
+		if(fgets(tmuxname, sizeof(tmuxname), fpout)== NULL)
+			printf("WARNING: fgets error\n");
+		pclose(fpout);
+	}
+	strcpy(pinfo->tmuxname, tmuxname);
+	
     return pinfo;
 }
 
