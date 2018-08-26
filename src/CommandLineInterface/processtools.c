@@ -700,8 +700,15 @@ int_fast8_t processinfo_CTRLscreen()
             for(dispindex=0; dispindex<NBpindexActive; dispindex++)
             {
 				//pindex = dispindex;
+				pindex = -1;
+				index = 0;
+				while ((pindex == -1)&&(index<PROCESSINFOLISTSIZE))
+				{
+					if(dispindex == sorted_pindex_time[index])
+						pindex = index;
+					index++;
+				}
 				
-				pindex = sorted_pindex_time[dispindex]; // time-sorted list
 				
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
