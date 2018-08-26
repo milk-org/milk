@@ -631,6 +631,7 @@ int_fast8_t processinfo_CTRLscreen()
                            pinfodisp[pindex].createtime_ns);
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
+                    printw("  %12s", pinfoarray[pindex]->tmuxname);
 
                     attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
