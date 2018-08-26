@@ -423,17 +423,19 @@ int_fast8_t processinfo_CTRLscreen()
                     pindexActive[NBpindexActive] = pindex;
                     NBpindexActive++;
                 }
+        printf("NBpindexActive = %ld\n", NBpindexActive);
+        fflush(stdout);
 		double *timearray;
 		long *indexarray;
 		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
 		indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
-		for(index=0;index<NBpindexActive;index++)
+/*		for(index=0;index<NBpindexActive;index++)
 		{
 			pindex = pindexActive[index];
 			indexarray[index] = pindex;
 			timearray[index] = 1.0*pinfoarray[pindex]->createtime.tv_sec + 1.0e9*pinfoarray[pindex]->createtime.tv_nsec;
 		}
-		quick_sort2l_double(timearray, indexarray, NBpindexActive);
+		quick_sort2l_double(timearray, indexarray, NBpindexActive);*/
 		
 		for(index=0;index<NBpindexActive;index++)
 			sorted_pindex_time[index] = indexarray[index];
