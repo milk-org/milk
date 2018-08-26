@@ -196,7 +196,7 @@ long processinfo_shm_list_create()
 //
 // Create processinfo in shared memory
 //
-PROCESSINFO* processinfo_shm_create(char *pname)
+PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 {
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
@@ -271,6 +271,12 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 	if(strlen(tmuxname)>0)
 		tmuxname[strlen(tmuxname)-1] = '\0';
 	strcpy(pinfo->tmuxname, tmuxname);
+	
+	// set control value (default 0)
+	// 1 : pause
+	// 2 : increment single step (will go back to 1)
+	// 3 : exit loop
+	pinfo->CTRLval = CTRLval;
 	
     return pinfo;
 }
@@ -363,7 +369,7 @@ int_fast8_t processinfo_CTRLscreen()
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
-	char syscommand[200];
+    char syscommand[200];
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -383,10 +389,10 @@ int_fast8_t processinfo_CTRLscreen()
     int NBpindexActive;
 
     // INITIALIZE ncurses
-	initncurses();
+    initncurses();
 
 
-    int NBpinfodisp = wrow-2;
+    int NBpinfodisp = wrow-3;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
@@ -482,11 +488,28 @@ int_fast8_t processinfo_CTRLscreen()
                 }
             }
             break;
-            
-            case 't':
-            pindex = pindexActive[index];
+
+        // loop controls
+        case 'p': // pause    
+			if(pinfoarray[pindexSelected]->CTRLval == 0){
+				pinfoarray[pindexSelected]->CTRLval = 1;
+			}
+			else
+				pinfoarray[pindexSelected]->CTRLval = 0;
+            break;
+
+        case 's': // step
+            pinfoarray[pindexSelected]->CTRLval = 2;
+            break;
+
+        case 'e': // exit
+            pinfoarray[pindexSelected]->CTRLval = 3;
+            break;
+
+
+        case 't':
             endwin();
-            sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
+            sprintf(syscommand, "tmux a -t %s", pinfoarray[pindexSelected]->tmuxname);
             system(syscommand);
             initncurses();
             break;
@@ -500,6 +523,7 @@ int_fast8_t processinfo_CTRLscreen()
             clear();
 
             printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
+            printw("Loop Controls: (p)ause (s)tep (e)xit\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -663,13 +687,14 @@ int_fast8_t processinfo_CTRLscreen()
                     default:
                         printw(" ?? ");
                     }
-                    //					printw(" ls=%d", pinfoarray[pindex]->loopstat );
+					
+					printw(" C%d", pinfoarray[pindex]->CTRLval );
 
-                    printw(" %02d:%02d:%02d.%09ld",
+                    printw(" %02d:%02d:%02d.%03d",
                            pinfodisp[pindex].createtime_hr,
                            pinfodisp[pindex].createtime_min,
                            pinfodisp[pindex].createtime_sec,
-                           pinfodisp[pindex].createtime_ns);
+                           (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
                     printw("  %12s", pinfoarray[pindex]->tmuxname);
