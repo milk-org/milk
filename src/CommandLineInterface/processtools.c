@@ -366,7 +366,7 @@ int_fast8_t processinfo_CTRLscreen()
     int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
     long loopcntarray[PROCESSINFOLISTSIZE];
 
-	int sorted_pindex_time[PROCESSINFOLISTSIZE];
+    int sorted_pindex_time[PROCESSINFOLISTSIZE];
 
 
     // Display fields
@@ -420,7 +420,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-		
+
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
@@ -501,12 +501,12 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         // loop controls
-        case 'p': // pause    
-			if(pinfoarray[pindexSelected]->CTRLval == 0){
-				pinfoarray[pindexSelected]->CTRLval = 1;
-			}
-			else
-				pinfoarray[pindexSelected]->CTRLval = 0;
+        case 'p': // pause
+            if(pinfoarray[pindexSelected]->CTRLval == 0) {
+                pinfoarray[pindexSelected]->CTRLval = 1;
+            }
+            else
+                pinfoarray[pindexSelected]->CTRLval = 0;
             break;
 
         case 's': // step
@@ -524,36 +524,36 @@ int_fast8_t processinfo_CTRLscreen()
             system(syscommand);
             initncurses();
             break;
-            
+
         case 'a':
-			pindex = pindexSelected;
-			if(pinfolist->active[pindex]==1)
-			{
-			endwin();
-			sprintf(syscommand, "watch -n 0.1 cat /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
-            system(syscommand);
-            initncurses();
-			}
-        break;
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex]==1)
+            {
+                endwin();
+                sprintf(syscommand, "watch -n 0.1 cat /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
+                system(syscommand);
+                initncurses();
+            }
+            break;
 
         case 'd':
-			pindex = pindexSelected;
-			if(pinfolist->active[pindex]==1)
-			{
-			endwin();
-			sprintf(syscommand, "watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
-            system(syscommand);
-            initncurses();
-			}
-        break;
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex]==1)
+            {
+                endwin();
+                sprintf(syscommand, "watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
+                system(syscommand);
+                initncurses();
+            }
+            break;
 
 
-	case 'o':
-	if(TimeSorted == 1)
-	TimeSorted = 0;
-	else
-	TimeSorted = 1;
-	break;
+        case 'o':
+            if(TimeSorted == 1)
+                TimeSorted = 0;
+            else
+                TimeSorted = 1;
+            break;
             break;
         }
 
@@ -667,72 +667,72 @@ int_fast8_t processinfo_CTRLscreen()
 
                 }
             }
-            
-            
-            
-            
-            			// compute time-sorted list
-		NBpindexActive = 0;
-		for(pindex=0;pindex<PROCESSINFOLISTSIZE;pindex++)
-			if(pinfolist->active[pindex] != 0)
+
+
+
+
+            // compute time-sorted list
+            NBpindexActive = 0;
+            for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+                if(pinfolist->active[pindex] == 1)
                 {
                     pindexActive[NBpindexActive] = pindex;
                     NBpindexActive++;
                 }
-		double *timearray;
-		long *indexarray;
-		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
-		indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
-		for(index=0;index<NBpindexActive;index++)
-		{
-			pindex = pindexActive[index];
-			indexarray[index] = pindex;
-			timearray[index] = 1.0*pinfoarray[pindex]->createtime.tv_sec + 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
-		}
-		
-		quick_sort2l_double(timearray, indexarray, NBpindexActive);		
-		
-		for(index=0;index<NBpindexActive;index++)
-			sorted_pindex_time[index] = indexarray[index];
-		
-		free(timearray);
-		free(indexarray);
-            
-            
-            
+            double *timearray;
+            long *indexarray;
+            timearray = (double*) malloc(sizeof(double)*NBpindexActive);
+            indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                indexarray[index] = pindex;
+                timearray[index] = 1.0*pinfoarray[pindex]->createtime.tv_sec + 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+            }
+
+            quick_sort2l_double(timearray, indexarray, NBpindexActive);
+
+            for(index=0; index<NBpindexActive; index++)
+                sorted_pindex_time[index] = indexarray[index];
+
+            free(timearray);
+            free(indexarray);
+
+
+
             // Display
 
-            
+
             int dispindex;
-//            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
-			int dispindexMax = 0;
-			if(TimeSorted == 0)
-				dispindexMax = wrow-3;
-			else
-				dispindexMax = NBpindexActive;
-				
+            //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
+            int dispindexMax = 0;
+            if(TimeSorted == 0)
+                dispindexMax = wrow-4;
+            else
+                dispindexMax = NBpindexActive;
+
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
-				if(TimeSorted == 0)
-				{
-					pindex = dispindex;
-				}
-				else
-				{
-				pindex = -1;
-				index = 0;
-				while ((pindex == -1)&&(index<PROCESSINFOLISTSIZE))
-				{
-					if(dispindex == sorted_pindex_time[index])
-						pindex = index;
-					index++;
-				}
-				}
-				
+                if(TimeSorted == 0)
+                {
+                    pindex = dispindex;
+                }
+                else
+                {
+                    pindex = -1;
+                    index = 0;
+                    while ((pindex == -1)&&(index<PROCESSINFOLISTSIZE))
+                    {
+                        if(dispindex == sorted_pindex_time[index])
+                            pindex = index;
+                        index++;
+                    }
+                }
+
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
 
-                printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[pindex], pindex, pinfodisp[pindex].updatecnt);
+                printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
 
 
 
@@ -785,8 +785,8 @@ int_fast8_t processinfo_CTRLscreen()
                     default:
                         printw(" ?? ");
                     }
-					
-					printw(" C%d", pinfoarray[pindex]->CTRLval );
+
+                    printw(" C%d", pinfoarray[pindex]->CTRLval );
 
                     printw(" %02d:%02d:%02d.%03d",
                            pinfodisp[pindex].createtime_hr,
@@ -822,11 +822,11 @@ int_fast8_t processinfo_CTRLscreen()
                 if(pindex == pindexSelected)
                     attroff(A_REVERSE);
 
-          /*      if(pinfolist->active[pindex] != 0)
-                {
-                    pindexActive[NBpindexActive] = pindex;
-                    NBpindexActive++;
-                }*/
+                /*      if(pinfolist->active[pindex] != 0)
+                      {
+                          pindexActive[NBpindexActive] = pindex;
+                          NBpindexActive++;
+                      }*/
             }
 
             refresh();
