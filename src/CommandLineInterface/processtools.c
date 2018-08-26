@@ -463,7 +463,7 @@ int_fast8_t processinfo_CTRLscreen()
         {
             clear();
 
-            printw("E(x)it   SIG(T)ERM  SIG(K)ILL  SIG(I)NT    (r)emove  (R)emoveall\n");
+            printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -658,18 +658,15 @@ int_fast8_t processinfo_CTRLscreen()
     }
     endwin();
 
+
     // cleanup
     for(pindex=0; pindex<NBpinfodisp; pindex++)
     {
         if(pinfommapped[pindex] == 1)
         {
-            //            char SM_fname[200];
             struct stat file_stat;
 
-            //            sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-            //            SM_fd = open(SM_fname, O_RDWR);
             fstat(fdarray[pindex], &file_stat);
-
             munmap(pinfoarray[pindex], file_stat.st_size);
             pinfommapped[pindex] == 0;
             close(fdarray[pindex]);
