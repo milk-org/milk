@@ -41,7 +41,7 @@
 
 
 #include <CommandLineInterface/CLIcore.h>
-
+#include "COREMOD_tools/COREMOD_tools.h"
 
 
 
@@ -366,6 +366,9 @@ int_fast8_t processinfo_CTRLscreen()
     int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
     long loopcntarray[PROCESSINFOLISTSIZE];
 
+	int sorted_pindex_time[PROCESSINFOLISTSIZE];
+
+
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
@@ -410,6 +413,34 @@ int_fast8_t processinfo_CTRLscreen()
     while( loopOK == 1 )
     {
         int pid;
+
+
+		// compute time-sorted list
+		NBpindexActive = 0;
+		for(pindex=0;pindex<PROCESSINFOLISTSIZE;pindex++)
+			if(pinfolist->active[pindex] != 0)
+                {
+                    pindexActive[NBpindexActive] = pindex;
+                    NBpindexActive++;
+                }
+		double *timearray;
+		long *indexarray;
+		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
+		indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
+		for(index=0;index<NBpindexActive;index++)
+		{
+			pindex = pindexActive[index];
+			indexarray[index] = pindex;
+			timearray[index] = 1.0*pinfoarray[pindex]->createtime.tv_sec + 1.0e9*pinfoarray[pindex]->createtime.tv_nsec;
+		}
+		quick_sort2l_double(timearray, indexarray, NBpindexActive);
+		
+		for(index=0;index<NBpindexActive;index++)
+			sorted_pindex_time[index] = indexarray[index];
+		
+		free(timearray);
+		free(indexarray);
+		
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
@@ -651,8 +682,13 @@ int_fast8_t processinfo_CTRLscreen()
             }
 
             NBpindexActive = 0;
-            for(pindex=0; pindex<NBpinfodisp; pindex++)
+            int dispindex;
+            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
             {
+				//pindex = dispindex;
+				
+				pindex = sorted_pindex_time[dispindex]; // time-sorted list
+				
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
 
