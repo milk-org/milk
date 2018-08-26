@@ -713,7 +713,7 @@ int_fast8_t processinfo_CTRLscreen()
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
 
-                printw("[%d]  %5ld %3ld  ", sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
+                printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[pindex], pindex, pinfodisp[pindex].updatecnt);
 
 
 
