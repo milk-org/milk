@@ -491,25 +491,21 @@ int_fast8_t processinfo_CTRLscreen()
 
         // loop controls
         case 'p':
-            pindex = pindexActive[index];
-            pinfoarray[pindex]->CTRLval = 1;
+            pinfoarray[pindexSelected]->CTRLval = 1;
             break;
 
         case 's':
-            pindex = pindexActive[index];
-            pinfoarray[pindex]->CTRLval = 2;
+            pinfoarray[pindexSelected]->CTRLval = 2;
             break;
 
         case 'e':
-            pindex = pindexActive[index];
-            pinfoarray[pindex]->CTRLval = 3;
+            pinfoarray[pindexSelected]->CTRLval = 3;
             break;
 
 
         case 't':
-            pindex = pindexActive[index];
             endwin();
-            sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
+            sprintf(syscommand, "tmux a -t %s", pinfoarray[pindexSelected]->tmuxname);
             system(syscommand);
             initncurses();
             break;
