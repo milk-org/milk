@@ -344,6 +344,8 @@ static int_fast8_t printInfo()
     printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
+    printf("procinfo status = %d\n", data.processinfo);
+    
     if(data.precision==0)
         printf("Default precision upon startup : float\n");
     if(data.precision==1)
@@ -512,6 +514,20 @@ static int_fast8_t load_module()
 
 
 
+
+int_fast8_t set_processinfoON()
+{
+  data.processinfo  = 1;
+  
+  return 0;
+}
+
+int_fast8_t set_processinfoOFF()
+{
+  data.processinfo  = 0;
+  
+  return 0;
+}
 
 
 
@@ -1514,6 +1530,30 @@ void main_init()
   strcpy(data.cmd[data.NBcmd].example,"dpdouble");
   strcpy(data.cmd[data.NBcmd].Ccall,"data.precision = 1");
   data.NBcmd++;
+
+
+
+// process info
+
+  strcpy(data.cmd[data.NBcmd].key,"setprocinfoON");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = set_processinfoON;
+  strcpy(data.cmd[data.NBcmd].info,"set processes info ON");
+  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
+  strcpy(data.cmd[data.NBcmd].example,"setprocinfoON");
+  strcpy(data.cmd[data.NBcmd].Ccall,"set_processinfoON()");
+  data.NBcmd++;
+
+
+  strcpy(data.cmd[data.NBcmd].key,"setprocinfoOFF");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = set_processinfoOFF;
+  strcpy(data.cmd[data.NBcmd].info,"set processes info OFF");
+  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
+  strcpy(data.cmd[data.NBcmd].example,"setprocinfoOFF");
+  strcpy(data.cmd[data.NBcmd].Ccall,"set_processinfoOFF()");
+  data.NBcmd++;
+
 
 
   strcpy(data.cmd[data.NBcmd].key,"procCTRL");
