@@ -515,6 +515,7 @@ int_fast8_t processinfo_CTRLscreen()
             break;
             
         case 'a':
+			pindex = pindexSelected;
 			if(pinfolist->active[pindex]==1)
 			{
 			endwin();
@@ -525,6 +526,7 @@ int_fast8_t processinfo_CTRLscreen()
         break;
 
         case 'd':
+			pindex = pindexSelected;
 			if(pinfolist->active[pindex]==1)
 			{
 			endwin();
