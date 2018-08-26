@@ -404,6 +404,7 @@ int_fast8_t processinfo_CTRLscreen()
     int freeze = 0;
     long cnt = 0;
     int MonMode = 0;
+    int TimeSorted = 0;
     pindexActiveSelected = 0;
 
     // Create / read process list
@@ -546,6 +547,13 @@ int_fast8_t processinfo_CTRLscreen()
 			}
         break;
 
+
+	case 'o':
+	if(TimeSorted == 1)
+	TimeSorted = 0;
+	else
+	TimeSorted = 1;
+	break;
             break;
         }
 
@@ -555,7 +563,7 @@ int_fast8_t processinfo_CTRLscreen()
             clear();
 
             printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
-            printw("st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit\n");
+            printw("time-s(o)rted    st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit\n");
             printw("%d processes tracked\n", NBpindexActive);
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
@@ -699,7 +707,12 @@ int_fast8_t processinfo_CTRLscreen()
 //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
             for(dispindex=0; dispindex<NBpindexActive; dispindex++)
             {
-				//pindex = dispindex;
+				if(TimeSorted == 0)
+				{
+					pindex = dispindex;
+				}
+				else
+				{
 				pindex = -1;
 				index = 0;
 				while ((pindex == -1)&&(index<PROCESSINFOLISTSIZE))
@@ -708,7 +721,7 @@ int_fast8_t processinfo_CTRLscreen()
 						pindex = index;
 					index++;
 				}
-				
+				}
 				
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
