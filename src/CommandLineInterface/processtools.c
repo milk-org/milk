@@ -697,7 +697,8 @@ int_fast8_t processinfo_CTRLscreen()
 
             NBpindexActive = 0;
             int dispindex;
-            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
+//            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
+            for(dispindex=0; dispindex<NBpindexActive; dispindex++)
             {
 				//pindex = dispindex;
 				
