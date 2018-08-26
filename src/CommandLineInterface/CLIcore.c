@@ -3,7 +3,6 @@
  * @file CLIcore.c
  * @brief main C file
  * 
- * Contains main()
  * 
  * @author Olivier Guyon
  * @date Aug 2 2017
@@ -872,9 +871,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     data.NBKEWORD_DFT = 10; // allocate memory for 10 keyword per image
     sprintf(data.SAVEDIR, ".");
 
-    data.CLIlogON = 0; // log every command
+    data.CLIlogON = 0;     // log every command
     data.fifoON = 1;
-
+	data.processinfo = 1;  // process info for intensive processes
 
     // signal handling
 
