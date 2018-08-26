@@ -687,7 +687,8 @@ int_fast8_t processinfo_CTRLscreen()
                     default:
                         printw(" ?? ");
                     }
-                    //					printw(" ls=%d", pinfoarray[pindex]->loopstat );
+					
+					printw(" C%d", pinfoarray[pindex]->CTRLval );
 
                     printw(" %02d:%02d:%02d.%09ld",
                            pinfodisp[pindex].createtime_hr,
