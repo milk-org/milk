@@ -719,14 +719,15 @@ int_fast8_t processinfo_CTRLscreen()
                 }
                 else
                 {
-                    pindex = -1;
+					pindex = sorted_pindex_time[dispindex];
+/*                    pindex = -1;
                     index = 0;
                     while ((pindex == -1)&&(index<PROCESSINFOLISTSIZE))
                     {
                         if(dispindex == sorted_pindex_time[index])
                             pindex = index;
                         index++;
-                    }
+                    }*/
                 }
 
                 if(pindex == pindexSelected)
