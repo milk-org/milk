@@ -478,6 +478,7 @@ int_fast8_t processinfo_CTRLscreen()
             case 't':
             pindex = pindexActive[index];
             sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
+            system(syscommand);
             break;
 
             break;
