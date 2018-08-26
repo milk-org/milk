@@ -519,7 +519,7 @@ int_fast8_t processinfo_CTRLscreen()
 			if(pinfolist->active[pindex]==1)
 			{
 			endwin();
-			sprintf(syscommand, "watch -n 0.1 /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
+			sprintf(syscommand, "watch -n 0.1 more /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
             system(syscommand);
             initncurses();
 			}
@@ -530,7 +530,7 @@ int_fast8_t processinfo_CTRLscreen()
 			if(pinfolist->active[pindex]==1)
 			{
 			endwin();
-			sprintf(syscommand, "watch -n 0.1 /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
+			sprintf(syscommand, "watch -n 0.1 more /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
             system(syscommand);
             initncurses();
 			}
