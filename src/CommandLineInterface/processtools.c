@@ -369,7 +369,7 @@ int_fast8_t processinfo_CTRLscreen()
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
-	char syscommand[200];
+    char syscommand[200];
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -389,7 +389,7 @@ int_fast8_t processinfo_CTRLscreen()
     int NBpindexActive;
 
     // INITIALIZE ncurses
-	initncurses();
+    initncurses();
 
 
     int NBpinfodisp = wrow-3;
@@ -488,8 +488,25 @@ int_fast8_t processinfo_CTRLscreen()
                 }
             }
             break;
-            
-            case 't':
+
+        // loop controls
+        case 'p':
+            pindex = pindexActive[index];
+            pinfoarray[pindex]->CTRLval = 1;
+            break;
+
+        case 's':
+            pindex = pindexActive[index];
+            pinfoarray[pindex]->CTRLval = 2;
+            break;
+
+        case 'e':
+            pindex = pindexActive[index];
+            pinfoarray[pindex]->CTRLval = 3;
+            break;
+
+
+        case 't':
             pindex = pindexActive[index];
             endwin();
             sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
