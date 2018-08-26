@@ -490,22 +490,19 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         // loop controls
-        case 'p':
-        
+        case 'p': // pause    
 			if(pinfoarray[pindexSelected]->CTRLval == 0){
 				pinfoarray[pindexSelected]->CTRLval = 1;
 			}
-			
-			//if(pinfoarray[pindexSelected]->CTRLval == 1){
-			//	pinfoarray[pindexSelected]->CTRLval = 0;
-			//}
+			else
+				pinfoarray[pindexSelected]->CTRLval = 0;
             break;
 
-        case 's':
+        case 's': // step
             pinfoarray[pindexSelected]->CTRLval = 2;
             break;
 
-        case 'e':
+        case 'e': // exit
             pinfoarray[pindexSelected]->CTRLval = 3;
             break;
 
