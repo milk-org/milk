@@ -556,6 +556,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
             printw("st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit\n");
+            printw("%d processes tracked\n", NBpindexActive);
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -670,8 +671,6 @@ int_fast8_t processinfo_CTRLscreen()
                     pindexActive[NBpindexActive] = pindex;
                     NBpindexActive++;
                 }
-        printf("NBpindexActive = %ld\n", NBpindexActive);
-        fflush(stdout);
 		double *timearray;
 		long *indexarray;
 		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
@@ -695,7 +694,7 @@ int_fast8_t processinfo_CTRLscreen()
             
             // Display
 
-            NBpindexActive = 0;
+            
             int dispindex;
 //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
             for(dispindex=0; dispindex<NBpindexActive; dispindex++)
