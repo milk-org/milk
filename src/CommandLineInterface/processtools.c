@@ -479,6 +479,11 @@ int_fast8_t processinfo_CTRLscreen()
             pindex = pindexActive[index];
             sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
             system(syscommand);
+                cbreak();
+    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
+    nodelay(stdscr, TRUE);
+    curs_set(0);
+    noecho();			/* Don't echo() while we do getch */
             break;
 
             break;
