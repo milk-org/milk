@@ -315,6 +315,34 @@ static int print_header(const char *str, char c)
 
 
 
+// INITIALIZE ncurses
+static int initncurses()
+{
+    if ( initscr() == NULL ) {
+        fprintf(stderr, "Error initialising ncurses.\n");
+        exit(EXIT_FAILURE);
+    }
+    getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
+    cbreak();
+    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
+    nodelay(stdscr, TRUE);
+    curs_set(0);
+    noecho();			/* Don't echo() while we do getch */
+
+    start_color();
+    init_pair(1, COLOR_BLACK, COLOR_WHITE);
+    init_pair(2, COLOR_BLACK, COLOR_RED);
+    init_pair(3, COLOR_BLACK, COLOR_GREEN);
+    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
+
+    init_pair(5, COLOR_GREEN, COLOR_BLACK);
+    init_pair(6, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(7, COLOR_RED, COLOR_BLACK);
+    init_pair(8, COLOR_BLACK, COLOR_RED);
+
+    return 0;
+}
+
 
 
 
@@ -355,28 +383,8 @@ int_fast8_t processinfo_CTRLscreen()
     int NBpindexActive;
 
     // INITIALIZE ncurses
+	initncurses();
 
-    if ( initscr() == NULL ) {
-        fprintf(stderr, "Error initialising ncurses.\n");
-        exit(EXIT_FAILURE);
-    }
-    getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-    cbreak();
-    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
-    nodelay(stdscr, TRUE);
-    curs_set(0);
-    noecho();			/* Don't echo() while we do getch */
-
-    start_color();
-    init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_BLACK, COLOR_RED);
-    init_pair(3, COLOR_BLACK, COLOR_GREEN);
-    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
-
-    init_pair(5, COLOR_GREEN, COLOR_BLACK);
-    init_pair(6, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(7, COLOR_RED, COLOR_BLACK);
-    init_pair(8, COLOR_BLACK, COLOR_RED);
 
     int NBpinfodisp = wrow-2;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
@@ -477,13 +485,10 @@ int_fast8_t processinfo_CTRLscreen()
             
             case 't':
             pindex = pindexActive[index];
+            endwin();
             sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
             system(syscommand);
-                cbreak();
-    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
-    nodelay(stdscr, TRUE);
-    curs_set(0);
-    noecho();			/* Don't echo() while we do getch */
+            initncurses();
             break;
 
             break;
