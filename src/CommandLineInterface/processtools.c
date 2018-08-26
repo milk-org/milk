@@ -335,6 +335,8 @@ int_fast8_t processinfo_CTRLscreen()
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
+	char syscommand[200];
+
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
@@ -474,9 +476,8 @@ int_fast8_t processinfo_CTRLscreen()
             break;
             
             case 't':
-            char command[200];
             pindex = pindexActive[index];
-            sprintf(command, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
+            sprintf(syscommand, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
             break;
 
             break;
