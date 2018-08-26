@@ -427,7 +427,7 @@ int_fast8_t processinfo_CTRLscreen()
 		long *indexarray;
 		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
 		indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
-/*		for(index=0;index<NBpindexActive;index++)
+		for(index=0;index<NBpindexActive;index++)
 		{
 			pindex = pindexActive[index];
 			indexarray[index] = pindex;
@@ -437,7 +437,7 @@ int_fast8_t processinfo_CTRLscreen()
 		
 		for(index=0;index<NBpindexActive;index++)
 			sorted_pindex_time[index] = indexarray[index];
-		*/
+		
 		free(timearray);
 		free(indexarray);
 		
