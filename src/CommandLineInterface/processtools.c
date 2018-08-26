@@ -415,34 +415,10 @@ int_fast8_t processinfo_CTRLscreen()
         int pid;
 
 
-		// compute time-sorted list
-		NBpindexActive = 0;
-		for(pindex=0;pindex<PROCESSINFOLISTSIZE;pindex++)
-			if(pinfolist->active[pindex] != 0)
-                {
-                    pindexActive[NBpindexActive] = pindex;
-                    NBpindexActive++;
-                }
-        printf("NBpindexActive = %ld\n", NBpindexActive);
-        fflush(stdout);
-		double *timearray;
-		long *indexarray;
-		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
-		indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
-		for(index=0;index<NBpindexActive;index++)
-		{
-			pindex = pindexActive[index];
-			indexarray[index] = pindex;
-//			timearray[index] = 1.0*pinfoarray[pindex]->createtime.tv_sec + 1.0e9*pinfoarray[pindex]->createtime.tv_nsec;
-		}
-		
-		//quick_sort2l_double(timearray, indexarray, NBpindexActive);
-		
-		for(index=0;index<NBpindexActive;index++)
-			sorted_pindex_time[index] = indexarray[index];
-		
-		free(timearray);
-		free(indexarray);
+
+
+
+
 		
 
         usleep((long) (1000000.0/frequ));
@@ -583,7 +559,6 @@ int_fast8_t processinfo_CTRLscreen()
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-
                 // SHOULD WE (RE)LOAD ?
                 if(pinfolist->active[pindex] == 0) // inactive
                     updatearray[pindex] = 0;
@@ -683,6 +658,42 @@ int_fast8_t processinfo_CTRLscreen()
 
                 }
             }
+            
+            
+            
+            
+            			// compute time-sorted list
+		NBpindexActive = 0;
+		for(pindex=0;pindex<PROCESSINFOLISTSIZE;pindex++)
+			if(pinfolist->active[pindex] != 0)
+                {
+                    pindexActive[NBpindexActive] = pindex;
+                    NBpindexActive++;
+                }
+        printf("NBpindexActive = %ld\n", NBpindexActive);
+        fflush(stdout);
+		double *timearray;
+		long *indexarray;
+		timearray = (double*) malloc(sizeof(double)*NBpindexActive);
+		indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
+		for(index=0;index<NBpindexActive;index++)
+		{
+			pindex = pindexActive[index];
+			indexarray[index] = pindex;
+			timearray[index] = 1.0*pinfoarray[pindex]->createtime.tv_sec + 1.0e9*pinfoarray[pindex]->createtime.tv_nsec;
+		}
+		
+		quick_sort2l_double(timearray, indexarray, NBpindexActive);		
+		
+		for(index=0;index<NBpindexActive;index++)
+			sorted_pindex_time[index] = indexarray[index];
+		
+		free(timearray);
+		free(indexarray);
+            
+            
+            
+            
 
             NBpindexActive = 0;
             int dispindex;
