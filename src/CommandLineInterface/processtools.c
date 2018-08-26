@@ -796,11 +796,11 @@ int_fast8_t processinfo_CTRLscreen()
                 if(pindex == pindexSelected)
                     attroff(A_REVERSE);
 
-                if(pinfolist->active[pindex] != 0)
+          /*      if(pinfolist->active[pindex] != 0)
                 {
                     pindexActive[NBpindexActive] = pindex;
                     NBpindexActive++;
-                }
+                }*/
             }
 
             refresh();
