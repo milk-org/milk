@@ -436,8 +436,8 @@ int_fast8_t processinfo_CTRLscreen()
 		quick_sort2l_double(timearray, indexarray, NBpindexActive);
 		
 		for(index=0;index<NBpindexActive;index++)
-*/			sorted_pindex_time[index] = indexarray[index];
-		
+			sorted_pindex_time[index] = indexarray[index];
+		*/
 		free(timearray);
 		free(indexarray);
 		
