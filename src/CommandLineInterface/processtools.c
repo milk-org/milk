@@ -254,6 +254,24 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 
 	pinfolist->active[pindex] = 1;
 
+	char tmuxname[80];
+	FILE *fpout;	
+	fpout = popen ("tmuxsessionname", "r");
+	if(fpout==NULL)
+	{
+		printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+	}
+	else
+	{
+		if(fgets(tmuxname, sizeof(tmuxname), fpout)== NULL)
+			printf("WARNING: fgets error\n");
+		pclose(fpout);
+	}
+	// remove line feed
+	if(strlen(tmuxname)>0)
+		tmuxname[strlen(tmuxname)-1] = '\0';
+	strcpy(pinfo->tmuxname, tmuxname);
+	
     return pinfo;
 }
 
@@ -616,6 +634,7 @@ int_fast8_t processinfo_CTRLscreen()
                            pinfodisp[pindex].createtime_ns);
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
+                    printw("  %12s", pinfoarray[pindex]->tmuxname);
 
                     attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
