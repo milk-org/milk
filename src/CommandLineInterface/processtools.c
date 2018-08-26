@@ -367,10 +367,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     start_color();
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_BLACK, COLOR_RED);   
+    init_pair(2, COLOR_BLACK, COLOR_RED);
     init_pair(3, COLOR_BLACK, COLOR_GREEN);
     init_pair(4, COLOR_BLACK, COLOR_YELLOW);
-    
+
     init_pair(5, COLOR_GREEN, COLOR_BLACK);
     init_pair(6, COLOR_YELLOW, COLOR_BLACK);
     init_pair(7, COLOR_RED, COLOR_BLACK);
@@ -472,6 +472,12 @@ int_fast8_t processinfo_CTRLscreen()
                 }
             }
             break;
+            
+            case 't':
+            char command[200];
+            pindex = pindexActive[index];
+            sprintf(command, "tmux a -t %s", pinfoarray[pindex]->tmuxname);
+            break;
 
             break;
         }
@@ -481,7 +487,7 @@ int_fast8_t processinfo_CTRLscreen()
         {
             clear();
 
-            printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall\n");
+            printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -532,7 +538,7 @@ int_fast8_t processinfo_CTRLscreen()
                     sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as inactive
-                        pinfolist->active[pindex] = 2;                     
+                        pinfolist->active[pindex] = 2;
                     }
                 }
 
@@ -548,14 +554,14 @@ int_fast8_t processinfo_CTRLscreen()
                     // if already mmapped, first unmap
                     if(pinfommapped[pindex] == 1)
                     {
-						fstat(fdarray[pindex], &file_stat);
+                        fstat(fdarray[pindex], &file_stat);
                         munmap(pinfoarray[pindex], file_stat.st_size);
                         close(fdarray[pindex]);
                         pinfommapped[pindex] == 0;
                     }
 
-					fdarray[pindex] = open(SM_fname, O_RDWR);
-					fstat(fdarray[pindex], &file_stat);
+                    fdarray[pindex] = open(SM_fname, O_RDWR);
+                    fstat(fdarray[pindex], &file_stat);
                     pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdarray[pindex], 0);
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(fdarray[pindex]);
@@ -605,18 +611,18 @@ int_fast8_t processinfo_CTRLscreen()
 
                 if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
                 {
-					if(pinfoarray[pindex]->loopstat == 3) // clean exit
-					{
-						attron(COLOR_PAIR(4));
-                    printw(" STOPPED");
-                    attroff(COLOR_PAIR(4));
-					}
-					else
-					{					
-                    attron(COLOR_PAIR(2));
-                    printw(" CRASHED");
-                    attroff(COLOR_PAIR(2));
-					}
+                    if(pinfoarray[pindex]->loopstat == 3) // clean exit
+                    {
+                        attron(COLOR_PAIR(4));
+                        printw(" STOPPED");
+                        attroff(COLOR_PAIR(4));
+                    }
+                    else
+                    {
+                        attron(COLOR_PAIR(2));
+                        printw(" CRASHED");
+                        attroff(COLOR_PAIR(2));
+                    }
                 }
 
 
@@ -624,28 +630,28 @@ int_fast8_t processinfo_CTRLscreen()
                 //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                 if(pinfolist->active[pindex] != 0)
                 {
-					switch (pinfoarray[pindex]->loopstat)
-					{
-						case 0:
-						printw("INIT");
-						 break;
-						 
-						 case 1:
-						 printw(" RUN");
-						 break;
-						 
-						 case 2:
-						 printw("PAUS");
-						 break;
-						 
-						 case 3:
-						 printw("TERM");
-						 break;
-						 
-						 default:
-						 printw(" ?? ");
-					 }
-//					printw(" ls=%d", pinfoarray[pindex]->loopstat );
+                    switch (pinfoarray[pindex]->loopstat)
+                    {
+                    case 0:
+                        printw("INIT");
+                        break;
+
+                    case 1:
+                        printw(" RUN");
+                        break;
+
+                    case 2:
+                        printw("PAUS");
+                        break;
+
+                    case 3:
+                        printw("TERM");
+                        break;
+
+                    default:
+                        printw(" ?? ");
+                    }
+                    //					printw(" ls=%d", pinfoarray[pindex]->loopstat );
 
                     printw(" %02d:%02d:%02d.%09ld",
                            pinfodisp[pindex].createtime_hr,
