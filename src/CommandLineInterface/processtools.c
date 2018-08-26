@@ -405,6 +405,9 @@ int_fast8_t processinfo_CTRLscreen()
     long cnt = 0;
     int MonMode = 0;
     int TimeSorted = 0;
+    int dispindexMax = 0;
+    
+    
     pindexActiveSelected = 0;
 
     // Create / read process list
@@ -451,14 +454,20 @@ int_fast8_t processinfo_CTRLscreen()
             pindexActiveSelected --;
             if(pindexActiveSelected<0)
                 pindexActiveSelected = 0;
-            pindexSelected = pindexActive[pindexActiveSelected];
+            if(TimeSorted == 0)
+				pindexSelected = pindexActive[pindexActiveSelected];
+            else
+				pindexSelected = sorted_pindex_time[pindexActiveSelected];
             break;
 
         case KEY_DOWN:
             pindexActiveSelected ++;
-            if(pindexActiveSelected>NBpindexActive-1)
-                pindexActiveSelected = NBpindexActive-1;
-            pindexSelected = pindexActive[pindexActiveSelected];
+			if(pindexActiveSelected>NBpindexActive-1)
+				pindexActiveSelected = NBpindexActive-1;
+            if(TimeSorted == 0)
+				pindexSelected = pindexActive[pindexActiveSelected];
+            else
+				pindexSelected = sorted_pindex_time[pindexActiveSelected];		
             break;
 
         case 'T':
@@ -705,7 +714,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             int dispindex;
             //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
-            int dispindexMax = 0;
+            
             if(TimeSorted == 0)
                 dispindexMax = wrow-4;
             else
@@ -720,14 +729,6 @@ int_fast8_t processinfo_CTRLscreen()
                 else
                 {
 					pindex = sorted_pindex_time[dispindex];
-/*                    pindex = -1;
-                    index = 0;
-                    while ((pindex == -1)&&(index<PROCESSINFOLISTSIZE))
-                    {
-                        if(dispindex == sorted_pindex_time[index])
-                            pindex = index;
-                        index++;
-                    }*/
                 }
 
                 if(pindex == pindexSelected)
