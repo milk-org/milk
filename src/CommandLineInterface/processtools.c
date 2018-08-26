@@ -513,6 +513,26 @@ int_fast8_t processinfo_CTRLscreen()
             system(syscommand);
             initncurses();
             break;
+            
+        case 'a':
+			if(pinfolist->active[pindex]==1)
+			{
+			endwin();
+			sprintf(syscommand, "watch -n 0.1 /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
+            system(syscommand);
+            initncurses();
+			}
+        break;
+
+        case 'd':
+			if(pinfolist->active[pindex]==1)
+			{
+			endwin();
+			sprintf(syscommand, "watch -n 0.1 /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
+            system(syscommand);
+            initncurses();
+			}
+        break;
 
             break;
         }
@@ -523,7 +543,7 @@ int_fast8_t processinfo_CTRLscreen()
             clear();
 
             printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
-            printw("Loop Controls: (p)ause (s)tep (e)xit\n");
+            printw("st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
