@@ -267,6 +267,9 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 			printf("WARNING: fgets error\n");
 		pclose(fpout);
 	}
+	// remove line feed
+	if(strlen(tmuxname)>0)
+		tmuxname[strlen(tmuxname)-1] = '\0';
 	strcpy(pinfo->tmuxname, tmuxname);
 	
     return pinfo;
