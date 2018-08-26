@@ -705,6 +705,7 @@ int_fast8_t processinfo_CTRLscreen()
             
             int dispindex;
 //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
+			dispindexMax = 0;
 			if(TimeSorted == 0)
 				dispindexMax = wrow-3;
 			else
