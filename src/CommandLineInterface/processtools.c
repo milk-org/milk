@@ -196,7 +196,7 @@ long processinfo_shm_list_create()
 //
 // Create processinfo in shared memory
 //
-PROCESSINFO* processinfo_shm_create(char *pname)
+PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 {
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
@@ -271,6 +271,12 @@ PROCESSINFO* processinfo_shm_create(char *pname)
 	if(strlen(tmuxname)>0)
 		tmuxname[strlen(tmuxname)-1] = '\0';
 	strcpy(pinfo->tmuxname, tmuxname);
+	
+	// set control value (default 0)
+	// 1 : pause
+	// 2 : increment single step (will go back to 1)
+	// 3 : exit loop
+	pinfo->CTRLval = CTRLval;
 	
     return pinfo;
 }
@@ -386,7 +392,7 @@ int_fast8_t processinfo_CTRLscreen()
 	initncurses();
 
 
-    int NBpinfodisp = wrow-2;
+    int NBpinfodisp = wrow-3;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
@@ -500,6 +506,7 @@ int_fast8_t processinfo_CTRLscreen()
             clear();
 
             printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
+            printw("Loop Controls: (p)ause (s)tep (e)xit\n");
             printw("\n");
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
