@@ -277,11 +277,18 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 		if(tmuxname[strlen(tmuxname)-1] == '\n')
 			tmuxname[strlen(tmuxname)-1] = '\0';
 	}
+	
+	printf("line %d\n", __LINE__);
+	fflush(stdout);
 	// force last char to be term, just in case
 	tmuxname[99] = '\0';
+	printf("line %d\n", __LINE__);
+	fflush(stdout);
 	
 	strncpy(pinfo->tmuxname, tmuxname, 100);
 	
+	printf("line %d\n", __LINE__);
+	fflush(stdout);
 	// set control value (default 0)
 	// 1 : pause
 	// 2 : increment single step (will go back to 1)
