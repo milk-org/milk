@@ -254,7 +254,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 
 	pinfolist->active[pindex] = 1;
 
-	char tmuxname[80];
+	char tmuxname[100];
 	FILE *fpout;	
 	fpout = popen ("tmuxsessionname", "r");
 	if(fpout==NULL)
