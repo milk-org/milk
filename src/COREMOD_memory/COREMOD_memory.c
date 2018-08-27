@@ -5356,7 +5356,7 @@ long COREMOD_MEMORY_streamDelay(
         processinfo->loopstat = 0; // loop initialization
 
         char msgstring[200];
-        sprintf(msgstring, "%s -> %s (%ld us delay)", IDin_name, IDout_name, delayus);
+        sprintf(msgstring, "%s->%s + %ldus", IDin_name, IDout_name, delayus);
         strcpy(processinfo->statusmsg, msgstring);
     }
 
@@ -5437,6 +5437,7 @@ long COREMOD_MEMORY_streamDelay(
     int loopOK = 1;
     int loopCTRLexit = 0;
 	long loopcnt = 0;
+	
     while(loopOK == 1)
     {
         if(data.processinfo==1)
@@ -5538,9 +5539,9 @@ long COREMOD_MEMORY_streamDelay(
         usleep(dtus);
         
         loopcnt++;
+        
         if(data.processinfo==1)
 			processinfo->loopcnt = loopcnt;
-        
     }
 
     delete_image_ID("_tmpc");
