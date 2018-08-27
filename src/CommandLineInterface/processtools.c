@@ -263,7 +263,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	}
 	else
 	{
-		if(fgets(tmuxname, sizeof(tmuxname), fpout)== NULL)
+		if(fgets(tmuxname, 80, fpout)== NULL)
 			printf("WARNING: fgets error\n");
 		pclose(fpout);
 	}
@@ -271,7 +271,10 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	if(strlen(tmuxname)>0)
 		if(tmuxname[strlen(tmuxname)-1] == '\n')
 			tmuxname[strlen(tmuxname)-1] = '\0';
-	strcpy(pinfo->tmuxname, tmuxname);
+	// force last char to be term
+	tmuxname[79] = '\0';
+	
+	strncpy(pinfo->tmuxname, tmuxname, 80);
 	
 	// set control value (default 0)
 	// 1 : pause
