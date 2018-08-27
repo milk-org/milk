@@ -806,7 +806,7 @@ int_fast8_t processinfo_CTRLscreen()
                            (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
-                    printw(" %12s", pinfoarray[pindex]->tmuxname);
+                    printw(" %16s", pinfoarray[pindex]->tmuxname);
 
                     attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
@@ -827,7 +827,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 					if(pinfoarray[pindex]->loopstat == 4) // ERROR
 						attron(COLOR_PAIR(2));
-                    printw("  -%60s", pinfoarray[pindex]->statusmsg);
+                    printw("  %40s", pinfoarray[pindex]->statusmsg);
                     if(pinfoarray[pindex]->loopstat == 4) // ERROR
 						attroff(COLOR_PAIR(2));
                 }
