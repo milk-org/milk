@@ -5430,10 +5430,13 @@ long COREMOD_MEMORY_streamDelay(
     for(kk=0; kk<zsize; kk++)
         t0array[kk] = tnow;
 
+
+
     if(data.processinfo==1)
         processinfo->loopstat = 1; // loop running
     int loopOK = 1;
     int loopCTRLexit = 0;
+	long loopcnt = 0;
     while(loopOK == 1)
     {
         if(data.processinfo==1)
@@ -5533,6 +5536,11 @@ long COREMOD_MEMORY_streamDelay(
 
 
         usleep(dtus);
+        
+        loopcnt++;
+        if(data.processinfo==1)
+			processinfo->loopcnt = loopcnt;
+        
     }
 
     delete_image_ID("_tmpc");
