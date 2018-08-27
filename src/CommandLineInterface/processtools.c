@@ -263,8 +263,10 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	}
 	else
 	{
-		if(fgets(tmuxname, 80, fpout)== NULL)
-			printf("WARNING: fgets error\n");
+		while(fgets(tmuxname, 80, fpout))
+		{
+			// nothing
+		}
 		pclose(fpout);
 	}
 	// remove line feed
