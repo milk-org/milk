@@ -67,7 +67,7 @@ typedef struct
 	long          createtime_ns;
 	
 	char          statusmsg[200];
-	char          tmuxname[80];
+	char          tmuxname[100];
 
 } PROCESSINFODISP;
 
@@ -263,20 +263,18 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	}
 	else
 	{
-		while(fgets(tmuxname, 80, fpout))
-		{
-			// nothing
-		}
+		if(fgets(tmuxname, 100, fpout)== NULL)
+			printf("WARNING: fgets error\n");
 		pclose(fpout);
 	}
 	// remove line feed
-	/*if(strlen(tmuxname)>0)
+	if(strlen(tmuxname)>0)
 		if(tmuxname[strlen(tmuxname)-1] == '\n')
-			tmuxname[strlen(tmuxname)-1] = '\0';*/
-	// force last char to be term
-	tmuxname[79] = '\0';
+			tmuxname[strlen(tmuxname)-1] = '\0';
+	// force last char to be term, just in case
+	tmuxname[99] = '\0';
 	
-	strncpy(pinfo->tmuxname, tmuxname, 80);
+	strncpy(pinfo->tmuxname, tmuxname, 100);
 	
 	// set control value (default 0)
 	// 1 : pause
