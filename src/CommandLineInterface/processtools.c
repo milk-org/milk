@@ -404,7 +404,7 @@ int_fast8_t processinfo_CTRLscreen()
     int freeze = 0;
     long cnt = 0;
     int MonMode = 0;
-    int TimeSorted = 0;
+    int TimeSorted = 1;  // by default, sort processes by start time (most recent at top)
     int dispindexMax = 0;
     
     
@@ -735,7 +735,7 @@ int_fast8_t processinfo_CTRLscreen()
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
 
-                printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
+               // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
 
 
 
