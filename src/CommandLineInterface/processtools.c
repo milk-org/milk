@@ -821,10 +821,10 @@ int_fast8_t processinfo_CTRLscreen()
 
                     loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
 
-					if(processinfo->loopstat == 4) // ERROR
+					if(pinfoarray[pindex]->loopstat == 4) // ERROR
 						attron(COLOR_PAIR(2));
                     printw("  %40s", pinfoarray[pindex]->statusmsg);
-                    if(processinfo->loopstat == 4) // ERROR
+                    if(pinfoarray[pindex]->loopstat == 4) // ERROR
 						attroff(COLOR_PAIR(2));
                 }
                 printw("\n");
