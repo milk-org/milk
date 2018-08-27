@@ -5313,34 +5313,34 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 
 
 
-/** 
- * 
+/**
+ *
  * IDout_name is a time-delayed copy of IDin_name
- * 
- */ 
+ *
+ */
 
 long COREMOD_MEMORY_streamDelay(
-		const char *IDin_name, 
-		const char *IDout_name, 
-		long delayus, 
-		long dtus
-		)
+    const char *IDin_name,
+    const char *IDout_name,
+    long delayus,
+    long dtus
+)
 {
-	long IDimc;
-	long IDin, IDout;
-	uint32_t xsize, ysize, xysize;
-	uint32_t zsize;
-	long kkin;
-	long cnt0, cnt0old;
-	long ii;
-	struct timespec *t0array;
-	struct timespec tnow;
-	double tdiffv;
-	struct timespec tdiff;
-	uint32_t *arraytmp;
-	long cntskip = 0;
-	long kkout;
-	long kk;
+    long IDimc;
+    long IDin, IDout;
+    uint32_t xsize, ysize, xysize;
+    uint32_t zsize;
+    long kkin;
+    long cnt0, cnt0old;
+    long ii;
+    struct timespec *t0array;
+    struct timespec tnow;
+    double tdiffv;
+    struct timespec tdiff;
+    uint32_t *arraytmp;
+    long cntskip = 0;
+    long kkout;
+    long kk;
 
 
 
@@ -5355,7 +5355,7 @@ long COREMOD_MEMORY_streamDelay(
         processinfo = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = 0; // loop initialization
 
-		char msgstring[200];
+        char msgstring[200];
         sprintf(msgstring, "%s -> %s (%ld us delay)", IDin_name, IDout_name, delayus);
         strcpy(processinfo->statusmsg, msgstring);
     }
@@ -5363,80 +5363,80 @@ long COREMOD_MEMORY_streamDelay(
 
 
 
-	IDin = image_ID(IDin_name);
-	
-	// ERROR HANDLING
-	if(IDin == -1)
-	{
-		struct timespec errtime; 
-		struct tm *errtm;
-		
-		clock_gettime(CLOCK_REALTIME, &errtime); 
-		errtm = gmtime(&errtime.tv_sec);
-		
-		fprintf(stderr, 
-			"%02d:%02d:%02d.%09ld  ERROR [%s %s %d] Input stream %s does not exist, cannot proceed\n", 
-			errtm->tm_hour,
-			errtm->tm_min,
-			errtm->tm_sec, 
-			errtime.tv_nsec,
-			__FILE__, 
-			__FUNCTION__, 
-			__LINE__, 
-			IDin_name);
-			
-		if(data.processinfo==1)
-		{
-			char msgstring[200];
-			sprintf(msgstring, "Input stream %s does not exist", IDin_name);
+    IDin = image_ID(IDin_name);
+
+    // ERROR HANDLING
+    if(IDin == -1)
+    {
+        struct timespec errtime;
+        struct tm *errtm;
+
+        clock_gettime(CLOCK_REALTIME, &errtime);
+        errtm = gmtime(&errtime.tv_sec);
+
+        fprintf(stderr,
+                "%02d:%02d:%02d.%09ld  ERROR [%s %s %d] Input stream %s does not exist, cannot proceed\n",
+                errtm->tm_hour,
+                errtm->tm_min,
+                errtm->tm_sec,
+                errtime.tv_nsec,
+                __FILE__,
+                __FUNCTION__,
+                __LINE__,
+                IDin_name);
+
+        if(data.processinfo==1)
+        {
+            char msgstring[200];
+            sprintf(msgstring, "Input stream %s does not exist", IDin_name);
             strcpy(processinfo->statusmsg, msgstring);
             processinfo->loopstat = 4; // Error
-		}
-		
-		
-		return 1;
-	}
-	
-	xsize = data.image[IDin].md[0].size[0];
-	ysize = data.image[IDin].md[0].size[1];
-	zsize = (uint32_t) (delayus/dtus);
-	if(zsize<1)
-		zsize = 1;
-	xysize = xsize*ysize;
-	
-	t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
-	
-	IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
-	
-	
-	
-	IDout = image_ID(IDout_name);
+        }
+
+
+        return 1;
+    }
+
+    xsize = data.image[IDin].md[0].size[0];
+    ysize = data.image[IDin].md[0].size[1];
+    zsize = (uint32_t) (delayus/dtus);
+    if(zsize<1)
+        zsize = 1;
+    xysize = xsize*ysize;
+
+    t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
+
+    IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
+
+
+
+    IDout = image_ID(IDout_name);
     if(IDout==-1) // CREATE IT
     {
-		arraytmp = (uint32_t*) malloc(sizeof(uint32_t)*2);
-		arraytmp[0] = xsize;
-		arraytmp[1] = ysize;
+        arraytmp = (uint32_t*) malloc(sizeof(uint32_t)*2);
+        arraytmp[0] = xsize;
+        arraytmp[1] = ysize;
         IDout = create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
         COREMOD_MEMORY_image_set_createsem(IDout_name, 10);
-		free(arraytmp);
+        free(arraytmp);
     }
-    
-    
-	kkin = 0;
-	kkout = 0;
-	cnt0old = data.image[IDin].md[0].cnt0;
 
-	clock_gettime(CLOCK_REALTIME, &tnow);
-	for(kk=0;kk<zsize;kk++)
-		t0array[kk] = tnow;
-	
-	if(data.processinfo==1)
+
+    kkin = 0;
+    kkout = 0;
+    cnt0old = data.image[IDin].md[0].cnt0;
+
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    for(kk=0; kk<zsize; kk++)
+        t0array[kk] = tnow;
+
+    if(data.processinfo==1)
         processinfo->loopstat = 1; // loop running
     int loopOK = 1;
     int loopCTRLexit = 0;
-	while(loopOK == 1)
-	{
-		if(data.processinfo==1)
+    while(loopOK == 1)
+    {
+        if(data.processinfo==1)
         {
             while(processinfo->CTRLval == 1)  // pause
                 usleep(50);
@@ -5447,72 +5447,72 @@ long COREMOD_MEMORY_streamDelay(
             if(processinfo->CTRLval == 3) // exit loop
                 loopCTRLexit = 1;
         }
-		
-		
-		// has new frame arrived ?
-		cnt0 = data.image[IDin].md[0].cnt0;
-		if(cnt0!=cnt0old)
-		{
-			clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 
-			for(ii=0; ii<xysize; ii++){
-				data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
-			}
-			kkin++;
-			
-			if(kkin==zsize)
-				kkin = 0;
-			cnt0old = cnt0;					
-		}
-		
-		clock_gettime(CLOCK_REALTIME, &tnow);
-		
-		
-		cntskip = 0;
-		tdiff = info_time_diff(t0array[kkout], tnow);
+
+        // has new frame arrived ?
+        cnt0 = data.image[IDin].md[0].cnt0;
+        if(cnt0!=cnt0old)
+        {
+            clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
+
+            for(ii=0; ii<xysize; ii++) {
+                data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
+            }
+            kkin++;
+
+            if(kkin==zsize)
+                kkin = 0;
+            cnt0old = cnt0;
+        }
+
+        clock_gettime(CLOCK_REALTIME, &tnow);
+
+
+        cntskip = 0;
+        tdiff = info_time_diff(t0array[kkout], tnow);
         tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		
-//		printf("tdiff = %f us   ", tdiffv*1e6);
-//		fflush(stdout);
-		while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
-			{
-				cntskip++;				
-				kkout++;
-				if(kkout==zsize)
-					kkout = 0;
-				tdiff = info_time_diff(t0array[kkout], tnow);
-				tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-			}
-//		printf("cntskip = %ld\n", cntskip);
-//		fflush(stdout);
-		
-		if(cntskip>0)
-		{
-			char* ptr; // pointer address
-			
-			//list_image_ID();
-			//printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
-			//fflush(stdout);
-			
-			data.image[IDout].md[0].write = 1;
-			
-			ptr = (char*) data.image[IDimc].array.F;
-			ptr += SIZEOF_DATATYPE_FLOAT*xysize*kkout;
-			memcpy(data.image[IDout].array.F, ptr, SIZEOF_DATATYPE_FLOAT*xysize);
 
-			//for(ii=0;ii<xysize;ii++)
-			//	data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];	
-			
-			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-			data.image[IDout].md[0].cnt0++;
-			data.image[IDout].md[0].write = 0;
-			//printf(" ... done\n");
-			//fflush(stdout);
-		}
-		
-		
-		
-		if(loopCTRLexit == 1) 
+        //		printf("tdiff = %f us   ", tdiffv*1e6);
+        //		fflush(stdout);
+        while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
+        {
+            cntskip++;
+            kkout++;
+            if(kkout==zsize)
+                kkout = 0;
+            tdiff = info_time_diff(t0array[kkout], tnow);
+            tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+        }
+        //		printf("cntskip = %ld\n", cntskip);
+        //		fflush(stdout);
+
+        if(cntskip>0)
+        {
+            char* ptr; // pointer address
+
+            //list_image_ID();
+            //printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
+            //fflush(stdout);
+
+            data.image[IDout].md[0].write = 1;
+
+            ptr = (char*) data.image[IDimc].array.F;
+            ptr += SIZEOF_DATATYPE_FLOAT*xysize*kkout;
+            memcpy(data.image[IDout].array.F, ptr, SIZEOF_DATATYPE_FLOAT*xysize);
+
+            //for(ii=0;ii<xysize;ii++)
+            //	data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];
+
+            COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+            data.image[IDout].md[0].cnt0++;
+            data.image[IDout].md[0].write = 0;
+            //printf(" ... done\n");
+            //fflush(stdout);
+        }
+
+
+
+        if(loopCTRLexit == 1)
         {
             loopOK = 0;
             if(data.processinfo==1)
@@ -5529,16 +5529,17 @@ long COREMOD_MEMORY_streamDelay(
 
                 processinfo->loopstat = 3; // clean exit
             }
-		
-	
-		usleep(dtus);
-	}
-	
-	delete_image_ID("_tmpc");
-	
-	free(t0array);
-	
-	return(0);
+        }
+
+
+        usleep(dtus);
+    }
+
+    delete_image_ID("_tmpc");
+
+    free(t0array);
+
+    return(0);
 }
 
 
