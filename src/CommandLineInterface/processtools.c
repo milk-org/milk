@@ -246,7 +246,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
         exit(0);
     }
 
-	printf("created processinfe entry at %s\n", SM_fname);
+	printf("created processinfo entry at %s\n", SM_fname);
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
 	clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
@@ -269,8 +269,14 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	}
 	// remove line feed
 	if(strlen(tmuxname)>0)
+	{
+		printf("tmux name : %s\n", tmuxname);
+		printf("len: %d\n", (int) strlen(tmuxname));
+		fflush(stdout);
+		
 		if(tmuxname[strlen(tmuxname)-1] == '\n')
 			tmuxname[strlen(tmuxname)-1] = '\0';
+	}
 	// force last char to be term, just in case
 	tmuxname[99] = '\0';
 	
