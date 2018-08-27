@@ -67,7 +67,7 @@ typedef struct
 	long          createtime_ns;
 	
 	char          statusmsg[200];
-	char          tmuxname[80];
+	char          tmuxname[100];
 
 } PROCESSINFODISP;
 
@@ -246,7 +246,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
         exit(0);
     }
 
-	printf("created processinfe entry at %s\n", SM_fname);
+	printf("created processinfo entry at %s\n", SM_fname);
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
 	clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
@@ -254,7 +254,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 
 	pinfolist->active[pindex] = 1;
 
-	char tmuxname[80];
+	char tmuxname[100];
 	FILE *fpout;	
 	fpout = popen ("tmuxsessionname", "r");
 	if(fpout==NULL)
@@ -263,15 +263,32 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	}
 	else
 	{
-		if(fgets(tmuxname, sizeof(tmuxname), fpout)== NULL)
+		if(fgets(tmuxname, 100, fpout)== NULL)
 			printf("WARNING: fgets error\n");
 		pclose(fpout);
 	}
 	// remove line feed
 	if(strlen(tmuxname)>0)
-		tmuxname[strlen(tmuxname)-1] = '\0';
-	strcpy(pinfo->tmuxname, tmuxname);
+	{
+		printf("tmux name : %s\n", tmuxname);
+		printf("len: %d\n", (int) strlen(tmuxname));
+		fflush(stdout);
+		
+		if(tmuxname[strlen(tmuxname)-1] == '\n')
+			tmuxname[strlen(tmuxname)-1] = '\0';
+	}
 	
+	printf("line %d\n", __LINE__);
+	fflush(stdout);
+	// force last char to be term, just in case
+	tmuxname[99] = '\0';
+	printf("line %d\n", __LINE__);
+	fflush(stdout);
+	
+	strncpy(pinfo->tmuxname, tmuxname, 100);
+	
+	printf("line %d\n", __LINE__);
+	fflush(stdout);
 	// set control value (default 0)
 	// 1 : pause
 	// 2 : increment single step (will go back to 1)
@@ -785,6 +802,10 @@ int_fast8_t processinfo_CTRLscreen()
                         printw("TERM");
                         break;
 
+                    case 4:
+                        printw(" ERR");
+                        break;
+
                     default:
                         printw(" ?? ");
                     }
@@ -798,7 +819,7 @@ int_fast8_t processinfo_CTRLscreen()
                            (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
-                    printw("  %12s", pinfoarray[pindex]->tmuxname);
+                    printw(" %16s", pinfoarray[pindex]->tmuxname);
 
                     attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
@@ -817,8 +838,11 @@ int_fast8_t processinfo_CTRLscreen()
 
                     loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
 
-
+					if(pinfoarray[pindex]->loopstat == 4) // ERROR
+						attron(COLOR_PAIR(2));
                     printw("  %40s", pinfoarray[pindex]->statusmsg);
+                    if(pinfoarray[pindex]->loopstat == 4) // ERROR
+						attroff(COLOR_PAIR(2));
                 }
                 printw("\n");
 
