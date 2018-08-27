@@ -323,7 +323,11 @@ typedef struct
 								
 								
 	char   tmuxname[80];          // name of tmux session in which process is running, or "NULL"
-	int    loopstat;              // 0: initialization (before loop), 1: in loop, 2: paused, 3: terminated (clean exit)
+	int    loopstat;              // 0: initialization (before loop)
+								// 1: in loop
+								// 2: paused
+								// 3: terminated (clean exit)
+								// 4: ERROR
 
 	char   statusmsg[200];        // status message
 	int    statuscode;            // status code 
