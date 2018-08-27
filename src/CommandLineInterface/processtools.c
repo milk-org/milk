@@ -268,9 +268,9 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 		pclose(fpout);
 	}
 	// remove line feed
-	if(strlen(tmuxname)>0)
+	/*if(strlen(tmuxname)>0)
 		if(tmuxname[strlen(tmuxname)-1] == '\n')
-			tmuxname[strlen(tmuxname)-1] = '\0';
+			tmuxname[strlen(tmuxname)-1] = '\0';*/
 	// force last char to be term
 	tmuxname[79] = '\0';
 	
