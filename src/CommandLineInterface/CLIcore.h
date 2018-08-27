@@ -327,7 +327,7 @@ typedef struct
 								// 1: in loop
 								// 2: paused
 								// 3: terminated (clean exit)
-								// 4: ERROR
+								// 4: ERROR (typically used when loop can't start, e.g. missing input)
 
 	char   statusmsg[200];        // status message
 	int    statuscode;            // status code 
