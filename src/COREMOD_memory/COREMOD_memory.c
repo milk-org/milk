@@ -5342,6 +5342,27 @@ long COREMOD_MEMORY_streamDelay(
 	long kkout;
 	long kk;
 
+
+
+    PROCESSINFO *processinfo;
+    if(data.processinfo==1)
+    {
+        // CREATE PROCESSINFO ENTRY
+        // see processtools.c in module CommandLineInterface for details
+        //
+        char pinfoname[200];
+        sprintf(pinfoname, "%s", __FUNCTION__);
+        processinfo = processinfo_shm_create(pinfoname, 0);
+        processinfo->loopstat = 0; // loop initialization
+
+		char msgstring[200];
+        sprintf(msgstring, "%s -> %s (%ld us delay)", IDin_name, IDout_name, delayus);
+        strcpy(processinfo->statusmsg, msgstring);
+    }
+
+
+
+
 	IDin = image_ID(IDin_name);
 	
 	// ERROR HANDLING
@@ -5363,6 +5384,16 @@ long COREMOD_MEMORY_streamDelay(
 			__FUNCTION__, 
 			__LINE__, 
 			IDin_name);
+			
+		if(data.processinfo==1)
+		{
+			char msgstring[200];
+			sprintf(msgstring, "Input stream %s does not exist", IDin_name);
+            strcpy(processinfo->statusmsg, msgstring);
+            processinfo->loopstat = 4; // Error
+		}
+		
+		
 		return 1;
 	}
 	
@@ -5399,9 +5430,25 @@ long COREMOD_MEMORY_streamDelay(
 	for(kk=0;kk<zsize;kk++)
 		t0array[kk] = tnow;
 	
-	
-	while(1)
+	if(data.processinfo==1)
+        processinfo->loopstat = 1; // loop running
+    int loopOK = 1;
+    int loopCTRLexit = 0;
+	while(loopOK == 1)
 	{
+		if(data.processinfo==1)
+        {
+            while(processinfo->CTRLval == 1)  // pause
+                usleep(50);
+
+            if(processinfo->CTRLval == 2) // single iteration
+                processinfo->CTRLval = 1;
+
+            if(processinfo->CTRLval == 3) // exit loop
+                loopCTRLexit = 1;
+        }
+		
+		
 		// has new frame arrived ?
 		cnt0 = data.image[IDin].md[0].cnt0;
 		if(cnt0!=cnt0old)
@@ -5462,6 +5509,26 @@ long COREMOD_MEMORY_streamDelay(
 			//printf(" ... done\n");
 			//fflush(stdout);
 		}
+		
+		
+		
+		if(loopCTRLexit == 1) 
+        {
+            loopOK = 0;
+            if(data.processinfo==1)
+            {
+                struct timespec tstop;
+                struct tm *tstoptm;
+                char msgstring[200];
+
+                clock_gettime(CLOCK_REALTIME, &tstop);
+                tstoptm = gmtime(&tstop.tv_sec);
+
+                sprintf(msgstring, "CTRLexit at %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+                strncpy(processinfo->statusmsg, msgstring, 200);
+
+                processinfo->loopstat = 3; // clean exit
+            }
 		
 	
 		usleep(dtus);
