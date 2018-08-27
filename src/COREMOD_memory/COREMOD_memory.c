@@ -4860,10 +4860,10 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 
 /** @brief takes a 3Dimage(s) (circular buffer(s)) and writes slices to a 2D image with time interval specified in us
  *
- * 
+ *
  * If NBcubes=1, then the circular buffer named IDinname is sent to IDoutname at a frequency of 1/usperiod MHz
  * If NBcubes>1, several circular buffers are used, named ("%S_%03ld", IDinname, cubeindex). Semaphore semtrig of image IDsync_name triggers switch between circular buffers, with a delay of offsetus. The number of consecutive sem posts required to advance to the next circular buffer is period
- * 
+ *
  * @param IDinname      Name of DM circular buffer (appended by _000, _001 etc... if NBcubes>1)
  * @param IDoutname     Output DM channel stream
  * @param usperiod      Interval between consecutive frames [us]
@@ -4873,20 +4873,20 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
  * @param IDsync_name   If NBcubes>1: Stream used for synchronization
  * @param semtrig       If NBcubes>1: semaphore used for synchronization
  * @param timingmode    Not used
- * 
+ *
  *
  */
 long COREMOD_MEMORY_image_streamupdateloop(
-	const char *IDinname, 
-	const char *IDoutname, 
-	long usperiod, 
-	long NBcubes, 
-	long period, 
-	long offsetus, 
-	const char *IDsync_name, 
-	int semtrig, 
-	int timingmode
-	)
+    const char *IDinname,
+    const char *IDoutname,
+    long usperiod,
+    long NBcubes,
+    long period,
+    long offsetus,
+    const char *IDsync_name,
+    int semtrig,
+    int timingmode
+)
 {
     long *IDin;
     long cubeindex;
@@ -4922,11 +4922,29 @@ long COREMOD_MEMORY_image_streamupdateloop(
 
 
 
-
     schedpar.sched_priority = RT_priority;
 #ifndef __MACH__
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
 #endif
+
+
+    PROCESSINFO *processinfo;
+    if(data.processinfo==1)
+    {
+        // CREATE PROCESSINFO ENTRY
+        // see processtools.c in module CommandLineInterface for details
+        //
+        char pinfoname[200];
+        sprintf(pinfoname, "%s", __FUNCTION__);
+        processinfo = processinfo_shm_create(pinfoname, 0);
+        processinfo->loopstat = 0; // loop initialization
+
+        char msgstring[200];
+        sprintf(msgstring, "%s->%s", IDinname, IDoutname);
+        strcpy(processinfo->statusmsg, msgstring);
+    }
+
+
 
 
     if(NBcubes<1)
@@ -4999,8 +5017,31 @@ long COREMOD_MEMORY_image_streamupdateloop(
     kk = 0;
     cntDelayMode = 0;
 
-    for(;;)
+
+
+    if(data.processinfo==1)
+        processinfo->loopstat = 1; // loop running
+    int loopOK = 1;
+    int loopCTRLexit = 0; // toggles to 1 when loop is set to exit cleanly
+    long loopcnt = 0;
+
+    while(loopOK == 1)
     {
+
+        // processinfo control
+        if(data.processinfo==1)
+        {
+            while(processinfo->CTRLval == 1)  // pause
+                usleep(50);
+
+            if(processinfo->CTRLval == 2) // single iteration
+                processinfo->CTRLval = 1;
+
+            if(processinfo->CTRLval == 3) // exit loop
+                loopCTRLexit = 1;
+        }
+
+
 
         if(NBcubes>1)
         {
@@ -5141,7 +5182,28 @@ long COREMOD_MEMORY_image_streamupdateloop(
             sem_wait(data.image[IDsync].semptr[semtrig]);
         }
 
+        if(loopCTRLexit == 1)
+        {
+            loopOK = 0;
+            if(data.processinfo==1)
+            {
+                struct timespec tstop;
+                struct tm *tstoptm;
+                char msgstring[200];
 
+                clock_gettime(CLOCK_REALTIME, &tstop);
+                tstoptm = gmtime(&tstop.tv_sec);
+
+                sprintf(msgstring, "CTRLexit at %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+                strncpy(processinfo->statusmsg, msgstring, 200);
+
+                processinfo->loopstat = 3; // clean exit
+            }
+        }
+
+        loopcnt++;
+        if(data.processinfo==1)
+            processinfo->loopcnt = loopcnt;
     }
 
     free(IDin);
