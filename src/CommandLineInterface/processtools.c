@@ -269,7 +269,8 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	}
 	// remove line feed
 	if(strlen(tmuxname)>0)
-		tmuxname[strlen(tmuxname)-1] = '\0';
+		if(tmuxname[strlen(tmuxname)-1] == '\n')
+			tmuxname[strlen(tmuxname)-1] = '\0';
 	strcpy(pinfo->tmuxname, tmuxname);
 	
 	// set control value (default 0)
@@ -802,7 +803,7 @@ int_fast8_t processinfo_CTRLscreen()
                            (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
                     printw("  %6d", pinfolist->PIDarray[pindex]);
-                    printw("  %12s", pinfoarray[pindex]->tmuxname);
+                    printw(" %12s", pinfoarray[pindex]->tmuxname);
 
                     attron(A_BOLD);
                     printw("  %40s", pinfodisp[pindex].name);
@@ -823,7 +824,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 					if(pinfoarray[pindex]->loopstat == 4) // ERROR
 						attron(COLOR_PAIR(2));
-                    printw("  %40s", pinfoarray[pindex]->statusmsg);
+                    printw("  -%60s", pinfoarray[pindex]->statusmsg);
                     if(pinfoarray[pindex]->loopstat == 4) // ERROR
 						attroff(COLOR_PAIR(2));
                 }
