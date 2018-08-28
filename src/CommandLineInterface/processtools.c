@@ -461,6 +461,7 @@ int_fast8_t processinfo_CTRLscreen()
             attroff(A_BOLD);
         }
 
+		int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
         {
         case 'f':     // Freeze screen (toggle)
