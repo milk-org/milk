@@ -193,9 +193,14 @@ long processinfo_shm_list_create()
 
 
 
-//
-// Create processinfo in shared memory
-//
+/**
+ * Create PROCESSINFO structure in shared memory
+ * 
+ * The structure holds real-time information about a process, so its status can be monitored and controlled
+ * See structure PROCESSINFO in CLLIcore.h for details
+ * 
+*/
+
 PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 {
     size_t sharedsize = 0; // shared memory size in bytes
@@ -303,15 +308,6 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 
 
 
-//
-// Remove processinfo in shared memory
-//
-int processinfo_shm_rm(char *pname)
-{
-	
-	return 0;
-}
-
 
 
 
@@ -338,7 +334,10 @@ static int print_header(const char *str, char c)
 
 
 
-// INITIALIZE ncurses
+/**
+ * INITIALIZE ncurses
+ * 
+ */ 
 static int initncurses()
 {
     if ( initscr() == NULL ) {
@@ -371,17 +370,29 @@ static int initncurses()
 
 
 
+
+
+/**
+ * Control screen for PROCESSINFO structures
+ * 
+ * Relies on ncurses for display
+ * 
+ */
+ 
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
+	// these arrays are indexed together 
+	// the index is different from the displayed order
+	// new process takes first available free index
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
-    int pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-
-    pid_t PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
-    int updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
-    int fdarray[PROCESSINFOLISTSIZE];     // file descriptors
-    long loopcntarray[PROCESSINFOLISTSIZE];
+    int          pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
+    pid_t        PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
+    int          updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
+    int          fdarray[PROCESSINFOLISTSIZE];     // file descriptors
+    long         loopcntarray[PROCESSINFOLISTSIZE];
+    int          selectedarray[PROCESSINFOLISTSIZE];
 
     int sorted_pindex_time[PROCESSINFOLISTSIZE];
 
@@ -394,8 +405,9 @@ int_fast8_t processinfo_CTRLscreen()
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
-        updatearray[pindex] = 1; // initialize: load all
-        pinfommapped[pindex] = 0;
+        updatearray[pindex]   = 1; // initialize: load all
+        pinfommapped[pindex]  = 0;
+        selectedarray[pindex] = 0; // initially not selected
     }
 
 
@@ -431,15 +443,10 @@ int_fast8_t processinfo_CTRLscreen()
     processinfo_shm_list_create();
 
 
+
     while( loopOK == 1 )
     {
         int pid;
-
-
-
-
-
-
 
 
         usleep((long) (1000000.0/frequ));
@@ -456,18 +463,26 @@ int_fast8_t processinfo_CTRLscreen()
 
         switch (ch)
         {
-        case 'f':
+        case 'f':     // Freeze screen (toggle)
             if(freeze==0)
                 freeze = 1;
             else
                 freeze = 0;
             break;
 
-        case 'x':
+        case 'x':     // Exit control screen
             loopOK=0;
             break;
 
-        case KEY_UP:
+		case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
+			pindex = pindexSelected;
+			if(selectedarray[pindex] == 1)
+				selectedarray[pindex] = 0;
+			else
+				selectedarray[pindex] = 1;
+			break;
+
+        case KEY_UP: 
             pindexActiveSelected --;
             if(pindexActiveSelected<0)
                 pindexActiveSelected = 0;
@@ -592,6 +607,8 @@ int_fast8_t processinfo_CTRLscreen()
             printw("time-s(o)rted    st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit\n");
             printw("%d processes tracked\n", NBpindexActive);
             printw("\n");
+            
+            
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
                 // SHOULD WE (RE)LOAD ?
@@ -753,6 +770,11 @@ int_fast8_t processinfo_CTRLscreen()
                     attron(A_REVERSE);
 
                // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
+               
+               if(selectedarray[pindex]==1)
+				printw("*");
+				else
+				printw(" ");
 
 
 
