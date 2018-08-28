@@ -392,6 +392,7 @@ int_fast8_t processinfo_CTRLscreen()
     int          updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
     int          fdarray[PROCESSINFOLISTSIZE];     // file descriptors
     long         loopcntarray[PROCESSINFOLISTSIZE];
+    long         loopcntoffsetarray[PROCESSINFOLISTSIZE];
     int          selectedarray[PROCESSINFOLISTSIZE];
 
     int sorted_pindex_time[PROCESSINFOLISTSIZE];
@@ -408,6 +409,7 @@ int_fast8_t processinfo_CTRLscreen()
         updatearray[pindex]   = 1; // initialize: load all
         pinfommapped[pindex]  = 0;
         selectedarray[pindex] = 0; // initially not selected
+        loopcntoffsetarray[pindex] = 0;
     }
 
 
@@ -564,7 +566,7 @@ int_fast8_t processinfo_CTRLscreen()
             pinfoarray[pindexSelected]->CTRLval = 3;
             break;
             
-        case 'z': // zero loop counter
+        case 'z': // apply current value as offset (zero loop counter)
 			selectedOK = 0;
 			for(index=0; index<NBpindexActive; index++)
 			{
@@ -572,13 +574,26 @@ int_fast8_t processinfo_CTRLscreen()
 				if(selectedarray[pindex] == 1)
 				{
 					selectedOK = 1;
-					pinfoarray[pindex]->loopcnt = 0;
+					loopcntoffsetarray[pindex] = pinfoarray[pindex]->loopcnt;
 				}
 			}
 			if(selectedOK == 0)
-				pinfoarray[pindexSelected]->loopcnt = 0;
+				loopcntoffsetarray[pindex] = pinfoarray[pindexSelected]->loopcnt;
 			break;
-
+		
+		case 'Z': // revert to original counter value
+			for(index=0; index<NBpindexActive; index++)
+			{
+				pindex = pindexActive[index];
+				if(selectedarray[pindex] == 1)
+				{
+					selectedOK = 1;
+					loopcntoffsetarray[pindex] = 0;
+				}
+			}
+			if(selectedOK == 0)
+				loopcntoffsetarray[pindex] = 0;
+			break;
 
         case 't':
             endwin();
@@ -624,8 +639,8 @@ int_fast8_t processinfo_CTRLscreen()
         {
             clear();
 
-            printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
-            printw("time-s(o)rted    st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit (z)ero counter\n");
+            printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
+            printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
             printw("%d processes tracked\n", NBpindexActive);
             printw("\n");
@@ -871,12 +886,12 @@ int_fast8_t processinfo_CTRLscreen()
 
                     if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
                     {   // loopcnt has not changed
-                        printw("  %8ld", pinfoarray[pindex]->loopcnt);
+                        printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
                     }
                     else
                     {   // loopcnt has changed
                         attron(COLOR_PAIR(3));
-                        printw("  %8ld", pinfoarray[pindex]->loopcnt);
+                        printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
                         attroff(COLOR_PAIR(3));
                     }
 

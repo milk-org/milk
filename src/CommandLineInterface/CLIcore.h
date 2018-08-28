@@ -301,10 +301,10 @@ extern DATA data;
 // --------------------- MANAGING PROCESSES -------------------------------
 
 
-//
-// This structure hold process information and hooks required for basic monitoring and control
-// Unlike the larger DATA structure above, it is meant to be stored in shared memory for fast access by other processes
-//
+/**
+ * This structure hold process information and hooks required for basic monitoring and control
+ * Unlike the larger DATA structure above, it is meant to be stored in shared memory for fast access by other processes
+ */
 typedef struct 
 {
 	char   name[200];             // process name
