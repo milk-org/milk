@@ -487,7 +487,7 @@ int_fast8_t processinfo_CTRLscreen()
 			
 		case 'u':    // undelect all
 			for(index=0;index<NBpindexActive;index++)
-				selectedarray[pindex] = 0;
+				selectedarray[index] = 0;
 			break;
 
 
@@ -578,7 +578,10 @@ int_fast8_t processinfo_CTRLscreen()
 				}
 			}
 			if(selectedOK == 0)
+			{
+				pindex = pindexSelected;
 				loopcntoffsetarray[pindex] = pinfoarray[pindexSelected]->loopcnt;
+			}
 			break;
 		
 		case 'Z': // revert to original counter value
@@ -592,7 +595,10 @@ int_fast8_t processinfo_CTRLscreen()
 				}
 			}
 			if(selectedOK == 0)
+			{
+				pindex = pindexSelected;
 				loopcntoffsetarray[pindex] = 0;
+			}
 			break;
 
         case 't':
