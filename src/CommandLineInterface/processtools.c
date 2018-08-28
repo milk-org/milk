@@ -489,7 +489,7 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                selectedarray[index] = 0;
+                selectedarray[pindex] = 0;
             }
             break;
 
@@ -521,14 +521,14 @@ int_fast8_t processinfo_CTRLscreen()
                 if(selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pid = pinfolist->PIDarray[pindexSelected];
+                    pid = pinfolist->PIDarray[pindex];
                     kill(pid, SIGTERM);
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pid = pinfolist->PIDarray[pindexSelected];
+                pid = pinfolist->PIDarray[pindex];
                 kill(pid, SIGTERM);
             }
             break;
@@ -540,14 +540,14 @@ int_fast8_t processinfo_CTRLscreen()
                 if(selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pid = pinfolist->PIDarray[pindexSelected];
+                    pid = pinfolist->PIDarray[pindex];
                     kill(pid, SIGKILL);
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pid = pinfolist->PIDarray[pindexSelected];
+                pid = pinfolist->PIDarray[pindex];
                 kill(pid, SIGKILL);
             }
             break;
@@ -559,14 +559,14 @@ int_fast8_t processinfo_CTRLscreen()
                 if(selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pid = pinfolist->PIDarray[pindexSelected];
+                    pid = pinfolist->PIDarray[pindex];
                     kill(pid, SIGINT);
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pid = pinfolist->PIDarray[pindexSelected];
+                pid = pinfolist->PIDarray[pindex];
                 kill(pid, SIGINT);
             }
             break;
@@ -619,19 +619,19 @@ int_fast8_t processinfo_CTRLscreen()
                 if(selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    if(pinfoarray[pindexSelected]->CTRLval == 0)
-                        pinfoarray[pindexSelected]->CTRLval = 1;
+                    if(pinfoarray[pindex]->CTRLval == 0)
+                        pinfoarray[pindex]->CTRLval = 1;
                     else
-                        pinfoarray[pindexSelected]->CTRLval = 0;
+                        pinfoarray[pindex]->CTRLval = 0;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                if(pinfoarray[pindexSelected]->CTRLval == 0)
-                    pinfoarray[pindexSelected]->CTRLval = 1;
+                if(pinfoarray[pindex]->CTRLval == 0)
+                    pinfoarray[pindex]->CTRLval = 1;
                 else
-                    pinfoarray[pindexSelected]->CTRLval = 0;
+                    pinfoarray[pindex]->CTRLval = 0;
             }
             break;
 
@@ -642,13 +642,13 @@ int_fast8_t processinfo_CTRLscreen()
                 if(selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pinfoarray[pindexSelected]->CTRLval = 2;
+                    pinfoarray[pindex]->CTRLval = 2;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pinfoarray[pindexSelected]->CTRLval = 2;
+                pinfoarray[pindex]->CTRLval = 2;
             }
             break;
 
@@ -659,13 +659,13 @@ int_fast8_t processinfo_CTRLscreen()
                 if(selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pinfoarray[pindexSelected]->CTRLval = 3;
+                    pinfoarray[pindex]->CTRLval = 3;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pinfoarray[pindexSelected]->CTRLval = 3;
+                pinfoarray[pindex]->CTRLval = 3;
             }
             break;
 
@@ -683,7 +683,7 @@ int_fast8_t processinfo_CTRLscreen()
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                loopcntoffsetarray[pindex] = pinfoarray[pindexSelected]->loopcnt;
+                loopcntoffsetarray[pindex] = pinfoarray[pindex]->loopcnt;
             }
             break;
 
