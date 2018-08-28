@@ -481,6 +481,12 @@ int_fast8_t processinfo_CTRLscreen()
 			else
 				selectedarray[pindex] = 1;
 			break;
+			
+		case 'u':    // undelect all
+			for(index=0;index<NBpindexActive;index++)
+				selectedarray[pindex] = 0;
+			break;
+
 
         case KEY_UP: 
             pindexActiveSelected --;
@@ -528,7 +534,6 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'R':
-
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
@@ -557,6 +562,21 @@ int_fast8_t processinfo_CTRLscreen()
         case 'e': // exit
             pinfoarray[pindexSelected]->CTRLval = 3;
             break;
+            
+        case 'z': // zero loop counter
+			selectedOK = 0;
+			for(index=0; index<NBpindexActive; index++)
+			{
+				pindex = pindexActive[index];
+				if(selectedarray[pindex] == 1)
+				{
+					selectedOK = 1;
+					pinfoarray[pindex]->loopcnt = 0;
+				}
+			}
+			if(selectedOK == 0)
+				pinfoarray[pindexSelected]->loopcnt = 0;
+			break;
 
 
         case 't':
@@ -604,7 +624,8 @@ int_fast8_t processinfo_CTRLscreen()
             clear();
 
             printw("E(x)it   (f)reeze   SIG(T)ERM SIG(K)ILL SIG(I)NT    (r)emove (R)emoveall  (t)mux\n");
-            printw("time-s(o)rted    st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit\n");
+            printw("time-s(o)rted    st(a)tus sche(d)         Loop Controls: (p)ause (s)tep (e)xit (z)ero counter\n");
+            printw("(SPACE):select toggle   (u)nselect all\n");
             printw("%d processes tracked\n", NBpindexActive);
             printw("\n");
             
