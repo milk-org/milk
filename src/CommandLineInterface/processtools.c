@@ -374,18 +374,18 @@ static int initncurses()
 
 /**
  * Control screen for PROCESSINFO structures
- * 
+ *
  * Relies on ncurses for display
- * 
+ *
  */
- 
+
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
-	// these arrays are indexed together 
-	// the index is different from the displayed order
-	// new process takes first available free index
+    // these arrays are indexed together
+    // the index is different from the displayed order
+    // new process takes first available free index
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
     int          pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
     pid_t        PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
@@ -437,8 +437,8 @@ int_fast8_t processinfo_CTRLscreen()
     int MonMode = 0;
     int TimeSorted = 1;  // by default, sort processes by start time (most recent at top)
     int dispindexMax = 0;
-    
-    
+
+
     pindexActiveSelected = 0;
 
     // Create / read process list
@@ -463,7 +463,7 @@ int_fast8_t processinfo_CTRLscreen()
             attroff(A_BOLD);
         }
 
-		int selectedOK = 0; // goes to 1 if at least one process is selected
+        int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
         {
         case 'f':     // Freeze screen (toggle)
@@ -477,62 +477,124 @@ int_fast8_t processinfo_CTRLscreen()
             loopOK=0;
             break;
 
-		case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
-			pindex = pindexSelected;
-			if(selectedarray[pindex] == 1)
-				selectedarray[pindex] = 0;
-			else
-				selectedarray[pindex] = 1;
-			break;
-			
-		case 'u':    // undelect all
-			for(index=0;index<NBpindexActive;index++)
-				selectedarray[index] = 0;
-			break;
+        case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
+            pindex = pindexSelected;
+            if(selectedarray[pindex] == 1)
+                selectedarray[pindex] = 0;
+            else
+                selectedarray[pindex] = 1;
+            break;
+
+        case 'u':    // undelect all
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                selectedarray[index] = 0;
+            }
+            break;
 
 
-        case KEY_UP: 
+        case KEY_UP:
             pindexActiveSelected --;
             if(pindexActiveSelected<0)
                 pindexActiveSelected = 0;
             if(TimeSorted == 0)
-				pindexSelected = pindexActive[pindexActiveSelected];
+                pindexSelected = pindexActive[pindexActiveSelected];
             else
-				pindexSelected = sorted_pindex_time[pindexActiveSelected];
+                pindexSelected = sorted_pindex_time[pindexActiveSelected];
             break;
 
         case KEY_DOWN:
             pindexActiveSelected ++;
-			if(pindexActiveSelected>NBpindexActive-1)
-				pindexActiveSelected = NBpindexActive-1;
+            if(pindexActiveSelected>NBpindexActive-1)
+                pindexActiveSelected = NBpindexActive-1;
             if(TimeSorted == 0)
-				pindexSelected = pindexActive[pindexActiveSelected];
+                pindexSelected = pindexActive[pindexActiveSelected];
             else
-				pindexSelected = sorted_pindex_time[pindexActiveSelected];		
+                pindexSelected = sorted_pindex_time[pindexActiveSelected];
             break;
 
         case 'T':
-            pid = pinfolist->PIDarray[pindexSelected];
-            kill(pid, SIGTERM);
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    pid = pinfolist->PIDarray[pindexSelected];
+                    kill(pid, SIGTERM);
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                pid = pinfolist->PIDarray[pindexSelected];
+                kill(pid, SIGTERM);
+            }
             break;
 
         case 'K':
-            pid = pinfolist->PIDarray[pindexSelected];
-            kill(pid, SIGKILL);
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    pid = pinfolist->PIDarray[pindexSelected];
+                    kill(pid, SIGKILL);
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                pid = pinfolist->PIDarray[pindexSelected];
+                kill(pid, SIGKILL);
+            }
             break;
 
         case 'I':
-            pid = pinfolist->PIDarray[pindexSelected];
-            kill(pid, SIGINT);
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    pid = pinfolist->PIDarray[pindexSelected];
+                    kill(pid, SIGINT);
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                pid = pinfolist->PIDarray[pindexSelected];
+                kill(pid, SIGINT);
+            }
             break;
 
         case 'r':
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex]!=1)
+            for(index=0; index<NBpindexActive; index++)
             {
-                char SM_fname[200];
-                sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-                remove(SM_fname);
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    if(pinfolist->active[pindex]!=1)
+                    {
+                        char SM_fname[200];
+                        sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                        remove(SM_fname);
+                    }
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex]!=1)
+                {
+                    char SM_fname[200];
+                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                    remove(SM_fname);
+                }
             }
             break;
 
@@ -551,55 +613,96 @@ int_fast8_t processinfo_CTRLscreen()
 
         // loop controls
         case 'p': // pause
-            if(pinfoarray[pindexSelected]->CTRLval == 0) {
-                pinfoarray[pindexSelected]->CTRLval = 1;
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    if(pinfoarray[pindexSelected]->CTRLval == 0)
+                        pinfoarray[pindexSelected]->CTRLval = 1;
+                    else
+                        pinfoarray[pindexSelected]->CTRLval = 0;
+                }
             }
-            else
-                pinfoarray[pindexSelected]->CTRLval = 0;
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                if(pinfoarray[pindexSelected]->CTRLval == 0)
+                    pinfoarray[pindexSelected]->CTRLval = 1;
+                else
+                    pinfoarray[pindexSelected]->CTRLval = 0;
+            }
             break;
 
         case 's': // step
-            pinfoarray[pindexSelected]->CTRLval = 2;
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    pinfoarray[pindexSelected]->CTRLval = 2;
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                pinfoarray[pindexSelected]->CTRLval = 2;
+            }
             break;
 
         case 'e': // exit
-            pinfoarray[pindexSelected]->CTRLval = 3;
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    pinfoarray[pindexSelected]->CTRLval = 3;
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                pinfoarray[pindexSelected]->CTRLval = 3;
+            }
             break;
-            
+
         case 'z': // apply current value as offset (zero loop counter)
-			selectedOK = 0;
-			for(index=0; index<NBpindexActive; index++)
-			{
-				pindex = pindexActive[index];
-				if(selectedarray[pindex] == 1)
-				{
-					selectedOK = 1;
-					loopcntoffsetarray[pindex] = pinfoarray[pindex]->loopcnt;
-				}
-			}
-			if(selectedOK == 0)
-			{
-				pindex = pindexSelected;
-				loopcntoffsetarray[pindex] = pinfoarray[pindexSelected]->loopcnt;
-			}
-			break;
-		
-		case 'Z': // revert to original counter value
-			for(index=0; index<NBpindexActive; index++)
-			{
-				pindex = pindexActive[index];
-				if(selectedarray[pindex] == 1)
-				{
-					selectedOK = 1;
-					loopcntoffsetarray[pindex] = 0;
-				}
-			}
-			if(selectedOK == 0)
-			{
-				pindex = pindexSelected;
-				loopcntoffsetarray[pindex] = 0;
-			}
-			break;
+            selectedOK = 0;
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    loopcntoffsetarray[pindex] = pinfoarray[pindex]->loopcnt;
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                loopcntoffsetarray[pindex] = pinfoarray[pindexSelected]->loopcnt;
+            }
+            break;
+
+        case 'Z': // revert to original counter value
+            for(index=0; index<NBpindexActive; index++)
+            {
+                pindex = pindexActive[index];
+                if(selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    loopcntoffsetarray[pindex] = 0;
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                loopcntoffsetarray[pindex] = 0;
+            }
+            break;
 
         case 't':
             endwin();
@@ -650,8 +753,8 @@ int_fast8_t processinfo_CTRLscreen()
             printw("(SPACE):select toggle   (u)nselect all\n");
             printw("%d processes tracked\n", NBpindexActive);
             printw("\n");
-            
-            
+
+
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
                 // SHOULD WE (RE)LOAD ?
@@ -792,7 +895,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             int dispindex;
             //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
-            
+
             if(TimeSorted == 0)
                 dispindexMax = wrow-4;
             else
@@ -806,18 +909,18 @@ int_fast8_t processinfo_CTRLscreen()
                 }
                 else
                 {
-					pindex = sorted_pindex_time[dispindex];
+                    pindex = sorted_pindex_time[dispindex];
                 }
 
                 if(pindex == pindexSelected)
                     attron(A_REVERSE);
 
-               // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
-               
-               if(selectedarray[pindex]==1)
-				printw("*");
-				else
-				printw(" ");
+                // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
+
+                if(selectedarray[pindex]==1)
+                    printw("*");
+                else
+                    printw(" ");
 
 
 
@@ -903,11 +1006,11 @@ int_fast8_t processinfo_CTRLscreen()
 
                     loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
 
-					if(pinfoarray[pindex]->loopstat == 4) // ERROR
-						attron(COLOR_PAIR(2));
+                    if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                        attron(COLOR_PAIR(2));
                     printw("  %40s", pinfoarray[pindex]->statusmsg);
                     if(pinfoarray[pindex]->loopstat == 4) // ERROR
-						attroff(COLOR_PAIR(2));
+                        attroff(COLOR_PAIR(2));
                 }
                 printw("\n");
 
