@@ -869,7 +869,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
             // compute time-sorted list
-         /*   NBpindexActive = 0;
+            NBpindexActive = 0;
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
                 if(pinfolist->active[pindex] != 0)
                 {
@@ -878,8 +878,8 @@ int_fast8_t processinfo_CTRLscreen()
                 }
             double *timearray;
             long *indexarray;
-            timearray = (double*) malloc(sizeof(double)*NBpindexActive);
-            indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
+            timearray  = (double*) malloc(sizeof(double)*NBpindexActive);
+            indexarray = (long*)   malloc(sizeof(long)  *NBpindexActive);
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
@@ -890,12 +890,14 @@ int_fast8_t processinfo_CTRLscreen()
 
             quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
-            for(index=0; index<NBpindexActive; index++)
-                sorted_pindex_time[index] = indexarray[index];
+           // for(index=0; index<NBpindexActive; index++)
+           //     sorted_pindex_time[index] = indexarray[index];
 
             free(timearray);
             free(indexarray);
-*/
+
+
+
 
 
             // DISPLAY
