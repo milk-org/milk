@@ -422,6 +422,14 @@ int_fast8_t processinfo_CTRLscreen()
     int pindexActive[PROCESSINFOLISTSIZE];
     int NBpindexActive;
 
+
+
+
+    // Create / read process list
+    processinfo_shm_list_create();
+
+
+
     // INITIALIZE ncurses
     initncurses();
 
@@ -440,9 +448,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
     pindexActiveSelected = 0;
-
-    // Create / read process list
-    processinfo_shm_list_create();
 
 
 
