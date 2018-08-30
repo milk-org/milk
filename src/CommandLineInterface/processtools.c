@@ -885,7 +885,8 @@ int_fast8_t processinfo_CTRLscreen()
                 pindex = pindexActive[index];
                 indexarray[index] = pindex;
                 // minus sign for most recent first
-               // timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+                printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+//                timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
             }
 
        //     quick_sort2l_double(timearray, indexarray, NBpindexActive);
