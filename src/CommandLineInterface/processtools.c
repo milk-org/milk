@@ -434,7 +434,7 @@ int_fast8_t processinfo_CTRLscreen()
     initncurses();
 
 
-    int NBpinfodisp = wrow-3;
+    int NBpinfodisp = wrow-5;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
@@ -760,6 +760,9 @@ int_fast8_t processinfo_CTRLscreen()
             printw("\n");
 
 
+
+			// LOAD / UPDATE process information
+
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
                 // SHOULD WE (RE)LOAD ?
@@ -875,19 +878,25 @@ int_fast8_t processinfo_CTRLscreen()
                 }
             double *timearray;
             long *indexarray;
-            timearray = (double*) malloc(sizeof(double)*NBpindexActive);
-            indexarray = (long*) malloc(sizeof(long)*NBpindexActive);
+            timearray  = (double*) malloc(sizeof(double)*NBpindexActive);
+            indexarray = (long*)   malloc(sizeof(long)  *NBpindexActive);
+            int listcnt = 0;
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                indexarray[index] = pindex;
-                // minus sign for most recent first
-                timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+                if(pinfommapped[pindex] == 1)
+                {
+					indexarray[index] = pindex;
+					// minus sign for most recent first
+					//printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+					timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+					listcnt++;
+                }
             }
+			NBpindexActive = listcnt;
+			quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
-            quick_sort2l_double(timearray, indexarray, NBpindexActive);
-
-            for(index=0; index<NBpindexActive; index++)
+           for(index=0; index<NBpindexActive; index++)
                 sorted_pindex_time[index] = indexarray[index];
 
             free(timearray);
@@ -895,7 +904,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-            // Display
+
+
+            // DISPLAY
 
 
             int dispindex;
