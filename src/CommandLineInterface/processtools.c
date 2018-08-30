@@ -869,7 +869,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
             // compute time-sorted list
-            NBpindexActive = 0;
+         /*   NBpindexActive = 0;
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
                 if(pinfolist->active[pindex] != 0)
                 {
@@ -895,7 +895,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             free(timearray);
             free(indexarray);
-
+*/
 
 
             // DISPLAY
@@ -910,7 +910,7 @@ int_fast8_t processinfo_CTRLscreen()
                 dispindexMax = NBpindexActive;
 
             //for(dispindex=0; dispindex<dispindexMax; dispindex++)
-            if(1==0)
+            if(1==0) // TESTING
             {
                 if(TimeSorted == 0)
                     pindex = dispindex;
