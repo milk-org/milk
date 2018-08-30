@@ -449,9 +449,6 @@ int_fast8_t processinfo_CTRLscreen()
 
     pindexActiveSelected = 0;
 
-	printf("Normal exit\n");
-	fflush(stdout);
-	exit(0);
 
 
     while( loopOK == 1 )
