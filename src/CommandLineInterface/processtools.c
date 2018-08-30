@@ -888,7 +888,7 @@ int_fast8_t processinfo_CTRLscreen()
                 timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
             }
 
-            quick_sort2l_double(timearray, indexarray, NBpindexActive);
+       //     quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
            // for(index=0; index<NBpindexActive; index++)
            //     sorted_pindex_time[index] = indexarray[index];
