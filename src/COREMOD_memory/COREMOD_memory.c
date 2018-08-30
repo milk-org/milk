@@ -127,6 +127,11 @@ struct savethreadmsg {
     int partial; // 1 if partial cube
     long cubesize; // size of the cube
 	
+	int saveascii; 
+		// 0 : Not saving ascii
+		// 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
+		// 2 : ???
+	
 	char fnameascii[200];
 	uint64_t *arraycnt0;
 	uint64_t *arraycnt1;
@@ -1827,6 +1832,9 @@ int_fast8_t clearall()
 
 
 
+
+
+
 void *save_fits_function( void *ptr )
 {
     long ID;
@@ -1842,14 +1850,14 @@ void *save_fits_function( void *ptr )
     FILE *fp;
 
 
-    int RT_priority = 20; 
+    int RT_priority = 20;
     struct sched_param schedpar;
 
 
     schedpar.sched_priority = RT_priority;
 #ifndef __MACH__
-	int r;
-    r = seteuid(data.euid); 
+    int r;
+    r = seteuid(data.euid);
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
     r = seteuid(data.ruid);
 #endif
@@ -1866,7 +1874,7 @@ void *save_fits_function( void *ptr )
     if(tmsg->partial==0) // full image
     {
         save_fits(tmsg->iname, tmsg->fname);
-	}
+    }
     else
     {
         //      printf("Saving partial image (name = %s   zsize = %ld)\n", tmsg->iname, tmsg->cubesize);
@@ -1892,65 +1900,65 @@ void *save_fits_function( void *ptr )
         // list_image_ID();
 
         switch ( atype ) {
-			
+
         case _DATATYPE_UINT8:
             framesize = SIZEOF_DATATYPE_UINT8*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.UI8;  // source
-			ptr1 = (char*) data.image[IDc].array.UI8; // destination
+            ptr0 = (char*) data.image[ID].array.UI8;  // source
+            ptr1 = (char*) data.image[IDc].array.UI8; // destination
             break;
         case _DATATYPE_INT8:
             framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.SI8;  // source
-			ptr1 = (char*) data.image[IDc].array.SI8; // destination
-            break;       
-       
-         case _DATATYPE_UINT16:
+            ptr0 = (char*) data.image[ID].array.SI8;  // source
+            ptr1 = (char*) data.image[IDc].array.SI8; // destination
+            break;
+
+        case _DATATYPE_UINT16:
             framesize = SIZEOF_DATATYPE_UINT16*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.UI16;  // source
-			ptr1 = (char*) data.image[IDc].array.UI16; // destination
+            ptr0 = (char*) data.image[ID].array.UI16;  // source
+            ptr1 = (char*) data.image[IDc].array.UI16; // destination
             break;
         case _DATATYPE_INT16:
             framesize = SIZEOF_DATATYPE_INT16*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.SI16;  // source
-			ptr1 = (char*) data.image[IDc].array.SI16; // destination
-            break;       
- 
-         case _DATATYPE_UINT32:
+            ptr0 = (char*) data.image[ID].array.SI16;  // source
+            ptr1 = (char*) data.image[IDc].array.SI16; // destination
+            break;
+
+        case _DATATYPE_UINT32:
             framesize = SIZEOF_DATATYPE_UINT32*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.UI32;  // source
-			ptr1 = (char*) data.image[IDc].array.UI32; // destination
+            ptr0 = (char*) data.image[ID].array.UI32;  // source
+            ptr1 = (char*) data.image[IDc].array.UI32; // destination
             break;
         case _DATATYPE_INT32:
             framesize = SIZEOF_DATATYPE_INT32*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.SI32;  // source
-			ptr1 = (char*) data.image[IDc].array.SI32; // destination
-            break;       
- 
+            ptr0 = (char*) data.image[ID].array.SI32;  // source
+            ptr1 = (char*) data.image[IDc].array.SI32; // destination
+            break;
+
         case _DATATYPE_UINT64:
             framesize = SIZEOF_DATATYPE_UINT64*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.UI64;  // source
-			ptr1 = (char*) data.image[IDc].array.UI64; // destination
+            ptr0 = (char*) data.image[ID].array.UI64;  // source
+            ptr1 = (char*) data.image[IDc].array.UI64; // destination
             break;
         case _DATATYPE_INT64:
             framesize = SIZEOF_DATATYPE_INT64*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.SI64;  // source
-			ptr1 = (char*) data.image[IDc].array.SI64; // destination
-            break;       
-       
+            ptr0 = (char*) data.image[ID].array.SI64;  // source
+            ptr1 = (char*) data.image[IDc].array.SI64; // destination
+            break;
+
         case _DATATYPE_FLOAT:
             framesize = SIZEOF_DATATYPE_FLOAT*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.F;  // source
-			ptr1 = (char*) data.image[IDc].array.F; // destination
+            ptr0 = (char*) data.image[ID].array.F;  // source
+            ptr1 = (char*) data.image[IDc].array.F; // destination
             break;
         case _DATATYPE_DOUBLE:
             framesize = SIZEOF_DATATYPE_DOUBLE*xsize*ysize;
-			ptr0 = (char*) data.image[ID].array.D;  // source
-			ptr1 = (char*) data.image[IDc].array.D; // destination
+            ptr0 = (char*) data.image[ID].array.D;  // source
+            ptr1 = (char*) data.image[IDc].array.D; // destination
             break;
 
         default:
             printf("ERROR: WRONG DATA TYPE\n");
-			free(imsizearray);
+            free(imsizearray);
             free(tmsg);
             exit(0);
             break;
@@ -1961,18 +1969,20 @@ void *save_fits_function( void *ptr )
         save_fits("tmpsavecube", tmsg->fname);
         delete_image_ID("tmpsavecube");
     }
-    
-    
-    if((fp=fopen(tmsg->fnameascii, "w"))==NULL)
+
+    if(tmsg->saveascii == 1)
     {
-		printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
-		exit(0);
-	}
-	for(k=0;k<tmsg->cubesize;k++)
-		{
-			fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
-		}
-	fclose(fp);
+        if((fp=fopen(tmsg->fnameascii, "w"))==NULL)
+        {
+            printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
+            exit(0);
+        }
+        for(k=0; k<tmsg->cubesize; k++)
+        {
+            fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+        }
+        fclose(fp);
+    }
 
     //    printf(" DONE\n");
     //fflush(stdout);
@@ -1981,8 +1991,8 @@ void *save_fits_function( void *ptr )
     tret = ID;
     free(imsizearray);
     pthread_exit(&tret);
-    
-  //  free(tmsg);
+
+    //  free(tmsg);
 }
 
 
@@ -6468,7 +6478,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                     if(semval<SEMAPHORE_MAXVAL)
                         sem_post(data.image[ID].semptr[semnb]);
                 }
-                
+                sem_post(data.image[ID].semlog);
                 
                 
                 
@@ -7511,6 +7521,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             strcpy(tmsg->iname, iname);
             strcpy(tmsg->fname, fname);
             strcpy(tmsg->fnameascii, fnameascii);
+            tmsg->saveascii = 1;
 
 
 
