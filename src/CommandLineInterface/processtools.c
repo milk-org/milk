@@ -413,7 +413,7 @@ int_fast8_t processinfo_CTRLscreen()
     }
 
 
-    float frequ = 20.0; // Hz
+    float frequ = 10.0; // Hz
     char monstring[200];
 
     // list of active indices
