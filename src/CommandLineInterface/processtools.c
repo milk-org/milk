@@ -816,7 +816,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-                if(updatearray[pindex] == 1)
+                if((updatearray[pindex] == 1)&&(pindex<NBpinfodisp))
                 {
                     // (RE)LOAD
                     struct stat file_stat;
@@ -909,124 +909,124 @@ int_fast8_t processinfo_CTRLscreen()
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
                 if(TimeSorted == 0)
-                {
                     pindex = dispindex;
-                }
                 else
-                {
                     pindex = sorted_pindex_time[dispindex];
-                }
 
-                if(pindex == pindexSelected)
-                    attron(A_REVERSE);
-
-                // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
-
-                if(selectedarray[pindex]==1)
-                    printw("*");
-                else
-                    printw(" ");
-
-
-
-                if(pinfolist->active[pindex] == 1)
+                if(pindex<NBpinfodisp)
                 {
-                    attron(COLOR_PAIR(3));
-                    printw("  ACTIVE");
-                    attroff(COLOR_PAIR(3));
-                }
 
-                if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
-                {
-                    if(pinfoarray[pindex]->loopstat == 3) // clean exit
-                    {
-                        attron(COLOR_PAIR(4));
-                        printw(" STOPPED");
-                        attroff(COLOR_PAIR(4));
-                    }
+                    if(pindex == pindexSelected)
+                        attron(A_REVERSE);
+
+                    // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
+
+                    if(selectedarray[pindex]==1)
+                        printw("*");
                     else
+                        printw(" ");
+
+
+
+                    if(pinfolist->active[pindex] == 1)
                     {
-                        attron(COLOR_PAIR(2));
-                        printw(" CRASHED");
-                        attroff(COLOR_PAIR(2));
-                    }
-                }
-
-
-
-                //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
-                if(pinfolist->active[pindex] != 0)
-                {
-                    switch (pinfoarray[pindex]->loopstat)
-                    {
-                    case 0:
-                        printw("INIT");
-                        break;
-
-                    case 1:
-                        printw(" RUN");
-                        break;
-
-                    case 2:
-                        printw("PAUS");
-                        break;
-
-                    case 3:
-                        printw("TERM");
-                        break;
-
-                    case 4:
-                        printw(" ERR");
-                        break;
-
-                    default:
-                        printw(" ?? ");
-                    }
-
-                    printw(" C%d", pinfoarray[pindex]->CTRLval );
-
-                    printw(" %02d:%02d:%02d.%03d",
-                           pinfodisp[pindex].createtime_hr,
-                           pinfodisp[pindex].createtime_min,
-                           pinfodisp[pindex].createtime_sec,
-                           (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
-
-                    printw("  %6d", pinfolist->PIDarray[pindex]);
-                    printw(" %16s", pinfoarray[pindex]->tmuxname);
-
-                    attron(A_BOLD);
-                    printw("  %40s", pinfodisp[pindex].name);
-                    attroff(A_BOLD);
-
-                    if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
-                    {   // loopcnt has not changed
-                        printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
-                    }
-                    else
-                    {   // loopcnt has changed
                         attron(COLOR_PAIR(3));
-                        printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                        printw("  ACTIVE");
                         attroff(COLOR_PAIR(3));
                     }
 
-                    loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+                    if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
+                    {
+                        if(pinfoarray[pindex]->loopstat == 3) // clean exit
+                        {
+                            attron(COLOR_PAIR(4));
+                            printw(" STOPPED");
+                            attroff(COLOR_PAIR(4));
+                        }
+                        else
+                        {
+                            attron(COLOR_PAIR(2));
+                            printw(" CRASHED");
+                            attroff(COLOR_PAIR(2));
+                        }
+                    }
 
-                    if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                        attron(COLOR_PAIR(2));
-                    printw("  %40s", pinfoarray[pindex]->statusmsg);
-                    if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                        attroff(COLOR_PAIR(2));
+
+
+                    //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
+                    if(pinfolist->active[pindex] != 0)
+                    {
+                        switch (pinfoarray[pindex]->loopstat)
+                        {
+                        case 0:
+                            printw("INIT");
+                            break;
+
+                        case 1:
+                            printw(" RUN");
+                            break;
+
+                        case 2:
+                            printw("PAUS");
+                            break;
+
+                        case 3:
+                            printw("TERM");
+                            break;
+
+                        case 4:
+                            printw(" ERR");
+                            break;
+
+                        default:
+                            printw(" ?? ");
+                        }
+
+                        printw(" C%d", pinfoarray[pindex]->CTRLval );
+
+                        printw(" %02d:%02d:%02d.%03d",
+                               pinfodisp[pindex].createtime_hr,
+                               pinfodisp[pindex].createtime_min,
+                               pinfodisp[pindex].createtime_sec,
+                               (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
+
+                        printw("  %6d", pinfolist->PIDarray[pindex]);
+                        printw(" %16s", pinfoarray[pindex]->tmuxname);
+
+                        attron(A_BOLD);
+                        printw("  %40s", pinfodisp[pindex].name);
+                        attroff(A_BOLD);
+
+                        if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
+                        {   // loopcnt has not changed
+                            printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                        }
+                        else
+                        {   // loopcnt has changed
+                            attron(COLOR_PAIR(3));
+                            printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                            attroff(COLOR_PAIR(3));
+                        }
+
+                        loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+
+                        if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                            attron(COLOR_PAIR(2));
+                        printw("  %40s", pinfoarray[pindex]->statusmsg);
+                        if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                            attroff(COLOR_PAIR(2));
+                    }
+                    printw("\n");
+
+                    if(pindex == pindexSelected)
+                        attroff(A_REVERSE);
+
+                    /*      if(pinfolist->active[pindex] != 0)
+                          {
+                              pindexActive[NBpindexActive] = pindex;
+                              NBpindexActive++;
+                          }*/
                 }
-                printw("\n");
-
-                if(pindex == pindexSelected)
-                    attroff(A_REVERSE);
-
-                /*      if(pinfolist->active[pindex] != 0)
-                      {
-                          pindexActive[NBpindexActive] = pindex;
-                          NBpindexActive++;
-                      }*/
             }
 
             refresh();

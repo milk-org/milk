@@ -38,7 +38,7 @@
 #define SZ_CLICOREVARRAY 1000
 
 
-#define PROCESSINFOLISTSIZE 1000
+#define PROCESSINFOLISTSIZE 10000
 
 /// important directories and info
 extern pid_t CLIPID;
