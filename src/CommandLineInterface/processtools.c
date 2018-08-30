@@ -434,7 +434,7 @@ int_fast8_t processinfo_CTRLscreen()
     initncurses();
 
 
-    int NBpinfodisp = wrow-3;
+    int NBpinfodisp = 100; //wrow-3;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
