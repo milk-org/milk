@@ -434,7 +434,7 @@ int_fast8_t processinfo_CTRLscreen()
     initncurses();
 
 
-    int NBpinfodisp = 100; //wrow-3;
+    int NBpinfodisp = wrow-3;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
@@ -760,6 +760,9 @@ int_fast8_t processinfo_CTRLscreen()
             printw("\n");
 
 
+
+			// LOAD / UPDATE process information
+
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
                 // SHOULD WE (RE)LOAD ?
@@ -895,7 +898,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-            // Display
+            // DISPLAY
 
 
             int dispindex;
@@ -906,7 +909,8 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 dispindexMax = NBpindexActive;
 
-            for(dispindex=0; dispindex<dispindexMax; dispindex++)
+            //for(dispindex=0; dispindex<dispindexMax; dispindex++)
+            if(1==0)
             {
                 if(TimeSorted == 0)
                     pindex = dispindex;
