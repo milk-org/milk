@@ -6478,7 +6478,10 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                     if(semval<SEMAPHORE_MAXVAL)
                         sem_post(data.image[ID].semptr[semnb]);
                 }
-                sem_post(data.image[ID].semlog);
+                
+                sem_getvalue(data.image[ID].semlog, &semval);
+                if(semval<2)
+					sem_post(data.image[ID].semlog);
                 
                 
                 
