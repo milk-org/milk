@@ -880,20 +880,24 @@ int_fast8_t processinfo_CTRLscreen()
             long *indexarray;
             timearray  = (double*) malloc(sizeof(double)*NBpindexActive);
             indexarray = (long*)   malloc(sizeof(long)  *NBpindexActive);
+            int listcnt = 0;
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                indexarray[index] = pindex;
-                // minus sign for most recent first
-                printw("index  %ld  ->  pindex  %ld\n", index, pindex);
-                timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
-                refresh();
+                if(pinfommapped[pindex] == 1)
+                {
+					indexarray[index] = pindex;
+					// minus sign for most recent first
+					//printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+					timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+					listcnt++;
+                }
             }
+			NBpindexActive = listcnt;
+			quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
-       //     quick_sort2l_double(timearray, indexarray, NBpindexActive);
-
-           // for(index=0; index<NBpindexActive; index++)
-           //     sorted_pindex_time[index] = indexarray[index];
+           for(index=0; index<NBpindexActive; index++)
+                sorted_pindex_time[index] = indexarray[index];
 
             free(timearray);
             free(indexarray);
@@ -913,8 +917,7 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 dispindexMax = NBpindexActive;
 
-            //for(dispindex=0; dispindex<dispindexMax; dispindex++)
-            if(1==0) // TESTING
+            for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
                 if(TimeSorted == 0)
                     pindex = dispindex;
