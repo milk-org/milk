@@ -132,15 +132,16 @@ struct savethreadmsg {
 		// 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
 		// 2 : ???
 	
-	char fnameascii[200];
+	char      fnameascii[200];  // name of frame to be saved
+	uint64_t *loopindex;
 	uint64_t *arraycnt0;
 	uint64_t *arraycnt1;
-	double *arraytime;
+	
+	double   *arraytime;
+	
 };
 
 static long tret; // thread return value
-
-
 
 
 
@@ -1834,18 +1835,27 @@ int_fast8_t clearall()
 
 
 
-
+/**
+ * ## Purpose
+ * 
+ * Save telemetry stream data 
+ * 
+ */
 void *save_fits_function( void *ptr )
 {
-    long ID;
+    long  ID;
+    
+    
     struct savethreadmsg *tmsg; // = malloc(sizeof(struct savethreadmsg));
-    uint32_t*imsizearray;
-    uint32_t xsize, ysize;
-    uint8_t atype;
+    uint32_t *imsizearray;
+    uint32_t  xsize, ysize;
+    uint8_t   atype;
+    
+    
     long IDc;
-    long framesize; // in bytes
-    char *ptr0; // source
-    char *ptr1; // destination
+    long  framesize;  // in bytes
+    char *ptr0;       // source pointer
+    char *ptr1;       // destination pointer
     long k;
     FILE *fp;
 
@@ -1977,9 +1987,20 @@ void *save_fits_function( void *ptr )
             printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
             exit(0);
         }
+        double t0; // time reference
         for(k=0; k<tmsg->cubesize; k++)
         {
-            fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+            
+            // entries are:
+            // - index within cube
+            // - loop index (if applicable)
+            // - time since cube start
+            // - time (absolute)
+            // - cnt0
+            // - cnt1
+            
+            fprintf(fp, "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n", k, tmsg->arraycnt0[k], tmsg->arraytime[k]-t0, tmsg->arraytime[k], tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
         }
         fclose(fp);
     }
@@ -6482,6 +6503,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                 sem_getvalue(data.image[ID].semlog, &semval);
                 if(semval<2)
 					sem_post(data.image[ID].semlog);
+					
                 
                 
                 
