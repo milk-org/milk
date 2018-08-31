@@ -121,26 +121,11 @@ static char errmsg_memory[SBUFFERSIZE];
  *
  */
 
-struct savethreadmsg {
-    char iname[100];
-    char fname[200];
-    int partial; // 1 if partial cube
-    long cubesize; // size of the cube
-	
-	int saveascii; 
-		// 0 : Not saving ascii
-		// 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
-		// 2 : ???
-	
-	char fnameascii[200];
-	uint64_t *arraycnt0;
-	uint64_t *arraycnt1;
-	double *arraytime;
-};
+
+
+static STREAMSAVE_THREAD_MESSAGE savethreadmsg;
 
 static long tret; // thread return value
-
-
 
 
 
@@ -1834,18 +1819,29 @@ int_fast8_t clearall()
 
 
 
-
+/**
+ * ## Purpose
+ * 
+ * Save telemetry stream data 
+ * 
+ */
 void *save_fits_function( void *ptr )
 {
-    long ID;
-    struct savethreadmsg *tmsg; // = malloc(sizeof(struct savethreadmsg));
-    uint32_t*imsizearray;
-    uint32_t xsize, ysize;
-    uint8_t atype;
+    long  ID;
+    
+    
+    //struct savethreadmsg *tmsg; // = malloc(sizeof(struct savethreadmsg));
+    STREAMSAVE_THREAD_MESSAGE *tmsg;
+    
+    uint32_t *imsizearray;
+    uint32_t  xsize, ysize;
+    uint8_t   atype;
+    
+    
     long IDc;
-    long framesize; // in bytes
-    char *ptr0; // source
-    char *ptr1; // destination
+    long  framesize;  // in bytes
+    char *ptr0;       // source pointer
+    char *ptr1;       // destination pointer
     long k;
     FILE *fp;
 
@@ -1868,7 +1864,9 @@ void *save_fits_function( void *ptr )
 
     imsizearray = (uint32_t*) malloc(sizeof(uint32_t)*3);
 
-    tmsg = (struct savethreadmsg*) ptr;
+//    tmsg = (struct savethreadmsg*) ptr;
+    tmsg = (STREAMSAVE_THREAD_MESSAGE*) ptr;
+    
     // printf("THREAD : SAVING  %s -> %s \n", tmsg->iname, tmsg->fname);
     //fflush(stdout);
     if(tmsg->partial==0) // full image
@@ -1977,9 +1975,33 @@ void *save_fits_function( void *ptr )
             printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
             exit(0);
         }
+        
+        fprintf(fp, "# Telemetry stream timing data \n");
+        fprintf(fp, "# File written by function %s in file %s\n", __FUNCTION__, __FILE__);
+        fprintf(fp, "# \n");
+        fprintf(fp, "# col1 : datacube frame index\n");
+        fprintf(fp, "# col2 : Main index\n");
+        fprintf(fp, "# col3 : Time since cube origin\n");
+        fprintf(fp, "# col4 : Absolute time\n");
+        fprintf(fp, "# col5 : stream cnt0 index\n");
+        fprintf(fp, "# col6 : stream cnt1 index\n");
+        fprintf(fp, "# \n");
+                
+        double t0; // time reference
+        t0 = tmsg->arraytime[0];
         for(k=0; k<tmsg->cubesize; k++)
         {
-            fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+            
+            // entries are:
+            // - index within cube
+            // - loop index (if applicable)
+            // - time since cube start
+            // - time (absolute)
+            // - cnt0
+            // - cnt1
+            
+            fprintf(fp, "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n", k, tmsg->arrayindex[k], tmsg->arraytime[k]-t0, tmsg->arraytime[k], tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
         }
         fclose(fp);
     }
@@ -6482,6 +6504,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                 sem_getvalue(data.image[ID].semlog, &semval);
                 if(semval<2)
 					sem_post(data.image[ID].semlog);
+					
                 
                 
                 
@@ -7036,6 +7059,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     long framesize; // in bytes
 
+	char *arrayindex_ptr;
     char *arraytime_ptr;
     char *arraycnt0_ptr;
     char *arraycnt1_ptr;
@@ -7047,7 +7071,9 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     int tOK = 0;
     int iret_savefits;
     //	char tmessage[500];
-    struct savethreadmsg *tmsg = malloc(sizeof(struct savethreadmsg));
+    //struct savethreadmsg *tmsg = malloc(sizeof(struct savethreadmsg));
+    STREAMSAVE_THREAD_MESSAGE *tmsg = malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+
 
     long fnb = 0;
     long NBfiles = -1; // run forever
@@ -7342,6 +7368,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
+					tmsg->arrayindex = array_cnt0_cp;
                     tmsg->arraycnt0 = array_cnt0_cp;
                     tmsg->arraycnt1 = array_cnt1_cp;
                     tmsg->arraytime = array_time_cp;
@@ -7401,6 +7428,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
+					tmsg->arrayindex = array_cnt0_cp;
                     tmsg->arraycnt0 = array_cnt0_cp;
                     tmsg->arraycnt1 = array_cnt1_cp;
                     tmsg->arraytime = array_time_cp;
@@ -7443,8 +7471,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     printf("%5d  Frame has arrived [index %ld]\n", __LINE__, index);
 
                 /// measure time
-                t = time(NULL);
-                uttime = gmtime(&t);
+             //   t = time(NULL);
+             //   uttime = gmtime(&t);
 
                 clock_gettime(CLOCK_REALTIME, &timenow);
 
@@ -7466,7 +7494,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
                 array_cnt0[index] = data.image[ID].md[0].cnt0;
                 array_cnt1[index] = data.image[ID].md[0].cnt1;
-                array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
+                //array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
+                array_time[index] = timenow.tv_sec + 1.0e-9*timenow.tv_nsec;
 
                 index++;
             }
@@ -7594,7 +7623,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 printf("%5d  Starting image save thread\n", __LINE__);
                 fflush(stdout);
             }
-
+			
+			tmsg->arrayindex = array_cnt0_cp;
             tmsg->arraycnt0 = array_cnt0_cp;
             tmsg->arraycnt1 = array_cnt1_cp;
             tmsg->arraytime = array_time_cp;
