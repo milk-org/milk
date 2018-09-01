@@ -1179,10 +1179,11 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								
 								if(cpuOK == 1)
-									printw(" %2d", cpu);
+									printw("|%2d", cpu);
 								else
-									printw("   ");
+									printw("|  ");
 							}
+							printw("|");
 						}
 						
 						if(pindex == pindexSelected)
