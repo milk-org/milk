@@ -414,7 +414,7 @@ static int GetNumberCPUs()
 		pclose(fpout);
 	}
 	
-	NBcpus = atoi(fpout);
+	NBcpus = atoi(outstring);
 
 	return(NBcpus);
 }
