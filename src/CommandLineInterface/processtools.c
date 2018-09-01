@@ -38,8 +38,9 @@
 
 #include <ncurses.h>
 #include <fcntl.h> 
+#include <ctype.h>
 
-
+#include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 
@@ -77,6 +78,10 @@ typedef struct
 	
 	int           processor;
 	int           rt_priority;
+	
+	// sub-processes
+	int           NBsubprocesses;
+	int           subprocPIDarray[50];
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -434,6 +439,9 @@ static int GetNumberCPUs()
 
 
 
+
+
+
 // for Display Mode 2
 
 static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
@@ -647,6 +655,45 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 	
 	pinfodisp[pindex].processor = stat_processor;
     pinfodisp[pindex].rt_priority = stat_rt_priority;
+    pinfodisp[pindex].NBsubprocesses = 0;
+    if(pinfodisp[pindex].threads > 1) // look for children
+    {
+		FILE *fpout;
+		char command[200];
+		char outstring[200];
+		char outstringc[200];
+		
+		sprintf(command, "pstree -p %d", pinfodisp[pindex].PID);
+		
+		fpout = popen (command, "r");
+		if(fpout==NULL)
+		{
+			printf("WARNING: cannot run command \"%s\"\n", command);
+		}
+		else
+		{
+			while(fgets(outstring, 100, fpout) != NULL)
+			{
+				int i = 0;
+				int ic = 0;
+				for(i=0;i<strlen(outstring);i++)
+				{
+					if(isdigit(outstring[i]))
+					{
+						outstringc[ic] = outstring[i];
+						ic++;
+					}
+					if(outstring[i] == '(')
+						ic = 0;
+				}
+				outstringc[ic] = '\0';
+				
+				pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(outstringc);
+				pinfodisp[pindex].NBsubprocesses++;
+			}
+			pclose(fpout);
+		}
+	}
     
     return 0;
 
@@ -730,8 +777,10 @@ int_fast8_t processinfo_CTRLscreen()
     int NBpinfodisp = wrow-5;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
+    {
         pinfodisp[pindex].updatecnt = 0;
-
+        pinfodisp[pindex].NBsubprocesses = 0;
+	}
 
     // Get number of cpus on system
     // getconf _NPROCESSORS_ONLN
@@ -1175,7 +1224,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-
+					pinfodisp[pindex].NBsubprocesses = 0;
 
                     pinfodisp[pindex].updatecnt ++;
 
@@ -1374,7 +1423,7 @@ int_fast8_t processinfo_CTRLscreen()
 							printw(" %2d", pinfodisp[pindex].rt_priority);
                             printw(" %-10s ", pinfodisp[pindex].cpuset);
                             
-                            printw(" %2dx  ", pinfodisp[pindex].threads);
+                            printw(" %2dx [%d]", pinfodisp[pindex].threads, pinfodisp[pindex].NBsubprocesses);
                             
                             
                             if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
