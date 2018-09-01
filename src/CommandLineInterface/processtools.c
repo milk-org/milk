@@ -1398,7 +1398,10 @@ int_fast8_t processinfo_CTRLscreen()
                             printw(" ");
                             
                             sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-                            for(cpu=0; cpu<NBcpus; cpu++)
+
+
+							// First group of cores (physical CPU 0)
+                            for(cpu=0; cpu<NBcpus; cpu += 2)
                             {
                                 int cpuOK = 0;
                                 sprintf(cpustring, ",%d,",cpu);
@@ -1417,7 +1420,32 @@ int_fast8_t processinfo_CTRLscreen()
 									attroff(COLOR_PAIR(3));
                                     
                             }
-                            printw("|");
+                            printw("| |");
+                            
+                            
+            				// Second group of cores (physical CPU 0)
+                            for(cpu=1; cpu<NBcpus; cpu += 2)
+                            {
+                                int cpuOK = 0;
+                                sprintf(cpustring, ",%d,",cpu);
+                                if(strstr(cpuliststring, cpustring) != NULL)
+                                    cpuOK = 1;
+                                
+                                if(cpu == pinfodisp[pindex].processor)
+									attron(COLOR_PAIR(3));
+
+                                if(cpuOK == 1)
+                                    printw("|%2d", cpu);
+                                else
+                                    printw("|  ");
+                          
+                                if(cpu == pinfodisp[pindex].processor)
+									attroff(COLOR_PAIR(3));
+                                    
+                            }
+                            printw("|");                
+                            
+                            
                         }
 
                         if(pindex == pindexSelected)
