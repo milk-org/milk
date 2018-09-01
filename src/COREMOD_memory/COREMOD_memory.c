@@ -1999,7 +1999,8 @@ void *save_fits_function( void *ptr )
         fprintf(fp, "# col6 : stream cnt1 index\n");
         fprintf(fp, "# \n");
                 
-        double t0; // time reference        
+        double t0; // time reference
+        t0 = tmsg->arraytime[0];
         for(k=0; k<tmsg->cubesize; k++)
         {
             //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
@@ -7500,7 +7501,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
                 array_cnt0[index] = data.image[ID].md[0].cnt0;
                 array_cnt1[index] = data.image[ID].md[0].cnt1;
-                array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
+                //array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
+                array_time[index] = timenow.tv_sec + 1.0e-9*timenow.tv_nsec;
 
                 index++;
             }
