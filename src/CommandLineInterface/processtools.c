@@ -1223,7 +1223,10 @@ int_fast8_t processinfo_CTRLscreen()
 								attron(COLOR_PAIR(4));
 							
                             
-                            printw("ctxsw: x%02ld x%02ld", abs(pinfodisp[pindex].ctxtsw_voluntary)%100, abs(pinfodisp[pindex].ctxtsw_nonvoluntary)%100);
+                            printw("ctxsw: +%02ld +%02ld", 
+								abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev)%100, 
+								abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev)%100
+								);
 
                             if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
 								attroff(COLOR_PAIR(2));
