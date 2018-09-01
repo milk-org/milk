@@ -1420,7 +1420,7 @@ int_fast8_t processinfo_CTRLscreen()
 									attroff(COLOR_PAIR(3));
                                     
                             }
-                            printw("| |");
+                            printw("| : ");
                             
                             
             				// Second group of cores (physical CPU 0)
