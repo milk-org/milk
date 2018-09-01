@@ -1191,7 +1191,7 @@ int_fast8_t processinfo_CTRLscreen()
                             
                             printw(" %2dx  ", pinfodisp[pindex].threads);
                             
-                            printw(" ctxsw: %12ld %8ld   ", ctxtsw_voluntary, ctxtsw_nonvoluntary);
+                            printw(" ctxsw: %12ld %8ld   ", pinfodisp[pindex].ctxtsw_voluntary, pinfodisp[pindex].ctxtsw_nonvoluntary);
 
                             sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
                             for(cpu=0; cpu<NBcpus; cpu++)
