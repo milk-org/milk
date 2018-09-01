@@ -1508,7 +1508,8 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 }
                                 printw("|");
-
+								
+								printw("\n");
 
                             }
                         }
