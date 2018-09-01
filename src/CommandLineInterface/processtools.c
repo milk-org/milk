@@ -1163,18 +1163,20 @@ int_fast8_t processinfo_CTRLscreen()
 						if( DisplayMode == 2)
 						{
 							int cpu;
+							char cpuliststring[200];
 							char cpustring[6];
 							
 							printw(" %-8s", pinfodisp[pindex].cpuset);
 							printw(" %20s", pinfodisp[pindex].cpusallowed);
 							
+							sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
 							for(cpu=0;cpu<NBcpus;cpu++)
 							{
 								int cpuOK = 0;
+									sprintf(cpustring, ",%d,",cpu);
+									if(strstr(cpuliststring, cpustring) != NULL)
+										cpuOK = 1;
 								
-								sprintf(cpustring, ",%d",cpu);
-								if(strstr(pinfodisp[pindex].cpusallowed, cpustring) != NULL)
-									cpuOK = 1;
 								
 								if(cpuOK == 1)
 									printw(" %2d", cpu);
