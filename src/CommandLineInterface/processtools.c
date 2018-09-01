@@ -1033,7 +1033,7 @@ int_fast8_t processinfo_CTRLscreen()
 						printw("  %6d", pinfolist->PIDarray[pindex]);
 
                             attron(A_BOLD);
-                            printw("  %30s", pinfodisp[pindex].name);
+                            printw("  %40s", pinfodisp[pindex].name);
                             attroff(A_BOLD);
 
 						if( DisplayMode == 1)
