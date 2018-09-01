@@ -73,8 +73,8 @@ typedef struct
 	long          ctxtsw_voluntary;
 	long          ctxtsw_nonvoluntary;
 
-	long          ctxtsw_voluntary_prev;
-	long          ctxtsw_nonvoluntary_prev;
+	long          ctxtsw_voluntary_prev[50];
+	long          ctxtsw_nonvoluntary_prev[50];
 	
 	int           processor;
 	int           rt_priority;
@@ -1434,7 +1434,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 if(spindex>0)
                                 {
-									printw("       %6d                                                  ", pinfodisp[pindex].subprocPIDarray[spindex]);
+									printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                     PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
 								}
 
@@ -1443,9 +1443,9 @@ int_fast8_t processinfo_CTRLscreen()
                                 printw(" %2dx ", pinfodisp[pindex].threads);
 
 
-                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
                                     attron(COLOR_PAIR(2));
-                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
                                     attron(COLOR_PAIR(4));
 
 
@@ -1459,8 +1459,8 @@ int_fast8_t processinfo_CTRLscreen()
                                 else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
                                     attroff(COLOR_PAIR(4));
 
-                                pinfodisp[pindex].ctxtsw_voluntary_prev = pinfodisp[pindex].ctxtsw_voluntary;
-                                pinfodisp[pindex].ctxtsw_nonvoluntary_prev = pinfodisp[pindex].ctxtsw_nonvoluntary;
+                                pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
+                                pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_nonvoluntary;
 
                                 printw(" ");
 
