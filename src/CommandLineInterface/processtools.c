@@ -67,6 +67,7 @@ typedef struct
 	long          createtime_ns;
 	
 	char          cpuset[16];       /**< cpuset name  */
+	char          cpusallowed[20]; 
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -912,9 +913,35 @@ int_fast8_t processinfo_CTRLscreen()
                     fp=fopen(fname, "r");
                     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
                     fclose(fp);
+                    
+                    // read /proc/PID/status
+					char * line = NULL;
+					size_t len = 0;
+					ssize_t read;
+					char string0[200];
+					char string1[200];
+					
+					sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
+					fp = fopen("/etc/motd", "r");
+					if (fp == NULL)
+						exit(EXIT_FAILURE);
 
+					while ((read = getline(&line, &len, fp)) != -1) {
+						
+						if(strncmp(line, "Cpus_allowed_list:", strlen("Cpus_allowed_list:")) == 0)
+						{
+							sscanf(line, "%s %s", string0, string1);
+							strcpy(pinfodisp[pindex].cpusallowed, string1);
+						}
+						
+						}
 
+					fclose(fp);
+					if (line)
+					free(line);
+   
 
+                    
                     pinfodisp[pindex].updatecnt ++;
 
                 }
@@ -1099,6 +1126,7 @@ int_fast8_t processinfo_CTRLscreen()
 						if( DisplayMode == 2)
 						{
 							printw(" %-8s", pinfodisp[pindex].cpuset);
+							printw(" %20s", pinfodisp[pindex].cpusallowed);
 						}
 						
 						if(pindex == pindexSelected)
