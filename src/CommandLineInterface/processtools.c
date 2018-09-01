@@ -587,7 +587,7 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 		"%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld",
 		&stat_pid,
 		stat_comm,
-		stat_state,
+		&stat_state,
 		&stat_ppid,
 		&stat_pgrp,
 		&stat_session,
