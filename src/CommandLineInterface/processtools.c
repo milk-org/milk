@@ -1432,7 +1432,10 @@ int_fast8_t processinfo_CTRLscreen()
                             {
 
                                 if(spindex>0)
+                                {
+									printw("                                                            ");
                                     PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
+								}
 
 
                                 printw(" %2d", pinfodisp[pindex].rt_priority);
