@@ -655,7 +655,11 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 	
 	pinfodisp[pindex].processor = stat_processor;
     pinfodisp[pindex].rt_priority = stat_rt_priority;
-    pinfodisp[pindex].NBsubprocesses = 0;
+    
+    
+    pinfodisp[pindex].subprocPIDarray[0] = pinfodisp[pindex].PID;
+    pinfodisp[pindex].NBsubprocesses = 1;
+    
     if(pinfodisp[pindex].threads > 1) // look for children
     {
 		FILE *fpout;
@@ -1416,14 +1420,17 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpuliststring[200];
                             char cpustring[6];
 
-
+//pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses]
 							// collect required info
 							PIDcollectSystemInfo(pindex, pinfodisp);
 							
+							int spindex; // sub process index
+							for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; pindex++)
+							{
+							
 							printw(" %2d", pinfodisp[pindex].rt_priority);
                             printw(" %-10s ", pinfodisp[pindex].cpuset);
-                            
-                            printw(" %2dx [%d]", pinfodisp[pindex].threads, pinfodisp[pindex].NBsubprocesses);
+                            printw(" %2dx ", pinfodisp[pindex].threads);
                             
                             
                             if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
@@ -1500,6 +1507,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                         if(pindex == pindexSelected)
                             attroff(A_REVERSE);
+						}
 
                     }
                     printw("\n");
