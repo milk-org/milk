@@ -121,24 +121,9 @@ static char errmsg_memory[SBUFFERSIZE];
  *
  */
 
-struct savethreadmsg {
-    char iname[100];
-    char fname[200];
-    int partial; // 1 if partial cube
-    long cubesize; // size of the cube
-	
-	int saveascii; 
-		// 0 : Not saving ascii
-		// 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
-		// 2 : ???
-	
-	char      fnameascii[200];  // name of frame to be saved
-	uint64_t *arrayindex;
-	uint64_t *arraycnt0;
-	uint64_t *arraycnt1;
-	
-	double   *arraytime;
-};
+
+
+struct STREAMSAVE_THREAD_MESSAGE savethreadmsg;
 
 static long tret; // thread return value
 
