@@ -1437,7 +1437,6 @@ int_fast8_t processinfo_CTRLscreen()
                                     PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
 								}
 
-
                                 printw(" %2d", pinfodisp[pindex].rt_priority);
                                 printw(" %-10s ", pinfodisp[pindex].cpuset);
                                 printw(" %2dx ", pinfodisp[pindex].threads);
