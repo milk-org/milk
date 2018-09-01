@@ -832,7 +832,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
-            printw("%d processes tracked    Display Mode %d\n", NBpindexActive, DisplayMode);
+            printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, DisplayMode);
             printw("\n");
 
 
