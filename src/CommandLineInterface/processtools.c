@@ -1428,7 +1428,7 @@ int_fast8_t processinfo_CTRLscreen()
                             PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
 
                             int spindex; // sub process index
-                            for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; pindex++)
+                            for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
                             {
 
                                 if(spindex>0)
@@ -1437,7 +1437,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
 								}
 
-                                printw("a %2d", pinfodisp[pindex].rt_priority);
+                                printw(" %2d", pinfodisp[pindex].rt_priority);
                                 printw(" %-10s ", pinfodisp[pindex].cpuset);
                                 printw(" %2dx ", pinfodisp[pindex].threads);
 
