@@ -444,7 +444,7 @@ static int GetNumberCPUs()
 
 // for Display Mode 2
 
-static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
+static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp, int level)
 {
 
     // COLLECT INFO FROM SYSTEM
@@ -452,7 +452,7 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
     char fname[200];
 
     // cpuset
-    sprintf(fname, "/proc/%d/task/%d/cpuset", pinfodisp[pindex].PID, pinfodisp[pindex].PID);
+    sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
     fp=fopen(fname, "r");
     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
     fclose(fp);
@@ -464,7 +464,7 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
     char string0[200];
     char string1[200];
 
-    sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
+    sprintf(fname, "/proc/%d/status", PID);
     fp = fopen(fname, "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
@@ -503,7 +503,7 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
     
 
 
-    sprintf(fname, "/proc/%d/stat", pinfodisp[pindex].PID);
+    sprintf(fname, "/proc/%d/stat", PID);
 
 	int           stat_pid;       // (1) The process ID.
 	char          stat_comm[20];  // (2) The filename of the executable, in parentheses.
@@ -656,8 +656,9 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 	pinfodisp[pindex].processor = stat_processor;
     pinfodisp[pindex].rt_priority = stat_rt_priority;
     
-    
-    pinfodisp[pindex].subprocPIDarray[0] = pinfodisp[pindex].PID;
+    if(level == 0)
+    {
+    pinfodisp[pindex].subprocPIDarray[0] = PID;
     pinfodisp[pindex].NBsubprocesses = 1;
     
     if(pinfodisp[pindex].threads > 1) // look for children
@@ -667,7 +668,7 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 		char outstring[200];
 		char outstringc[200];
 		
-		sprintf(command, "pstree -p %d", pinfodisp[pindex].PID);
+		sprintf(command, "pstree -p %d", PID);
 		
 		fpout = popen (command, "r");
 		if(fpout==NULL)
@@ -698,11 +699,11 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 			pclose(fpout);
 		}
 	}
+	}
     
     return 0;
 
 }
-
 
 
 
@@ -1414,19 +1415,25 @@ int_fast8_t processinfo_CTRLscreen()
                         }
 
 
+
+
                         if( DisplayMode == 2)
                         {
                             int cpu;
                             char cpuliststring[200];
                             char cpustring[6];
 
-//pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses]
-							// collect required info
-							PIDcollectSystemInfo(pindex, pinfodisp);
+
+							// collect required info for display
+							PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
 							
 							int spindex; // sub process index
 							for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; pindex++)
 							{
+								
+								if(spindex>0)
+									PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
+								
 							
 							printw(" %2d", pinfodisp[pindex].rt_priority);
                             printw(" %-10s ", pinfodisp[pindex].cpuset);
