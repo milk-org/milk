@@ -71,6 +71,9 @@ typedef struct
 	int           threads; 
 	long          ctxtsw_voluntary;
 	long          ctxtsw_nonvoluntary;
+
+	long          ctxtsw_voluntary_prev;
+	long          ctxtsw_nonvoluntary_prev;
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -581,7 +584,7 @@ int_fast8_t processinfo_CTRLscreen()
             pindexActiveSelected ++;
             if(pindexActiveSelected>NBpindexActive-1)
                 pindexActiveSelected = NBpindexActive-1;
-            if(TimeSorted == 0)
+            if(TimeSorted == 0)pinfodisp[pindex].
                 pindexSelected = pindexActive[pindexActiveSelected];
             else
                 pindexSelected = sorted_pindex_time[pindexActiveSelected];
@@ -1191,7 +1194,23 @@ int_fast8_t processinfo_CTRLscreen()
                             
                             printw(" %2dx  ", pinfodisp[pindex].threads);
                             
-                            printw(" ctxsw: %12ld %8ld   ", pinfodisp[pindex].ctxtsw_voluntary, pinfodisp[pindex].ctxtsw_nonvoluntary);
+                            
+                            if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+								attron(COLOR_PAIR(2));
+							else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+								attron(COLOR_PAIR(4));
+							
+                            
+                            printw(" ctxsw: %2ld %2ld   ", pinfodisp[pindex].ctxtsw_voluntary%100, pinfodisp[pindex].ctxtsw_nonvoluntary%100);
+
+                            if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+								attroff(COLOR_PAIR(2));
+							else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+								attroff(COLOR_PAIR(4));   
+                            
+                            pinfodisp[pindex].ctxtsw_voluntary_prev = pinfodisp[pindex].ctxtsw_voluntary;
+                            pinfodisp[pindex].ctxtsw_nonvoluntary_prev = pinfodisp[pindex].ctxtsw_nonvoluntary;
+                            
 
                             sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
                             for(cpu=0; cpu<NBcpus; cpu++)
