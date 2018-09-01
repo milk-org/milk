@@ -67,7 +67,8 @@ typedef struct
 	long          createtime_ns;
 	
 	char          cpuset[16];       /**< cpuset name  */
-	char          cpusallowed[20]; 
+	char          cpusallowed[20];
+	int           threads; 
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -451,12 +452,12 @@ int_fast8_t processinfo_CTRLscreen()
     PROCESSINFODISP *pinfodisp;
 
     char syscommand[200];
-    
-    
+
+
     int NBcpus;
-    
-    
-    
+
+
+
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -483,7 +484,7 @@ int_fast8_t processinfo_CTRLscreen()
     // Create / read process list
     processinfo_shm_list_create();
 
-	NBcpus = GetNumberCPUs();
+    NBcpus = GetNumberCPUs();
 
 
     // INITIALIZE ncurses
@@ -496,8 +497,8 @@ int_fast8_t processinfo_CTRLscreen()
         pinfodisp[pindex].updatecnt = 0;
 
 
-	// Get number of cpus on system
-	// getconf _NPROCESSORS_ONLN
+    // Get number of cpus on system
+    // getconf _NPROCESSORS_ONLN
 
 
 
@@ -950,35 +951,41 @@ int_fast8_t processinfo_CTRLscreen()
                     fp=fopen(fname, "r");
                     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
                     fclose(fp);
-                    
+
                     // read /proc/PID/status
-					char * line = NULL;
-					size_t len = 0;
-					ssize_t read;
-					char string0[200];
-					char string1[200];
-					
-					sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
-					fp = fopen(fname, "r");
-					if (fp == NULL)
-						exit(EXIT_FAILURE);
+                    char * line = NULL;
+                    size_t len = 0;
+                    ssize_t read;
+                    char string0[200];
+                    char string1[200];
 
-					while ((read = getline(&line, &len, fp)) != -1) {
-						
-						if(strncmp(line, "Cpus_allowed_list:", strlen("Cpus_allowed_list:")) == 0)
-						{
-							sscanf(line, "%s %s", string0, string1);
-							strcpy(pinfodisp[pindex].cpusallowed, string1);
-						}
-						
-						}
+                    sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
+                    fp = fopen(fname, "r");
+                    if (fp == NULL)
+                        exit(EXIT_FAILURE);
 
-					fclose(fp);
-					if (line)
-					free(line);
-   
+                    while ((read = getline(&line, &len, fp)) != -1) {
 
-                    
+                        if(strncmp(line, "Cpus_allowed_list:", strlen("Cpus_allowed_list:")) == 0)
+                        {
+                            sscanf(line, "%s %s", string0, string1);
+                            strcpy(pinfodisp[pindex].cpusallowed, string1);
+                        }
+                        
+                        if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
+                        {
+                            sscanf(line, "%s %s", string0, string1);
+                            pinfodisp[pindex].threads = atoi(string1);
+                        }
+
+                    }
+
+                    fclose(fp);
+                    if (line)
+                        free(line);
+
+
+
                     pinfodisp[pindex].updatecnt ++;
 
                 }
@@ -1094,15 +1101,15 @@ int_fast8_t processinfo_CTRLscreen()
                         if(pindex == pindexSelected)
                             attron(A_REVERSE);
 
-						printw("  %6d", pinfolist->PIDarray[pindex]);
+                        printw("  %6d", pinfolist->PIDarray[pindex]);
 
-                            attron(A_BOLD);
-                            printw("  %40s", pinfodisp[pindex].name);
-                            attroff(A_BOLD);
+                        attron(A_BOLD);
+                        printw("  %40s", pinfodisp[pindex].name);
+                        attroff(A_BOLD);
 
-						if( DisplayMode == 1)
+                        if( DisplayMode == 1)
                         {
-                           switch (pinfoarray[pindex]->loopstat)
+                            switch (pinfoarray[pindex]->loopstat)
                             {
                             case 0:
                                 printw("INIT");
@@ -1157,38 +1164,39 @@ int_fast8_t processinfo_CTRLscreen()
                             printw("  %40s", pinfoarray[pindex]->statusmsg);
                             if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                 attroff(COLOR_PAIR(2));
-						}
-						
-						
-						if( DisplayMode == 2)
-						{
-							int cpu;
-							char cpuliststring[200];
-							char cpustring[6];
-							
-							printw(" %-8s", pinfodisp[pindex].cpuset);
-							//printw(" %20s", pinfodisp[pindex].cpusallowed);
-							
-							sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-							for(cpu=0;cpu<NBcpus;cpu++)
-							{
-								int cpuOK = 0;
-									sprintf(cpustring, ",%d,",cpu);
-									if(strstr(cpuliststring, cpustring) != NULL)
-										cpuOK = 1;
-								
-								
-								if(cpuOK == 1)
-									printw("|%2d", cpu);
-								else
-									printw("|  ");
-							}
-							printw("|");
-						}
-						
-						if(pindex == pindexSelected)
-								attroff(A_REVERSE);
-						
+                        }
+
+
+                        if( DisplayMode == 2)
+                        {
+                            int cpu;
+                            char cpuliststring[200];
+                            char cpustring[6];
+
+                            printw(" %-12s ", pinfodisp[pindex].cpuset);
+                            
+                            printw(" %2d threads  ", pinfodisp[pindex].threads);
+
+                            sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
+                            for(cpu=0; cpu<NBcpus; cpu++)
+                            {
+                                int cpuOK = 0;
+                                sprintf(cpustring, ",%d,",cpu);
+                                if(strstr(cpuliststring, cpustring) != NULL)
+                                    cpuOK = 1;
+
+
+                                if(cpuOK == 1)
+                                    printw("|%2d", cpu);
+                                else
+                                    printw("|  ");
+                            }
+                            printw("|");
+                        }
+
+                        if(pindex == pindexSelected)
+                            attroff(A_REVERSE);
+
                     }
                     printw("\n");
 
