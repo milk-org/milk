@@ -1987,7 +1987,19 @@ void *save_fits_function( void *ptr )
             printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
             exit(0);
         }
-        double t0; // time reference
+        
+        fprintf(fp, "# Telemetry stream timing data \n");
+        fprintf(fp, "# File written by function %s in file %s\n", __FUNCTION__, __FILE__);
+        fprintf(fp, "# \n");
+        fprintf(fp, "# col1 : datacube frame index\n");
+        fprintf(fp, "# col2 : Loop index\n");
+        fprintf(fp, "# col3 : Time since cube origin\n");
+        fprintf(fp, "# col4 : Absolute time\n");
+        fprintf(fp, "# col5 : stream cnt0 index\n");
+        fprintf(fp, "# col6 : stream cnt1 index\n");
+        fprintf(fp, "# \n");
+                
+        double t0; // time reference        
         for(k=0; k<tmsg->cubesize; k++)
         {
             //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
