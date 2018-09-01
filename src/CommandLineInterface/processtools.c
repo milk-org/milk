@@ -66,9 +66,11 @@ typedef struct
 	int           createtime_sec;
 	long          createtime_ns;
 	
+	char          cpuset[16];       /**< cpuset name  */
+	
 	char          statusmsg[200];
 	char          tmuxname[100];
-
+	
 } PROCESSINFODISP;
 
 
@@ -471,7 +473,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     pindexActiveSelected = 0;
 
-
+	int DisplayMode = 0; 
+	// display modes:
+	// 0: overview
+	// 1: CPU affinity
 
     while( loopOK == 1 )
     {
@@ -767,7 +772,23 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 TimeSorted = 1;
             break;
-            break;
+            
+            // Set Display Mode
+        
+        
+        case KEY_F(0):
+			DisplayMode = 0;
+			break;
+            
+        case KEY_F(1):
+			DisplayMode = 1;
+			break;
+                        
+        case KEY_F(2):
+			DisplayMode = 2;
+			break;
+            
+
         }
 
 
@@ -778,7 +799,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
-            printw("%d processes tracked\n", NBpindexActive);
+            printw("%d processes tracked    Display Mode %d\n", NBpindexActive, DisplayMode);
             printw("\n");
 
 
@@ -854,6 +875,9 @@ int_fast8_t processinfo_CTRLscreen()
                         close(fdarray[pindex]);
                         pinfommapped[pindex] == 0;
                     }
+                    
+                    
+                    // COLLECT INFORMATION FROM PROCESSINFO FILE
 
                     fdarray[pindex] = open(SM_fname, O_RDWR);
                     fstat(fdarray[pindex], &file_stat);
@@ -881,7 +905,21 @@ int_fast8_t processinfo_CTRLscreen()
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-
+                    
+                    
+                    
+                    // COLLECT INFO FROM SYSTEM
+                    FILE *fp;
+                    char fname[200];
+                    
+                    // cpuset
+                    sprintf(fname, "/proc/%d/task/%d/cpuset", pinfodisp[pindex].PID, pinfodisp[pindex].PID);
+                    fp=fopen(fname, "r");
+                    fscanf(fp, "%s", &pinfodisp[pindex].cpuset);
+                    fclose(fp);
+                    
+                    
+                    
                     pinfodisp[pindex].updatecnt ++;
 
                 }
