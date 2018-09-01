@@ -1511,6 +1511,8 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								printw("\n");
 
+								if(pindex == pindexSelected)
+									attroff(A_REVERSE);
                             }
                         }
 
