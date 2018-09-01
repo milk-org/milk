@@ -1364,6 +1364,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 break;
 
                             case 1:
+
                                 printw(" RUN");
                                 break;
 
@@ -1434,7 +1435,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 if(spindex>0)
                                 {
 									printw("                                                            ");
-                                    PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
+                                    PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
 								}
 
                                 printw(" %2d", pinfodisp[pindex].rt_priority);
