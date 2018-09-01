@@ -69,6 +69,8 @@ typedef struct
 	char          cpuset[16];       /**< cpuset name  */
 	char          cpusallowed[20];
 	int           threads; 
+	long          ctxtsw_voluntary;
+	long          ctxtsw_nonvoluntary;
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -977,6 +979,18 @@ int_fast8_t processinfo_CTRLscreen()
                             sscanf(line, "%s %s", string0, string1);
                             pinfodisp[pindex].threads = atoi(string1);
                         }
+                        
+                        if(strncmp(line, "voluntary_ctxt_switches:", strlen("voluntary_ctxt_switches:")) == 0)
+                        {
+                            sscanf(line, "%s %s", string0, string1);
+                            pinfodisp[pindex].ctxtsw_voluntary = atoi(string1);
+                        }
+                        
+                        if(strncmp(line, "nonvoluntary_ctxt_switches:", strlen("nonvoluntary_ctxt_switches:")) == 0)
+                        {
+                            sscanf(line, "%s %s", string0, string1);
+                            pinfodisp[pindex].ctxtsw_nonvoluntary = atoi(string1);
+                        }
 
                     }
 
@@ -1173,9 +1187,11 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpuliststring[200];
                             char cpustring[6];
 
-                            printw(" %-12s ", pinfodisp[pindex].cpuset);
+                            printw(" %-10s ", pinfodisp[pindex].cpuset);
                             
-                            printw(" %2d threads  ", pinfodisp[pindex].threads);
+                            printw(" %2dx  ", pinfodisp[pindex].threads);
+                            
+                            printw(" ctxsw: %12ld %8ld   ", ctxtsw_voluntary, ctxtsw_nonvoluntary);
 
                             sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
                             for(cpu=0; cpu<NBcpus; cpu++)
