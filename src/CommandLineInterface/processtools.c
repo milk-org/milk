@@ -1434,7 +1434,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 if(spindex>0)
                                 {
-									printw("                                                            ");
+									printw("       %6d                                                  ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                     PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
 								}
 
