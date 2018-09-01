@@ -319,9 +319,9 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
     tstoptm = gmtime(&tstop.tv_sec);
 
     if(processinfo->CTRLval == 3) // loop exit from processinfo control
-        sprintf(msgstring, "CTRLexit at %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+        sprintf(msgstring, "CTRLexit  %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
     else
-        sprintf(msgstring, "Loop exit at %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+        sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
 
     strncpy(processinfo->statusmsg, msgstring, 200);
 
