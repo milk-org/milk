@@ -1167,7 +1167,7 @@ int_fast8_t processinfo_CTRLscreen()
 							char cpustring[6];
 							
 							printw(" %-8s", pinfodisp[pindex].cpuset);
-							printw(" %20s", pinfodisp[pindex].cpusallowed);
+							//printw(" %20s", pinfodisp[pindex].cpusallowed);
 							
 							sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
 							for(cpu=0;cpu<NBcpus;cpu++)
