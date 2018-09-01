@@ -922,7 +922,7 @@ int_fast8_t processinfo_CTRLscreen()
 					char string1[200];
 					
 					sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
-					fp = fopen("/etc/motd", "r");
+					fp = fopen(fname, "r");
 					if (fp == NULL)
 						exit(EXIT_FAILURE);
 
