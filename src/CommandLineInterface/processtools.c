@@ -427,6 +427,72 @@ static int GetNumberCPUs()
 
 
 
+// for Display Mode 2
+
+static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
+{
+
+    // COLLECT INFO FROM SYSTEM
+    FILE *fp;
+    char fname[200];
+
+    // cpuset
+    sprintf(fname, "/proc/%d/task/%d/cpuset", pinfodisp[pindex].PID, pinfodisp[pindex].PID);
+    fp=fopen(fname, "r");
+    fscanf(fp, "%s", pinfodisp[pindex].cpuset);
+    fclose(fp);
+
+    // read /proc/PID/status
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    char string0[200];
+    char string1[200];
+
+    sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
+    fp = fopen(fname, "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+
+    while ((read = getline(&line, &len, fp)) != -1) {
+
+        if(strncmp(line, "Cpus_allowed_list:", strlen("Cpus_allowed_list:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            strcpy(pinfodisp[pindex].cpusallowed, string1);
+        }
+
+        if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            pinfodisp[pindex].threads = atoi(string1);
+        }
+
+        if(strncmp(line, "voluntary_ctxt_switches:", strlen("voluntary_ctxt_switches:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            pinfodisp[pindex].ctxtsw_voluntary = atoi(string1);
+        }
+
+        if(strncmp(line, "nonvoluntary_ctxt_switches:", strlen("nonvoluntary_ctxt_switches:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            pinfodisp[pindex].ctxtsw_nonvoluntary = atoi(string1);
+        }
+
+    }
+
+    fclose(fp);
+    if (line)
+        free(line);
+    return 0;
+
+}
+
+
+
+
+
 
 /**
  * Control screen for PROCESSINFO structures
@@ -946,63 +1012,6 @@ int_fast8_t processinfo_CTRLscreen()
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
 
 
-
-                    // COLLECT INFO FROM SYSTEM
-                    FILE *fp;
-                    char fname[200];
-
-                    // cpuset
-                    sprintf(fname, "/proc/%d/task/%d/cpuset", pinfodisp[pindex].PID, pinfodisp[pindex].PID);
-                    fp=fopen(fname, "r");
-                    fscanf(fp, "%s", pinfodisp[pindex].cpuset);
-                    fclose(fp);
-
-                    // read /proc/PID/status
-                    char * line = NULL;
-                    size_t len = 0;
-                    ssize_t read;
-                    char string0[200];
-                    char string1[200];
-
-                    sprintf(fname, "/proc/%d/status", pinfodisp[pindex].PID);
-                    fp = fopen(fname, "r");
-                    if (fp == NULL)
-                        exit(EXIT_FAILURE);
-
-                    while ((read = getline(&line, &len, fp)) != -1) {
-
-                        if(strncmp(line, "Cpus_allowed_list:", strlen("Cpus_allowed_list:")) == 0)
-                        {
-                            sscanf(line, "%s %s", string0, string1);
-                            strcpy(pinfodisp[pindex].cpusallowed, string1);
-                        }
-                        
-                        if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
-                        {
-                            sscanf(line, "%s %s", string0, string1);
-                            pinfodisp[pindex].threads = atoi(string1);
-                        }
-                        
-                        if(strncmp(line, "voluntary_ctxt_switches:", strlen("voluntary_ctxt_switches:")) == 0)
-                        {
-                            sscanf(line, "%s %s", string0, string1);
-                            pinfodisp[pindex].ctxtsw_voluntary = atoi(string1);
-                        }
-                        
-                        if(strncmp(line, "nonvoluntary_ctxt_switches:", strlen("nonvoluntary_ctxt_switches:")) == 0)
-                        {
-                            sscanf(line, "%s %s", string0, string1);
-                            pinfodisp[pindex].ctxtsw_nonvoluntary = atoi(string1);
-                        }
-
-                    }
-
-                    fclose(fp);
-                    if (line)
-                        free(line);
-
-
-
                     pinfodisp[pindex].updatecnt ++;
 
                 }
@@ -1107,7 +1116,10 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
+					
+					
+					
+					
 
 
 
@@ -1190,6 +1202,16 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpuliststring[200];
                             char cpustring[6];
 
+
+
+
+
+							// collect required info
+							PIDcollectSystemInfo(pindex, pinfodisp);
+
+
+
+
                             printw(" %-10s ", pinfodisp[pindex].cpuset);
                             
                             printw(" %2dx  ", pinfodisp[pindex].threads);
@@ -1201,7 +1223,7 @@ int_fast8_t processinfo_CTRLscreen()
 								attron(COLOR_PAIR(4));
 							
                             
-                            printw(" ctxsw: %2ld %2ld   ", pinfodisp[pindex].ctxtsw_voluntary%100, pinfodisp[pindex].ctxtsw_nonvoluntary%100);
+                            printw(" ctxsw: x%02ld x%02ld   ", abs(pinfodisp[pindex].ctxtsw_voluntary)%100, abs(pinfodisp[pindex].ctxtsw_nonvoluntary)%100);
 
                             if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
 								attroff(COLOR_PAIR(2));
