@@ -133,12 +133,11 @@ struct savethreadmsg {
 		// 2 : ???
 	
 	char      fnameascii[200];  // name of frame to be saved
-	uint64_t *loopindex;
+	uint64_t *arrayindex;
 	uint64_t *arraycnt0;
 	uint64_t *arraycnt1;
 	
 	double   *arraytime;
-	
 };
 
 static long tret; // thread return value
@@ -1992,7 +1991,7 @@ void *save_fits_function( void *ptr )
         fprintf(fp, "# File written by function %s in file %s\n", __FUNCTION__, __FILE__);
         fprintf(fp, "# \n");
         fprintf(fp, "# col1 : datacube frame index\n");
-        fprintf(fp, "# col2 : Loop index\n");
+        fprintf(fp, "# col2 : Main index\n");
         fprintf(fp, "# col3 : Time since cube origin\n");
         fprintf(fp, "# col4 : Absolute time\n");
         fprintf(fp, "# col5 : stream cnt0 index\n");
@@ -2013,7 +2012,7 @@ void *save_fits_function( void *ptr )
             // - cnt0
             // - cnt1
             
-            fprintf(fp, "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n", k, tmsg->arraycnt0[k], tmsg->arraytime[k]-t0, tmsg->arraytime[k], tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
+            fprintf(fp, "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n", k, tmsg->arrayindex[k], tmsg->arraytime[k]-t0, tmsg->arraytime[k], tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
         }
         fclose(fp);
     }
@@ -7071,6 +7070,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     long framesize; // in bytes
 
+	char *arrayindex_ptr;
     char *arraytime_ptr;
     char *arraycnt0_ptr;
     char *arraycnt1_ptr;
@@ -7377,6 +7377,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
+					tmsg->arrayindex = array_cnt0_cp;
                     tmsg->arraycnt0 = array_cnt0_cp;
                     tmsg->arraycnt1 = array_cnt1_cp;
                     tmsg->arraytime = array_time_cp;
@@ -7436,6 +7437,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t)*index);
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t)*index);
 
+					tmsg->arrayindex = array_cnt0_cp;
                     tmsg->arraycnt0 = array_cnt0_cp;
                     tmsg->arraycnt1 = array_cnt1_cp;
                     tmsg->arraytime = array_time_cp;
@@ -7630,7 +7632,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                 printf("%5d  Starting image save thread\n", __LINE__);
                 fflush(stdout);
             }
-
+			
+			tmsg->arrayindex = array_cnt0_cp;
             tmsg->arraycnt0 = array_cnt0_cp;
             tmsg->arraycnt1 = array_cnt1_cp;
             tmsg->arraytime = array_time_cp;
