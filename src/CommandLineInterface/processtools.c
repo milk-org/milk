@@ -584,7 +584,7 @@ int_fast8_t processinfo_CTRLscreen()
             pindexActiveSelected ++;
             if(pindexActiveSelected>NBpindexActive-1)
                 pindexActiveSelected = NBpindexActive-1;
-            if(TimeSorted == 0)pinfodisp[pindex].
+            if(TimeSorted == 0)
                 pindexSelected = pindexActive[pindexActiveSelected];
             else
                 pindexSelected = sorted_pindex_time[pindexActiveSelected];
