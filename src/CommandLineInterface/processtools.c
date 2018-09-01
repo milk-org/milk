@@ -785,7 +785,7 @@ int_fast8_t processinfo_CTRLscreen()
     {
         pinfodisp[pindex].updatecnt = 0;
         pinfodisp[pindex].NBsubprocesses = 0;
-	}
+    }
 
     // Get number of cpus on system
     // getconf _NPROCESSORS_ONLN
@@ -1229,7 +1229,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-					pinfodisp[pindex].NBsubprocesses = 0;
+                    pinfodisp[pindex].NBsubprocesses = 0;
 
                     pinfodisp[pindex].updatecnt ++;
 
@@ -1335,10 +1335,10 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-					
-					
-					
-					
+
+
+
+
 
 
 
@@ -1424,102 +1424,103 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpustring[6];
 
 
-							// collect required info for display
-							PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
-							
-							int spindex; // sub process index
-							for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; pindex++)
-							{
-								
-								if(spindex>0)
-									PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
-								
-							
-							printw(" %2d", pinfodisp[pindex].rt_priority);
-                            printw(" %-10s ", pinfodisp[pindex].cpuset);
-                            printw(" %2dx ", pinfodisp[pindex].threads);
-                            
-                            
-                            if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
-								attron(COLOR_PAIR(2));
-							else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
-								attron(COLOR_PAIR(4));
-							
-                            
-                            printw("ctxsw: +%02ld +%02ld", 
-								abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev)%100, 
-								abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev)%100
-								);
+                            // collect required info for display
+                            PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
 
-                            if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
-								attroff(COLOR_PAIR(2));
-							else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
-								attroff(COLOR_PAIR(4));   
-                            
-                            pinfodisp[pindex].ctxtsw_voluntary_prev = pinfodisp[pindex].ctxtsw_voluntary;
-                            pinfodisp[pindex].ctxtsw_nonvoluntary_prev = pinfodisp[pindex].ctxtsw_nonvoluntary;
-                            
-                            printw(" ");
-                            
-                            sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-
-
-							// First group of cores (physical CPU 0)
-                            for(cpu=0; cpu<NBcpus; cpu += 2)
+                            int spindex; // sub process index
+                            for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; pindex++)
                             {
-                                int cpuOK = 0;
-                                sprintf(cpustring, ",%d,",cpu);
-                                if(strstr(cpuliststring, cpustring) != NULL)
-                                    cpuOK = 1;
-                                
-                                if(cpu == pinfodisp[pindex].processor)
-									attron(COLOR_PAIR(3));
 
-                                if(cpuOK == 1)
-                                    printw("|%2d", cpu);
-                                else
-                                    printw("|  ");
-                          
-                                if(cpu == pinfodisp[pindex].processor)
-									attroff(COLOR_PAIR(3));
-                                    
-                            }
-                            printw("|    ");
-                            
-                            
-            				// Second group of cores (physical CPU 0)
-                            for(cpu=1; cpu<NBcpus; cpu += 2)
-                            {
-                                int cpuOK = 0;
-                                sprintf(cpustring, ",%d,",cpu);
-                                if(strstr(cpuliststring, cpustring) != NULL)
-                                    cpuOK = 1;
-                                
-                                if(cpu == pinfodisp[pindex].processor)
-									attron(COLOR_PAIR(3));
+                                if(spindex>0)
+                                    PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
 
-                                if(cpuOK == 1)
-                                    printw("|%2d", cpu);
-                                else
-                                    printw("|  ");
-                          
-                                if(cpu == pinfodisp[pindex].processor)
-									attroff(COLOR_PAIR(3));
-                                    
+
+                                printw(" %2d", pinfodisp[pindex].rt_priority);
+                                printw(" %-10s ", pinfodisp[pindex].cpuset);
+                                printw(" %2dx ", pinfodisp[pindex].threads);
+
+
+                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                    attron(COLOR_PAIR(2));
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                    attron(COLOR_PAIR(4));
+
+
+                                printw("ctxsw: +%02ld +%02ld",
+                                       abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev)%100,
+                                       abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev)%100
+                                      );
+
+                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                    attroff(COLOR_PAIR(2));
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                    attroff(COLOR_PAIR(4));
+
+                                pinfodisp[pindex].ctxtsw_voluntary_prev = pinfodisp[pindex].ctxtsw_voluntary;
+                                pinfodisp[pindex].ctxtsw_nonvoluntary_prev = pinfodisp[pindex].ctxtsw_nonvoluntary;
+
+                                printw(" ");
+
+                                sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
+
+
+                                // First group of cores (physical CPU 0)
+                                for(cpu=0; cpu<NBcpus; cpu += 2)
+                                {
+                                    int cpuOK = 0;
+                                    sprintf(cpustring, ",%d,",cpu);
+                                    if(strstr(cpuliststring, cpustring) != NULL)
+                                        cpuOK = 1;
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attron(COLOR_PAIR(3));
+
+                                    if(cpuOK == 1)
+                                        printw("|%2d", cpu);
+                                    else
+                                        printw("|  ");
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attroff(COLOR_PAIR(3));
+
+                                }
+                                printw("|    ");
+
+
+                                // Second group of cores (physical CPU 0)
+                                for(cpu=1; cpu<NBcpus; cpu += 2)
+                                {
+                                    int cpuOK = 0;
+                                    sprintf(cpustring, ",%d,",cpu);
+                                    if(strstr(cpuliststring, cpustring) != NULL)
+                                        cpuOK = 1;
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attron(COLOR_PAIR(3));
+
+                                    if(cpuOK == 1)
+                                        printw("|%2d", cpu);
+                                    else
+                                        printw("|  ");
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attroff(COLOR_PAIR(3));
+
+                                }
+                                printw("|");
+
+
                             }
-                            printw("|");                
-                            
-                            
                         }
 
                         if(pindex == pindexSelected)
                             attroff(A_REVERSE);
-						}
-
                     }
-                    printw("\n");
 
                 }
+                printw("\n");
+
+
             }
 
             refresh();
