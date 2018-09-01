@@ -76,6 +76,7 @@ typedef struct
 	long          ctxtsw_nonvoluntary_prev;
 	
 	int           processor;
+	int           rt_priority;
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -645,7 +646,7 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 	
 	
 	pinfodisp[pindex].processor = stat_processor;
-    
+    pinfodisp[pindex].rt_priority = stat_rt_priority;
     
     return 0;
 
@@ -1369,8 +1370,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 							// collect required info
 							PIDcollectSystemInfo(pindex, pinfodisp);
-
-
+							
+							printw(" %2d", pinfodisp[pindex].rt_priority);
                             printw(" %-10s ", pinfodisp[pindex].cpuset);
                             
                             printw(" %2dx  ", pinfodisp[pindex].threads);
