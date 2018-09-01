@@ -1030,6 +1030,12 @@ int_fast8_t processinfo_CTRLscreen()
                         if(pindex == pindexSelected)
                             attron(A_REVERSE);
 
+						printw("  %6d", pinfolist->PIDarray[pindex]);
+
+                            attron(A_BOLD);
+                            printw("  %30s", pinfodisp[pindex].name);
+                            attroff(A_BOLD);
+
 						if( DisplayMode == 1)
                         {
                            switch (pinfoarray[pindex]->loopstat)
@@ -1066,12 +1072,8 @@ int_fast8_t processinfo_CTRLscreen()
                                    pinfodisp[pindex].createtime_sec,
                                    (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
-                            printw("  %6d", pinfolist->PIDarray[pindex]);
                             printw(" %16s", pinfoarray[pindex]->tmuxname);
 
-                            attron(A_BOLD);
-                            printw("  %40s", pinfodisp[pindex].name);
-                            attroff(A_BOLD);
 
                             if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
                             {   // loopcnt has not changed
