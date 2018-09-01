@@ -1162,6 +1162,8 @@ int_fast8_t processinfo_CTRLscreen()
 						
 						if( DisplayMode == 2)
 						{
+							int cpu;
+							
 							printw(" %-8s", pinfodisp[pindex].cpuset);
 							printw(" %20s", pinfodisp[pindex].cpusallowed);
 							
