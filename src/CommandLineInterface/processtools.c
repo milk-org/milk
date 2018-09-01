@@ -103,7 +103,7 @@ static PROCESSINFOLIST *pinfolist;
 
 static int wrow, wcol;
 
-
+static float CPUload[100];
 
 
 
@@ -435,6 +435,45 @@ static int GetNumberCPUs()
 
 
 
+
+
+
+
+static int GetCPUloads()
+{
+	int NBcpus;
+	char * line = NULL;
+	FILE *fp;
+	ssize_t read;
+	size_t len = 0;
+	int cpu;
+	long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+	char string0[80];
+	
+	
+	NBcpus = GetNumberCPUs();
+
+    fp = fopen("/proc/stat", "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+    
+    if(getline(&line, &len, fp) == -1)
+	{
+		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
+		exit(0);
+	}
+    
+    while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
+		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+		CPUload[cpu] = (vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
+		cpu++;
+	}
+     
+    fclose(fp);
+
+	return(NBcpus);
+
+}
 
 
 
@@ -1424,7 +1463,12 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpuliststring[200];
                             char cpustring[6];
 
-
+							// Measure CPU loads
+							GetCPUloads();
+                            
+                            for(cpu;cpu<NBcpus;cpu++)
+								printw(" %02d", (int) (100.0*CPUload[cpu]));
+                            
                             // collect required info for display
                             PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
 
