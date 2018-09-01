@@ -395,6 +395,31 @@ static int initncurses()
 
 
 
+static int GetNumberCPUs()
+{
+	FILE *fpout;	
+	char outstring[16];
+	int NBcpus;
+
+	
+	fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
+	if(fpout==NULL)
+	{
+		printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+	}
+	else
+	{
+		if(fgets(outstring, 100, fpout)== NULL)
+			printf("WARNING: fgets error\n");
+		pclose(fpout);
+	}
+	
+	NBcpus = atoi(fpout);
+
+	return(NBcpus);
+}
+
+
 
 
 /**
@@ -422,11 +447,16 @@ int_fast8_t processinfo_CTRLscreen()
 
     int sorted_pindex_time[PROCESSINFOLISTSIZE];
 
-
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
     char syscommand[200];
+    
+    
+    int NBcpus;
+    
+    
+    
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -453,6 +483,7 @@ int_fast8_t processinfo_CTRLscreen()
     // Create / read process list
     processinfo_shm_list_create();
 
+	NBcpus = GetNumberCPUs();
 
 
     // INITIALIZE ncurses
@@ -463,6 +494,12 @@ int_fast8_t processinfo_CTRLscreen()
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
         pinfodisp[pindex].updatecnt = 0;
+
+
+	// Get number of cpus on system
+	// getconf _NPROCESSORS_ONLN
+
+
 
     int loopOK = 1;
     int freeze = 0;
@@ -1127,6 +1164,11 @@ int_fast8_t processinfo_CTRLscreen()
 						{
 							printw(" %-8s", pinfodisp[pindex].cpuset);
 							printw(" %20s", pinfodisp[pindex].cpusallowed);
+							
+							for(cpu=0;cpu<NBcpus;cpu++)
+							{
+								printw(" %2d", cpu);
+							}
 						}
 						
 						if(pindex == pindexSelected)
