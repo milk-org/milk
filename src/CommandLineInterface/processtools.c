@@ -473,10 +473,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     pindexActiveSelected = 0;
 
-	int DisplayMode = 0; 
-	// display modes:
-	// 0: overview
-	// 1: CPU affinity
+    int DisplayMode = 1;
+    // display modes:
+    // 1: overview
+    // 2: CPU affinity
 
     while( loopOK == 1 )
     {
@@ -772,22 +772,17 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 TimeSorted = 1;
             break;
-            
-            // Set Display Mode
-        
-        
-        case KEY_F(0):
-			DisplayMode = 0;
-			break;
-            
+
+        // Set Display Mode
+
         case KEY_F(1):
-			DisplayMode = 1;
-			break;
-                        
+            DisplayMode = 1;
+            break;
+
         case KEY_F(2):
-			DisplayMode = 2;
-			break;
-            
+            DisplayMode = 2;
+            break;
+
 
         }
 
@@ -804,7 +799,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-			// LOAD / UPDATE process information
+            // LOAD / UPDATE process information
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -875,8 +870,8 @@ int_fast8_t processinfo_CTRLscreen()
                         close(fdarray[pindex]);
                         pinfommapped[pindex] == 0;
                     }
-                    
-                    
+
+
                     // COLLECT INFORMATION FROM PROCESSINFO FILE
 
                     fdarray[pindex] = open(SM_fname, O_RDWR);
@@ -905,21 +900,21 @@ int_fast8_t processinfo_CTRLscreen()
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-                    
-                    
-                    
+
+
+
                     // COLLECT INFO FROM SYSTEM
                     FILE *fp;
                     char fname[200];
-                    
+
                     // cpuset
                     sprintf(fname, "/proc/%d/task/%d/cpuset", pinfodisp[pindex].PID, pinfodisp[pindex].PID);
                     fp=fopen(fname, "r");
                     fscanf(fp, "%s", &pinfodisp[pindex].cpuset);
                     fclose(fp);
-                    
-                    
-                    
+
+
+
                     pinfodisp[pindex].updatecnt ++;
 
                 }
@@ -946,17 +941,17 @@ int_fast8_t processinfo_CTRLscreen()
                 pindex = pindexActive[index];
                 if(pinfommapped[pindex] == 1)
                 {
-					indexarray[index] = pindex;
-					// minus sign for most recent first
-					//printw("index  %ld  ->  pindex  %ld\n", index, pindex);
-					timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
-					listcnt++;
+                    indexarray[index] = pindex;
+                    // minus sign for most recent first
+                    //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+                    timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+                    listcnt++;
                 }
             }
-			NBpindexActive = listcnt;
-			quick_sort2l_double(timearray, indexarray, NBpindexActive);
+            NBpindexActive = listcnt;
+            quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
-           for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<NBpindexActive; index++)
                 sorted_pindex_time[index] = indexarray[index];
 
             free(timearray);
@@ -1024,79 +1019,94 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+
+
+
+
+
                     //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                     if(pinfolist->active[pindex] != 0)
                     {
-                        switch (pinfoarray[pindex]->loopstat)
+
+
+
+                        switch( DisplayMode )
                         {
-                        case 0:
-                            printw("INIT");
-                            break;
+                        case 1 : // DISPLAY MODE 1
 
-                        case 1:
-                            printw(" RUN");
-                            break;
+                            switch (pinfoarray[pindex]->loopstat)
+                            {
+                            case 0:
+                                printw("INIT");
+                                break;
 
-                        case 2:
-                            printw("PAUS");
-                            break;
+                            case 1:
+                                printw(" RUN");
+                                break;
 
-                        case 3:
-                            printw("TERM");
-                            break;
+                            case 2:
+                                printw("PAUS");
+                                break;
 
-                        case 4:
-                            printw(" ERR");
-                            break;
+                            case 3:
+                                printw("TERM");
+                                break;
 
-                        default:
-                            printw(" ?? ");
+                            case 4:
+                                printw(" ERR");
+                                break;
+
+                            default:
+                                printw(" ?? ");
+                            }
+
+                            printw(" C%d", pinfoarray[pindex]->CTRLval );
+
+                            printw(" %02d:%02d:%02d.%03d",
+                                   pinfodisp[pindex].createtime_hr,
+                                   pinfodisp[pindex].createtime_min,
+                                   pinfodisp[pindex].createtime_sec,
+                                   (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
+
+                            printw("  %6d", pinfolist->PIDarray[pindex]);
+                            printw(" %16s", pinfoarray[pindex]->tmuxname);
+
+                            attron(A_BOLD);
+                            printw("  %40s", pinfodisp[pindex].name);
+                            attroff(A_BOLD);
+
+                            if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
+                            {   // loopcnt has not changed
+                                printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                            }
+                            else
+                            {   // loopcnt has changed
+                                attron(COLOR_PAIR(3));
+                                printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                                attroff(COLOR_PAIR(3));
+                            }
+
+                            loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+
+                            if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                                attron(COLOR_PAIR(2));
+                            printw("  %40s", pinfoarray[pindex]->statusmsg);
+                            if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                                attroff(COLOR_PAIR(2));
                         }
+                        if(pindex == pindexSelected)
+                            attroff(A_REVERSE);
 
-                        printw(" C%d", pinfoarray[pindex]->CTRLval );
+                        break;
 
-                        printw(" %02d:%02d:%02d.%03d",
-                               pinfodisp[pindex].createtime_hr,
-                               pinfodisp[pindex].createtime_min,
-                               pinfodisp[pindex].createtime_sec,
-                               (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
-                        printw("  %6d", pinfolist->PIDarray[pindex]);
-                        printw(" %16s", pinfoarray[pindex]->tmuxname);
+                    case 2 : // DISPLAY MODE 2
+                        printw(" %8s", pinfodisp[pindex].cpuset);
 
-                        attron(A_BOLD);
-                        printw("  %40s", pinfodisp[pindex].name);
-                        attroff(A_BOLD);
-
-                        if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
-                        {   // loopcnt has not changed
-                            printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
-                        }
-                        else
-                        {   // loopcnt has changed
-                            attron(COLOR_PAIR(3));
-                            printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
-                            attroff(COLOR_PAIR(3));
-                        }
-
-                        loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
-
-                        if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                            attron(COLOR_PAIR(2));
-                        printw("  %40s", pinfoarray[pindex]->statusmsg);
-                        if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                            attroff(COLOR_PAIR(2));
+                        break;
                     }
                     printw("\n");
 
-                    if(pindex == pindexSelected)
-                        attroff(A_REVERSE);
-
-                    /*      if(pinfolist->active[pindex] != 0)
-                          {
-                              pindexActive[NBpindexActive] = pindex;
-                              NBpindexActive++;
-                          }*/
                 }
             }
 
