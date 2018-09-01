@@ -1450,8 +1450,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                 printw("ctxsw: +%02ld +%02ld",
-                                       abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev)%100,
-                                       abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev)%100
+                                       abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
+                                       abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
                                       );
 
                                 if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
