@@ -1091,16 +1091,17 @@ int_fast8_t processinfo_CTRLscreen()
                             printw("  %40s", pinfoarray[pindex]->statusmsg);
                             if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                 attroff(COLOR_PAIR(2));
-                        
-                        if(pindex == pindexSelected)
-                            attroff(A_REVERSE);
 						}
 						
 						
 						if( DisplayMode == 2)
 						{
-                        printw(" %8s", pinfodisp[pindex].cpuset);
+							printw(" %-8s", pinfodisp[pindex].cpuset);
 						}
+						
+						if(pindex == pindexSelected)
+								attroff(A_REVERSE);
+						
                     }
                     printw("\n");
 
