@@ -1433,7 +1433,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 if(spindex>0)
                                 {
-									printw("                                                            ");
+									//printw("                                                            ");
                                     PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 1);
 								}
 
