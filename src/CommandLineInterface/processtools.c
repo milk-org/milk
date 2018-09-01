@@ -910,7 +910,7 @@ int_fast8_t processinfo_CTRLscreen()
                     // cpuset
                     sprintf(fname, "/proc/%d/task/%d/cpuset", pinfodisp[pindex].PID, pinfodisp[pindex].PID);
                     fp=fopen(fname, "r");
-                    fscanf(fp, "%s", &pinfodisp[pindex].cpuset);
+                    fscanf(fp, "%s", pinfodisp[pindex].cpuset);
                     fclose(fp);
 
 
@@ -1027,14 +1027,12 @@ int_fast8_t processinfo_CTRLscreen()
                     //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                     if(pinfolist->active[pindex] != 0)
                     {
+                        if(pindex == pindexSelected)
+                            attron(A_REVERSE);
 
-
-
-                        switch( DisplayMode )
+						if( DisplayMode == 1)
                         {
-                        case 1 : // DISPLAY MODE 1
-
-                            switch (pinfoarray[pindex]->loopstat)
+                           switch (pinfoarray[pindex]->loopstat)
                             {
                             case 0:
                                 printw("INIT");
@@ -1093,17 +1091,16 @@ int_fast8_t processinfo_CTRLscreen()
                             printw("  %40s", pinfoarray[pindex]->statusmsg);
                             if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                 attroff(COLOR_PAIR(2));
-                        }
+                        
                         if(pindex == pindexSelected)
                             attroff(A_REVERSE);
-
-                        break;
-
-
-                    case 2 : // DISPLAY MODE 2
+						}
+						
+						
+						if( DisplayMode == 2)
+						{
                         printw(" %8s", pinfodisp[pindex].cpuset);
-
-                        break;
+						}
                     }
                     printw("\n");
 
