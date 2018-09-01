@@ -7478,8 +7478,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
                     printf("%5d  Frame has arrived [index %ld]\n", __LINE__, index);
 
                 /// measure time
-                t = time(NULL);
-                uttime = gmtime(&t);
+             //   t = time(NULL);
+             //   uttime = gmtime(&t);
 
                 clock_gettime(CLOCK_REALTIME, &timenow);
 
