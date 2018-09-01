@@ -123,7 +123,7 @@ static char errmsg_memory[SBUFFERSIZE];
 
 
 
-STREAMSAVE_THREAD_MESSAGE savethreadmsg;
+static STREAMSAVE_THREAD_MESSAGE savethreadmsg;
 
 static long tret; // thread return value
 
