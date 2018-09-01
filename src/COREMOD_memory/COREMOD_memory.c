@@ -123,7 +123,7 @@ static char errmsg_memory[SBUFFERSIZE];
 
 
 
-struct STREAMSAVE_THREAD_MESSAGE savethreadmsg;
+STREAMSAVE_THREAD_MESSAGE savethreadmsg;
 
 static long tret; // thread return value
 
@@ -1830,7 +1830,9 @@ void *save_fits_function( void *ptr )
     long  ID;
     
     
-    struct savethreadmsg *tmsg; // = malloc(sizeof(struct savethreadmsg));
+    //struct savethreadmsg *tmsg; // = malloc(sizeof(struct savethreadmsg));
+    STREAMSAVE_THREAD_MESSAGE *tmsg;
+    
     uint32_t *imsizearray;
     uint32_t  xsize, ysize;
     uint8_t   atype;
@@ -1862,7 +1864,9 @@ void *save_fits_function( void *ptr )
 
     imsizearray = (uint32_t*) malloc(sizeof(uint32_t)*3);
 
-    tmsg = (struct savethreadmsg*) ptr;
+//    tmsg = (struct savethreadmsg*) ptr;
+    tmsg = (STREAMSAVE_THREAD_MESSAGE*) ptr;
+    
     // printf("THREAD : SAVING  %s -> %s \n", tmsg->iname, tmsg->fname);
     //fflush(stdout);
     if(tmsg->partial==0) // full image
@@ -7067,7 +7071,9 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     int tOK = 0;
     int iret_savefits;
     //	char tmessage[500];
-    struct savethreadmsg *tmsg = malloc(sizeof(struct savethreadmsg));
+    //struct savethreadmsg *tmsg = malloc(sizeof(struct savethreadmsg));
+    STREAMSAVE_THREAD_MESSAGE *tmsg = malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+
 
     long fnb = 0;
     long NBfiles = -1; // run forever
