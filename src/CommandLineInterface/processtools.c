@@ -38,8 +38,9 @@
 
 #include <ncurses.h>
 #include <fcntl.h> 
+#include <ctype.h>
 
-
+#include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 
@@ -66,9 +67,25 @@ typedef struct
 	int           createtime_sec;
 	long          createtime_ns;
 	
+	char          cpuset[16];       /**< cpuset name  */
+	char          cpusallowed[20];
+	int           threads; 
+	long          ctxtsw_voluntary;
+	long          ctxtsw_nonvoluntary;
+
+	long          ctxtsw_voluntary_prev[50];
+	long          ctxtsw_nonvoluntary_prev[50];
+	
+	int           processor;
+	int           rt_priority;
+	
+	// sub-processes
+	int           NBsubprocesses;
+	int           subprocPIDarray[50];
+	
 	char          statusmsg[200];
 	char          tmuxname[100];
-
+	
 } PROCESSINFODISP;
 
 
@@ -86,7 +103,7 @@ static PROCESSINFOLIST *pinfolist;
 
 static int wrow, wcol;
 
-
+static float CPUload[100];
 
 
 
@@ -392,6 +409,345 @@ static int initncurses()
 
 
 
+static int GetNumberCPUs()
+{
+	FILE *fpout;	
+	char outstring[16];
+	int NBcpus;
+
+	
+	fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
+	if(fpout==NULL)
+	{
+		printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+	}
+	else
+	{
+		if(fgets(outstring, 100, fpout)== NULL)
+			printf("WARNING: fgets error\n");
+		pclose(fpout);
+	}
+	
+	NBcpus = atoi(outstring);
+
+	return(NBcpus);
+}
+
+
+
+
+
+
+
+static int GetCPUloads()
+{
+	int NBcpus;
+	char * line = NULL;
+	FILE *fp;
+	ssize_t read;
+	size_t len = 0;
+	int cpu;
+	long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+	char string0[80];
+	
+	
+	NBcpus = GetNumberCPUs();
+
+    fp = fopen("/proc/stat", "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+    
+    if(getline(&line, &len, fp) == -1)
+	{
+		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
+		exit(0);
+	}
+    
+    while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
+		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+		CPUload[cpu] = (vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
+		cpu++;
+	}
+     
+    fclose(fp);
+
+	return(NBcpus);
+
+}
+
+
+
+
+
+
+
+// for Display Mode 2
+
+static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp, int level)
+{
+
+    // COLLECT INFO FROM SYSTEM
+    FILE *fp;
+    char fname[200];
+
+    // cpuset
+    sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
+    fp=fopen(fname, "r");
+    fscanf(fp, "%s", pinfodisp[pindex].cpuset);
+    fclose(fp);
+
+    // read /proc/PID/status
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    char string0[200];
+    char string1[200];
+
+    sprintf(fname, "/proc/%d/status", PID);
+    fp = fopen(fname, "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+
+    while ((read = getline(&line, &len, fp)) != -1) {
+
+        if(strncmp(line, "Cpus_allowed_list:", strlen("Cpus_allowed_list:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            strcpy(pinfodisp[pindex].cpusallowed, string1);
+        }
+
+        if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            pinfodisp[pindex].threads = atoi(string1);
+        }
+
+        if(strncmp(line, "voluntary_ctxt_switches:", strlen("voluntary_ctxt_switches:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            pinfodisp[pindex].ctxtsw_voluntary = atoi(string1);
+        }
+
+        if(strncmp(line, "nonvoluntary_ctxt_switches:", strlen("nonvoluntary_ctxt_switches:")) == 0)
+        {
+            sscanf(line, "%s %s", string0, string1);
+            pinfodisp[pindex].ctxtsw_nonvoluntary = atoi(string1);
+        }
+
+    }
+
+    fclose(fp);
+    if (line)
+        free(line);
+    
+
+
+    sprintf(fname, "/proc/%d/stat", PID);
+
+	int           stat_pid;       // (1) The process ID.
+	char          stat_comm[20];  // (2) The filename of the executable, in parentheses.
+	char          stat_state;     // (3) 
+	/* One of the following characters, indicating process state:
+                        R  Running
+                        S  Sleeping in an interruptible wait
+                        D  Waiting in uninterruptible disk sleep
+                        Z  Zombie
+                        T  Stopped (on a signal) or (before Linux 2.6.33)
+                           trace stopped
+                        t  Tracing stop (Linux 2.6.33 onward)
+                        W  Paging (only before Linux 2.6.0)
+                        X  Dead (from Linux 2.6.0 onward)
+                        x  Dead (Linux 2.6.33 to 3.13 only)
+                        K  Wakekill (Linux 2.6.33 to 3.13 only)
+                        W  Waking (Linux 2.6.33 to 3.13 only)
+                        P  Parked (Linux 3.9 to 3.13 only)
+                 */
+    int           stat_ppid;      // (4) The PID of the parent of this process.
+	int           stat_pgrp;      // (5) The process group ID of the process
+	int           stat_session;   // (6) The session ID of the process
+	int           stat_tty_nr;    // (7) The controlling terminal of the process
+	int           stat_tpgid;     // (8) The ID of the foreground process group of the controlling terminal of the process
+	unsigned int  stat_flags;     // (9) The kernel flags word of the process
+	unsigned long stat_minflt;    // (10) The number of minor faults the process has made which have not required loading a memory page from disk
+	unsigned long stat_cminflt;   // (11) The number of minor faults that the process's waited-for children have made
+	unsigned long stat_majflt;    // (12) The number of major faults the process has made which have required loading a memory page from disk
+	unsigned long stat_cmajflt;   // (13) The number of major faults that the process's waited-for children have made
+	unsigned long stat_utime;     // (14) Amount of time that this process has been scheduled in user mode, measured in clock ticks (divide by sysconf(_SC_CLK_TCK)).
+	unsigned long stat_stime;     // (15) Amount of time that this process has been scheduled in kernel mode, measured in clock ticks
+	long          stat_cutime;       // (16) Amount of time that this process's waited-for children have been scheduled in user mode, measured in clock ticks
+	long          stat_cstime;       // (17) Amount of time that this process's waited-for children have been scheduled in kernel mode, measured in clock ticks
+	long          stat_priority;     // (18) (Explanation for Linux 2.6) For processes running a
+    /*                  real-time scheduling policy (policy below; see
+                        sched_setscheduler(2)), this is the negated schedul‐
+                        ing priority, minus one; that is, a number in the
+                        range -2 to -100, corresponding to real-time priori‐
+                        ties 1 to 99.  For processes running under a non-
+                        real-time scheduling policy, this is the raw nice
+                        value (setpriority(2)) as represented in the kernel.
+                        The kernel stores nice values as numbers in the
+                        range 0 (high) to 39 (low), corresponding to the
+                        user-visible nice range of -20 to 19.
+                       
+                        Before Linux 2.6, this was a scaled value based on
+                        the scheduler weighting given to this process.*/
+    long          stat_nice;         // (19) The nice value (see setpriority(2)), a value in the range 19 (low priority) to -20 (high priority)
+	long          stat_num_threads;  // (20) Number of threads in this process
+	long          stat_itrealvalue;  // (21) hard coded as 0
+	unsigned long long    stat_starttime; // (22) The time the process started after system boot in clock ticks
+	unsigned long stat_vsize;        // (23)  Virtual memory size in bytes
+	long          stat_rss;          // (24) Resident Set Size: number of pages the process has in real memory
+	unsigned long stat_rsslim;       // (25) Current soft limit in bytes on the rss of the process
+	unsigned long stat_startcode;    // (26) The address above which program text can run
+	unsigned long stat_endcode;      // (27) The address below which program text can run
+	unsigned long stat_startstack;   // (28) The address of the start (i.e., bottom) of the stack
+	unsigned long stat_kstkesp;      // (29) The current value of ESP (stack pointer), as found in the kernel stack page for the process
+	unsigned long stat_kstkeip;      // (30) The current EIP (instruction pointer)
+	unsigned long stat_signal;       // (31) The bitmap of pending signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead
+	unsigned long stat_blocked;      // (32) The bitmap of blocked signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
+	unsigned long stat_sigignore;    // (33) The bitmap of ignored signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
+	unsigned long stat_sigcatch;     // (34) The bitmap of ignored signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
+	unsigned long stat_wchan;        // (35) This is the "channel" in which the process is waiting.  It is the address of a location in the kernel where the process is sleeping.  The corresponding symbolic name can be found in /proc/[pid]/wchan.
+	unsigned long stat_nswap;        // (36) Number of pages swapped (not maintained)
+	unsigned long stat_cnswap;       // (37) Cumulative nswap for child processes (not maintained)
+	int           stat_exit_signal;  // (38) Signal to be sent to parent when we die
+	int           stat_processor;    // (39) CPU number last executed on
+	unsigned int  stat_rt_priority;  // (40) Real-time scheduling priority, a number in the range 1 to 99 for processes scheduled under a real-time policy, or 0, for non-real-time processes (see  sched_setscheduler(2)).
+	unsigned int  stat_policy;       // (41) Scheduling policy (see sched_setscheduler(2))
+	unsigned long long    stat_delayacct_blkio_ticks; // (42) Aggregated block I/O delays, measured in clock ticks
+	unsigned long stat_guest_time;   // (43) Guest time of the process (time spent running a virtual CPU for a guest operating system), measured in clock ticks 
+	long          stat_cguest_time;  // (44) Guest time of the process's children, measured in clock ticks (divide by sysconf(_SC_CLK_TCK)).
+	unsigned long stat_start_data;   // (45) Address above which program initialized and uninitialized (BSS) data are placed
+	unsigned long stat_end_data;     // (46) ddress below which program initialized and uninitialized (BSS) data are placed
+	unsigned long stat_start_brk;    // (47) Address above which program heap can be expanded with brk(2)
+	unsigned long stat_arg_start;    // (48) Address above which program command-line arguments (argv) are placed
+	unsigned long stat_arg_end;      // (49) Address below program command-line arguments (argv) are placed
+	unsigned long stat_env_start;    // (50) Address above which program environment is placed
+	unsigned long stat_env_end;      // (51) Address below which program environment is placed
+	long          stat_exit_code;    // (52) The thread's exit status in the form reported by waitpid(2)
+	
+	
+	
+    fp = fopen(fname, "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+    
+    if ( fscanf(fp, 
+		"%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld",
+		&stat_pid,
+		stat_comm,
+		&stat_state,
+		&stat_ppid,
+		&stat_pgrp,
+		&stat_session,
+		&stat_tty_nr,
+		&stat_tpgid,
+		&stat_flags,
+		&stat_minflt,
+		&stat_cminflt,
+		&stat_majflt,
+		&stat_cmajflt,
+		&stat_utime,
+		&stat_stime,
+		&stat_cutime,
+		&stat_cstime,
+		&stat_priority,
+		&stat_nice,
+		&stat_num_threads,
+		&stat_itrealvalue,
+		&stat_starttime,
+		&stat_vsize,
+		&stat_rss,
+		&stat_rsslim,
+		&stat_startcode,
+		&stat_endcode,
+		&stat_startstack,
+		&stat_kstkesp,
+		&stat_kstkeip,
+		&stat_signal,
+		&stat_blocked,
+		&stat_sigignore,
+		&stat_sigcatch,
+		&stat_wchan,
+		&stat_nswap,
+		&stat_cnswap,
+		&stat_exit_signal,
+		&stat_processor,
+		&stat_rt_priority,
+		&stat_policy,
+		&stat_delayacct_blkio_ticks,
+		&stat_guest_time,
+		&stat_cguest_time,
+		&stat_start_data,
+		&stat_end_data,
+		&stat_start_brk,
+		&stat_arg_start,
+		&stat_arg_end,
+		&stat_env_start,
+		&stat_env_end,
+		&stat_exit_code
+		) != 52)
+	printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+
+	fclose(fp);
+	
+	
+	
+	pinfodisp[pindex].processor = stat_processor;
+    pinfodisp[pindex].rt_priority = stat_rt_priority;
+    
+    if(level == 0)
+    {
+    pinfodisp[pindex].subprocPIDarray[0] = PID;
+    pinfodisp[pindex].NBsubprocesses = 1;
+    
+    if(pinfodisp[pindex].threads > 1) // look for children
+    {
+		FILE *fpout;
+		char command[200];
+		char outstring[200];
+		char outstringc[200];
+		
+		sprintf(command, "pstree -p %d", PID);
+		
+		fpout = popen (command, "r");
+		if(fpout==NULL)
+		{
+			printf("WARNING: cannot run command \"%s\"\n", command);
+		}
+		else
+		{
+			while(fgets(outstring, 100, fpout) != NULL)
+			{
+				int i = 0;
+				int ic = 0;
+				for(i=0;i<strlen(outstring);i++)
+				{
+					if(isdigit(outstring[i]))
+					{
+						outstringc[ic] = outstring[i];
+						ic++;
+					}
+					if(outstring[i] == '(')
+						ic = 0;
+				}
+				outstringc[ic] = '\0';
+				
+				pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(outstringc);
+				pinfodisp[pindex].NBsubprocesses++;
+			}
+			pclose(fpout);
+		}
+	}
+	}
+    
+    return 0;
+
+}
+
+
+
+
+
 
 
 /**
@@ -419,11 +775,16 @@ int_fast8_t processinfo_CTRLscreen()
 
     int sorted_pindex_time[PROCESSINFOLISTSIZE];
 
-
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
     char syscommand[200];
+
+
+    int NBcpus;
+
+
+
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -450,6 +811,7 @@ int_fast8_t processinfo_CTRLscreen()
     // Create / read process list
     processinfo_shm_list_create();
 
+    NBcpus = GetNumberCPUs();
 
 
     // INITIALIZE ncurses
@@ -459,7 +821,15 @@ int_fast8_t processinfo_CTRLscreen()
     int NBpinfodisp = wrow-5;
     pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*NBpinfodisp);
     for(pindex=0; pindex<NBpinfodisp; pindex++)
+    {
         pinfodisp[pindex].updatecnt = 0;
+        pinfodisp[pindex].NBsubprocesses = 0;
+    }
+
+    // Get number of cpus on system
+    // getconf _NPROCESSORS_ONLN
+
+
 
     int loopOK = 1;
     int freeze = 0;
@@ -471,7 +841,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     pindexActiveSelected = 0;
 
-
+    int DisplayMode = 1;
+    // display modes:
+    // 1: overview
+    // 2: CPU affinity
 
     while( loopOK == 1 )
     {
@@ -767,7 +1140,18 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 TimeSorted = 1;
             break;
+
+        // Set Display Mode
+
+        case KEY_F(1):
+            DisplayMode = 1;
             break;
+
+        case KEY_F(2):
+            DisplayMode = 2;
+            break;
+
+
         }
 
 
@@ -778,12 +1162,12 @@ int_fast8_t processinfo_CTRLscreen()
             printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
-            printw("%d processes tracked\n", NBpindexActive);
+            printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, DisplayMode);
             printw("\n");
 
 
 
-			// LOAD / UPDATE process information
+            // LOAD / UPDATE process information
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -855,6 +1239,9 @@ int_fast8_t processinfo_CTRLscreen()
                         pinfommapped[pindex] == 0;
                     }
 
+
+                    // COLLECT INFORMATION FROM PROCESSINFO FILE
+
                     fdarray[pindex] = open(SM_fname, O_RDWR);
                     fstat(fdarray[pindex], &file_stat);
                     pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdarray[pindex], 0);
@@ -881,6 +1268,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                     pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
+                    pinfodisp[pindex].NBsubprocesses = 0;
 
                     pinfodisp[pindex].updatecnt ++;
 
@@ -889,8 +1277,11 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
-            // compute time-sorted list
+            /** ### Build a time-sorted list of processes
+             *
+             *
+             *
+             */
             NBpindexActive = 0;
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
                 if(pinfolist->active[pindex] != 0)
@@ -908,17 +1299,17 @@ int_fast8_t processinfo_CTRLscreen()
                 pindex = pindexActive[index];
                 if(pinfommapped[pindex] == 1)
                 {
-					indexarray[index] = pindex;
-					// minus sign for most recent first
-					//printw("index  %ld  ->  pindex  %ld\n", index, pindex);
-					timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
-					listcnt++;
+                    indexarray[index] = pindex;
+                    // minus sign for most recent first
+                    //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+                    timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+                    listcnt++;
                 }
             }
-			NBpindexActive = listcnt;
-			quick_sort2l_double(timearray, indexarray, NBpindexActive);
+            NBpindexActive = listcnt;
+            quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
-           for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<NBpindexActive; index++)
                 sorted_pindex_time[index] = indexarray[index];
 
             free(timearray);
@@ -927,8 +1318,11 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
-            // DISPLAY
+            /** ### Display
+             *
+             *
+             *
+             */
 
 
             int dispindex;
@@ -938,6 +1332,19 @@ int_fast8_t processinfo_CTRLscreen()
                 dispindexMax = wrow-4;
             else
                 dispindexMax = NBpindexActive;
+
+            if(DisplayMode == 2)
+            {
+                // Measure CPU loads, Display
+                GetCPUloads();
+                int cpu;
+                
+                printw("%d CPUs : ", NBcpus);
+                for(cpu=0; cpu<NBcpus; cpu++)
+                    printw(" |%02d|", (int) (100.0*CPUload[cpu]));
+                printw("\n");
+            }
+
 
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
@@ -986,80 +1393,199 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+
+
+
+
+
+
+
+
                     //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                     if(pinfolist->active[pindex] != 0)
                     {
-                        switch (pinfoarray[pindex]->loopstat)
-                        {
-                        case 0:
-                            printw("INIT");
-                            break;
-
-                        case 1:
-                            printw(" RUN");
-                            break;
-
-                        case 2:
-                            printw("PAUS");
-                            break;
-
-                        case 3:
-                            printw("TERM");
-                            break;
-
-                        case 4:
-                            printw(" ERR");
-                            break;
-
-                        default:
-                            printw(" ?? ");
-                        }
-
-                        printw(" C%d", pinfoarray[pindex]->CTRLval );
-
-                        printw(" %02d:%02d:%02d.%03d",
-                               pinfodisp[pindex].createtime_hr,
-                               pinfodisp[pindex].createtime_min,
-                               pinfodisp[pindex].createtime_sec,
-                               (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
+                        if(pindex == pindexSelected)
+                            attron(A_REVERSE);
 
                         printw("  %6d", pinfolist->PIDarray[pindex]);
-                        printw(" %16s", pinfoarray[pindex]->tmuxname);
 
                         attron(A_BOLD);
                         printw("  %40s", pinfodisp[pindex].name);
                         attroff(A_BOLD);
 
-                        if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
-                        {   // loopcnt has not changed
-                            printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
-                        }
-                        else
-                        {   // loopcnt has changed
-                            attron(COLOR_PAIR(3));
-                            printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
-                            attroff(COLOR_PAIR(3));
+                        if( DisplayMode == 1)
+                        {
+                            switch (pinfoarray[pindex]->loopstat)
+                            {
+                            case 0:
+                                printw("INIT");
+                                break;
+
+                            case 1:
+
+                                printw(" RUN");
+                                break;
+
+                            case 2:
+                                printw("PAUS");
+                                break;
+
+                            case 3:
+                                printw("TERM");
+                                break;
+
+                            case 4:
+                                printw(" ERR");
+                                break;
+
+                            default:
+                                printw(" ?? ");
+                            }
+
+                            printw(" C%d", pinfoarray[pindex]->CTRLval );
+
+                            printw(" %02d:%02d:%02d.%03d",
+                                   pinfodisp[pindex].createtime_hr,
+                                   pinfodisp[pindex].createtime_min,
+                                   pinfodisp[pindex].createtime_sec,
+                                   (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
+
+                            printw(" %16s", pinfoarray[pindex]->tmuxname);
+
+
+                            if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
+                            {   // loopcnt has not changed
+                                printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                            }
+                            else
+                            {   // loopcnt has changed
+                                attron(COLOR_PAIR(3));
+                                printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                                attroff(COLOR_PAIR(3));
+                            }
+
+                            loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+
+                            if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                                attron(COLOR_PAIR(2));
+                            printw("  %40s", pinfoarray[pindex]->statusmsg);
+                            if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                                attroff(COLOR_PAIR(2));
                         }
 
-                        loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
 
-                        if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                            attron(COLOR_PAIR(2));
-                        printw("  %40s", pinfoarray[pindex]->statusmsg);
-                        if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                            attroff(COLOR_PAIR(2));
+
+
+                        if( DisplayMode == 2)
+                        {
+                            int cpu;
+                            char cpuliststring[200];
+                            char cpustring[6];
+
+
+
+                            // collect required info for display
+                            PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
+
+                            int spindex; // sub process index
+                            for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
+                            {
+
+                                if(spindex>0)
+                                {
+                                    printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
+                                    PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
+                                }
+
+                                printw(" %2d", pinfodisp[pindex].rt_priority);
+                                printw(" %-10s ", pinfodisp[pindex].cpuset);
+                                printw(" %2dx ", pinfodisp[pindex].threads);
+
+
+                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                    attron(COLOR_PAIR(2));
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
+                                    attron(COLOR_PAIR(4));
+
+
+                                printw("ctxsw: +%02ld +%02ld",
+                                       abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
+                                       abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
+                                      );
+
+                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                    attroff(COLOR_PAIR(2));
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                    attroff(COLOR_PAIR(4));
+
+                                pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
+                                pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_nonvoluntary;
+
+                                printw(" ");
+
+                                sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
+
+
+                                // First group of cores (physical CPU 0)
+                                for(cpu=0; cpu<NBcpus; cpu += 2)
+                                {
+                                    int cpuOK = 0;
+                                    sprintf(cpustring, ",%d,",cpu);
+                                    if(strstr(cpuliststring, cpustring) != NULL)
+                                        cpuOK = 1;
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attron(COLOR_PAIR(3));
+
+                                    if(cpuOK == 1)
+                                        printw("|%2d", cpu);
+                                    else
+                                        printw("|  ");
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attroff(COLOR_PAIR(3));
+
+                                }
+                                printw("|    ");
+
+
+                                // Second group of cores (physical CPU 0)
+                                for(cpu=1; cpu<NBcpus; cpu += 2)
+                                {
+                                    int cpuOK = 0;
+                                    sprintf(cpustring, ",%d,",cpu);
+                                    if(strstr(cpuliststring, cpustring) != NULL)
+                                        cpuOK = 1;
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attron(COLOR_PAIR(3));
+
+                                    if(cpuOK == 1)
+                                        printw("|%2d", cpu);
+                                    else
+                                        printw("|  ");
+
+                                    if(cpu == pinfodisp[pindex].processor)
+                                        attroff(COLOR_PAIR(3));
+
+                                }
+                                printw("|");
+
+                                printw("\n");
+
+                                if(pindex == pindexSelected)
+                                    attroff(A_REVERSE);
+                            }
+                        }
+
+                        if(pindex == pindexSelected)
+                            attroff(A_REVERSE);
                     }
-                    printw("\n");
 
-                    if(pindex == pindexSelected)
-                        attroff(A_REVERSE);
-
-                    /*      if(pinfolist->active[pindex] != 0)
-                          {
-                              pindexActive[NBpindexActive] = pindex;
-                              NBpindexActive++;
-                          }*/
                 }
+                printw("\n");
+
+
             }
 
             refresh();
