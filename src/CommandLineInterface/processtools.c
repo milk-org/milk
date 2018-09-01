@@ -75,6 +75,8 @@ typedef struct
 	long          ctxtsw_voluntary_prev;
 	long          ctxtsw_nonvoluntary_prev;
 	
+	int           processor;
+	
 	char          statusmsg[200];
 	char          tmuxname[100];
 	
@@ -639,8 +641,10 @@ static int PIDcollectSystemInfo(int pindex, PROCESSINFODISP *pinfodisp)
 	printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
 
 	fclose(fp);
-		
-
+	
+	
+	
+	pinfodisp[pindex].processor = stat_processor;
     
     
     return 0;
@@ -1400,12 +1404,18 @@ int_fast8_t processinfo_CTRLscreen()
                                 sprintf(cpustring, ",%d,",cpu);
                                 if(strstr(cpuliststring, cpustring) != NULL)
                                     cpuOK = 1;
-
+                                
+                                if(cpu == pinfodisp[pindex].processor)
+									attron(COLOR_PAIR(3));
 
                                 if(cpuOK == 1)
                                     printw("|%2d", cpu);
                                 else
                                     printw("|  ");
+                          
+                                if(cpu == pinfodisp[pindex].processor)
+									attroff(COLOR_PAIR(3));
+                                    
                             }
                             printw("|");
                         }
