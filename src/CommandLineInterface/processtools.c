@@ -1151,7 +1151,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
         // get CPU and MEM load
         // ps -T -o lwp,%cpu,%mem  -p PID
 
+		sprintf(command, "ps -T -o %%cpu,%%mem  -p %d > test.%d.txt", PID, PID);
+		system(command);
+		
         sprintf(command, "ps -T -o %%cpu,%%mem  -p %d", PID);
+        
         fpout = popen (command, "r");
         if(fpout==NULL)
         {
