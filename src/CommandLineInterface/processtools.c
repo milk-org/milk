@@ -1340,8 +1340,9 @@ int_fast8_t processinfo_CTRLscreen()
                 int cpu;
                 
                 printw("%d CPUs : ", NBcpus);
+                
                 for(cpu=0; cpu<NBcpus; cpu++)
-                    printw(" |%02d|", (int) (100.0*CPUload[cpu]));
+                    printw(" |%02d|", cpu); //(int) (100.0*CPUload[cpu]));
                 printw("\n");
             }
 
