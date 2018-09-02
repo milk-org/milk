@@ -2130,7 +2130,9 @@ int_fast8_t processinfo_CTRLscreen()
 									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
 										cpuColor = 3;
 									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>40.0)
-										cpuColor = 1;
+										cpuColor = 4;
+									if(pinfodisp[pindex].subprocCPUloadarray[spindex]<1.0)
+										cpuColor = 5;
 									
                                     sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
 
@@ -2166,7 +2168,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             cpuOK = 1;
 
                                         if(cpu == pinfodisp[pindex].processor)
-                                            attron(COLOR_PAIR(2));
+                                            attron(COLOR_PAIR(cpuColor));
 
                                         if(cpuOK == 1)
                                             printw("|%2d", cpu);
@@ -2174,7 +2176,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             printw("|  ");
 
                                         if(cpu == pinfodisp[pindex].processor)
-                                            attroff(COLOR_PAIR(2));
+                                            attroff(COLOR_PAIR(cpuColor));
 
                                     }
                                     printw("|");
