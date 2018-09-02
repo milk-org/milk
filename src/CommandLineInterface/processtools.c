@@ -1769,7 +1769,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				// List CPUs
-                printw("                                                                          %2d CPUs  ", NBcpus);
+                printw("                                                                           %2d CPUs  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                     printw("|%02d", cpu);                
                 printw("|    |");
@@ -2062,9 +2062,9 @@ int_fast8_t processinfo_CTRLscreen()
                                            abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
                                           );
 
-                                    if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                    if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
                                         attroff(COLOR_PAIR(4));
-                                    else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                    else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
                                         attroff(COLOR_PAIR(3));
 
                                     pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
