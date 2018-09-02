@@ -2178,6 +2178,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     for(cpu=1; cpu<NBcpus; cpu += 2)
                                     {
                                         int cpuOK = 0;
+                                        int cpumin, cpumax;
                                         
                                         sprintf(cpustring, ",%d,",cpu);
                                         if(strstr(cpuliststring, cpustring) != NULL)
