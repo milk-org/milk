@@ -1640,9 +1640,12 @@ int_fast8_t processinfo_CTRLscreen()
 				strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
 				strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
 				pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
+				
+				printw("Source Code: [%s] [%s]  LINE %d\n", pindexSelected, selectedOK, pselected_FILE, pselected_FUNCTION, pselected_LINE);
 			}
-			
-			printw("%ld [%d]  FILE %20s   FUNCTION %20s   LINE %d\n", pindexSelected, selectedOK, pselected_FILE, pselected_FUNCTION, pselected_LINE);
+			else
+				printw("\n");
+				
 			printw("\n");
 
 
