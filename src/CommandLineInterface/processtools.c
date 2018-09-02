@@ -111,7 +111,7 @@
      
      // process signals
      
-     		if(data.signal_INT == 1){
+		if(data.signal_INT == 1){
 			loopOK = 0;
 			if(data.processinfo==1)
 				processinfo_SIGexit(processinfo, SIGINT);
@@ -1151,7 +1151,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
         // get CPU and MEM load
         // ps -T -o lwp,%cpu,%mem  -p PID
 
+//		sprintf(command, "ps -T -o %%cpu,%%mem  -p %d > test.%d.txt", PID, PID);
+	//	system(command);
+		
         sprintf(command, "ps -T -o %%cpu,%%mem  -p %d", PID);
+        
         fpout = popen (command, "r");
         if(fpout==NULL)
         {
@@ -1163,10 +1167,15 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
             while((fgets(outstring, 100, fpout) != NULL)&&(lcnt<pinfodisp[pindex].NBsubprocesses+1))
             {
                 if(lcnt>0)
-                    scanf(outstring, "%f %f",
+                {
+                    sscanf(outstring, "%f %f\n",
                           &pinfodisp[pindex].subprocCPUloadarray[lcnt-1],
                           &pinfodisp[pindex].subprocMEMloadarray[lcnt-1]
                          );
+					//pinfodisp[pindex].subprocCPUloadarray[lcnt-1] = 1.0;
+				}
+				lcnt++;
+
             }
 
             pclose(fpout);
