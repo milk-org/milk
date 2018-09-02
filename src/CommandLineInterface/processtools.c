@@ -2089,6 +2089,10 @@ int_fast8_t processinfo_CTRLscreen()
                                     printw(" %2dx ", pinfodisp[pindex].threads);
 
 
+
+
+									// Context Switches
+									
                                     if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
                                         attron(COLOR_PAIR(4));
                                     else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
@@ -2108,10 +2112,27 @@ int_fast8_t processinfo_CTRLscreen()
                                     pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
                                     pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_nonvoluntary;
 
+
+
+
+
                                     printw(" ");
 
-                                    sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
 
+									// CPU use
+									
+									int cpuColor = 0;
+									
+									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
+										cpuColor = 1;
+									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
+										cpuColor = 2;
+									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
+										cpuColor = 3;
+									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>40.0)
+										cpuColor = 1;
+									
+                                    sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
 
                                     // First group of cores (physical CPU 0)
                                     for(cpu=0; cpu<NBcpus; cpu += 2)
@@ -2122,7 +2143,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             cpuOK = 1;
 
                                         if(cpu == pinfodisp[pindex].processor)
-                                            attron(COLOR_PAIR(2));
+                                            attron(COLOR_PAIR(cpuColor));
 
                                         if(cpuOK == 1)
                                             printw("|%2d", cpu);
@@ -2130,7 +2151,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             printw("|  ");
 
                                         if(cpu == pinfodisp[pindex].processor)
-                                            attroff(COLOR_PAIR(2));
+                                            attroff(COLOR_PAIR(cpuColor));
 
                                     }
                                     printw("|    ");
@@ -2157,6 +2178,8 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     }
                                     printw("|");
+                                    
+                                    
                                     
                                     
                                     
