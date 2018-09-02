@@ -1243,6 +1243,10 @@ int_fast8_t processinfo_CTRLscreen()
     int NBcpus = 0;
 
 
+	char pselected_FILE[200];
+	char pselected_FUNCTION[200];
+	int pselected_LINE;
+
 
 
 
@@ -1626,6 +1630,21 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+			sprintf(pselected_FILE, "?");
+			sprintf(pselected_FUNCTION, "?");
+			pselected_LINE = 0;
+
+			 if(selectedOK == 0)
+			 {
+			strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
+			strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
+			pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
+			}
+			
+			printw("FILE %20s   FUNCTION %20s   LINE %d\n", pselected_FILE, pselected_FUNCTION, pselected_LINE);
+			printw("\n");
+
+
             // LOAD / UPDATE process information
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
@@ -1782,6 +1801,7 @@ int_fast8_t processinfo_CTRLscreen()
              *
              *
              */
+
 
 
             int dispindex;
@@ -2262,10 +2282,13 @@ int_fast8_t processinfo_CTRLscreen()
 
                         if(pindex == pindexSelected)
                             attroff(A_REVERSE);
+						
                     }
 
                 }
-                printw("\n");
+                
+                if(DisplayMode == 1)
+					printw("\n");
 
 
             }
