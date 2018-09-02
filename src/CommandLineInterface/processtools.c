@@ -465,8 +465,13 @@ static int GetCPUloads()
 	}
     printf("Reading CPU load %d / %d\n", cpu, NBcpus);
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
+		printf("  read %d chars\n", (int) len);
+		printf("line : %s\n", line);
 		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
-		CPUload[cpu] = (vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
+		
+		CPUload[cpu] = (1.0*vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
+		
+		printf(" %ld %ld --- > CPUload = %5.2f\n", vall0, vall1, 100.0*CPUload[cpu]);
 		cpu++;
 	}
      
