@@ -1376,8 +1376,7 @@ int_fast8_t processinfo_CTRLscreen()
                 int CPUloadLim1 = 60;
                 int CPUloadLim2 = 80;
                 
-                printw("%d CPUs :                                 ", NBcpus);
-                
+                printw("%d CPUs :                                                                                     ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                 {
 					int vint = (int) (100.0*CPUload[cpu]);
