@@ -688,7 +688,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 		processinfo_WriteMessage(processinfo, msgstring);
 		break;
 	}
-		processinfo_WriteMessage(processinfo, "TEST2");
+	
     return 0;
 }
 
