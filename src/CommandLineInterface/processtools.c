@@ -1391,10 +1391,11 @@ int_fast8_t processinfo_CTRLscreen()
 						ColorCode = 3;
 					if(vint>CPUloadLim2)
 						ColorCode = 4;
-				
+					
+					printw("|");
 					if(ColorCode != 0)
 						attron(COLOR_PAIR(ColorCode));
-                    printw("|%02d", (int) (100.0*CPUload[cpu]));
+                    printw("%02d", (int) (100.0*CPUload[cpu]));
                     if(ColorCode != 0)
 						attroff(COLOR_PAIR(ColorCode));
 				}
@@ -1415,9 +1416,10 @@ int_fast8_t processinfo_CTRLscreen()
 				
 					if(ColorCode != 0)
 						attron(COLOR_PAIR(ColorCode));
-                    printw("%02d|", (int) (100.0*CPUload[cpu]));
+                    printw("%02d", (int) (100.0*CPUload[cpu]));
                     if(ColorCode != 0)
 						attroff(COLOR_PAIR(ColorCode));
+					printw("|");
 				}
                 
                 printw("\n");
