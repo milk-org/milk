@@ -113,6 +113,12 @@
      
      
      // process signals
+
+		if(data.signal_TERM == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGTERM);
+		}
      
 		if(data.signal_INT == 1){
 			loopOK = 0;
@@ -504,12 +510,13 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
     tstoptm = gmtime(&tstop.tv_sec);
 
     if(processinfo->CTRLval == 3) // loop exit from processinfo control
-        sprintf(msgstring, "CTRLexit  %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+        sprintf(msgstring, "CTRLexit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
     
     if(processinfo->loopstat == 1)
         sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
 
-    strncpy(processinfo->statusmsg, msgstring, 200);
+//    strncpy(processinfo->statusmsg, msgstring, 200);
+	strncpy(processinfo->statusmsg, "TEST1", 200);
 	
 	processinfo->loopstat = 3; // clean exit
 
@@ -524,10 +531,10 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 {
-	char timestring[200];
-    struct timespec tstop;
+	char       timestring[200];
+    struct     timespec tstop;
     struct tm *tstoptm;
-    char msgstring[200];
+    char       msgstring[200];
 
     clock_gettime(CLOCK_REALTIME, &tstop);
     tstoptm = gmtime(&tstop.tv_sec);
@@ -678,7 +685,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 		processinfo_WriteMessage(processinfo, msgstring);
 		break;
 	}
-		
+		processinfo_WriteMessage(processinfo, "TEST2");
     return 0;
 }
 
