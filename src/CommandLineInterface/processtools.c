@@ -781,7 +781,7 @@ int_fast8_t processinfo_CTRLscreen()
     char syscommand[200];
 
 
-    int NBcpus;
+    int NBcpus = 0;
 
 
 
@@ -1336,12 +1336,13 @@ int_fast8_t processinfo_CTRLscreen()
             if(DisplayMode == 2)
             {
                 // Measure CPU loads, Display
-                GetCPUloads();
+                NBcpus = GetCPUloads();
                 int cpu;
                 
                 printw("%d CPUs : ", NBcpus);
+                
                 for(cpu=0; cpu<NBcpus; cpu++)
-                    printw(" |%02d|", (int) (100.0*CPUload[cpu]));
+                    printw("|%02d|", (int) (100.0*CPUload[cpu]));
                 printw("\n");
             }
 
