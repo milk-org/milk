@@ -509,15 +509,17 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
     clock_gettime(CLOCK_REALTIME, &tstop);
     tstoptm = gmtime(&tstop.tv_sec);
 
-	strcpy(msgstring, "TEST00");
-
     if(processinfo->CTRLval == 3) // loop exit from processinfo control
+    {
         sprintf(msgstring, "CTRLexit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+		strncpy(processinfo->statusmsg, msgstring, 200);
+    }
     
     if(processinfo->loopstat == 1)
+    {
         sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
-
-	strncpy(processinfo->statusmsg, msgstring, 200);
+		strncpy(processinfo->statusmsg, msgstring, 200);
+	}
 	
 	processinfo->loopstat = 3; // clean exit
 
