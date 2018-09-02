@@ -60,13 +60,16 @@
 
    int loopOK = 1;
  
-         sprintf(msgstring, "ERROR: no WFS reference");
+ if(.... error condition ....)
+ {
+   sprintf(msgstring, "ERROR: no WFS reference");
         if(data.processinfo == 1)
         {
 			processinfo->loopstat = 4; // ERROR
-			strcpy(processinfo->statusmsg, msgstring);
-			loopOK = 0;
-		}
+			processinfo_WriteMessage(processinfo, msgstring);
+		}	
+	loopOK = 0;
+	}
  
   
   
@@ -74,7 +77,7 @@
   
   
       if(data.processinfo==1)
-        processinfo->loopstat = 1;
+        processinfo->loopstat = 1;  // Notify processinfo that we are entering loop
     
    
     long loopcnt = 0;
@@ -2030,7 +2033,7 @@ int_fast8_t processinfo_CTRLscreen()
                                    pinfodisp[pindex].createtime_sec,
                                    (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
-                            printw(" %16s", pinfoarray[pindex]->tmuxname);
+                            printw(" %24s", pinfoarray[pindex]->tmuxname);
 
 
                             if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
