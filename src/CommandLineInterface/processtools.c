@@ -270,6 +270,8 @@ static long CPUcnt6[100];
 static long CPUcnt7[100];
 static long CPUcnt8[100];
 
+static float CPUpcnt[100];
+
 
 
 
@@ -784,61 +786,85 @@ static int GetNumberCPUs()
 
 static int GetCPUloads()
 {
-	int NBcpus;
-	char * line = NULL;
-	FILE *fp;
-	ssize_t read;
-	size_t len = 0;
-	int cpu;
-	long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
-	float v0, v1, v2, v3, v4, v5, v6, v7, v8;
-	char string0[80];
-	
-	
-	NBcpus = GetNumberCPUs();
+    int NBcpus;
+    char * line = NULL;
+    FILE *fp;
+    ssize_t read;
+    size_t len = 0;
+    int cpu;
+    long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+    float v0, v1, v2, v3, v4, v5, v6, v7, v8;
+    char string0[80];
+
+
+    NBcpus = GetNumberCPUs();
 
     fp = fopen("/proc/stat", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
-    
+
     cpu = 0;
     if(getline(&line, &len, fp) == -1)
-	{
-		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
-		exit(0);
-	}
+    {
+        printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
+        exit(0);
+    }
 
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
-		
-		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
-		
-		v0 = vall0 - CPUcnt0[cpu];
-		v1 = vall1 - CPUcnt1[cpu];
-		v2 = vall2 - CPUcnt2[cpu];
-		v3 = vall3 - CPUcnt3[cpu];
-		v4 = vall4 - CPUcnt4[cpu];
-		v5 = vall5 - CPUcnt5[cpu];
-		v6 = vall6 - CPUcnt6[cpu];
-		v7 = vall7 - CPUcnt7[cpu];
-		v8 = vall8 - CPUcnt8[cpu];
-		
-		CPUcnt0[cpu] = vall0;
-		CPUcnt1[cpu] = vall1;
-		CPUcnt2[cpu] = vall2;
-		CPUcnt3[cpu] = vall3;
-		CPUcnt4[cpu] = vall4;
-		CPUcnt5[cpu] = vall5;
-		CPUcnt6[cpu] = vall6;
-		CPUcnt7[cpu] = vall7;
-		CPUcnt8[cpu] = vall8;
-		
-		CPUload[cpu] = (v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
-		cpu++;
-	}
-     
+
+        sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+
+        v0 = vall0 - CPUcnt0[cpu];
+        v1 = vall1 - CPUcnt1[cpu];
+        v2 = vall2 - CPUcnt2[cpu];
+        v3 = vall3 - CPUcnt3[cpu];
+        v4 = vall4 - CPUcnt4[cpu];
+        v5 = vall5 - CPUcnt5[cpu];
+        v6 = vall6 - CPUcnt6[cpu];
+        v7 = vall7 - CPUcnt7[cpu];
+        v8 = vall8 - CPUcnt8[cpu];
+
+        CPUcnt0[cpu] = vall0;
+        CPUcnt1[cpu] = vall1;
+        CPUcnt2[cpu] = vall2;
+        CPUcnt3[cpu] = vall3;
+        CPUcnt4[cpu] = vall4;
+        CPUcnt5[cpu] = vall5;
+        CPUcnt6[cpu] = vall6;
+        CPUcnt7[cpu] = vall7;
+        CPUcnt8[cpu] = vall8;
+
+        CPUload[cpu] = (v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
+        cpu++;
+    }
+
     fclose(fp);
 
-	return(cpu);
+
+    // number of process per CPU
+    for(cpu=0; cpu<NBcpus; cpu++)
+    {
+        char outstring[200];
+        char command[200];
+
+
+        sprintf(command, "CORENUM=%d; ps -e -o pid,psr,cpu,cmd | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
+        fpout = popen (command, "r");
+        if(fpout==NULL)
+        {
+            printf("WARNING: cannot run command \"%s\"\n", command);
+        }
+        else
+        {
+            if(fgets(outstring, 100, fpout)== NULL)
+                printf("WARNING: fgets error\n");
+            pclose(fpout);
+            CPUpcnt[cpu] = atoi(outstring);
+        }
+	}
+
+
+    return(cpu);
 }
 
 
@@ -1735,7 +1761,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				// List CPUs
-                printw("%d CPUs :                                                                           ", NBcpus);
                 printw("                                                                          %2d CPUs  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                     printw("|%02d", cpu);                
@@ -1743,6 +1768,59 @@ int_fast8_t processinfo_CTRLscreen()
                 for(cpu=1; cpu<NBcpus; cpu+=2)
                     printw("%02d|", cpu);
                 printw("\n");
+                
+				// List CPU # processes
+                printw("                                                                         PROCESSES  ", NBcpus);
+                for(cpu=0; cpu<NBcpus; cpu+=2)
+                {
+                    int vint = CPUpcnt[cpu];
+                    if(vint>99)
+                        vint = 99;
+
+                    ColorCode = 0;
+                    if(vint>CPUpcntLim1)
+                        ColorCode = 2;
+                    if(vint>CPUpcntLim2)
+                        ColorCode = 3;
+                    if(vint>CPUpcntLim3)
+                        ColorCode = 4;
+                    if(vint<CPUpcntLim0)
+                        ColorCode = 5;
+
+                    printw("|");
+                    if(ColorCode != 0)
+                        attron(COLOR_PAIR(ColorCode));
+                    printw("%02d", vint);
+                    if(ColorCode != 0)
+                        attroff(COLOR_PAIR(ColorCode));
+                }
+                printw("|    |");
+                for(cpu=1; cpu<NBcpus; cpu+=2)
+                {
+                    int vint = CPUpcnt[cpu];
+                    if(vint>99)
+                        vint = 99;
+
+                    ColorCode = 0;
+                    if(vint>CPUpcntLim1)
+                        ColorCode = 2;
+                    if(vint>CPUpcntLim2)
+                        ColorCode = 3;
+                    if(vint>CPUpcntLim3)
+                        ColorCode = 4;
+                    if(vint<CPUpcntLim0)
+                        ColorCode = 5;
+
+                    if(ColorCode != 0)
+                        attron(COLOR_PAIR(ColorCode));
+                    printw("%02d", vint);
+                    if(ColorCode != 0)
+                        attroff(COLOR_PAIR(ColorCode));
+                    printw("|");
+                }
+
+                printw("\n");
+                
                 
                 
                 
