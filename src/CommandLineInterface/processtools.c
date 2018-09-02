@@ -1168,7 +1168,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
             {
                 if(lcnt>0)
                 {
-                    scanf(outstring, "%f %f",
+                    sscanf(outstring, "%f %f\n",
                           &pinfodisp[pindex].subprocCPUloadarray[lcnt-1],
                           &pinfodisp[pindex].subprocMEMloadarray[lcnt-1]
                          );
