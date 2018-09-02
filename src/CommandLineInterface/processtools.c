@@ -405,7 +405,7 @@ static int initncurses()
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
     init_pair(4, COLOR_BLACK, COLOR_RED);
-    init_pair(5, COLOR_BLACK, COLOR_BLUE);
+    init_pair(5, COLOR_BLACK, COLOR_CYAN);
 
     init_pair(6, COLOR_GREEN, COLOR_BLACK);
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
@@ -1384,9 +1384,16 @@ int_fast8_t processinfo_CTRLscreen()
 
             if(DisplayMode == 2)
             {
-                // Measure CPU loads, Display
-                NBcpus = GetCPUloads();
+				NBcpus = GetCPUloads();
                 int cpu;
+				
+                // List CPUs
+                
+                
+                
+                
+                
+                // Measure CPU loads, Display
                 int ColorCode;
                 
 				int CPUloadLim0 = 3;

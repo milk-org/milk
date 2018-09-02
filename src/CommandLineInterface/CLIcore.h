@@ -302,12 +302,22 @@ extern DATA data;
 
 
 /**
+ * 
  * This structure hold process information and hooks required for basic monitoring and control
  * Unlike the larger DATA structure above, it is meant to be stored in shared memory for fast access by other processes
+ * 
+ * 
+ * File name:  /tmp/proc.PID.shm
+ * 
  */
 typedef struct 
 {
-	char   name[200];             // process name
+	char   name[200];             // process name (human-readable)
+
+	char   source_FUNCTION[200];  // source code function
+	char   source_FILE[200];      // source code file
+	int    source_LINE;           // source code line
+
 	pid_t  PID;                   // process ID
 	// file name is /tmp/proc.PID.shm
 	
@@ -315,19 +325,19 @@ typedef struct
 
 
 	long   loopcnt;               // counter, useful for loop processes to monitor activity
-	int    CTRLval;             // control value to be externally written. 
-								// 0: run                     (default) 
-								// 1: pause
-								// 2: increment single step (will go back to 1)
-								// 3: exit loop
+	int    CTRLval;               // control value to be externally written. 
+								  // 0: run                     (default) 
+								  // 1: pause
+                                  // 2: increment single step (will go back to 1)
+                                  // 3: exit loop
 								
 								
-	char   tmuxname[100];          // name of tmux session in which process is running, or "NULL"
+	char   tmuxname[100];         // name of tmux session in which process is running, or "NULL"
 	int    loopstat;              // 0: initialization (before loop)
-								// 1: in loop
-								// 2: paused
-								// 3: terminated (clean exit)
-								// 4: ERROR (typically used when loop can't start, e.g. missing input)
+	                              // 1: in loop
+	                              // 2: paused
+	                              // 3: terminated (clean exit)
+	                              // 4: ERROR (typically used when loop can't start, e.g. missing input)
 
 	char   statusmsg[200];        // status message
 	int    statuscode;            // status code 
