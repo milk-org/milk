@@ -1736,6 +1736,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 				// List CPUs
                 printw("%d CPUs :                                                                           ", NBcpus);
+                printw("                                                                          %2d CPUs  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                     printw("|%02d", cpu);                
                 printw("|    |");
@@ -1747,7 +1748,7 @@ int_fast8_t processinfo_CTRLscreen()
                 
                 
                 // Print CPU LOAD
-                printw("                CPU LOAD :                                                          ", NBcpus);
+                printw("                                                                          CPU LOAD  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                 {
                     int vint = (int) (100.0*CPUload[cpu]);
