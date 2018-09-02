@@ -4967,13 +4967,17 @@ long COREMOD_MEMORY_image_streamupdateloop(
         // see processtools.c in module CommandLineInterface for details
         //
         char pinfoname[200];
-        sprintf(pinfoname, "%s", __FUNCTION__);
+        sprintf(pinfoname, "stream %s to %s", IDinname, IDoutname);
         processinfo = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = 0; // loop initialization
 
+        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+        strcpy(processinfo->source_FILE,     __FILE__);
+        processinfo->source_LINE = __LINE__;
+
         char msgstring[200];
         sprintf(msgstring, "%s->%s", IDinname, IDoutname);
-        strcpy(processinfo->statusmsg, msgstring);
+        processinfo_WriteMessage(processinfo, msgstring);
     }
 
 
