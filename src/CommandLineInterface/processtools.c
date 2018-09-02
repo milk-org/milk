@@ -400,15 +400,17 @@ static int initncurses()
 
     start_color();
     
+	// Black font on color background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(4, COLOR_BLACK, COLOR_RED);
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
+    init_pair(4, COLOR_BLACK, COLOR_RED);
+    init_pair(5, COLOR_BLACK, COLOR_BLUE);
 
-    init_pair(5, COLOR_GREEN, COLOR_BLACK);
-    init_pair(6, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(7, COLOR_RED, COLOR_BLACK);
-    init_pair(8, COLOR_BLACK, COLOR_RED);
+    init_pair(6, COLOR_GREEN, COLOR_BLACK);
+    init_pair(7, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(8, COLOR_RED, COLOR_BLACK);
+    init_pair(9, COLOR_BLACK, COLOR_RED);
 
     return 0;
 }
@@ -1386,10 +1388,11 @@ int_fast8_t processinfo_CTRLscreen()
                 NBcpus = GetCPUloads();
                 int cpu;
                 int ColorCode;
-
-                int CPUloadLim0 = 40;
-                int CPUloadLim1 = 60;
-                int CPUloadLim2 = 80;
+                
+				int CPUloadLim0 = 3;
+                int CPUloadLim1 = 40;
+                int CPUloadLim2 = 60;
+                int CPUloadLim3 = 80;
 
                 printw("%d CPUs :                                                                                     ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
@@ -1399,12 +1402,14 @@ int_fast8_t processinfo_CTRLscreen()
                         vint = 99;
 
                     ColorCode = 0;
-                    if(vint>CPUloadLim0)
-                        ColorCode = 2;
                     if(vint>CPUloadLim1)
-                        ColorCode = 3;
+                        ColorCode = 2;
                     if(vint>CPUloadLim2)
+                        ColorCode = 3;
+                    if(vint>CPUloadLim3)
                         ColorCode = 4;
+                    if(vint<CPUloadLim0)
+                        ColorCode = 5;
 
                     printw("|");
                     if(ColorCode != 0)
@@ -1421,12 +1426,14 @@ int_fast8_t processinfo_CTRLscreen()
                         vint = 99;
 
                     ColorCode = 0;
-                    if(vint>CPUloadLim0)
-                        ColorCode = 2;
                     if(vint>CPUloadLim1)
-                        ColorCode = 3;
+                        ColorCode = 2;
                     if(vint>CPUloadLim2)
+                        ColorCode = 3;
+                    if(vint>CPUloadLim3)
                         ColorCode = 4;
+                    if(vint<CPUloadLim0)
+                        ColorCode = 5;
 
                     if(ColorCode != 0)
                         attron(COLOR_PAIR(ColorCode));
