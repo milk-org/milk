@@ -859,10 +859,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
     CLIPID = getpid();
+    
     printf("PID = %d\n", (int) CLIPID);
+    sprintf(command, "cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
+    if(system(command)!=0)
+		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 
-	printf("TESTING - sleep\n");
-	sleep(1000);
 	
 
     atexit(fnExit1);
