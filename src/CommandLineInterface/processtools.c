@@ -111,7 +111,7 @@
      
      // process signals
      
-     		if(data.signal_INT == 1){
+		if(data.signal_INT == 1){
 			loopOK = 0;
 			if(data.processinfo==1)
 				processinfo_SIGexit(processinfo, SIGINT);
