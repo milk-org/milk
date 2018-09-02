@@ -104,8 +104,15 @@ static PROCESSINFOLIST *pinfolist;
 static int wrow, wcol;
 
 static float CPUload[100];
-
-
+static long CPUcnt0[100];
+static long CPUcnt1[100];
+static long CPUcnt2[100];
+static long CPUcnt3[100];
+static long CPUcnt4[100];
+static long CPUcnt5[100];
+static long CPUcnt6[100];
+static long CPUcnt7[100];
+static long CPUcnt8[100];
 
 
 
@@ -368,6 +375,7 @@ static int print_header(const char *str, char c)
     printw("\n");
     attroff(A_BOLD);
 
+
     return(0);
 }
 
@@ -448,6 +456,7 @@ static int GetCPUloads()
 	size_t len = 0;
 	int cpu;
 	long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+	float v0, v1, v2, v3, v4, v5, v6, v7, v8;
 	char string0[80];
 	
 	
@@ -457,22 +466,44 @@ static int GetCPUloads()
     if (fp == NULL)
         exit(EXIT_FAILURE);
     
+    cpu = 0;
     if(getline(&line, &len, fp) == -1)
 	{
 		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
 		exit(0);
 	}
-    
+
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
-		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
-		CPUload[cpu] = (vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
+		
+		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+		
+		v0 = vall0 - CPUcnt0[cpu];
+		v1 = vall1 - CPUcnt1[cpu];
+		v2 = vall2 - CPUcnt2[cpu];
+		v3 = vall3 - CPUcnt3[cpu];
+		v4 = vall4 - CPUcnt4[cpu];
+		v5 = vall5 - CPUcnt5[cpu];
+		v6 = vall6 - CPUcnt6[cpu];
+		v7 = vall7 - CPUcnt7[cpu];
+		v8 = vall8 - CPUcnt8[cpu];
+		
+		CPUcnt0[cpu] = vall0;
+		CPUcnt1[cpu] = vall1;
+		CPUcnt2[cpu] = vall2;
+		CPUcnt3[cpu] = vall3;
+		CPUcnt4[cpu] = vall4;
+		CPUcnt5[cpu] = vall5;
+		CPUcnt6[cpu] = vall6;
+		CPUcnt7[cpu] = vall7;
+		CPUcnt8[cpu] = vall8;
+		
+		CPUload[cpu] = (v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
 		cpu++;
 	}
      
     fclose(fp);
 
-	return(NBcpus);
-
+	return(cpu);
 }
 
 
@@ -812,7 +843,7 @@ int_fast8_t processinfo_CTRLscreen()
     processinfo_shm_list_create();
 
     NBcpus = GetNumberCPUs();
-
+	GetCPUloads();
 
     // INITIALIZE ncurses
     initncurses();
@@ -1339,10 +1370,14 @@ int_fast8_t processinfo_CTRLscreen()
                 NBcpus = GetCPUloads();
                 int cpu;
                 
-                printw("%d CPUs : ", NBcpus);
+                printw("%d CPUs :                        ", NBcpus);
                 
-                for(cpu=0; cpu<NBcpus; cpu++)
-                    printw("|%02d|", (int) (100.0*CPUload[cpu]));
+                for(cpu=0; cpu<NBcpus; cpu+=2)
+                    printw("|%02d", (int) (100.0*CPUload[cpu]));
+                printw("|   |");
+                for(cpu=1; cpu<NBcpus; cpu+=2)
+                    printw("%02d|", (int) (100.0*CPUload[cpu]));
+                
                 printw("\n");
             }
 
