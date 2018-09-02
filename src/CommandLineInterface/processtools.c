@@ -749,12 +749,12 @@ static int initncurses()
 
     start_color();
     
-	// Black font on color background
+	//  color background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(4, COLOR_BLACK, COLOR_RED);
-    init_pair(5, COLOR_BLACK, COLOR_CYAN);
+    init_pair(4, COLOR_WHITE, COLOR_RED);
+    init_pair(5, COLOR_WHITE, COLOR_BLUE);
 
     init_pair(6, COLOR_GREEN, COLOR_BLACK);
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
@@ -1640,9 +1640,12 @@ int_fast8_t processinfo_CTRLscreen()
 				strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
 				strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
 				pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
+				
+				printw("Source Code: %s line %d (function %s)\n", pselected_FILE,  pselected_LINE, pselected_FUNCTION);
 			}
-			
-			printw("%ld [%d]  FILE %20s   FUNCTION %20s   LINE %d\n", pindexSelected, selectedOK, pselected_FILE, pselected_FUNCTION, pselected_LINE);
+			else
+				printw("\n");
+				
 			printw("\n");
 
 
