@@ -1327,6 +1327,18 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 dispindexMax = NBpindexActive;
 
+		if(DisplayMode == 2)
+		{
+		// Measure CPU loads, Display
+							GetCPUloads();
+                            int cpu; 
+                            
+                            for(cpu;cpu<NBcpus;cpu++)
+								printw(" %02d", (int) (100.0*CPUload[cpu]));
+							printw("\n");
+						}
+
+
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
                 if(TimeSorted == 0)
@@ -1463,11 +1475,7 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpuliststring[200];
                             char cpustring[6];
 
-							// Measure CPU loads
-							GetCPUloads();
-                            
-                            for(cpu;cpu<NBcpus;cpu++)
-								printw(" %02d", (int) (100.0*CPUload[cpu]));
+
                             
                             // collect required info for display
                             PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
