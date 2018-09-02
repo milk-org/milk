@@ -1163,10 +1163,14 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
             while((fgets(outstring, 100, fpout) != NULL)&&(lcnt<pinfodisp[pindex].NBsubprocesses+1))
             {
                 if(lcnt>0)
+                {
                     scanf(outstring, "%f %f",
                           &pinfodisp[pindex].subprocCPUloadarray[lcnt-1],
                           &pinfodisp[pindex].subprocMEMloadarray[lcnt-1]
                          );
+					pinfodisp[pindex].subprocCPUloadarray[lcnt-1] = 1.0;
+				}
+
             }
 
             pclose(fpout);
