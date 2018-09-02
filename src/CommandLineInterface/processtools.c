@@ -538,7 +538,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     sprintf(fname, "/proc/%d/status", PID);
     fp = fopen(fname, "r");
     if (fp == NULL)
-        exit(EXIT_FAILURE);
+        return -1;
 
     while ((read = getline(&line, &len, fp)) != -1) {
 
@@ -571,15 +571,15 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     fclose(fp);
     if (line)
         free(line);
-    
+
 
 
     sprintf(fname, "/proc/%d/stat", PID);
 
-	int           stat_pid;       // (1) The process ID.
-	char          stat_comm[20];  // (2) The filename of the executable, in parentheses.
-	char          stat_state;     // (3) 
-	/* One of the following characters, indicating process state:
+    int           stat_pid;       // (1) The process ID.
+    char          stat_comm[20];  // (2) The filename of the executable, in parentheses.
+    char          stat_state;     // (3)
+    /* One of the following characters, indicating process state:
                         R  Running
                         S  Sleeping in an interruptible wait
                         D  Waiting in uninterruptible disk sleep
@@ -595,20 +595,20 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                         P  Parked (Linux 3.9 to 3.13 only)
                  */
     int           stat_ppid;      // (4) The PID of the parent of this process.
-	int           stat_pgrp;      // (5) The process group ID of the process
-	int           stat_session;   // (6) The session ID of the process
-	int           stat_tty_nr;    // (7) The controlling terminal of the process
-	int           stat_tpgid;     // (8) The ID of the foreground process group of the controlling terminal of the process
-	unsigned int  stat_flags;     // (9) The kernel flags word of the process
-	unsigned long stat_minflt;    // (10) The number of minor faults the process has made which have not required loading a memory page from disk
-	unsigned long stat_cminflt;   // (11) The number of minor faults that the process's waited-for children have made
-	unsigned long stat_majflt;    // (12) The number of major faults the process has made which have required loading a memory page from disk
-	unsigned long stat_cmajflt;   // (13) The number of major faults that the process's waited-for children have made
-	unsigned long stat_utime;     // (14) Amount of time that this process has been scheduled in user mode, measured in clock ticks (divide by sysconf(_SC_CLK_TCK)).
-	unsigned long stat_stime;     // (15) Amount of time that this process has been scheduled in kernel mode, measured in clock ticks
-	long          stat_cutime;       // (16) Amount of time that this process's waited-for children have been scheduled in user mode, measured in clock ticks
-	long          stat_cstime;       // (17) Amount of time that this process's waited-for children have been scheduled in kernel mode, measured in clock ticks
-	long          stat_priority;     // (18) (Explanation for Linux 2.6) For processes running a
+    int           stat_pgrp;      // (5) The process group ID of the process
+    int           stat_session;   // (6) The session ID of the process
+    int           stat_tty_nr;    // (7) The controlling terminal of the process
+    int           stat_tpgid;     // (8) The ID of the foreground process group of the controlling terminal of the process
+    unsigned int  stat_flags;     // (9) The kernel flags word of the process
+    unsigned long stat_minflt;    // (10) The number of minor faults the process has made which have not required loading a memory page from disk
+    unsigned long stat_cminflt;   // (11) The number of minor faults that the process's waited-for children have made
+    unsigned long stat_majflt;    // (12) The number of major faults the process has made which have required loading a memory page from disk
+    unsigned long stat_cmajflt;   // (13) The number of major faults that the process's waited-for children have made
+    unsigned long stat_utime;     // (14) Amount of time that this process has been scheduled in user mode, measured in clock ticks (divide by sysconf(_SC_CLK_TCK)).
+    unsigned long stat_stime;     // (15) Amount of time that this process has been scheduled in kernel mode, measured in clock ticks
+    long          stat_cutime;       // (16) Amount of time that this process's waited-for children have been scheduled in user mode, measured in clock ticks
+    long          stat_cstime;       // (17) Amount of time that this process's waited-for children have been scheduled in kernel mode, measured in clock ticks
+    long          stat_priority;     // (18) (Explanation for Linux 2.6) For processes running a
     /*                  real-time scheduling policy (policy below; see
                         sched_setscheduler(2)), this is the negated schedul‐
                         ing priority, minus one; that is, a number in the
@@ -619,159 +619,159 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                         The kernel stores nice values as numbers in the
                         range 0 (high) to 39 (low), corresponding to the
                         user-visible nice range of -20 to 19.
-                       
+
                         Before Linux 2.6, this was a scaled value based on
                         the scheduler weighting given to this process.*/
     long          stat_nice;         // (19) The nice value (see setpriority(2)), a value in the range 19 (low priority) to -20 (high priority)
-	long          stat_num_threads;  // (20) Number of threads in this process
-	long          stat_itrealvalue;  // (21) hard coded as 0
-	unsigned long long    stat_starttime; // (22) The time the process started after system boot in clock ticks
-	unsigned long stat_vsize;        // (23)  Virtual memory size in bytes
-	long          stat_rss;          // (24) Resident Set Size: number of pages the process has in real memory
-	unsigned long stat_rsslim;       // (25) Current soft limit in bytes on the rss of the process
-	unsigned long stat_startcode;    // (26) The address above which program text can run
-	unsigned long stat_endcode;      // (27) The address below which program text can run
-	unsigned long stat_startstack;   // (28) The address of the start (i.e., bottom) of the stack
-	unsigned long stat_kstkesp;      // (29) The current value of ESP (stack pointer), as found in the kernel stack page for the process
-	unsigned long stat_kstkeip;      // (30) The current EIP (instruction pointer)
-	unsigned long stat_signal;       // (31) The bitmap of pending signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead
-	unsigned long stat_blocked;      // (32) The bitmap of blocked signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
-	unsigned long stat_sigignore;    // (33) The bitmap of ignored signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
-	unsigned long stat_sigcatch;     // (34) The bitmap of ignored signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
-	unsigned long stat_wchan;        // (35) This is the "channel" in which the process is waiting.  It is the address of a location in the kernel where the process is sleeping.  The corresponding symbolic name can be found in /proc/[pid]/wchan.
-	unsigned long stat_nswap;        // (36) Number of pages swapped (not maintained)
-	unsigned long stat_cnswap;       // (37) Cumulative nswap for child processes (not maintained)
-	int           stat_exit_signal;  // (38) Signal to be sent to parent when we die
-	int           stat_processor;    // (39) CPU number last executed on
-	unsigned int  stat_rt_priority;  // (40) Real-time scheduling priority, a number in the range 1 to 99 for processes scheduled under a real-time policy, or 0, for non-real-time processes (see  sched_setscheduler(2)).
-	unsigned int  stat_policy;       // (41) Scheduling policy (see sched_setscheduler(2))
-	unsigned long long    stat_delayacct_blkio_ticks; // (42) Aggregated block I/O delays, measured in clock ticks
-	unsigned long stat_guest_time;   // (43) Guest time of the process (time spent running a virtual CPU for a guest operating system), measured in clock ticks 
-	long          stat_cguest_time;  // (44) Guest time of the process's children, measured in clock ticks (divide by sysconf(_SC_CLK_TCK)).
-	unsigned long stat_start_data;   // (45) Address above which program initialized and uninitialized (BSS) data are placed
-	unsigned long stat_end_data;     // (46) ddress below which program initialized and uninitialized (BSS) data are placed
-	unsigned long stat_start_brk;    // (47) Address above which program heap can be expanded with brk(2)
-	unsigned long stat_arg_start;    // (48) Address above which program command-line arguments (argv) are placed
-	unsigned long stat_arg_end;      // (49) Address below program command-line arguments (argv) are placed
-	unsigned long stat_env_start;    // (50) Address above which program environment is placed
-	unsigned long stat_env_end;      // (51) Address below which program environment is placed
-	long          stat_exit_code;    // (52) The thread's exit status in the form reported by waitpid(2)
-	
-	
-	
+    long          stat_num_threads;  // (20) Number of threads in this process
+    long          stat_itrealvalue;  // (21) hard coded as 0
+    unsigned long long    stat_starttime; // (22) The time the process started after system boot in clock ticks
+    unsigned long stat_vsize;        // (23)  Virtual memory size in bytes
+    long          stat_rss;          // (24) Resident Set Size: number of pages the process has in real memory
+    unsigned long stat_rsslim;       // (25) Current soft limit in bytes on the rss of the process
+    unsigned long stat_startcode;    // (26) The address above which program text can run
+    unsigned long stat_endcode;      // (27) The address below which program text can run
+    unsigned long stat_startstack;   // (28) The address of the start (i.e., bottom) of the stack
+    unsigned long stat_kstkesp;      // (29) The current value of ESP (stack pointer), as found in the kernel stack page for the process
+    unsigned long stat_kstkeip;      // (30) The current EIP (instruction pointer)
+    unsigned long stat_signal;       // (31) The bitmap of pending signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead
+    unsigned long stat_blocked;      // (32) The bitmap of blocked signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
+    unsigned long stat_sigignore;    // (33) The bitmap of ignored signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
+    unsigned long stat_sigcatch;     // (34) The bitmap of ignored signals, displayed as a decimal number.  Obsolete, because it does not provide information on real-time signals; use /proc/[pid]/status instead.
+    unsigned long stat_wchan;        // (35) This is the "channel" in which the process is waiting.  It is the address of a location in the kernel where the process is sleeping.  The corresponding symbolic name can be found in /proc/[pid]/wchan.
+    unsigned long stat_nswap;        // (36) Number of pages swapped (not maintained)
+    unsigned long stat_cnswap;       // (37) Cumulative nswap for child processes (not maintained)
+    int           stat_exit_signal;  // (38) Signal to be sent to parent when we die
+    int           stat_processor;    // (39) CPU number last executed on
+    unsigned int  stat_rt_priority;  // (40) Real-time scheduling priority, a number in the range 1 to 99 for processes scheduled under a real-time policy, or 0, for non-real-time processes (see  sched_setscheduler(2)).
+    unsigned int  stat_policy;       // (41) Scheduling policy (see sched_setscheduler(2))
+    unsigned long long    stat_delayacct_blkio_ticks; // (42) Aggregated block I/O delays, measured in clock ticks
+    unsigned long stat_guest_time;   // (43) Guest time of the process (time spent running a virtual CPU for a guest operating system), measured in clock ticks
+    long          stat_cguest_time;  // (44) Guest time of the process's children, measured in clock ticks (divide by sysconf(_SC_CLK_TCK)).
+    unsigned long stat_start_data;   // (45) Address above which program initialized and uninitialized (BSS) data are placed
+    unsigned long stat_end_data;     // (46) ddress below which program initialized and uninitialized (BSS) data are placed
+    unsigned long stat_start_brk;    // (47) Address above which program heap can be expanded with brk(2)
+    unsigned long stat_arg_start;    // (48) Address above which program command-line arguments (argv) are placed
+    unsigned long stat_arg_end;      // (49) Address below program command-line arguments (argv) are placed
+    unsigned long stat_env_start;    // (50) Address above which program environment is placed
+    unsigned long stat_env_end;      // (51) Address below which program environment is placed
+    long          stat_exit_code;    // (52) The thread's exit status in the form reported by waitpid(2)
+
+
+
     fp = fopen(fname, "r");
     if (fp == NULL)
-        exit(EXIT_FAILURE);
-    
-    if ( fscanf(fp, 
-		"%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld",
-		&stat_pid,
-		stat_comm,
-		&stat_state,
-		&stat_ppid,
-		&stat_pgrp,
-		&stat_session,
-		&stat_tty_nr,
-		&stat_tpgid,
-		&stat_flags,
-		&stat_minflt,
-		&stat_cminflt,
-		&stat_majflt,
-		&stat_cmajflt,
-		&stat_utime,
-		&stat_stime,
-		&stat_cutime,
-		&stat_cstime,
-		&stat_priority,
-		&stat_nice,
-		&stat_num_threads,
-		&stat_itrealvalue,
-		&stat_starttime,
-		&stat_vsize,
-		&stat_rss,
-		&stat_rsslim,
-		&stat_startcode,
-		&stat_endcode,
-		&stat_startstack,
-		&stat_kstkesp,
-		&stat_kstkeip,
-		&stat_signal,
-		&stat_blocked,
-		&stat_sigignore,
-		&stat_sigcatch,
-		&stat_wchan,
-		&stat_nswap,
-		&stat_cnswap,
-		&stat_exit_signal,
-		&stat_processor,
-		&stat_rt_priority,
-		&stat_policy,
-		&stat_delayacct_blkio_ticks,
-		&stat_guest_time,
-		&stat_cguest_time,
-		&stat_start_data,
-		&stat_end_data,
-		&stat_start_brk,
-		&stat_arg_start,
-		&stat_arg_end,
-		&stat_env_start,
-		&stat_env_end,
-		&stat_exit_code
-		) != 52)
-	printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+        return -1;
 
-	fclose(fp);
-	
-	
-	
-	pinfodisp[pindex].processor = stat_processor;
+    if ( fscanf(fp,
+                "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld",
+                &stat_pid,
+                stat_comm,
+                &stat_state,
+                &stat_ppid,
+                &stat_pgrp,
+                &stat_session,
+                &stat_tty_nr,
+                &stat_tpgid,
+                &stat_flags,
+                &stat_minflt,
+                &stat_cminflt,
+                &stat_majflt,
+                &stat_cmajflt,
+                &stat_utime,
+                &stat_stime,
+                &stat_cutime,
+                &stat_cstime,
+                &stat_priority,
+                &stat_nice,
+                &stat_num_threads,
+                &stat_itrealvalue,
+                &stat_starttime,
+                &stat_vsize,
+                &stat_rss,
+                &stat_rsslim,
+                &stat_startcode,
+                &stat_endcode,
+                &stat_startstack,
+                &stat_kstkesp,
+                &stat_kstkeip,
+                &stat_signal,
+                &stat_blocked,
+                &stat_sigignore,
+                &stat_sigcatch,
+                &stat_wchan,
+                &stat_nswap,
+                &stat_cnswap,
+                &stat_exit_signal,
+                &stat_processor,
+                &stat_rt_priority,
+                &stat_policy,
+                &stat_delayacct_blkio_ticks,
+                &stat_guest_time,
+                &stat_cguest_time,
+                &stat_start_data,
+                &stat_end_data,
+                &stat_start_brk,
+                &stat_arg_start,
+                &stat_arg_end,
+                &stat_env_start,
+                &stat_env_end,
+                &stat_exit_code
+               ) != 52)
+        printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+
+    fclose(fp);
+
+
+
+    pinfodisp[pindex].processor = stat_processor;
     pinfodisp[pindex].rt_priority = stat_rt_priority;
-    
+
     if(level == 0)
     {
-    pinfodisp[pindex].subprocPIDarray[0] = PID;
-    pinfodisp[pindex].NBsubprocesses = 1;
-    
-    if(pinfodisp[pindex].threads > 1) // look for children
-    {
-		FILE *fpout;
-		char command[200];
-		char outstring[200];
-		char outstringc[200];
-		
-		sprintf(command, "pstree -p %d", PID);
-		
-		fpout = popen (command, "r");
-		if(fpout==NULL)
-		{
-			printf("WARNING: cannot run command \"%s\"\n", command);
-		}
-		else
-		{
-			while(fgets(outstring, 100, fpout) != NULL)
-			{
-				int i = 0;
-				int ic = 0;
-				for(i=0;i<strlen(outstring);i++)
-				{
-					if(isdigit(outstring[i]))
-					{
-						outstringc[ic] = outstring[i];
-						ic++;
-					}
-					if(outstring[i] == '(')
-						ic = 0;
-				}
-				outstringc[ic] = '\0';
-				
-				pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(outstringc);
-				pinfodisp[pindex].NBsubprocesses++;
-			}
-			pclose(fpout);
-		}
-	}
-	}
-    
+        pinfodisp[pindex].subprocPIDarray[0] = PID;
+        pinfodisp[pindex].NBsubprocesses = 1;
+
+        if(pinfodisp[pindex].threads > 1) // look for children
+        {
+            FILE *fpout;
+            char command[200];
+            char outstring[200];
+            char outstringc[200];
+
+            sprintf(command, "pstree -p %d", PID);
+
+            fpout = popen (command, "r");
+            if(fpout==NULL)
+            {
+                printf("WARNING: cannot run command \"%s\"\n", command);
+            }
+            else
+            {
+                while(fgets(outstring, 100, fpout) != NULL)
+                {
+                    int i = 0;
+                    int ic = 0;
+                    for(i=0; i<strlen(outstring); i++)
+                    {
+                        if(isdigit(outstring[i]))
+                        {
+                            outstringc[ic] = outstring[i];
+                            ic++;
+                        }
+                        if(outstring[i] == '(')
+                            ic = 0;
+                    }
+                    outstringc[ic] = '\0';
+
+                    pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(outstringc);
+                    pinfodisp[pindex].NBsubprocesses++;
+                }
+                pclose(fpout);
+            }
+        }
+    }
+
     return 0;
 
 }
@@ -844,7 +844,7 @@ int_fast8_t processinfo_CTRLscreen()
     processinfo_shm_list_create();
 
     NBcpus = GetNumberCPUs();
-	GetCPUloads();
+    GetCPUloads();
 
     // INITIALIZE ncurses
     initncurses();
@@ -1371,56 +1371,56 @@ int_fast8_t processinfo_CTRLscreen()
                 NBcpus = GetCPUloads();
                 int cpu;
                 int ColorCode;
-                
+
                 int CPUloadLim0 = 40;
                 int CPUloadLim1 = 60;
                 int CPUloadLim2 = 80;
-                
+
                 printw("%d CPUs :                                                                                     ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                 {
-					int vint = (int) (100.0*CPUload[cpu]);
+                    int vint = (int) (100.0*CPUload[cpu]);
                     if(vint>99)
-						vint = 99;
-						
-					ColorCode = 0;
-					if(vint>CPUloadLim0)
-						ColorCode = 2;
-					if(vint>CPUloadLim1)
-						ColorCode = 3;
-					if(vint>CPUloadLim2)
-						ColorCode = 4;
-					
-					printw("|");
-					if(ColorCode != 0)
-						attron(COLOR_PAIR(ColorCode));
+                        vint = 99;
+
+                    ColorCode = 0;
+                    if(vint>CPUloadLim0)
+                        ColorCode = 2;
+                    if(vint>CPUloadLim1)
+                        ColorCode = 3;
+                    if(vint>CPUloadLim2)
+                        ColorCode = 4;
+
+                    printw("|");
+                    if(ColorCode != 0)
+                        attron(COLOR_PAIR(ColorCode));
                     printw("%02d", vint);
                     if(ColorCode != 0)
-						attroff(COLOR_PAIR(ColorCode));
-				}
+                        attroff(COLOR_PAIR(ColorCode));
+                }
                 printw("|    |");
                 for(cpu=1; cpu<NBcpus; cpu+=2)
                 {
-					int vint = (int) (100.0*CPUload[cpu]);
+                    int vint = (int) (100.0*CPUload[cpu]);
                     if(vint>99)
-						vint = 99;
-						
-					ColorCode = 0;
-					if(vint>CPUloadLim0)
-						ColorCode = 2;
-					if(vint>CPUloadLim1)
-						ColorCode = 3;
-					if(vint>CPUloadLim2)
-						ColorCode = 4;
-				
-					if(ColorCode != 0)
-						attron(COLOR_PAIR(ColorCode));
+                        vint = 99;
+
+                    ColorCode = 0;
+                    if(vint>CPUloadLim0)
+                        ColorCode = 2;
+                    if(vint>CPUloadLim1)
+                        ColorCode = 3;
+                    if(vint>CPUloadLim2)
+                        ColorCode = 4;
+
+                    if(ColorCode != 0)
+                        attron(COLOR_PAIR(ColorCode));
                     printw("%02d", vint);
                     if(ColorCode != 0)
-						attroff(COLOR_PAIR(ColorCode));
-					printw("|");
-				}
-                
+                        attroff(COLOR_PAIR(ColorCode));
+                    printw("|");
+                }
+
                 printw("\n");
             }
 
@@ -1560,100 +1560,104 @@ int_fast8_t processinfo_CTRLscreen()
                             int cpu;
                             char cpuliststring[200];
                             char cpustring[6];
+                            int  psysinfostatus;
 
 
 
                             // collect required info for display
-                            PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
-
-                            int spindex; // sub process index
-                            for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
+                            psysinfostatus = PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
+                            if(psysinfostatus == 0)
                             {
 
-                                if(spindex>0)
+                                int spindex; // sub process index
+                                for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
                                 {
-                                    printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
-                                    PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
+
+                                    if(spindex>0)
+                                    {
+                                        printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
+                                        PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
+                                    }
+
+                                    printw(" %2d", pinfodisp[pindex].rt_priority);
+                                    printw(" %-10s ", pinfodisp[pindex].cpuset);
+                                    printw(" %2dx ", pinfodisp[pindex].threads);
+
+
+                                    if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                        attron(COLOR_PAIR(4));
+                                    else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
+                                        attron(COLOR_PAIR(3));
+
+
+                                    printw("ctxsw: +%02ld +%02ld",
+                                           abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
+                                           abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
+                                          );
+
+                                    if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                        attroff(COLOR_PAIR(4));
+                                    else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                        attroff(COLOR_PAIR(3));
+
+                                    pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
+                                    pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_nonvoluntary;
+
+                                    printw(" ");
+
+                                    sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
+
+
+                                    // First group of cores (physical CPU 0)
+                                    for(cpu=0; cpu<NBcpus; cpu += 2)
+                                    {
+                                        int cpuOK = 0;
+                                        sprintf(cpustring, ",%d,",cpu);
+                                        if(strstr(cpuliststring, cpustring) != NULL)
+                                            cpuOK = 1;
+
+                                        if(cpu == pinfodisp[pindex].processor)
+                                            attron(COLOR_PAIR(2));
+
+                                        if(cpuOK == 1)
+                                            printw("|%2d", cpu);
+                                        else
+                                            printw("|  ");
+
+                                        if(cpu == pinfodisp[pindex].processor)
+                                            attroff(COLOR_PAIR(2));
+
+                                    }
+                                    printw("|    ");
+
+
+                                    // Second group of cores (physical CPU 0)
+                                    for(cpu=1; cpu<NBcpus; cpu += 2)
+                                    {
+                                        int cpuOK = 0;
+                                        sprintf(cpustring, ",%d,",cpu);
+                                        if(strstr(cpuliststring, cpustring) != NULL)
+                                            cpuOK = 1;
+
+                                        if(cpu == pinfodisp[pindex].processor)
+                                            attron(COLOR_PAIR(2));
+
+                                        if(cpuOK == 1)
+                                            printw("|%2d", cpu);
+                                        else
+                                            printw("|  ");
+
+                                        if(cpu == pinfodisp[pindex].processor)
+                                            attroff(COLOR_PAIR(2));
+
+                                    }
+                                    printw("|");
+
+                                    printw("\n");
+
+                                    if(pindex == pindexSelected)
+                                        attroff(A_REVERSE);
                                 }
-
-                                printw(" %2d", pinfodisp[pindex].rt_priority);
-                                printw(" %-10s ", pinfodisp[pindex].cpuset);
-                                printw(" %2dx ", pinfodisp[pindex].threads);
-
-
-                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
-                                    attron(COLOR_PAIR(4));
-                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
-                                    attron(COLOR_PAIR(3));
-
-
-                                printw("ctxsw: +%02ld +%02ld",
-                                       abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
-                                       abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
-                                      );
-
-                                if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
-                                    attroff(COLOR_PAIR(4));
-                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
-                                    attroff(COLOR_PAIR(3));
-
-                                pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
-                                pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_nonvoluntary;
-
-                                printw(" ");
-
-                                sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-
-
-                                // First group of cores (physical CPU 0)
-                                for(cpu=0; cpu<NBcpus; cpu += 2)
-                                {
-                                    int cpuOK = 0;
-                                    sprintf(cpustring, ",%d,",cpu);
-                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                        cpuOK = 1;
-
-                                    if(cpu == pinfodisp[pindex].processor)
-                                        attron(COLOR_PAIR(2));
-
-                                    if(cpuOK == 1)
-                                        printw("|%2d", cpu);
-                                    else
-                                        printw("|  ");
-
-                                    if(cpu == pinfodisp[pindex].processor)
-                                        attroff(COLOR_PAIR(2));
-
-                                }
-                                printw("|    ");
-
-
-                                // Second group of cores (physical CPU 0)
-                                for(cpu=1; cpu<NBcpus; cpu += 2)
-                                {
-                                    int cpuOK = 0;
-                                    sprintf(cpustring, ",%d,",cpu);
-                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                        cpuOK = 1;
-
-                                    if(cpu == pinfodisp[pindex].processor)
-                                        attron(COLOR_PAIR(2));
-
-                                    if(cpuOK == 1)
-                                        printw("|%2d", cpu);
-                                    else
-                                        printw("|  ");
-
-                                    if(cpu == pinfodisp[pindex].processor)
-                                        attroff(COLOR_PAIR(2));
-
-                                }
-                                printw("|");
-
-                                printw("\n");
-
-                                if(pindex == pindexSelected)
-                                    attroff(A_REVERSE);
                             }
                         }
 
