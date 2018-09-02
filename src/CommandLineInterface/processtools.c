@@ -5,6 +5,91 @@
  * 
  * Manages structure PROCESSINFO
  * 
+ * 
+ * 
+ * Use Template
+ * 
+ * 
+ * At beginning of function:
+ * 
+ * 
+ * PROCESSINFO *processinfo;
+    if(data.processinfo==1)
+    {
+        // CREATE PROCESSINFO ENTRY
+        // see processtools.c in module CommandLineInterface for details
+        //
+        char pinfoname[200];
+        sprintf(pinfoname, "process %s to %s", IDinname, IDoutname);
+        processinfo = processinfo_shm_create(pinfoname, 0);
+        processinfo->loopstat = 0; // loop initialization
+
+        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+        strcpy(processinfo->source_FILE,     __FILE__);
+        processinfo->source_LINE = __LINE__;
+
+        char msgstring[200];
+        sprintf(msgstring, "%s->%s", IDinname, IDoutname);
+        processinfo_WriteMessage(processinfo, msgstring);
+    }
+ * 
+ * 
+ * 
+ * At loop code
+ * 
+ * 
+ *     if(data.processinfo==1)
+        processinfo->loopstat = 1;
+    
+    int loopOK = 1;
+    long loopcnt = 0;
+     
+    while(loopOK==1)
+    {
+      if(data.processinfo==1)
+        {
+            while(processinfo->CTRLval == 1)  // pause
+                usleep(50);
+
+            if(processinfo->CTRLval == 2) // single iteration
+                processinfo->CTRLval = 1;
+
+            if(processinfo->CTRLval == 3) // exit loop
+            {
+                loopOK = 0;
+            }
+        }
+    
+    
+    // LOOP CODE GOES HERE
+    
+    
+		// OPTIONAL MESSAGE WHILE LOOP RUNNING
+	if(data.processinfo==1)
+        {
+            char msgstring[200];
+            sprintf(msgstring, "%d save threads", NBthreads);
+            processinfo_WriteMessage(processinfo, msgstring);
+        }
+
+     
+     
+     
+     
+     
+        loopcnt++;
+        if(data.processinfo==1)
+            processinfo->loopcnt = loopcnt;
+    
+	}    
+
+    if(data.processinfo==1)
+        processinfo_cleanExit(processinfo);
+
+
+ * 
+ * 
+ * 
  * @author Olivier Guyon
  * @date 24 Aug 2018
  */
@@ -355,7 +440,14 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
 
 
-
+int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
+{
+	strcpy(processinfo->statusmsg, msgstring);
+	
+	// TODO: add to logfile
+	
+	return 0;
+}
 
 
 
@@ -405,7 +497,7 @@ static int initncurses()
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
     init_pair(4, COLOR_BLACK, COLOR_RED);
-    init_pair(5, COLOR_BLACK, COLOR_BLUE);
+    init_pair(5, COLOR_BLACK, COLOR_CYAN);
 
     init_pair(6, COLOR_GREEN, COLOR_BLACK);
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
@@ -1384,9 +1476,16 @@ int_fast8_t processinfo_CTRLscreen()
 
             if(DisplayMode == 2)
             {
-                // Measure CPU loads, Display
-                NBcpus = GetCPUloads();
+				NBcpus = GetCPUloads();
                 int cpu;
+				
+                // List CPUs
+                
+                
+                
+                
+                
+                // Measure CPU loads, Display
                 int ColorCode;
                 
 				int CPUloadLim0 = 3;
