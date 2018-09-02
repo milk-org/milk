@@ -33,9 +33,30 @@
         processinfo_WriteMessage(processinfo, msgstring);
     }
  
- 
- * pre-loop testing, anything that would prevent loop from starting should issue message
+ // CATCH SIGNALS
+ 	
+	if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
 
+	if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");    
+
+	if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");     
+
+	if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+
+	if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");         
+
+	if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");         
+
+	if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");   
+ 
+ // pre-loop testing, anything that would prevent loop from starting should issue message
 
    int loopOK = 1;
  
@@ -49,7 +70,7 @@
  
   
   
- * At loop code
+ // At loop code
   
   
       if(data.processinfo==1)
@@ -78,7 +99,7 @@
     // LOOP CODE GOES HERE
     
     
-		// OPTIONAL MESSAGE WHILE LOOP RUNNING
+	// OPTIONAL MESSAGE WHILE LOOP RUNNING
 	if(data.processinfo==1)
         {
             char msgstring[200];
@@ -1712,7 +1733,21 @@ int_fast8_t processinfo_CTRLscreen()
                 int CPUloadLim2 = 60;
                 int CPUloadLim3 = 80;
 
-                printw("%d CPUs :                                                                                     ", NBcpus);
+
+				// List CPUs
+                printw("%d CPUs :                                                                           ", NBcpus);
+                for(cpu=0; cpu<NBcpus; cpu+=2)
+                    printw("|%02d", cpu);                
+                printw("|    |");
+                for(cpu=1; cpu<NBcpus; cpu+=2)
+                    printw("%02d|", cpu);
+                printw("\n");
+                
+                
+                
+                
+                // Print CPU LOAD
+                printw("                CPU LOAD :                                                          ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                 {
                     int vint = (int) (100.0*CPUload[cpu]);
@@ -1762,6 +1797,7 @@ int_fast8_t processinfo_CTRLscreen()
                 }
 
                 printw("\n");
+                
             }
 
 
@@ -1829,7 +1865,7 @@ int_fast8_t processinfo_CTRLscreen()
                         printw("  %6d", pinfolist->PIDarray[pindex]);
 
                         attron(A_BOLD);
-                        printw("  %40s", pinfodisp[pindex].name);
+                        printw("  %-30s", pinfodisp[pindex].name);
                         attroff(A_BOLD);
 
                         if( DisplayMode == 1)
