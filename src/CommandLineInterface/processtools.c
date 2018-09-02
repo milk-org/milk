@@ -1642,7 +1642,7 @@ int_fast8_t processinfo_CTRLscreen()
 				//pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
 			}
 			
-			printw("FILE %20s   FUNCTION %20s   LINE %d\n", pselected_FILE, pselected_FUNCTION, pselected_LINE);
+			printw("%ld [%d]  FILE %20s   FUNCTION %20s   LINE %d\n", pindexSelected, selectedOK, pselected_FILE, pselected_FUNCTION, pselected_LINE);
 			printw("\n");
 
 
