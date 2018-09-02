@@ -6382,6 +6382,16 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     }
 
 
+
+	if(data.processinfo==1)
+        {
+            char msgstring[200];
+            sprintf(msgstring, "Receiving stram %s", imgmd[0].name);
+            processinfo_WriteMessage(processinfo, msgstring);
+        }
+        
+        
+
 	// is image already in memory ?
 	OKim = 0;
 	
@@ -6427,6 +6437,9 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     }
     else
 		printf("REUSING EXISTING IMAGE %s\n", imgmd[0].name);
+    
+    
+    
     
     
 	COREMOD_MEMORY_image_set_createsem(imgmd[0].name, 10);
