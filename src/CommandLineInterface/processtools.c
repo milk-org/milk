@@ -2060,7 +2060,7 @@ int_fast8_t processinfo_CTRLscreen()
                         {
                             int cpu;
                             char cpuliststring[200];
-                            char cpustring[6];
+                            char cpustring[16];
                             int  psysinfostatus;
 
 
@@ -2149,14 +2149,15 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(strstr(cpuliststring, cpustring) != NULL)
                                             cpuOK = 1;
                                         
+                                        
                                         for(cpumin=0;cpumin<cpu;cpumin++)
 											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
 											{
 												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
 												if(strstr(cpuliststring, cpustring) != NULL)
-												cpuOK = 1;
+													cpuOK = 1;
 											}
-
+										
 
 
                                         if(cpu == pinfodisp[pindex].processor)
@@ -2189,7 +2190,7 @@ int_fast8_t processinfo_CTRLscreen()
 											{
 												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
 												if(strstr(cpuliststring, cpustring) != NULL)
-												cpuOK = 1;
+													cpuOK = 1;
 											}
 
 
