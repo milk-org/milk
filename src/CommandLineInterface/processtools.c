@@ -457,12 +457,13 @@ static int GetCPUloads()
     if (fp == NULL)
         exit(EXIT_FAILURE);
     
+    cpu = 0;
     if(getline(&line, &len, fp) == -1)
 	{
 		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
 		exit(0);
 	}
-    
+    printf("Reading CPU load %d \n", cpu);
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
 		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 		CPUload[cpu] = (vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
@@ -812,7 +813,8 @@ int_fast8_t processinfo_CTRLscreen()
     processinfo_shm_list_create();
 
     NBcpus = GetNumberCPUs();
-
+	GetCPUloads();
+	exit(0);
 
     // INITIALIZE ncurses
     initncurses();
