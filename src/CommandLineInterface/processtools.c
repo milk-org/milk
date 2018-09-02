@@ -524,7 +524,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
     // cpuset
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
+    
     fp=fopen(fname, "r");
+    if (fp == NULL)
+        return -1;
+    
     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
     fclose(fp);
 
@@ -772,6 +776,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
         }
     }
 
+   
+   
     return 0;
 
 }
@@ -1565,8 +1571,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                             // collect required info for display
-                            /*psysinfostatus = PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
-							if(psysinfostatus == 0)
+                            psysinfostatus = PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
+							/*if(psysinfostatus == 0)
                             {
 
                                 int spindex; // sub process index
