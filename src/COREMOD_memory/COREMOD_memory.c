@@ -33,6 +33,7 @@
 #include <ncurses.h>
 
 #include <errno.h>
+#include <signal.h>
 
 #include <semaphore.h>
 #include <arpa/inet.h>
