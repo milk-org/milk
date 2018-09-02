@@ -1398,7 +1398,7 @@ int_fast8_t processinfo_CTRLscreen()
                     if(ColorCode != 0)
 						attroff(COLOR_PAIR(ColorCode));
 				}
-                printw("|   |");
+                printw("|    |");
                 for(cpu=1; cpu<NBcpus; cpu+=2)
                 {
 					int vint = (int) (100.0*CPUload[cpu]);
