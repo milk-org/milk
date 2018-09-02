@@ -6386,7 +6386,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 	if(data.processinfo==1)
         {
             char msgstring[200];
-            sprintf(msgstring, "Receiving stram %s", imgmd[0].name);
+            sprintf(msgstring, "Receiving stream %s", imgmd[0].name);
             processinfo_WriteMessage(processinfo, msgstring);
         }
         
