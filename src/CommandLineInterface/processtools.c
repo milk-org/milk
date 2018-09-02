@@ -2179,16 +2179,32 @@ int_fast8_t processinfo_CTRLscreen()
                                             attroff(COLOR_PAIR(cpuColor));
 
                                     }
-                                    printw("|");
+                                    printw("| ");
                                     
                                     
                                     
+                                    attron(COLOR_PAIR(cpuColor));
+                                    printw("%4.1f", 
+										pinfodisp[pindex].subprocCPUloadarray[spindex]);
+                                    attroff(COLOR_PAIR(cpuColor));
                                     
-                                    
-                                    printw(" %4.1f  %4.1f", 
-										pinfodisp[pindex].subprocCPUloadarray[spindex],
+                                    int memColor = 0;
+									
+									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
+										memColor = 1;
+									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
+										memColor = 2;
+									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
+										memColor = 3;
+									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>4.0)
+										memColor = 4;
+									if(pinfodisp[pindex].subprocMEMloadarray[spindex]<0.1)
+										memColor = 5;
+										
+									attron(COLOR_PAIR(memColor));
+                                    printw(" %4.1f", 
 										pinfodisp[pindex].subprocMEMloadarray[spindex]);
-
+									attroff(COLOR_PAIR(memColor));
 
 
 
