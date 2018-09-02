@@ -1566,7 +1566,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                             // collect required info for display
                             psysinfostatus = PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
-                            if(psysinfostatus == 0)
+							/*if(psysinfostatus == 0)
                             {
 
                                 int spindex; // sub process index
@@ -1659,6 +1659,8 @@ int_fast8_t processinfo_CTRLscreen()
                                         attroff(A_REVERSE);
                                 }
                             }
+                        
+                        */
                         }
 
                         if(pindex == pindexSelected)
