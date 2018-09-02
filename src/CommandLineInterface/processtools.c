@@ -1394,7 +1394,7 @@ int_fast8_t processinfo_CTRLscreen()
 					printw("|");
 					if(ColorCode != 0)
 						attron(COLOR_PAIR(ColorCode));
-                    printw("%02d", (int) (100.0*CPUload[cpu]));
+                    printw("%02d", vint);
                     if(ColorCode != 0)
 						attroff(COLOR_PAIR(ColorCode));
 				}
@@ -1415,7 +1415,7 @@ int_fast8_t processinfo_CTRLscreen()
 				
 					if(ColorCode != 0)
 						attron(COLOR_PAIR(ColorCode));
-                    printw("%02d", (int) (100.0*CPUload[cpu]));
+                    printw("%02d", vint);
                     if(ColorCode != 0)
 						attroff(COLOR_PAIR(ColorCode));
 					printw("|");
