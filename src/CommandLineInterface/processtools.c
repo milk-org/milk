@@ -2135,14 +2135,29 @@ int_fast8_t processinfo_CTRLscreen()
 										cpuColor = 5;
 									
                                     sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
+                                    
+                                    
+                                    
 
                                     // First group of cores (physical CPU 0)
                                     for(cpu=0; cpu<NBcpus; cpu += 2)
                                     {
                                         int cpuOK = 0;
+                                        int cpumin, cpumax;
+
                                         sprintf(cpustring, ",%d,",cpu);
                                         if(strstr(cpuliststring, cpustring) != NULL)
                                             cpuOK = 1;
+                                        
+                                        for(cpumin=0;cpumin<cpu;cpumin++)
+											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
+											{
+												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+												if(strstr(cpuliststring, cpustring) != NULL)
+												cpuOK = 1;
+											}
+
+
 
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
@@ -2163,9 +2178,20 @@ int_fast8_t processinfo_CTRLscreen()
                                     for(cpu=1; cpu<NBcpus; cpu += 2)
                                     {
                                         int cpuOK = 0;
+                                        
                                         sprintf(cpustring, ",%d,",cpu);
                                         if(strstr(cpuliststring, cpustring) != NULL)
                                             cpuOK = 1;
+                                         
+                                        for(cpumin=0;cpumin<cpu;cpumin++)
+											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
+											{
+												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+												if(strstr(cpuliststring, cpustring) != NULL)
+												cpuOK = 1;
+											}
+
+
 
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
@@ -2201,8 +2227,9 @@ int_fast8_t processinfo_CTRLscreen()
 									if(pinfodisp[pindex].subprocMEMloadarray[spindex]<0.1)
 										memColor = 5;
 										
+									printw(" ");
 									attron(COLOR_PAIR(memColor));
-                                    printw(" %4.1f", 
+                                    printw("%4.1f", 
 										pinfodisp[pindex].subprocMEMloadarray[spindex]);
 									attroff(COLOR_PAIR(memColor));
 
