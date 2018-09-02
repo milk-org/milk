@@ -4967,7 +4967,7 @@ long COREMOD_MEMORY_image_streamupdateloop(
         // see processtools.c in module CommandLineInterface for details
         //
         char pinfoname[200];
-        sprintf(pinfoname, "stream %s to %s", IDinname, IDoutname);
+        sprintf(pinfoname, "streamloop %s to %s", IDinname, IDoutname);
         processinfo = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = 0; // loop initialization
 
@@ -6209,6 +6209,56 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     struct sched_param schedpar;
     
 
+
+
+	PROCESSINFO *processinfo;
+    if(data.processinfo==1)
+    {
+        // CREATE PROCESSINFO ENTRY
+        // see processtools.c in module CommandLineInterface for details
+        //
+        char pinfoname[200];
+        sprintf(pinfoname, "ntw-receive-%d", port);
+        processinfo = processinfo_shm_create(pinfoname, 0);
+        processinfo->loopstat = 0; // loop initialization
+
+        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+        strcpy(processinfo->source_FILE,     __FILE__);
+        processinfo->source_LINE = __LINE__;
+
+        char msgstring[200];
+        sprintf(msgstring, "mode = %d", mode);
+        processinfo_WriteMessage(processinfo, msgstring);
+    }
+ 
+ // CATCH SIGNALS
+ 	
+	if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
+
+	if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");    
+
+	if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");     
+
+	if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+
+	if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");         
+
+	if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");         
+
+	if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");   
+
+
+
+
+
+
     schedpar.sched_priority = RT_priority;
     #ifndef __MACH__
     int r;
@@ -6221,8 +6271,16 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     if((fds_server=socket(PF_INET, SOCK_STREAM, IPPROTO_TCP))==-1)
     {
         printf("ERROR creating socket\n");
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4;
+			processinfo_WriteMessage(processinfo, "ERROR creating socket");
+		}
         exit(0);
     }
+ 
+ 
+ 
 
 
     memset((char*) &sock_server, 0, sizeof(sock_server));
@@ -6235,6 +6293,11 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     if (result < 0)
     {
         printf("ERROR setsockopt\n");
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4;
+			processinfo_WriteMessage(processinfo, "ERROR socketopt");
+		}
         exit(0);
     }
 
@@ -6246,14 +6309,33 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     //bind socket to port
     if( bind(fds_server , (struct sockaddr*)&sock_server, sizeof(sock_server) ) == -1)
     {
-        printf("ERROR binding socket, port %d\n", port);
+		char msgstring[200];
+		
+        sprintf(msgstring, "ERROR binding socket, port %d", port);
+        printf("%s\n", msgstring);
+
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4;
+			processinfo_WriteMessage(processinfo, msgstring);
+		}
         exit(0);
     }
 
 
     if (listen(fds_server, MAXPENDING) < 0)
     {
-        printf("ERROR listen socket\n");
+		char msgstring[200];
+		
+        sprintf(msgstring, "ERROR listen socket");
+         printf("%s\n", msgstring);
+         
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4;
+			processinfo_WriteMessage(processinfo, msgstring);
+		}
+        
         exit(0);
     }
 
@@ -6265,7 +6347,17 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     /* Wait for a client to connect */
     if ((fds_client = accept(fds_server, (struct sockaddr *) &sock_client, &slen_client)) == -1)
     {
-        printf("ERROR accept socket\n");
+		char msgstring[200];
+		
+        sprintf(msgstring, "ERROR accept socket");
+        printf("%s\n", msgstring);
+        
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4;
+			processinfo_WriteMessage(processinfo, msgstring);
+		}
+        
         exit(0);
     }
 
@@ -6275,7 +6367,17 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     // listen for image metadata
     if((recvsize = recv(fds_client, imgmd, sizeof(IMAGE_METADATA), MSG_WAITALL)) < 0)
     {
-        printf("ERROR receiving image metadata\n");
+		char msgstring[200];
+        
+        sprintf(msgstring, "ERROR receiving image metadata");
+        printf("%s\n", msgstring);
+        
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4;
+			processinfo_WriteMessage(processinfo, msgstring);
+		}
+        
         exit(0);
     }
 
@@ -6429,7 +6531,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
         break;
     }
 
-
+/*
     if (sigaction(SIGINT, &data.sigact, NULL) == -1) {
         perror("sigaction");
         exit(EXIT_FAILURE);
@@ -6458,6 +6560,8 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
+    */
+    
 
     // this line is not needed, as frame_md is declared below
     // frame_md = (TCP_BUFFER_METADATA*) malloc(sizeof(TCP_BUFFER_METADATA));
@@ -6467,9 +6571,32 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 
     frame_md = (TCP_BUFFER_METADATA*) (buff + framesize);
 
+
+
+	 if(data.processinfo==1)
+        processinfo->loopstat = 1;  //notify processinfo that we are entering loop
+
     socketOpen = 1;
-    while(socketOpen==1)
+    long loopcnt = 0;
+    int loopOK = 1;
+    
+    while(loopOK == 1 )
     {
+		if(data.processinfo==1)
+        {
+            while(processinfo->CTRLval == 1)  // pause
+                usleep(50);
+
+            if(processinfo->CTRLval == 2) // single iteration
+                processinfo->CTRLval = 1;
+
+            if(processinfo->CTRLval == 3) // exit loop
+            {
+                loopOK = 0;
+            }
+        }
+        
+		
         if ((recvsize = recv(fds_client, buff, framesize1, MSG_WAITALL)) < 0)
         {
             printf("ERROR recv()\n");
@@ -6509,14 +6636,56 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
                 if(semval<2)
 					sem_post(data.image[ID].semlog);
 					
-                
-                
-                
-                
             }
-        if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
-            socketOpen = 0;
+
+		if(socketOpen == 0)
+			loopOK = 0;
+		
+		// process signals
+     
+		if(data.signal_INT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGINT);
+		}
+
+		if(data.signal_ABRT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGABRT);
+		}
+
+		if(data.signal_BUS == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGBUS);
+		}
+		
+		if(data.signal_SEGV == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGSEGV);
+		}
+		
+		if(data.signal_HUP == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGHUP);
+		}
+		
+		if(data.signal_PIPE == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGPIPE);
+		}	
+     
+        loopcnt++;
+        if(data.processinfo==1)
+            processinfo->loopcnt = loopcnt;
     }
+    
+    if(data.processinfo==1)
+        processinfo_cleanExit(processinfo);
     
     
     free(buff);
