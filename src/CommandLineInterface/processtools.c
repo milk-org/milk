@@ -1634,12 +1634,12 @@ int_fast8_t processinfo_CTRLscreen()
 			sprintf(pselected_FUNCTION, "?");
 			pselected_LINE = 0;
 
-			 if(selectedOK == 0)
+			 if(pinfommapped[pindexSelected] == 1)
 			 {
 				
-				//strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
-				//strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
-				//pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
+				strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
+				strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
+				pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
 			}
 			
 			printw("%ld [%d]  FILE %20s   FUNCTION %20s   LINE %d\n", pindexSelected, selectedOK, pselected_FILE, pselected_FUNCTION, pselected_LINE);
