@@ -399,10 +399,11 @@ static int initncurses()
     noecho();			/* Don't echo() while we do getch */
 
     start_color();
+    
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_BLACK, COLOR_RED);
-    init_pair(3, COLOR_BLACK, COLOR_GREEN);
-    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
+    init_pair(4, COLOR_BLACK, COLOR_RED);
+    init_pair(2, COLOR_BLACK, COLOR_GREEN);
+    init_pair(3, COLOR_BLACK, COLOR_YELLOW);
 
     init_pair(5, COLOR_GREEN, COLOR_BLACK);
     init_pair(6, COLOR_YELLOW, COLOR_BLACK);
@@ -1369,14 +1370,55 @@ int_fast8_t processinfo_CTRLscreen()
                 // Measure CPU loads, Display
                 NBcpus = GetCPUloads();
                 int cpu;
+                int ColorCode;
                 
-                printw("%d CPUs :                        ", NBcpus);
+                int CPUloadLim0 = 40;
+                int CPUloadLim1 = 60;
+                int CPUloadLim2 = 80;
+                
+                printw("%d CPUs :                                 ", NBcpus);
                 
                 for(cpu=0; cpu<NBcpus; cpu+=2)
+                {
+					int vint = (int) (100.0*CPUload[cpu]);
+                    if(vint>99)
+						vint = 99;
+						
+					ColorCode = 0;
+					if(vint>CPUloadLim0)
+						ColorCode = 2;
+					if(vint>CPUloadLim1)
+						ColorCode = 3;
+					if(vint>CPUloadLim2)
+						ColorCode = 4;
+				
+					if(ColorCode != 0)
+						attron(COLOR_PAIR(ColorCode));
                     printw("|%02d", (int) (100.0*CPUload[cpu]));
+                    if(ColorCode != 0)
+						attroff(COLOR_PAIR(ColorCode));
+				}
                 printw("|   |");
                 for(cpu=1; cpu<NBcpus; cpu+=2)
+                {
+					int vint = (int) (100.0*CPUload[cpu]);
+                    if(vint>99)
+						vint = 99;
+						
+					ColorCode = 0;
+					if(vint>CPUloadLim0)
+						ColorCode = 2;
+					if(vint>CPUloadLim1)
+						ColorCode = 3;
+					if(vint>CPUloadLim2)
+						ColorCode = 4;
+				
+					if(ColorCode != 0)
+						attron(COLOR_PAIR(ColorCode));
                     printw("%02d|", (int) (100.0*CPUload[cpu]));
+                    if(ColorCode != 0)
+						attroff(COLOR_PAIR(ColorCode));
+				}
                 
                 printw("\n");
             }
@@ -1406,24 +1448,24 @@ int_fast8_t processinfo_CTRLscreen()
 
                     if(pinfolist->active[pindex] == 1)
                     {
-                        attron(COLOR_PAIR(3));
+                        attron(COLOR_PAIR(2));
                         printw("  ACTIVE");
-                        attroff(COLOR_PAIR(3));
+                        attroff(COLOR_PAIR(2));
                     }
 
                     if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
                     {
                         if(pinfoarray[pindex]->loopstat == 3) // clean exit
                         {
-                            attron(COLOR_PAIR(4));
+                            attron(COLOR_PAIR(3));
                             printw(" STOPPED");
-                            attroff(COLOR_PAIR(4));
+                            attroff(COLOR_PAIR(3));
                         }
                         else
                         {
-                            attron(COLOR_PAIR(2));
+                            attron(COLOR_PAIR(4));
                             printw(" CRASHED");
-                            attroff(COLOR_PAIR(2));
+                            attroff(COLOR_PAIR(4));
                         }
                     }
 
@@ -1495,18 +1537,18 @@ int_fast8_t processinfo_CTRLscreen()
                             }
                             else
                             {   // loopcnt has changed
-                                attron(COLOR_PAIR(3));
+                                attron(COLOR_PAIR(2));
                                 printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
-                                attroff(COLOR_PAIR(3));
+                                attroff(COLOR_PAIR(2));
                             }
 
                             loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
 
                             if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                                attron(COLOR_PAIR(2));
+                                attron(COLOR_PAIR(4));
                             printw("  %40s", pinfoarray[pindex]->statusmsg);
                             if(pinfoarray[pindex]->loopstat == 4) // ERROR
-                                attroff(COLOR_PAIR(2));
+                                attroff(COLOR_PAIR(4));
                         }
 
 
@@ -1539,9 +1581,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                 if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
-                                    attron(COLOR_PAIR(2));
-                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
                                     attron(COLOR_PAIR(4));
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
+                                    attron(COLOR_PAIR(3));
 
 
                                 printw("ctxsw: +%02ld +%02ld",
@@ -1550,9 +1592,9 @@ int_fast8_t processinfo_CTRLscreen()
                                       );
 
                                 if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
-                                    attroff(COLOR_PAIR(2));
-                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
                                     attroff(COLOR_PAIR(4));
+                                else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                    attroff(COLOR_PAIR(3));
 
                                 pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;
                                 pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_nonvoluntary;
@@ -1571,7 +1613,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         cpuOK = 1;
 
                                     if(cpu == pinfodisp[pindex].processor)
-                                        attron(COLOR_PAIR(3));
+                                        attron(COLOR_PAIR(2));
 
                                     if(cpuOK == 1)
                                         printw("|%2d", cpu);
@@ -1579,7 +1621,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         printw("|  ");
 
                                     if(cpu == pinfodisp[pindex].processor)
-                                        attroff(COLOR_PAIR(3));
+                                        attroff(COLOR_PAIR(2));
 
                                 }
                                 printw("|    ");
@@ -1594,7 +1636,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         cpuOK = 1;
 
                                     if(cpu == pinfodisp[pindex].processor)
-                                        attron(COLOR_PAIR(3));
+                                        attron(COLOR_PAIR(2));
 
                                     if(cpuOK == 1)
                                         printw("|%2d", cpu);
@@ -1602,7 +1644,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         printw("|  ");
 
                                     if(cpu == pinfodisp[pindex].processor)
-                                        attroff(COLOR_PAIR(3));
+                                        attroff(COLOR_PAIR(2));
 
                                 }
                                 printw("|");
