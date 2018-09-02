@@ -2150,7 +2150,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             cpuOK = 1;
                                         
                                         
-                                        for(cpumin=0;cpumin<cpu;cpumin++)
+                                        for(cpumin=0;cpumin=<cpu;cpumin++)
 											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
 											{
 												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
@@ -2185,7 +2185,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(strstr(cpuliststring, cpustring) != NULL)
                                             cpuOK = 1;
                                          
-                                        for(cpumin=0;cpumin<cpu;cpumin++)
+                                        for(cpumin=0;cpumin=<cpu;cpumin++)
 											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
 											{
 												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
