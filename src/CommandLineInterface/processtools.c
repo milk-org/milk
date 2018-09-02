@@ -89,7 +89,8 @@ typedef struct
 } PROCESSINFODISP;
 
 
-
+// testing
+static long val0;
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -368,6 +369,7 @@ static int print_header(const char *str, char c)
     printw("\n");
     attroff(A_BOLD);
 
+
     return(0);
 }
 
@@ -465,7 +467,9 @@ static int GetCPUloads()
 	}
 
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
+		
 		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+		val0 = vall0;
 		CPUload[cpu] = (1.0*vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
 		cpu++;
 	}
@@ -1339,13 +1343,13 @@ int_fast8_t processinfo_CTRLscreen()
                 NBcpus = GetCPUloads();
                 int cpu;
                 
-                printw("%d CPUs : ", NBcpus);
+                printw("%d CPUs : %ld            ", NBcpus, val0);
                 
                 for(cpu=0; cpu<NBcpus; cpu+=2)
-                    printw("|%02d|", (int) (100.0*CPUload[cpu]));
-                printw("   ");
+                    printw("|%02d", (int) (100.0*CPUload[cpu]));
+                printw("|   |");
                 for(cpu=1; cpu<NBcpus; cpu+=2)
-                    printw("|%02d|", (int) (100.0*CPUload[cpu]));
+                    printw("%02d|", (int) (100.0*CPUload[cpu]));
                 
                 printw("\n");
             }
