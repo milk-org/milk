@@ -13,7 +13,7 @@
  * At beginning of function:
  * 
  * 
- * PROCESSINFO *processinfo;
+  PROCESSINFO *processinfo;
     if(data.processinfo==1)
     {
         // CREATE PROCESSINFO ENTRY
@@ -32,16 +32,30 @@
         sprintf(msgstring, "%s->%s", IDinname, IDoutname);
         processinfo_WriteMessage(processinfo, msgstring);
     }
- * 
- * 
- * 
+ 
+ 
+ * pre-loop testing, anything that would prevent loop from starting should issue message
+
+
+   int loopOK = 1;
+ 
+         sprintf(msgstring, "ERROR: no WFS reference");
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4; // ERROR
+			strcpy(processinfo->statusmsg, msgstring);
+			loopOK = 0;
+		}
+ 
+  
+  
  * At loop code
- * 
- * 
- *     if(data.processinfo==1)
+  
+  
+      if(data.processinfo==1)
         processinfo->loopstat = 1;
     
-    int loopOK = 1;
+   
     long loopcnt = 0;
      
     while(loopOK==1)
@@ -74,14 +88,49 @@
 
      
      
+     // process signals
      
-     
+     		if(data.signal_INT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGINT);
+		}
+
+		if(data.signal_ABRT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGABRT);
+		}
+
+		if(data.signal_BUS == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGBUS);
+		}
+		
+		if(data.signal_SEGV == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGSEGV);
+		}
+		
+		if(data.signal_HUP == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGHUP);
+		}
+		
+		if(data.signal_PIPE == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGPIPE);
+		}	
      
         loopcnt++;
         if(data.processinfo==1)
             processinfo->loopcnt = loopcnt;
     
-	}    
+	}    // end of loop
 
     if(data.processinfo==1)
         processinfo_cleanExit(processinfo);
@@ -115,6 +164,7 @@
 #include <sys/mman.h> // mmap()
 
 #include <time.h>
+#include <signal.h>
 
 #include <unistd.h>    // getpid()
 #include <sys/types.h>
@@ -434,9 +484,177 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
     strncpy(processinfo->statusmsg, msgstring, 200);
 
-
     return 0;
 }
+
+
+
+
+
+
+
+int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
+{
+	char timestring[200];
+    struct timespec tstop;
+    struct tm *tstoptm;
+    char msgstring[200];
+
+    clock_gettime(CLOCK_REALTIME, &tstop);
+    tstoptm = gmtime(&tstop.tv_sec);
+	
+	sprintf(timestring, "%02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+	processinfo->loopstat = 3; // clean exit
+	
+
+	switch ( SignalNumber ) {
+
+		case SIGHUP :  // Hangup detected on controlling terminal or death of controlling process
+		sprintf(msgstring, "SIGHUP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+		
+		case SIGINT :  // Interrupt from keyboard
+		sprintf(msgstring, "SIGINT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+		
+		case SIGQUIT :  // Quit from keyboard
+		sprintf(msgstring, "SIGQUIT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGILL :  // Illegal Instruction
+		sprintf(msgstring, "SIGILL at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGABRT :  // Abort signal from abort
+		sprintf(msgstring, "SIGABRT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGFPE :  // Floating-point exception
+		sprintf(msgstring, "SIGFPE at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGKILL :  // Kill signal
+		sprintf(msgstring, "SIGKILL at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGSEGV :  // Invalid memory reference
+		sprintf(msgstring, "SIGSEGV at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGPIPE :  // Broken pipe: write to pipe with no readers
+		sprintf(msgstring, "SIGPIPE at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGALRM :  // Timer signal from alarm
+		sprintf(msgstring, "SIGALRM at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTERM :  // Termination signal
+		sprintf(msgstring, "SIGTERM at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGUSR1 :  // User-defined signal 1
+		sprintf(msgstring, "SIGUSR1 at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGUSR2 :  // User-defined signal 1
+		sprintf(msgstring, "SIGUSR2 at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGCHLD :  // Child stopped or terminated
+		sprintf(msgstring, "SIGCHLD at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGCONT :  // Continue if stopped
+		sprintf(msgstring, "SIGCONT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGSTOP :  // Stop process
+		sprintf(msgstring, "SIGSTOP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTSTP :  // Stop typed at terminal
+		sprintf(msgstring, "SIGTSTP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTTIN :  // Terminal input for background process
+		sprintf(msgstring, "SIGTTIN at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTTOU :  // Terminal output for background process
+		sprintf(msgstring, "SIGTTOU at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGBUS :  // Bus error (bad memory access)
+		sprintf(msgstring, "SIGBUS at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGPOLL :  // Pollable event (Sys V).
+		sprintf(msgstring, "SIGPOLL at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGPROF :  // Profiling timer expired
+		sprintf(msgstring, "SIGPROF at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGSYS :  // Bad system call (SVr4)
+		sprintf(msgstring, "SIGSYS at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTRAP :  // Trace/breakpoint trap
+		sprintf(msgstring, "SIGTRAP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGURG :  // Urgent condition on socket (4.2BSD)
+		sprintf(msgstring, "SIGURG at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGVTALRM :  // Virtual alarm clock (4.2BSD)
+		sprintf(msgstring, "SIGVTALRM at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGXCPU :  // CPU time limit exceeded (4.2BSD)
+		sprintf(msgstring, "SIGXCPU at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGXFSZ :  // File size limit exceeded (4.2BSD)
+		sprintf(msgstring, "SIGXFSZ at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+	}
+		
+    return 0;
+}
+
+
+
 
 
 
