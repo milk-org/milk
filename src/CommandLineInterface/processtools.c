@@ -1277,8 +1277,11 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
-            // compute time-sorted list
+            /** ### Build a time-sorted list of processes
+             *
+             *
+             *
+             */
             NBpindexActive = 0;
             for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
                 if(pinfolist->active[pindex] != 0)
@@ -1315,8 +1318,11 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
-            // DISPLAY
+            /** ### Display
+             *
+             *
+             *
+             */
 
 
             int dispindex;
@@ -1327,16 +1333,17 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 dispindexMax = NBpindexActive;
 
-		if(DisplayMode == 2)
-		{
-		// Measure CPU loads, Display
-							GetCPUloads();
-                            int cpu; 
-                            
-                            for(cpu;cpu<NBcpus;cpu++)
-								printw(" %02d", (int) (100.0*CPUload[cpu]));
-							printw("\n");
-						}
+            if(DisplayMode == 2)
+            {
+                // Measure CPU loads, Display
+                GetCPUloads();
+                int cpu;
+                
+                printw("%d CPUs : ", NBcpus);
+                for(cpu; cpu<NBcpus; cpu++)
+                    printw(" %02d", (int) (100.0*CPUload[cpu]));
+                printw("\n");
+            }
 
 
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
@@ -1476,7 +1483,7 @@ int_fast8_t processinfo_CTRLscreen()
                             char cpustring[6];
 
 
-                            
+
                             // collect required info for display
                             PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
 
@@ -1486,9 +1493,9 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 if(spindex>0)
                                 {
-									printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
+                                    printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                     PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
-								}
+                                }
 
                                 printw(" %2d", pinfodisp[pindex].rt_priority);
                                 printw(" %-10s ", pinfodisp[pindex].cpuset);
@@ -1563,11 +1570,11 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 }
                                 printw("|");
-								
-								printw("\n");
 
-								if(pindex == pindexSelected)
-									attroff(A_REVERSE);
+                                printw("\n");
+
+                                if(pindex == pindexSelected)
+                                    attroff(A_REVERSE);
                             }
                         }
 
