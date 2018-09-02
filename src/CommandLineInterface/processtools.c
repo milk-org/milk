@@ -355,7 +355,14 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
 
 
-
+int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
+{
+	strcpy(processinfo->statusmsg, msgstring);
+	
+	// TODO: add to logfile
+	
+	return 0;
+}
 
 
 

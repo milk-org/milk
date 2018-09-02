@@ -342,6 +342,8 @@ typedef struct
 	char   statusmsg[200];        // status message
 	int    statuscode;            // status code 
 
+	FILE  *logFile;
+
 } PROCESSINFO;
 
 
@@ -389,7 +391,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
 
 PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval);
 int processinfo_cleanExit(PROCESSINFO *processinfo);
-
+int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring);
 
 
 int_fast8_t processinfo_CTRLscreen();
