@@ -463,7 +463,7 @@ static int GetCPUloads()
 		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
 		exit(0);
 	}
-    printf("Reading CPU load %d \n", cpu);
+    printf("Reading CPU load %d / %d\n", cpu, NBcpus);
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
 		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 		CPUload[cpu] = (vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
