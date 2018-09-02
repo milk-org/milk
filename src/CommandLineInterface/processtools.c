@@ -463,15 +463,16 @@ static int GetCPUloads()
 		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
 		exit(0);
 	}
-    printf("Reading CPU load %d / %d\n", cpu, NBcpus);
+//    printf("Reading CPU load %d / %d\n", cpu, NBcpus);
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
-		printf("  read %d chars\n", (int) len);
-		printf("line : %s\n", line);
-		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+		//printf("  read %d chars\n", (int) len);
+		//printf("line : %s\n", line);
+		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 		
 		CPUload[cpu] = (1.0*vall0+vall1+vall2+vall4+vall5+vall6)/(vall0+vall1+vall2+vall3+vall4+vall5+vall6+vall7+vall8);
 		
-		printf(" %ld %ld --- > CPUload = %5.2f\n", vall0, vall1, 100.0*CPUload[cpu]);
+		//printf(" %ld %ld --- > CPUload = %5.2f\n", vall0, vall1, 100.0*CPUload[cpu]);
+		//printf("\n\n");
 		cpu++;
 	}
      
@@ -819,7 +820,6 @@ int_fast8_t processinfo_CTRLscreen()
 
     NBcpus = GetNumberCPUs();
 	GetCPUloads();
-	exit(0);
 
     // INITIALIZE ncurses
     initncurses();
@@ -1348,8 +1348,12 @@ int_fast8_t processinfo_CTRLscreen()
                 
                 printw("%d CPUs : ", NBcpus);
                 
-                for(cpu=0; cpu<NBcpus; cpu++)
+                for(cpu=0; cpu<NBcpus; cpu+=2)
                     printw("|%02d|", (int) (100.0*CPUload[cpu]));
+                printw("   ");
+                for(cpu=1; cpu<NBcpus; cpu+=2)
+                    printw("|%02d|", (int) (100.0*CPUload[cpu]));
+                
                 printw("\n");
             }
 
