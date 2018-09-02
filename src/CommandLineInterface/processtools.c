@@ -13,7 +13,7 @@
  * At beginning of function:
  * 
  * 
- * PROCESSINFO *processinfo;
+  PROCESSINFO *processinfo;
     if(data.processinfo==1)
     {
         // CREATE PROCESSINFO ENTRY
@@ -32,16 +32,51 @@
         sprintf(msgstring, "%s->%s", IDinname, IDoutname);
         processinfo_WriteMessage(processinfo, msgstring);
     }
- * 
- * 
- * 
- * At loop code
- * 
- * 
- *     if(data.processinfo==1)
+ 
+ // CATCH SIGNALS
+ 	
+	if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
+
+	if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");    
+
+	if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");     
+
+	if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+
+	if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");         
+
+	if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");         
+
+	if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");   
+ 
+ // pre-loop testing, anything that would prevent loop from starting should issue message
+
+   int loopOK = 1;
+ 
+         sprintf(msgstring, "ERROR: no WFS reference");
+        if(data.processinfo == 1)
+        {
+			processinfo->loopstat = 4; // ERROR
+			strcpy(processinfo->statusmsg, msgstring);
+			loopOK = 0;
+		}
+ 
+  
+  
+ // At loop code
+  
+  
+      if(data.processinfo==1)
         processinfo->loopstat = 1;
     
-    int loopOK = 1;
+   
     long loopcnt = 0;
      
     while(loopOK==1)
@@ -64,7 +99,7 @@
     // LOOP CODE GOES HERE
     
     
-		// OPTIONAL MESSAGE WHILE LOOP RUNNING
+	// OPTIONAL MESSAGE WHILE LOOP RUNNING
 	if(data.processinfo==1)
         {
             char msgstring[200];
@@ -74,14 +109,49 @@
 
      
      
+     // process signals
      
-     
+     		if(data.signal_INT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGINT);
+		}
+
+		if(data.signal_ABRT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGABRT);
+		}
+
+		if(data.signal_BUS == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGBUS);
+		}
+		
+		if(data.signal_SEGV == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGSEGV);
+		}
+		
+		if(data.signal_HUP == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGHUP);
+		}
+		
+		if(data.signal_PIPE == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGPIPE);
+		}	
      
         loopcnt++;
         if(data.processinfo==1)
             processinfo->loopcnt = loopcnt;
     
-	}    
+	}    // end of loop
 
     if(data.processinfo==1)
         processinfo_cleanExit(processinfo);
@@ -115,6 +185,7 @@
 #include <sys/mman.h> // mmap()
 
 #include <time.h>
+#include <signal.h>
 
 #include <unistd.h>    // getpid()
 #include <sys/types.h>
@@ -198,6 +269,8 @@ static long CPUcnt5[100];
 static long CPUcnt6[100];
 static long CPUcnt7[100];
 static long CPUcnt8[100];
+
+static float CPUpcnt[100];
 
 
 
@@ -418,8 +491,6 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 
 int processinfo_cleanExit(PROCESSINFO *processinfo)
 {
-    processinfo->loopstat = 3; // clean exit
-
     struct timespec tstop;
     struct tm *tstoptm;
     char msgstring[200];
@@ -429,14 +500,185 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
     if(processinfo->CTRLval == 3) // loop exit from processinfo control
         sprintf(msgstring, "CTRLexit  %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
-    else
+    
+    if(processinfo->loopstat == 1)
         sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
 
     strncpy(processinfo->statusmsg, msgstring, 200);
-
+	
+	processinfo->loopstat = 3; // clean exit
 
     return 0;
 }
+
+
+
+
+
+
+
+int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
+{
+	char timestring[200];
+    struct timespec tstop;
+    struct tm *tstoptm;
+    char msgstring[200];
+
+    clock_gettime(CLOCK_REALTIME, &tstop);
+    tstoptm = gmtime(&tstop.tv_sec);
+	
+	sprintf(timestring, "%02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+	processinfo->loopstat = 3; // clean exit
+	
+
+	switch ( SignalNumber ) {
+
+		case SIGHUP :  // Hangup detected on controlling terminal or death of controlling process
+		sprintf(msgstring, "SIGHUP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+		
+		case SIGINT :  // Interrupt from keyboard
+		sprintf(msgstring, "SIGINT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+		
+		case SIGQUIT :  // Quit from keyboard
+		sprintf(msgstring, "SIGQUIT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGILL :  // Illegal Instruction
+		sprintf(msgstring, "SIGILL at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGABRT :  // Abort signal from abort
+		sprintf(msgstring, "SIGABRT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGFPE :  // Floating-point exception
+		sprintf(msgstring, "SIGFPE at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGKILL :  // Kill signal
+		sprintf(msgstring, "SIGKILL at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGSEGV :  // Invalid memory reference
+		sprintf(msgstring, "SIGSEGV at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGPIPE :  // Broken pipe: write to pipe with no readers
+		sprintf(msgstring, "SIGPIPE at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGALRM :  // Timer signal from alarm
+		sprintf(msgstring, "SIGALRM at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTERM :  // Termination signal
+		sprintf(msgstring, "SIGTERM at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGUSR1 :  // User-defined signal 1
+		sprintf(msgstring, "SIGUSR1 at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGUSR2 :  // User-defined signal 1
+		sprintf(msgstring, "SIGUSR2 at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGCHLD :  // Child stopped or terminated
+		sprintf(msgstring, "SIGCHLD at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGCONT :  // Continue if stopped
+		sprintf(msgstring, "SIGCONT at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGSTOP :  // Stop process
+		sprintf(msgstring, "SIGSTOP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTSTP :  // Stop typed at terminal
+		sprintf(msgstring, "SIGTSTP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTTIN :  // Terminal input for background process
+		sprintf(msgstring, "SIGTTIN at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTTOU :  // Terminal output for background process
+		sprintf(msgstring, "SIGTTOU at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGBUS :  // Bus error (bad memory access)
+		sprintf(msgstring, "SIGBUS at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGPOLL :  // Pollable event (Sys V).
+		sprintf(msgstring, "SIGPOLL at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGPROF :  // Profiling timer expired
+		sprintf(msgstring, "SIGPROF at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGSYS :  // Bad system call (SVr4)
+		sprintf(msgstring, "SIGSYS at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGTRAP :  // Trace/breakpoint trap
+		sprintf(msgstring, "SIGTRAP at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGURG :  // Urgent condition on socket (4.2BSD)
+		sprintf(msgstring, "SIGURG at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGVTALRM :  // Virtual alarm clock (4.2BSD)
+		sprintf(msgstring, "SIGVTALRM at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGXCPU :  // CPU time limit exceeded (4.2BSD)
+		sprintf(msgstring, "SIGXCPU at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+
+		case SIGXFSZ :  // File size limit exceeded (4.2BSD)
+		sprintf(msgstring, "SIGXFSZ at %s", timestring);
+		processinfo_WriteMessage(processinfo, msgstring);
+		break;
+	}
+		
+    return 0;
+}
+
+
+
 
 
 
@@ -544,61 +786,86 @@ static int GetNumberCPUs()
 
 static int GetCPUloads()
 {
-	int NBcpus;
-	char * line = NULL;
-	FILE *fp;
-	ssize_t read;
-	size_t len = 0;
-	int cpu;
-	long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
-	float v0, v1, v2, v3, v4, v5, v6, v7, v8;
-	char string0[80];
-	
-	
-	NBcpus = GetNumberCPUs();
+    int NBcpus;
+    char * line = NULL;
+    FILE *fp;
+    ssize_t read;
+    size_t len = 0;
+    int cpu;
+    long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+    float v0, v1, v2, v3, v4, v5, v6, v7, v8;
+    char string0[80];
+
+
+    NBcpus = GetNumberCPUs();
 
     fp = fopen("/proc/stat", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
-    
+
     cpu = 0;
     if(getline(&line, &len, fp) == -1)
-	{
-		printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
-		exit(0);
-	}
+    {
+        printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
+        exit(0);
+    }
 
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
-		
-		sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
-		
-		v0 = vall0 - CPUcnt0[cpu];
-		v1 = vall1 - CPUcnt1[cpu];
-		v2 = vall2 - CPUcnt2[cpu];
-		v3 = vall3 - CPUcnt3[cpu];
-		v4 = vall4 - CPUcnt4[cpu];
-		v5 = vall5 - CPUcnt5[cpu];
-		v6 = vall6 - CPUcnt6[cpu];
-		v7 = vall7 - CPUcnt7[cpu];
-		v8 = vall8 - CPUcnt8[cpu];
-		
-		CPUcnt0[cpu] = vall0;
-		CPUcnt1[cpu] = vall1;
-		CPUcnt2[cpu] = vall2;
-		CPUcnt3[cpu] = vall3;
-		CPUcnt4[cpu] = vall4;
-		CPUcnt5[cpu] = vall5;
-		CPUcnt6[cpu] = vall6;
-		CPUcnt7[cpu] = vall7;
-		CPUcnt8[cpu] = vall8;
-		
-		CPUload[cpu] = (v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
-		cpu++;
-	}
-     
+
+        sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+
+        v0 = vall0 - CPUcnt0[cpu];
+        v1 = vall1 - CPUcnt1[cpu];
+        v2 = vall2 - CPUcnt2[cpu];
+        v3 = vall3 - CPUcnt3[cpu];
+        v4 = vall4 - CPUcnt4[cpu];
+        v5 = vall5 - CPUcnt5[cpu];
+        v6 = vall6 - CPUcnt6[cpu];
+        v7 = vall7 - CPUcnt7[cpu];
+        v8 = vall8 - CPUcnt8[cpu];
+
+        CPUcnt0[cpu] = vall0;
+        CPUcnt1[cpu] = vall1;
+        CPUcnt2[cpu] = vall2;
+        CPUcnt3[cpu] = vall3;
+        CPUcnt4[cpu] = vall4;
+        CPUcnt5[cpu] = vall5;
+        CPUcnt6[cpu] = vall6;
+        CPUcnt7[cpu] = vall7;
+        CPUcnt8[cpu] = vall8;
+
+        CPUload[cpu] = (v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
+        cpu++;
+    }
+
     fclose(fp);
 
-	return(cpu);
+
+    // number of process per CPU
+    for(cpu=0; cpu<NBcpus; cpu++)
+    {
+        char outstring[200];
+        char command[200];
+        FILE * fpout;
+
+
+        sprintf(command, "CORENUM=%d; ps -e -o pid,psr,cpu,cmd | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
+        fpout = popen (command, "r");
+        if(fpout==NULL)
+        {
+            printf("WARNING: cannot run command \"%s\"\n", command);
+        }
+        else
+        {
+            if(fgets(outstring, 100, fpout)== NULL)
+                printf("WARNING: fgets error\n");
+            pclose(fpout);
+            CPUpcnt[cpu] = atoi(outstring);
+        }
+	}
+
+
+    return(cpu);
 }
 
 
@@ -1488,12 +1755,86 @@ int_fast8_t processinfo_CTRLscreen()
                 // Measure CPU loads, Display
                 int ColorCode;
                 
+                // color limits for load
 				int CPUloadLim0 = 3;
                 int CPUloadLim1 = 40;
                 int CPUloadLim2 = 60;
                 int CPUloadLim3 = 80;
 
-                printw("%d CPUs :                                                                                     ", NBcpus);
+				// color limits for # processes
+				int CPUpcntLim0 = 1;
+                int CPUpcntLim1 = 2;
+                int CPUpcntLim2 = 4;
+                int CPUpcntLim3 = 8;
+
+
+				// List CPUs
+                printw("                                                                           %2d CPUs  ", NBcpus);
+                for(cpu=0; cpu<NBcpus; cpu+=2)
+                    printw("|%02d", cpu);                
+                printw("|    |");
+                for(cpu=1; cpu<NBcpus; cpu+=2)
+                    printw("%02d|", cpu);
+                printw("\n");
+                
+				// List CPU # processes
+                printw("                                                                         PROCESSES  ", NBcpus);
+                for(cpu=0; cpu<NBcpus; cpu+=2)
+                {
+                    int vint = CPUpcnt[cpu];
+                    if(vint>99)
+                        vint = 99;
+
+                    ColorCode = 0;
+                    if(vint>CPUpcntLim1)
+                        ColorCode = 2;
+                    if(vint>CPUpcntLim2)
+                        ColorCode = 3;
+                    if(vint>CPUpcntLim3)
+                        ColorCode = 4;
+                    if(vint<CPUpcntLim0)
+                        ColorCode = 5;
+
+                    printw("|");
+                    if(ColorCode != 0)
+                        attron(COLOR_PAIR(ColorCode));
+                    printw("%02d", vint);
+                    if(ColorCode != 0)
+                        attroff(COLOR_PAIR(ColorCode));
+                }
+                printw("|    |");
+                for(cpu=1; cpu<NBcpus; cpu+=2)
+                {
+                    int vint = CPUpcnt[cpu];
+                    if(vint>99)
+                        vint = 99;
+
+                    ColorCode = 0;
+                    if(vint>CPUpcntLim1)
+                        ColorCode = 2;
+                    if(vint>CPUpcntLim2)
+                        ColorCode = 3;
+                    if(vint>CPUpcntLim3)
+                        ColorCode = 4;
+                    if(vint<CPUpcntLim0)
+                        ColorCode = 5;
+
+                    if(ColorCode != 0)
+                        attron(COLOR_PAIR(ColorCode));
+                    printw("%02d", vint);
+                    if(ColorCode != 0)
+                        attroff(COLOR_PAIR(ColorCode));
+                    printw("|");
+                }
+
+                printw("\n");
+                
+                
+                
+                
+                
+                // Print CPU LOAD
+                printw("                                                                          CPU LOAD  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                 {
                     int vint = (int) (100.0*CPUload[cpu]);
@@ -1542,6 +1883,7 @@ int_fast8_t processinfo_CTRLscreen()
                     printw("|");
                 }
 
+                printw("\n");
                 printw("\n");
             }
 
@@ -1610,7 +1952,7 @@ int_fast8_t processinfo_CTRLscreen()
                         printw("  %6d", pinfolist->PIDarray[pindex]);
 
                         attron(A_BOLD);
-                        printw("  %40s", pinfodisp[pindex].name);
+                        printw("  %-30s", pinfodisp[pindex].name);
                         attroff(A_BOLD);
 
                         if( DisplayMode == 1)
@@ -1700,7 +2042,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     if(spindex>0)
                                     {
-                                        printw("           %6d                                          ", pinfodisp[pindex].subprocPIDarray[spindex]);
+                                        printw("                 |---%6d                      ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                         PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
                                     }
 
@@ -1720,9 +2062,9 @@ int_fast8_t processinfo_CTRLscreen()
                                            abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
                                           );
 
-                                    if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev != pinfodisp[pindex].ctxtsw_nonvoluntary)
+                                    if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
                                         attroff(COLOR_PAIR(4));
-                                    else if(pinfodisp[pindex].ctxtsw_voluntary_prev != pinfodisp[pindex].ctxtsw_voluntary)
+                                    else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
                                         attroff(COLOR_PAIR(3));
 
                                     pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = pinfodisp[pindex].ctxtsw_voluntary;

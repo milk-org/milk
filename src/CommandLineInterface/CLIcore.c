@@ -858,7 +858,14 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;
     TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
+    CLIPID = getpid();
+    
+    printf("PID = %d\n", (int) CLIPID);
+    sprintf(command, "cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
+    if(system(command)!=0)
+		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 
+	
 
     atexit(fnExit1);
 
@@ -884,11 +891,11 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     data.signal_USR1 = 0;
     data.signal_USR2 = 0;
     data.signal_TERM = 0;
-    data.signal_INT = 0;
-    data.signal_BUS = 0;
+    data.signal_INT  = 0;
+    data.signal_BUS  = 0;
     data.signal_SEGV = 0;
     data.signal_ABRT = 0;
-    data.signal_HUP = 0;
+    data.signal_HUP  = 0;
     data.signal_PIPE = 0;
 
 
@@ -898,6 +905,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         printf("\ncan't catch SIGUSR1\n");
     if (sigaction(SIGUSR2, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGUSR2\n");
+
+
+
 
     // to take advantage of kernel priority:
     // owner=root mode=4755
@@ -930,7 +940,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         fprintf(stdout, "%s: compiled %s %s\n",__FILE__,__DATE__,__TIME__);
     }
 
-    CLIPID = getpid();
+
 
     //    sprintf(promptname, "%s", data.processname);
     
