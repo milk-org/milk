@@ -858,11 +858,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;
     TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
-# ifdef _OPENMP
-    printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
-# else
-	printf("        Compiled without openMP\n");
-# endif
+    CLIPID = getpid();
+    printf("PID = %d\n", (int) CLIPID);
+
+	printf("TESTING - sleep\n");
+	sleep(1000);
+	
 
     atexit(fnExit1);
 
@@ -937,8 +938,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         fprintf(stdout, "%s: compiled %s %s\n",__FILE__,__DATE__,__TIME__);
     }
 
-    CLIPID = getpid();
-    printf("PID = %d\n", (int) CLIPID);
+
 
     //    sprintf(promptname, "%s", data.processname);
     
