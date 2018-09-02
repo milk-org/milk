@@ -238,6 +238,8 @@ typedef struct
 	// sub-processes
 	int           NBsubprocesses;
 	int           subprocPIDarray[50];
+	float         subprocCPUloadarray[50];
+	float         subprocMEMloadarray[50];
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -888,11 +890,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     // cpuset
 
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
-    
+
     fp=fopen(fname, "r");
     if (fp == NULL)
         return -1;
-    
+
     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
     fclose(fp);
 
@@ -1103,14 +1105,15 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
     if(level == 0)
     {
+        FILE *fpout;
+        char command[200];
+        char outstring[200];
+
         pinfodisp[pindex].subprocPIDarray[0] = PID;
         pinfodisp[pindex].NBsubprocesses = 1;
 
         if(pinfodisp[pindex].threads > 1) // look for children
         {
-            FILE *fpout;
-            char command[200];
-            char outstring[200];
             char outstringc[200];
 
             sprintf(command, "pstree -p %d", PID);
@@ -1144,10 +1147,36 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 pclose(fpout);
             }
         }
+
+        // get CPU and MEM load
+        // ps -T -o lwp,%cpu,%mem  -p PID
+
+        sprintf(command, "ps -T -o %%cpu,%%mem  -p %d", PID);
+        fpout = popen (command, "r");
+        if(fpout==NULL)
+        {
+            printf("WARNING: cannot run command \"t%s\"\n", command);
+        }
+        else
+        {
+            int lcnt = 0;
+            while((fgets(outstring, 100, fpout) != NULL)&&(lcnt<pinfodisp[pindex].NBsubprocesses+1))
+            {
+                if(lcnt>0)
+                    scanf(outstring, "%f %f",
+                          &pinfodisp[pindex].subprocCPUloadarray[lcnt-1],
+                          &pinfodisp[pindex].subprocMEMloadarray[lcnt-1]
+                         );
+            }
+
+            pclose(fpout);
+        }
+
+
     }
 
-   
-   
+
+
     return 0;
 
 }
@@ -2042,7 +2071,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     if(spindex>0)
                                     {
-                                        printw("                 |---%6d                      ", pinfodisp[pindex].subprocPIDarray[spindex]);
+                                        printw("               |---%6d                        ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                         PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
                                     }
 
@@ -2119,6 +2148,15 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     }
                                     printw("|");
+                                    
+                                    
+                                    
+                                    printw(" %4.1f  %4.1f", 
+										pinfodisp[pindex].subprocCPUloadarray[spindex],
+										pinfodisp[pindex].subprocMEMloadarray[spindex]);
+
+
+
 
                                     printw("\n");
 
