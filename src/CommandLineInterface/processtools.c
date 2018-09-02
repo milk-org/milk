@@ -522,7 +522,10 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     FILE *fp;
     char fname[200];
 
+
+
     // cpuset
+
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
     
     fp=fopen(fname, "r");
@@ -532,7 +535,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
     fclose(fp);
 
+
+
+
     // read /proc/PID/status
+
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
@@ -575,6 +582,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     fclose(fp);
     if (line)
         free(line);
+
+
 
 
 
@@ -1572,9 +1581,13 @@ int_fast8_t processinfo_CTRLscreen()
 
                             // collect required info for display
                             psysinfostatus = PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
-							/*if(psysinfostatus == 0)
+                            
+                            if(psysinfostatus == -1)
                             {
-
+								printw(" no process info available\n");
+							}
+							else
+                            {
                                 int spindex; // sub process index
                                 for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
                                 {
@@ -1666,7 +1679,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 }
                             }
                         
-                        */
+                        
                         }
 
                         if(pindex == pindexSelected)
