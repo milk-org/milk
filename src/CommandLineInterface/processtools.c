@@ -846,6 +846,7 @@ static int GetCPUloads()
     {
         char outstring[200];
         char command[200];
+        FILE * fpout;
 
 
         sprintf(command, "CORENUM=%d; ps -e -o pid,psr,cpu,cmd | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
@@ -1754,10 +1755,17 @@ int_fast8_t processinfo_CTRLscreen()
                 // Measure CPU loads, Display
                 int ColorCode;
                 
+                // color limits for load
 				int CPUloadLim0 = 3;
                 int CPUloadLim1 = 40;
                 int CPUloadLim2 = 60;
                 int CPUloadLim3 = 80;
+
+				// color limits for # processes
+				int CPUpcntLim0 = 1;
+                int CPUpcntLim1 = 2;
+                int CPUpcntLim2 = 4;
+                int CPUpcntLim3 = 8;
 
 
 				// List CPUs
