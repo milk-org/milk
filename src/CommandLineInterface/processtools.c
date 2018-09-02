@@ -2033,7 +2033,7 @@ int_fast8_t processinfo_CTRLscreen()
                                    pinfodisp[pindex].createtime_sec,
                                    (int) (0.000001*(pinfodisp[pindex].createtime_ns)));
 
-                            printw(" %24s", pinfoarray[pindex]->tmuxname);
+                            printw(" %26s", pinfoarray[pindex]->tmuxname);
 
 
                             if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
