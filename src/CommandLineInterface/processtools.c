@@ -870,8 +870,9 @@ static long getTopOutput()
 						);
 						
 				// TEST
-				printf("  < %s >  %d\n", outstring, ret);
-				printf("process %5d : %4.1f\n", toparray_PID[NBtop], toparray_CPU[NBtop]);
+				printf("%5ld  < %s >  %d\n", NBtop, outstring, ret);
+				printf("           process %5d : %4.1f\n", toparray_PID[NBtop], toparray_CPU[NBtop]);
+				printf("\n");
 						
 				   NBtop++;
 			   }
