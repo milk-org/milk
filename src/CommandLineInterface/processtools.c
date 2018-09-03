@@ -835,7 +835,8 @@ static long getTopOutput()
     char outstring[200];
     char command[200];
     FILE * fpout;
-
+	int ret;
+	
 
     sprintf(command, "top -b -n 1");
     fpout = popen (command, "r");
@@ -853,7 +854,7 @@ static long getTopOutput()
 				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
 					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
 
-				   sscanf(outstring, "%d %s %d %d %s %s %s %s %f %f %s %s\n",
+				   ret = sscanf(outstring, "%d %s %d %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
 						toparray_USER[NBtop],
 						&toparray_PR[NBtop],
@@ -869,6 +870,7 @@ static long getTopOutput()
 						);
 						
 				// TEST
+				printf("  < %s >  %d\n", outstring, ret);
 				printf("process %5d : %4.1f\n", toparray_PID[NBtop], toparray_CPU[NBtop]);
 						
 				   NBtop++;
