@@ -2243,9 +2243,9 @@ int_fast8_t processinfo_CTRLscreen()
 									// CPU use
 									
 									int cpuColor = 0;
-									
-									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
-										cpuColor = 1;
+																		
+				//					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
+									cpuColor = 1;
 									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
 										cpuColor = 2;
 									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
@@ -2339,8 +2339,8 @@ int_fast8_t processinfo_CTRLscreen()
                                     
                                     int memColor = 0;
 									
-									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
-										memColor = 1;
+									//if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
+									memColor = 1;
 									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
 										memColor = 2;
 									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
