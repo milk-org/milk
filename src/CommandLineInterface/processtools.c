@@ -856,7 +856,7 @@ static int GetCPUloads()
         CPUcnt7[cpu] = vall7;
         CPUcnt8[cpu] = vall8;
 
-        CPUload[cpu] = (1.0*v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
+        CPUload[cpu] = 1.0*v0; //(1.0*v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
         cpu++;
     }
 
