@@ -747,8 +747,10 @@ static int initncurses()
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
 
-    init_color(COLOR_GREEN, 900, 1000, 900);
-	init_color(COLOR_YELLOW, 1000, 1000, 900);
+
+
+    init_color(COLOR_GREEN, 700, 1000, 700);
+	init_color(COLOR_YELLOW, 1000, 1000, 700);
 
     start_color();
     
@@ -1053,13 +1055,16 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
 
+
+
     fp = fopen(fname, "r");
+    int Nfields;
     if (fp == NULL)
         return -1;
 
-    if ( fscanf(fp,
-                "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld",
-                &stat_pid,
+    Nfields = fscanf(fp,
+                "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
+                &stat_pid,      //  1
                 stat_comm,
                 &stat_state,
                 &stat_ppid,
@@ -1068,7 +1073,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_tty_nr,
                 &stat_tpgid,
                 &stat_flags,
-                &stat_minflt,
+                &stat_minflt,   //  10
                 &stat_cminflt,
                 &stat_majflt,
                 &stat_cmajflt,
@@ -1078,7 +1083,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_cstime,
                 &stat_priority,
                 &stat_nice,
-                &stat_num_threads,
+                &stat_num_threads,  // 20
                 &stat_itrealvalue,
                 &stat_starttime,
                 &stat_vsize,
@@ -1088,7 +1093,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_endcode,
                 &stat_startstack,
                 &stat_kstkesp,
-                &stat_kstkeip,
+                &stat_kstkeip,  // 30
                 &stat_signal,
                 &stat_blocked,
                 &stat_sigignore,
@@ -1098,7 +1103,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_cnswap,
                 &stat_exit_signal,
                 &stat_processor,
-                &stat_rt_priority,
+                &stat_rt_priority,  // 40
                 &stat_policy,
                 &stat_delayacct_blkio_ticks,
                 &stat_guest_time,
@@ -1108,18 +1113,91 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_start_brk,
                 &stat_arg_start,
                 &stat_arg_end,
-                &stat_env_start,
+                &stat_env_start,   // 50
                 &stat_env_end,
                 &stat_exit_code
-               ) != 52)
-        printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+               );
+        if(Nfields != 52)
+               {
+					printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+					pinfodisp[pindex].processor = stat_processor;
+					pinfodisp[pindex].rt_priority = stat_rt_priority; 
+				}
+		else
+		{
+			fclose(fp);
+			pinfodisp[pindex].processor = stat_processor;
+			pinfodisp[pindex].rt_priority = stat_rt_priority;
+		}
 
-    fclose(fp);
+/* For testing 
+FILE * fpouttest;
+					
+					sprintf(fname, "out.%d.txt", PID);
+					fpouttest = fopen(fname, "w");
+					fprintf(fpouttest, "%d\n", Nfields);
+					fprintf(fpouttest, "%d\n", pindex);
+					fprintf(fpouttest, "%d\n", stat_processor);
+					fprintf(fpouttest, "%d\n", stat_rt_priority);
+					fprintf(fpouttest, "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
+                stat_pid,
+                stat_comm,
+                stat_state,
+                stat_ppid,
+                stat_pgrp,
+                stat_session,
+                stat_tty_nr,
+                stat_tpgid,
+                stat_flags,
+                stat_minflt,
+                stat_cminflt,
+                stat_majflt,
+                stat_cmajflt,
+                stat_utime,
+                stat_stime,
+                stat_cutime,
+                stat_cstime,
+                stat_priority,
+                stat_nice,
+                stat_num_threads,
+                stat_itrealvalue,
+                stat_starttime,
+                stat_vsize,
+                stat_rss,
+                stat_rsslim,
+                stat_startcode,
+                stat_endcode,
+                stat_startstack,
+                stat_kstkesp,
+                stat_kstkeip,
+                stat_signal,
+                stat_blocked,
+                stat_sigignore,
+                stat_sigcatch,
+                stat_wchan,
+                stat_nswap,
+                stat_cnswap,
+                stat_exit_signal,
+                stat_processor,
+                stat_rt_priority,
+                stat_policy,
+                stat_delayacct_blkio_ticks,
+                stat_guest_time,
+                stat_cguest_time,
+                stat_start_data,
+                stat_end_data,
+                stat_start_brk,
+                stat_arg_start,
+                stat_arg_end,
+                stat_env_start,
+                stat_env_end,
+                stat_exit_code
+               );
+					fclose(fpouttest);
+
+*/
 
 
-
-    pinfodisp[pindex].processor = stat_processor;
-    pinfodisp[pindex].rt_priority = stat_rt_priority;
 
     if(level == 0)
     {
@@ -2127,6 +2205,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     }
 
                                     printw(" %2d", pinfodisp[pindex].rt_priority);
+                                    printw(" %2d", pinfodisp[pindex].processor);
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
                                     printw(" %2dx ", pinfodisp[pindex].threads);
 
@@ -2164,9 +2243,9 @@ int_fast8_t processinfo_CTRLscreen()
 									// CPU use
 									
 									int cpuColor = 0;
-									
-									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
-										cpuColor = 1;
+																		
+				//					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
+									cpuColor = 1;
 									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
 										cpuColor = 2;
 									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
@@ -2201,14 +2280,14 @@ int_fast8_t processinfo_CTRLscreen()
 											}
 										
 
-
+										printw("|");
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
 
                                         if(cpuOK == 1)
-                                            printw("|%2d", cpu);
+                                            printw("%2d", cpu);
                                         else
-                                            printw("|  ");
+                                            printw("  ");
 
                                         if(cpu == pinfodisp[pindex].processor)
                                             attroff(COLOR_PAIR(cpuColor));
@@ -2236,14 +2315,14 @@ int_fast8_t processinfo_CTRLscreen()
 											}
 
 
-
+										printw("|");
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
 
                                         if(cpuOK == 1)
-                                            printw("|%2d", cpu);
+                                            printw("%2d", cpu);
                                         else
-                                            printw("|  ");
+                                            printw("  ");
 
                                         if(cpu == pinfodisp[pindex].processor)
                                             attroff(COLOR_PAIR(cpuColor));
@@ -2260,8 +2339,8 @@ int_fast8_t processinfo_CTRLscreen()
                                     
                                     int memColor = 0;
 									
-									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
-										memColor = 1;
+									//if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
+									memColor = 1;
 									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
 										memColor = 2;
 									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
