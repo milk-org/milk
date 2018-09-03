@@ -306,8 +306,18 @@ static int NBtopP; // number of processes scanned by top
 
 
 
+// timing info collected to optimize this program
+static struct timespec t1;
+static struct timespec t2;
+static struct timespec tdiff;
 
-
+// timing categories
+static double scantime_cpuset;
+static double scantime_status;
+static double scantime_stat;
+static double scantime_pstree;
+static double scantime_top;
+static double scantime_CPUload;
 
 
 /* =============================================================================================== */
@@ -841,7 +851,8 @@ static long getTopOutput()
     FILE * fpout;
 	int ret;
 	
-
+	clock_gettime(CLOCK_REALTIME, &t1);
+	
     sprintf(command, "top -H -b -n 1");
     fpout = popen (command, "r");
     if(fpout==NULL)
@@ -889,10 +900,13 @@ static long getTopOutput()
 		   }
         pclose(fpout);
     }
-    
+    clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_top += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 	return NBtop;
 }
+
 
 
 
@@ -908,7 +922,9 @@ static int GetCPUloads()
     long long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
     long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
-
+    
+    
+	clock_gettime(CLOCK_REALTIME, &t1);
 
     NBcpus = GetNumberCPUs();
 
@@ -976,7 +992,9 @@ static int GetCPUloads()
             CPUpcnt[cpu] = atoi(outstring);
         }
 	}
-
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_CPUload += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
     return(cpu);
 }
@@ -1008,21 +1026,21 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
     // cpuset
-
+    
+    clock_gettime(CLOCK_REALTIME, &t1);
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
-
     fp=fopen(fname, "r");
     if (fp == NULL)
         return -1;
-
     fscanf(fp, "%s", pinfodisp[pindex].cpuset);
     fclose(fp);
-
-
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_cpuset += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
     // read /proc/PID/status
-
+	clock_gettime(CLOCK_REALTIME, &t1);
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
@@ -1065,11 +1083,16 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     fclose(fp);
     if (line)
         free(line);
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_status += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
 
 
 
+	// read /proc/PID/stat
+	clock_gettime(CLOCK_REALTIME, &t1);
     sprintf(fname, "/proc/%d/stat", PID);
 
     int           stat_pid;       // (1) The process ID.
@@ -1229,76 +1252,14 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			pinfodisp[pindex].processor = stat_processor;
 			pinfodisp[pindex].rt_priority = stat_rt_priority;
 		}
-
-/* For testing 
-FILE * fpouttest;
-					
-					sprintf(fname, "out.%d.txt", PID);
-					fpouttest = fopen(fname, "w");
-					fprintf(fpouttest, "%d\n", Nfields);
-					fprintf(fpouttest, "%d\n", pindex);
-					fprintf(fpouttest, "%d\n", stat_processor);
-					fprintf(fpouttest, "%d\n", stat_rt_priority);
-					fprintf(fpouttest, "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
-                stat_pid,
-                stat_comm,
-                stat_state,
-                stat_ppid,
-                stat_pgrp,
-                stat_session,
-                stat_tty_nr,
-                stat_tpgid,
-                stat_flags,
-                stat_minflt,
-                stat_cminflt,
-                stat_majflt,
-                stat_cmajflt,
-                stat_utime,
-                stat_stime,
-                stat_cutime,
-                stat_cstime,
-                stat_priority,
-                stat_nice,
-                stat_num_threads,
-                stat_itrealvalue,
-                stat_starttime,
-                stat_vsize,
-                stat_rss,
-                stat_rsslim,
-                stat_startcode,
-                stat_endcode,
-                stat_startstack,
-                stat_kstkesp,
-                stat_kstkeip,
-                stat_signal,
-                stat_blocked,
-                stat_sigignore,
-                stat_sigcatch,
-                stat_wchan,
-                stat_nswap,
-                stat_cnswap,
-                stat_exit_signal,
-                stat_processor,
-                stat_rt_priority,
-                stat_policy,
-                stat_delayacct_blkio_ticks,
-                stat_guest_time,
-                stat_cguest_time,
-                stat_start_data,
-                stat_end_data,
-                stat_start_brk,
-                stat_arg_start,
-                stat_arg_end,
-                stat_env_start,
-                stat_env_end,
-                stat_exit_code
-               );
-					fclose(fpouttest);
-
-*/
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
 
+
+	clock_gettime(CLOCK_REALTIME, &t1);
     if(level == 0)
     {
         FILE *fpout;
@@ -1342,53 +1303,11 @@ FILE * fpouttest;
                 }
                 pclose(fpout);
             }
-        }
-        
-        
-        
+        }   
 	}
-
-
-
-
-
-        
-        // ps -T -o lwp,%cpu,%mem  -p PID
-
-//		sprintf(command, "ps -T -o %%cpu,%%mem  -p %d > test.%d.txt", PID, PID);
-	//	system(command);
-/*		
-        sprintf(command, "ps -T -o %%cpu,%%mem  -p %d", PID);
-        
-        fpout = popen (command, "r");
-        if(fpout==NULL)
-        {
-            printf("WARNING: cannot run command \"t%s\"\n", command);
-        }
-        else
-        {
-            int lcnt = 0;
-            while((fgets(outstring, 100, fpout) != NULL)&&(lcnt<pinfodisp[pindex].NBsubprocesses+1))
-            {
-                if(lcnt>0)
-                {
-                    sscanf(outstring, "%f %f\n",
-                          &pinfodisp[pindex].subprocCPUloadarray[lcnt-1],
-                          &pinfodisp[pindex].subprocMEMloadarray[lcnt-1]
-                         );
-					//pinfodisp[pindex].subprocCPUloadarray[lcnt-1] = 1.0;
-				}
-				lcnt++;
-
-            }
-
-            pclose(fpout);
-        }
-        */ 
-
-
-    
-
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_pstree += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
     return 0;
@@ -1439,9 +1358,13 @@ int_fast8_t processinfo_CTRLscreen()
     char pselected_FUNCTION[200];
     int pselected_LINE;
 
-    struct timespec t1;
-    struct timespec t2;
-    struct timespec tdiff;
+
+    struct timespec t1loop;
+    struct timespec t2loop;
+    struct timespec tdiffloop;
+
+
+
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -1511,7 +1434,14 @@ int_fast8_t processinfo_CTRLscreen()
         usleep((long) (1000000.0/frequ));
         int ch = getch();
 
-clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_REALTIME, &t1loop);
+
+		scantime_cpuset = 0.0;
+		scantime_status = 0.0;
+		scantime_stat = 0.0;
+		scantime_pstree = 0.0;
+		scantime_top = 0.0;
+		scantime_CPUload = 0.0;
 
 
         if(freeze==0)
@@ -2327,8 +2257,8 @@ clock_gettime(CLOCK_REALTIME, &t1);
                                     else
                                     {
                                         TID = pinfodisp[pindex].PID;
-										pinfodisp[pindex].subprocPIDarray[0] = pinfodisp[pindex].PID;
-									}
+                                        pinfodisp[pindex].subprocPIDarray[0] = pinfodisp[pindex].PID;
+                                    }
 
                                     printw(" %2d", pinfodisp[pindex].rt_priority);
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
@@ -2372,19 +2302,19 @@ clock_gettime(CLOCK_REALTIME, &t1);
                                     int itopOK = 0;
                                     for(itop = 0; itop<NBtopP; itop++)
                                     {
-										
+
                                         if(TID == toparray_PID[itop])
                                         {
-											itopOK = 1;
+                                            itopOK = 1;
                                             pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
                                             pinfodisp[pindex].subprocMEMloadarray[spindex] = toparray_MEM[itop];
                                         }
                                     }
                                     if(itopOK==0)
                                     {
-										pinfodisp[pindex].subprocCPUloadarray[spindex] = -1.0;
+                                        pinfodisp[pindex].subprocCPUloadarray[spindex] = -1.0;
                                         pinfodisp[pindex].subprocMEMloadarray[spindex] = -1.0;
-									}
+                                    }
 
 
 
@@ -2533,11 +2463,18 @@ clock_gettime(CLOCK_REALTIME, &t1);
 
         }
 
-	clock_gettime(CLOCK_REALTIME, &t2);
+        clock_gettime(CLOCK_REALTIME, &t2loop);
 
-            tdiff = info_time_diff(t1, t2);
-            double tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw("Process scan time = %9.8f s\n", tdiffv);
+        tdiff = info_time_diff(t1loop, t2loop);
+        double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+        
+        printw("Process scan time = %9.8f s\n", tdiffvloop);
+		printw("     %9.8f  scantime_cpuset\n", scantime_cpuset);
+		printw("     %9.8f  scantime_status\n", scantime_status);
+		printw("     %9.8f  scantime_stat\n", scantime_stat);
+		printw("     %9.8f  scantime_pstree\n", scantime_pstree);
+		printw("     %9.8f  scantime_top\n", scantime_top);
+		printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
 
     }
     endwin();
