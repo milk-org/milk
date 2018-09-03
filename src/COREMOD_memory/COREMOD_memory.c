@@ -4760,7 +4760,7 @@ long COREMOD_MEMORY_streamPaste(
             }
             else
                 sem_wait(data.image[ID0].semptr[semtrig1]);
-			Xoffset = 0;
+			Xoffset = xsize;
 			IDin = 1;
         }
 		
@@ -4771,9 +4771,7 @@ long COREMOD_MEMORY_streamPaste(
         data.image[IDout].md[0].write = 1;
 
 
-		for(ii=0;ii<xsize;ii++)
-			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.F[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
+	
 				
 		switch(atype)
 		{
