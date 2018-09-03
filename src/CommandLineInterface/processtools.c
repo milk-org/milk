@@ -318,6 +318,8 @@ static double scantime_stat;
 static double scantime_pstree;
 static double scantime_top;
 static double scantime_CPUload;
+static double scantime_CPUpcnt;
+
 
 
 /* =============================================================================================== */
@@ -968,8 +970,12 @@ static int GetCPUloads()
     }
 
     fclose(fp);
-
-
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_CPUload += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+	
+	
+	clock_gettime(CLOCK_REALTIME, &t1);
     // number of process per CPU
     for(cpu=0; cpu<NBcpus; cpu++)
     {
@@ -992,9 +998,12 @@ static int GetCPUloads()
             CPUpcnt[cpu] = atoi(outstring);
         }
 	}
+	
+	
+	
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
-	scantime_CPUload += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+	scantime_CPUpcnt += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
     return(cpu);
 }
@@ -1442,7 +1451,7 @@ int_fast8_t processinfo_CTRLscreen()
 		scantime_pstree = 0.0;
 		scantime_top = 0.0;
 		scantime_CPUload = 0.0;
-
+		scantime_CPUpcnt = 0.0;
 
         if(freeze==0)
         {
@@ -2475,6 +2484,7 @@ int_fast8_t processinfo_CTRLscreen()
 		printw("     %9.8f  scantime_pstree\n", scantime_pstree);
 		printw("     %9.8f  scantime_top\n", scantime_top);
 		printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
+		printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
 
     }
     endwin();
