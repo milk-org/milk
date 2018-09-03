@@ -2312,12 +2312,16 @@ int_fast8_t processinfo_CTRLscreen()
                                 int spindex; // sub process index, 0 for main
                                 for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
                                 {
+									int TID; // thread ID
 
                                     if(spindex>0)
                                     {
+										TID = pinfodisp[pindex].subprocPIDarray[spindex];
                                         printw("               |---%6d                        ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                         PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
                                     }
+                                    else
+										TID = pinfodisp[pindex].PID;
 
                                     printw(" %2d", pinfodisp[pindex].rt_priority);
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
@@ -2355,32 +2359,18 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 									// CPU use
-									
-									/*
-									toparray_PID[NBtopMax];
-static char  toparray_USER[NBtopMax][32];
-static char  toparray_PR[NBtopMax][8];
-static int   toparray_NI[NBtopMax];
-static char  toparray_VIRT[NBtopMax][32];
-static char  toparray_RES[NBtopMax][32];
-static char  toparray_SHR[NBtopMax][32];
-static char  toparray_S[NBtopMax][8];
-static float toparray_CPU[NBtopMax];
-static float toparray_MEM[NBtopMax];
-static char  toparray_TIME[NBtopMax][32];
-static char  toparray_COMMAND[NBtopMax][32];
-
-
+								
         // get CPU and MEM load
         int itop;
-        for(itop = 0; itop<NBtopP, itop++)
+        for(itop = 0; itop<NBtopP; itop++)
         {
-			if(PID == toparray_PID[itop])
+			if(TID == toparray_PID[itop])
 			{
-				
+				pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
+				pinfodisp[pindex].subprocMEMloadarray[spindex] = toparray_MEM[itop];
 			}
 		}
-									*/
+									
 									
 									
 									int cpuColor = 0;
