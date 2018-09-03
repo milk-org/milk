@@ -4968,7 +4968,7 @@ long COREMOD_MEMORY_image_streamupdateloop(
         // see processtools.c in module CommandLineInterface for details
         //
         char pinfoname[200];
-        sprintf(pinfoname, "streamloop %s to %s", IDinname, IDoutname);
+        sprintf(pinfoname, "streamloop-%s", IDoutname);
         processinfo = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = 0; // loop initialization
 
