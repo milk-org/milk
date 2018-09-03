@@ -2321,7 +2321,10 @@ int_fast8_t processinfo_CTRLscreen()
                                         PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
                                     }
                                     else
+                                    {
                                         TID = pinfodisp[pindex].PID;
+										pinfodisp[pindex].subprocPIDarray[0] = pinfodisp[pindex].PID;
+									}
 
                                     printw(" %2d", pinfodisp[pindex].rt_priority);
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
@@ -2364,6 +2367,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     int itop;
                                     for(itop = 0; itop<NBtopP; itop++)
                                     {
+										
                                         if(TID == toparray_PID[itop])
                                         {
                                             pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
