@@ -290,12 +290,12 @@ static float CPUpcnt[100];
 
 static int   toparray_PID[NBtopMax];
 static char  toparray_USER[32][NBtopMax];
-static int   toparray_PR[NBtopMax];
+static int   toparray_PR[8][NBtopMax];
 static int   toparray_NI[NBtopMax];
 static char  toparray_VIRT[32][NBtopMax];
 static char  toparray_RES[32][NBtopMax];
 static char  toparray_SHR[32][NBtopMax];
-static char  toparray_S[32][NBtopMax];
+static char  toparray_S[8][NBtopMax];
 static float toparray_CPU[NBtopMax];
 static float toparray_MEM[NBtopMax];
 static char  toparray_TIME[32][NBtopMax];
@@ -854,10 +854,10 @@ static long getTopOutput()
 				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
 					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
 
-				   ret = sscanf(outstring, "%d %s %d %d %s %s %s %s %f %f %s %s\n",
+				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
 						toparray_USER[NBtop],
-						&toparray_PR[NBtop],
+						toparray_PR[NBtop],
 						&toparray_NI[NBtop],
 						 toparray_VIRT[NBtop],
 						 toparray_RES[NBtop],
