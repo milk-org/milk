@@ -2205,6 +2205,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     }
 
                                     printw(" %2d", pinfodisp[pindex].rt_priority);
+                                    printw(" %2d", pinfodisp[pindex].processor);
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
                                     printw(" %2dx ", pinfodisp[pindex].threads);
 
