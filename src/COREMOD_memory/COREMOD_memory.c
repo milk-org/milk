@@ -4760,7 +4760,7 @@ long COREMOD_MEMORY_streamPaste(
             }
             else
                 sem_wait(data.image[ID0].semptr[semtrig1]);
-			Xoffset = xsize;
+			Xoffset = 0;
 			IDin = 1;
         }
 		
