@@ -1287,8 +1287,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			{
 				while (ep = readdir (dp))
 					{
-						pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(ep->d_name);
-						pinfodisp[pindex].NBsubprocesses++;
+						if(ep->d_name[0] != '.')
+						{
+							pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(ep->d_name);
+							pinfodisp[pindex].NBsubprocesses++;
+						}
 					}
 				(void) closedir (dp);
 			}
