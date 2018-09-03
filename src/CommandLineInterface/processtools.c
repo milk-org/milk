@@ -749,6 +749,7 @@ static int initncurses()
 
     start_color();
     
+    init_color(COLOR_GREEN, 300, 1000, 300);
 	//  color background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
