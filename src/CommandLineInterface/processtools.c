@@ -286,7 +286,7 @@ static float CPUpcnt[100];
 
 
 
-#define NBtopMax 1000
+#define NBtopMax 5000
 
 static int   toparray_PID[NBtopMax];
 static char  toparray_USER[NBtopMax][32];
