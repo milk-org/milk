@@ -301,6 +301,7 @@ static float toparray_MEM[NBtopMax];
 static char  toparray_TIME[NBtopMax][32];
 static char  toparray_COMMAND[NBtopMax][32];
 
+static int NBtopP; // number of processes scanned by top
 
 
 
@@ -828,6 +829,9 @@ static int GetNumberCPUs()
 
 
 
+
+
+
 static long getTopOutput()
 {
 	long NBtop = 0;
@@ -855,8 +859,8 @@ static long getTopOutput()
 				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
 					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
 
-					printf("%5ld:  %s", NBtop, outstring);
-					fflush(stdout);
+					//printf("%5ld:  %s", NBtop, outstring);
+					//fflush(stdout);
 					
 				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
@@ -874,8 +878,8 @@ static long getTopOutput()
 						);
 					
 				// TEST
-				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
-				printf("\n");
+//				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
+//				printf("\n");
 						
 				   NBtop++;
 			   }
@@ -976,6 +980,15 @@ static int GetCPUloads()
 
     return(cpu);
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1330,8 +1343,16 @@ FILE * fpouttest;
                 pclose(fpout);
             }
         }
+        
+        
+        
+	}
 
-        // get CPU and MEM load
+
+
+
+
+        
         // ps -T -o lwp,%cpu,%mem  -p PID
 
 //		sprintf(command, "ps -T -o %%cpu,%%mem  -p %d > test.%d.txt", PID, PID);
@@ -1366,7 +1387,7 @@ FILE * fpouttest;
         */ 
 
 
-    }
+    
 
 
 
@@ -1418,10 +1439,8 @@ int_fast8_t processinfo_CTRLscreen()
 	char pselected_FUNCTION[200];
 	int pselected_LINE;
 
+
 	
-	printf("scanning %ld processes\n", getTopOutput());
-	
-	exit(0);
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
@@ -1822,7 +1841,13 @@ int_fast8_t processinfo_CTRLscreen()
 			printw("\n");
 
 
+            
+            
+            
+            
+            
             // LOAD / UPDATE process information
+			NBtopP = getTopOutput();
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -1969,6 +1994,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             free(timearray);
             free(indexarray);
+
 
 
 
@@ -2283,7 +2309,7 @@ int_fast8_t processinfo_CTRLscreen()
 							}
 							else
                             {
-                                int spindex; // sub process index
+                                int spindex; // sub process index, 0 for main
                                 for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
                                 {
 
@@ -2329,6 +2355,33 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 									// CPU use
+									
+									/*
+									toparray_PID[NBtopMax];
+static char  toparray_USER[NBtopMax][32];
+static char  toparray_PR[NBtopMax][8];
+static int   toparray_NI[NBtopMax];
+static char  toparray_VIRT[NBtopMax][32];
+static char  toparray_RES[NBtopMax][32];
+static char  toparray_SHR[NBtopMax][32];
+static char  toparray_S[NBtopMax][8];
+static float toparray_CPU[NBtopMax];
+static float toparray_MEM[NBtopMax];
+static char  toparray_TIME[NBtopMax][32];
+static char  toparray_COMMAND[NBtopMax][32];
+
+
+        // get CPU and MEM load
+        int itop;
+        for(itop = 0; itop<NBtopP, itop++)
+        {
+			if(PID == toparray_PID[itop])
+			{
+				
+			}
+		}
+									*/
+									
 									
 									int cpuColor = 0;
 																		
