@@ -271,15 +271,15 @@ static PROCESSINFOLIST *pinfolist;
 static int wrow, wcol;
 
 static float CPUload[100];
-static long CPUcnt0[100];
-static long CPUcnt1[100];
-static long CPUcnt2[100];
-static long CPUcnt3[100];
-static long CPUcnt4[100];
-static long CPUcnt5[100];
-static long CPUcnt6[100];
-static long CPUcnt7[100];
-static long CPUcnt8[100];
+static long long CPUcnt0[100];
+static long long CPUcnt1[100];
+static long long CPUcnt2[100];
+static long long CPUcnt3[100];
+static long long CPUcnt4[100];
+static long long CPUcnt5[100];
+static long long CPUcnt6[100];
+static long long CPUcnt7[100];
+static long long CPUcnt8[100];
 
 static float CPUpcnt[100];
 
@@ -814,8 +814,8 @@ static int GetCPUloads()
     ssize_t read;
     size_t len = 0;
     int cpu;
-    long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
-    float v0, v1, v2, v3, v4, v5, v6, v7, v8;
+    long long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+    long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
 
 
@@ -834,7 +834,7 @@ static int GetCPUloads()
 
     while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
 
-        sscanf(line, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+        sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 
         v0 = vall0 - CPUcnt0[cpu];
         v1 = vall1 - CPUcnt1[cpu];
@@ -856,7 +856,7 @@ static int GetCPUloads()
         CPUcnt7[cpu] = vall7;
         CPUcnt8[cpu] = vall8;
 
-        CPUload[cpu] = (v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
+        CPUload[cpu] = (1.0*v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
         cpu++;
     }
 
@@ -2122,7 +2122,6 @@ int_fast8_t processinfo_CTRLscreen()
                                 break;
 
                             case 1:
-
                                 printw(" RUN");
                                 break;
 
