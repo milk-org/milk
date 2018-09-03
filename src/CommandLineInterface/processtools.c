@@ -247,6 +247,8 @@ typedef struct
 	
 	int           processor;
 	int           rt_priority;
+	float         cpuload;
+	float         memload;
 	
 	// sub-processes
 	int           NBsubprocesses;
@@ -1257,6 +1259,11 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			pinfodisp[pindex].processor = stat_processor;
 			pinfodisp[pindex].rt_priority = stat_rt_priority;
 		}
+	
+	
+	pinfodisp[pindex].cpuload = sysconf(_SC_CLK_TCK);  //(stat_utime + stat_stime)
+	pinfodisp[pindex].memload = 0.0;
+	
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
 	scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
@@ -1295,46 +1302,6 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 					}
 				(void) closedir (dp);
 			}
-/*		else
-			perror ("Couldn't open the directory");
-
-
-
-			
-			/*
-			
-            char outstringc[200];
-
-            sprintf(command, "pstree -p %d", PID);
-
-            fpout = popen (command, "r");
-            if(fpout==NULL)
-            {
-                printf("WARNING: cannot run command \"%s\"\n", command);
-            }
-            else
-            {
-                while(fgets(outstring, 100, fpout) != NULL)
-                {
-                    int i = 0;
-                    int ic = 0;
-                    for(i=0; i<strlen(outstring); i++)
-                    {
-                        if(isdigit(outstring[i]))
-                        {
-                            outstringc[ic] = outstring[i];
-                            ic++;
-                        }
-                        if(outstring[i] == '(')
-                            ic = 0;
-                    }
-                    outstringc[ic] = '\0';
-
-                    pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(outstringc);
-                    pinfodisp[pindex].NBsubprocesses++;
-                }
-                pclose(fpout);
-            }*/
         }   
 	}
 	clock_gettime(CLOCK_REALTIME, &t2);
@@ -2464,6 +2431,7 @@ int_fast8_t processinfo_CTRLscreen()
                                            pinfodisp[pindex].subprocMEMloadarray[spindex]);
                                     attroff(COLOR_PAIR(memColor));
 
+									printw("  %f\n", pinfodisp[pindex].cpuload);
 
 
                                     printw("\n");
