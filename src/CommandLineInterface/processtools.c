@@ -2280,14 +2280,14 @@ int_fast8_t processinfo_CTRLscreen()
 											}
 										
 
-
+										printw("|");
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
 
                                         if(cpuOK == 1)
-                                            printw("|%2d", cpu);
+                                            printw("%2d", cpu);
                                         else
-                                            printw("|  ");
+                                            printw("  ");
 
                                         if(cpu == pinfodisp[pindex].processor)
                                             attroff(COLOR_PAIR(cpuColor));
@@ -2315,14 +2315,14 @@ int_fast8_t processinfo_CTRLscreen()
 											}
 
 
-
+										printw("|");
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
 
                                         if(cpuOK == 1)
-                                            printw("|%2d", cpu);
+                                            printw("%2d", cpu);
                                         else
-                                            printw("|  ");
+                                            printw("  ");
 
                                         if(cpu == pinfodisp[pindex].processor)
                                             attroff(COLOR_PAIR(cpuColor));
