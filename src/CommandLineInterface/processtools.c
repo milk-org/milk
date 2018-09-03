@@ -1125,7 +1125,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 					
 					FILE * fpouttest;
 					
-					fpouttest = fopen("out.test.txt", "w");
+					sprintf(fname, "out.%d.txt", PID);
+					fpouttest = fopen(fname, "w");
 					fprintf(fpouttest, "%d\n", Nfields);
 					fprintf(fpouttest, "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
                 stat_pid,
