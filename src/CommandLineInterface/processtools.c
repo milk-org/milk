@@ -747,8 +747,10 @@ static int initncurses()
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
 
-    init_color(COLOR_GREEN, 900, 1000, 900);
-	init_color(COLOR_YELLOW, 1000, 1000, 900);
+
+
+    init_color(COLOR_GREEN, 700, 1000, 700);
+	init_color(COLOR_YELLOW, 1000, 1000, 700);
 
     start_color();
     
@@ -1053,12 +1055,15 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
 
+
+
     fp = fopen(fname, "r");
+    int Nfields;
     if (fp == NULL)
         return -1;
 
-    if ( fscanf(fp,
-                "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld",
+    Nfields = fscanf(fp,
+                "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
                 &stat_pid,
                 stat_comm,
                 &stat_state,
@@ -1111,15 +1116,81 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_env_start,
                 &stat_env_end,
                 &stat_exit_code
-               ) != 52)
-        printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+               );
+        if(Nfields != 52)
+               {
+					printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+					pinfodisp[pindex].processor = stat_processor;
+					pinfodisp[pindex].rt_priority = 30; //TESTING
+					
+					FILE * fpouttest;
+					
+					fpouttest = fopen("out.test.txt", "w");
+					fprintf(fpouttest, "%d\n", Nfields);
+					fprintf(fpouttest, "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
+                stat_pid,
+                stat_comm,
+                stat_state,
+                stat_ppid,
+                stat_pgrp,
+                stat_session,
+                stat_tty_nr,
+                stat_tpgid,
+                stat_flags,
+                stat_minflt,
+                stat_cminflt,
+                stat_majflt,
+                stat_cmajflt,
+                stat_utime,
+                stat_stime,
+                stat_cutime,
+                stat_cstime,
+                stat_priority,
+                stat_nice,
+                stat_num_threads,
+                stat_itrealvalue,
+                stat_starttime,
+                stat_vsize,
+                stat_rss,
+                stat_rsslim,
+                stat_startcode,
+                stat_endcode,
+                stat_startstack,
+                stat_kstkesp,
+                stat_kstkeip,
+                stat_signal,
+                stat_blocked,
+                stat_sigignore,
+                stat_sigcatch,
+                stat_wchan,
+                stat_nswap,
+                stat_cnswap,
+                stat_exit_signal,
+                stat_processor,
+                stat_rt_priority,
+                stat_policy,
+                stat_delayacct_blkio_ticks,
+                stat_guest_time,
+                stat_cguest_time,
+                stat_start_data,
+                stat_end_data,
+                stat_start_brk,
+                stat_arg_start,
+                stat_arg_end,
+                stat_env_start,
+                stat_env_end,
+                stat_exit_code
+               );
+					fclose(fpouttest);
+				}
+		else
+		{
+			fclose(fp);
+			pinfodisp[pindex].processor = stat_processor;
+			pinfodisp[pindex].rt_priority = stat_rt_priority;
+		}
 
-    fclose(fp);
 
-
-
-    pinfodisp[pindex].processor = stat_processor;
-    pinfodisp[pindex].rt_priority = stat_rt_priority;
 
     if(level == 0)
     {
