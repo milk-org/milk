@@ -205,6 +205,10 @@
 #include <fcntl.h> 
 #include <ctype.h>
 
+#include <dirent.h>
+
+
+
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -327,6 +331,7 @@ static double scantime_CPUpcnt;
 /*                                    FUNCTIONS SOURCE CODE                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
 
 
 // 
@@ -869,12 +874,6 @@ static long getTopOutput()
            {
 			   if(startScan == 1)
 			   { 
-				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
-					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
-
-					//printf("%5ld:  %s", NBtop, outstring);
-					//fflush(stdout);
-					
 				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
 						toparray_USER[NBtop],
@@ -889,11 +888,6 @@ static long getTopOutput()
 						 toparray_TIME[NBtop],
 						 toparray_COMMAND[NBtop]
 						);
-					
-				// TEST
-//				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
-//				printf("\n");
-						
 				   NBtop++;
 			   }
 			   
@@ -908,6 +902,8 @@ static long getTopOutput()
 
 	return NBtop;
 }
+
+
 
 
 
@@ -1280,6 +1276,30 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
         if(pinfodisp[pindex].threads > 1) // look for children
         {
+			DIR *dp;
+			struct dirent *ep;
+			char dirname[200];
+			
+			sprintf(dirname, "/proc/%d/task/", PID);
+			dp = opendir (dirname);
+
+			if (dp != NULL)
+			{
+				while (ep = readdir (dp))
+					{
+						pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(ep->d_name);
+						pinfodisp[pindex].NBsubprocesses++;
+					}
+				(void) closedir (dp);
+			}
+/*		else
+			perror ("Couldn't open the directory");
+
+
+
+			
+			/*
+			
             char outstringc[200];
 
             sprintf(command, "pstree -p %d", PID);
@@ -1311,7 +1331,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                     pinfodisp[pindex].NBsubprocesses++;
                 }
                 pclose(fpout);
-            }
+            }*/
         }   
 	}
 	clock_gettime(CLOCK_REALTIME, &t2);
