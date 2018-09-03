@@ -2365,15 +2365,22 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     // get CPU and MEM load
                                     int itop;
+                                    int itopOK = 0;
                                     for(itop = 0; itop<NBtopP; itop++)
                                     {
 										
                                         if(TID == toparray_PID[itop])
                                         {
+											itopOK = 1;
                                             pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
                                             pinfodisp[pindex].subprocMEMloadarray[spindex] = toparray_MEM[itop];
                                         }
                                     }
+                                    if(itopOK==0)
+                                    {
+										pinfodisp[pindex].subprocCPUloadarray[spindex] = -1.0;
+                                        pinfodisp[pindex].subprocMEMloadarray[spindex] = -1.0;
+									}
 
 
 
