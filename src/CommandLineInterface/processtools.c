@@ -208,7 +208,7 @@
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
-
+#include "info/info.h"
 
 
 /* =============================================================================================== */
@@ -732,7 +732,7 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 
 
 
-
+/*
 static int print_header(const char *str, char c)
 {
     long n;
@@ -751,7 +751,7 @@ static int print_header(const char *str, char c)
 
     return(0);
 }
-
+*/
 
 
 /**
@@ -1439,7 +1439,9 @@ int_fast8_t processinfo_CTRLscreen()
     char pselected_FUNCTION[200];
     int pselected_LINE;
 
-
+    struct timespec t1;
+    struct timespec t2;
+    struct timespec tdiff;
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -1508,6 +1510,8 @@ int_fast8_t processinfo_CTRLscreen()
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
+
+clock_gettime(CLOCK_REALTIME, &t1);
 
 
         if(freeze==0)
@@ -2528,6 +2532,12 @@ int_fast8_t processinfo_CTRLscreen()
             cnt++;
 
         }
+
+	clock_gettime(CLOCK_REALTIME, &t2);
+
+            tdiff = info_time_diff(t1, t2);
+            double tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw("Process scan time = %9.8f s\n", tdiffv);
 
     }
     endwin();
