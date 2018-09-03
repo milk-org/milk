@@ -286,6 +286,29 @@ static float CPUpcnt[100];
 
 
 
+#define NBtopMax 1000
+
+static int   toparray_PID[NBtopMax];
+static char  toparray_USER[32][NBtopMax];
+static int   toparray_PR[NBtopMax];
+static int   toparray_NI[NBtopMax];
+static char  toparray_VIRT[32][NBtopMax];
+static char  toparray_RES[32][NBtopMax];
+static char  toparray_SHR[32][NBtopMax];
+static char  toparray_S[32][NBtopMax];
+static float toparray_CPU[NBtopMax];
+static float toparray_MEM[NBtopMax];
+static char  toparray_TIME[32][NBtopMax];
+static char  toparray_COMMAND[32][NBtopMax];
+
+
+
+
+
+
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                    FUNCTIONS SOURCE CODE                                        */
@@ -802,6 +825,59 @@ static int GetNumberCPUs()
 
 
 
+
+
+
+static long getTopOutput()
+{
+	long NBtop;
+
+    char outstring[200];
+    char command[200];
+    FILE * fpout;
+
+
+    sprintf(command, "top -b -n 1");
+    fpout = popen (command, "r");
+    if(fpout==NULL)
+    {
+        printf("WARNING: cannot run command \"%s\"\n", command);
+    }
+    else
+    {
+		int startScan = 0;
+        while((fgets(outstring, 100, fpout) != NULL)&&(NBtop<NBtopMax))
+           {
+			   if(startScan == 1)
+			   { 
+				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
+
+				   sscanf(outstring, "%d %s %d %d %s %s %s %s %f %f %s %s\n",
+						&toparray_PID[NBtop],
+						toparray_USER[NBtop],
+						&toparray_PR[NBtop],
+						&toparray_NI[NBtop],
+						 toparray_VIRT[NBtop],
+						 toparray_RES[NBtop],
+						 toparray_SHR[NBtop],
+						 toparray_S[NBtop],
+						&toparray_CPU[NBtop],
+						&toparray_MEM[NBtop],
+						 toparray_TIME[NBtop],
+						 toparray_COMMAND[NBtop]
+						);
+				   NBtop++;
+			   }
+			   
+				if(strstr(outstring, "USER")!=NULL)
+					startScan = 1;
+		   }
+        pclose(fpout);
+    }
+
+	return NBtop;
+}
 
 
 
@@ -1331,8 +1407,10 @@ int_fast8_t processinfo_CTRLscreen()
 	char pselected_FUNCTION[200];
 	int pselected_LINE;
 
-
-
+	
+	printf("scanning %ld processes\n", getTopOutput());
+	
+	exit(0);
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
