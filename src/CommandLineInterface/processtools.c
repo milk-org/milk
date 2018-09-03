@@ -1121,7 +1121,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                {
 					printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
 					pinfodisp[pindex].processor = stat_processor;
-					pinfodisp[pindex].rt_priority = 30; //TESTING
+					pinfodisp[pindex].rt_priority = stat_rt_priority; 
 				}
 		else
 		{
@@ -1136,6 +1136,9 @@ FILE * fpouttest;
 					sprintf(fname, "out.%d.txt", PID);
 					fpouttest = fopen(fname, "w");
 					fprintf(fpouttest, "%d\n", Nfields);
+					fprintf(fpouttest, "%d\n", pindex);
+					fprintf(fpouttest, "%d\n", stat_processor);
+					fprintf(fpouttest, "%d\n", stat_rt_priority);
 					fprintf(fpouttest, "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
                 stat_pid,
                 stat_comm,
