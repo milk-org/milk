@@ -747,10 +747,12 @@ static int initncurses()
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
 
-    start_color();
-    
     init_color(COLOR_GREEN, 900, 1000, 900);
 	init_color(COLOR_YELLOW, 1000, 1000, 900);
+
+    start_color();
+    
+
 
 	//  color background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
