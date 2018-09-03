@@ -854,6 +854,8 @@ static long getTopOutput()
 				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
 					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
 
+					printf("%5ld:  %s", NBtop, outstring);
+					
 				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
 						toparray_USER[NBtop],
@@ -870,8 +872,7 @@ static long getTopOutput()
 						);
 						
 				// TEST
-				printf("%5ld  < %s >  %d\n", NBtop, outstring, ret);
-				printf("           process %5d : %4.1f\n", toparray_PID[NBtop], toparray_CPU[NBtop]);
+				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
 				printf("\n");
 						
 				   NBtop++;
