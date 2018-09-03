@@ -414,6 +414,10 @@ long COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
 long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreammask_name, const char *IDstreamout_name, long semtrig);
 
 
+/** @brief Paste two equal size 2D streams into an output 2D stream
+*/
+long COREMOD_MEMORY_streamPaste(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreamout_name, long semtrig0, long semtrig1, int master);
+
 
 /** difference between two halves of stream image
 */

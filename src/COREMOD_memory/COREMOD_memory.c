@@ -808,6 +808,19 @@ int_fast8_t COREMOD_MEMORY_streamDiff_cli()
 }
 
 
+int_fast8_t COREMOD_MEMORY_streamPaste_cli()
+{
+	if(CLI_checkarg(1,4)+CLI_checkarg(2,4)+CLI_checkarg(3,5)+CLI_checkarg(4,2)+CLI_checkarg(5,2)+CLI_checkarg(6,2)==0)
+    {
+        COREMOD_MEMORY_streamPaste(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.string, data.cmdargtoken[4].val.numl, data.cmdargtoken[5].val.numl, data.cmdargtoken[6].val.numl);
+        return 0;
+    }
+    else
+        return 1;
+}
+
+
+
 int_fast8_t COREMOD_MEMORY_stream_halfimDiff_cli()
 {
 	if(CLI_checkarg(1,4)+CLI_checkarg(2,4)+CLI_checkarg(3,2)==0)
@@ -1242,6 +1255,8 @@ int_fast8_t init_COREMOD_memory()
     RegisterCLIcommand("impixdecodeU", __FILE__, COREMOD_MEMORY_PixMapDecode_U_cli, "decode image stream", "<in stream> <xsize [long]> <ysize [long]> <nbpix per slice [ASCII file]> <decode map> <out stream> <out image slice index [FITS]>", "impixdecodeU streamin 120 120 pixsclienb.txt decmap outim outsliceindex.fits", "COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizeim, uint32_t ysizeim, const char* NBpix_fname, const char* IDmap_name, const char *IDout_name, const char *IDout_pixslice_fname)");
     
     RegisterCLIcommand("streamdiff", __FILE__, COREMOD_MEMORY_streamDiff_cli, "compute difference between two image streams", "<in stream 0> <in stream 1> <out stream> <optional mask> <sem trigger index>", "streamdiff stream0 stream1 null outstream 3", "long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreamout_name, long semtrig)");
+
+    RegisterCLIcommand("streampaste", __FILE__, COREMOD_MEMORY_streamPaste_cli, "paste two 2D image streams of same size", "<in stream 0> <in stream 1> <out stream> <sem trigger0> <sem trigger1> <master>", "streampaste stream0 stream1 outstream 3 3 0", "long COREMOD_MEMORY_streamPaste(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreamout_name, long semtrig0, long semtrig1, int master)");
 	
     RegisterCLIcommand("streamhalfdiff", __FILE__, COREMOD_MEMORY_stream_halfimDiff_cli, "compute difference between two halves of an image stream", "<in stream> <out stream> <sem trigger index>", "streamhalfdiff stream outstream 3", "long COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name, const char *IDstreamout_name, long semtrig)");
 
@@ -4666,6 +4681,202 @@ long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1
 	
 	return(IDout);
 }
+
+
+
+
+
+
+
+//
+// compute difference between two 2D streams
+// triggers alternatively on stream0 and stream1
+//
+long COREMOD_MEMORY_streamPaste(
+    const char *IDstream0_name,
+    const char *IDstream1_name,
+    const char *IDstreamout_name,
+    long semtrig0,
+    long semtrig1,
+    int master
+)
+{
+    long ID0, ID1, IDout, IDin;
+    long Xoffset;
+    uint32_t xsize, ysize, xysize;
+    long ii, jj;
+    uint32_t *arraysize;
+    long long cnt;
+    uint8_t atype;
+    int FrameIndex;
+
+    ID0 = image_ID(IDstream0_name);
+    ID1 = image_ID(IDstream1_name);
+
+    xsize = data.image[ID0].md[0].size[0];
+    ysize = data.image[ID0].md[0].size[1];
+    xysize = xsize*ysize;
+    atype = data.image[ID0].md[0].atype;
+
+    arraysize = (uint32_t*) malloc(sizeof(uint32_t)*2);
+    arraysize[0] = 2*xsize;
+    arraysize[1] = ysize;
+
+    IDout = image_ID(IDstreamout_name);
+    if(IDout == -1)
+    {
+        IDout = create_image_ID(IDstreamout_name, 2, arraysize, atype, 1, 0);
+        COREMOD_MEMORY_image_set_createsem(IDstreamout_name, 10);
+    }
+    free(arraysize);
+
+
+    FrameIndex = 0;
+
+    while(1)
+    {
+        if( FrameIndex == 0 )
+        {
+            // has new frame 0 arrived ?
+            if(data.image[ID0].md[0].sem==0)
+            {
+                while(cnt==data.image[ID0].md[0].cnt0) // test if new frame exists
+                    usleep(5);
+                cnt = data.image[ID0].md[0].cnt0;
+            }
+            else
+                sem_wait(data.image[ID0].semptr[semtrig0]);
+			Xoffset = 0;
+			IDin = 0;
+        }
+        else
+        {
+            // has new frame 1 arrived ?
+            if(data.image[ID1].md[0].sem==0)
+            {
+                while(cnt==data.image[ID1].md[0].cnt0) // test if new frame exists
+                    usleep(5);
+                cnt = data.image[ID1].md[0].cnt0;
+            }
+            else
+                sem_wait(data.image[ID0].semptr[semtrig1]);
+			Xoffset = xsize;
+			IDin = 1;
+        }
+		
+		
+		
+		
+		
+        data.image[IDout].md[0].write = 1;
+
+
+		for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.F[jj*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
+				
+		switch(atype)
+		{
+            case _DATATYPE_UINT8 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.UI8[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI8[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_UINT16 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.UI16[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI16[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_UINT32 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.UI32[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI32[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_UINT64 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.UI64[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI64[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_INT8 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.SI8[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI8[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_INT16 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.SI16[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI16[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_INT32 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.SI32[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI32[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_INT64 :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.SI64[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI64[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_FLOAT :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.F[jj*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_DOUBLE :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.D[jj*xsize + ii+Xoffset] = data.image[IDin].array.D[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_COMPLEX_FLOAT :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.CF[jj*xsize + ii+Xoffset] = data.image[IDin].array.CF[jj*xsize + ii];
+                break;
+
+            case _DATATYPE_COMPLEX_DOUBLE :
+            for(ii=0;ii<xsize;ii++)
+			for(jj=0;jj<ysize;jj++)
+				data.image[IDout].array.CD[jj*xsize + ii+Xoffset] = data.image[IDin].array.CD[jj*xsize + ii];
+                break;
+
+            default :
+                printf("Unknown data type\n");
+                exit(0);
+                break;
+            }
+		if(FrameIndex==master)
+		{
+			COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);;
+			data.image[IDout].md[0].cnt0++;
+		}
+        data.image[IDout].md[0].cnt1 = FrameIndex;
+        data.image[IDout].md[0].write = 0;
+
+		if( FrameIndex == 0 )
+			FrameIndex = 1;
+		else
+			FrameIndex = 0;
+    }
+
+    return(IDout);
+}
+
+
+
+
+
+
+
 
 
 
