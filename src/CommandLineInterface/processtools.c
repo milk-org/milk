@@ -976,8 +976,8 @@ static int GetCPUloads()
 	
 	
 	clock_gettime(CLOCK_REALTIME, &t1);
-    // number of process per CPU
-    for(cpu=0; cpu<NBcpus; cpu++)
+    // number of process per CPU -> we can get that from top?
+/*    for(cpu=0; cpu<NBcpus; cpu++)
     {
         char outstring[200];
         char command[200];
@@ -998,7 +998,7 @@ static int GetCPUloads()
             CPUpcnt[cpu] = atoi(outstring);
         }
 	}
-	
+	*/
 	
 	
 	clock_gettime(CLOCK_REALTIME, &t2);
