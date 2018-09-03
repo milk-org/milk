@@ -830,7 +830,7 @@ static int GetNumberCPUs()
 
 static long getTopOutput()
 {
-	long NBtop;
+	long NBtop = 0;
 
     char outstring[200];
     char command[200];
@@ -846,7 +846,7 @@ static long getTopOutput()
     else
     {
 		int startScan = 0;
-        while((fgets(outstring, 100, fpout) != NULL)&&(NBtop<NBtopMax))
+        while( (fgets(outstring, 100, fpout) != NULL) && (NBtop<NBtopMax) )
            {
 			   if(startScan == 1)
 			   { 
@@ -867,6 +867,10 @@ static long getTopOutput()
 						 toparray_TIME[NBtop],
 						 toparray_COMMAND[NBtop]
 						);
+						
+				// TEST
+				printf("process %5d : %4.1f\n", toparray_PID[NBtop], toparray_CPU[NBtop]);
+						
 				   NBtop++;
 			   }
 			   
@@ -875,6 +879,7 @@ static long getTopOutput()
 		   }
         pclose(fpout);
     }
+    
 
 	return NBtop;
 }
