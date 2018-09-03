@@ -4773,80 +4773,80 @@ long COREMOD_MEMORY_streamPaste(
 
 		for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.F[jj*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
+				data.image[IDout].array.F[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
 				
 		switch(atype)
 		{
             case _DATATYPE_UINT8 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.UI8[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI8[jj*xsize + ii];
+				data.image[IDout].array.UI8[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.UI8[jj*xsize + ii];
                 break;
 
             case _DATATYPE_UINT16 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.UI16[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI16[jj*xsize + ii];
+				data.image[IDout].array.UI16[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.UI16[jj*xsize + ii];
                 break;
 
             case _DATATYPE_UINT32 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.UI32[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI32[jj*xsize + ii];
+				data.image[IDout].array.UI32[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.UI32[jj*xsize + ii];
                 break;
 
             case _DATATYPE_UINT64 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.UI64[jj*xsize + ii+Xoffset] = data.image[IDin].array.UI64[jj*xsize + ii];
+				data.image[IDout].array.UI64[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.UI64[jj*xsize + ii];
                 break;
 
             case _DATATYPE_INT8 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.SI8[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI8[jj*xsize + ii];
+				data.image[IDout].array.SI8[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.SI8[jj*xsize + ii];
                 break;
 
             case _DATATYPE_INT16 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.SI16[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI16[jj*xsize + ii];
+				data.image[IDout].array.SI16[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.SI16[jj*xsize + ii];
                 break;
 
             case _DATATYPE_INT32 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.SI32[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI32[jj*xsize + ii];
+				data.image[IDout].array.SI32[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.SI32[jj*xsize + ii];
                 break;
 
             case _DATATYPE_INT64 :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.SI64[jj*xsize + ii+Xoffset] = data.image[IDin].array.SI64[jj*xsize + ii];
+				data.image[IDout].array.SI64[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.SI64[jj*xsize + ii];
                 break;
 
             case _DATATYPE_FLOAT :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.F[jj*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
+				data.image[IDout].array.F[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.F[jj*xsize + ii];
                 break;
 
             case _DATATYPE_DOUBLE :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.D[jj*xsize + ii+Xoffset] = data.image[IDin].array.D[jj*xsize + ii];
+				data.image[IDout].array.D[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.D[jj*xsize + ii];
                 break;
 
             case _DATATYPE_COMPLEX_FLOAT :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.CF[jj*xsize + ii+Xoffset] = data.image[IDin].array.CF[jj*xsize + ii];
+				data.image[IDout].array.CF[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.CF[jj*xsize + ii];
                 break;
 
             case _DATATYPE_COMPLEX_DOUBLE :
             for(ii=0;ii<xsize;ii++)
 			for(jj=0;jj<ysize;jj++)
-				data.image[IDout].array.CD[jj*xsize + ii+Xoffset] = data.image[IDin].array.CD[jj*xsize + ii];
+				data.image[IDout].array.CD[jj*2*xsize + ii+Xoffset] = data.image[IDin].array.CD[jj*xsize + ii];
                 break;
 
             default :
