@@ -3,73 +3,104 @@
  * @file processtools.c
  * @brief Tools to manage processes
  * 
- * Manages structure PROCESSINFO
+ * Manages structure PROCESSINFO.
+ * 
+ * The PROCESSINFO structures allow fine-grained management of real-time loop processes.\n
+ * The loop can be paused, stepped or stopped, and a counter value inspected.
  * 
  * 
  * 
- * Use Template
+ * # Use Template
  * 
  * 
- * At beginning of function:
+ * ## Creating processinfo instance
+ * 
+ * At beginning of function, create the processinfo for the function.
+ * 
+ * @code
+ * 
+ * PROCESSINFO *processinfo;
+ * 
+ * if(data.processinfo==1)
+ * {
+ *     // CREATE PROCESSINFO ENTRY
+ *     // see processtools.c in module CommandLineInterface for details
+ *     //
+ *     
+ *     char pinfoname[200];  // short name for the processinfo instance
+ *     // avoid spaces, name should be human-readable
  * 
  * 
-  PROCESSINFO *processinfo;
-    if(data.processinfo==1)
-    {
-        // CREATE PROCESSINFO ENTRY
-        // see processtools.c in module CommandLineInterface for details
-        //
-        char pinfoname[200];
-        sprintf(pinfoname, "process %s to %s", IDinname, IDoutname);
-        processinfo = processinfo_shm_create(pinfoname, 0);
-        processinfo->loopstat = 0; // loop initialization
-
-        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-        strcpy(processinfo->source_FILE,     __FILE__);
-        processinfo->source_LINE = __LINE__;
-
-        char msgstring[200];
-        sprintf(msgstring, "%s->%s", IDinname, IDoutname);
-        processinfo_WriteMessage(processinfo, msgstring);
-    }
- 
- // CATCH SIGNALS
- 	
-	if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGTERM\n");
-
-	if (sigaction(SIGINT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGINT\n");    
-
-	if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGABRT\n");     
-
-	if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGBUS\n");
-
-	if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGSEGV\n");         
-
-	if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGHUP\n");         
-
-	if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGPIPE\n");   
- 
- // pre-loop testing, anything that would prevent loop from starting should issue message
-
-   int loopOK = 1;
- 
- if(.... error condition ....)
- {
-   sprintf(msgstring, "ERROR: no WFS reference");
-        if(data.processinfo == 1)
-        {
-			processinfo->loopstat = 4; // ERROR
-			processinfo_WriteMessage(processinfo, msgstring);
-		}	
-	loopOK = 0;
-	}
+ *     sprintf(pinfoname, "process-%s-to-%s", IDinname, IDoutname);
+ *     processinfo = processinfo_shm_create(pinfoname, 0);
+ *     processinfo->loopstat = 0; // loop initialization
+ *     strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+ *     strcpy(processinfo->source_FILE,     __FILE__);
+ *     processinfo->source_LINE = __LINE__;
+ * 
+ *     char msgstring[200];
+ *     sprintf(msgstring, "%s->%s", IDinname, IDoutname);
+ *     processinfo_WriteMessage(processinfo, msgstring);
+ * }
+ * 
+ * @endcode
+ * 
+ * Process signals should be caught for suitable processing and reporting.
+ * 
+ * @code
+ * // CATCH SIGNALS
+ * 
+ * if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGTERM\n");
+ * 
+ * if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGINT\n");    
+ * 
+ * if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGABRT\n");
+ * 
+ * if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGBUS\n");
+ * 
+ * if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGSEGV\n");         
+ * 
+ * if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGHUP\n");         
+ * 
+ * if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGPIPE\n");
+ * @endcode
+ * 
+ * 
+ * 
+ * ## Testing if loop process can start
+ * 
+ * Pre-loop testing, anything that would prevent loop from starting should issue message
+ * 
+ * @code
+ * int loopOK = 1;
+ * 
+ * if(.... error condition ....)
+ * {
+ *     sprintf(msgstring, "ERROR: no WFS reference");
+ *     if(data.processinfo == 1)
+ *     {
+ *         processinfo->loopstat = 4; // ERROR
+ *         processinfo_WriteMessage(processinfo, msgstring);
+ *     }
+ *     loopOK = 0;
+ * }
+ * @endcode
+ * 
+ * 
+ * ## Starting loop
+ * 
+ * @code
+ * 
+  @endcode
+ * 
+ * 
  
   
   
@@ -205,6 +236,10 @@
 #include <fcntl.h> 
 #include <ctype.h>
 
+#include <dirent.h>
+
+
+
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -216,6 +251,8 @@
 /*                                      DEFINES, MACROS                                            */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
+#define MAXNBSUBPROCESS 50
 
 typedef struct
 {
@@ -234,21 +271,35 @@ typedef struct
 	
 	char          cpuset[16];       /**< cpuset name  */
 	char          cpusallowed[20];
-	int           threads; 
+	int           threads;
+	
+	double        sampletime;
+	double        sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
+	double        sampletimearray_prev[MAXNBSUBPROCESS];
+	
 	long          ctxtsw_voluntary;
 	long          ctxtsw_nonvoluntary;
-
-	long          ctxtsw_voluntary_prev[50];
-	long          ctxtsw_nonvoluntary_prev[50];
+	long          ctxtsw_voluntary_prev[MAXNBSUBPROCESS];
+	long          ctxtsw_nonvoluntary_prev[MAXNBSUBPROCESS];
+	
+	long long     cpuloadcnt;
+	long long     cpuloadcntarray[MAXNBSUBPROCESS];
+	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
+	
+	
+	long          VmRSS;
+	long          VmRSSarray[MAXNBSUBPROCESS];
 	
 	int           processor;
 	int           rt_priority;
+	float         memload;
 	
-	// sub-processes
+	
 	int           NBsubprocesses;
-	int           subprocPIDarray[50];
-	float         subprocCPUloadarray[50];
-	float         subprocMEMloadarray[50];
+	int           subprocPIDarray[MAXNBSUBPROCESS];
+
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -329,10 +380,19 @@ static double scantime_CPUpcnt;
 /* =============================================================================================== */
 
 
-// 
-// if list does not exist, create it and return index = 0
-// if list exists, return first available index
-//
+
+/**
+ * ## Purpose
+ * 
+ * Read/create processinfo list
+ * 
+ * ## Description
+ * 
+ * If list does not exist, create it and return index = 0
+ * 
+ * If list exists, return first available index
+ * 
+ */
 
 long processinfo_shm_list_create()
 {
@@ -531,6 +591,8 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	
     return pinfo;
 }
+
+
 
 
 
@@ -869,12 +931,6 @@ static long getTopOutput()
            {
 			   if(startScan == 1)
 			   { 
-				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
-					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
-
-					//printf("%5ld:  %s", NBtop, outstring);
-					//fflush(stdout);
-					
 				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
 						toparray_USER[NBtop],
@@ -889,11 +945,6 @@ static long getTopOutput()
 						 toparray_TIME[NBtop],
 						 toparray_COMMAND[NBtop]
 						);
-					
-				// TEST
-//				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
-//				printf("\n");
-						
 				   NBtop++;
 			   }
 			   
@@ -908,6 +959,8 @@ static long getTopOutput()
 
 	return NBtop;
 }
+
+
 
 
 
@@ -1056,6 +1109,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     char string0[200];
     char string1[200];
 
+	
+
     sprintf(fname, "/proc/%d/status", PID);
     fp = fopen(fname, "r");
     if (fp == NULL)
@@ -1068,7 +1123,13 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
             sscanf(line, "%s %s", string0, string1);
             strcpy(pinfodisp[pindex].cpusallowed, string1);
         }
-
+        
+        if(strncmp(line, "VmRSS:", strlen("VmRSS:")) == 0)
+        {
+			sscanf(line, "%s %s", string0, string1);
+			pinfodisp[pindex].VmRSS = atol(string1);
+		}
+        
         if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
         {
             sscanf(line, "%s %s", string0, string1);
@@ -1261,6 +1322,12 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			pinfodisp[pindex].processor = stat_processor;
 			pinfodisp[pindex].rt_priority = stat_rt_priority;
 		}
+	
+	pinfodisp[pindex].sampletime = 1.0*t1.tv_sec + 1.0e-9*t1.tv_nsec;
+	
+	pinfodisp[pindex].cpuloadcnt = (stat_utime + stat_stime); 
+	pinfodisp[pindex].memload = 0.0;
+	
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
 	scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
@@ -1280,38 +1347,25 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
         if(pinfodisp[pindex].threads > 1) // look for children
         {
-            char outstringc[200];
+			DIR *dp;
+			struct dirent *ep;
+			char dirname[200];
+			
+			sprintf(dirname, "/proc/%d/task/", PID);
+			dp = opendir (dirname);
 
-            sprintf(command, "pstree -p %d", PID);
-
-            fpout = popen (command, "r");
-            if(fpout==NULL)
-            {
-                printf("WARNING: cannot run command \"%s\"\n", command);
-            }
-            else
-            {
-                while(fgets(outstring, 100, fpout) != NULL)
-                {
-                    int i = 0;
-                    int ic = 0;
-                    for(i=0; i<strlen(outstring); i++)
-                    {
-                        if(isdigit(outstring[i]))
-                        {
-                            outstringc[ic] = outstring[i];
-                            ic++;
-                        }
-                        if(outstring[i] == '(')
-                            ic = 0;
-                    }
-                    outstringc[ic] = '\0';
-
-                    pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(outstringc);
-                    pinfodisp[pindex].NBsubprocesses++;
-                }
-                pclose(fpout);
-            }
+			if (dp != NULL)
+			{
+				while (ep = readdir (dp))
+					{
+						if(ep->d_name[0] != '.')
+						{
+							pinfodisp[pindex].subprocPIDarray[pinfodisp[pindex].NBsubprocesses] = atoi(ep->d_name);
+							pinfodisp[pindex].NBsubprocesses++;
+						}
+					}
+				(void) closedir (dp);
+			}
         }   
 	}
 	clock_gettime(CLOCK_REALTIME, &t2);
@@ -1330,47 +1384,69 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
 /**
+ * ## Purpose
+ * 
  * Control screen for PROCESSINFO structures
  *
- * Relies on ncurses for display
+ * ## Description
+ * 
+ * Relies on ncurses for display\n
+ * 
  *
  */
 
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
-
+    
+    
+    //
     // these arrays are indexed together
     // the index is different from the displayed order
     // new process takes first available free index
+    //
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
-    int          pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-    pid_t        PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
-    int          updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
-    int          fdarray[PROCESSINFOLISTSIZE];     // file descriptors
-    long         loopcntarray[PROCESSINFOLISTSIZE];
-    long         loopcntoffsetarray[PROCESSINFOLISTSIZE];
-    int          selectedarray[PROCESSINFOLISTSIZE];
+    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
+    pid_t         PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
+    int           updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
+    int           fdarray[PROCESSINFOLISTSIZE];     // file descriptors
+    long          loopcntarray[PROCESSINFOLISTSIZE];
+    long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
+    int           selectedarray[PROCESSINFOLISTSIZE];
 
-    int sorted_pindex_time[PROCESSINFOLISTSIZE];
+    int           sorted_pindex_time[PROCESSINFOLISTSIZE];
 
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
     char syscommand[200];
-
-
-    int NBcpus = 0;
-
-
+    int  NBcpus = 0;
     char pselected_FILE[200];
     char pselected_FUNCTION[200];
-    int pselected_LINE;
+    int  pselected_LINE;
 
-
+	// timers 
     struct timespec t1loop;
     struct timespec t2loop;
     struct timespec tdiffloop;
+
+    struct timespec t01loop;
+    struct timespec t02loop;
+    struct timespec t03loop;
+    struct timespec t04loop;
+    struct timespec t05loop;
+    struct timespec t06loop;
+    struct timespec t07loop;
+
+
+    float frequ = 10.0; // Hz
+    char  monstring[200];
+
+    // list of active indices
+    int   pindexActiveSelected;
+    int   pindexSelected;
+    int   pindexActive[PROCESSINFOLISTSIZE];
+    int   NBpindexActive;
 
 
 
@@ -1383,16 +1459,6 @@ int_fast8_t processinfo_CTRLscreen()
         selectedarray[pindex] = 0; // initially not selected
         loopcntoffsetarray[pindex] = 0;
     }
-
-
-    float frequ = 10.0; // Hz
-    char monstring[200];
-
-    // list of active indices
-    int pindexActiveSelected;
-    int pindexSelected;
-    int pindexActive[PROCESSINFOLISTSIZE];
-    int NBpindexActive;
 
 
 
@@ -1434,6 +1500,8 @@ int_fast8_t processinfo_CTRLscreen()
     // display modes:
     // 1: overview
     // 2: CPU affinity
+
+	clear();
 
     while( loopOK == 1 )
     {
@@ -1751,12 +1819,12 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         }
+        clock_gettime(CLOCK_REALTIME, &t01loop);
 
 
         if(freeze==0)
-        {
-            clear();
-
+        {           			
+			erase();
             printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
@@ -1764,10 +1832,6 @@ int_fast8_t processinfo_CTRLscreen()
             printw("\n");
 
 
-
-            sprintf(pselected_FILE, "?");
-            sprintf(pselected_FUNCTION, "?");
-            pselected_LINE = 0;
 
             if(pinfommapped[pindexSelected] == 1)
             {
@@ -1779,21 +1843,31 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("Source Code: %s line %d (function %s)\n", pselected_FILE,  pselected_LINE, pselected_FUNCTION);
             }
             else
+            {
+				sprintf(pselected_FILE, "?");
+				sprintf(pselected_FUNCTION, "?");
+				pselected_LINE = 0;
                 printw("\n");
+			}
 
             printw("\n");
 
 
 
 
-
+			clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
             // LOAD / UPDATE process information
-            NBtopP = getTopOutput();
+          
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
+				char SM_fname[200];    // shared memory file name
+				struct stat file_stat;
+				
+				
+				
                 // SHOULD WE (RE)LOAD ?
                 if(pinfolist->active[pindex] == 0) // inactive
                     updatearray[pindex] = 0;
@@ -1815,12 +1889,11 @@ int_fast8_t processinfo_CTRLscreen()
                     updatearray[pindex] = 0;
 
 
-                char SM_fname[200];
+                
 
 
                 // check if process info file exists
 
-                struct stat file_stat;
                 sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
 
                 // Does file exist ?
@@ -1837,6 +1910,7 @@ int_fast8_t processinfo_CTRLscreen()
                     // check if process still exists
                     struct stat sts;
                     char procfname[200];
+                    
                     sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as inactive
@@ -1900,6 +1974,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+			clock_gettime(CLOCK_REALTIME, &t03loop);
+			
+			
             /** ### Build a time-sorted list of processes
              *
              *
@@ -1940,7 +2017,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
+			clock_gettime(CLOCK_REALTIME, &t04loop);
 
             /** ### Display
              *
@@ -2105,6 +2182,11 @@ int_fast8_t processinfo_CTRLscreen()
             }
 
 
+
+
+			clock_gettime(CLOCK_REALTIME, &t05loop);
+
+
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
                 if(TimeSorted == 0)
@@ -2117,8 +2199,6 @@ int_fast8_t processinfo_CTRLscreen()
 
                     if(pindex == pindexSelected)
                         attron(A_REVERSE);
-
-                    // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
 
                     if(selectedarray[pindex]==1)
                         printw("*");
@@ -2152,15 +2232,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
-
-
-
-
-
-
-
-                    //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                     if(pinfolist->active[pindex] != 0)
                     {
                         if(pindex == pindexSelected)
@@ -2273,7 +2344,11 @@ int_fast8_t processinfo_CTRLscreen()
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
                                     printw(" %2dx ", pinfodisp[pindex].threads);
 
-
+									// place info in subprocess arrays
+									pinfodisp[pindex].sampletimearray_prev[spindex] = pinfodisp[pindex].sampletimearray[spindex];
+									pinfodisp[pindex].sampletimearray[spindex] = pinfodisp[pindex].sampletime;
+									pinfodisp[pindex].cpuloadcntarray[spindex] = pinfodisp[pindex].cpuloadcnt;
+									pinfodisp[pindex].VmRSSarray[spindex] = pinfodisp[pindex].VmRSS;
 
 
                                     // Context Switches
@@ -2282,7 +2357,6 @@ int_fast8_t processinfo_CTRLscreen()
                                         attron(COLOR_PAIR(4));
                                     else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
                                         attron(COLOR_PAIR(3));
-
 
                                     printw("ctxsw: +%02ld +%02ld",
                                            abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
@@ -2300,49 +2374,33 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
                                     printw(" ");
 
 
                                     // CPU use
 
-                                    // get CPU and MEM load
-                                    int itop;
-                                    int itopOK = 0;
-                                    for(itop = 0; itop<NBtopP; itop++)
-                                    {
-
-                                        if(TID == toparray_PID[itop])
-                                        {
-                                            itopOK = 1;
-                                            pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
-                                            pinfodisp[pindex].subprocMEMloadarray[spindex] = toparray_MEM[itop];
-                                        }
-                                    }
-                                    if(itopOK==0)
-                                    {
-                                        pinfodisp[pindex].subprocCPUloadarray[spindex] = -1.0;
-                                        pinfodisp[pindex].subprocMEMloadarray[spindex] = -1.0;
-                                    }
-
+                                    // get CPU and MEM load																		
+									pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfodisp[pindex].cpuloadcntarray[spindex]-pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfodisp[pindex].sampletimearray[spindex] - pinfodisp[pindex].sampletimearray_prev[spindex]);
+									
+									pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfodisp[pindex].cpuloadcntarray[spindex];
+                                    
+									pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfodisp[pindex].subprocCPUloadarray[spindex];
 
 
                                     int cpuColor = 0;
 
                                     //					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
                                     cpuColor = 1;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]>10.0)
                                         cpuColor = 2;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]>20.0)
                                         cpuColor = 3;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>40.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]>40.0)
                                         cpuColor = 4;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]<1.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]<1.0)
                                         cpuColor = 5;
 
                                     sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-
-
 
 
                                     // First group of cores (physical CPU 0)
@@ -2418,29 +2476,56 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                     attron(COLOR_PAIR(cpuColor));
-                                    printw("%4.1f",
-                                           pinfodisp[pindex].subprocCPUloadarray[spindex]);
+                                    printw("%5.1f %6.2f",
+                                           pinfodisp[pindex].subprocCPUloadarray[spindex],
+                                           pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
                                     attroff(COLOR_PAIR(cpuColor));
+
+
 
                                     int memColor = 0;
 
+									int kBcnt, MBcnt, GBcnt;
+									
+									kBcnt = pinfodisp[pindex].VmRSSarray[spindex];
+									MBcnt = kBcnt/1024;
+									kBcnt = kBcnt - MBcnt*1024;
+									
+									GBcnt = MBcnt/1024;									
+									MBcnt = MBcnt - GBcnt*1024;
+
                                     //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                     memColor = 1;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
+                                    if(pinfodisp[pindex].VmRSSarray[spindex]>100*1024>10)        // 10 MB
                                         memColor = 2;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
+                                    if(pinfodisp[pindex].VmRSSarray[spindex]>100*1024)       // 100 MB
                                         memColor = 3;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>4.0)
+                                    if(pinfodisp[pindex].VmRSSarray[spindex]>1024*1024)  // 1 GB
                                         memColor = 4;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]<0.1)
+                                    if(pinfodisp[pindex].VmRSSarray[spindex]<1024)            // 1 MB 
                                         memColor = 5;
 
                                     printw(" ");
                                     attron(COLOR_PAIR(memColor));
-                                    printw("%4.1f",
-                                           pinfodisp[pindex].subprocMEMloadarray[spindex]);
+									if(GBcnt>0)
+										printw("%3d GB ", GBcnt);
+									else
+										printw("       ");
+									
+									if(MBcnt>0)
+										printw("%3d MB ", MBcnt);
+									else
+										printw("       ");
+									
+									if(kBcnt>0)
+										printw("%3d kB ", kBcnt);
+									else
+										printw("       ");
+									
+                              
                                     attroff(COLOR_PAIR(memColor));
 
+									
 
 
                                     printw("\n");
@@ -2465,19 +2550,52 @@ int_fast8_t processinfo_CTRLscreen()
 
 
             }
+            clock_gettime(CLOCK_REALTIME, &t06loop);
 
             refresh();
+            
+            clock_gettime(CLOCK_REALTIME, &t07loop);
 
             cnt++;
 
-        }
+        
 
         clock_gettime(CLOCK_REALTIME, &t2loop);
 
-        tdiff = info_time_diff(t1loop, t2loop);
+      /*  tdiff = info_time_diff(t1loop, t2loop);
         double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
         
-        printw("Process scan time = %9.8f s\n", tdiffvloop);
+        printw("Loop time = %9.8f s\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t1loop, t01loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 01  : %9.8f\n", tdiffvloop);
+
+		tdiff = info_time_diff(t01loop, t02loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 02  : %9.8f\n", tdiffvloop);
+
+		tdiff = info_time_diff(t02loop, t03loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 03  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t03loop, t04loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 04  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t04loop, t05loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 05  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t05loop, t06loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 06  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t06loop, t07loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 07  : %9.8f\n", tdiffvloop);
+
+		
 		printw("     %9.8f  scantime_cpuset\n", scantime_cpuset);
 		printw("     %9.8f  scantime_status\n", scantime_status);
 		printw("     %9.8f  scantime_stat\n", scantime_stat);
@@ -2485,6 +2603,10 @@ int_fast8_t processinfo_CTRLscreen()
 		printw("     %9.8f  scantime_top\n", scantime_top);
 		printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
 		printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
+		*/
+		
+		
+		}
 
     }
     endwin();
