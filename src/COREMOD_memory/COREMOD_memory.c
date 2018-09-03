@@ -4759,19 +4759,13 @@ long COREMOD_MEMORY_streamPaste(
                 cnt = data.image[ID1].md[0].cnt0;
             }
             else
-                sem_wait(data.image[ID0].semptr[semtrig1]);
+                sem_wait(data.image[ID1].semptr[semtrig1]);
 			Xoffset = xsize;
 			IDin = 1;
         }
 		
 		
-		
-		
-		
         data.image[IDout].md[0].write = 1;
-
-
-	
 				
 		switch(atype)
 		{
