@@ -6228,7 +6228,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
         processinfo->source_LINE = __LINE__;
 
         char msgstring[200];
-        sprintf(msgstring, "mode = %d", mode);
+        sprintf(msgstring, "Waiting for input stream");
         processinfo_WriteMessage(processinfo, msgstring);
     }
  
