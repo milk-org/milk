@@ -286,6 +286,30 @@ static float CPUpcnt[100];
 
 
 
+#define NBtopMax 1000
+
+static int   toparray_PID[NBtopMax];
+static char  toparray_USER[NBtopMax][32];
+static int   toparray_PR[NBtopMax][8];
+static int   toparray_NI[NBtopMax];
+static char  toparray_VIRT[NBtopMax][32];
+static char  toparray_RES[NBtopMax][32];
+static char  toparray_SHR[NBtopMax][32];
+static char  toparray_S[NBtopMax][8];
+static float toparray_CPU[NBtopMax];
+static float toparray_MEM[NBtopMax];
+static char  toparray_TIME[NBtopMax][32];
+static char  toparray_COMMAND[NBtopMax][32];
+
+static int NBtopP; // number of processes scanned by top
+
+
+
+
+
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                    FUNCTIONS SOURCE CODE                                        */
@@ -806,6 +830,73 @@ static int GetNumberCPUs()
 
 
 
+
+
+static long getTopOutput()
+{
+	long NBtop = 0;
+
+    char outstring[200];
+    char command[200];
+    FILE * fpout;
+	int ret;
+	
+
+    sprintf(command, "top -H -b -n 1");
+    fpout = popen (command, "r");
+    if(fpout==NULL)
+    {
+        printf("WARNING: cannot run command \"%s\"\n", command);
+    }
+    else
+    {
+		int startScan = 0;
+		ret = 12;
+        while( (fgets(outstring, 100, fpout) != NULL) && (NBtop<NBtopMax) && (ret==12) )
+           {
+			   if(startScan == 1)
+			   { 
+				   // PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
+
+					//printf("%5ld:  %s", NBtop, outstring);
+					//fflush(stdout);
+					
+				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
+						&toparray_PID[NBtop],
+						toparray_USER[NBtop],
+						toparray_PR[NBtop],
+						&toparray_NI[NBtop],
+						 toparray_VIRT[NBtop],
+						 toparray_RES[NBtop],
+						 toparray_SHR[NBtop],
+						 toparray_S[NBtop],
+						&toparray_CPU[NBtop],
+						&toparray_MEM[NBtop],
+						 toparray_TIME[NBtop],
+						 toparray_COMMAND[NBtop]
+						);
+					
+				// TEST
+//				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
+//				printf("\n");
+						
+				   NBtop++;
+			   }
+			   
+				if(strstr(outstring, "USER")!=NULL)
+					startScan = 1;
+		   }
+        pclose(fpout);
+    }
+    
+
+	return NBtop;
+}
+
+
+
+
 static int GetCPUloads()
 {
     int NBcpus;
@@ -856,7 +947,7 @@ static int GetCPUloads()
         CPUcnt7[cpu] = vall7;
         CPUcnt8[cpu] = vall8;
 
-        CPUload[cpu] = 1.0*v0; //(1.0*v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
+        CPUload[cpu] = (1.0*v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
         cpu++;
     }
 
@@ -889,6 +980,15 @@ static int GetCPUloads()
 
     return(cpu);
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1243,13 +1343,21 @@ FILE * fpouttest;
                 pclose(fpout);
             }
         }
+        
+        
+        
+	}
 
-        // get CPU and MEM load
+
+
+
+
+        
         // ps -T -o lwp,%cpu,%mem  -p PID
 
 //		sprintf(command, "ps -T -o %%cpu,%%mem  -p %d > test.%d.txt", PID, PID);
 	//	system(command);
-		
+/*		
         sprintf(command, "ps -T -o %%cpu,%%mem  -p %d", PID);
         
         fpout = popen (command, "r");
@@ -1276,9 +1384,10 @@ FILE * fpouttest;
 
             pclose(fpout);
         }
+        */ 
 
 
-    }
+    
 
 
 
@@ -1326,9 +1435,9 @@ int_fast8_t processinfo_CTRLscreen()
     int NBcpus = 0;
 
 
-	char pselected_FILE[200];
-	char pselected_FUNCTION[200];
-	int pselected_LINE;
+    char pselected_FILE[200];
+    char pselected_FUNCTION[200];
+    int pselected_LINE;
 
 
 
@@ -1713,26 +1822,32 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-			sprintf(pselected_FILE, "?");
-			sprintf(pselected_FUNCTION, "?");
-			pselected_LINE = 0;
+            sprintf(pselected_FILE, "?");
+            sprintf(pselected_FUNCTION, "?");
+            pselected_LINE = 0;
 
-			 if(pinfommapped[pindexSelected] == 1)
-			 {
-				
-				strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
-				strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
-				pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
-				
-				printw("Source Code: %s line %d (function %s)\n", pselected_FILE,  pselected_LINE, pselected_FUNCTION);
-			}
-			else
-				printw("\n");
-				
-			printw("\n");
+            if(pinfommapped[pindexSelected] == 1)
+            {
+
+                strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
+                strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
+                pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
+
+                printw("Source Code: %s line %d (function %s)\n", pselected_FILE,  pselected_LINE, pselected_FUNCTION);
+            }
+            else
+                printw("\n");
+
+            printw("\n");
+
+
+
+
+
 
 
             // LOAD / UPDATE process information
+            NBtopP = getTopOutput();
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -1883,6 +1998,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+
             /** ### Display
              *
              *
@@ -1901,41 +2017,41 @@ int_fast8_t processinfo_CTRLscreen()
 
             if(DisplayMode == 2)
             {
-				NBcpus = GetCPUloads();
+                NBcpus = GetCPUloads();
                 int cpu;
-				
+
                 // List CPUs
-                
-                
-                
-                
-                
+
+
+
+
+
                 // Measure CPU loads, Display
                 int ColorCode;
-                
+
                 // color limits for load
-				int CPUloadLim0 = 3;
+                int CPUloadLim0 = 3;
                 int CPUloadLim1 = 40;
                 int CPUloadLim2 = 60;
                 int CPUloadLim3 = 80;
 
-				// color limits for # processes
-				int CPUpcntLim0 = 1;
+                // color limits for # processes
+                int CPUpcntLim0 = 1;
                 int CPUpcntLim1 = 2;
                 int CPUpcntLim2 = 4;
                 int CPUpcntLim3 = 8;
 
 
-				// List CPUs
+                // List CPUs
                 printw("                                                                           %2d CPUs  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
-                    printw("|%02d", cpu);                
+                    printw("|%02d", cpu);
                 printw("|    |");
                 for(cpu=1; cpu<NBcpus; cpu+=2)
                     printw("%02d|", cpu);
                 printw("\n");
-                
-				// List CPU # processes
+
+                // List CPU # processes
                 printw("                                                                         PROCESSES  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
                 {
@@ -1986,11 +2102,11 @@ int_fast8_t processinfo_CTRLscreen()
                 }
 
                 printw("\n");
-                
-                
-                
-                
-                
+
+
+
+
+
                 // Print CPU LOAD
                 printw("                                                                          CPU LOAD  ", NBcpus);
                 for(cpu=0; cpu<NBcpus; cpu+=2)
@@ -2186,22 +2302,26 @@ int_fast8_t processinfo_CTRLscreen()
 
                             // collect required info for display
                             psysinfostatus = PIDcollectSystemInfo(pinfodisp[pindex].PID, pindex, pinfodisp, 0);
-                            
+
                             if(psysinfostatus == -1)
                             {
-								printw(" no process info available\n");
-							}
-							else
+                                printw(" no process info available\n");
+                            }
+                            else
                             {
-                                int spindex; // sub process index
+                                int spindex; // sub process index, 0 for main
                                 for(spindex = 0; spindex < pinfodisp[pindex].NBsubprocesses; spindex++)
                                 {
+                                    int TID; // thread ID
 
                                     if(spindex>0)
                                     {
+                                        TID = pinfodisp[pindex].subprocPIDarray[spindex];
                                         printw("               |---%6d                        ", pinfodisp[pindex].subprocPIDarray[spindex]);
                                         PIDcollectSystemInfo(pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfodisp, 1);
                                     }
+                                    else
+                                        TID = pinfodisp[pindex].PID;
 
                                     printw(" %2d", pinfodisp[pindex].rt_priority);
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
@@ -2210,8 +2330,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-									// Context Switches
-									
+                                    // Context Switches
+
                                     if(pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_nonvoluntary)
                                         attron(COLOR_PAIR(4));
                                     else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
@@ -2238,25 +2358,38 @@ int_fast8_t processinfo_CTRLscreen()
                                     printw(" ");
 
 
-									// CPU use
-									
-									int cpuColor = 0;
-																		
-				//					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
-									cpuColor = 1;
-									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
-										cpuColor = 2;
-									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
-										cpuColor = 3;
-									if(pinfodisp[pindex].subprocCPUloadarray[spindex]>40.0)
-										cpuColor = 4;
-									if(pinfodisp[pindex].subprocCPUloadarray[spindex]<1.0)
-										cpuColor = 5;
-									
+                                    // CPU use
+
+                                    // get CPU and MEM load
+                                    int itop;
+                                    for(itop = 0; itop<NBtopP; itop++)
+                                    {
+                                        if(TID == toparray_PID[itop])
+                                        {
+                                            pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
+                                            pinfodisp[pindex].subprocMEMloadarray[spindex] = toparray_MEM[itop];
+                                        }
+                                    }
+
+
+
+                                    int cpuColor = 0;
+
+                                    //					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
+                                    cpuColor = 1;
+                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
+                                        cpuColor = 2;
+                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
+                                        cpuColor = 3;
+                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>40.0)
+                                        cpuColor = 4;
+                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]<1.0)
+                                        cpuColor = 5;
+
                                     sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-                                    
-                                    
-                                    
+
+
+
 
                                     // First group of cores (physical CPU 0)
                                     for(cpu=0; cpu<NBcpus; cpu += 2)
@@ -2267,18 +2400,18 @@ int_fast8_t processinfo_CTRLscreen()
                                         sprintf(cpustring, ",%d,",cpu);
                                         if(strstr(cpuliststring, cpustring) != NULL)
                                             cpuOK = 1;
-                                        
-                                        
-                                        for(cpumin=0;cpumin<=cpu;cpumin++)
-											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
-											{
-												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-												if(strstr(cpuliststring, cpustring) != NULL)
-													cpuOK = 1;
-											}
-										
 
-										printw("|");
+
+                                        for(cpumin=0; cpumin<=cpu; cpumin++)
+                                            for(cpumax=cpu; cpumax<NBcpus; cpumax++)
+                                            {
+                                                sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+                                                if(strstr(cpuliststring, cpustring) != NULL)
+                                                    cpuOK = 1;
+                                            }
+
+
+                                        printw("|");
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
 
@@ -2299,21 +2432,21 @@ int_fast8_t processinfo_CTRLscreen()
                                     {
                                         int cpuOK = 0;
                                         int cpumin, cpumax;
-                                        
+
                                         sprintf(cpustring, ",%d,",cpu);
                                         if(strstr(cpuliststring, cpustring) != NULL)
                                             cpuOK = 1;
-                                         
-                                        for(cpumin=0;cpumin<=cpu;cpumin++)
-											for(cpumax=cpu;cpumax<NBcpus;cpumax++)
-											{
-												sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-												if(strstr(cpuliststring, cpustring) != NULL)
-													cpuOK = 1;
-											}
+
+                                        for(cpumin=0; cpumin<=cpu; cpumin++)
+                                            for(cpumax=cpu; cpumax<NBcpus; cpumax++)
+                                            {
+                                                sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+                                                if(strstr(cpuliststring, cpustring) != NULL)
+                                                    cpuOK = 1;
+                                            }
 
 
-										printw("|");
+                                        printw("|");
                                         if(cpu == pinfodisp[pindex].processor)
                                             attron(COLOR_PAIR(cpuColor));
 
@@ -2327,32 +2460,32 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     }
                                     printw("| ");
-                                    
-                                    
-                                    
+
+
+
                                     attron(COLOR_PAIR(cpuColor));
-                                    printw("%4.1f", 
-										pinfodisp[pindex].subprocCPUloadarray[spindex]);
+                                    printw("%4.1f",
+                                           pinfodisp[pindex].subprocCPUloadarray[spindex]);
                                     attroff(COLOR_PAIR(cpuColor));
-                                    
+
                                     int memColor = 0;
-									
-									//if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
-									memColor = 1;
-									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
-										memColor = 2;
-									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
-										memColor = 3;
-									if(pinfodisp[pindex].subprocMEMloadarray[spindex]>4.0)
-										memColor = 4;
-									if(pinfodisp[pindex].subprocMEMloadarray[spindex]<0.1)
-										memColor = 5;
-										
-									printw(" ");
-									attron(COLOR_PAIR(memColor));
-                                    printw("%4.1f", 
-										pinfodisp[pindex].subprocMEMloadarray[spindex]);
-									attroff(COLOR_PAIR(memColor));
+
+                                    //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
+                                    memColor = 1;
+                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
+                                        memColor = 2;
+                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
+                                        memColor = 3;
+                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>4.0)
+                                        memColor = 4;
+                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]<0.1)
+                                        memColor = 5;
+
+                                    printw(" ");
+                                    attron(COLOR_PAIR(memColor));
+                                    printw("%4.1f",
+                                           pinfodisp[pindex].subprocMEMloadarray[spindex]);
+                                    attroff(COLOR_PAIR(memColor));
 
 
 
@@ -2362,19 +2495,19 @@ int_fast8_t processinfo_CTRLscreen()
                                         attroff(A_REVERSE);
                                 }
                             }
-                        
-                        
+
+
                         }
 
                         if(pindex == pindexSelected)
                             attroff(A_REVERSE);
-						
+
                     }
 
                 }
-                
+
                 if(DisplayMode == 1)
-					printw("\n");
+                    printw("\n");
 
 
             }
