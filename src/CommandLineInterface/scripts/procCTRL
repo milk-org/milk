@@ -1,0 +1,6 @@
+#!/bin/bash
+
+SF="shmimmonstartup"
+echo "procCTRL" >$SF
+echo "exitCLI" >> $SF
+milk -n procCTRL -f procctrlfifo -s $SF
