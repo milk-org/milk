@@ -1130,7 +1130,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			pinfodisp[pindex].rt_priority = stat_rt_priority;
 		}
 
-
+/* For testing 
 FILE * fpouttest;
 					
 					sprintf(fname, "out.%d.txt", PID);
@@ -1195,7 +1195,7 @@ FILE * fpouttest;
                );
 					fclose(fpouttest);
 
-
+*/
 
 
 
