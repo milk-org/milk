@@ -1064,7 +1064,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
     Nfields = fscanf(fp,
                 "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %ld\n",
-                &stat_pid,
+                &stat_pid,      //  1
                 stat_comm,
                 &stat_state,
                 &stat_ppid,
@@ -1073,7 +1073,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_tty_nr,
                 &stat_tpgid,
                 &stat_flags,
-                &stat_minflt,
+                &stat_minflt,   //  10
                 &stat_cminflt,
                 &stat_majflt,
                 &stat_cmajflt,
@@ -1083,7 +1083,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_cstime,
                 &stat_priority,
                 &stat_nice,
-                &stat_num_threads,
+                &stat_num_threads,  // 20
                 &stat_itrealvalue,
                 &stat_starttime,
                 &stat_vsize,
@@ -1093,7 +1093,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_endcode,
                 &stat_startstack,
                 &stat_kstkesp,
-                &stat_kstkeip,
+                &stat_kstkeip,  // 30
                 &stat_signal,
                 &stat_blocked,
                 &stat_sigignore,
@@ -1103,7 +1103,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_cnswap,
                 &stat_exit_signal,
                 &stat_processor,
-                &stat_rt_priority,
+                &stat_rt_priority,  // 40
                 &stat_policy,
                 &stat_delayacct_blkio_ticks,
                 &stat_guest_time,
@@ -1113,7 +1113,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 &stat_start_brk,
                 &stat_arg_start,
                 &stat_arg_end,
-                &stat_env_start,
+                &stat_env_start,   // 50
                 &stat_env_end,
                 &stat_exit_code
                );
@@ -1122,8 +1122,16 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 					printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
 					pinfodisp[pindex].processor = stat_processor;
 					pinfodisp[pindex].rt_priority = 30; //TESTING
-					
-					FILE * fpouttest;
+				}
+		else
+		{
+			fclose(fp);
+			pinfodisp[pindex].processor = stat_processor;
+			pinfodisp[pindex].rt_priority = stat_rt_priority;
+		}
+
+
+FILE * fpouttest;
 					
 					sprintf(fname, "out.%d.txt", PID);
 					fpouttest = fopen(fname, "w");
@@ -1183,13 +1191,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
                 stat_exit_code
                );
 					fclose(fpouttest);
-				}
-		else
-		{
-			fclose(fp);
-			pinfodisp[pindex].processor = stat_processor;
-			pinfodisp[pindex].rt_priority = stat_rt_priority;
-		}
+
+
 
 
 
