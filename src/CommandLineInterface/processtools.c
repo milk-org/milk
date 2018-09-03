@@ -847,7 +847,8 @@ static long getTopOutput()
     else
     {
 		int startScan = 0;
-        while( (fgets(outstring, 100, fpout) != NULL) && (NBtop<NBtopMax) )
+		ret = 12;
+        while( (fgets(outstring, 100, fpout) != NULL) && (NBtop<NBtopMax) && (ret==12) )
            {
 			   if(startScan == 1)
 			   { 
@@ -855,6 +856,7 @@ static long getTopOutput()
 					// 32412 scexao   -91   0  0.611t 4.063g 3.616g S  80.4  0.8  20:16.25 aol0run
 
 					printf("%5ld:  %s", NBtop, outstring);
+					fflush(stdout);
 					
 				   ret = sscanf(outstring, "%d %s %s %d %s %s %s %s %f %f %s %s\n",
 						&toparray_PID[NBtop],
@@ -870,7 +872,7 @@ static long getTopOutput()
 						 toparray_TIME[NBtop],
 						 toparray_COMMAND[NBtop]
 						);
-						
+					
 				// TEST
 				printf("        [%d]   process %5d : %4.1f\n", ret, toparray_PID[NBtop], toparray_CPU[NBtop]);
 				printf("\n");
