@@ -1085,7 +1085,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
         if(strncmp(line, "VmSize:", strlen("VmSize:")) == 0)
         {
 			sscanf(line, "%s %s", string0, string1);
-			pinfodisp[pindex].VmSize = atol(string0);
+			pinfodisp[pindex].VmSize = atol(string1);
 		}
         
         if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
