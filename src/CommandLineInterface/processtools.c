@@ -349,10 +349,18 @@ static double scantime_CPUpcnt;
 
 
 
-// 
-// if list does not exist, create it and return index = 0
-// if list exists, return first available index
-//
+/**
+ * ## Purpose
+ * 
+ * Read/create processinfo list
+ * 
+ * ## Description
+ * 
+ * If list does not exist, create it and return index = 0
+ * 
+ * If list exists, return first available index
+ * 
+ */
 
 long processinfo_shm_list_create()
 {
@@ -551,6 +559,8 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	
     return pinfo;
 }
+
+
 
 
 
@@ -1342,47 +1352,66 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
 /**
+ * ## Purpose
+ * 
  * Control screen for PROCESSINFO structures
  *
- * Relies on ncurses for display
+ * ## Description
+ * 
+ * Relies on ncurses for display\n
+ * 
  *
  */
 
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
-
+    
+    
+    //
     // these arrays are indexed together
     // the index is different from the displayed order
     // new process takes first available free index
+    //
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
-    int          pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-    pid_t        PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
-    int          updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
-    int          fdarray[PROCESSINFOLISTSIZE];     // file descriptors
-    long         loopcntarray[PROCESSINFOLISTSIZE];
-    long         loopcntoffsetarray[PROCESSINFOLISTSIZE];
-    int          selectedarray[PROCESSINFOLISTSIZE];
+    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
+    pid_t         PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
+    int           updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
+    int           fdarray[PROCESSINFOLISTSIZE];     // file descriptors
+    long          loopcntarray[PROCESSINFOLISTSIZE];
+    long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
+    int           selectedarray[PROCESSINFOLISTSIZE];
 
-    int sorted_pindex_time[PROCESSINFOLISTSIZE];
+    int           sorted_pindex_time[PROCESSINFOLISTSIZE];
 
     // Display fields
     PROCESSINFODISP *pinfodisp;
 
     char syscommand[200];
-
-
-    int NBcpus = 0;
-
-
+    int  NBcpus = 0;
     char pselected_FILE[200];
     char pselected_FUNCTION[200];
-    int pselected_LINE;
+    int  pselected_LINE;
 
-
+	// timers 
     struct timespec t1loop;
     struct timespec t2loop;
     struct timespec tdiffloop;
+
+    struct timespec t01loop;
+    struct timespec t02loop;
+    struct timespec t03loop;
+    struct timespec t04loop;
+
+
+    float frequ = 10.0; // Hz
+    char  monstring[200];
+
+    // list of active indices
+    int   pindexActiveSelected;
+    int   pindexSelected;
+    int   pindexActive[PROCESSINFOLISTSIZE];
+    int   NBpindexActive;
 
 
 
@@ -1395,16 +1424,6 @@ int_fast8_t processinfo_CTRLscreen()
         selectedarray[pindex] = 0; // initially not selected
         loopcntoffsetarray[pindex] = 0;
     }
-
-
-    float frequ = 10.0; // Hz
-    char monstring[200];
-
-    // list of active indices
-    int pindexActiveSelected;
-    int pindexSelected;
-    int pindexActive[PROCESSINFOLISTSIZE];
-    int NBpindexActive;
 
 
 
@@ -1763,6 +1782,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         }
+        clock_gettime(CLOCK_REALTIME, &t01loop);
 
 
         if(freeze==0)
@@ -1777,10 +1797,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-            sprintf(pselected_FILE, "?");
-            sprintf(pselected_FUNCTION, "?");
-            pselected_LINE = 0;
-
             if(pinfommapped[pindexSelected] == 1)
             {
 
@@ -1791,21 +1807,31 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("Source Code: %s line %d (function %s)\n", pselected_FILE,  pselected_LINE, pselected_FUNCTION);
             }
             else
+            {
+				sprintf(pselected_FILE, "?");
+				sprintf(pselected_FUNCTION, "?");
+				pselected_LINE = 0;
                 printw("\n");
+			}
 
             printw("\n");
 
 
 
 
-
+			clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
             // LOAD / UPDATE process information
-          //  NBtopP = getTopOutput();
+          
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
+				char SM_fname[200];    // shared memory file name
+				struct stat file_stat;
+				
+				
+				
                 // SHOULD WE (RE)LOAD ?
                 if(pinfolist->active[pindex] == 0) // inactive
                     updatearray[pindex] = 0;
@@ -1827,12 +1853,11 @@ int_fast8_t processinfo_CTRLscreen()
                     updatearray[pindex] = 0;
 
 
-                char SM_fname[200];
+                
 
 
                 // check if process info file exists
 
-                struct stat file_stat;
                 sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
 
                 // Does file exist ?
@@ -1849,6 +1874,7 @@ int_fast8_t processinfo_CTRLscreen()
                     // check if process still exists
                     struct stat sts;
                     char procfname[200];
+                    
                     sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as inactive
@@ -1912,6 +1938,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+			clock_gettime(CLOCK_REALTIME, &t03loop);
+			
+			
             /** ### Build a time-sorted list of processes
              *
              *
@@ -1952,7 +1981,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
+			clock_gettime(CLOCK_REALTIME, &t04loop);
 
             /** ### Display
              *
@@ -2115,6 +2144,9 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("\n");
                 printw("\n");
             }
+
+
+			clock_gettime(CLOCK_REALTIME, &t05loop);
 
 
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
@@ -2512,19 +2544,52 @@ int_fast8_t processinfo_CTRLscreen()
 
 
             }
+            clock_gettime(CLOCK_REALTIME, &t06loop);
 
             refresh();
+            
+            clock_gettime(CLOCK_REALTIME, &t07loop);
 
             cnt++;
 
-        }
+        
 
         clock_gettime(CLOCK_REALTIME, &t2loop);
 
         tdiff = info_time_diff(t1loop, t2loop);
         double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
         
-        printw("Process scan time = %9.8f s\n", tdiffvloop);
+        printw("Loop time = %9.8f s\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t1loop, t01loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 01  : %9.8f\n", tdiffvloop);
+
+		tdiff = info_time_diff(t01loop, t02loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 02  : %9.8f\n", tdiffvloop);
+
+		tdiff = info_time_diff(t02loop, t03loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 03  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t03loop, t04loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 04  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t04loop, t05loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 05  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t05loop, t06loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 06  : %9.8f\n", tdiffvloop);
+		
+		tdiff = info_time_diff(t06loop, t07loop);
+		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		printw(" loop time 07  : %9.8f\n", tdiffvloop);
+
+		
 		printw("     %9.8f  scantime_cpuset\n", scantime_cpuset);
 		printw("     %9.8f  scantime_status\n", scantime_status);
 		printw("     %9.8f  scantime_stat\n", scantime_stat);
@@ -2532,6 +2597,10 @@ int_fast8_t processinfo_CTRLscreen()
 		printw("     %9.8f  scantime_top\n", scantime_top);
 		printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
 		printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
+		
+		
+		
+		}
 
     }
     endwin();
