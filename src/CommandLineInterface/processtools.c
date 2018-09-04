@@ -2444,7 +2444,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                     attron(COLOR_PAIR(cpuColor));
-                                    printw("%4.1f %4.2f",
+                                    printw("%5.1f %6.2f",
                                            pinfodisp[pindex].subprocCPUloadarray[spindex],
                                            pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
                                     attroff(COLOR_PAIR(cpuColor));
