@@ -1802,7 +1802,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
             // LOAD / UPDATE process information
-            NBtopP = getTopOutput();
+          //  NBtopP = getTopOutput();
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
@@ -2447,6 +2447,14 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     int memColor = 0;
 
+									int kBcnt, MBcnt, GBcnt;
+									
+									kBcnt = pinfodisp[pindex].VmSizearray[spindex];
+									MBcnt = kBcnt/1024;
+									kBcnt = kBcnt - MBcnt*1024;
+									GBcnt = MBcnt/1024;
+									MBcnt = MBcnt = GBcnt*1024;
+
                                     //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                     memColor = 1;
                                     if(pinfodisp[pindex].VmSizearray[spindex]>10*1024)        // 10 MB
@@ -2460,8 +2468,23 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     printw(" ");
                                     attron(COLOR_PAIR(memColor));
-                                    printw("%ld kB",
-                                           pinfodisp[pindex].VmSizearray[spindex]);
+									if(GBcnt>0)
+										printw("%3d GB ", GBcnt);
+									else
+										printw("       ");
+									
+									if(MBcnt>0)
+										printw("%3d MB ", MBcnt);
+									else
+										printw("       ");
+									
+									if(kBcnt>0)
+										printw("%3d kB ", MBcnt);
+									else
+										printw("       ");
+									
+                                    /*printw("%ld kB",
+                                           pinfodisp[pindex].VmSizearray[spindex]);*/
                                     attroff(COLOR_PAIR(memColor));
 
 									//printw("  %f\n", pinfodisp[pindex].cpuload);
