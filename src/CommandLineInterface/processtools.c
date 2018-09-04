@@ -1271,7 +1271,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			pinfodisp[pindex].rt_priority = stat_rt_priority;
 		}
 	
-	pinfodisp[pindex].sampletime = 1.0*t1.tvsec + 1.0e-9*t1.tv_nsec;
+	pinfodisp[pindex].sampletime = 1.0*t1.tv_sec + 1.0e-9*t1.tv_nsec;
 	
 	pinfodisp[pindex].cpuloadcnt = (stat_utime + stat_stime); 
 	pinfodisp[pindex].memload = 0.0;
