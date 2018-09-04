@@ -3,73 +3,104 @@
  * @file processtools.c
  * @brief Tools to manage processes
  * 
- * Manages structure PROCESSINFO
+ * Manages structure PROCESSINFO.
+ * 
+ * The PROCESSINFO structures allow fine-grained management of real-time loop processes.\n
+ * The loop can be paused, stepped or stopped, and a counter value inspected.
  * 
  * 
  * 
- * Use Template
+ * # Use Template
  * 
  * 
- * At beginning of function:
+ * ## Creating processinfo instance
+ * 
+ * At beginning of function, create the processinfo for the function.
+ * 
+ * @code
+ * 
+ * PROCESSINFO *processinfo;
+ * 
+ * if(data.processinfo==1)
+ * {
+ *     // CREATE PROCESSINFO ENTRY
+ *     // see processtools.c in module CommandLineInterface for details
+ *     //
+ *     
+ *     char pinfoname[200];  // short name for the processinfo instance
+ *     // avoid spaces, name should be human-readable
  * 
  * 
-  PROCESSINFO *processinfo;
-    if(data.processinfo==1)
-    {
-        // CREATE PROCESSINFO ENTRY
-        // see processtools.c in module CommandLineInterface for details
-        //
-        char pinfoname[200];
-        sprintf(pinfoname, "process %s to %s", IDinname, IDoutname);
-        processinfo = processinfo_shm_create(pinfoname, 0);
-        processinfo->loopstat = 0; // loop initialization
-
-        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-        strcpy(processinfo->source_FILE,     __FILE__);
-        processinfo->source_LINE = __LINE__;
-
-        char msgstring[200];
-        sprintf(msgstring, "%s->%s", IDinname, IDoutname);
-        processinfo_WriteMessage(processinfo, msgstring);
-    }
- 
- // CATCH SIGNALS
- 	
-	if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGTERM\n");
-
-	if (sigaction(SIGINT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGINT\n");    
-
-	if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGABRT\n");     
-
-	if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGBUS\n");
-
-	if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGSEGV\n");         
-
-	if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGHUP\n");         
-
-	if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGPIPE\n");   
- 
- // pre-loop testing, anything that would prevent loop from starting should issue message
-
-   int loopOK = 1;
- 
- if(.... error condition ....)
- {
-   sprintf(msgstring, "ERROR: no WFS reference");
-        if(data.processinfo == 1)
-        {
-			processinfo->loopstat = 4; // ERROR
-			processinfo_WriteMessage(processinfo, msgstring);
-		}	
-	loopOK = 0;
-	}
+ *     sprintf(pinfoname, "process-%s-to-%s", IDinname, IDoutname);
+ *     processinfo = processinfo_shm_create(pinfoname, 0);
+ *     processinfo->loopstat = 0; // loop initialization
+ *     strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+ *     strcpy(processinfo->source_FILE,     __FILE__);
+ *     processinfo->source_LINE = __LINE__;
+ * 
+ *     char msgstring[200];
+ *     sprintf(msgstring, "%s->%s", IDinname, IDoutname);
+ *     processinfo_WriteMessage(processinfo, msgstring);
+ * }
+ * 
+ * @endcode
+ * 
+ * Process signals should be caught for suitable processing and reporting.
+ * 
+ * @code
+ * // CATCH SIGNALS
+ * 
+ * if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGTERM\n");
+ * 
+ * if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGINT\n");    
+ * 
+ * if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGABRT\n");
+ * 
+ * if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGBUS\n");
+ * 
+ * if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGSEGV\n");         
+ * 
+ * if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGHUP\n");         
+ * 
+ * if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+ *     printf("\ncan't catch SIGPIPE\n");
+ * @endcode
+ * 
+ * 
+ * 
+ * ## Testing if loop process can start
+ * 
+ * Pre-loop testing, anything that would prevent loop from starting should issue message
+ * 
+ * @code
+ * int loopOK = 1;
+ * 
+ * if(.... error condition ....)
+ * {
+ *     sprintf(msgstring, "ERROR: no WFS reference");
+ *     if(data.processinfo == 1)
+ *     {
+ *         processinfo->loopstat = 4; // ERROR
+ *         processinfo_WriteMessage(processinfo, msgstring);
+ *     }
+ *     loopOK = 0;
+ * }
+ * @endcode
+ * 
+ * 
+ * ## Starting loop
+ * 
+ * @code
+ * 
+  @endcode
+ * 
+ * 
  
   
   
@@ -1470,6 +1501,8 @@ int_fast8_t processinfo_CTRLscreen()
     // 1: overview
     // 2: CPU affinity
 
+	clear();
+
     while( loopOK == 1 )
     {
         int pid;
@@ -1790,9 +1823,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         if(freeze==0)
-        {
-            clear();
-
+        {           			
+			erase();
             printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
