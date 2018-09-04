@@ -2313,7 +2313,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     // CPU use
 
                                     // get CPU and MEM load																		
-									pinfodisp[pindex].subprocCPUloadarray[spindex] = ((1.0*pinfodisp[pindex].cpuloadcntarray[spindex]-pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfodisp[pindex].sampletimearray[spindex] - pinfodisp[pindex].sampletimearray_prev[spindex]);
+									pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfodisp[pindex].cpuloadcntarray[spindex]-pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfodisp[pindex].sampletimearray[spindex] - pinfodisp[pindex].sampletimearray_prev[spindex]);
 									
 									pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfodisp[pindex].cpuloadcntarray[spindex];
                                     
