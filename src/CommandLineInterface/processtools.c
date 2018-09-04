@@ -254,6 +254,11 @@ typedef struct
 	long long     cpuloadcnt;
 	long long     cpuloadcntarray[MAXNBSUBPROCESS];
 	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray[MAXNBSUBPROCESS];
+	
+	
+	long          VmSize;
+	long          VmSizearray[MAXNBSUBPROCESS];
 	
 	int           processor;
 	int           rt_priority;
@@ -262,8 +267,7 @@ typedef struct
 	
 	int           NBsubprocesses;
 	int           subprocPIDarray[MAXNBSUBPROCESS];
-	float         subprocCPUloadarray[MAXNBSUBPROCESS];
-	float         subprocMEMloadarray[MAXNBSUBPROCESS];
+
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -1077,7 +1081,13 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
             sscanf(line, "%s %s", string0, string1);
             strcpy(pinfodisp[pindex].cpusallowed, string1);
         }
-
+        
+        if(strncmp(line, "VmSize:", strlen("VmSize:")) == 0)
+        {
+			sscanf(line, "%s %s", string0, string1);
+			pinfodisp[pindex].VmSize = atol(string0);
+		}
+        
         if(strncmp(line, "Threads:", strlen("Threads:")) == 0)
         {
             sscanf(line, "%s %s", string0, string1);
@@ -2279,7 +2289,7 @@ int_fast8_t processinfo_CTRLscreen()
 									pinfodisp[pindex].sampletimearray_prev[spindex] = pinfodisp[pindex].sampletimearray[spindex];
 									pinfodisp[pindex].sampletimearray[spindex] = pinfodisp[pindex].sampletime;
 									pinfodisp[pindex].cpuloadcntarray[spindex] = pinfodisp[pindex].cpuloadcnt;
-									
+									pinfodisp[pindex].VmSizearray[spindex] = pinfodisp[pindex].VmSize;
 
 
                                     // Context Switches
@@ -2433,23 +2443,25 @@ int_fast8_t processinfo_CTRLscreen()
                                            pinfodisp[pindex].subprocCPUloadarray[spindex]);
                                     attroff(COLOR_PAIR(cpuColor));
 
+
+
                                     int memColor = 0;
 
                                     //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                     memColor = 1;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>1.0)
+                                    if(pinfodisp[pindex].VmSizearray[spindex]>10*1024)        // 10 MB
                                         memColor = 2;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>2.0)
+                                    if(pinfodisp[pindex].VmSizearray[spindex]>100*1024)       // 100 MB
                                         memColor = 3;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]>4.0)
+                                    if(pinfodisp[pindex].VmSizearray[spindex]>1024*1024*1024)  // 1 GB
                                         memColor = 4;
-                                    if(pinfodisp[pindex].subprocMEMloadarray[spindex]<0.1)
+                                    if(pinfodisp[pindex].VmSizearray[spindex]<1024)            // 1 MB 
                                         memColor = 5;
 
                                     printw(" ");
                                     attron(COLOR_PAIR(memColor));
-                                    printw("%4.1f",
-                                           pinfodisp[pindex].subprocMEMloadarray[spindex]);
+                                    printw("%ld kB",
+                                           pinfodisp[pindex].VmSizearray[spindex]);
                                     attroff(COLOR_PAIR(memColor));
 
 									//printw("  %f\n", pinfodisp[pindex].cpuload);
