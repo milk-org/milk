@@ -255,6 +255,7 @@ typedef struct
 	long long     cpuloadcntarray[MAXNBSUBPROCESS];
 	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
 	float         subprocCPUloadarray[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
 	
 	
 	long          VmRSS;
@@ -2149,6 +2150,8 @@ int_fast8_t processinfo_CTRLscreen()
             }
 
 
+
+
 			clock_gettime(CLOCK_REALTIME, &t05loop);
 
 
@@ -2164,8 +2167,6 @@ int_fast8_t processinfo_CTRLscreen()
 
                     if(pindex == pindexSelected)
                         attron(A_REVERSE);
-
-                    // printw("%d  [%d]  %5ld %3ld  ", dispindex, sorted_pindex_time[dispindex], pindex, pinfodisp[pindex].updatecnt);
 
                     if(selectedarray[pindex]==1)
                         printw("*");
@@ -2199,15 +2200,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
-
-
-
-
-
-
-
-                    //				printw("%5ld %d", pindex, pinfolist->active[pindex]);
                     if(pinfolist->active[pindex] != 0)
                     {
                         if(pindex == pindexSelected)
@@ -2334,7 +2326,6 @@ int_fast8_t processinfo_CTRLscreen()
                                     else if(pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != pinfodisp[pindex].ctxtsw_voluntary)
                                         attron(COLOR_PAIR(3));
 
-
                                     printw("ctxsw: +%02ld +%02ld",
                                            abs(pinfodisp[pindex].ctxtsw_voluntary    - pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
                                            abs(pinfodisp[pindex].ctxtsw_nonvoluntary - pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
@@ -2351,7 +2342,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
                                     printw(" ");
 
 
@@ -2362,43 +2352,23 @@ int_fast8_t processinfo_CTRLscreen()
 									
 									pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfodisp[pindex].cpuloadcntarray[spindex];
                                     
-                                    /*
-                                    int itop;
-                                    int itopOK = 0;
-                                    for(itop = 0; itop<NBtopP; itop++)
-                                    {
-
-                                        if(TID == toparray_PID[itop])
-                                        {
-                                            itopOK = 1;
-                                            pinfodisp[pindex].subprocCPUloadarray[spindex] = toparray_CPU[itop];
-                                            pinfodisp[pindex].subprocMEMloadarray[spindex] = toparray_MEM[itop];
-                                        }
-                                    }
-                                    if(itopOK==0)
-                                    {
-                                        pinfodisp[pindex].subprocCPUloadarray[spindex] = -1.0;
-                                        pinfodisp[pindex].subprocMEMloadarray[spindex] = -1.0;
-                                    }
-*/
+									pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfodisp[pindex].subprocCPUloadarray[spindex];
 
 
                                     int cpuColor = 0;
 
                                     //					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
                                     cpuColor = 1;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>10.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]>10.0)
                                         cpuColor = 2;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>20.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]>20.0)
                                         cpuColor = 3;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]>40.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]>40.0)
                                         cpuColor = 4;
-                                    if(pinfodisp[pindex].subprocCPUloadarray[spindex]<1.0)
+                                    if(pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]<1.0)
                                         cpuColor = 5;
 
                                     sprintf(cpuliststring, ",%s,", pinfodisp[pindex].cpusallowed);
-
-
 
 
                                     // First group of cores (physical CPU 0)
@@ -2474,8 +2444,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                     attron(COLOR_PAIR(cpuColor));
-                                    printw("%4.1f",
-                                           pinfodisp[pindex].subprocCPUloadarray[spindex]);
+                                    printw("%4.1f %4.2f",
+                                           pinfodisp[pindex].subprocCPUloadarray[spindex],
+                                           pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
                                     attroff(COLOR_PAIR(cpuColor));
 
 
@@ -2522,7 +2493,7 @@ int_fast8_t processinfo_CTRLscreen()
                               
                                     attroff(COLOR_PAIR(memColor));
 
-									//printw("  %f\n", pinfodisp[pindex].cpuload);
+									
 
 
                                     printw("\n");
