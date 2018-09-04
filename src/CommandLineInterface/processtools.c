@@ -221,6 +221,8 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+#define MAXNBSUBPROCESS 50
+
 typedef struct
 {
 	int           active;
@@ -238,23 +240,30 @@ typedef struct
 	
 	char          cpuset[16];       /**< cpuset name  */
 	char          cpusallowed[20];
-	int           threads; 
+	int           threads;
+	
+	double        sampletime;
+	double        sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
+	double        sampletimearray_prev[MAXNBSUBPROCESS];
+	
 	long          ctxtsw_voluntary;
 	long          ctxtsw_nonvoluntary;
-
-	long          ctxtsw_voluntary_prev[50];
-	long          ctxtsw_nonvoluntary_prev[50];
+	long          ctxtsw_voluntary_prev[MAXNBSUBPROCESS];
+	long          ctxtsw_nonvoluntary_prev[MAXNBSUBPROCESS];
+	
+	long long     cpuloadcnt;
+	long long     cpuloadcntarray[MAXNBSUBPROCESS];
+	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
 	
 	int           processor;
 	int           rt_priority;
-	float         cpuload;
 	float         memload;
 	
-	// sub-processes
+	
 	int           NBsubprocesses;
-	int           subprocPIDarray[50];
-	float         subprocCPUloadarray[50];
-	float         subprocMEMloadarray[50];
+	int           subprocPIDarray[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray[MAXNBSUBPROCESS];
+	float         subprocMEMloadarray[MAXNBSUBPROCESS];
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -1054,6 +1063,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     char string0[200];
     char string1[200];
 
+	
+
     sprintf(fname, "/proc/%d/status", PID);
     fp = fopen(fname, "r");
     if (fp == NULL)
@@ -1260,8 +1271,9 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 			pinfodisp[pindex].rt_priority = stat_rt_priority;
 		}
 	
+	pinfodisp[pindex].sampletime = 1.0*t1.tvsec + 1.0e-9*t1.tv_nsec;
 	
-	pinfodisp[pindex].cpuload = sysconf(_SC_CLK_TCK);  //(stat_utime + stat_stime)
+	pinfodisp[pindex].cpuloadcnt = (stat_utime + stat_stime); 
 	pinfodisp[pindex].memload = 0.0;
 	
 	clock_gettime(CLOCK_REALTIME, &t2);
@@ -2263,7 +2275,11 @@ int_fast8_t processinfo_CTRLscreen()
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
                                     printw(" %2dx ", pinfodisp[pindex].threads);
 
-
+									// place info in subprocess arrays
+									pinfodisp[pindex].sampletimearray_prev[spindex] = pinfodisp[pindex].sampletimearray[spindex];
+									pinfodisp[pindex].sampletimearray[spindex] = pinfodisp[pindex].sampletime;
+									pinfodisp[pindex].cpuloadcntarray[spindex] = pinfodisp[pindex].cpuloadcnt;
+									
 
 
                                     // Context Switches
@@ -2296,7 +2312,12 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     // CPU use
 
-                                    // get CPU and MEM load
+                                    // get CPU and MEM load																		
+									pinfodisp[pindex].subprocCPUloadarray[spindex] = ((pinfodisp[pindex].cpuloadcntarray[spindex]-pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /   ( pinfodisp[pindex].sampletimearray[spindex] - pinfodisp[pindex].sampletimearray_prev[spindex]);
+									
+									pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfodisp[pindex].cpuloadcntarray[spindex];
+                                    
+                                    /*
                                     int itop;
                                     int itopOK = 0;
                                     for(itop = 0; itop<NBtopP; itop++)
@@ -2314,7 +2335,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         pinfodisp[pindex].subprocCPUloadarray[spindex] = -1.0;
                                         pinfodisp[pindex].subprocMEMloadarray[spindex] = -1.0;
                                     }
-
+*/
 
 
                                     int cpuColor = 0;
@@ -2431,7 +2452,7 @@ int_fast8_t processinfo_CTRLscreen()
                                            pinfodisp[pindex].subprocMEMloadarray[spindex]);
                                     attroff(COLOR_PAIR(memColor));
 
-									printw("  %f\n", pinfodisp[pindex].cpuload);
+									//printw("  %f\n", pinfodisp[pindex].cpuload);
 
 
                                     printw("\n");
