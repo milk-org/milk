@@ -2462,7 +2462,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         memColor = 2;
                                     if(pinfodisp[pindex].VmSizearray[spindex]>100*1024)       // 100 MB
                                         memColor = 3;
-                                    if(pinfodisp[pindex].VmSizearray[spindex]>1024*1024*1024)  // 1 GB
+                                    if(pinfodisp[pindex].VmSizearray[spindex]>1024*1024)  // 1 GB
                                         memColor = 4;
                                     if(pinfodisp[pindex].VmSizearray[spindex]<1024)            // 1 MB 
                                         memColor = 5;
