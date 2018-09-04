@@ -1402,6 +1402,9 @@ int_fast8_t processinfo_CTRLscreen()
     struct timespec t02loop;
     struct timespec t03loop;
     struct timespec t04loop;
+    struct timespec t05loop;
+    struct timespec t06loop;
+    struct timespec t07loop;
 
 
     float frequ = 10.0; // Hz
