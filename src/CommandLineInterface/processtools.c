@@ -2480,7 +2480,7 @@ int_fast8_t processinfo_CTRLscreen()
 										printw("       ");
 									
 									if(kBcnt>0)
-										printw("%3d kB ", MBcnt);
+										printw("%3d kB ", kBcnt);
 									else
 										printw("       ");
 									
