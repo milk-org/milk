@@ -6748,36 +6748,15 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
         break;
     }
 
-/*
-    if (sigaction(SIGINT, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGTERM, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGBUS, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-   if (sigaction(SIGABRT, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-  if (sigaction(SIGHUP, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-  if (sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    */
+
+
+	if(data.processinfo==1)
+        {
+            char msgstring[200];
+            sprintf(msgstring, "Receiving stream %s [%ld x %ld]  %ld slice(s) atype=%d", imgmd[0].name, xsize, ysize, NBslices, data.image[ID].md[0].atype);
+            processinfo_WriteMessage(processinfo, msgstring);
+        }
+        
     
 
     // this line is not needed, as frame_md is declared below
