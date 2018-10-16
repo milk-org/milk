@@ -6753,7 +6753,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 	if(data.processinfo==1)
         {
             char msgstring[200];
-            sprintf(msgstring, "Receiving stream %s [%d x %d]  %ld slice(s) atype=%d", imgmd[0].name, (int) xsize, (int) ysize, NBslices, data.image[ID].md[0].atype);
+            sprintf(msgstring, "<- %s [%d x %d x %ld] type %d", imgmd[0].name, (int) xsize, (int) ysize, NBslices, data.image[ID].md[0].atype);
             processinfo_WriteMessage(processinfo, msgstring);
         }
         
