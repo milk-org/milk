@@ -6655,50 +6655,64 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
         if(data.image[ID].md[0].size[2]>1)
             NBslices = data.image[ID].md[0].size[2];
 
+
+	char typestring[8];
+	
     switch ( data.image[ID].md[0].atype ) {
 
     case _DATATYPE_INT8:
         framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
+        sprintf(typestring,"INT8");
         break;
 
     case _DATATYPE_UINT8:
         framesize = SIZEOF_DATATYPE_UINT8*xsize*ysize;
+        sprintf(typestring,"UINT8");
         break;
 
     case _DATATYPE_INT16:
         framesize = SIZEOF_DATATYPE_INT16*xsize*ysize;
+        sprintf(typestring,"INT16");
         break;
 
     case _DATATYPE_UINT16:
         framesize = SIZEOF_DATATYPE_UINT16*xsize*ysize;
+        sprintf(typestring,"UINT16");
         break;
 
     case _DATATYPE_INT32:
         framesize = SIZEOF_DATATYPE_INT32*xsize*ysize;
+        sprintf(typestring,"INT32");
         break;
 
     case _DATATYPE_UINT32:
         framesize = SIZEOF_DATATYPE_UINT32*xsize*ysize;
+        sprintf(typestring,"UINT32");
         break;
 
     case _DATATYPE_INT64:
         framesize = SIZEOF_DATATYPE_INT64*xsize*ysize;
+        sprintf(typestring,"INT64");
         break;
 
     case _DATATYPE_UINT64:
         framesize = SIZEOF_DATATYPE_UINT64*xsize*ysize;
+        sprintf(typestring,"UINT64");
         break;
 
     case _DATATYPE_FLOAT:
         framesize = SIZEOF_DATATYPE_FLOAT*xsize*ysize;
+        sprintf(typestring,"FLOAT");
         break;
 
     case _DATATYPE_DOUBLE:
         framesize = SIZEOF_DATATYPE_DOUBLE*xsize*ysize;
+        sprintf(typestring,"DOUBLE");
         break;
 
     default:
         printf("ERROR: WRONG DATA TYPE\n");
+        sprintf(typestring,"ERR");
         exit(0);
         break;
     }
@@ -6753,7 +6767,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 	if(data.processinfo==1)
         {
             char msgstring[200];
-            sprintf(msgstring, "<- %s [%d x %d x %ld] type %d", imgmd[0].name, (int) xsize, (int) ysize, NBslices, data.image[ID].md[0].atype);
+            sprintf(msgstring, "<- %s [%d x %d x %ld] %s", imgmd[0].name, (int) xsize, (int) ysize, NBslices, typestring);
             processinfo_WriteMessage(processinfo, msgstring);
         }
         
