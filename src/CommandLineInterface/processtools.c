@@ -339,9 +339,10 @@ static float CPUpcnt[100];
 
 #define NBtopMax 5000
 
+
 static int   toparray_PID[NBtopMax];
 static char  toparray_USER[NBtopMax][32];
-static int   toparray_PR[NBtopMax][8];
+static char  toparray_PR[NBtopMax][8];
 static int   toparray_NI[NBtopMax];
 static char  toparray_VIRT[NBtopMax][32];
 static char  toparray_RES[NBtopMax][32];

@@ -238,6 +238,7 @@ typedef struct
     int CLIlogON;
     char CLIlogname[200];  
     int processinfo;       // 1 if processes info is to be logged
+    int processinfoActive; // 1 is the process is currently logged
 
     // Command Line Interface (CLI) INPUT
     int fifoON;

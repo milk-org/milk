@@ -881,7 +881,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     data.CLIlogON = 0;     // log every command
     data.fifoON = 1;
 	data.processinfo = 1;  // process info for intensive processes
-
+	data.processinfoActive = 0; // toggles to 1 when process is logged
+    
     // signal handling
 
     data.sigact.sa_handler = sig_handler;
