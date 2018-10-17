@@ -1830,7 +1830,7 @@ int_fast8_t processinfo_CTRLscreen()
 			erase();
 			
             printw("E");
-            attron(A_UNDERLINE|A_BOLD);printw("x");attroff(A_UNDERLINE|A_BOLD);
+            attron(A_UNDERLINE|A_BOLD|A_BLINK);printw("x");attroff(A_UNDERLINE|A_BOLD|A_BLINK);
             printw("it ");
             attron(COLOR_PAIR(1)|A_BLINK);printw("f");attroff(COLOR_PAIR(1)|A_BLINK);            
             printw("reeze *** SIG");
