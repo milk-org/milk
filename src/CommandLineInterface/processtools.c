@@ -1881,7 +1881,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw(" ");
             attron(attrval);printw("F2");attroff(attrval);
             
-            
+           
             printw("\n\n");
 
 
