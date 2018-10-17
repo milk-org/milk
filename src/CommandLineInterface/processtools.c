@@ -868,6 +868,7 @@ static int initncurses()
     init_pair(8, COLOR_RED, COLOR_BLACK);
     init_pair(9, COLOR_BLACK, COLOR_RED);
 
+
     return 0;
 }
 
@@ -1827,10 +1828,16 @@ int_fast8_t processinfo_CTRLscreen()
         if(freeze==0)
         {           			
 			erase();
-            printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
+            printw("E");
+            attron(COLOR_PAIR(1));
+            printw("x");
+            attroff(COLOR_PAIR(1));
+            printw("it ");
+            
+            printw("(f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
-            printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, DisplayMode);
+            printw("%2d cpus   %2d processes tracked    Display Mode %d ((F1)/(F2))\n", NBcpus, NBpindexActive, DisplayMode);
             printw("\n");
 
 
@@ -1947,7 +1954,7 @@ int_fast8_t processinfo_CTRLscreen()
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(fdarray[pindex]);
                         endwin();
-                        fprintf(stderr, "[%d] Error mmapping file %s\n", __LINE__, SM_fname);
+                        fprintf(stderr, "[%d] Error mapping file %s\n", __LINE__, SM_fname);
                         pinfolist->active[pindex] = 3;
                     }
                     else
