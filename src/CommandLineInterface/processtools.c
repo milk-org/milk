@@ -1828,6 +1828,7 @@ int_fast8_t processinfo_CTRLscreen()
         if(freeze==0)
         {           			
 			erase();
+			attron(A_DIM);
             printw("E");
             attron(A_UNDERLINE|A_BOLD);printw("x");attroff(A_UNDERLINE|A_BOLD);
             printw("it ");
@@ -1877,6 +1878,8 @@ int_fast8_t processinfo_CTRLscreen()
             attron(COLOR_PAIR(1));printw("F1");attroff(COLOR_PAIR(1));
             printw(" ");
             attron(COLOR_PAIR(1));printw("F2");attroff(COLOR_PAIR(1));
+            
+            attroff(A_DIM);
             printw("\n\n");
 
 
