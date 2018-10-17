@@ -1848,9 +1848,35 @@ int_fast8_t processinfo_CTRLscreen()
             
             
             
-            printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
-            printw("(SPACE):select toggle   (u)nselect all\n");
-            printw("%2d cpus   %2d processes tracked    Display Mode %d ((F1)/(F2))\n", NBcpus, NBpindexActive, DisplayMode);
+            printw("time-s");
+            attron(COLOR_PAIR(1));printw("o");attroff(COLOR_PAIR(1));
+            printw("rted    st");
+            attron(COLOR_PAIR(1));printw("a");attroff(COLOR_PAIR(1));
+            printw("tus sche");
+            attron(COLOR_PAIR(1));printw("d");attroff(COLOR_PAIR(1));
+            printw(" *** Loop Controls: ");
+            attron(COLOR_PAIR(1));printw("p");attroff(COLOR_PAIR(1));
+            printw("ause ");
+            attron(COLOR_PAIR(1));printw("s");attroff(COLOR_PAIR(1));
+            printw("tep ");
+            attron(COLOR_PAIR(1));printw("e");attroff(COLOR_PAIR(1));
+            printw("xit *** ");
+            attron(COLOR_PAIR(1));printw("z");attroff(COLOR_PAIR(1));
+            printw("ero or un");
+            attron(COLOR_PAIR(1));printw("Z");attroff(COLOR_PAIR(1));
+            printw("ero counter\n");
+            
+            
+            attron(COLOR_PAIR(1));printw("SPACE");
+            printw(":select toggle   ");
+            attron(COLOR_PAIR(1));printw("u");attroff(COLOR_PAIR(1));
+            printw("nselect all\n");
+            
+            
+            printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
+            attron(COLOR_PAIR(1));printw("F1");attroff(COLOR_PAIR(1));
+            printw(" ");
+            attron(COLOR_PAIR(1));printw("F2");attroff(COLOR_PAIR(1));
             printw("\n");
 
 
