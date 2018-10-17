@@ -1836,50 +1836,50 @@ int_fast8_t processinfo_CTRLscreen()
             printw("it ");
             attron(attrval);printw("f");attroff(attrval);            
             printw("reeze *** SIG");
-            attron(COLOR_PAIR(1));printw("T");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("T");attroff(attrval);
             printw("ERM SIG");
-            attron(COLOR_PAIR(1));printw("K");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("K");attroff(attrval);
             printw("ILL SIG");
-            attron(COLOR_PAIR(1));printw("I");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("I");attroff(attrval);
             printw("NT *** ");
-            attron(COLOR_PAIR(1));printw("r");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("r");attroff(attrval);
             printw("emove ");
-            attron(COLOR_PAIR(1));printw("R");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("R");attroff(attrval);
             printw("emoveall *** ");
-            attron(COLOR_PAIR(1));printw("t");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("t");attroff(attrval);
             printw("mux\n");
             
             
             
             printw("time-s");
-            attron(COLOR_PAIR(1));printw("o");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("o");attroff(attrval);
             printw("rted    st");
-            attron(COLOR_PAIR(1));printw("a");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("a");attroff(attrval);
             printw("tus sche");
-            attron(COLOR_PAIR(1));printw("d");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("d");attroff(attrval);
             printw(" *** Loop Controls: ");
-            attron(COLOR_PAIR(1));printw("p");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("p");attroff(attrval);
             printw("ause ");
-            attron(COLOR_PAIR(1));printw("s");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("s");attroff(attrval);
             printw("tep ");
-            attron(COLOR_PAIR(1));printw("e");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("e");attroff(attrval);
             printw("xit *** ");
-            attron(COLOR_PAIR(1));printw("z");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("z");attroff(attrval);
             printw("ero or un");
-            attron(COLOR_PAIR(1));printw("Z");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("Z");attroff(attrval);
             printw("ero counter\n");
             
             
-            attron(COLOR_PAIR(1));printw("SPACE");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("SPACE");attroff(attrval);
             printw(":select toggle   ");
-            attron(COLOR_PAIR(1));printw("u");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("u");attroff(attrval);
             printw("nselect all\n");
             
             
             printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
-            attron(COLOR_PAIR(1));printw("F1");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("F1");attroff(attrval);
             printw(" ");
-            attron(COLOR_PAIR(1));printw("F2");attroff(COLOR_PAIR(1));
+            attron(attrval);printw("F2");attroff(attrval);
             
             
             printw("\n\n");
