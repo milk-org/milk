@@ -1829,7 +1829,7 @@ int_fast8_t processinfo_CTRLscreen()
         {           			
 			erase();
             printw("E");
-            attron(COLOR_PAIR(1));printw("x");attroff(COLOR_PAIR(1));
+            attron(A_UNDERLINE|A_BOLD);printw("x");attroff(A_UNDERLINE|A_BOLD);
             printw("it ");
             attron(COLOR_PAIR(1));printw("f");attroff(COLOR_PAIR(1));            
             printw("reeze *** SIG");
