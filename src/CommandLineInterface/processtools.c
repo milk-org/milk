@@ -21,7 +21,7 @@
  * 
  * PROCESSINFO *processinfo;
  * 
- * if(data.processinfo==1)
+ * if((data.processinfo==1)&&(data.processinfoActive==0))
  * {
  *     // CREATE PROCESSINFO ENTRY
  *     // see processtools.c in module CommandLineInterface for details
@@ -41,6 +41,7 @@
  *     char msgstring[200];
  *     sprintf(msgstring, "%s->%s", IDinname, IDoutname);
  *     processinfo_WriteMessage(processinfo, msgstring);
+ *     data.processinfoActive = 1;
  * }
  * 
  * @endcode
@@ -193,7 +194,7 @@
     
 	}    // end of loop
 
-    if(data.processinfo==1)
+    if((data.processinfo==1)&&(processinfo->loopstat != 4))
         processinfo_cleanExit(processinfo);
 
 
