@@ -868,6 +868,7 @@ static int initncurses()
     init_pair(8, COLOR_RED, COLOR_BLACK);
     init_pair(9, COLOR_BLACK, COLOR_RED);
 
+
     return 0;
 }
 
@@ -1827,11 +1828,56 @@ int_fast8_t processinfo_CTRLscreen()
         if(freeze==0)
         {           			
 			erase();
-            printw("E(x)it (f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
-            printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
-            printw("(SPACE):select toggle   (u)nselect all\n");
-            printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, DisplayMode);
-            printw("\n");
+            printw("E");
+            attron(COLOR_PAIR(1));printw("x");attroff(COLOR_PAIR(1));
+            printw("it ");
+            attron(COLOR_PAIR(1));printw("f");attroff(COLOR_PAIR(1));            
+            printw("reeze *** SIG");
+            attron(COLOR_PAIR(1));printw("T");attroff(COLOR_PAIR(1));
+            printw("ERM SIG");
+            attron(COLOR_PAIR(1));printw("K");attroff(COLOR_PAIR(1));
+            printw("ILL SIG");
+            attron(COLOR_PAIR(1));printw("I");attroff(COLOR_PAIR(1));
+            printw("NT *** ");
+            attron(COLOR_PAIR(1));printw("r");attroff(COLOR_PAIR(1));
+            printw("emove ");
+            attron(COLOR_PAIR(1));printw("R");attroff(COLOR_PAIR(1));
+            printw("emoveall *** ");
+            attron(COLOR_PAIR(1));printw("t");attroff(COLOR_PAIR(1));
+            printw("mux\n");
+            
+            
+            
+            printw("time-s");
+            attron(COLOR_PAIR(1));printw("o");attroff(COLOR_PAIR(1));
+            printw("rted    st");
+            attron(COLOR_PAIR(1));printw("a");attroff(COLOR_PAIR(1));
+            printw("tus sche");
+            attron(COLOR_PAIR(1));printw("d");attroff(COLOR_PAIR(1));
+            printw(" *** Loop Controls: ");
+            attron(COLOR_PAIR(1));printw("p");attroff(COLOR_PAIR(1));
+            printw("ause ");
+            attron(COLOR_PAIR(1));printw("s");attroff(COLOR_PAIR(1));
+            printw("tep ");
+            attron(COLOR_PAIR(1));printw("e");attroff(COLOR_PAIR(1));
+            printw("xit *** ");
+            attron(COLOR_PAIR(1));printw("z");attroff(COLOR_PAIR(1));
+            printw("ero or un");
+            attron(COLOR_PAIR(1));printw("Z");attroff(COLOR_PAIR(1));
+            printw("ero counter\n");
+            
+            
+            attron(COLOR_PAIR(1));printw("SPACE");attroff(COLOR_PAIR(1));
+            printw(":select toggle   ");
+            attron(COLOR_PAIR(1));printw("u");attroff(COLOR_PAIR(1));
+            printw("nselect all\n");
+            
+            
+            printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
+            attron(COLOR_PAIR(1));printw("F1");attroff(COLOR_PAIR(1));
+            printw(" ");
+            attron(COLOR_PAIR(1));printw("F2");attroff(COLOR_PAIR(1));
+            printw("\n\n");
 
 
 
@@ -1947,7 +1993,7 @@ int_fast8_t processinfo_CTRLscreen()
                     if (pinfoarray[pindex] == MAP_FAILED) {
                         close(fdarray[pindex]);
                         endwin();
-                        fprintf(stderr, "[%d] Error mmapping file %s\n", __LINE__, SM_fname);
+                        fprintf(stderr, "[%d] Error mapping file %s\n", __LINE__, SM_fname);
                         pinfolist->active[pindex] = 3;
                     }
                     else
