@@ -1867,7 +1867,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw("ero counter\n");
             
             
-            attron(COLOR_PAIR(1));printw("SPACE");
+            attron(COLOR_PAIR(1));printw("SPACE");attroff(COLOR_PAIR(1));
             printw(":select toggle   ");
             attron(COLOR_PAIR(1));printw("u");attroff(COLOR_PAIR(1));
             printw("nselect all\n");
@@ -1877,7 +1877,7 @@ int_fast8_t processinfo_CTRLscreen()
             attron(COLOR_PAIR(1));printw("F1");attroff(COLOR_PAIR(1));
             printw(" ");
             attron(COLOR_PAIR(1));printw("F2");attroff(COLOR_PAIR(1));
-            printw("\n");
+            printw("\n\n");
 
 
 
