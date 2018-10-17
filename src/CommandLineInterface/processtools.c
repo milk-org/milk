@@ -1828,11 +1828,11 @@ int_fast8_t processinfo_CTRLscreen()
         if(freeze==0)
         {           			
 			erase();
-			attron(A_DIM);
+			
             printw("E");
             attron(A_UNDERLINE|A_BOLD);printw("x");attroff(A_UNDERLINE|A_BOLD);
             printw("it ");
-            attron(COLOR_PAIR(1)|A_BOLD);printw("f");attroff(COLOR_PAIR(1)|A_BOLD);            
+            attron(COLOR_PAIR(1)|A_BLINK);printw("f");attroff(COLOR_PAIR(1)|A_BLINK);            
             printw("reeze *** SIG");
             attron(COLOR_PAIR(1));printw("T");attroff(COLOR_PAIR(1));
             printw("ERM SIG");
@@ -1879,7 +1879,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw(" ");
             attron(COLOR_PAIR(1));printw("F2");attroff(COLOR_PAIR(1));
             
-            attroff(A_DIM);
+            
             printw("\n\n");
 
 
