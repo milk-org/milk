@@ -1829,12 +1829,25 @@ int_fast8_t processinfo_CTRLscreen()
         {           			
 			erase();
             printw("E");
-            attron(COLOR_PAIR(1));
-            printw("x");
-            attroff(COLOR_PAIR(1));
+            attron(COLOR_PAIR(1));printw("x");attroff(COLOR_PAIR(1));
             printw("it ");
+            attron(COLOR_PAIR(1));printw("f");attroff(COLOR_PAIR(1));            
+            printw("reeze *** SIG");
+            attron(COLOR_PAIR(1));printw("T");attroff(COLOR_PAIR(1));
+            printw("ERM SIG");
+            attron(COLOR_PAIR(1));printw("K");attroff(COLOR_PAIR(1));
+            printw("ILL SIG");
+            attron(COLOR_PAIR(1));printw("I");attroff(COLOR_PAIR(1));
+            printw("NT *** ");
+            attron(COLOR_PAIR(1));printw("r");attroff(COLOR_PAIR(1));
+            printw("emove ");
+            attron(COLOR_PAIR(1));printw("R");attroff(COLOR_PAIR(1));
+            printw("emoveall *** ");
+            attron(COLOR_PAIR(1));printw("t");attroff(COLOR_PAIR(1));
+            printw("mux\n");
             
-            printw("(f)reeze *** SIG(T)ERM SIG(K)ILL SIG(I)NT *** (r)emove (R)emoveall *** (t)mux\n");
+            
+            
             printw("time-s(o)rted    st(a)tus sche(d) *** Loop Controls: (p)ause (s)tep (e)xit *** (z)ero or un(Z)ero counter\n");
             printw("(SPACE):select toggle   (u)nselect all\n");
             printw("%2d cpus   %2d processes tracked    Display Mode %d ((F1)/(F2))\n", NBcpus, NBpindexActive, DisplayMode);
