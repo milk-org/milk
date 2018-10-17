@@ -1829,10 +1829,12 @@ int_fast8_t processinfo_CTRLscreen()
         {           			
 			erase();
 			
+			int attrval = A_UNDERLINE|A_BOLD|A_BLINK;
+			
             printw("E");
-            attron(A_UNDERLINE|A_BOLD|A_BLINK);printw("x");attroff(A_UNDERLINE|A_BOLD|A_BLINK);
+            attron(attrval);printw("x");attroff(attrval);
             printw("it ");
-            attron(COLOR_PAIR(1)|A_BLINK);printw("f");attroff(COLOR_PAIR(1)|A_BLINK);            
+            attron(attrval);printw("f");attroff(attrval);            
             printw("reeze *** SIG");
             attron(COLOR_PAIR(1));printw("T");attroff(COLOR_PAIR(1));
             printw("ERM SIG");
