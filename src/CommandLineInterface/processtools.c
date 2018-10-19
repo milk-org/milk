@@ -872,8 +872,11 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 			processinfo->dtiter_limit_cnt ++;
 			if(processinfo->dtiter_limit_enable == 1) // pause process due to timing limit
 			{
+				char msgstring[200];
+				
 				processinfo->CTRLval = 1;
-				processinfo_WriteMessage(processinfo, "Timing limit dtiter exceeded -> paused");
+				sprintf(msgstring, "dtiter lim [%.1f > %.1f] -> paused", 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+				processinfo_WriteMessage(processinfo, msgstring);
 			}
 		}
     }
@@ -905,7 +908,10 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 			processinfo->dtexec_limit_cnt ++;
 			if(processinfo->dtexec_limit_enable == 1) // pause process due to timing limit
 			{
+				char msgstring[200];
+				
 				processinfo->CTRLval = 1;
+				sprintf(msgstring, "dtexec lim [%.1f > %.1f] -> paused", 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
 				processinfo_WriteMessage(processinfo, "Timing limit dtexec exceeded -> paused");
 			}
 		}
