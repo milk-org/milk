@@ -621,6 +621,8 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->dtexec_limit_enable = 0;
 	
 	data.pinfo = pinfo;  
+	pinfo->PID = PID;
+	
 	
 	// create logfile
 	char logfilename[300];
@@ -634,7 +636,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 
 	
 	char msgstring[200];
-	sprintf(msgstring, "LOG START FILE %s", pinfo->logfilename);
+	sprintf(msgstring, "LOG START %s", pinfo->logfilename);
 	processinfo_WriteMessage(pinfo, msgstring);
 	
 	
