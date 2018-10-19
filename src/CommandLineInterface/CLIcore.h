@@ -252,7 +252,7 @@ typedef struct
 	int MeasureTiming;  // 1 if timing is measured, 0 otherwise
 	
 	// the last PROCESSINFO_NBtimer times are stored in a circular buffer, from which timing stats are derived
-	int    timerindex;                            // index in circular buffer
+	int    timerindex;                                // last written index in circular buffer
 	int    timingbuffercnt;                           // increments every cycle of the circular buffer
 	struct timespec texecstart[PROCESSINFO_NBtimer];  // task starts
 	struct timespec texecend[PROCESSINFO_NBtimer];    // task ends

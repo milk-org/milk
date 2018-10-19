@@ -2767,8 +2767,49 @@ int_fast8_t processinfo_CTRLscreen()
 							printw(" %d", pinfoarray[pindex]->MeasureTiming);
 							if(pinfoarray[pindex]->MeasureTiming == 1)
 							{
-								printw("ITER-lim %d ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
-								printw("EXEC-lim %d ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
+								long *dtiter_array;
+								long *dtexec_array;
+								int dtindex;
+								
+								
+								printw(" %3d %6ld ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt);
+								
+								// compute timing stat
+								dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
+								dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
+								
+								int tindex;
+								dtindex = 0;
+								
+								for(tindex=0;tindex<PROCESSINFO_NBtimer-1;tindex++)
+								{
+									int ti0, ti1;
+									
+									ti1 = pinfoarray[pindex]->timerindex - tindex;
+									ti0 = ti1 - 1;
+
+									if(ti0<0)
+										ti0 += PROCESSINFO_NBtimer;									
+
+									if(ti1<0)
+										ti1 += PROCESSINFO_NBtimer;
+									
+									dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
+									dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
+								}
+								
+								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
+								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
+								
+								
+								printw("[ITER-lim %d/%9ld/%5ld]  ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
+								printw("[EXEC-lim %d/%9ld/%5ld] ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
+								
+								printw(" dtiter = %9ld ns  ", dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]);
+								printw(" dtexec = %9ld ns  ", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]);
+								
+								free(dtiter_array);
+								free(dtexec_array);
 							}
 						}
 
