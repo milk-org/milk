@@ -1649,6 +1649,7 @@ int_fast8_t processinfo_CTRLscreen()
     while( loopOK == 1 )
     {
         int pid;
+        char command[200];
 
 
         usleep((long) (1000000.0/frequ));
@@ -1981,6 +1982,12 @@ int_fast8_t processinfo_CTRLscreen()
 			}
 			break;;
 
+
+		case 'm' : // message
+			pindex = pindexSelected;
+			sprintf(command, "tail -f %s", pinfoarray[pindex]->logfilename);
+			break;
+			
         // Set Display Mode
 
         case KEY_F(1):
@@ -2087,7 +2094,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw("nselect all\n");
 
 
-			printw("(L)i(M)its  ");
+			printw("(L)i(M)its (m)essageLog ");
 
             printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
             attron(attrval);
