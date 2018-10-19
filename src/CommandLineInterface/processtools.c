@@ -623,18 +623,22 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	data.pinfo = pinfo;  
 	
 	// create logfile
-	char logfilename[200];
+	char logfilename[300];
 	struct timespec tnow;
 	
     clock_gettime(CLOCK_REALTIME, &tnow);
  
 	sprintf(pinfo->logfilename, "/tmp/proc.%s.%06d.%09d.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
-	fclose(pinfo->logFile);
+	//fclose(pinfo->logFile);
+	
+	fprintf(pinfo->logFile, "this is a test\n");
 	
 	char msgstring[200];
 	sprintf(msgstring, "LOG START");
 	processinfo_WriteMessage(pinfo, msgstring);
+	
+	
 	
     return pinfo;
 }
@@ -856,12 +860,12 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 
     // sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
     
-	processinfo->logFile = fopen(processinfo->logfilename, "a");
+	//processinfo->logFile = fopen(processinfo->logfilename, "a");
     fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
             tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)),
             tnow.tv_sec, tnow.tv_nsec,
             (int) processinfo->PID, msgstring);
-    fclose(processinfo->logFile);
+    //fclose(processinfo->logFile);
 
     return 0;
 }
