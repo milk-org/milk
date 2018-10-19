@@ -318,7 +318,6 @@ typedef struct
 	
 	int           NBsubprocesses;
 	int           subprocPIDarray[MAXNBSUBPROCESS];
-
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -1924,11 +1923,12 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
 
-		case 'I' : // toggle time limit (iter)
+		case 'L': // toggle time limit (iter)
 			ToggleValue = pinfoarray[pindex]->dtiter_limit_enable;
 			if(ToggleValue==0)
 			{
 				pinfoarray[pindex]->dtiter_limit_enable = 1;
+				pinfoarray[pindex]->dtiter_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_iter_ns);
 				pinfoarray[pindex]->dtiter_limit_cnt = 0;				
 			}
 			else
@@ -1937,11 +1937,12 @@ int_fast8_t processinfo_CTRLscreen()
 			}
 			break;;
 
-		case 'E' : // toggle time limit (exec)
+		case 'M' : // toggle time limit (exec)
 			ToggleValue = pinfoarray[pindex]->dtexec_limit_enable;
 			if(ToggleValue==0)
 			{
 				pinfoarray[pindex]->dtexec_limit_enable = 1;
+				pinfoarray[pindex]->dtexec_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_exec_ns);
 				pinfoarray[pindex]->dtexec_limit_cnt = 0;
 			}
 			else
@@ -2055,6 +2056,8 @@ int_fast8_t processinfo_CTRLscreen()
             attroff(attrval);
             printw("nselect all\n");
 
+
+			printw("(L)i(M)its  ");
 
             printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
             attron(attrval);
@@ -2802,7 +2805,6 @@ int_fast8_t processinfo_CTRLscreen()
 								int dtindex;
 								
 								
-								
 								printw(" %3d ..%02ld ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
 								
 								// compute timing stat
@@ -2839,6 +2841,7 @@ int_fast8_t processinfo_CTRLscreen()
 								float tval;
 								
 								tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								pinfoarray[pindex]->dtmedian_iter_ns = dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
 									printw(" ITER    >10ms ");
 								else
@@ -2858,6 +2861,7 @@ int_fast8_t processinfo_CTRLscreen()
 									
 									
 								tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								pinfoarray[pindex]->dtmedian_exec_ns = dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
 									printw(" EXEC    >10ms ");
 								else
