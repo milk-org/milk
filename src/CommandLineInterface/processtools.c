@@ -1924,6 +1924,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 		case 'L': // toggle time limit (iter)
+			pindex = pindexSelected;
 			ToggleValue = pinfoarray[pindex]->dtiter_limit_enable;
 			if(ToggleValue==0)
 			{
@@ -1938,6 +1939,7 @@ int_fast8_t processinfo_CTRLscreen()
 			break;;
 
 		case 'M' : // toggle time limit (exec)
+			pindex = pindexSelected;
 			ToggleValue = pinfoarray[pindex]->dtexec_limit_enable;
 			if(ToggleValue==0)
 			{
