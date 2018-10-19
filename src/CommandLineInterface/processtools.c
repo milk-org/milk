@@ -2773,11 +2773,12 @@ int_fast8_t processinfo_CTRLscreen()
 								int dtindex;
 								
 								
+								
 								printw(" %3d ..%02ld ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
 								
 								// compute timing stat
 								dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
-								dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
+								dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer));
 								
 								int tindex;
 								dtindex = 0;
@@ -2798,16 +2799,64 @@ int_fast8_t processinfo_CTRLscreen()
 									dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
 									dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
 								}
+								int ti1 = PROCESSINFO_NBtimer-1;
+								dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
+								
 								
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
-								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
+								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer);
 								
 
 								printw(" ITERlim %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
 								printw(" EXEClim %d/%8ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
 								
-								printw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
-								printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
+								float tval;
+								
+								tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								if(tval > 9999.9)
+									printw(" ITER  >10ms  ");
+								else
+									printw(" ITER %6.1fus ", tval);
+								
+								tval = 0.001*dtiter_array[0];
+								if(tval > 9999.9)
+									printw("[  >10ms -");
+								else
+									printw("[%6.1fus -", tval);
+
+								tval = 0.001*dtiter_array[PROCESSINFO_NBtimer-2];
+								if(tval > 9999.9)
+									printw("  >10ms  ]");
+								else
+									printw(" %6.1fus ]", tval);
+									
+									
+								tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								if(tval > 9999.9)
+									printw(" ITER  >10ms  ");
+								else
+									printw(" ITER %6.1fus ", tval);
+								
+								tval = 0.001*dtexec_array[0];
+								if(tval > 9999.9)
+									printw("[  >10ms -");
+								else
+									printw("[%6.1fus -", tval);
+
+								tval = 0.001*dtexec_array[PROCESSINFO_NBtimer-1];
+								if(tval > 9999.9)
+									printw("  >10ms  ]");
+								else
+									printw(" %6.1fus ]", tval);
+
+																	
+							//	printw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
+								
+								
+								
+								
+								
+							//	printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
 								
 								
 								printw("  busy = %6.2f%%", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]/(dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1));
