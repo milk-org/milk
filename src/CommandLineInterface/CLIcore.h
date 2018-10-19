@@ -198,113 +198,6 @@ typedef struct
 
 
 
-
-// THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
-typedef struct
-{
-	char package_name[100];
-	char package_version[100];
-	char configdir[100];
-	char sourcedir[100];
-	
-	
-    struct sigaction sigact; 
-    // signals toggle flags
-    int signal_USR1;
-    int signal_USR2;
-    int signal_TERM;
-    int signal_INT;
-    int signal_SEGV;
-    int signal_ABRT;
-    int signal_BUS;
-    int signal_HUP;
-    int signal_PIPE;
-    
-    int progStatus;  // main program status
-    // 0: before automatic loading of shared objects
-    // 1: after automatic loading of shared objects
-    
-    uid_t ruid; // Real UID (= user launching process at startup)
-	uid_t euid; // Effective UID (= owner of executable at startup)
-	uid_t suid; // Saved UID (= owner of executable at startup)
-	// system permissions are set by euid
-	// at startup, euid = owner of executable (meant to be root)
-	// -> we first drop privileges by setting euid to ruid
-	// when root privileges needed, we set euid <- suid
-	// when reverting to user privileges : euid <- ruid
-    
-    int Debug;
-    int quiet;
-    int overwrite;		// automatically overwrite FITS files
-    double INVRANDMAX;
-    gsl_rng *rndgen;		// random number generator
-    int precision;		// default precision: 0 for float, 1 for double
-
-    // logging, process monitoring
-    int CLIlogON;
-    char CLIlogname[200];  
-    int processinfo;       // 1 if processes info is to be logged
-    int processinfoActive; // 1 is the process is currently logged
-
-    // Command Line Interface (CLI) INPUT
-    int fifoON;
-    char processname[100];
-    char fifoname[100];
-    uint_fast16_t NBcmd;
-    
-    long NB_MAX_COMMAND;
-    CMD cmd[1000];
-    
-    int parseerror; // 1 if error, 0 otherwise
-    long cmdNBarg;  // number of arguments in last command line
-    CMDARGTOKEN cmdargtoken[NB_ARG_MAX];
-    long cmdindex; // when command is found in command line, holds index of command
-    long calctmp_imindex; // used to create temporary images
-    int CMDexecuted; // 0 if command has not been executed, 1 otherwise
-    long NBmodule;
-    
-    long NB_MAX_MODULE;
-    MODULE module[100];
-
-    // shared memory default
-    int SHARED_DFT;
-
-    // Number of keyword per iamge default
-    int NBKEWORD_DFT;
-
-    // images, variables
-    long NB_MAX_IMAGE;
-    #ifdef DATA_STATIC_ALLOC
-    IMAGE image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
-	#else
-	IMAGE *image;
-	#endif
-	
-    long NB_MAX_VARIABLE;
-    #ifdef DATA_STATIC_ALLOC
-    VARIABLE variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
-	#else
-	VARIABLE *variable;
-	#endif
-	
-
-
-    float FLOATARRAY[1000];	// array to store temporary variables
-    double DOUBLEARRAY[1000];    // for convenience
-    char SAVEDIR[500];
-
-    // status counter (used for profiling)
-    int status0;
-    int status1;
-} DATA;
-
-
-extern DATA data;
-
-
-
-
-
 // --------------------- MANAGING PROCESSES -------------------------------
 
 
@@ -400,6 +293,122 @@ typedef struct
 	int           active[PROCESSINFOLISTSIZE];
 	
 } PROCESSINFOLIST;
+
+
+// ---------------------  -------------------------------
+
+
+
+
+
+
+
+
+
+// THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
+typedef struct
+{
+	char package_name[100];
+	char package_version[100];
+	char configdir[100];
+	char sourcedir[100];
+	
+	
+    struct sigaction sigact; 
+    // signals toggle flags
+    int signal_USR1;
+    int signal_USR2;
+    int signal_TERM;
+    int signal_INT;
+    int signal_SEGV;
+    int signal_ABRT;
+    int signal_BUS;
+    int signal_HUP;
+    int signal_PIPE;
+    
+    int progStatus;  // main program status
+    // 0: before automatic loading of shared objects
+    // 1: after automatic loading of shared objects
+    
+    uid_t ruid; // Real UID (= user launching process at startup)
+	uid_t euid; // Effective UID (= owner of executable at startup)
+	uid_t suid; // Saved UID (= owner of executable at startup)
+	// system permissions are set by euid
+	// at startup, euid = owner of executable (meant to be root)
+	// -> we first drop privileges by setting euid to ruid
+	// when root privileges needed, we set euid <- suid
+	// when reverting to user privileges : euid <- ruid
+    
+    int Debug;
+    int quiet;
+    int overwrite;		// automatically overwrite FITS files
+    double INVRANDMAX;
+    gsl_rng *rndgen;		// random number generator
+    int precision;		// default precision: 0 for float, 1 for double
+
+    // logging, process monitoring
+    int CLIlogON;
+    char CLIlogname[200];  
+    int processinfo;       // 1 if processes info is to be logged
+    int processinfoActive; // 1 is the process is currently logged
+    PROCESSINFO *pinfo;    // pointer to process info structure
+
+    // Command Line Interface (CLI) INPUT
+    int fifoON;
+    char processname[100];
+    char fifoname[100];
+    uint_fast16_t NBcmd;
+    
+    long NB_MAX_COMMAND;
+    CMD cmd[1000];
+    
+    int parseerror; // 1 if error, 0 otherwise
+    long cmdNBarg;  // number of arguments in last command line
+    CMDARGTOKEN cmdargtoken[NB_ARG_MAX];
+    long cmdindex; // when command is found in command line, holds index of command
+    long calctmp_imindex; // used to create temporary images
+    int CMDexecuted; // 0 if command has not been executed, 1 otherwise
+    long NBmodule;
+    
+    long NB_MAX_MODULE;
+    MODULE module[100];
+
+    // shared memory default
+    int SHARED_DFT;
+
+    // Number of keyword per iamge default
+    int NBKEWORD_DFT;
+
+    // images, variables
+    long NB_MAX_IMAGE;
+    #ifdef DATA_STATIC_ALLOC
+    IMAGE image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
+	#else
+	IMAGE *image;
+	#endif
+	
+    long NB_MAX_VARIABLE;
+    #ifdef DATA_STATIC_ALLOC
+    VARIABLE variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
+	#else
+	VARIABLE *variable;
+	#endif
+	
+
+
+    float FLOATARRAY[1000];	// array to store temporary variables
+    double DOUBLEARRAY[1000];    // for convenience
+    char SAVEDIR[500];
+
+    // status counter (used for profiling)
+    int status0;
+    int status1;
+} DATA;
+
+
+extern DATA data;
+
+
 
 
 
