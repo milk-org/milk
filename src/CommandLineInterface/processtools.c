@@ -1994,6 +1994,7 @@ int_fast8_t processinfo_CTRLscreen()
 				sprintf(syscommand, "tail -f %s", pinfoarray[pindex]->logfilename);
 				sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
 				system(syscommand);
+				sleep(1);
 				initncurses();
 			}
 			break;
