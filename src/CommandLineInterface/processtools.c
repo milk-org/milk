@@ -619,6 +619,8 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->dtiter_limit_enable = 0;
 	pinfo->dtexec_limit_enable = 0;
 	
+	data.pinfo = pinfo;  
+	
     return pinfo;
 }
 
