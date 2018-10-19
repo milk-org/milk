@@ -257,6 +257,7 @@
 #include <dirent.h>
 
 #include <wchar.h>
+#include <locale.h>
 
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
@@ -1562,7 +1563,7 @@ int_fast8_t processinfo_CTRLscreen()
     int   NBpindexActive;
 
 
-
+	setlocale(LC_ALL, "");
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
