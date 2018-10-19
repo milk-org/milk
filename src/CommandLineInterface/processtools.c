@@ -2778,7 +2778,7 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								// compute timing stat
 								dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
-								dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer));
+								dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
 								
 								int tindex;
 								dtindex = 0;
@@ -2799,8 +2799,8 @@ int_fast8_t processinfo_CTRLscreen()
 									dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
 									dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
 								}
-								int ti1 = PROCESSINFO_NBtimer-1;
-								dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
+								//int ti1 = PROCESSINFO_NBtimer-1;
+								//dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
 								
 								
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
@@ -2843,7 +2843,7 @@ int_fast8_t processinfo_CTRLscreen()
 								else
 									printw("[%6.1fus -", tval);
 
-								tval = 0.001*dtexec_array[PROCESSINFO_NBtimer-1];
+								tval = 0.001*dtexec_array[PROCESSINFO_NBtimer-2];
 								if(tval > 9999.9)
 									printw("    >10ms ]");
 								else
@@ -2859,7 +2859,7 @@ int_fast8_t processinfo_CTRLscreen()
 							//	printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
 								
 								
-								printw("  busy = %6.2f%%", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]/(dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1));
+								printw("  busy = %6.2f%%", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)] / (dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1) );
 								
 								free(dtiter_array);
 								free(dtexec_array);
