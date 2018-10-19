@@ -318,7 +318,6 @@ typedef struct
 	
 	int           NBsubprocesses;
 	int           subprocPIDarray[MAXNBSUBPROCESS];
-
 	
 	char          statusmsg[200];
 	char          tmuxname[100];
@@ -491,6 +490,7 @@ long processinfo_shm_list_create()
         while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
 	}
+	
 
 	printf("pindex = %ld\n", pindex);
 		
@@ -622,6 +622,19 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	
 	data.pinfo = pinfo;  
 	
+	// create logfile
+	char logfilename[200];
+	struct timespec tnow;
+	
+    clock_gettime(CLOCK_REALTIME, &tnow);
+ 
+	sprintf(pinfo->logfilename, "/tmp/proc.%s.%06d.%09d.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+	pinfo->logFile = fopen(pinfo->logfilename, "w");
+	
+	char msgstring[200];
+	sprintf(msgstring, "LOG START");
+	processinfo_WriteMessage(pinfo, msgstring);
+	
     return pinfo;
 }
 
@@ -646,11 +659,11 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 		strncpy(processinfo->statusmsg, msgstring, 200);
     }
     
-//    if(processinfo->loopstat == 1)
-//   {
+    if(processinfo->loopstat == 1)
+   {
         sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
 		strncpy(processinfo->statusmsg, msgstring, 200);
-//	}
+	}
 	
 	processinfo->loopstat = 3; // clean exit
 
@@ -831,9 +844,20 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 {
+	struct timespec tnow;
+	struct tm *tmnow;
+	char msgstringFull[300];
+	
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    tmnow = gmtime(&tnow.tv_sec);
+	
 	strcpy(processinfo->statusmsg, msgstring);
 	
-	// TODO: add to logfile
+   // sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
+	fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s", 
+		tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), 
+		tnow.tv_sec, tnow.tv_nsec, 
+		(int) processinfo->PID, msgstring);
 	
 	return 0;
 }
@@ -873,8 +897,11 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 			processinfo->dtiter_limit_cnt ++;
 			if(processinfo->dtiter_limit_enable == 1) // pause process due to timing limit
 			{
+				char msgstring[200];
+				
 				processinfo->CTRLval = 1;
-				processinfo_WriteMessage(processinfo, "Timing limit dtiter exceeded -> paused");
+				sprintf(msgstring, "dtiter lim [%.1f > %.1f] -> paused", 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+				processinfo_WriteMessage(processinfo, msgstring);
 			}
 		}
     }
@@ -906,8 +933,11 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 			processinfo->dtexec_limit_cnt ++;
 			if(processinfo->dtexec_limit_enable == 1) // pause process due to timing limit
 			{
+				char msgstring[200];
+				
 				processinfo->CTRLval = 1;
-				processinfo_WriteMessage(processinfo, "Timing limit dtexec exceeded -> paused");
+				sprintf(msgstring, "dtexec lim [%.1f > %.1f] -> paused", 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+				processinfo_WriteMessage(processinfo, msgstring);
 			}
 		}
     }
@@ -1562,6 +1592,8 @@ int_fast8_t processinfo_CTRLscreen()
     int   pindexActive[PROCESSINFOLISTSIZE];
     int   NBpindexActive;
 
+	int ToggleValue;
+
 
 	setlocale(LC_ALL, "");
 
@@ -1620,6 +1652,7 @@ int_fast8_t processinfo_CTRLscreen()
     while( loopOK == 1 )
     {
         int pid;
+        char command[200];
 
 
         usleep((long) (1000000.0/frequ));
@@ -1921,6 +1954,43 @@ int_fast8_t processinfo_CTRLscreen()
                 TimeSorted = 1;
             break;
 
+
+		case 'L': // toggle time limit (iter)
+			pindex = pindexSelected;
+			ToggleValue = pinfoarray[pindex]->dtiter_limit_enable;
+			if(ToggleValue==0)
+			{
+				pinfoarray[pindex]->dtiter_limit_enable = 1;
+				pinfoarray[pindex]->dtiter_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_iter_ns);
+				pinfoarray[pindex]->dtiter_limit_cnt = 0;				
+			}
+			else
+			{
+				pinfoarray[pindex]->dtiter_limit_enable = 0;
+			}
+			break;;
+
+		case 'M' : // toggle time limit (exec)
+			pindex = pindexSelected;
+			ToggleValue = pinfoarray[pindex]->dtexec_limit_enable;
+			if(ToggleValue==0)
+			{
+				pinfoarray[pindex]->dtexec_limit_enable = 1;
+				pinfoarray[pindex]->dtexec_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_exec_ns);
+				pinfoarray[pindex]->dtexec_limit_cnt = 0;
+			}
+			else
+			{
+				pinfoarray[pindex]->dtexec_limit_enable = 0;
+			}
+			break;;
+
+
+		case 'm' : // message
+			pindex = pindexSelected;
+			sprintf(command, "tail -f %s", pinfoarray[pindex]->logfilename);
+			break;
+			
         // Set Display Mode
 
         case KEY_F(1):
@@ -2026,6 +2096,8 @@ int_fast8_t processinfo_CTRLscreen()
             attroff(attrval);
             printw("nselect all\n");
 
+
+			printw("(L)i(M)its (m)essageLog ");
 
             printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
             attron(attrval);
@@ -2773,8 +2845,7 @@ int_fast8_t processinfo_CTRLscreen()
 								int dtindex;
 								
 								
-								
-								printw(" %3d ..%02ld ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
+								printw(" %3d ..%02ld  ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
 								
 								// compute timing stat
 								dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
@@ -2803,13 +2874,40 @@ int_fast8_t processinfo_CTRLscreen()
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
-
-								printw(" ITERlim %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
-								printw(" EXEClim %d/%8ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
+								int colorcode;
 								
+								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+								{
+									if(pinfoarray[pindex]->dtiter_limit_cnt==0)
+										colorcode = COLOR_PAIR(2);
+									else
+										colorcode = COLOR_PAIR(4);
+									attron(colorcode);
+								}
+								printw("ITERlim %d/%5ld/%4ld", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
+								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+									attroff(colorcode);
+									
+								printw("  ");
+								
+								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+								{
+									if(pinfoarray[pindex]->dtexec_limit_cnt==0)
+										colorcode = COLOR_PAIR(2);
+									else
+										colorcode = COLOR_PAIR(4);
+									attron(colorcode);
+								}
+								
+								printw("EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
+								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+									attroff(colorcode);
+									
+									
 								float tval;
 								
 								tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								pinfoarray[pindex]->dtmedian_iter_ns = dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
 									printw(" ITER    >10ms ");
 								else
@@ -2829,6 +2927,7 @@ int_fast8_t processinfo_CTRLscreen()
 									
 									
 								tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								pinfoarray[pindex]->dtmedian_exec_ns = dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
 									printw(" EXEC    >10ms ");
 								else

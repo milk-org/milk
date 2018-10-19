@@ -243,6 +243,7 @@ typedef struct
 	int    statuscode;            // status code 
 
 	FILE  *logFile;
+	char  logfilename[200];
 	
 	 // OPTIONAL TIMING MEASUREMENT
 	// Used to measure how long loop process takes to complete task
