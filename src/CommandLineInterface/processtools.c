@@ -2804,7 +2804,7 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
-								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer);
+								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
 
 								printw(" ITERlim %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
@@ -2859,7 +2859,7 @@ int_fast8_t processinfo_CTRLscreen()
 							//	printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
 								
 								
-								//printw("  busy = %6.2f%%", 100.0*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)] / ( dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1 ) );
+								printw("  busy = %6.2f%%", 100.0*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)] / ( dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1 ) );
 								
 								free(dtiter_array);
 								free(dtexec_array);
