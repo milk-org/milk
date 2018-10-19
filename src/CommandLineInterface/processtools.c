@@ -256,7 +256,7 @@
 
 #include <dirent.h>
 
-
+#include <wchar.h>
 
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
@@ -2801,9 +2801,9 @@ int_fast8_t processinfo_CTRLscreen()
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
-								char block1[] = { 0xe2, 0x94, 0x80, '\0' };
-								char block2[] = { 0xe2, 0x94, 0x81, '\0' };
-								printw("%s%s\n", block1, block2);
+								char block1[] = { 0xe2, 0x94, 0x80, "\0" };
+								char block2[] = { 0xe2, 0x94, 0x81, "\0" };
+								printw("%s%s", block1, block2);
     
 //								printw("%lc ", 0x2503);
 								printw("| %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
