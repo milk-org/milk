@@ -42,9 +42,15 @@
  *     sprintf(msgstring, "%s->%s", IDinname, IDoutname);
  *     processinfo_WriteMessage(processinfo, msgstring);
  *     data.processinfoActive = 1;
+ * 
+ *     processinfo->MeasureTiming = 0; // OPTIONAL: do not measure timing 
+ * 
  * }
  * 
  * @endcode
+ * 
+ * 
+ * 
  * 
  * Process signals should be caught for suitable processing and reporting.
  * 
@@ -132,6 +138,17 @@
     
     
     // LOOP CODE GOES HERE
+    
+    // computation start here
+    if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
+		processinfo_exec_start(processinfo);
+    
+	// computation ....
+	
+	// computation done
+	if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
+		processinfo_exec_end(processinfo);
+    
     
     
 	// OPTIONAL MESSAGE WHILE LOOP RUNNING
@@ -591,6 +608,17 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	// 3 : exit loop
 	pinfo->CTRLval = CTRLval;
 	
+	
+	pinfo->MeasureTiming = 1;
+	
+	// initialize timer indexes and counters
+	pinfo->timerindex = 0;
+	pinfo->timingbuffercnt = 0;
+	
+	// disable timer limit feature
+	pinfo->dtiter_limit_enable = 0;
+	pinfo->dtexec_limit_enable = 0;
+	
     return pinfo;
 }
 
@@ -797,6 +825,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 
 
+
 int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 {
 	strcpy(processinfo->statusmsg, msgstring);
@@ -805,6 +834,85 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 	
 	return 0;
 }
+
+
+
+
+
+
+int processinfo_exec_start(PROCESSINFO *processinfo)
+{
+	
+	processinfo->timerindex ++;
+	if(processinfo->timerindex==PROCESSINFO_NBtimer)
+	{
+		processinfo->timerindex = 0;
+		processinfo->timingbuffercnt++;
+	}
+	
+	clock_gettime(CLOCK_REALTIME, &processinfo->texecstart[processinfo->timerindex]);
+
+    if(processinfo->dtiter_limit_enable != 0)
+    {
+        long dtiter;
+        int timerindexlast;
+
+        if(processinfo->timerindex == 0)
+            timerindexlast = PROCESSINFO_NBtimer;
+        else
+            timerindexlast = processinfo->timerindex - 1;
+        
+        dtiter = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecend[timerindexlast].tv_nsec;
+        dtiter += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[timerindexlast].tv_sec);
+        
+        if(dtiter > processinfo->dtiter_limit_value)
+        {
+			processinfo->dtiter_limit_cnt ++;
+			if(processinfo->dtiter_limit_enable == 1) // pause process due to timing limit
+			{
+				processinfo->CTRLval = 1;
+				processinfo_WriteMessage(processinfo, "Timing limit dtiter exceeded -> paused");
+			}
+		}
+    }
+
+	return 0;
+}
+
+
+
+int processinfo_exec_end(PROCESSINFO *processinfo)
+{
+    clock_gettime(CLOCK_REALTIME, &processinfo->texecend[processinfo->timerindex]);
+
+    if(processinfo->dtexec_limit_enable != 0)
+    {
+        long dtexec;
+        int timerindexlast;
+
+        if(processinfo->timerindex == 0)
+            timerindexlast = PROCESSINFO_NBtimer;
+        else
+            timerindexlast = processinfo->timerindex - 1;
+        
+        dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecend[timerindexlast].tv_nsec;
+        dtexec += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[timerindexlast].tv_sec);
+        
+        if(dtexec > processinfo->dtexec_limit_value)
+        {
+			processinfo->dtexec_limit_cnt ++;
+			if(processinfo->dtexec_limit_enable == 1) // pause process due to timing limit
+			{
+				processinfo->CTRLval = 1;
+				processinfo_WriteMessage(processinfo, "Timing limit dtexec exceeded -> paused");
+			}
+		}
+    }
+
+    return 0;
+}
+
+
 
 
 

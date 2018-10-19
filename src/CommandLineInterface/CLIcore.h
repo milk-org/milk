@@ -88,6 +88,12 @@ typedef uint_fast8_t BOOL;
 #define STATIC_NB_MAX_VARIABLE 5030
 
 
+// timing info for real-time loop processes
+#define PROCESSINFO_NBtimer  100
+
+
+
+
 //Need to install process with setuid.  Then, so you aren't running privileged all the time do this:
 extern uid_t euid_real;
 extern uid_t euid_called;
@@ -344,8 +350,41 @@ typedef struct
 	int    statuscode;            // status code 
 
 	FILE  *logFile;
+	
+	 // OPTIONAL TIMING MEASUREMENT
+	// Used to measure how long loop process takes to complete task
+	// Provides means to stop/pause loop process if timing constraints exceeded
+	//
 
+	int MeasureTiming;  // 1 if timing is measured, 0 otherwise
+	
+	// the last PROCESSINFO_NBtimer times are stored in a circular buffer, from which timing stats are derived
+	int    timerindex;                            // index in circular buffer
+	int    timingbuffercnt;                           // increments every cycle of the circular buffer
+	struct timespec texecstart[PROCESSINFO_NBtimer];  // task starts
+	struct timespec texecend[PROCESSINFO_NBtimer];    // task ends
+
+	long   dtmedian_iter_ns;                      // median time offset between iterations [nanosec]
+	long   dtmedian_exec_ns;                      // median compute/busy time [nanosec]
+	
+	// If enabled=1, pause process if dtiter larger than limit
+	int    dtiter_limit_enable;
+	long   dtiter_limit_value;
+	long   dtiter_limit_cnt;
+	
+	// If enabled=1, pause process if dtexec larger than limit
+	int    dtexec_limit_enable;
+	long   dtexec_limit_value;
+	long   dtexec_limit_cnt;
+	
+	
 } PROCESSINFO;
+
+
+
+
+
+
 
 
 
@@ -395,6 +434,9 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval);
 int processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
 int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring);
+
+int processinfo_exec_start(PROCESSINFO *processinfo);
+int processinfo_exec_end(PROCESSINFO *processinfo);
 
 
 int_fast8_t processinfo_CTRLscreen();
