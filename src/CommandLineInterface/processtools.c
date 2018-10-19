@@ -2836,17 +2836,34 @@ int_fast8_t processinfo_CTRLscreen()
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
+								int colorcode;
+								
 								if(pinfoarray[pindex]->dtiter_limit_enable==1)
-									attron(COLOR_PAIR(4));
+								{
+									if(pinfoarray[pindex]->dtiter_limit_cnt==0)
+										colorcode = COLOR_PAIR(2);
+									else
+										colorcode = COLOR_PAIR(4);
+									attron(colorcode);
+								}
 								printw("ITERlim %d/%5ld/%4ld", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
 								if(pinfoarray[pindex]->dtiter_limit_enable==1)
-									attroff(COLOR_PAIR(4));
+									attroff(colorcode);
+									
 								printw("  ");
+								
 								if(pinfoarray[pindex]->dtexec_limit_enable==1)
-									attron(COLOR_PAIR(4));
+								{
+									if(pinfoarray[pindex]->dtexec_limit_cnt==0)
+										colorcode = COLOR_PAIR(2);
+									else
+										colorcode = COLOR_PAIR(4);
+									attron(colorcode);
+								}
+								
 								printw("EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
 								if(pinfoarray[pindex]->dtexec_limit_enable==1)
-									attroff(COLOR_PAIR(4));
+									attroff(colorcode);
 									
 									
 								float tval;
