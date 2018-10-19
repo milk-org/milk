@@ -490,6 +490,7 @@ long processinfo_shm_list_create()
         while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
 	}
+	
 
 	printf("pindex = %ld\n", pindex);
 		
@@ -620,6 +621,21 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->dtexec_limit_enable = 0;
 	
 	data.pinfo = pinfo;  
+	
+	// create logfile
+	char logfilename[200];
+	struct timespec tnow;
+	
+    clock_gettime(CLOCK_REALTIME, &tnow);
+ 
+	
+	
+	sprintf(logfilename, "/tmp/proc.%s.%06d.%09d.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+	pinfo->logFile = fopen(logfilename, "w");
+	
+	char msgstring[200];
+	sprintf(msgstring, "LOG START ===============");
+	processinfo_WriteMessage(pinfo, msgstring);
 	
     return pinfo;
 }
@@ -830,9 +846,17 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 {
+	struct timespec tnow;
+	struct tm *tmnow;
+	char msgstringFull[300];
+	
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    tmnow = gmtime(&tnow.tv_sec);
+	
 	strcpy(processinfo->statusmsg, msgstring);
 	
-	// TODO: add to logfile
+    sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
+	fprintf(processinfo->logFile, msgstringFull);
 	
 	return 0;
 }
