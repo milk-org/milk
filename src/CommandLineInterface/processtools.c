@@ -2837,8 +2837,8 @@ int_fast8_t processinfo_CTRLscreen()
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
 
-								printw(" ITERlim %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
-								printw(" EXEClim %d/%8ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
+								printw(" ITERlim %d/%5ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
+								printw(" EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
 								
 								float tval;
 								
