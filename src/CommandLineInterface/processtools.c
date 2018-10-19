@@ -2797,11 +2797,8 @@ int_fast8_t processinfo_CTRLscreen()
 										ti1 += PROCESSINFO_NBtimer;
 									
 									dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
-									dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
+									dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti0].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti0].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
 								}
-								//int ti1 = PROCESSINFO_NBtimer-1;
-								//dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti1].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti1].tv_sec);
-								
 								
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
