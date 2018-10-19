@@ -853,8 +853,8 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 	
 	strcpy(processinfo->statusmsg, msgstring);
 	
-    sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
-	fprintf(processinfo->logFile, msgstringFull);
+   // sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
+	fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
 	
 	return 0;
 }
