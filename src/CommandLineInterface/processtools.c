@@ -2833,9 +2833,9 @@ int_fast8_t processinfo_CTRLscreen()
 									
 								tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
-									printw(" ITER    >10ms ");
+									printw(" EXEC    >10ms ");
 								else
-									printw(" ITER %6.1fus ", tval);
+									printw(" EXEC %6.1fus ", tval);
 								
 								tval = 0.001*dtexec_array[0];
 								if(tval > 9999.9)
