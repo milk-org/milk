@@ -2814,38 +2814,38 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
-									printw(" ITER  >10ms  ");
+									printw(" ITER    >10ms ");
 								else
 									printw(" ITER %6.1fus ", tval);
 								
 								tval = 0.001*dtiter_array[0];
 								if(tval > 9999.9)
-									printw("[  >10ms -");
+									printw("[   >10ms -");
 								else
 									printw("[%6.1fus -", tval);
 
 								tval = 0.001*dtiter_array[PROCESSINFO_NBtimer-2];
 								if(tval > 9999.9)
-									printw("  >10ms  ]");
+									printw("    >10ms ]");
 								else
 									printw(" %6.1fus ]", tval);
 									
 									
 								tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
 								if(tval > 9999.9)
-									printw(" ITER  >10ms  ");
+									printw(" ITER    >10ms ");
 								else
 									printw(" ITER %6.1fus ", tval);
 								
 								tval = 0.001*dtexec_array[0];
 								if(tval > 9999.9)
-									printw("[  >10ms -");
+									printw("[   >10ms -");
 								else
 									printw("[%6.1fus -", tval);
 
 								tval = 0.001*dtexec_array[PROCESSINFO_NBtimer-1];
 								if(tval > 9999.9)
-									printw("  >10ms  ]");
+									printw("    >10ms ]");
 								else
 									printw(" %6.1fus ]", tval);
 
