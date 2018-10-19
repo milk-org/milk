@@ -1562,6 +1562,8 @@ int_fast8_t processinfo_CTRLscreen()
     int   pindexActive[PROCESSINFOLISTSIZE];
     int   NBpindexActive;
 
+	int ToggleValue;
+
 
 	setlocale(LC_ALL, "");
 
@@ -1920,6 +1922,33 @@ int_fast8_t processinfo_CTRLscreen()
             else
                 TimeSorted = 1;
             break;
+
+
+		case 'I' : // toggle time limit (iter)
+			ToggleValue = pinfoarray[pindex]->dtiter_limit_enable;
+			if(ToggleValue==0)
+			{
+				pinfoarray[pindex]->dtiter_limit_enable = 1;
+				pinfoarray[pindex]->dtiter_limit_cnt = 0;				
+			}
+			else
+			{
+				pinfoarray[pindex]->dtiter_limit_enable = 0;
+			}
+			break;;
+
+		case 'E' : // toggle time limit (exec)
+			ToggleValue = pinfoarray[pindex]->dtexec_limit_enable;
+			if(ToggleValue==0)
+			{
+				pinfoarray[pindex]->dtexec_limit_enable = 1;
+				pinfoarray[pindex]->dtexec_limit_cnt = 0;
+			}
+			else
+			{
+				pinfoarray[pindex]->dtexec_limit_enable = 0;
+			}
+			break;;
 
         // Set Display Mode
 
