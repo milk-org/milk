@@ -1930,6 +1930,10 @@ int_fast8_t processinfo_CTRLscreen()
             DisplayMode = 2;
             break;
 
+        case KEY_F(3):
+            DisplayMode = 3;
+            break;
+
 
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
@@ -1990,7 +1994,8 @@ int_fast8_t processinfo_CTRLscreen()
             attron(attrval);printw("F1");attroff(attrval);
             printw(" ");
             attron(attrval);printw("F2");attroff(attrval);
-            
+            printw(" ");
+            attron(attrval);printw("F3");attroff(attrval);            
            
             printw("\n\n");
 
