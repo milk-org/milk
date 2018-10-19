@@ -912,7 +912,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 				
 				processinfo->CTRLval = 1;
 				sprintf(msgstring, "dtexec lim [%.1f > %.1f] -> paused", 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
-				processinfo_WriteMessage(processinfo, "Timing limit dtexec exceeded -> paused");
+				processinfo_WriteMessage(processinfo, msgstring);
 			}
 		}
     }
