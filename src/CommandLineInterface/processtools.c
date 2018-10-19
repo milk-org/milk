@@ -632,7 +632,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
 	
 	fprintf(pinfo->logFile, "This is a test\n");
-	fclose((pinfo->logFile);
+	fclose(pinfo->logFile);
 	
 	char msgstring[200];
 	sprintf(msgstring, "LOG START");
