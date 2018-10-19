@@ -632,7 +632,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
 	
 	fprintf(pinfo->logFile, "This is a test\n");
-	fclose(pinfo->logFile);
+	//fclose(pinfo->logFile);
 	
 	char msgstring[200];
 	sprintf(msgstring, "LOG START");
@@ -861,12 +861,12 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 
     // sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
     
-	fp = fopen(processinfo->logfilename, "a");
-    fprintf(fp, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
+	//fp = fopen(processinfo->logfilename, "a");
+    fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
             tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)),
             tnow.tv_sec, tnow.tv_nsec,
             (int) processinfo->PID, msgstring);
-    fclose(fp);
+   // fclose(fp);
 
     return 0;
 }
