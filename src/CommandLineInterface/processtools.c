@@ -256,7 +256,8 @@
 
 #include <dirent.h>
 
-
+#include <wchar.h>
+#include <locale.h>
 
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
@@ -645,11 +646,11 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 		strncpy(processinfo->statusmsg, msgstring, 200);
     }
     
-    if(processinfo->loopstat == 1)
-    {
+//    if(processinfo->loopstat == 1)
+//   {
         sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
 		strncpy(processinfo->statusmsg, msgstring, 200);
-	}
+//	}
 	
 	processinfo->loopstat = 3; // clean exit
 
@@ -1498,21 +1499,21 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 /**
  * ## Purpose
- * 
+ *
  * Control screen for PROCESSINFO structures
  *
  * ## Description
- * 
+ *
  * Relies on ncurses for display\n
- * 
+ *
  *
  */
 
 int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
-    
-    
+
+
     //
     // these arrays are indexed together
     // the index is different from the displayed order
@@ -1538,7 +1539,7 @@ int_fast8_t processinfo_CTRLscreen()
     char pselected_FUNCTION[200];
     int  pselected_LINE;
 
-	// timers 
+    // timers
     struct timespec t1loop;
     struct timespec t2loop;
     struct timespec tdiffloop;
@@ -1562,7 +1563,7 @@ int_fast8_t processinfo_CTRLscreen()
     int   NBpindexActive;
 
 
-
+	setlocale(LC_ALL, "");
 
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
@@ -1614,7 +1615,7 @@ int_fast8_t processinfo_CTRLscreen()
     // 1: overview
     // 2: CPU affinity
 
-	clear();
+    clear();
 
     while( loopOK == 1 )
     {
@@ -1626,13 +1627,13 @@ int_fast8_t processinfo_CTRLscreen()
 
         clock_gettime(CLOCK_REALTIME, &t1loop);
 
-		scantime_cpuset = 0.0;
-		scantime_status = 0.0;
-		scantime_stat = 0.0;
-		scantime_pstree = 0.0;
-		scantime_top = 0.0;
-		scantime_CPUload = 0.0;
-		scantime_CPUpcnt = 0.0;
+        scantime_cpuset = 0.0;
+        scantime_status = 0.0;
+        scantime_stat = 0.0;
+        scantime_pstree = 0.0;
+        scantime_top = 0.0;
+        scantime_CPUload = 0.0;
+        scantime_CPUpcnt = 0.0;
 
         if(freeze==0)
         {
@@ -1930,68 +1931,115 @@ int_fast8_t processinfo_CTRLscreen()
             DisplayMode = 2;
             break;
 
+        case KEY_F(3):
+            DisplayMode = 3;
+            break;
+
 
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
 
         if(freeze==0)
-        {           			
-			erase();
-			
-			int attrval = A_UNDERLINE|A_BOLD|A_BLINK;
-			
+        {
+            erase();
+
+            int attrval = A_UNDERLINE|A_BOLD|A_BLINK;
+
             printw("E");
-            attron(attrval);printw("x");attroff(attrval);
+            attron(attrval);
+            printw("x");
+            attroff(attrval);
             printw("it ");
-            attron(attrval);printw("f");attroff(attrval);            
+            attron(attrval);
+            printw("f");
+            attroff(attrval);
             printw("reeze *** SIG");
-            attron(attrval);printw("T");attroff(attrval);
+            attron(attrval);
+            printw("T");
+            attroff(attrval);
             printw("ERM SIG");
-            attron(attrval);printw("K");attroff(attrval);
+            attron(attrval);
+            printw("K");
+            attroff(attrval);
             printw("ILL SIG");
-            attron(attrval);printw("I");attroff(attrval);
+            attron(attrval);
+            printw("I");
+            attroff(attrval);
             printw("NT *** ");
-            attron(attrval);printw("r");attroff(attrval);
+            attron(attrval);
+            printw("r");
+            attroff(attrval);
             printw("emove ");
-            attron(attrval);printw("R");attroff(attrval);
+            attron(attrval);
+            printw("R");
+            attroff(attrval);
             printw("emoveall *** ");
-            attron(attrval);printw("t");attroff(attrval);
+            attron(attrval);
+            printw("t");
+            attroff(attrval);
             printw("mux\n");
-            
-            
-            
+
+
+
             printw("time-s");
-            attron(attrval);printw("o");attroff(attrval);
+            attron(attrval);
+            printw("o");
+            attroff(attrval);
             printw("rted    st");
-            attron(attrval);printw("a");attroff(attrval);
+            attron(attrval);
+            printw("a");
+            attroff(attrval);
             printw("tus sche");
-            attron(attrval);printw("d");attroff(attrval);
+            attron(attrval);
+            printw("d");
+            attroff(attrval);
             printw(" *** Loop Controls: ");
-            attron(attrval);printw("p");attroff(attrval);
+            attron(attrval);
+            printw("p");
+            attroff(attrval);
             printw("ause ");
-            attron(attrval);printw("s");attroff(attrval);
+            attron(attrval);
+            printw("s");
+            attroff(attrval);
             printw("tep ");
-            attron(attrval);printw("e");attroff(attrval);
+            attron(attrval);
+            printw("e");
+            attroff(attrval);
             printw("xit *** ");
-            attron(attrval);printw("z");attroff(attrval);
+            attron(attrval);
+            printw("z");
+            attroff(attrval);
             printw("ero or un");
-            attron(attrval);printw("Z");attroff(attrval);
+            attron(attrval);
+            printw("Z");
+            attroff(attrval);
             printw("ero counter\n");
-            
-            
-            attron(attrval);printw("SPACE");attroff(attrval);
+
+
+            attron(attrval);
+            printw("SPACE");
+            attroff(attrval);
             printw(":select toggle   ");
-            attron(attrval);printw("u");attroff(attrval);
+            attron(attrval);
+            printw("u");
+            attroff(attrval);
             printw("nselect all\n");
-            
-            
+
+
             printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
-            attron(attrval);printw("F1");attroff(attrval);
+            attron(attrval);
+            printw("F1");
+            attroff(attrval);
             printw(" ");
-            attron(attrval);printw("F2");attroff(attrval);
-            
-           
+            attron(attrval);
+            printw("F2");
+            attroff(attrval);
+            printw(" ");
+            attron(attrval);
+            printw("F3");
+            attroff(attrval);
+
             printw("\n\n");
 
 
@@ -2007,30 +2055,30 @@ int_fast8_t processinfo_CTRLscreen()
             }
             else
             {
-				sprintf(pselected_FILE, "?");
-				sprintf(pselected_FUNCTION, "?");
-				pselected_LINE = 0;
+                sprintf(pselected_FILE, "?");
+                sprintf(pselected_FUNCTION, "?");
+                pselected_LINE = 0;
                 printw("\n");
-			}
+            }
 
             printw("\n");
 
 
 
 
-			clock_gettime(CLOCK_REALTIME, &t02loop);
+            clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
             // LOAD / UPDATE process information
-          
+
 
             for(pindex=0; pindex<NBpinfodisp; pindex++)
             {
-				char SM_fname[200];    // shared memory file name
-				struct stat file_stat;
-				
-				
-				
+                char SM_fname[200];    // shared memory file name
+                struct stat file_stat;
+
+
+
                 // SHOULD WE (RE)LOAD ?
                 if(pinfolist->active[pindex] == 0) // inactive
                     updatearray[pindex] = 0;
@@ -2052,7 +2100,7 @@ int_fast8_t processinfo_CTRLscreen()
                     updatearray[pindex] = 0;
 
 
-                
+
 
 
                 // check if process info file exists
@@ -2073,7 +2121,7 @@ int_fast8_t processinfo_CTRLscreen()
                     // check if process still exists
                     struct stat sts;
                     char procfname[200];
-                    
+
                     sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if (stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as inactive
@@ -2137,9 +2185,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-			clock_gettime(CLOCK_REALTIME, &t03loop);
-			
-			
+            clock_gettime(CLOCK_REALTIME, &t03loop);
+
+
             /** ### Build a time-sorted list of processes
              *
              *
@@ -2180,7 +2228,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-			clock_gettime(CLOCK_REALTIME, &t04loop);
+            clock_gettime(CLOCK_REALTIME, &t04loop);
 
             /** ### Display
              *
@@ -2347,8 +2395,15 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-			clock_gettime(CLOCK_REALTIME, &t05loop);
+            clock_gettime(CLOCK_REALTIME, &t05loop);
 
+
+
+
+
+			// ===========================================================================
+			// ============== PRINT INFORMATION FOR EACH PROCESS =========================
+			// ===========================================================================
 
             for(dispindex=0; dispindex<dispindexMax; dispindex++)
             {
@@ -2406,6 +2461,8 @@ int_fast8_t processinfo_CTRLscreen()
                         printw("  %-30s", pinfodisp[pindex].name);
                         attroff(A_BOLD);
 
+
+						// ================ DISPLAY MODE 1 ==================
                         if( DisplayMode == 1)
                         {
                             switch (pinfoarray[pindex]->loopstat)
@@ -2468,6 +2525,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
+						// ================ DISPLAY MODE 2 ==================
                         if( DisplayMode == 2)
                         {
                             int cpu;
@@ -2507,11 +2565,11 @@ int_fast8_t processinfo_CTRLscreen()
                                     printw(" %-10s ", pinfodisp[pindex].cpuset);
                                     printw(" %2dx ", pinfodisp[pindex].threads);
 
-									// place info in subprocess arrays
-									pinfodisp[pindex].sampletimearray_prev[spindex] = pinfodisp[pindex].sampletimearray[spindex];
-									pinfodisp[pindex].sampletimearray[spindex] = pinfodisp[pindex].sampletime;
-									pinfodisp[pindex].cpuloadcntarray[spindex] = pinfodisp[pindex].cpuloadcnt;
-									pinfodisp[pindex].VmRSSarray[spindex] = pinfodisp[pindex].VmRSS;
+                                    // place info in subprocess arrays
+                                    pinfodisp[pindex].sampletimearray_prev[spindex] = pinfodisp[pindex].sampletimearray[spindex];
+                                    pinfodisp[pindex].sampletimearray[spindex] = pinfodisp[pindex].sampletime;
+                                    pinfodisp[pindex].cpuloadcntarray[spindex] = pinfodisp[pindex].cpuloadcnt;
+                                    pinfodisp[pindex].VmRSSarray[spindex] = pinfodisp[pindex].VmRSS;
 
 
                                     // Context Switches
@@ -2542,12 +2600,12 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     // CPU use
 
-                                    // get CPU and MEM load																		
-									pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfodisp[pindex].cpuloadcntarray[spindex]-pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfodisp[pindex].sampletimearray[spindex] - pinfodisp[pindex].sampletimearray_prev[spindex]);
-									
-									pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfodisp[pindex].cpuloadcntarray[spindex];
-                                    
-									pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfodisp[pindex].subprocCPUloadarray[spindex];
+                                    // get CPU and MEM load
+                                    pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfodisp[pindex].cpuloadcntarray[spindex]-pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfodisp[pindex].sampletimearray[spindex] - pinfodisp[pindex].sampletimearray_prev[spindex]);
+
+                                    pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfodisp[pindex].cpuloadcntarray[spindex];
+
+                                    pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfodisp[pindex].subprocCPUloadarray[spindex];
 
 
                                     int cpuColor = 0;
@@ -2648,14 +2706,14 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     int memColor = 0;
 
-									int kBcnt, MBcnt, GBcnt;
-									
-									kBcnt = pinfodisp[pindex].VmRSSarray[spindex];
-									MBcnt = kBcnt/1024;
-									kBcnt = kBcnt - MBcnt*1024;
-									
-									GBcnt = MBcnt/1024;									
-									MBcnt = MBcnt - GBcnt*1024;
+                                    int kBcnt, MBcnt, GBcnt;
+
+                                    kBcnt = pinfodisp[pindex].VmRSSarray[spindex];
+                                    MBcnt = kBcnt/1024;
+                                    kBcnt = kBcnt - MBcnt*1024;
+
+                                    GBcnt = MBcnt/1024;
+                                    MBcnt = MBcnt - GBcnt*1024;
 
                                     //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                     memColor = 1;
@@ -2665,30 +2723,30 @@ int_fast8_t processinfo_CTRLscreen()
                                         memColor = 3;
                                     if(pinfodisp[pindex].VmRSSarray[spindex]>1024*1024)  // 1 GB
                                         memColor = 4;
-                                    if(pinfodisp[pindex].VmRSSarray[spindex]<1024)            // 1 MB 
+                                    if(pinfodisp[pindex].VmRSSarray[spindex]<1024)            // 1 MB
                                         memColor = 5;
 
                                     printw(" ");
                                     attron(COLOR_PAIR(memColor));
-									if(GBcnt>0)
-										printw("%3d GB ", GBcnt);
-									else
-										printw("       ");
-									
-									if(MBcnt>0)
-										printw("%3d MB ", MBcnt);
-									else
-										printw("       ");
-									
-									if(kBcnt>0)
-										printw("%3d kB ", kBcnt);
-									else
-										printw("       ");
-									
-                              
+                                    if(GBcnt>0)
+                                        printw("%3d GB ", GBcnt);
+                                    else
+                                        printw("       ");
+
+                                    if(MBcnt>0)
+                                        printw("%3d MB ", MBcnt);
+                                    else
+                                        printw("       ");
+
+                                    if(kBcnt>0)
+                                        printw("%3d kB ", kBcnt);
+                                    else
+                                        printw("       ");
+
+
                                     attroff(COLOR_PAIR(memColor));
 
-									
+
 
 
                                     printw("\n");
@@ -2701,6 +2759,110 @@ int_fast8_t processinfo_CTRLscreen()
 
                         }
 
+
+
+						// ================ DISPLAY MODE 3 ==================
+						if( DisplayMode == 3)
+						{
+							
+							printw(" %d", pinfoarray[pindex]->MeasureTiming);
+							if(pinfoarray[pindex]->MeasureTiming == 1)
+							{
+								long *dtiter_array;
+								long *dtexec_array;
+								int dtindex;
+								
+								
+								
+								printw(" %3d ..%02ld ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
+								
+								// compute timing stat
+								dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
+								dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
+								
+								int tindex;
+								dtindex = 0;
+								
+								for(tindex=0;tindex<PROCESSINFO_NBtimer-1;tindex++)
+								{
+									int ti0, ti1;
+									
+									ti1 = pinfoarray[pindex]->timerindex - tindex;
+									ti0 = ti1 - 1;
+
+									if(ti0<0)
+										ti0 += PROCESSINFO_NBtimer;									
+
+									if(ti1<0)
+										ti1 += PROCESSINFO_NBtimer;
+									
+									dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
+									dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti0].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti0].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
+								}
+								
+								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
+								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
+								
+
+								printw(" ITERlim %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
+								printw(" EXEClim %d/%8ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
+								
+								float tval;
+								
+								tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								if(tval > 9999.9)
+									printw(" ITER    >10ms ");
+								else
+									printw(" ITER %6.1fus ", tval);
+								
+								tval = 0.001*dtiter_array[0];
+								if(tval > 9999.9)
+									printw("[   >10ms -");
+								else
+									printw("[%6.1fus -", tval);
+
+								tval = 0.001*dtiter_array[PROCESSINFO_NBtimer-2];
+								if(tval > 9999.9)
+									printw("    >10ms ]");
+								else
+									printw(" %6.1fus ]", tval);
+									
+									
+								tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
+								if(tval > 9999.9)
+									printw(" EXEC    >10ms ");
+								else
+									printw(" EXEC %6.1fus ", tval);
+								
+								tval = 0.001*dtexec_array[0];
+								if(tval > 9999.9)
+									printw("[   >10ms -");
+								else
+									printw("[%6.1fus -", tval);
+
+								tval = 0.001*dtexec_array[PROCESSINFO_NBtimer-2];
+								if(tval > 9999.9)
+									printw("    >10ms ]");
+								else
+									printw(" %6.1fus ]", tval);
+
+																	
+							//	printw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
+								
+								
+								
+								
+								
+							//	printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
+								
+								
+								printw("  busy = %6.2f%%", 100.0*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)] / ( dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1 ) );
+								
+								free(dtiter_array);
+								free(dtexec_array);
+							}
+						}
+
                         if(pindex == pindexSelected)
                             attroff(A_REVERSE);
 
@@ -2710,66 +2872,67 @@ int_fast8_t processinfo_CTRLscreen()
 
                 if(DisplayMode == 1)
                     printw("\n");
-
+                if(DisplayMode == 3)
+                    printw("\n");
 
             }
             clock_gettime(CLOCK_REALTIME, &t06loop);
 
             refresh();
-            
+
             clock_gettime(CLOCK_REALTIME, &t07loop);
 
             cnt++;
 
-        
 
-        clock_gettime(CLOCK_REALTIME, &t2loop);
 
-      /*  tdiff = info_time_diff(t1loop, t2loop);
-        double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-        
-        printw("Loop time = %9.8f s\n", tdiffvloop);
-		
-		tdiff = info_time_diff(t1loop, t01loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 01  : %9.8f\n", tdiffvloop);
+            clock_gettime(CLOCK_REALTIME, &t2loop);
 
-		tdiff = info_time_diff(t01loop, t02loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 02  : %9.8f\n", tdiffvloop);
+            /*  tdiff = info_time_diff(t1loop, t2loop);
+              double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
-		tdiff = info_time_diff(t02loop, t03loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 03  : %9.8f\n", tdiffvloop);
-		
-		tdiff = info_time_diff(t03loop, t04loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 04  : %9.8f\n", tdiffvloop);
-		
-		tdiff = info_time_diff(t04loop, t05loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 05  : %9.8f\n", tdiffvloop);
-		
-		tdiff = info_time_diff(t05loop, t06loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 06  : %9.8f\n", tdiffvloop);
-		
-		tdiff = info_time_diff(t06loop, t07loop);
-		tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		printw(" loop time 07  : %9.8f\n", tdiffvloop);
+              printw("Loop time = %9.8f s\n", tdiffvloop);
 
-		
-		printw("     %9.8f  scantime_cpuset\n", scantime_cpuset);
-		printw("     %9.8f  scantime_status\n", scantime_status);
-		printw("     %9.8f  scantime_stat\n", scantime_stat);
-		printw("     %9.8f  scantime_pstree\n", scantime_pstree);
-		printw("     %9.8f  scantime_top\n", scantime_top);
-		printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
-		printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
-		*/
-		
-		
-		}
+            tdiff = info_time_diff(t1loop, t01loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 01  : %9.8f\n", tdiffvloop);
+
+            tdiff = info_time_diff(t01loop, t02loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 02  : %9.8f\n", tdiffvloop);
+
+            tdiff = info_time_diff(t02loop, t03loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 03  : %9.8f\n", tdiffvloop);
+
+            tdiff = info_time_diff(t03loop, t04loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 04  : %9.8f\n", tdiffvloop);
+
+            tdiff = info_time_diff(t04loop, t05loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 05  : %9.8f\n", tdiffvloop);
+
+            tdiff = info_time_diff(t05loop, t06loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 06  : %9.8f\n", tdiffvloop);
+
+            tdiff = info_time_diff(t06loop, t07loop);
+            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            printw(" loop time 07  : %9.8f\n", tdiffvloop);
+
+
+            printw("     %9.8f  scantime_cpuset\n", scantime_cpuset);
+            printw("     %9.8f  scantime_status\n", scantime_status);
+            printw("     %9.8f  scantime_stat\n", scantime_stat);
+            printw("     %9.8f  scantime_pstree\n", scantime_pstree);
+            printw("     %9.8f  scantime_top\n", scantime_top);
+            printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
+            printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
+            */
+
+
+        }
 
     }
     endwin();
