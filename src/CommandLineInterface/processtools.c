@@ -2801,7 +2801,7 @@ int_fast8_t processinfo_CTRLscreen()
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
-								
+								printw("%lc ", 0x2503);
 								printw("| %d/%8ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
 								printw("| %d/%8ld/%4ld |", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
 								
