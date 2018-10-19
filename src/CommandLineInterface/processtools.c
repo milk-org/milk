@@ -2809,7 +2809,9 @@ int_fast8_t processinfo_CTRLscreen()
 								printw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
 								printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
 								
-								printw("  busy = %6.2f%%", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]/dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]);
+								
+								printw("  busy = %6.2f%%", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]/(dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]+1));
+								
 								free(dtiter_array);
 								free(dtexec_array);
 							}
