@@ -866,6 +866,7 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
             tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)),
             tnow.tv_sec, tnow.tv_nsec,
             (int) processinfo->PID, msgstring);
+    fflush(processinfo->logFile);
    // fclose(fp);
 
     return 0;
