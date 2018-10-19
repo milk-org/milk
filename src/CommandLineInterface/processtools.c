@@ -1988,8 +1988,13 @@ int_fast8_t processinfo_CTRLscreen()
 
 		case 'm' : // message
 			pindex = pindexSelected;
-			sprintf(command, "tail -f %s", pinfoarray[pindex]->logfilename);
-			system(command);
+			if(pinfolist->active[pindex]==1)
+            {
+                endwin();
+				sprintf(syscommand, "tail -f %s", pinfoarray[pindex]->logfilename);
+				system(syscommand);
+				initncurses();
+			}
 			break;
 			
         // Set Display Mode
