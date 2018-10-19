@@ -2807,7 +2807,7 @@ int_fast8_t processinfo_CTRLscreen()
 								int dtindex;
 								
 								
-								printw(" %3d ..%02ld ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
+								printw(" %3d ..%02ld  ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
 								
 								// compute timing stat
 								dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
@@ -2836,10 +2836,19 @@ int_fast8_t processinfo_CTRLscreen()
 								quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
 								quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
 								
-
-								printw(" ITERlim %d/%5ld/%4ld ", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
-								printw(" EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
-								
+								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+									attron(COLOR_PAIR(4));
+								printw("ITERlim %d/%5ld/%4ld", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
+								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+									attroff(COLOR_PAIR(4));
+								printw("  ");
+								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+									attron(COLOR_PAIR(4));
+								printw("EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
+								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+									attroff(COLOR_PAIR(4));
+									
+									
 								float tval;
 								
 								tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
