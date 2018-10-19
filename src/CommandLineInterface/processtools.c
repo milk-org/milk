@@ -2805,8 +2805,8 @@ int_fast8_t processinfo_CTRLscreen()
 								printw("[ITER-lim %d/%9ld/%5ld]  ", pinfoarray[pindex]->dtiter_limit_enable, pinfoarray[pindex]->dtiter_limit_value, pinfoarray[pindex]->dtiter_limit_value);
 								printw("[EXEC-lim %d/%9ld/%5ld] ", pinfoarray[pindex]->dtexec_limit_enable, pinfoarray[pindex]->dtexec_limit_value, pinfoarray[pindex]->dtexec_limit_value);
 								
-								printw(" dtiter = %9ld ns  ", dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]);
-								printw(" dtexec = %9ld ns  ", dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]);
+								printw(" dtiter = %7.3f us  ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)]);
+								printw(" dtexec = %7.3f us  ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)]);
 								
 								free(dtiter_array);
 								free(dtexec_array);
