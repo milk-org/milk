@@ -6812,7 +6812,11 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
             printf("ERROR recv()\n");
             socketOpen = 0;
         }
-
+	
+	
+		if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
+			processinfo_exec_start(processinfo);
+		
         if(recvsize!=0)
         {
             totsize += recvsize;
@@ -6850,6 +6854,10 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 
 		if(socketOpen == 0)
 			loopOK = 0;
+
+		if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
+			processinfo_exec_end(processinfo);
+
 		
 		// process signals
 		
