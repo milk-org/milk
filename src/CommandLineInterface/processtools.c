@@ -621,9 +621,11 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->dtexec_limit_enable = 0;
 	
 	data.pinfo = pinfo;  
+	pinfo->PID = PID;
+	
 	
 	// create logfile
-	char logfilename[200];
+	char logfilename[300];
 	struct timespec tnow;
 	
     clock_gettime(CLOCK_REALTIME, &tnow);
@@ -631,9 +633,13 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	sprintf(pinfo->logfilename, "/tmp/proc.%s.%06d.%09d.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
 	
+
+	
 	char msgstring[200];
-	sprintf(msgstring, "LOG START");
+	sprintf(msgstring, "LOG START %s", pinfo->logfilename);
 	processinfo_WriteMessage(pinfo, msgstring);
+	
+	
 	
     return pinfo;
 }
@@ -844,22 +850,25 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 {
-	struct timespec tnow;
-	struct tm *tmnow;
-	char msgstringFull[300];
+    struct timespec tnow;
+    struct tm *tmnow;
+    char msgstringFull[300];
+	FILE *fp;
 	
     clock_gettime(CLOCK_REALTIME, &tnow);
     tmnow = gmtime(&tnow.tv_sec);
-	
-	strcpy(processinfo->statusmsg, msgstring);
-	
-   // sprintf(msgstringFull, "%02d:%02d:%02d.%06d  %8ld:%09ld  %06d  %s", tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), tnow.tv_sec, tnow.tv_nsec, (int) processinfo->PID, msgstring);
-	fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s", 
-		tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)), 
-		tnow.tv_sec, tnow.tv_nsec, 
-		(int) processinfo->PID, msgstring);
-	
-	return 0;
+
+    strcpy(processinfo->statusmsg, msgstring);
+
+   
+    fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
+            tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)),
+            tnow.tv_sec, tnow.tv_nsec,
+            (int) processinfo->PID, 
+            msgstring);
+    fflush(processinfo->logFile);
+
+    return 0;
 }
 
 
@@ -1988,7 +1997,15 @@ int_fast8_t processinfo_CTRLscreen()
 
 		case 'm' : // message
 			pindex = pindexSelected;
-			sprintf(command, "tail -f %s", pinfoarray[pindex]->logfilename);
+			if(pinfolist->active[pindex]==1)
+            {
+                endwin();
+				sprintf(syscommand, "clear; tail -f %s", pinfoarray[pindex]->logfilename);
+				//sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
+				system(syscommand);
+				sleep(1);
+				initncurses();
+			}
 			break;
 			
         // Set Display Mode
