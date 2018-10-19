@@ -1998,7 +1998,7 @@ int_fast8_t processinfo_CTRLscreen()
 			if(pinfolist->active[pindex]==1)
             {
                 endwin();
-				sprintf(syscommand, "tail -f %s", pinfoarray[pindex]->logfilename);
+				sprintf(syscommand, "clear; tail -f %s", pinfoarray[pindex]->logfilename);
 				//sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
 				system(syscommand);
 				sleep(1);
