@@ -1530,6 +1530,107 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
 
+/**
+ * ## Purpose
+ *
+ * Creates list of CPU sets
+ *
+ * ## Description
+ *
+ * Uses command: cset set -l
+ *
+ *
+ */
+
+int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
+{
+	char syscommand[200];
+	char line[200];
+	FILE *fp;
+	int NBsetMax = 1000;
+	int setindex;
+	char word[200];
+	char word1[200];
+	int NBset = 0;
+	
+	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$0}' > _tmplist.txt");
+	system(syscommand);
+	
+	
+	// first scan: get number of entries
+	fp = fopen("_tmplist.txt", "r");
+	while ( NBset < NBsetMax ) {
+        if (fgets(line, 199, fp) == NULL) break;
+        NBset++;
+//		printf("%3d: %s", NBset, line);
+	}
+	fclose(fp);
+	
+	
+	setindex = 0;
+	fp = fopen("_tmplist.txt", "r");
+	while ( 1 ) {
+        if (fgets(line, 199, fp) == NULL) break;
+        sscanf(line, "%s %s", word, word1);
+        strcpy(CPUsetList[setindex].name, word);
+        strcpy(CPUsetList[setindex].description, word1);
+        setindex++;
+	}
+	fclose(fp);
+	
+	return NBset;
+}
+
+
+
+
+
+int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
+{
+    int selected = 0;
+	long i;
+	char buff[100];
+	int inputOK;
+	char *p;
+
+	printf("%d entries in list:\n", NBelem);
+	fflush(stdout);
+	for(i=0;i<NBelem;i++)
+	{
+		printf("   %3d   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
+		fflush(stdout);
+	}
+	
+    printf ("\nEnter a number: ");
+    fflush(stdout);
+	inputOK = 0;
+
+    if (fgets(buff, sizeof(buff), stdin) != NULL)
+    {
+        selected = strtol(buff, &p, 10);
+
+        if (buff[0] != '\n' && (*p == '\n' || *p == '\0'))
+            inputOK = 1;
+        else  inputOK = 0;
+    }
+    
+    if(inputOK == 1)
+    {
+		if(selected < 0)
+			selected = 0;
+		if(selected > NBelem-1)
+			selected = 0;
+	}
+	 
+	printf("Selected entry : %s\n", StringList[selected].name);
+	
+
+    return selected;
+}
+
+
+
+
 
 /**
  * ## Purpose
@@ -1596,6 +1697,8 @@ int_fast8_t processinfo_CTRLscreen()
     int   pindexActive[PROCESSINFOLISTSIZE];
     int   NBpindexActive;
 
+	int listindex;
+
     int ToggleValue;
 
 
@@ -1610,7 +1713,10 @@ int_fast8_t processinfo_CTRLscreen()
         loopcntoffsetarray[pindex] = 0;
     }
 
-
+	STRINGLISTENTRY *CPUsetList;
+	int NBCPUset;
+	CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
+	NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
 
     // Create / read process list
@@ -1869,6 +1975,35 @@ int_fast8_t processinfo_CTRLscreen()
             }
             break;
 
+
+        case '>': // move to other cpuset
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex]==1)
+            {
+                endwin();
+                system("clear"); // clear screen
+                printf("CURRENT cpu set : %s\n",  pinfodisp[pindex].cpuset);
+                listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+                sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
+                system(syscommand);
+                initncurses();
+			}
+            break;
+
+        case '<': // move to same cpuset
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex]==1)
+            {
+				endwin();
+				sprintf(syscommand,"sudo cset proc -m %d root &> /dev/null", pinfolist->PIDarray[pindex]);
+                system(syscommand);
+				sprintf(syscommand,"sudo cset proc --force -m %d %s &> /dev/null", pinfolist->PIDarray[pindex], pinfodisp[pindex].cpuset);
+                system(syscommand);
+                initncurses();
+			}
+            break;
+
+
         case 'e': // exit
             for(index=0; index<NBpindexActive; index++)
             {
@@ -2004,7 +2139,6 @@ int_fast8_t processinfo_CTRLscreen()
                 sprintf(syscommand, "clear; tail -f %s", pinfoarray[pindex]->logfilename);
                 //sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
                 system(syscommand);
-                sleep(1);
                 initncurses();
             }
             break;
@@ -2041,13 +2175,13 @@ int_fast8_t processinfo_CTRLscreen()
                 int attrval = A_BOLD;
 
                 attron(attrval);
-                printw("x");
+                printw("    x");
                 attroff(attrval);
                 printw("    Exit\n");
 
 
 				printw("\n");
-                printw("Display: \n");
+                printw("============ DISPLAY \n");
 
                 attron(attrval);
                 printw("    F1");
@@ -2068,8 +2202,6 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    F4");
                 attroff(attrval);
                 printw("   Process timing screen\n");
-                
-                
                 
                 attron(attrval);
                 printw("    f");
@@ -2104,7 +2236,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Process details: \n");
+                printw("============ PROCESS DETAILS \n");
 
                 attron(attrval);
                 printw("    t");
@@ -2125,7 +2257,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Loop Controls: \n");
+                printw("============ LOOP CONTROL \n");
 
                 attron(attrval);
                 printw("    p");
@@ -2161,7 +2293,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Counters, timers: \n");
+                printw("============ COUNTERS, TIMERS \n");
 
                 attron(attrval);
                 printw("    z");
@@ -2182,7 +2314,23 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    M");
                 attroff(attrval);
                 printw("    Enable execution time limit\n"); 
+                
+                
 
+				printw("\n");
+                printw("============ AFFINITY \n");
+
+                attron(attrval);
+                printw("    >");
+                attroff(attrval);
+                printw("    Move to other CPU set\n");   
+
+                attron(attrval);
+                printw("    <");
+                attroff(attrval);
+                printw("    Move back to same CPU set\n");   
+
+                
                 printw("\n\n");
             }
             else
@@ -2880,12 +3028,12 @@ int_fast8_t processinfo_CTRLscreen()
                                             printw("       ");
 
                                         if(MBcnt>0)
-                                            printw("%3d MB ", MBcnt);
+                                            printw("%4d MB ", MBcnt);
                                         else
                                             printw("       ");
 
                                         if(kBcnt>0)
-                                            printw("%3d kB ", kBcnt);
+                                            printw("%4d kB ", kBcnt);
                                         else
                                             printw("       ");
 

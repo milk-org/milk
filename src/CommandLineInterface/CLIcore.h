@@ -299,7 +299,11 @@ typedef struct
 // ---------------------  -------------------------------
 
 
-
+typedef struct
+{
+	char name[200];
+	char description[200];
+} STRINGLISTENTRY;
 
 
 
