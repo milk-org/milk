@@ -1575,7 +1575,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 		CPUsetList[setindex] = (char *) malloc(200*sizeof(char));
         if (fgets(CPUsetList[setindex], 199, fp) == NULL) break;
         setindex++;
-        printf("%3d: %s", NBset, CPUsetList[setindex]);
+        printf("%3d: %s", setindex, CPUsetList[setindex]);
         fflush(stdout);
 	}
 	fclose(fp);
