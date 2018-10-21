@@ -1567,8 +1567,6 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	fclose(fp);
 	
 	
-	CPUsetList = malloc(NBset * sizeof(STRINGLISTENTRY));
-	
 	setindex = 0;
 	fp = fopen("_tmplist.txt", "r");
 	while ( 1 ) {
@@ -1723,6 +1721,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 	STRINGLISTENTRY *CPUsetList;
 	int NBCPUset;
+	CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
 	NBCPUset = processinfo_CPUsets_List(CPUsetList);
 	processinfo_SelectFromList(CPUsetList, NBCPUset);
 exit(0);
