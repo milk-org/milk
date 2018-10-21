@@ -1581,6 +1581,14 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	fclose(fp);
 	
 	
+	long i;
+	for(i=0;i<NBset;i++)
+	{
+		printf("--   %3d   : %s\n", i, CPUsetList[i]);
+		fflush(stdout);
+	}
+	
+	
 	return NBset;
 }
 
@@ -1588,7 +1596,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 
 
 
-int processinfo_SelectFromList(char **List, int NBelem)
+int processinfo_SelectFromList(char **StringList, int NBelem)
 {
     int selected = 0;
 	long i;
@@ -1600,7 +1608,7 @@ int processinfo_SelectFromList(char **List, int NBelem)
 	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
-		printf("   %3d   : %s\n", i, "test"); //List[i]);
+		printf("   %3d   : %s\n", i, StringList[i]);
 		fflush(stdout);
 	}
 	
@@ -1625,7 +1633,7 @@ int processinfo_SelectFromList(char **List, int NBelem)
 			selected = 0;
 	}
 	 
-	printf("Selected entry : %s\n", List[selected]);
+	printf("Selected entry : %s\n", StringList[selected]);
 	
 
     return selected;
