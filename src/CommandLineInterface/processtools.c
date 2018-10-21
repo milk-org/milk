@@ -1986,7 +1986,7 @@ int_fast8_t processinfo_CTRLscreen()
 			if(ToggleValue==0)
 			{
 				pinfoarray[pindex]->dtexec_limit_enable = 1;
-				pinfoarray[pindex]->dtexec_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_exec_ns);
+				pinfoarray[pindex]->dtexec_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_exec_ns + 20000);
 				pinfoarray[pindex]->dtexec_limit_cnt = 0;
 			}
 			else
