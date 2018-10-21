@@ -1542,13 +1542,42 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
  *
  */
 
-int processinfo_CPUsets_List()
-{	
-	int NBset;
+int processinfo_CPUsets_List(char **CPUsetList)
+{
 	char syscommand[200];
+	char line[200];
+	FILE *fp;
+	int NBsetMax = 1000;
+	int setindex;
+	
+	int NBset = 0;
 	
 	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$1}' > _tmplist.txt");
 	system(syscommand);
+	
+	
+	// first scan: get number of entries
+	fp = fopen("_tmplist.txt", "r");
+	while ( NBset < NBsetMax ) {
+        if (fgets(line, 199, fp) == NULL) break;
+        NBset++;
+     //  printf("%3d: %s", NBset, line);
+	}
+	fclose(fp);
+	
+	
+	CPUsetList = malloc(NBset * sizeof(char*));
+	
+	setindex = 0;
+	fp = fopen("_tmplist.txt", "r");
+	while ( 1 ) {
+		CPUsetList[setindex] = (char *) malloc(200*sizeof(char));
+        if (fgets(CPUsetList[setindex], 199, fp) == NULL) break;
+        setindex++;
+        printf("%3d: %s", NBset, CPUsetList[setindex]);
+	}
+	fclose(fp);
+	
 	
 	return NBset;
 }
@@ -1637,8 +1666,11 @@ int_fast8_t processinfo_CTRLscreen()
         loopcntoffsetarray[pindex] = 0;
     }
 
+	char **CPUsetList;
+	int NBCPUset;
+	NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
-	processinfo_CPUsets_List();
+	exit(0);
 
     // Create / read process list
     processinfo_shm_list_create();
