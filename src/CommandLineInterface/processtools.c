@@ -904,7 +904,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         if(dtiter > processinfo->dtiter_limit_value)
         {
 			processinfo->dtiter_limit_cnt ++;
-			if(processinfo->dtiter_limit_enable == 1) // pause process due to timing limit
+			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
 			{
 				char msgstring[200];
 				
@@ -934,7 +934,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
         if(dtexec > processinfo->dtexec_limit_value)
         {
 			processinfo->dtexec_limit_cnt ++;
-			if(processinfo->dtexec_limit_enable == 1) // pause process due to timing limit
+			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
 			{
 				char msgstring[200];
 				
@@ -1970,7 +1970,10 @@ int_fast8_t processinfo_CTRLscreen()
 			}
 			else
 			{
-				pinfoarray[pindex]->dtiter_limit_enable = 0;
+				ToggleValue ++;
+				if(ToggleValue==3)
+					ToggleValue = 0;
+				pinfoarray[pindex]->dtiter_limit_enable = ToggleValue;
 			}
 			break;;
 
@@ -1985,7 +1988,10 @@ int_fast8_t processinfo_CTRLscreen()
 			}
 			else
 			{
-				pinfoarray[pindex]->dtexec_limit_enable = 0;
+				ToggleValue ++;
+				if(ToggleValue==3)
+					ToggleValue = 0;
+				pinfoarray[pindex]->dtexec_limit_enable = ToggleValue;
 			}
 			break;;
 
