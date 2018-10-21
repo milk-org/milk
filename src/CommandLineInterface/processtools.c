@@ -2038,7 +2038,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             if(DisplayMode == 1)
             {
-                int attrval = A_UNDERLINE|A_BOLD;
+                int attrval = A_BOLD;
 
                 attron(attrval);
                 printw("x");
@@ -2143,17 +2143,17 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    clean exit\n");   
 
                 attron(attrval);
-                printw("T");
+                printw("    T");
                 attroff(attrval);
                 printw("    SIGTERM\n");                
                 
                 attron(attrval);
-                printw("K");
+                printw("    K");
                 attroff(attrval);
                 printw("    SIGKILL\n");                   
                 
                 attron(attrval);
-                printw("I");
+                printw("    I");
                 attroff(attrval);
                 printw("    SIGINT\n");  
 
@@ -2188,7 +2188,7 @@ int_fast8_t processinfo_CTRLscreen()
             else
             {
 
-				printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
+				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, DisplayMode);
 
                 if(pinfommapped[pindexSelected] == 1)
                 {
