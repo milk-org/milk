@@ -911,7 +911,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 				processinfo->CTRLval = 1;
 				sprintf(msgstring, "dtiter lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
 				processinfo_WriteMessage(processinfo, msgstring);
-			}
+			}			
 		}
     }
 
@@ -2903,7 +2903,7 @@ int_fast8_t processinfo_CTRLscreen()
 									attron(colorcode);
 								}
 								printw("ITERlim %d/%5ld/%4ld", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
-								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+								if(pinfoarray[pindex]->dtiter_limit_enable!=0)
 									attroff(colorcode);
 									
 								printw("  ");
@@ -2918,7 +2918,7 @@ int_fast8_t processinfo_CTRLscreen()
 								}
 								
 								printw("EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
-								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+								if(pinfoarray[pindex]->dtexec_limit_enable!=0)
 									attroff(colorcode);
 									
 									
