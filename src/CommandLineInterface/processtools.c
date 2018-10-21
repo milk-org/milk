@@ -898,8 +898,8 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         else
             timerindexlast = processinfo->timerindex - 1;
         
-        dtiter = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecend[timerindexlast].tv_nsec;
-        dtiter += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[timerindexlast].tv_sec);
+        dtiter = processinfo->texecstart[processinfo->timerindex].tv_nsec - processinfo->texecstart[timerindexlast].tv_nsec;
+        dtiter += 1000000000*(processinfo->texecstart[processinfo->timerindex].tv_sec - processinfo->texecstart[timerindexlast].tv_sec);
         
         char msgstring[200];
         sprintf(msgstring, "dtiter %03ld = %.1f us   %.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
