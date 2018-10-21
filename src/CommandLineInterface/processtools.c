@@ -1549,7 +1549,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	FILE *fp;
 	int NBsetMax = 1000;
 	int setindex;
-	
+	char word[200];
 	int NBset = 0;
 	
 	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$1}' > _tmplist.txt");
@@ -1573,9 +1573,10 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	fp = fopen("_tmplist.txt", "r");
 	while ( 1 ) {
 		CPUsetList[setindex] = (char *) malloc(200*sizeof(char));
-        if (fgets(CPUsetList[setindex], 199, fp) == NULL) break;
+        if (fgets(line, 199, fp) == NULL) break;
+        sscanf(line, "%s", word);
+        printf("%3d: %s %d", setindex, word, strlen(word)); //CPUsetList[setindex]);
         setindex++;
-        printf("%3d: %s", setindex, CPUsetList[setindex]);
         fflush(stdout);
 	}
 	fclose(fp);
