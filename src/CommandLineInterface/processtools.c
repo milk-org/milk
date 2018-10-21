@@ -1567,7 +1567,6 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	fclose(fp);
 	
 	
-	//CPUsetList = malloc(NBset * sizeof(char*));
 	CPUsetList = malloc(NBset * sizeof(STRINGLISTENTRY));
 	
 	setindex = 0;
@@ -1575,10 +1574,8 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	while ( 1 ) {
         if (fgets(line, 199, fp) == NULL) break;
         sscanf(line, "%s %s", word, word1);
-//        CPUsetList[setindex] = (char *) malloc((strlen(word)+1)*sizeof(char));
         strcpy(CPUsetList[setindex].name, word);
         strcpy(CPUsetList[setindex].description, word1);
-       // printf("%3d: %16s %3d  -> %s\n", setindex, word, strlen(word), CPUsetList[setindex]);
         setindex++;
 	}
 	fclose(fp);
@@ -1587,10 +1584,9 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	long i;
 	for(i=0;i<NBset;i++)
 	{
-		printf("--   %3d   : %s\n", i, CPUsetList[i].name);
+		printf("   %3d   : %16s   %s\n", i, CPUsetList[i].name, CPUsetList[i].description);
 		fflush(stdout);
 	}
-	
 	
 	return NBset;
 }
@@ -1607,7 +1603,7 @@ int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 	int inputOK;
 	char *p;
 
-	printf("%d entries:\n", NBelem);
+	printf("%d entries in list:\n", NBelem);
 	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
