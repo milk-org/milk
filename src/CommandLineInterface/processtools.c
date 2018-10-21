@@ -1712,8 +1712,8 @@ int_fast8_t processinfo_CTRLscreen()
 	char **CPUsetList;
 	int NBCPUset;
 	NBCPUset = processinfo_CPUsets_List(CPUsetList);
-
-
+	processinfo_SelectFromList(CPUsetList, NBCPUset);
+exit(0);
 
     // Create / read process list
     processinfo_shm_list_create();
