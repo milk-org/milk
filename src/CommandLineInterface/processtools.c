@@ -1561,7 +1561,8 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	while ( NBset < NBsetMax ) {
         if (fgets(line, 199, fp) == NULL) break;
         NBset++;
-     //  printf("%3d: %s", NBset, line);
+		printf("%3d: %s", NBset, line);
+		fflush(stdout);
 	}
 	fclose(fp);
 	
@@ -1575,6 +1576,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
         if (fgets(CPUsetList[setindex], 199, fp) == NULL) break;
         setindex++;
         printf("%3d: %s", NBset, CPUsetList[setindex]);
+        fflush(stdout);
 	}
 	fclose(fp);
 	
