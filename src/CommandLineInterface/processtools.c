@@ -1982,7 +1982,7 @@ int_fast8_t processinfo_CTRLscreen()
             {
                 endwin();
                 system("clear"); // clear screen
-                printf("CURRENT cpu set : %s\n", pinfolist->cpuset[pindex]);
+                printf("CURRENT cpu set : %s\n",  pinfodisp[pindex].cpuset);
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
                 sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
                 //printf("%s\n", syscommand);
