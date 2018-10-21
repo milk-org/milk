@@ -3017,12 +3017,12 @@ int_fast8_t processinfo_CTRLscreen()
                                             printw("       ");
 
                                         if(MBcnt>0)
-                                            printw("%3d MB ", MBcnt);
+                                            printw("%4d MB ", MBcnt);
                                         else
                                             printw("       ");
 
                                         if(kBcnt>0)
-                                            printw("%3d kB ", kBcnt);
+                                            printw("%4d kB ", kBcnt);
                                         else
                                             printw("       ");
 
