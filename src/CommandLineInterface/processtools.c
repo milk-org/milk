@@ -2038,110 +2038,157 @@ int_fast8_t processinfo_CTRLscreen()
 
             if(DisplayMode == 1)
             {
-                int attrval = A_UNDERLINE|A_BOLD|A_BLINK;
+                int attrval = A_UNDERLINE|A_BOLD;
 
-                printw("E");
                 attron(attrval);
                 printw("x");
                 attroff(attrval);
-                printw("it ");
-                attron(attrval);
-                printw("f");
-                attroff(attrval);
-                printw("reeze *** SIG");
-                attron(attrval);
-                printw("T");
-                attroff(attrval);
-                printw("ERM SIG");
-                attron(attrval);
-                printw("K");
-                attroff(attrval);
-                printw("ILL SIG");
-                attron(attrval);
-                printw("I");
-                attroff(attrval);
-                printw("NT *** ");
-                attron(attrval);
-                printw("r");
-                attroff(attrval);
-                printw("emove ");
-                attron(attrval);
-                printw("R");
-                attroff(attrval);
-                printw("emoveall *** ");
-                attron(attrval);
-                printw("t");
-                attroff(attrval);
-                printw("mux\n");
+                printw("    Exit\n");
 
 
+				printw("\n");
+                printw("Display: \n");
 
-                printw("time-s");
                 attron(attrval);
-                printw("o");
+                printw("    F1");
                 attroff(attrval);
-                printw("rted    st");
-                attron(attrval);
-                printw("a");
-                attroff(attrval);
-                printw("tus sche");
-                attron(attrval);
-                printw("d");
-                attroff(attrval);
-                printw(" *** Loop Controls: ");
-                attron(attrval);
-                printw("p");
-                attroff(attrval);
-                printw("ause ");
-                attron(attrval);
-                printw("s");
-                attroff(attrval);
-                printw("tep ");
-                attron(attrval);
-                printw("e");
-                attroff(attrval);
-                printw("xit *** ");
-                attron(attrval);
-                printw("z");
-                attroff(attrval);
-                printw("ero or un");
-                attron(attrval);
-                printw("Z");
-                attroff(attrval);
-                printw("ero counter\n");
+                printw("   Help screen\n");
 
+                attron(attrval);
+                printw("    F2");
+                attroff(attrval);
+                printw("   Process control screen\n");
+                
+                attron(attrval);
+                printw("    F3");
+                attroff(attrval);
+                printw("   Process resources screen\n");
+                attron(attrval);
+
+                printw("    F4");
+                attroff(attrval);
+                printw("   Process timing screen\n");
+                
+                
+                
+                attron(attrval);
+                printw("    f");
+                attroff(attrval);
+                printw("    Freeze\n");
+
+                attron(attrval);
+                printw("    r");
+                attroff(attrval);
+                printw("    Remove selected inactive process log\n");     
+
+                attron(attrval);
+                printw("    R");
+                attroff(attrval);
+                printw("    Remove all inactive processes logs\n");     
+                              
+                attron(attrval);
+                printw("    o");
+                attroff(attrval);
+                printw("    sort processes (toggle)\n");   
 
                 attron(attrval);
                 printw("SPACE");
                 attroff(attrval);
-                printw(":select toggle   ");
+                printw("    Select this process\n");
+                   
                 attron(attrval);
-                printw("u");
+                printw("    u");
                 attroff(attrval);
-                printw("nselect all\n");
+                printw("    Unselect all processes\n");   
 
 
-                printw("(L)i(M)its (m)essageLog ");
 
-                printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
+				printw("\n");
+                printw("Process details: \n");
+
                 attron(attrval);
-                printw("F1");
+                printw("    t");
                 attroff(attrval);
-                printw(" ");
+                printw("    Connect to tmux session\n");    
+
                 attron(attrval);
-                printw("F2");
+                printw("    a");
                 attroff(attrval);
-                printw(" ");
+                printw("    process stat\n");   
+
                 attron(attrval);
-                printw("F3");
+                printw("    d");
                 attroff(attrval);
+                printw("    process sched\n");   
+
+
+
+
+				printw("\n");
+                printw("Loop Controls: \n");
+
+                attron(attrval);
+                printw("    p");
+                attroff(attrval);
+                printw("    pause\n");   
+
+                attron(attrval);
+                printw("    s");
+                attroff(attrval);
+                printw("    step\n");   
+
+                attron(attrval);
+                printw("    e");
+                attroff(attrval);
+                printw("    clean exit\n");   
+
+                attron(attrval);
+                printw("T");
+                attroff(attrval);
+                printw("    SIGTERM\n");                
+                
+                attron(attrval);
+                printw("K");
+                attroff(attrval);
+                printw("    SIGKILL\n");                   
+                
+                attron(attrval);
+                printw("I");
+                attroff(attrval);
+                printw("    SIGINT\n");  
+
+
+
+
+				printw("\n");
+                printw("Counters, timers: \n");
+
+                attron(attrval);
+                printw("    z");
+                attroff(attrval);
+                printw("    zero this selected counter\n");   
+
+                attron(attrval);
+                printw("    Z");
+                attroff(attrval);
+                printw("    zero all selected counters\n");   
+
+                attron(attrval);
+                printw("    L");
+                attroff(attrval);
+                printw("    Enable iteration time limit\n");   
+
+                attron(attrval);
+                printw("    M");
+                attroff(attrval);
+                printw("    Enable execution time limit\n"); 
 
                 printw("\n\n");
             }
             else
             {
 
-
+				printw("%2d cpus   %2d processes tracked    Display Mode %d ", NBcpus, NBpindexActive, DisplayMode);
 
                 if(pinfommapped[pindexSelected] == 1)
                 {
