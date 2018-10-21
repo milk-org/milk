@@ -1553,7 +1553,7 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	char word1[200];
 	int NBset = 0;
 	
-	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$1}' > _tmplist.txt");
+	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$0}' > _tmplist.txt");
 	system(syscommand);
 	
 	
