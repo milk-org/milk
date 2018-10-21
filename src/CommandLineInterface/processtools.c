@@ -1984,8 +1984,8 @@ int_fast8_t processinfo_CTRLscreen()
                 system("clear"); // clear screen
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
                 sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
-                printf("%s\n", syscommand);
-                sleep(5);
+                //printf("%s\n", syscommand);
+                system(syscommand);
                 initncurses();
 			}
             break;
