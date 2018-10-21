@@ -1596,10 +1596,11 @@ int processinfo_SelectFromList(char **List, int NBelem)
 	int inputOK;
 	char *p;
 
-	printf("\n");
+	printf("%d entries:\n", NBelem);
+	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
-		printf("%3d   : %s\n", List[i]);
+		printf("   %3d   : %s\n", i, List[i]);
 		fflush(stdout);
 	}
 	
