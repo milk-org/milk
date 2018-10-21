@@ -1600,7 +1600,7 @@ int processinfo_SelectFromList(char **List, int NBelem)
 	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
-		printf("   %3d   : %s\n", i, List[i]);
+		printf("   %3d   : %s\n", i, "test"); //List[i]);
 		fflush(stdout);
 	}
 	
