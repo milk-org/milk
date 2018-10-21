@@ -2181,7 +2181,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Display: \n");
+                printw("============ DISPLAY \n");
 
                 attron(attrval);
                 printw("    F1");
@@ -2202,8 +2202,6 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    F4");
                 attroff(attrval);
                 printw("   Process timing screen\n");
-                
-                
                 
                 attron(attrval);
                 printw("    f");
@@ -2238,7 +2236,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Process details: \n");
+                printw("============ PROCESS DETAILS \n");
 
                 attron(attrval);
                 printw("    t");
@@ -2259,7 +2257,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Loop Controls: \n");
+                printw("============ LOOP CONTROL \n");
 
                 attron(attrval);
                 printw("    p");
@@ -2295,7 +2293,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("Counters, timers: \n");
+                printw("============ COUNTERS, TIMERS \n");
 
                 attron(attrval);
                 printw("    z");
@@ -2318,7 +2316,20 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    Enable execution time limit\n"); 
                 
                 
-                
+
+				printw("\n");
+                printw("============ AFFINITY \n");
+
+                attron(attrval);
+                printw("    >");
+                attroff(attrval);
+                printw("    Move to other CPU set\n");   
+
+                attron(attrval);
+                printw("    <");
+                attroff(attrval);
+                printw("    Move back to same CPU set\n");   
+
                 
                 printw("\n\n");
             }
