@@ -1976,17 +1976,28 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
 
-        case '>': // move to cpuset
+        case '>': // move to other cpuset
             pindex = pindexSelected;
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
                 system("clear"); // clear screen
+                printf("CURRENT cpu set : %s\n", pinfolist->cpuset[pindex]);
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
                 sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
                 //printf("%s\n", syscommand);
                 system(syscommand);
                 initncurses();
+			}
+            break;
+
+        case '<': // move to same cpuset
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex]==1)
+            {
+				
+                //sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);                
+                //system(syscommand);
 			}
             break;
 
