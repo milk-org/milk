@@ -894,7 +894,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         int timerindexlast;
 
         if(processinfo->timerindex == 0)
-            timerindexlast = PROCESSINFO_NBtimer;
+            timerindexlast = PROCESSINFO_NBtimer-1;
         else
             timerindexlast = processinfo->timerindex - 1;
         
@@ -909,7 +909,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 				char msgstring[200];
 				
 				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtiter lim [%.1f > %.1f] -> paused", 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+				sprintf(msgstring, "dtiter lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
 				processinfo_WriteMessage(processinfo, msgstring);
 			}
 		}
@@ -930,7 +930,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
         int timerindexlast;
 
         if(processinfo->timerindex == 0)
-            timerindexlast = PROCESSINFO_NBtimer;
+            timerindexlast = PROCESSINFO_NBtimer-1;
         else
             timerindexlast = processinfo->timerindex - 1;
         
@@ -945,9 +945,10 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 				char msgstring[200];
 				
 				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtexec lim [%.1f > %.1f] -> paused", 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+				sprintf(msgstring, "dtexec lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
 				processinfo_WriteMessage(processinfo, msgstring);
 			}
+			
 		}
     }
 
