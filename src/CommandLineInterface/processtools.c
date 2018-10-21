@@ -901,12 +901,17 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         dtiter = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecend[timerindexlast].tv_nsec;
         dtiter += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[timerindexlast].tv_sec);
         
+        char msgstring[200];
+        sprintf(msgstring, "dtiter %03ld = %.1f us   %.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+        processinfo_WriteMessage(processinfo, msgstring);
+        
+        
         if(dtiter > processinfo->dtiter_limit_value)
         {
 			processinfo->dtiter_limit_cnt ++;
 			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
 			{
-				char msgstring[200];
+				//char msgstring[200];
 				
 				processinfo->CTRLval = 1;
 				sprintf(msgstring, "dtiter lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
@@ -3075,7 +3080,8 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     int tindex;
                                     dtindex = 0;
-
+                                    
+                                    // we exclude the current timerindex, as timers may not all be written
                                     for(tindex=0; tindex<PROCESSINFO_NBtimer-1; tindex++)
                                     {
                                         int ti0, ti1;
@@ -3087,11 +3093,14 @@ int_fast8_t processinfo_CTRLscreen()
                                             ti0 += PROCESSINFO_NBtimer;
 
                                         if(ti1<0)
-                                            ti1 += PROCESSINFO_NBtimer;
-
+											ti1 += PROCESSINFO_NBtimer;
+                                            
                                         dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
+                                        
                                         dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti0].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti0].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
                                     }
+                                    
+                                  
 
                                     quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
                                     quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
