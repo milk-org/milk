@@ -1598,9 +1598,13 @@ int processinfo_SelectFromList(char **List, int NBelem)
 
 	printf("\n");
 	for(i=0;i<NBelem;i++)
+	{
 		printf("%3d   : %s\n", List[i]);
+		fflush(stdout);
+	}
 	
     printf ("\nEnter a number: ");
+    fflush(stdout);
 	inputOK = 0;
 
     if (fgets(buff, sizeof(buff), stdin) != NULL)
