@@ -1542,7 +1542,7 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
  *
  */
 
-int processinfo_CPUsets_List(char **CPUsetList)
+int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 {
 	char syscommand[200];
 	char line[200];
@@ -1550,6 +1550,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	int NBsetMax = 1000;
 	int setindex;
 	char word[200];
+	char word1[200];
 	int NBset = 0;
 	
 	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$1}' > _tmplist.txt");
@@ -1566,15 +1567,17 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	fclose(fp);
 	
 	
-	CPUsetList = malloc(NBset * sizeof(char*));
+	//CPUsetList = malloc(NBset * sizeof(char*));
+	CPUsetList = malloc(NBset * sizeof(STRINGLISTENTRY));
 	
 	setindex = 0;
 	fp = fopen("_tmplist.txt", "r");
 	while ( 1 ) {
         if (fgets(line, 199, fp) == NULL) break;
-        sscanf(line, "%s", word);
-        CPUsetList[setindex] = (char *) malloc((strlen(word)+1)*sizeof(char));
-        strcpy(CPUsetList[setindex], word);
+        sscanf(line, "%s %s", word, word1);
+//        CPUsetList[setindex] = (char *) malloc((strlen(word)+1)*sizeof(char));
+        strcpy(CPUsetList[setindex].name, word);
+        strcpy(CPUsetList[setindex].description, word1);
        // printf("%3d: %16s %3d  -> %s\n", setindex, word, strlen(word), CPUsetList[setindex]);
         setindex++;
 	}
@@ -1584,7 +1587,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	long i;
 	for(i=0;i<NBset;i++)
 	{
-		printf("--   %3d   : %s\n", i, CPUsetList[i]);
+		printf("--   %3d   : %s\n", i, CPUsetList[i].name);
 		fflush(stdout);
 	}
 	
@@ -1596,7 +1599,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 
 
 
-int processinfo_SelectFromList(char **StringList, int NBelem)
+int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 {
     int selected = 0;
 	long i;
@@ -1608,7 +1611,7 @@ int processinfo_SelectFromList(char **StringList, int NBelem)
 	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
-		printf("   %3d   : %s\n", i, StringList[i]);
+		printf("   %3d   : %16s   %s\n", i, StringList[i].name, , StringList[i].description);
 		fflush(stdout);
 	}
 	
@@ -1633,7 +1636,7 @@ int processinfo_SelectFromList(char **StringList, int NBelem)
 			selected = 0;
 	}
 	 
-	printf("Selected entry : %s\n", StringList[selected]);
+	printf("Selected entry : %s\n", StringList[selected].name);
 	
 
     return selected;
