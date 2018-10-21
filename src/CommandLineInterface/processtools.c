@@ -1721,7 +1721,7 @@ int_fast8_t processinfo_CTRLscreen()
         loopcntoffsetarray[pindex] = 0;
     }
 
-	char **CPUsetList;
+	STRINGLISTENTRY *CPUsetList;
 	int NBCPUset;
 	NBCPUset = processinfo_CPUsets_List(CPUsetList);
 	processinfo_SelectFromList(CPUsetList, NBCPUset);
