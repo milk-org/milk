@@ -2998,7 +2998,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                     if(DisplayMode == 2)
                         printw("\n");
-                    if(DisplayMode == 3)
+                    if(DisplayMode == 4)
                         printw("\n");
 
                 }
