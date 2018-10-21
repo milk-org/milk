@@ -1995,9 +1995,8 @@ int_fast8_t processinfo_CTRLscreen()
             pindex = pindexSelected;
             if(pinfolist->active[pindex]==1)
             {
-				
-                //sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);                
-                //system(syscommand);
+				sprintf(syscommand,"sudo cset proc --force -m %d %s", pinfolist->PIDarray[pindex], pinfodisp[pindex].cpuset);
+                system(syscommand);
 			}
             break;
 
