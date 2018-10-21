@@ -1697,6 +1697,8 @@ int_fast8_t processinfo_CTRLscreen()
     int   pindexActive[PROCESSINFOLISTSIZE];
     int   NBpindexActive;
 
+	int listindex;
+
     int ToggleValue;
 
 
