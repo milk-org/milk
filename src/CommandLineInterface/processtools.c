@@ -901,20 +901,21 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         dtiter = processinfo->texecstart[processinfo->timerindex].tv_nsec - processinfo->texecstart[timerindexlast].tv_nsec;
         dtiter += 1000000000*(processinfo->texecstart[processinfo->timerindex].tv_sec - processinfo->texecstart[timerindexlast].tv_sec);
         
-        char msgstring[200];
-        sprintf(msgstring, "dtiter %03ld = %.1f us   %.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
-        processinfo_WriteMessage(processinfo, msgstring);
         
         
         if(dtiter > processinfo->dtiter_limit_value)
         {
+			char msgstring[200];
+			
 			processinfo->dtiter_limit_cnt ++;
+			
+			sprintf(msgstring, "dtiter lim %03ld = %.1f us  > %.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+			processinfo_WriteMessage(processinfo, msgstring);	
+			
 			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
 			{
-				//char msgstring[200];
-				
 				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtiter lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+				sprintf(msgstring, "dtiter lim -> paused");
 				processinfo_WriteMessage(processinfo, msgstring);
 			}			
 		}
@@ -938,13 +939,17 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
         
         if(dtexec > processinfo->dtexec_limit_value)
         {
+			char msgstring[200];
+			
 			processinfo->dtexec_limit_cnt ++;
+			
+			sprintf(msgstring, "dtexec lim %03ld = %.1f us  > %.1f us", processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+			processinfo_WriteMessage(processinfo, msgstring);
+			
 			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
-			{
-				char msgstring[200];
-				
+			{				
 				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtexec lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+				sprintf(msgstring, "dtexec lim -> paused", processinfo->timerindex);
 				processinfo_WriteMessage(processinfo, msgstring);
 			}
 			
