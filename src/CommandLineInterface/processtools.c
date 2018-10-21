@@ -1561,8 +1561,7 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	while ( NBset < NBsetMax ) {
         if (fgets(line, 199, fp) == NULL) break;
         NBset++;
-		printf("%3d: %s", NBset, line);
-		fflush(stdout);
+//		printf("%3d: %s", NBset, line);
 	}
 	fclose(fp);
 	
@@ -1576,9 +1575,8 @@ int processinfo_CPUsets_List(char **CPUsetList)
         sscanf(line, "%s", word);
         CPUsetList[setindex] = (char *) malloc((strlen(word)+1)*sizeof(char));
         strcpy(CPUsetList[setindex], word);
-        printf("%3d: %16s %3d  -> %s\n", setindex, word, strlen(word), CPUsetList[setindex]);
+       // printf("%3d: %16s %3d  -> %s\n", setindex, word, strlen(word), CPUsetList[setindex]);
         setindex++;
-        fflush(stdout);
 	}
 	fclose(fp);
 	
@@ -1586,6 +1584,47 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	return NBset;
 }
 
+
+
+
+
+int processinfo_SelectFromList(char **List, int NBelem)
+{
+    int selected = 0;
+	long i;
+	char buff[100];
+	int inputOK;
+	char *p;
+
+	printf("\n");
+	for(i=0;i<NBelem;i++)
+		printf("%3d   : %s\n", List[i]);
+	
+    printf ("\nEnter a number: ");
+	inputOK = 0;
+
+    if (fgets(buff, sizeof(buff), stdin) != NULL)
+    {
+        selected = strtol(buff, &p, 10);
+
+        if (buff[0] != '\n' && (*p == '\n' || *p == '\0'))
+            inputOK = 1;
+        else  inputOK = 0;
+    }
+    
+    if(inputOK == 1)
+    {
+		if(selected < 0)
+			selected = 0;
+		if(selected > NBelem-1)
+			selected = 0;
+	}
+	 
+	printf("Selected entry : %s\n", List[selected]);
+	
+
+    return selected;
+}
 
 
 
@@ -1674,7 +1713,7 @@ int_fast8_t processinfo_CTRLscreen()
 	int NBCPUset;
 	NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
-	exit(0);
+
 
     // Create / read process list
     processinfo_shm_list_create();
@@ -1932,6 +1971,19 @@ int_fast8_t processinfo_CTRLscreen()
             }
             break;
 
+
+        case '>': // move to cpuset
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex]==1)
+            {
+                endwin();
+                processinfo_SelectFromList(CPUsetList, NBCPUset);
+                sleep(5);
+                initncurses();
+			}
+            break;
+
+
         case 'e': // exit
             for(index=0; index<NBpindexActive; index++)
             {
@@ -2067,7 +2119,6 @@ int_fast8_t processinfo_CTRLscreen()
                 sprintf(syscommand, "clear; tail -f %s", pinfoarray[pindex]->logfilename);
                 //sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
                 system(syscommand);
-                sleep(1);
                 initncurses();
             }
             break;
