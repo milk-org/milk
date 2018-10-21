@@ -927,15 +927,9 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
     if(processinfo->dtexec_limit_enable != 0)
     {
         long dtexec;
-        int timerindexlast;
 
-        if(processinfo->timerindex == 0)
-            timerindexlast = PROCESSINFO_NBtimer-1;
-        else
-            timerindexlast = processinfo->timerindex - 1;
-        
-        dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecend[timerindexlast].tv_nsec;
-        dtexec += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[timerindexlast].tv_sec);
+        dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecstart[processinfo->timerindex].tv_nsec;
+        dtexec += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[processinfo->timerindex].tv_sec);
         
         if(dtexec > processinfo->dtexec_limit_value)
         {
