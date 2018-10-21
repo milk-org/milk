@@ -1611,7 +1611,7 @@ int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
-		printf("   %3d   : %16s   %s\n", i, StringList[i].name, , StringList[i].description);
+		printf("   %3d   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
 		fflush(stdout);
 	}
 	
