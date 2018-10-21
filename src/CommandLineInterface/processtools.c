@@ -1530,6 +1530,33 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
 
 
 
+/**
+ * ## Purpose
+ *
+ * Creates list of CPU sets
+ *
+ * ## Description
+ *
+ * Uses command: cset set -l
+ *
+ *
+ */
+
+int processinfo_CPUsets_List()
+{	
+	int NBset;
+	char syscommand[200];
+	
+	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$1}' > _tmplist.txt");
+	
+	
+	return NBset;
+}
+
+
+
+
+
 
 /**
  * ## Purpose
@@ -1611,7 +1638,7 @@ int_fast8_t processinfo_CTRLscreen()
     }
 
 
-
+	processinfo_CPUsets_List();
 
     // Create / read process list
     processinfo_shm_list_create();
@@ -2041,7 +2068,7 @@ int_fast8_t processinfo_CTRLscreen()
                 int attrval = A_BOLD;
 
                 attron(attrval);
-                printw("x");
+                printw("    x");
                 attroff(attrval);
                 printw("    Exit\n");
 
@@ -2182,7 +2209,10 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    M");
                 attroff(attrval);
                 printw("    Enable execution time limit\n"); 
-
+                
+                
+                
+                
                 printw("\n\n");
             }
             else
