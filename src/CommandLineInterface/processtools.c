@@ -1578,14 +1578,6 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	}
 	fclose(fp);
 	
-	
-	long i;
-	for(i=0;i<NBset;i++)
-	{
-		printf("   %3d   : %16s   %s\n", i, CPUsetList[i].name, CPUsetList[i].description);
-		fflush(stdout);
-	}
-	
 	return NBset;
 }
 
@@ -1723,8 +1715,7 @@ int_fast8_t processinfo_CTRLscreen()
 	int NBCPUset;
 	CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
 	NBCPUset = processinfo_CPUsets_List(CPUsetList);
-	processinfo_SelectFromList(CPUsetList, NBCPUset);
-exit(0);
+
 
     // Create / read process list
     processinfo_shm_list_create();
