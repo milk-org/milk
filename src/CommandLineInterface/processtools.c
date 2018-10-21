@@ -1572,10 +1572,11 @@ int processinfo_CPUsets_List(char **CPUsetList)
 	setindex = 0;
 	fp = fopen("_tmplist.txt", "r");
 	while ( 1 ) {
-		CPUsetList[setindex] = (char *) malloc(200*sizeof(char));
         if (fgets(line, 199, fp) == NULL) break;
         sscanf(line, "%s", word);
-        printf("%3d: %s %d", setindex, word, strlen(word)); //CPUsetList[setindex]);
+        CPUsetList[setindex] = (char *) malloc((strlen(word)+1)*sizeof(char));
+        strcpy(CPUsetList[setindex], word);
+        printf("%3d: %16s %3d  -> %s\n", setindex, word, strlen(word), CPUsetList[setindex]);
         setindex++;
         fflush(stdout);
 	}
