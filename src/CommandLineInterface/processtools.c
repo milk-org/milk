@@ -904,14 +904,14 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         if(dtiter > processinfo->dtiter_limit_value)
         {
 			processinfo->dtiter_limit_cnt ++;
-			if(processinfo->dtiter_limit_enable == 1) // pause process due to timing limit
+			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
 			{
 				char msgstring[200];
 				
 				processinfo->CTRLval = 1;
 				sprintf(msgstring, "dtiter lim %03ld [%.1f > %.1f] -> paused", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
 				processinfo_WriteMessage(processinfo, msgstring);
-			}
+			}			
 		}
     }
 
@@ -934,7 +934,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
         if(dtexec > processinfo->dtexec_limit_value)
         {
 			processinfo->dtexec_limit_cnt ++;
-			if(processinfo->dtexec_limit_enable == 1) // pause process due to timing limit
+			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
 			{
 				char msgstring[200];
 				
@@ -1970,7 +1970,10 @@ int_fast8_t processinfo_CTRLscreen()
 			}
 			else
 			{
-				pinfoarray[pindex]->dtiter_limit_enable = 0;
+				ToggleValue ++;
+				if(ToggleValue==3)
+					ToggleValue = 0;
+				pinfoarray[pindex]->dtiter_limit_enable = ToggleValue;
 			}
 			break;;
 
@@ -1985,7 +1988,10 @@ int_fast8_t processinfo_CTRLscreen()
 			}
 			else
 			{
-				pinfoarray[pindex]->dtexec_limit_enable = 0;
+				ToggleValue ++;
+				if(ToggleValue==3)
+					ToggleValue = 0;
+				pinfoarray[pindex]->dtexec_limit_enable = ToggleValue;
 			}
 			break;;
 
@@ -2888,7 +2894,7 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								int colorcode;
 								
-								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+								if(pinfoarray[pindex]->dtiter_limit_enable!=0)
 								{
 									if(pinfoarray[pindex]->dtiter_limit_cnt==0)
 										colorcode = COLOR_PAIR(2);
@@ -2897,12 +2903,12 @@ int_fast8_t processinfo_CTRLscreen()
 									attron(colorcode);
 								}
 								printw("ITERlim %d/%5ld/%4ld", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
-								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+								if(pinfoarray[pindex]->dtiter_limit_enable!=0)
 									attroff(colorcode);
 									
 								printw("  ");
 								
-								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+								if(pinfoarray[pindex]->dtexec_limit_enable!=0)
 								{
 									if(pinfoarray[pindex]->dtexec_limit_cnt==0)
 										colorcode = COLOR_PAIR(2);
@@ -2912,7 +2918,7 @@ int_fast8_t processinfo_CTRLscreen()
 								}
 								
 								printw("EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
-								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+								if(pinfoarray[pindex]->dtexec_limit_enable!=0)
 									attroff(colorcode);
 									
 									
