@@ -2894,7 +2894,7 @@ int_fast8_t processinfo_CTRLscreen()
 								
 								int colorcode;
 								
-								if(pinfoarray[pindex]->dtiter_limit_enable==1)
+								if(pinfoarray[pindex]->dtiter_limit_enable!=0)
 								{
 									if(pinfoarray[pindex]->dtiter_limit_cnt==0)
 										colorcode = COLOR_PAIR(2);
@@ -2908,7 +2908,7 @@ int_fast8_t processinfo_CTRLscreen()
 									
 								printw("  ");
 								
-								if(pinfoarray[pindex]->dtexec_limit_enable==1)
+								if(pinfoarray[pindex]->dtexec_limit_enable!=0)
 								{
 									if(pinfoarray[pindex]->dtexec_limit_cnt==0)
 										colorcode = COLOR_PAIR(2);
