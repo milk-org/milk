@@ -37,6 +37,7 @@
  *     strcpy(processinfo->source_FUNCTION, __FUNCTION__);
  *     strcpy(processinfo->source_FILE,     __FILE__);
  *     processinfo->source_LINE = __LINE__;
+ *     sprintf(processinfo->description, "computes something");
  * 
  *     char msgstring[200];
  *     sprintf(msgstring, "%s->%s", IDinname, IDoutname);
@@ -906,10 +907,8 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         if(dtiter > processinfo->dtiter_limit_value)
         {
 			char msgstring[200];
-			
-			processinfo->dtiter_limit_cnt ++;
-			
-			sprintf(msgstring, "dtiter %6.1f us  > %6.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+						
+			sprintf(msgstring, "dtiter %4ld  %6.1f us  > %6.1f us", processinfo->dtiter_limit_cnt, processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);			
 			processinfo_WriteMessage(processinfo, msgstring);	
 			
 			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
@@ -917,7 +916,8 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 				processinfo->CTRLval = 1;
 				sprintf(msgstring, "dtiter lim -> paused");
 				processinfo_WriteMessage(processinfo, msgstring);
-			}			
+			}
+			processinfo->dtiter_limit_cnt ++;
 		}
     }
 
@@ -941,9 +941,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
         {
 			char msgstring[200];
 			
-			processinfo->dtexec_limit_cnt ++;
-			
-			sprintf(msgstring, "dtexec %6.1f us  > %6.1f us", processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+			sprintf(msgstring, "dtexec %4ld  %6.1f us  > %6.1f us", processinfo->dtexec_limit_cnt, processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
 			processinfo_WriteMessage(processinfo, msgstring);
 			
 			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
@@ -952,7 +950,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 				sprintf(msgstring, "dtexec lim -> paused", processinfo->timerindex);
 				processinfo_WriteMessage(processinfo, msgstring);
 			}
-			
+			processinfo->dtexec_limit_cnt ++;
 		}
     }
 
@@ -2818,10 +2816,13 @@ int_fast8_t processinfo_CTRLscreen()
                                 }
 
                                 loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+                                
+                                
+                                printw("  %20s", pinfoarray[pindex]->description);
 
                                 if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attron(COLOR_PAIR(4));
-                                printw("  %80s", pinfoarray[pindex]->statusmsg);
+                                printw("  %60s", pinfoarray[pindex]->statusmsg);
                                 if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
