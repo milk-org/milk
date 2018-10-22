@@ -1188,8 +1188,7 @@ static int GetCPUloads()
     
     // number of process per CPU -> we can get that from top?
     char command[200];
-    sprintf(command, "ps -e -o pid,psr,cpu,cmd > _psoutput.txt");
-    system(command);
+
     
     for(cpu=0; cpu<NBcpus; cpu++)
     {
@@ -1212,7 +1211,8 @@ static int GetCPUloads()
         }
 	}
 	
-	
+    sprintf(command, "ps -e -o pid,psr,cpu,cmd > _psoutput.txt &");
+    system(command);	
 	
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
