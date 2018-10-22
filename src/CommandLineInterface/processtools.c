@@ -2818,11 +2818,11 @@ int_fast8_t processinfo_CTRLscreen()
                                 loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
                                 
                                 
-                                printw("  %20s", pinfoarray[pindex]->description);
+                                printw("  %25s", pinfoarray[pindex]->description);
 
                                 if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attron(COLOR_PAIR(4));
-                                printw("  %80s", pinfoarray[pindex]->statusmsg);
+                                printw("  %100s", pinfoarray[pindex]->statusmsg);
                                 if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
