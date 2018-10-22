@@ -2822,7 +2822,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                 if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attron(COLOR_PAIR(4));
-                                printw("  %60s", pinfoarray[pindex]->statusmsg);
+                                printw("  %80s", pinfoarray[pindex]->statusmsg);
                                 if(pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
