@@ -909,7 +909,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 			
 			processinfo->dtiter_limit_cnt ++;
 			
-			sprintf(msgstring, "dtiter %.1f us  > %.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
+			sprintf(msgstring, "dtiter %6.1f us  > %6.1f us", processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);
 			processinfo_WriteMessage(processinfo, msgstring);	
 			
 			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
@@ -943,7 +943,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 			
 			processinfo->dtexec_limit_cnt ++;
 			
-			sprintf(msgstring, "dtexec %.1f us  > %.1f us", processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+			sprintf(msgstring, "dtexec %6.1f us  > %6.1f us", processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
 			processinfo_WriteMessage(processinfo, msgstring);
 			
 			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
