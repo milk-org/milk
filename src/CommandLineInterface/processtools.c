@@ -1185,15 +1185,19 @@ static int GetCPUloads()
 	
 	
 	clock_gettime(CLOCK_REALTIME, &t1);
+    
     // number of process per CPU -> we can get that from top?
+    sprintf(command, "ps -e -o pid,psr,cpu,cmd > _psoutput.txt");
+    system(command);
+    
     for(cpu=0; cpu<NBcpus; cpu++)
     {
         char outstring[200];
         char command[200];
         FILE * fpout;
 
-
-        sprintf(command, "CORENUM=%d; ps -e -o pid,psr,cpu,cmd | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
+		
+        sprintf(command, "CORENUM=%d; cat _psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
         fpout = popen (command, "r");
         if(fpout==NULL)
         {
