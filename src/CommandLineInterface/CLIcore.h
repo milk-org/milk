@@ -271,6 +271,8 @@ typedef struct
 	long   dtexec_limit_value;
 	long   dtexec_limit_cnt;
 	
+	char description[200];
+	
 	
 } PROCESSINFO;
 
