@@ -6768,7 +6768,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
         {
             char msgstring[200];
             sprintf(msgstring, "<- %s [%d x %d x %ld] %s", imgmd[0].name, (int) xsize, (int) ysize, NBslices, typestring);
-            sprintf(processinfo->description, "%s[%dx%dx%ld]%s", imgmd[0].name, (int) xsize, (int) ysize, NBslices, typestring);
+            sprintf(processinfo->description, "%s %dx%dx%ld %s", imgmd[0].name, (int) xsize, (int) ysize, NBslices, typestring);
             processinfo_WriteMessage(processinfo, msgstring);
         }
         
