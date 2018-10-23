@@ -2191,7 +2191,7 @@ int_fast8_t processinfo_CTRLscreen()
 
         case KEY_F(7): // atop
             endwin();
-            sprintf(syscommand, "atop");
+            sprintf(syscommand, "sudo atop");
             system(syscommand);
             initncurses();
             break;
