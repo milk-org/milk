@@ -2237,16 +2237,19 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    F4");
                 attroff(attrval);
                 printw("   Process timing screen\n");
-
+                
+                attron(attrval);
                 printw("    F5");
                 attroff(attrval);
                 printw("   htop\n");
                 
+                attron(attrval);
                 printw("    F6");
                 attroff(attrval);
                 printw("   iotop\n");
                 
-                 printw("    F7");
+                attron(attrval);
+                printw("    F7");
                 attroff(attrval);
                 printw("   atop\n");
                 
