@@ -2175,6 +2175,13 @@ int_fast8_t processinfo_CTRLscreen()
             DisplayMode = 4;
             break;
 
+        case KEY_F(5): // I/O
+            endwin();
+            sprintf(syscommand, "sudo iotop -o");
+            system(syscommand);
+            initncurses();
+            break;
+
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
@@ -2195,7 +2202,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 				printw("\n");
-                printw("============ DISPLAY \n");
+                printw("============ SCREENS \n");
 
                 attron(attrval);
                 printw("    F1");
@@ -2210,13 +2217,21 @@ int_fast8_t processinfo_CTRLscreen()
                 attron(attrval);
                 printw("    F3");
                 attroff(attrval);
-                printw("   Process resources screen\n");
+                printw("   Process CPU and MEM resources screen\n");
                 attron(attrval);
 
                 printw("    F4");
                 attroff(attrval);
                 printw("   Process timing screen\n");
+
+                printw("    F5");
+                attroff(attrval);
+                printw("   I/O screen\n");
                 
+                
+				printw("\n");
+                printw("============ DISPLAY \n");
+                                
                 attron(attrval);
                 printw("    f");
                 attroff(attrval);
@@ -2699,6 +2714,8 @@ int_fast8_t processinfo_CTRLscreen()
                     printw("\n");
                     printw("\n");
                 }
+
+
 
 
 
