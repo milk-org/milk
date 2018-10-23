@@ -2175,9 +2175,23 @@ int_fast8_t processinfo_CTRLscreen()
             DisplayMode = 4;
             break;
 
-        case KEY_F(5): // I/O
+        case KEY_F(5): // htop
+            endwin();
+            sprintf(syscommand, "htop");
+            system(syscommand);
+            initncurses();
+            break;
+
+        case KEY_F(6): // iotop
             endwin();
             sprintf(syscommand, "sudo iotop -o");
+            system(syscommand);
+            initncurses();
+            break;
+
+        case KEY_F(7): // atop
+            endwin();
+            sprintf(syscommand, "sudo atop");
             system(syscommand);
             initncurses();
             break;
@@ -2223,10 +2237,21 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    F4");
                 attroff(attrval);
                 printw("   Process timing screen\n");
-
+                
+                attron(attrval);
                 printw("    F5");
                 attroff(attrval);
-                printw("   I/O screen\n");
+                printw("   htop        Type F10 to exit\n");
+                
+                attron(attrval);
+                printw("    F6");
+                attroff(attrval);
+                printw("   iotop       Type q to exit\n");
+                
+                attron(attrval);
+                printw("    F7");
+                attroff(attrval);
+                printw("   atop        Type q to exit\n");
                 
                 
 				printw("\n");
