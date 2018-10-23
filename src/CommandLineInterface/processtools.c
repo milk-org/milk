@@ -2241,17 +2241,17 @@ int_fast8_t processinfo_CTRLscreen()
                 attron(attrval);
                 printw("    F5");
                 attroff(attrval);
-                printw("   htop\n");
+                printw("   htop        Type F10 to exit\n");
                 
                 attron(attrval);
                 printw("    F6");
                 attroff(attrval);
-                printw("   iotop\n");
+                printw("   iotop       Type q to exit\n");
                 
                 attron(attrval);
                 printw("    F7");
                 attroff(attrval);
-                printw("   atop\n");
+                printw("   atop        Type q to exit\n");
                 
                 
 				printw("\n");
