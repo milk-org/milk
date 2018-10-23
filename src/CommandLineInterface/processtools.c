@@ -1213,7 +1213,7 @@ static int GetCPUloads()
 	
 //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
     
-    sprintf(command, "{ if [ ! -f _psLock ]; then touch _psOKlock; ps -e -o pid,psr,cpu,cmd > _psoutput.txt; fi; rm _psLock; } &");
+    sprintf(command, "{ if [ ! -f _psLock ]; then touch _psOKlock; ps -e -o pid,psr,cpu,cmd > _psoutput.txt; fi; rm _psLock &> /dev/null; } &");
     system(command);	
 	
 	clock_gettime(CLOCK_REALTIME, &t2);
