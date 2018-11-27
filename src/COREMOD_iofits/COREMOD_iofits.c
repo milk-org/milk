@@ -1586,7 +1586,13 @@ int save_fits(const char * restrict ID_name, const char * restrict file_name)
 
 
 
-
+/**
+ * atomic save is a two step process:
+ * 
+ * (1) save to temporary unique file
+ * (2) change file name
+ * 
+ */ 
 int save_fits_atomic(const char * restrict ID_name, const char * restrict file_name)
 {
     long ID;
@@ -1597,6 +1603,7 @@ int save_fits_atomic(const char * restrict ID_name, const char * restrict file_n
 	
     ID = image_ID(ID_name);
 
+	// get PID to include in file name, so that file name is unique
 	self_id=pthread_self();
 	
 	if(sprintf(fnametmp, "_savefits_atomic_%s_%d_%ld.tmp.fits", ID_name, (int) getpid(), (long) self_id) < 1)
