@@ -364,18 +364,16 @@ int templatemodule_examplefunc00(int mode)
  * 
  * ---
  * 
- * ## Details
- * 
  * 
  * @return number of iteration [int]
- * 
- * 
- * 
  * @note sched_setscheduler and seteuid not supported under OS-X
  * @warning This function does nothing useful 
  * 
- * 
  * \ingroup RTfunctions
+ * 
+ * 
+ * ## Details
+ * 
  */
 int templatemodule_examplefunc01(
 		const char*           namein, 
