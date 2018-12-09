@@ -30,6 +30,7 @@
 
 
 #include "ImageStreamIO/ImageStruct.h"
+#include "processtools.h"
 
 
 #define PI 3.14159265358979323846264338328
@@ -37,8 +38,6 @@
 /// Size of array CLICOREVARRAY
 #define SZ_CLICOREVARRAY 1000
 
-
-#define PROCESSINFOLISTSIZE 10000
 
 /// important directories and info
 extern pid_t CLIPID;
@@ -86,11 +85,6 @@ typedef uint_fast8_t BOOL;
 //#define DATA_STATIC_ALLOC // comment if DYNAMIC
 #define STATIC_NB_MAX_IMAGE 5020
 #define STATIC_NB_MAX_VARIABLE 5030
-
-
-// timing info for real-time loop processes
-#define PROCESSINFO_NBtimer  100
-
 
 
 
@@ -191,125 +185,6 @@ typedef struct
     } value;
     char comment[200];
 } VARIABLE;
-
-
-
-
-
-
-
-// --------------------- MANAGING PROCESSES -------------------------------
-
-
-/**
- * 
- * This structure hold process information and hooks required for basic monitoring and control
- * Unlike the larger DATA structure above, it is meant to be stored in shared memory for fast access by other processes
- * 
- * 
- * File name:  /tmp/proc.PID.shm
- * 
- */
-typedef struct 
-{
-	char   name[200];             // process name (human-readable)
-
-	char   source_FUNCTION[200];  // source code function
-	char   source_FILE[200];      // source code file
-	int    source_LINE;           // source code line
-
-	pid_t  PID;                   // process ID
-	// file name is /tmp/proc.PID.shm
-	
-	struct timespec createtime;   // time at which pinfo was created
-
-
-	long   loopcnt;               // counter, useful for loop processes to monitor activity
-	int    CTRLval;               // control value to be externally written. 
-								  // 0: run                     (default) 
-								  // 1: pause
-                                  // 2: increment single step (will go back to 1)
-                                  // 3: exit loop
-								
-								
-	char   tmuxname[100];         // name of tmux session in which process is running, or "NULL"
-	int    loopstat;              // 0: initialization (before loop)
-	                              // 1: in loop
-	                              // 2: paused
-	                              // 3: terminated (clean exit)
-	                              // 4: ERROR (typically used when loop can't start, e.g. missing input)
-
-	char   statusmsg[200];        // status message
-	int    statuscode;            // status code 
-
-	FILE  *logFile;
-	char  logfilename[250];
-	
-	 // OPTIONAL TIMING MEASUREMENT
-	// Used to measure how long loop process takes to complete task
-	// Provides means to stop/pause loop process if timing constraints exceeded
-	//
-
-	int MeasureTiming;  // 1 if timing is measured, 0 otherwise
-	
-	// the last PROCESSINFO_NBtimer times are stored in a circular buffer, from which timing stats are derived
-	int    timerindex;                                // last written index in circular buffer
-	int    timingbuffercnt;                           // increments every cycle of the circular buffer
-	struct timespec texecstart[PROCESSINFO_NBtimer];  // task starts
-	struct timespec texecend[PROCESSINFO_NBtimer];    // task ends
-
-	long   dtmedian_iter_ns;                      // median time offset between iterations [nanosec]
-	long   dtmedian_exec_ns;                      // median compute/busy time [nanosec]
-	
-	// If enabled=1, pause process if dtiter larger than limit
-	int    dtiter_limit_enable;
-	long   dtiter_limit_value;
-	long   dtiter_limit_cnt;
-	
-	// If enabled=1, pause process if dtexec larger than limit
-	int    dtexec_limit_enable;
-	long   dtexec_limit_value;
-	long   dtexec_limit_cnt;
-	
-	char description[200];
-	
-	
-} PROCESSINFO;
-
-
-
-
-
-
-
-
-
-
-
-//
-// This structure maintains a list of active processes
-// It is used to quickly build (without scanning directory) an array of PROCESSINFO
-//
-typedef struct
-{
-	pid_t         PIDarray[PROCESSINFOLISTSIZE];
-	int           active[PROCESSINFOLISTSIZE];
-	
-} PROCESSINFOLIST;
-
-
-// ---------------------  -------------------------------
-
-
-typedef struct
-{
-	char name[200];
-	char description[200];
-} STRINGLISTENTRY;
-
-
-
-
 
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
