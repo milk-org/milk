@@ -25,3 +25,7 @@ calc_bison.h
 
 calc_flex.c
 
+CacaoProcessTools.egg-info
+build
+_*
+setup.cfg

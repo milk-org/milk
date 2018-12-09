@@ -1,57 +1,102 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.8)
 project (CLIcore C)
 
-find_package(BISON)
-find_package(FLEX)
-#find_package(Curses REQUIRED) # already performed in main build dir
-find_package (Threads REQUIRED)
-find_package(PkgConfig REQUIRED)
-find_package(GSL QUIET REQUIRED)
-pkg_check_modules(FFTW REQUIRED fftw3)
-pkg_check_modules(FFTWF REQUIRED fftw3f)
+option(PYTHON_STANDALONE "PYTHON_STANDALONE mode" OFF)
 
-BISON_TARGET(MilkBison calc_bison.y ${PROJECT_SOURCE_DIR}/calc_bison.c)
-FLEX_TARGET(MilkFlex calc_flex.l ${PROJECT_SOURCE_DIR}/calc_flex.c)
-ADD_FLEX_BISON_DEPENDENCY(MilkFlex MilkBison)
+message(${PYTHON_STANDALONE})
+
+if(${PYTHON_STANDALONE})
+    set(CORE_FILES standalone_dependencies.c)
+else()
+    include_directories ("${PROJECT_SOURCE_DIR}/src")
+    include_directories ("${PROJECT_SOURCE_DIR}/..")
+
+    find_package(BISON)
+    find_package(FLEX)
+    #find_package(Curses REQUIRED) # already performed in main build dir
+    find_package (Threads REQUIRED)
+    find_package(PkgConfig REQUIRED)
+    find_package(GSL QUIET REQUIRED)
+    pkg_check_modules(FFTW REQUIRED fftw3)
+    pkg_check_modules(FFTWF REQUIRED fftw3f)
+
+    BISON_TARGET(MilkBison calc_bison.y ${PROJECT_SOURCE_DIR}/calc_bison.c)
+    FLEX_TARGET(MilkFlex calc_flex.l ${PROJECT_SOURCE_DIR}/calc_flex.c)
+    ADD_FLEX_BISON_DEPENDENCY(MilkFlex MilkBison)
+    set(CORE_FILES 
+        CLIcore.c 
+        CLIcore.h 
+        processtools.c
+        calc.h
+        ${BISON_MilkBison_OUTPUTS}
+        ${FLEX_MilkFlex_OUTPUTS})        
+endif()
+
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NCURSES REQUIRED ncurses)
+pkg_check_modules(HWLOC hwloc)
+
+link_directories( ${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS} )
 
 # main
 add_library(CLIcore SHARED
-CLIcore.c 
-CLIcore.h 
 processtools.c
-calc.h
-${BISON_MilkBison_OUTPUTS}
-${FLEX_MilkFlex_OUTPUTS})
+${CORE_FILES}
+)
+
+if(${PYTHON_STANDALONE})
+    target_compile_definitions(CLIcore PRIVATE STANDALONE)
+else()
+    target_include_directories(CLIcore PUBLIC
+    ${PROJECT_SOURCE_DIR}/..
+    ${PROJECT_SOURCE_DIR}/src
+    ${GSL_INCLUDE_DIRS}
+    ${FFTW_INCLUDE_DIRS}
+    ${FFTWF_INCLUDE_DIRS}
+    )
+
+    target_compile_options(CLIcore PUBLIC 
+    ${FFTW_CFLAGS_OTHER}
+    ${FFTWF_CFLAGS_OTHER}
+    )
+
+    target_link_libraries (CLIcore PUBLIC
+    m
+    readline
+    cfitsio
+    dl
+    rt
+    ${GSL_LIBRARIES} 
+    ${FFTW_LIBRARIES}
+    ${FFTWF_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${CURSES_LIBRARIES}
+    )
+endif()
+
+if(${HWLOC_FOUND})
+    target_compile_definitions(CLIcore PRIVATE USE_HWLOC)
+endif()
 
 target_include_directories(CLIcore PUBLIC
-${PROJECT_SOURCE_DIR}/..
-${PROJECT_SOURCE_DIR}/src
-${GSL_INCLUDE_DIRS}
-${FFTW_INCLUDE_DIRS}
-${FFTWF_INCLUDE_DIRS}
-${CURSES_INCLUDE_DIR}
+${CMAKE_CURRENT_SOURCE_DIR}
+${HWLOC_INCLUDE_DIR}
+${NCURSES_INCLUDE_DIR}
 )
 
-target_compile_options(CLIcore PUBLIC 
-${FFTW_CFLAGS_OTHER}
-${FFTWF_CFLAGS_OTHER}
-)
-
-#set_target_properties(CLIcore PROPERTIES COMPILE_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DPACKAGE_VERSION=\\\"0.0.0\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"me@me.com\\\"" )
+target_compile_options(CLIcore PUBLIC )
 
 target_link_libraries (CLIcore PUBLIC
-m
-readline
-cfitsio
-dl
-rt
-${GSL_LIBRARIES} 
-${FFTW_LIBRARIES}
-${FFTWF_LIBRARIES}
 ${CMAKE_THREAD_LIBS_INIT}
-${CURSES_LIBRARIES}
+${HWLOC_LIBRARIES}
+${NCURSES_LIBRARIES}
 )
+
+if(${PYTHON_STANDALONE})
+    add_subdirectory(python_module)
+endif()
 
 install(TARGETS CLIcore DESTINATION bin)
 install(TARGETS CLIcore DESTINATION lib)
-install(FILES CLIcore.h DESTINATION include)
+install(FILES CLIcore.h processtools.h DESTINATION include)
