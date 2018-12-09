@@ -260,11 +260,20 @@
 #include <wchar.h>
 #include <locale.h>
 
+#ifdef STANDALONE
+#include "standalone_dependencies.h"
+#else
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "info/info.h"
+#endif
 
+#include <processtools.h>
+
+#ifdef USE_HWLOC
+#include <hwloc.h>
+#endif
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -338,7 +347,7 @@ typedef struct
 
 static PROCESSINFOLIST *pinfolist;
 
-static int wrow, wcol;
+static int wrow, wcol, NBcores, NBcpus;
 
 static float CPUload[100];
 static long long CPUcnt0[100];
@@ -350,6 +359,7 @@ static long long CPUcnt5[100];
 static long long CPUcnt6[100];
 static long long CPUcnt7[100];
 static long long CPUcnt8[100];
+static long long CPUids[100];
 
 static int CPUpcnt[100];
 
@@ -398,8 +408,6 @@ static double scantime_CPUpcnt;
 /*                                    FUNCTIONS SOURCE CODE                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
-
-
 
 /**
  * ## Purpose
@@ -621,7 +629,9 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	pinfo->dtiter_limit_enable = 0;
 	pinfo->dtexec_limit_enable = 0;
 	
+#ifndef STANDALONE
 	data.pinfo = pinfo;  
+#endif
 	pinfo->PID = PID;
 	
 	
@@ -1027,15 +1037,58 @@ static int initncurses()
 
 
 
-
-
+/**
+ * ## Purpose
+ * 
+ * detects the number of CPU and fill the cpuids
+ * 
+ * ## Description
+ * 
+ * populates cpuids array with the global system PU numbers in the physical order:
+ * [PU0 of CPU0, PU1 of CPU0, ... PU0 of CPU1, PU1 of CPU1, ...]
+ * 
+ */
 
 static int GetNumberCPUs()
 {
+  unsigned int pu_index = 0;
+
+#ifdef USE_HWLOC
+
+  unsigned int depth = 0;
+  hwloc_topology_t topology;
+
+  /* Allocate and initialize topology object. */
+  hwloc_topology_init(&topology);
+
+  /* ... Optionally, put detection configuration here to ignore
+     some objects types, define a synthetic topology, etc....
+     The default is to detect all the objects of the machine that
+     the caller is allowed to access.  See Configure Topology
+     Detection. */
+
+  /* Perform the topology detection. */
+  hwloc_topology_load(topology);
+
+  depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
+  NBcores = hwloc_get_nbobjs_by_depth(topology, depth);
+
+  depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+  NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
+
+  hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth, 0);
+  do {
+    CPUids[pu_index] = obj->os_index;
+    ++pu_index;
+    obj = obj->next_cousin;
+  } while (obj != NULL);
+
+#else
+
 	FILE *fpout;	
 	char outstring[16];
-	int NBcpus;
 
+    unsigned int tmp_index = 0;
 	
 	fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
 	if(fpout==NULL)
@@ -1048,8 +1101,19 @@ static int GetNumberCPUs()
 			printf("WARNING: fgets error\n");
 		pclose(fpout);
 	}
-	
+
+	NBcores = 2;
 	NBcpus = atoi(outstring);
+    for(pu_index=0; pu_index<NBcpus; pu_index+=2){
+      CPUids[tmp_index] = pu_index;
+      ++tmp_index;
+    }
+    for(pu_index=1; pu_index<NBcpus; pu_index+=2){
+      CPUids[tmp_index] = pu_index;
+      ++tmp_index;
+    }
+
+#endif
 
 	return(NBcpus);
 }
@@ -1124,7 +1188,6 @@ static long getTopOutput()
 
 static int GetCPUloads()
 {
-    int NBcpus;
     char * line = NULL;
     FILE *fp;
     ssize_t read;
@@ -1136,8 +1199,6 @@ static int GetCPUloads()
     
     
 	clock_gettime(CLOCK_REALTIME, &t1);
-
-    NBcpus = GetNumberCPUs();
 
     fp = fopen("/proc/stat", "r");
     if (fp == NULL)
@@ -2622,19 +2683,22 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                     // List CPUs
-                    printw("                                                                           %2d CPUs  ", NBcpus);
-                    for(cpu=0; cpu<NBcpus; cpu+=2)
-                        printw("|%02d", cpu);
+                    printw(
+                        "                                                                "
+                        "  %2d Cores %2d CPUs  ",
+                        NBcores, NBcpus);
+                    for (cpu = 0; cpu < NBcpus / NBcores; cpu++)
+                        printw("|%02d", CPUids[cpu]);
                     printw("|    |");
-                    for(cpu=1; cpu<NBcpus; cpu+=2)
-                        printw("%02d|", cpu);
+                    for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++)
+                        printw("%02d|", CPUids[cpu]);
                     printw("\n");
 
                     // List CPU # processes
                     printw("                                                                         PROCESSES  ", NBcpus);
-                    for(cpu=0; cpu<NBcpus; cpu+=2)
+          for (cpu = 0; cpu < NBcpus / NBcores; cpu++) 
                     {
-                        int vint = CPUpcnt[cpu];
+                        int vint = CPUpcnt[CPUids[cpu]];
                         if(vint>99)
                             vint = 99;
 
@@ -2656,9 +2720,9 @@ int_fast8_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(ColorCode));
                     }
                     printw("|    |");
-                    for(cpu=1; cpu<NBcpus; cpu+=2)
+          for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++) 
                     {
-                        int vint = CPUpcnt[cpu];
+                        int vint = CPUpcnt[CPUids[cpu]];
                         if(vint>99)
                             vint = 99;
 
@@ -2688,9 +2752,9 @@ int_fast8_t processinfo_CTRLscreen()
 
                     // Print CPU LOAD
                     printw("                                                                          CPU LOAD  ", NBcpus);
-                    for(cpu=0; cpu<NBcpus; cpu+=2)
+          for (cpu = 0; cpu < NBcpus / NBcores; cpu++) 
                     {
-                        int vint = (int) (100.0*CPUload[cpu]);
+                        int vint = (int) (100.0*CPUload[CPUids[cpu]]);
                         if(vint>99)
                             vint = 99;
 
@@ -2712,9 +2776,9 @@ int_fast8_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(ColorCode));
                     }
                     printw("|    |");
-                    for(cpu=1; cpu<NBcpus; cpu+=2)
+          for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++) 
                     {
-                        int vint = (int) (100.0*CPUload[cpu]);
+                        int vint = (int) (100.0*CPUload[CPUids[cpu]]);
                         if(vint>99)
                             vint = 99;
 
@@ -2978,18 +3042,18 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // First group of cores (physical CPU 0)
-                                        for(cpu=0; cpu<NBcpus; cpu += 2)
+                    for (cpu = 0; cpu < NBcpus / NBcores; cpu++) 
                                         {
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
 
-                                            sprintf(cpustring, ",%d,",cpu);
+                                            sprintf(cpustring, ",%d,",CPUids[cpu]);
                                             if(strstr(cpuliststring, cpustring) != NULL)
                                                 cpuOK = 1;
 
 
-                                            for(cpumin=0; cpumin<=cpu; cpumin++)
-                                                for(cpumax=cpu; cpumax<NBcpus; cpumax++)
+                                            for(cpumin=0; cpumin<=CPUids[cpu]; cpumin++)
+                                                for(cpumax=CPUids[cpu]; cpumax<NBcpus; cpumax++)
                                                 {
                                                     sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
                                                     if(strstr(cpuliststring, cpustring) != NULL)
@@ -2998,15 +3062,15 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                             printw("|");
-                                            if(cpu == pinfodisp[pindex].processor)
+                                            if(CPUids[cpu] == pinfodisp[pindex].processor)
                                                 attron(COLOR_PAIR(cpuColor));
 
                                             if(cpuOK == 1)
-                                                printw("%2d", cpu);
+                                                printw("%2d", CPUids[cpu]);
                                             else
                                                 printw("  ");
 
-                                            if(cpu == pinfodisp[pindex].processor)
+                                            if(CPUids[cpu] == pinfodisp[pindex].processor)
                                                 attroff(COLOR_PAIR(cpuColor));
 
                                         }
@@ -3014,17 +3078,17 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // Second group of cores (physical CPU 0)
-                                        for(cpu=1; cpu<NBcpus; cpu += 2)
+                    for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++)
                                         {
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
 
-                                            sprintf(cpustring, ",%d,",cpu);
+                                            sprintf(cpustring, ",%d,",CPUids[cpu]);
                                             if(strstr(cpuliststring, cpustring) != NULL)
                                                 cpuOK = 1;
 
-                                            for(cpumin=0; cpumin<=cpu; cpumin++)
-                                                for(cpumax=cpu; cpumax<NBcpus; cpumax++)
+                                            for(cpumin=0; cpumin<=CPUids[cpu]; cpumin++)
+                                                for(cpumax=CPUids[cpu]; cpumax<NBcpus; cpumax++)
                                                 {
                                                     sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
                                                     if(strstr(cpuliststring, cpustring) != NULL)
@@ -3033,15 +3097,15 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                             printw("|");
-                                            if(cpu == pinfodisp[pindex].processor)
+                                            if(CPUids[cpu] == pinfodisp[pindex].processor)
                                                 attron(COLOR_PAIR(cpuColor));
 
                                             if(cpuOK == 1)
-                                                printw("%2d", cpu);
+                                                printw("%2d", CPUids[cpu]);
                                             else
                                                 printw("  ");
 
-                                            if(cpu == pinfodisp[pindex].processor)
+                                            if(CPUids[cpu] == pinfodisp[pindex].processor)
                                                 attroff(COLOR_PAIR(cpuColor));
 
                                         }
