@@ -409,6 +409,11 @@ long COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
 /* =============================================================================================== */
 
 
+/** @brief Poke stream at regular intervals 
+ */
+long COREMOD_MEMORY_streamPoke(const char *IDstream_name, long usperiod);
+
+
 /** @brief Difference between two streams
 */
 long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreammask_name, const char *IDstreamout_name, long semtrig);

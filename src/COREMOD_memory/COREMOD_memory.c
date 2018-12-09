@@ -795,6 +795,18 @@ int_fast8_t COREMOD_MEMORY_image_set_semflush_cli()
 
 
 
+int_fast8_t COREMOD_MEMORY_streamPoke_cli()
+{
+	if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
+    {
+        COREMOD_MEMORY_streamPoke(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+        return 0;
+    }
+    else
+        return 1;
+}
+
+
 
 int_fast8_t COREMOD_MEMORY_streamDiff_cli()
 {
@@ -1253,6 +1265,8 @@ int_fast8_t init_COREMOD_memory()
     RegisterCLIcommand("imnetwreceive", __FILE__, COREMOD_MEMORY_image_NETWORKreceive_cli, "receive image(s) over network. mode=1 uses counter instead of semaphore", "<port [long]> <mode [int]> <RT priority>", "imnetwreceive 8887 0 80", "long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)");
     
     RegisterCLIcommand("impixdecodeU", __FILE__, COREMOD_MEMORY_PixMapDecode_U_cli, "decode image stream", "<in stream> <xsize [long]> <ysize [long]> <nbpix per slice [ASCII file]> <decode map> <out stream> <out image slice index [FITS]>", "impixdecodeU streamin 120 120 pixsclienb.txt decmap outim outsliceindex.fits", "COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizeim, uint32_t ysizeim, const char* NBpix_fname, const char* IDmap_name, const char *IDout_name, const char *IDout_pixslice_fname)");
+    
+    RegisterCLIcommand("streampoke", __FILE__, COREMOD_MEMORY_streamPoke_cli, "Poke image stream at regular interval", "<in stream> <poke period [us]>", "streampoke stream 100", "long COREMOD_MEMORY_streamPoke(const char *IDstream_name, long usperiod)");
     
     RegisterCLIcommand("streamdiff", __FILE__, COREMOD_MEMORY_streamDiff_cli, "compute difference between two image streams", "<in stream 0> <in stream 1> <out stream> <optional mask> <sem trigger index>", "streamdiff stream0 stream1 null outstream 3", "long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreamout_name, long semtrig)");
 
@@ -2319,7 +2333,7 @@ long read_sharedmem_image(const char *name)
 	ID = next_avail_image_ID();
 	
 	image = &data.image[ID];
-	if(ImageStreamIO_read_sharedmem_image_toIMAGE(name, image)==-1)
+	if(ImageStreamIO_read_sharedmem_image_toIMAGE(name, image) == -1)
 		ID = -1;
 
     if(MEM_MONITOR == 1)
@@ -4610,13 +4624,146 @@ long COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
 /* =============================================================================================== */
 
 
+/**
+ * ## Purpose
+ *
+ * Poke a stream at regular time interval\n
+ * Does not change shared memory content\n
+ *
+ */
+long COREMOD_MEMORY_streamPoke(
+    const char *IDstream_name,
+    long  usperiod
+)
+{
+    uint32_t ID;
+    long twait1;
+    struct timespec t0;
+    struct timespec t1;
+    double tdiffv;
+    struct timespec tdiff;
+
+    ID = image_ID(IDstream_name);
 
 
-//
-// compute difference between two 2D streams
-// triggers on stream0
-//
-long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreammask_name, const char *IDstreamout_name, long semtrig)
+
+    PROCESSINFO *processinfo;
+    if(data.processinfo==1)
+    {
+        // CREATE PROCESSINFO ENTRY
+        // see processtools.c in module CommandLineInterface for details
+        //
+        char pinfoname[200];
+        sprintf(pinfoname, "streampoke-%s", IDstream_name);
+        processinfo = processinfo_shm_create(pinfoname, 0);
+        processinfo->loopstat = 0; // loop initialization
+
+        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+        strcpy(processinfo->source_FILE,     __FILE__);
+        processinfo->source_LINE = __LINE__;
+
+        char msgstring[200];
+        sprintf(msgstring, "%s", IDstream_name);
+        processinfo_WriteMessage(processinfo, msgstring);
+    }
+
+    if(data.processinfo==1)
+        processinfo->loopstat = 1; // loop running
+    int loopOK = 1;
+    int loopCTRLexit = 0; // toggles to 1 when loop is set to exit cleanly
+    long loopcnt = 0;
+
+    while(loopOK == 1)
+    {
+        // processinfo control
+        if(data.processinfo==1)
+        {
+            while(processinfo->CTRLval == 1)  // pause
+                usleep(50);
+
+            if(processinfo->CTRLval == 2) // single iteration
+                processinfo->CTRLval = 1;
+
+            if(processinfo->CTRLval == 3) // exit loop
+                loopCTRLexit = 1;
+        }
+
+
+        clock_gettime(CLOCK_REALTIME, &t0);
+
+        data.image[ID].md[0].write = 1;
+        data.image[ID].md[0].cnt0++;
+        data.image[ID].md[0].write = 0;
+        COREMOD_MEMORY_image_set_sempost_byID(ID, -1);
+
+
+
+        usleep(twait1);
+
+        clock_gettime(CLOCK_REALTIME, &t1);
+        tdiff = info_time_diff(t0, t1);
+        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+
+        if(tdiffv<1.0e-6*usperiod)
+            twait1 ++;
+        else
+            twait1 --;
+
+        if(twait1<0)
+            twait1 = 0;
+        if(twait1>usperiod)
+            twait1 = usperiod;
+
+
+        if(loopCTRLexit == 1)
+        {
+            loopOK = 0;
+            if(data.processinfo==1)
+            {
+                struct timespec tstop;
+                struct tm *tstoptm;
+                char msgstring[200];
+
+                clock_gettime(CLOCK_REALTIME, &tstop);
+                tstoptm = gmtime(&tstop.tv_sec);
+
+                sprintf(msgstring, "CTRLexit at %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+                strncpy(processinfo->statusmsg, msgstring, 200);
+
+                processinfo->loopstat = 3; // clean exit
+            }
+        }
+
+        loopcnt++;
+        if(data.processinfo==1)
+            processinfo->loopcnt = loopcnt;
+    }
+
+
+
+    return ID;
+}
+
+
+
+
+
+
+
+/**
+ * ## Purpose
+ * 
+ * Compute difference between two 2D streams\n
+ * Triggers on stream0\n
+ * 
+ */
+long COREMOD_MEMORY_streamDiff(
+	const char *IDstream0_name, 
+	const char *IDstream1_name, 
+	const char *IDstreammask_name, 
+	const char *IDstreamout_name, 
+	      long  semtrig
+)
 {
 	long ID0, ID1, IDout;
 	uint32_t xsize, ysize, xysize;
