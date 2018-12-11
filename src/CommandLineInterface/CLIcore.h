@@ -40,7 +40,7 @@
 
 
 /// important directories and info
-extern pid_t CLIPID;
+extern pid_t CLIPID;            // command line interface PID
 extern char DocDir[200];		// location of documentation
 extern char SrcDir[200];		// location of source
 extern char BuildFile[200];		// file name for source

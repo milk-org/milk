@@ -349,6 +349,8 @@ static int_fast8_t printInfo()
         printf("Default precision upon startup : float\n");
     if(data.precision==1)
         printf("Default precision upon startup : double\n");
+    printf("sizeof(struct timespec)        = %4ld bit\n", sizeof(struct timespec)*8);
+	printf("sizeof(pid_t)                  = %4ld bit\n", sizeof(pid_t)*8);
 	printf("sizeof(short int)              = %4ld bit\n", sizeof(short int)*8);
 	printf("sizeof(int)                    = %4ld bit\n", sizeof(int)*8);
 	printf("sizeof(long)                   = %4ld bit\n", sizeof(long)*8);
