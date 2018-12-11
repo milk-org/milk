@@ -747,6 +747,16 @@ int_fast8_t COREMOD_MEMORY_image_set_createsem_cli()
         return 1;
 }
 
+
+int_fast8_t COREMOD_MEMORY_image_seminfo_cli()
+{
+    if(CLI_checkarg(1,4)==0)
+        COREMOD_MEMORY_image_seminfo(data.cmdargtoken[1].val.string);
+    else
+        return 1;	
+}
+
+
 int_fast8_t COREMOD_MEMORY_image_set_sempost_cli()
 {
     if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
@@ -754,6 +764,7 @@ int_fast8_t COREMOD_MEMORY_image_set_sempost_cli()
     else
         return 1;
 }
+
 
 int_fast8_t COREMOD_MEMORY_image_set_sempost_loop_cli()
 {
@@ -772,6 +783,7 @@ int_fast8_t COREMOD_MEMORY_image_set_semwait_cli()
     else
         return 1;
 }
+
 
 int_fast8_t COREMOD_MEMORY_image_set_semflush_cli()
 {
@@ -1232,6 +1244,8 @@ int_fast8_t init_COREMOD_memory()
 /* =============================================================================================== */
 
     RegisterCLIcommand("imsetcreatesem", __FILE__, COREMOD_MEMORY_image_set_createsem_cli, "create image semaphore", "<image> <NBsem>", "imsetcreatesem im1 5", "long COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem)");    
+
+    RegisterCLIcommand("imseminfo", __FILE__, COREMOD_MEMORY_image_seminfo_cli, "display semaphore info", "<image>", "imseminfo im1", "long COREMOD_MEMORY_image_seminfo(const char *IDname)");  
 
     RegisterCLIcommand("imsetsempost", __FILE__, COREMOD_MEMORY_image_set_sempost_cli, "post image semaphore. If sem index = -1, post all semaphores", "<image> <sem index>", "imsetsempost im1 2", "long COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)");  
 
@@ -4402,6 +4416,40 @@ long COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem)
 		ImageStreamIO_createsem(&data.image[ID], NBsem);
 
     return(ID);
+}
+
+
+
+long COREMOD_MEMORY_image_seminfo(
+	const char *IDname
+)
+{
+	long ID;
+	
+	ID = image_ID(IDname);
+	
+	printf("  NB SEMAPHORES = %3d \n", data.image[ID].md[0].sem);
+
+	printf("----------------------------------\n");
+	printf(" sem    value   writePID   readPID\n");
+	printf("----------------------------------\n");
+	int s;
+    for(s=0;s<data.image[ID].md[0].sem;s++)
+    {
+		int semval;
+		
+		sem_getvalue(data.image[ID].semptr[s], &semval);
+		
+		printf("  %2d   %6d   %8d  %8d\n", s, semval, (int) data.image[ID].semWritePID[s], (int) data.image[ID].semReadPID[s]);  
+      
+    }
+    printf("----------------------------------\n");
+	int semval;
+    sem_getvalue(data.image[ID].semlog, &semval);   
+    printf(" semlog = %3d\n", semval);
+	printf("----------------------------------\n");
+	
+	return ID;
 }
 
 
