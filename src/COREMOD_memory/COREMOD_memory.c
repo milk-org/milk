@@ -4420,48 +4420,39 @@ long COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem)
 
 
 
+
 long COREMOD_MEMORY_image_seminfo(
     const char *IDname
 )
 {
     long ID;
-    long iter;
 
 
     ID = image_ID(IDname);
 
-	iter = 0;
-    for(;;)
-    {	
-		printf("\n\n  %ld\n", iter);
-		iter++;
-
-
-        printf("  NB SEMAPHORES = %3d \n", data.image[ID].md[0].sem);
-        printf(" semWritePID at %p\n", (void*) data.image[ID].semWritePID);
-        printf(" semReadPID  at %p\n", (void*) data.image[ID].semReadPID);
-        printf("----------------------------------\n");
-        printf(" sem    value   writePID   readPID\n");
-        printf("----------------------------------\n");
-        int s;
-        for(s=0; s<data.image[ID].md[0].sem; s++)
-        {
-            int semval;
-
-            sem_getvalue(data.image[ID].semptr[s], &semval);
-
-            printf("  %2d   %6d   %8d  %8d\n", s, semval, (int) data.image[ID].semWritePID[s], (int) data.image[ID].semReadPID[s]);
-
-        }
-        printf("----------------------------------\n");
+    printf("  NB SEMAPHORES = %3d \n", data.image[ID].md[0].sem);
+    printf(" semWritePID at %p\n", (void*) data.image[ID].semWritePID);
+    printf(" semReadPID  at %p\n", (void*) data.image[ID].semReadPID);
+    printf("----------------------------------\n");
+    printf(" sem    value   writePID   readPID\n");
+    printf("----------------------------------\n");
+    int s;
+    for(s=0; s<data.image[ID].md[0].sem; s++)
+    {
         int semval;
-        sem_getvalue(data.image[ID].semlog, &semval);
-        printf(" semlog = %3d\n", semval);
-        printf("----------------------------------\n");
 
-		sleep(1.0);
+        sem_getvalue(data.image[ID].semptr[s], &semval);
+
+        printf("  %2d   %6d   %8d  %8d\n", s, semval, (int) data.image[ID].semWritePID[s], (int) data.image[ID].semReadPID[s]);
 
     }
+    printf("----------------------------------\n");
+    int semval;
+    sem_getvalue(data.image[ID].semlog, &semval);
+    printf(" semlog = %3d\n", semval);
+    printf("----------------------------------\n");
+
+
 
     return ID;
 }
