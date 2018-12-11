@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.8)
 project (CLIcore C)
-
+ 
 option(PYTHON_STANDALONE "PYTHON_STANDALONE mode" OFF)
 
 message(${PYTHON_STANDALONE})
