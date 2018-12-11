@@ -395,7 +395,7 @@ int_fast8_t create_image_shared_cli() // default precision
         }
         free(imsize);
         printf("Creating 10 semaphores\n");
-        COREMOD_MEMORY_image_set_createsem(data.cmdargtoken[1].val.string, 10);
+        COREMOD_MEMORY_image_set_createsem(data.cmdargtoken[1].val.string, IMAGE_NB_SEMAPHORE);
     }
     else
         return 1;
@@ -435,41 +435,41 @@ int_fast8_t create_ushort_image_shared_cli() // default precision
 
 int_fast8_t create_2Dimage_float()
 {
-  uint32_t *imsize;
+    uint32_t *imsize;
 
-  // CHECK ARGS
-//  printf("CREATING IMAGE\n");
-  imsize = (uint32_t*) malloc(sizeof(uint32_t)*2);
+    // CHECK ARGS
+    //  printf("CREATING IMAGE\n");
+    imsize = (uint32_t*) malloc(sizeof(uint32_t)*2);
 
-  imsize[0] = data.cmdargtoken[2].val.numl;
-  imsize[1] = data.cmdargtoken[3].val.numl;
+    imsize[0] = data.cmdargtoken[2].val.numl;
+    imsize[1] = data.cmdargtoken[3].val.numl;
 
-  create_image_ID(data.cmdargtoken[1].val.string, 2, imsize, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT);
+    create_image_ID(data.cmdargtoken[1].val.string, 2, imsize, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT);
 
-  free(imsize);
+    free(imsize);
 
-  return 0;
+    return 0;
 }
 
 
 
 int_fast8_t create_3Dimage_float()
 {
-  uint32_t *imsize;
+    uint32_t *imsize;
 
-  // CHECK ARGS
-//  printf("CREATING 3D IMAGE\n");
-  imsize = (uint32_t *) malloc(sizeof(uint32_t)*3);
+    // CHECK ARGS
+    //  printf("CREATING 3D IMAGE\n");
+    imsize = (uint32_t *) malloc(sizeof(uint32_t)*3);
 
-  imsize[0] = data.cmdargtoken[2].val.numl;
-  imsize[1] = data.cmdargtoken[3].val.numl;
-  imsize[2] = data.cmdargtoken[4].val.numl;
+    imsize[0] = data.cmdargtoken[2].val.numl;
+    imsize[1] = data.cmdargtoken[3].val.numl;
+    imsize[2] = data.cmdargtoken[4].val.numl;
 
-  create_image_ID(data.cmdargtoken[1].val.string, 3, imsize, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT);
+    create_image_ID(data.cmdargtoken[1].val.string, 3, imsize, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT);
 
-  free(imsize);
+    free(imsize);
 
-  return 0;
+    return 0;
 }
 
 
@@ -2819,7 +2819,11 @@ long create_variable_string_ID(const char *name, const char *value)
 
 
 
-long copy_image_ID(const char *name, const char *newname, int shared)
+long copy_image_ID(
+	const char *name, 
+	const char *newname, 
+	int         shared
+)
 {
     long ID, IDout;
     long naxis;
@@ -2835,11 +2839,11 @@ long copy_image_ID(const char *name, const char *newname, int shared)
 
     ID = image_ID(name);
     if(ID==-1)
-        {
-            sprintf(errstr, "image \"%s\" does not exist", name);
-            printERROR(__FILE__,__func__,__LINE__, errstr);
-            exit(0);
-        }
+    {
+        sprintf(errstr, "image \"%s\" does not exist", name);
+        printERROR(__FILE__,__func__,__LINE__, errstr);
+        exit(0);
+    }
     naxis = data.image[ID].md[0].naxis;
 
     size = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
@@ -2940,9 +2944,8 @@ long copy_image_ID(const char *name, const char *newname, int shared)
     if(atype == _DATATYPE_COMPLEX_DOUBLE)
         memcpy (data.image[IDout].array.CD, data.image[ID].array.CD, SIZEOF_DATATYPE_COMPLEX_DOUBLE*nelement);
 
-
-    
     COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+    
     data.image[IDout].md[0].write = 0;
     data.image[IDout].md[0].cnt0++;
 
@@ -4788,7 +4791,7 @@ long COREMOD_MEMORY_streamDiff(
 	if(IDout == -1)
 	{
 		IDout = create_image_ID(IDstreamout_name, 2, arraysize, _DATATYPE_FLOAT, 1, 0);
-		COREMOD_MEMORY_image_set_createsem(IDstreamout_name, 10);
+		COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
 	}
 
 	free(arraysize);
@@ -4873,7 +4876,7 @@ long COREMOD_MEMORY_streamPaste(
     if(IDout == -1)
     {
         IDout = create_image_ID(IDstreamout_name, 2, arraysize, atype, 1, 0);
-        COREMOD_MEMORY_image_set_createsem(IDstreamout_name, 10);
+        COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
     }
     free(arraysize);
 
@@ -5055,7 +5058,7 @@ long COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name, const char *IDs
 	if(IDout == -1)
 	{
 		IDout = create_image_ID(IDstreamout_name, 2, arraysize, _DATATYPE_FLOAT, 1, 0);
-		COREMOD_MEMORY_image_set_createsem(IDstreamout_name, 10);
+		COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
 	}
 
 	free(arraysize);
@@ -5134,7 +5137,7 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 			imsize[0] = xsize;
 			imsize[1] = ysize;
 			IDout = create_image_ID(IDout_name, 2, imsize, _DATATYPE_FLOAT, 1, 0);
-			COREMOD_MEMORY_image_set_createsem(IDout_name, 10);
+			COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
 			free(imsize);
 		}
     }
@@ -5392,7 +5395,7 @@ long COREMOD_MEMORY_image_streamupdateloop(
     if(IDout == -1)
     {
         IDout = create_image_ID(IDoutname, 2, arraysize, atype, 1, 0);
-        COREMOD_MEMORY_image_set_createsem(IDoutname, 10);
+        COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
     cubeindex = 0;
@@ -5659,7 +5662,7 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 	if(IDout == -1)
 	{
 		IDout = create_image_ID(IDoutname, 2, arraysize, atype, 1, 0);
-		COREMOD_MEMORY_image_set_createsem(IDoutname, 10);
+		COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
 	}
 	
     switch ( atype ) {
@@ -5866,7 +5869,7 @@ long COREMOD_MEMORY_streamDelay(
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
         IDout = create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
-        COREMOD_MEMORY_image_set_createsem(IDout_name, 10);
+        COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
         free(arraytmp);
     }
 
@@ -6793,7 +6796,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
     
     
     
-	COREMOD_MEMORY_image_set_createsem(imgmd[0].name, 10);
+	COREMOD_MEMORY_image_set_createsem(imgmd[0].name, IMAGE_NB_SEMAPHORE);
 
     xsize = data.image[ID].md[0].size[0];
     ysize = data.image[ID].md[0].size[1];
@@ -7139,7 +7142,7 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
     IDout = create_image_ID(IDout_name, 2, sizearray, data.image[IDin].md[0].atype, 1, 0);
-    COREMOD_MEMORY_image_set_createsem(IDout_name, 10); // create 10 semaphores
+    COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE); 
     IDout_pixslice = create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0, 0);
 
     NBslice = data.image[IDin].md[0].size[2];
