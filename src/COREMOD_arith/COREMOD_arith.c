@@ -651,7 +651,7 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
     }
     if(naxis==3)
     {
-		printf("naxis = 3\n");
+	//	printf("naxis = 3\n");
         if(atype == _DATATYPE_FLOAT)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
@@ -2051,8 +2051,8 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
   ID1 = image_ID(ID_name1);
   ID2 = image_ID(ID_name2);
 
-	printf("IMAGE IMAGE -> IMAGE\n");
-	fflush(stdout);
+	//printf("IMAGE IMAGE -> IMAGE\n");
+	//fflush(stdout);
 
 
   if(ID1==-1)
@@ -2109,8 +2109,8 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
   nelement2 = data.image[ID2].md[0].nelement;
   
 	// test if 3D 2D -> 3D operation
-	printf("naxis   %ld (%d)   %ld (%d)\n", naxis, atype1, naxis2, atype2);
-	fflush(stdout);
+	//printf("naxis   %ld (%d)   %ld (%d)\n", naxis, atype1, naxis2, atype2);
+	//fflush(stdout);
 	
 	op3D2Dto3D = 0;
 	xysize = 0;
