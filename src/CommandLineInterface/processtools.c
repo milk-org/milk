@@ -641,7 +641,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	
     clock_gettime(CLOCK_REALTIME, &tnow);
  
-	sprintf(pinfo->logfilename, "/tmp/proc.%s.%06d.%09d.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+	sprintf(pinfo->logfilename, "/tmp/proc.%s.%06d.%09ld.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
 	
 
@@ -918,7 +918,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         {
 			char msgstring[200];
 						
-			sprintf(msgstring, "dtiter %4ld  %6.1f us  > %6.1f us", processinfo->dtiter_limit_cnt, processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);			
+			sprintf(msgstring, "dtiter %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtiter_limit_cnt, processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);			
 			processinfo_WriteMessage(processinfo, msgstring);	
 			
 			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
@@ -951,13 +951,13 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
         {
 			char msgstring[200];
 			
-			sprintf(msgstring, "dtexec %4ld  %6.1f us  > %6.1f us", processinfo->dtexec_limit_cnt, processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
+			sprintf(msgstring, "dtexec %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtexec_limit_cnt, processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
 			processinfo_WriteMessage(processinfo, msgstring);
 			
 			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
 			{				
 				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtexec lim -> paused", processinfo->timerindex);
+				sprintf(msgstring, "dtexec lim -> paused");
 				processinfo_WriteMessage(processinfo, msgstring);
 			}
 			processinfo->dtexec_limit_cnt ++;
@@ -1196,9 +1196,9 @@ static int GetCPUloads()
     long long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
     long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
-    
-    
-	clock_gettime(CLOCK_REALTIME, &t1);
+
+
+    clock_gettime(CLOCK_REALTIME, &t1);
 
     fp = fopen("/proc/stat", "r");
     if (fp == NULL)
@@ -1240,23 +1240,23 @@ static int GetCPUloads()
     }
 
     fclose(fp);
-	clock_gettime(CLOCK_REALTIME, &t2);
-	tdiff = info_time_diff(t1, t2);
-	scantime_CPUload += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-	
-	
-	clock_gettime(CLOCK_REALTIME, &t1);
-    
+    clock_gettime(CLOCK_REALTIME, &t2);
+    tdiff = info_time_diff(t1, t2);
+    scantime_CPUload += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+
+
+    clock_gettime(CLOCK_REALTIME, &t1);
+
     // number of process per CPU -> we can get that from top?
     char command[200];
 
-    
+
     for(cpu=0; cpu<NBcpus; cpu++)
     {
         char outstring[200];
         FILE * fpout;
 
-		
+
         sprintf(command, "CORENUM=%d; cat _psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
         fpout = popen (command, "r");
         if(fpout==NULL)
@@ -1270,16 +1270,17 @@ static int GetCPUloads()
             pclose(fpout);
             CPUpcnt[cpu] = atoi(outstring);
         }
-	}
-	
-//	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
-    
+    }
+
+    //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
+
     sprintf(command, "{ if [ ! -f _psOKlock ]; then touch _psOKlock; ps -e -o pid,psr,cpu,cmd > _psoutput.txt; fi; rm _psOKlock &> /dev/null; } &");
-   system(command);	
-	
-	clock_gettime(CLOCK_REALTIME, &t2);
-	tdiff = info_time_diff(t1, t2);
-	scantime_CPUpcnt += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+    if(system(command) != 0)
+		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+
+    clock_gettime(CLOCK_REALTIME, &t2);
+    tdiff = info_time_diff(t1, t2);
+    scantime_CPUpcnt += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
     return(cpu);
 }
@@ -1317,7 +1318,8 @@ static int PIDcollectSystemInfo(int PID, int pindex, PROCESSINFODISP *pinfodisp,
     fp=fopen(fname, "r");
     if (fp == NULL)
         return -1;
-    fscanf(fp, "%s", pinfodisp[pindex].cpuset);
+    if(fscanf(fp, "%s", pinfodisp[pindex].cpuset) != 1)
+		printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
     fclose(fp);
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
@@ -1628,8 +1630,9 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	char word1[200];
 	int NBset = 0;
 	
-	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \$0}' > _tmplist.txt");
-	system(syscommand);
+	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \\$0}' > _tmplist.txt");
+	if(system(syscommand) != 0)
+		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 	
 	
 	// first scan: get number of entries
@@ -1672,7 +1675,7 @@ int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 	fflush(stdout);
 	for(i=0;i<NBelem;i++)
 	{
-		printf("   %3d   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
+		printf("   %3ld   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
 		fflush(stdout);
 	}
 	
@@ -2056,11 +2059,13 @@ int_fast8_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
-                system("clear"); // clear screen
+                if(system("clear") != 0) // clear screen
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 printf("CURRENT cpu set : %s\n",  pinfodisp[pindex].cpuset);
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
                 sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
-                system(syscommand);
+                if(system(syscommand) != 0)
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
 			}
             break;
@@ -2071,9 +2076,11 @@ int_fast8_t processinfo_CTRLscreen()
             {
 				endwin();
 				sprintf(syscommand,"sudo cset proc -m %d root &> /dev/null", pinfolist->PIDarray[pindex]);
-                system(syscommand);
+                if(system(syscommand) != 0)
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 				sprintf(syscommand,"sudo cset proc --force -m %d %s &> /dev/null", pinfolist->PIDarray[pindex], pinfodisp[pindex].cpuset);
-                system(syscommand);
+                if(system(syscommand) != 0)
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
 			}
             break;
@@ -2134,7 +2141,8 @@ int_fast8_t processinfo_CTRLscreen()
         case 't':
             endwin();
             sprintf(syscommand, "tmux a -t %s", pinfoarray[pindexSelected]->tmuxname);
-            system(syscommand);
+			if(system(syscommand) != 0)
+				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
@@ -2144,7 +2152,8 @@ int_fast8_t processinfo_CTRLscreen()
             {
                 endwin();
                 sprintf(syscommand, "watch -n 0.1 cat /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
-                system(syscommand);
+				if(system(syscommand) != 0)
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
             }
             break;
@@ -2155,7 +2164,8 @@ int_fast8_t processinfo_CTRLscreen()
             {
                 endwin();
                 sprintf(syscommand, "watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
-                system(syscommand);
+                if(system(syscommand) != 0)
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
             }
             break;
@@ -2213,7 +2223,8 @@ int_fast8_t processinfo_CTRLscreen()
                 endwin();
                 sprintf(syscommand, "clear; tail -f %s", pinfoarray[pindex]->logfilename);
                 //sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
-                system(syscommand);
+                if(system(syscommand) != 0)
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
             }
             break;
@@ -2239,21 +2250,24 @@ int_fast8_t processinfo_CTRLscreen()
         case KEY_F(5): // htop
             endwin();
             sprintf(syscommand, "htop");
-            system(syscommand);
+            if(system(syscommand) != 0)
+				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
         case KEY_F(6): // iotop
             endwin();
             sprintf(syscommand, "sudo iotop -o");
-            system(syscommand);
+            if(system(syscommand) != 0)
+				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
         case KEY_F(7): // atop
             endwin();
             sprintf(syscommand, "sudo atop");
-            system(syscommand);
+            if(system(syscommand) != 0)
+				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
@@ -3047,7 +3061,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
 
-                                            sprintf(cpustring, ",%d,",CPUids[cpu]);
+                                            sprintf(cpustring, ",%lld,",CPUids[cpu]);
                                             if(strstr(cpuliststring, cpustring) != NULL)
                                                 cpuOK = 1;
 
@@ -3083,7 +3097,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
 
-                                            sprintf(cpustring, ",%d,",CPUids[cpu]);
+                                            sprintf(cpustring, ",%lld,",CPUids[cpu]);
                                             if(strstr(cpuliststring, cpustring) != NULL)
                                                 cpuOK = 1;
 
