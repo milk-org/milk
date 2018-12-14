@@ -779,7 +779,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 		processinfo_WriteMessage(processinfo, msgstring);
 		break;
 
-		case SIGCONT :  // Continue if stopped
+		case SIGCONT :  // Continue if stoppedshmimTCPtransmit
 		sprintf(msgstring, "SIGCONT at %s", timestring);
 		processinfo_WriteMessage(processinfo, msgstring);
 		break;
