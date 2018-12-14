@@ -1097,7 +1097,7 @@ static int GetNumberCPUs()
 	}
 	else
 	{
-		if(fgets(outstring, 100, fpout)== NULL)
+		if(fgets(outstring, 16, fpout)== NULL)
 			printf("WARNING: fgets error\n");
 		pclose(fpout);
 	}
