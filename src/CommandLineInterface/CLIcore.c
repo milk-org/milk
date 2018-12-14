@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <CommandLineInterface/CLIcore.h>
+#include "CommandLineInterface/CLIcore.h"
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
