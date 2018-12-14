@@ -29,6 +29,7 @@
 #include <signal.h>
 
 
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "processtools.h"
 
