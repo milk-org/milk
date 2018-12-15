@@ -5397,29 +5397,30 @@ long COREMOD_MEMORY_image_streamupdateloop(
     }
 
 
-	int * in_semwaitindex;
+	int sync_semwaitindex;
     IDin = (long*) malloc(sizeof(long)*NBcubes);
-    in_semwaitindex = (int*) malloc(sizeof(int)*NBcubes);
     SyncSlice = 0;
     if(NBcubes==1)
     {
         IDin[0] = image_ID(IDinname);
-		in_semwaitindex[0] = ImageStreamIO_getsemwaitindex(&data.image[IDin[0]], semtrig);
         
         // in single cube mode, optional sync stream drives updates to next slice within cube
         IDsync = image_ID(IDsync_name);
         if(IDsync!=-1)
+        {
             SyncSlice = 1;
+			sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], semtrig);
+		}
     }
     else
     {
         IDsync = image_ID(IDsync_name);
+		sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDsync], semtrig);
 
         for(cubeindex=0; cubeindex<NBcubes; cubeindex++)
         {
             sprintf(imname, "%s_%03ld", IDinname, cubeindex);
             IDin[cubeindex] = image_ID(imname);
-            in_semwaitindex[cubeindex] = ImageStreamIO_getsemwaitindex(&data.image[IDin[cubeindex]], semtrig);
         }
         offsetfr = (long) ( 0.5 + 1.0*offsetus/usperiod );
 
@@ -5627,7 +5628,7 @@ long COREMOD_MEMORY_image_streamupdateloop(
         }
         else
         {
-            sem_wait(data.image[IDsync].semptr[semtrig]);
+            sem_wait(data.image[IDsync].semptr[sync_semwaitindex]);
         }
 
         if(loopCTRLexit == 1)
@@ -5655,7 +5656,6 @@ long COREMOD_MEMORY_image_streamupdateloop(
     }
 
     free(IDin);
-	free(in_semwaitindex);
 	
     return(IDout);
 }
