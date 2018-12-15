@@ -2190,7 +2190,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
         }
 
 
-        if( (atype1==_DATATYPE_UINT8) && (atype2==_DATATYPE_UINT8) )  // UINT16 UINT16 -> FLOAT
+        if( (atype1==_DATATYPE_UINT16) && (atype2==_DATATYPE_UINT16) )  // UINT16 UINT16 -> FLOAT
         {
 
             if(op3D2Dto3D == 0)
@@ -2210,7 +2210,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
 
         }
 
-        if( (atype1==_DATATYPE_INT8) && (atype2==_DATATYPE_INT8) )  // INT16 INT16 -> FLOAT
+        if( (atype1==_DATATYPE_INT16) && (atype2==_DATATYPE_INT16) )  // INT16 INT16 -> FLOAT
         {
 
             if(op3D2Dto3D == 0)
