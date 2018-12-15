@@ -333,4 +333,6 @@ int processinfo_exec_end(PROCESSINFO *processinfo);
 
 int_fast8_t processinfo_CTRLscreen();
 
+int_fast8_t streamCTRL_CTRLscreen();
+
 #endif

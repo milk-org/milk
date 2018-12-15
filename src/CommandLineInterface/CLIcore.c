@@ -1603,6 +1603,14 @@ void main_init()
   strcpy(data.cmd[data.NBcmd].Ccall,"processinfo_CTRLscreen()");
   data.NBcmd++;
 
+  strcpy(data.cmd[data.NBcmd].key,"streamCTRL");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen;
+  strcpy(data.cmd[data.NBcmd].info,"stream control screen");
+  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
+  strcpy(data.cmd[data.NBcmd].example,"streamCTRL");
+  strcpy(data.cmd[data.NBcmd].Ccall,"streamCTRL_CTRLscreen()");
+  data.NBcmd++;
 
 
   strcpy(data.cmd[data.NBcmd].key,"usleep");

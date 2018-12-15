@@ -27,6 +27,7 @@ else()
         CLIcore.c 
         CLIcore.h 
         processtools.c
+        streamCTRL.c
         calc.h
         ${BISON_MilkBison_OUTPUTS}
         ${FLEX_MilkFlex_OUTPUTS})        
