@@ -1630,7 +1630,7 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	char word1[200];
 	int NBset = 0;
 	
-	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print \\$0}' > _tmplist.txt");
+	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print $0}' > _tmplist.txt");
 	if(system(syscommand) != 0)
 		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 	
