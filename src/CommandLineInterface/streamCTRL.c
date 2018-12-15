@@ -183,6 +183,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 	
 	long IDmax = 10000;
 	long cnt0array[1000];
+	long IDarray[200];
 
     setlocale(LC_ALL, "");
 
@@ -262,7 +263,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
         case 'R': // remove stream
-            
+            ImageStreamIO_destroyIm( &data.image[IDarray[sindex]] );
             break;
 
         }
@@ -337,6 +338,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         if(ID == -1)
                             ID = read_sharedmem_image(sname);
                         printw("%03ld %4ld %32s ", sindex, ID, sname);
+                        IDarray[sindex] = ID;
 
 
                         int atype = data.image[ID].md[0].atype;
@@ -393,7 +395,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         // counter and semaphores
                         if(data.image[ID].md[0].cnt0 == cnt0array[ID]) // has not changed
                         {
-							printw(" %6ld", data.image[ID].md[0].cnt0);
+							printw(" %8ld", data.image[ID].md[0].cnt0);
 						}
 						else
 						{
