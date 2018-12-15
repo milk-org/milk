@@ -337,7 +337,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         ID = image_ID(sname);
                         if(ID == -1)
                             ID = read_sharedmem_image(sname);
-                        printw("%03ld %4ld %32s ", sindex, ID, sname);
+                        printw("%03ld %4ld  %-36s ", sindex, ID, sname);
                         IDarray[sindex] = ID;
 
 
