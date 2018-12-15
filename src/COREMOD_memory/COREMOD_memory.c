@@ -5397,13 +5397,15 @@ long COREMOD_MEMORY_image_streamupdateloop(
     }
 
 
-
+	int * in_semwaitindex;
     IDin = (long*) malloc(sizeof(long)*NBcubes);
+    in_semwaitindex = (int*) malloc(sizeof(int)*NBcubes);
     SyncSlice = 0;
     if(NBcubes==1)
     {
         IDin[0] = image_ID(IDinname);
-
+		in_semwaitindex[0] = ImageStreamIO_getsemwaitindex(&data.image[IDin[0]], semtrig);
+        
         // in single cube mode, optional sync stream drives updates to next slice within cube
         IDsync = image_ID(IDsync_name);
         if(IDsync!=-1)
@@ -5417,11 +5419,14 @@ long COREMOD_MEMORY_image_streamupdateloop(
         {
             sprintf(imname, "%s_%03ld", IDinname, cubeindex);
             IDin[cubeindex] = image_ID(imname);
+            in_semwaitindex[cubeindex] = ImageStreamIO_getsemwaitindex(&data.image[IDin[cubeindex]], semtrig);
         }
         offsetfr = (long) ( 0.5 + 1.0*offsetus/usperiod );
 
         printf("FRAMES OFFSET = %ld\n", offsetfr);
     }
+    
+
 
     printf("SyncSlice = %d\n", SyncSlice);
 
@@ -5650,7 +5655,8 @@ long COREMOD_MEMORY_image_streamupdateloop(
     }
 
     free(IDin);
-
+	free(in_semwaitindex);
+	
     return(IDout);
 }
 
@@ -7188,9 +7194,6 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
         //
 
         char pinfoname[200];  // short name for the processinfo instance
-        // avoid spaces, name should be human-readable
-
-
         sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
         processinfo = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = 0; // loop initialization
@@ -7205,7 +7208,6 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
         data.processinfoActive = 1;
 
         processinfo->MeasureTiming = 0; // OPTIONAL: do not measure timing
-
     }
 
 
