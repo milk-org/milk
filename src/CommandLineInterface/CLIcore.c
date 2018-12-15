@@ -987,8 +987,34 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 	data.progStatus = 1;
 
+
+
+
+
 	// LOAD MODULES
 	load_module_shared_ALL();
+
+	// load other libs specified by environment variable CLI_ADD_LIBS
+    char* CLI_ADD_LIBS=getenv("CLI_ADD_LIBS");
+    if(CLI_ADD_LIBS!=NULL)
+    {
+        //printf("CLI_ADD_LIBS='%s'\n", CLI_ADD_LIBS);
+
+        char * libname;
+        char * fname;
+        libname = strtok (CLI_ADD_LIBS, " ,");
+
+        while (libname != NULL) {
+            printf ("--- CLI Adding library: %s\n", libname);
+            load_sharedobj(libname);
+            libname = strtok (NULL, " ,");
+        }
+        printf("\n");
+    }
+
+
+
+
 
 
     /*--------------------------------------------------
@@ -2092,7 +2118,7 @@ static int_fast8_t load_module_shared_ALL()
     int itermax;
     
     sprintf(dirname, "%s/../lib", data.sourcedir);
-	
+	printf("LOAD MODULES SHARED ALL: %s\n", dirname);
 
     loopOK = 0;
     iter = 0;    
