@@ -5796,9 +5796,12 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
     kk = 0;
     kk1 = 0;
     
+    int sync_semwaitindex;
+    sync_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], semtrig);
+    
     while(1)
     {				
-        sem_wait(data.image[IDsync].semptr[semtrig]);
+        sem_wait(data.image[IDsync].semptr[sync_semwaitindex]);
      
         kk++;
         if(kk==period) // UPDATE
@@ -5816,6 +5819,9 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 				data.image[IDout].md[0].write = 0;
 			}        		
     }
+    
+    // release semaphore
+    data.image[IDsync].semReadPID[sync_semwaitindex] = 0;
 
     return(IDout);
 }
