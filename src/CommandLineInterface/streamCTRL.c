@@ -259,6 +259,12 @@ int_fast8_t streamCTRL_CTRLscreen()
         case KEY_F(4): // read PIDs
             DisplayMode = 4;
             break;
+
+
+        case 'R': // remove stream
+            
+            break;
+
         }
 
         erase();
@@ -330,7 +336,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         ID = image_ID(sname);
                         if(ID == -1)
                             ID = read_sharedmem_image(sname);
-                        printw("%03ld %4ld %16s ", sindex, ID, sname);
+                        printw("%03ld %4ld %32s ", sindex, ID, sname);
 
 
                         int atype = data.image[ID].md[0].atype;
