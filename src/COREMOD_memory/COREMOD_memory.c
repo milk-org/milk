@@ -7172,6 +7172,34 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     long slice1;
 
 
+	PROCESSINFO *processinfo;
+
+if((data.processinfo==1)&&(data.processinfoActive==0))
+{
+     // CREATE PROCESSINFO ENTRY
+     // see processtools.c in module CommandLineInterface for details
+     //
+     
+     char pinfoname[200];  // short name for the processinfo instance
+     // avoid spaces, name should be human-readable
+ 
+ 
+     sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
+     processinfo = processinfo_shm_create(pinfoname, 0);
+     processinfo->loopstat = 0; // loop initialization
+     strcpy(processinfo->source_FUNCTION, __FUNCTION__);
+     strcpy(processinfo->source_FILE,     __FILE__);
+    processinfo->source_LINE = __LINE__;
+         sprintf(processinfo->description, "Decode cube stream into 2D image");
+ 
+      char msgstring[200];
+      sprintf(msgstring, "%s->%s", inputstream_name, IDout_name);
+      processinfo_WriteMessage(processinfo, msgstring);
+      data.processinfoActive = 1;
+  
+      processinfo->MeasureTiming = 0; // OPTIONAL: do not measure timing 
+  
+  }
 
 
     sizearray = (uint32_t*) malloc(sizeof(uint32_t)*3);
@@ -7233,40 +7261,51 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     save_fits("outpixsl", IDout_pixslice_fname);
     delete_image_ID("outpixsl");
 
-    if (sigaction(SIGINT, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGTERM, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGBUS, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGABRT, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGHUP, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
 
+  if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGTERM\n");
+  
+  if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGINT\n");    
+  
+  if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGABRT\n");
+  
+  if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGBUS\n");
+  
+  if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGSEGV\n");         
+  
+  if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGHUP\n");         
+  
+  if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+      printf("\ncan't catch SIGPIPE\n");
 
-    iter = 0;
+  //  iter = 0;
     loopOK = 1;
+    if(data.processinfo==1)
+        processinfo->loopstat = 1;  // Notify processinfo that we are entering loop
+        
+    long loopcnt = 0;
     while(loopOK == 1)
     {
+		if(data.processinfo==1)
+        {
+            while(processinfo->CTRLval == 1)  // pause
+                usleep(50);
+
+            if(processinfo->CTRLval == 2) // single iteration
+                processinfo->CTRLval = 1;
+
+            if(processinfo->CTRLval == 3) // exit loop
+            {
+                loopOK = 0;
+            }
+        }
+		
+		
         if(data.image[IDin].md[0].sem==0)
         {
             while(data.image[IDin].md[0].cnt0==cnt) // test if new frame exists
@@ -7281,21 +7320,24 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
             }
             ts.tv_sec += 1;
             #ifndef __MACH__
-            ImageStreamIO_semtimedwait(&data.image[IDin], in_semwaitindex, &ts);
+            semr = ImageStreamIO_semtimedwait(&data.image[IDin], in_semwaitindex, &ts);
             //semr = sem_timedwait(data.image[IDin].semptr[0], &ts);
             #else
             alarm(1);
-            ImageStreamIO_semwait(&data.image[IDin], in_semwaitindex);
+            semr = ImageStreamIO_semwait(&data.image[IDin], in_semwaitindex);
             //semr = sem_wait(data.image[IDin].semptr[0]);
             #endif
 
-            if(iter == 0)
+            if(loopcnt == 0)
             {
                 sem_getvalue(data.image[IDin].semptr[in_semwaitindex], &semval);
                 for(scnt=0; scnt<semval; scnt++)
                     sem_trywait(data.image[IDin].semptr[in_semwaitindex]);
             }
         }
+
+    if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
+		processinfo_exec_start(processinfo);
 
         if(semr==0)
         {
@@ -7351,11 +7393,65 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
             oldslice = slice;
         }
 
-        if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
-            loopOK = 0;
+	if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
+		processinfo_exec_end(processinfo);
 
-        iter++;
+     // process signals
+
+		if(data.signal_TERM == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGTERM);
+		}
+     
+		if(data.signal_INT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGINT);
+		}
+
+		if(data.signal_ABRT == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGABRT);
+		}
+
+		if(data.signal_BUS == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGBUS);
+		}
+		
+		if(data.signal_SEGV == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGSEGV);
+		}
+		
+		if(data.signal_HUP == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGHUP);
+		}
+		
+		if(data.signal_PIPE == 1){
+			loopOK = 0;
+			if(data.processinfo==1)
+				processinfo_SIGexit(processinfo, SIGPIPE);
+		}	
+     
+        loopcnt++;
+        if(data.processinfo==1)
+            processinfo->loopcnt = loopcnt;
+
+    //    if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
+    //        loopOK = 0;
+
+        //iter++;
     }
+
+    if((data.processinfo==1)&&(processinfo->loopstat != 4))
+        processinfo_cleanExit(processinfo);
 
     free(nbpixslice);
     free(sizearray);
