@@ -1,9 +1,6 @@
 # Installation {#page_installation}
 
-
-# Downloading source code
-You can clone this repository, or download the latest .tar.gz distribution.
-
+---
 
 # 1 Libraries 
 
@@ -62,10 +59,10 @@ Two options:
 
 
 
+---
 
 
-
-# 2 Compilation from git clone (recommended)
+# 2 Compilation 
 
 ## 2.1 Additional libraries
 
@@ -80,16 +77,8 @@ Install Development tools, use the command bellow. This will search the yum repo
 		sudo apt-get install autoconf libtool git
 
 
-## 2.2 Compilation (autotools)
 
-The source code follows the standard GNU build process:
-
-		autoreconf -vif
-		./configure
-		make
-		make install
-
-## 2.3 Compilation (cmake)
+## 2.2 Compilation 
 
 Use cmake version 3.xx.
 
@@ -103,6 +92,8 @@ To compile using cmake
 	mkdir _build
 	cd _build
 	cmake ..
+	make
+	sudo make install
 
 You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 
@@ -112,7 +103,7 @@ You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 
 
 
-
+---
 
 # 3 Troubleshooting and FAQs
 

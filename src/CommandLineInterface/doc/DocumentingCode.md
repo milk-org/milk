@@ -11,7 +11,6 @@ Instructions to build locally documentation and push it to repo.
 Documentation is built by doxygen in the ./dochtml/html directory. To set it up on you local repo, 
 follow these steps AFTER you have cloned the repo
 	
-	git push
 	mkdir dochtml
 	mkdir dochtml/html
 	cd dochtml/html
@@ -24,7 +23,6 @@ follow these steps AFTER you have cloned the repo
 For initial setup (creating gh-pages branch for the first time)
 
 		
-	git push
 	mkdir dochtml
 	mkdir dochtml/html
 	# exclude dochtml from repo
