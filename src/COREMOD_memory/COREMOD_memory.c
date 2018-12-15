@@ -7182,6 +7182,8 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     xsizein = data.image[IDin].md[0].size[0];
     ysizein = data.image[IDin].md[0].size[1];
 
+	int in_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], 0);
+
     if(xsizein != data.image[IDmap].md[0].size[0])
     {
         printf("ERROR: xsize for %s (%d) does not match xsize for %s (%d)\n", inputstream_name, xsizein, IDmap_name, data.image[IDmap].md[0].size[0]);
@@ -7279,17 +7281,19 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
             }
             ts.tv_sec += 1;
             #ifndef __MACH__
-            semr = sem_timedwait(data.image[IDin].semptr[0], &ts);
+            ImageStreamIO_semtimedwait(&data.image[IDin], in_semwaitindex, &ts);
+            //semr = sem_timedwait(data.image[IDin].semptr[0], &ts);
             #else
             alarm(1);
-            semr = sem_wait(data.image[IDin].semptr[0]);
+            ImageStreamIO_semwait(&data.image[IDin], in_semwaitindex);
+            //semr = sem_wait(data.image[IDin].semptr[0]);
             #endif
 
             if(iter == 0)
             {
-                sem_getvalue(data.image[IDin].semptr[0], &semval);
+                sem_getvalue(data.image[IDin].semptr[in_semwaitindex], &semval);
                 for(scnt=0; scnt<semval; scnt++)
-                    sem_trywait(data.image[IDin].semptr[0]);
+                    sem_trywait(data.image[IDin].semptr[in_semwaitindex]);
             }
         }
 
@@ -7318,26 +7322,7 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
             {
 				COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 				
-/*                sem_getvalue(data.image[IDout].semptr[0], &semval);
-                if(semval<SEMAPHORE_MAXVAL)
-                    sem_post(data.image[IDout].semptr[0]);
 
-                sem_getvalue(data.image[IDout].semptr[1], &semval);
-                if(semval<SEMAPHORE_MAXVAL)
-                    sem_post(data.image[IDout].semptr[1]);
-
-                sem_getvalue(data.image[IDout].semptr[4], &semval);
-                if(semval<SEMAPHORE_MAXVAL)
-                    sem_post(data.image[IDout].semptr[4]);
-
-                sem_getvalue(data.image[IDout].semptr[5], &semval);
-                if(semval<SEMAPHORE_MAXVAL)
-                    sem_post(data.image[IDout].semptr[5]);
-
-                sem_getvalue(data.image[IDout].semlog, &semval);
-                if(semval<SEMAPHORE_MAXVAL)
-                    sem_post(data.image[IDout].semlog);
-  */           
                 data.image[IDout].md[0].cnt0 ++;
 
                 //     printf("[[ Timimg [us] :   ");
