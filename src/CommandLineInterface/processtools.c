@@ -57,27 +57,7 @@
  * 
  * @code
  * // CATCH SIGNALS
- * 
- * if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGTERM\n");
- * 
- * if (sigaction(SIGINT, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGINT\n");    
- * 
- * if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGABRT\n");
- * 
- * if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGBUS\n");
- * 
- * if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGSEGV\n");         
- * 
- * if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGHUP\n");         
- * 
- * if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
- *     printf("\ncan't catch SIGPIPE\n");
+  processinfo_CatchSignals();
  * @endcode
  * 
  * 
@@ -162,52 +142,10 @@
 
      
      
-     // process signals
-
-		if(data.signal_TERM == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGTERM);
-		}
      
-		if(data.signal_INT == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGINT);
-		}
-
-		if(data.signal_ABRT == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGABRT);
-		}
-
-		if(data.signal_BUS == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGBUS);
-		}
-		
-		if(data.signal_SEGV == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGSEGV);
-		}
-		
-		if(data.signal_HUP == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGHUP);
-		}
-		
-		if(data.signal_PIPE == 1){
-			loopOK = 0;
-			if(data.processinfo==1)
-				processinfo_SIGexit(processinfo, SIGPIPE);
-		}	
-     
-        loopcnt++;
-        if(data.processinfo==1)
+     // process signals, end loop
+     loopcnt++;
+     if(data.processinfo==1)
             processinfo->loopcnt = loopcnt;
     
 	}    // end of loop
@@ -882,6 +820,86 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
     return 0;
 }
 
+
+
+
+int processinfo_CatchSignals()
+{
+    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
+
+    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");
+
+    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");
+
+    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+
+    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");
+
+    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");
+
+    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");
+
+    return 0;
+}
+
+
+
+int processinfo_ProcessSignals(PROCESSINFO *processinfo)
+{
+    int loopOK = 1;
+    // process signals
+
+    if(data.signal_TERM == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGTERM);
+    }
+
+    if(data.signal_INT == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGINT);
+    }
+
+    if(data.signal_ABRT == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGABRT);
+    }
+
+    if(data.signal_BUS == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGBUS);
+    }
+
+    if(data.signal_SEGV == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGSEGV);
+    }
+
+    if(data.signal_HUP == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGHUP);
+    }
+
+    if(data.signal_PIPE == 1) {
+        loopOK = 0;
+        if(data.processinfo==1)
+            processinfo_SIGexit(processinfo, SIGPIPE);
+    }
+
+    return loopOK;
+}
 
 
 
@@ -2231,7 +2249,7 @@ int_fast8_t processinfo_CTRLscreen()
 
         // Set Display Mode
 
-        case KEY_F(1): // help
+        case 'h': // help
             DisplayMode = 1;
             break;
 
@@ -2294,7 +2312,7 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("============ SCREENS \n");
 
                 attron(attrval);
-                printw("    F1");
+                printw("     h");
                 attroff(attrval);
                 printw("   Help screen\n");
 
