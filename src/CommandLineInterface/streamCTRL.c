@@ -543,8 +543,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     else
                                         printw("%7d", pid);
                                 }
-                                printw(" ]");
+                                printw(" ");
                             }
+                            printw("]");
                         }
                         if(DisplayMode == 4) // sem read PIDs
                         {
@@ -570,8 +571,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     else
                                         printw("%7d", pid);
                                 }
-                                printw(" ]");
+                                printw(" ");
                             }
+                            printw("]");
                         }
 
                         if(DisplayMode == 5) // open by processes...
@@ -610,12 +612,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     pch = strtok (NULL, " ");
                                 }
                                 streamOpenPIDarray_cnt[sindex] = NBpid;
-
-
-                                fuserUpdate = 0;
                             }
 
-                            printw("  OPENED BY: ");
+                            printw(" OPENED BY procs: ");
                             int pidIndex;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[sindex] ; pidIndex++)
                             {
@@ -637,6 +636,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                     }
                 }
                 closedir(d);
+                
+                fuserUpdate = 0;
             }
             NBsindex = sindex;
         }
