@@ -289,6 +289,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 				fuserUpdate = 1;
 				time(&rawtime);
 				uttime_lastScan = gmtime(&rawtime);
+				fuserScan = 1;
             }
             
             DisplayMode = 5;
@@ -647,8 +648,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 pid_t pid = streamOpenPIDarray[sindex][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) )
                                     printw(" %s(%d)", get_process_name_by_pid(pid), (int) pid);
-                            }
-                            fuserScan = 1;
+                            }                            
                         }
 
 
