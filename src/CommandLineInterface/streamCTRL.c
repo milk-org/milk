@@ -227,6 +227,11 @@ int_fast8_t streamCTRL_CTRLscreen()
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
 	struct tm *uttime_lastScan;
+	time_t rawtime;
+
+
+				time(&rawtime);
+				uttime_lastScan = gmtime(&rawtime);
 
     clear();
 
@@ -285,7 +290,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 			if((DisplayMode == 5)||(fuserUpdate0==1))
 			{
 				fuserUpdate = 1;
-				time_t rawtime;
 				time(&rawtime);
 				uttime_lastScan = gmtime(&rawtime);
             }
