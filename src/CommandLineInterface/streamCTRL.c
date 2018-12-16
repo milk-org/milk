@@ -227,6 +227,8 @@ int_fast8_t streamCTRL_CTRLscreen()
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
 	struct tm *uttime_lastScan;
+	time_t rawtime;
+	int fuserScan = 0;
 
     clear();
 
@@ -285,9 +287,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 			if((DisplayMode == 5)||(fuserUpdate0==1))
 			{
 				fuserUpdate = 1;
-				time_t rawtime;
 				time(&rawtime);
 				uttime_lastScan = gmtime(&rawtime);
+				fuserScan = 1;
             }
             
             DisplayMode = 5;
@@ -414,7 +416,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 			if(DisplayMode==5)
 			{
-				printw("Last scan on  %02d:%02d:%02d  - Press F5 again to re-scan\n", uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
+				if(fuserScan==1)
+					printw("Last scan on  %02d:%02d:%02d  - Press F5 again to re-scan\n", uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
+				else
+					printw("Last scan on  XX:XX:XX  - Press F5 again to scan\n");
 			}
 			else
 				printw("\n");
@@ -643,7 +648,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 pid_t pid = streamOpenPIDarray[sindex][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) )
                                     printw(" %s(%d)", get_process_name_by_pid(pid), (int) pid);
-                            }
+                            }                            
                         }
 
 
