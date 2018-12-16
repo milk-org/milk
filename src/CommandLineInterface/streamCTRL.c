@@ -205,7 +205,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     setlocale(LC_ALL, "");
 
-
+	
 
     // INITIALIZE ncurses
     initncurses();
@@ -222,9 +222,11 @@ int_fast8_t streamCTRL_CTRLscreen()
     // display modes:
     // 1: overview
 
+	int fuserUpdate0 = 1; //update on first instance
     int fuserUpdate = 1;
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
+	struct tm *uttime_lastScan;
 
     clear();
 
@@ -280,7 +282,14 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
         case KEY_F(5): // read PIDs
-            fuserUpdate = 1;
+			if((DisplayMode == 5)||(fuserUpdate0==1))
+			{
+				fuserUpdate = 1;
+				time_t rawtime;
+				time(&rawtime);
+				uttime_lastScan = gmtime(&rawtime);
+            }
+            
             DisplayMode = 5;
             //erase();
             //printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
@@ -401,9 +410,16 @@ int_fast8_t streamCTRL_CTRLscreen()
 			else
 				printw("[F5] processes access");
 			printw("   ");	
+			printw("\n");
 
+			if(DisplayMode==5)
+			{
+				printw("Last scan on  %02d:%02d:%02d  - Press F5 again to re-scan\n", uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
+			}
+			else
+				printw("\n");
 
-			printw("\n\n");
+			printw("\n");
 
 
 
@@ -647,6 +663,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 closedir(d);
                 
                 fuserUpdate = 0;
+                fuserUpdate0 = 0;
             }
             NBsindex = sindex;
         }
