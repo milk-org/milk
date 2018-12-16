@@ -282,9 +282,9 @@ int_fast8_t streamCTRL_CTRLscreen()
         case KEY_F(5): // read PIDs
             fuserUpdate = 1;
             DisplayMode = 5;
-            erase();
-            printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
-            refresh();
+            //erase();
+            //printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
+            //refresh();
             break;
 
 
@@ -635,6 +635,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         if(sindex == sindexSelected)
                             attroff(A_REVERSE);
+
+						if(fuserUpdate==1)
+							refresh();
 
                         sindex++;
                         if(sindex>NBsinfodisp-1)
