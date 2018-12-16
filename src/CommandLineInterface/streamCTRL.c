@@ -584,6 +584,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char fuseroutline[1035];
                                 char command[2000];
 
+								printw("SCANNING PROCESSES ...\n");
+
+
                                 /* Open the command for reading. */
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname);
                                 fp = popen(command, "r");
@@ -619,7 +622,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[sindex] ; pidIndex++)
                             {
                                 pid_t pid = streamOpenPIDarray[sindex][pidIndex];
-                                if(getpgid(pid) >= 0)
+                                if( (getpgid(pid) >= 0) && (pid != getpid()) )
                                     printw(" %s(%d)", get_process_name_by_pid(pid), (int) pid);
                             }
                         }
