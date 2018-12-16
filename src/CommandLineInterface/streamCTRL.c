@@ -239,10 +239,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-        attron(A_BOLD);
-        sprintf(monstring, "PRESS x TO STOP MONITOR");
-        print_header(monstring, '-');
-        attroff(A_BOLD);
+
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
@@ -285,6 +282,9 @@ int_fast8_t streamCTRL_CTRLscreen()
         case KEY_F(5): // read PIDs
             fuserUpdate = 1;
             DisplayMode = 5;
+            erase();
+            printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
+            refresh();
             break;
 
 
@@ -295,6 +295,11 @@ int_fast8_t streamCTRL_CTRLscreen()
         }
 
         erase();
+
+        attron(A_BOLD);
+        sprintf(monstring, "PRESS x TO STOP MONITOR");
+        print_header(monstring, '-');
+        attroff(A_BOLD);
 
 
         if(DisplayMode == 1) // help
@@ -583,8 +588,6 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 FILE *fp;
                                 char fuseroutline[1035];
                                 char command[2000];
-
-								printw("SCANNING PROCESSES ...\n");
 
 
                                 /* Open the command for reading. */
