@@ -612,12 +612,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     pch = strtok (NULL, " ");
                                 }
                                 streamOpenPIDarray_cnt[sindex] = NBpid;
-
-
-                                fuserUpdate = 0;
                             }
 
-                            printw("  OPENED BY: ");
+                            printw(" OPENED BY procs: ");
                             int pidIndex;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[sindex] ; pidIndex++)
                             {
@@ -639,6 +636,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                     }
                 }
                 closedir(d);
+                
+                fuserUpdate = 0;
             }
             NBsindex = sindex;
         }
