@@ -543,8 +543,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     else
                                         printw("%7d", pid);
                                 }
-                                printw(" ]");
+                                printw(" ");
                             }
+                            printw("]");
                         }
                         if(DisplayMode == 4) // sem read PIDs
                         {
@@ -570,8 +571,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     else
                                         printw("%7d", pid);
                                 }
-                                printw(" ]");
+                                printw(" ");
                             }
+                            printw("]");
                         }
 
                         if(DisplayMode == 5) // open by processes...
