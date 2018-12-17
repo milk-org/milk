@@ -825,6 +825,7 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
 
 int processinfo_CatchSignals()
 {
+#ifndef STANDALONE
     if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGTERM\n");
 
@@ -845,6 +846,7 @@ int processinfo_CatchSignals()
 
     if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGPIPE\n");
+#endif
 
     return 0;
 }
@@ -856,6 +858,7 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
     int loopOK = 1;
     // process signals
 
+#ifndef STANDALONE
     if(data.signal_TERM == 1) {
         loopOK = 0;
         if(data.processinfo==1)
@@ -897,6 +900,7 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
         if(data.processinfo==1)
             processinfo_SIGexit(processinfo, SIGPIPE);
     }
+#endif
 
     return loopOK;
 }
