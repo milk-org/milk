@@ -177,6 +177,37 @@ static const char* get_process_name_by_pid(const int pid)
 
 
 
+int streamCTRL_CatchSignals()
+{
+
+    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
+
+    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");
+
+    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");
+
+    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+
+    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");
+
+    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");
+
+    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");
+
+    return 0;
+}
+
+
+
+
+
 
 
 
@@ -205,7 +236,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     setlocale(LC_ALL, "");
 
-	
+
+	streamCTRL_CatchSignals();
 
     // INITIALIZE ncurses
     initncurses();
@@ -679,6 +711,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         cnt++;
 
+		if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
+			loopOK = 0;
     }
 
     endwin();
