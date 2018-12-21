@@ -531,8 +531,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 			// alphabetical sorting
 			double *namedoublearray;
 			long *larray;
+			int *cindexarray;//TEST
 			namedoublearray = (double*) malloc(sizeof(double)*NBsindex);
 			larray = (long*) malloc(sizeof(long)*NBsindex);
+			cindexarray = (int*) malloc(sizeof(int)*NBsindex);
 			for(sindex=0; sindex<NBsindex; sindex++)
 			{
 				larray[sindex] = sindex;
@@ -549,13 +551,14 @@ int_fast8_t streamCTRL_CTRLscreen()
 					cindex++;
 					coeff /= 256.0;
 				}
+				cindexarray[sindex] = cindex;
 			}
 			quick_sort2l(namedoublearray, larray, NBsindex);
 			 endwin();//TEST
 			for(dindex=0;dindex<NBsindex;dindex++)
 			{
 				ssindex[dindex] = larray[dindex];
-				printf("%5ld  %20f  %s\n", dindex, namedoublearray[dindex], sname_array[ssindex[dindex]]);
+				printf("%5ld  %30.20f  %3d  %s\n", dindex, namedoublearray[dindex], cindexarray[ssindex[dindex]], sname_array[ssindex[dindex]]);
 			}
 			
 			free(larray);
