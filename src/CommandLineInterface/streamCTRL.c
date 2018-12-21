@@ -548,15 +548,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 				}
 			}
 
-			 endwin();//TEST
 			for(dindex=0;dindex<NBsindex;dindex++)
-			{
 				ssindex[dindex] = larray[dindex];
-				printf("%5ld  %s\n", dindex, sname_array[ssindex[dindex]]);
-			}
-			
 			free(larray);
-exit(0);//TEST
+
 
 
             
