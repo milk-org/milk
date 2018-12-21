@@ -522,12 +522,38 @@ int_fast8_t streamCTRL_CTRLscreen()
 			
 			
 			// SORT
+			// default : no sorting
 			for(dindex=0; dindex<NBsindex; dindex++)
 			{
 				ssindex[dindex] = dindex;
 			}
 			
+			// alphabetical sorting
+			double *namedoublearray;
+			long *larray;
+			namedoublearray = (double*) malloc(sizeof(double)*NBsindex);
+			larray = (long*) malloc(sizeof(long)*NBsindex);
+			for(sindex=0; sindex<NBsindex; sindex++)
+			{
+				larray[sindex] = sindex;
+				
+				namedoublearray[sindex] = 0.0;
+				int cindex = 0; // character index
+				char c;
+				
+				while( (c = sname_array[sindex][cindex]) != '\0')
+				{
+					namedoublearray[sindex] += 1.0*((int) c)/(256.0*cindex);
+					cindex++;
+				}
+			}
+			quick_sort2l(namedoublearray, larray, NBsindex);
 			
+			for(dindex=0;dindex<NBsindex;dindex++)
+				ssindex[dindex] = larray[dindex];
+				
+			free(larray);
+			free(namedoublearray);
 
 
 
