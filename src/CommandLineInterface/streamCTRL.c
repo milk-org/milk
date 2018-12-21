@@ -330,7 +330,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
             
         case KEY_PPAGE:
-            dindexSelected =- 10;
+            dindexSelected -= 10;
             if(dindexSelected<0)
                 dindexSelected = 0;
             break;
