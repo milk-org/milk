@@ -553,7 +553,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 			for(dindex=0;dindex<NBsindex;dindex++)
 			{
 				ssindex[dindex] = larray[dindex];
-				printf("%5ld  %20f  %s\n", dindex, namedoublearray[dindex], sname_array[dindex]);
+				printf("%5ld  %20f  %s\n", dindex, namedoublearray[dindex], sname_array[ssindex[dindex]]);
 			}
 			
 			free(larray);
