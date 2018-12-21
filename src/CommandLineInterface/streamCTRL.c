@@ -559,7 +559,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                         else
                         {
-                            float gainv = 0.99;
+                            float gainv = 0.9;
                             deltacnt0[ID] = data.image[ID].md[0].cnt0 - cnt0array[ID];
                             updatevaluearray[ID] = gainv * updatevaluearray[ID] + (1.0-gainv) * (1.0*deltacnt0[ID]/tdiffv);
                         }
