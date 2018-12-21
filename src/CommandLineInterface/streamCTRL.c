@@ -899,14 +899,19 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                     }
 
-
                     printw("\n");
 
                     if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
+					
+
                     if(fuserUpdate==1)
+                    {
                         refresh();
+						if(data.signal_TERM == 1)
+							fuserUpdate = 0;
+					}
 
                     if(dindex>NBsinfodisp-1)
                         sOK = 0;
