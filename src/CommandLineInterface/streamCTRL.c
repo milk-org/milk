@@ -541,7 +541,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                         else
                         {
-                            float gainv = 0.9;
+                            float gainv = 0.99;
                             deltacnt0[ID] = data.image[ID].md[0].cnt0 - cnt0array[ID];
                             updatevaluearray[ID] = gainv * updatevaluearray[ID] + (1.0-gainv) * (deltacnt0[ID]);
                         }
@@ -601,7 +601,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 for(sindex=0; sindex<NBsindex; sindex++)
                 {
                     larray[sindex] = sindex;
-                    varray[sindex] = updatevaluearray[sindex];
+                    varray[sindex] = updatevaluearray[IDarray[sindex]];
                 }
 
                 quick_sort2l(varray, larray, NBsindex);
