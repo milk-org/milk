@@ -880,13 +880,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                             while (pch != NULL) {
                                 if(NBpid<streamOpenNBpid_MAX) {
-                                    streamOpenPIDarray[PID][NBpid] = atoi(pch);
+                                    streamOpenPIDarray[ID][NBpid] = atoi(pch);
                                     if(getpgid(pid) >= 0)
                                         NBpid++;
                                 }
                                 pch = strtok (NULL, " ");
                             }
-                            streamOpenPIDarray_cnt[PID] = NBpid;
+                            streamOpenPIDarray_cnt[ID] = NBpid;
                         }
                         
                         if(fuserUpdate == 2)
@@ -897,9 +897,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 						{
                         printw(" OPENED BY procs: ");
                         int pidIndex;
-                        for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[PID] ; pidIndex++)
+                        for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                         {
-                            pid_t pid = streamOpenPIDarray[PID][pidIndex];
+                            pid_t pid = streamOpenPIDarray[ID][pidIndex];
                             if( (getpgid(pid) >= 0) && (pid != getpid()) )
                                 printw(" %s(%d)", get_process_name_by_pid(pid), (int) pid);
                         }
