@@ -524,7 +524,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             else
                             {
                                 attron(COLOR_PAIR(2));
-                                printw(" %8ld", data.image[ID].md[0].cnt0);
+                                printw(" %10ld", data.image[ID].md[0].cnt0);
                                 attroff(COLOR_PAIR(2));
                             }
                             cnt0array[ID] = data.image[ID].md[0].cnt0;

@@ -1798,6 +1798,8 @@ int_fast8_t processinfo_CTRLscreen()
     int ToggleValue;
 
 
+	processinfo_CatchSignals();
+
     setlocale(LC_ALL, "");
 
 
@@ -3415,6 +3417,11 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         }
+
+
+
+	    if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
+			loopOK = 0;
 
     }
     endwin();
