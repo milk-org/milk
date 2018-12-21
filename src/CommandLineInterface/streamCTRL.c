@@ -152,21 +152,23 @@ static int initncurses()
 
 static const char* get_process_name_by_pid(const int pid)
 {
-    char* name = (char*)calloc(1024,sizeof(char));
+    char* fname = (char*)calloc(1024,sizeof(char));
+    char* pname = (char*)calloc(1024,sizeof(char));
+    
     if(name) {
-        sprintf(name, "/proc/%d/cmdline",pid);
-        FILE* f = fopen(name,"r");
+        sprintf(fname, "/proc/%d/cmdline",pid);
+        FILE* f = fopen(fname,"r");
         if(f) {
             size_t size;
-            size = fread(name, sizeof(char), 1024, f);
+            size = fread(pname, sizeof(char), 1024, f);
             if(size>0) {
-                if('\n'==name[size-1])
-                    name[size-1]='\0';
+                if('\n'==pname[size-1])
+                    pname[size-1]='\0';
             }
             fclose(f);
         }
     }
-    return name;
+    return pname;
 }
 
 
@@ -849,14 +851,13 @@ int_fast8_t streamCTRL_CTRLscreen()
                         printw("]");
                     }
 
-                    if(DisplayMode == 5) // open by processes...
+                    if(DisplayMode == 5) // list processes that are accessing streams
                     {
                         if(fuserUpdate==1)
                         {
                             FILE *fp;
                             char fuseroutline[1035];
                             char command[2000];
-
 
                             /* Open the command for reading. */
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
