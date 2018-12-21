@@ -252,8 +252,11 @@ int_fast8_t streamCTRL_CTRLscreen()
     // data arrays
     char sname_array[streamNBID_MAX][200];
     long IDarray[streamNBID_MAX];
+
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
+	int streamOpenPIDarray_status[streamNBID_MAX];
+
     int atype_array[streamNBID_MAX];
     long long cnt0_array[streamNBID_MAX];
 
@@ -858,14 +861,17 @@ int_fast8_t streamCTRL_CTRLscreen()
                             char fuseroutline[1035];
                             char command[2000];
 
+							int NBpid = 0;
+                            
+                            
                             /* Open the command for reading. */
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
                             if (fp == NULL) {
-								endwin();
-                                printf("Failed to run command : \"%s\"\n", command);
-                                exit(1);
+                                streamOpenPIDarray_status[ID] = 2; // failed
                             }
+                            else
+                            {                           
                             /* Read the output a line at a time - output it. */
                             if (fgets(fuseroutline, sizeof(fuseroutline)-1, fp) != NULL) {
                                 //printw("  OPEN BY: %-30s", fuseroutline);
@@ -874,7 +880,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
                             char * pch;
-                            int NBpid = 0;
 
                             pch = strtok (fuseroutline," ");
 
@@ -886,25 +891,44 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 pch = strtok (NULL, " ");
                             }
+                            streamOpenPIDarray_status[ID] = 1; // success 
+							}
+                            
                             streamOpenPIDarray_cnt[ID] = NBpid;
                         }
                         
                         if(fuserUpdate == 2)
                         {
-							printw(" --- NOT SCANNED ---");
+							streamOpenPIDarray_status[ID] = 0; // not scanned						
 						}
-						else
-						{
-                        printw(" OPENED BY procs: ");
+					
+					
+					
+                        printw(" ");
                         int pidIndex;
+                        
+                        switch (streamOpenPIDarray_status[ID]) {
+						
+						case 0:
                         for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                         {
                             pid_t pid = streamOpenPIDarray[ID][pidIndex];
                             if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                                printw(" %s(%d)", get_process_name_by_pid(pid), (int) pid);
+                                printw(" %8s(%d)", get_process_name_by_pid(pid), (int) pid);
                         }
+                        break;
+                        
+                        case 1:
+                        printw("NOT SCANNED");
+                        break;
+                        
+                        case 2:
+                        printw("FAILED");
+                        break;
 					}
-                    }
+					
+					}
+                    
 
                     printw("\n");
 
