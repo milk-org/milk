@@ -241,6 +241,13 @@ int_fast8_t streamCTRL_CTRLscreen()
     int SORTING = 0;
 	int SORT_TOGGLE = 0;
 
+	// timing
+	struct timespec t0;
+    struct timespec t1;
+    double tdiffv;
+    struct timespec tdiff;
+
+
     // data arrays
     char sname_array[streamNBID_MAX][200];
     long IDarray[streamNBID_MAX];
@@ -249,7 +256,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     int atype_array[streamNBID_MAX];
     long long cnt0_array[streamNBID_MAX];
 
-    double updatevaluearray[streamNBID_MAX]; // higher value = more actively recent updates
+    double updatevaluearray[streamNBID_MAX]; // higher value = more actively recent updates [Hz]
 	double updatevaluearray_frozen[streamNBID_MAX];
 
     long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
@@ -282,7 +289,9 @@ int_fast8_t streamCTRL_CTRLscreen()
     int fuserScan = 0;
 
     clear();
-
+	clock_gettime(CLOCK_REALTIME, &t0);
+    
+    
     while( loopOK == 1 )
     {
         int pid;
@@ -293,7 +302,12 @@ int_fast8_t streamCTRL_CTRLscreen()
         int ch = getch();
 
 
-
+		// timing measurement
+		clock_gettime(CLOCK_REALTIME, &t1);
+        tdiff = info_time_diff(t0, t1);
+        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+		clock_gettime(CLOCK_REALTIME, &t0);
+		
 
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -547,7 +561,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         {
                             float gainv = 0.99;
                             deltacnt0[ID] = data.image[ID].md[0].cnt0 - cnt0array[ID];
-                            updatevaluearray[ID] = gainv * updatevaluearray[ID] + (1.0-gainv) * (deltacnt0[ID]);
+                            updatevaluearray[ID] = gainv * updatevaluearray[ID] + (1.0-gainv) * (1.0*deltacnt0[ID]/tdiffv);
                         }
                         cnt0array[ID] = data.image[ID].md[0].cnt0; // keep memory of cnt0
 
@@ -719,6 +733,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             printw(" %10ld", data.image[ID].md[0].cnt0);
                             attroff(COLOR_PAIR(2));
                         }
+                        
+                        printw("  %7.2f Hz", updatevaluearray[ID]);
                     }
 
 
