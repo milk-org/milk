@@ -538,16 +538,16 @@ int_fast8_t streamCTRL_CTRLscreen()
 				larray[sindex] = sindex;
 				
 				namedoublearray[sindex] = 0.0;
-				int cindex = 1; // character index
+				int cindex = 0; // character index
 				char c;
 				
 				while( (c = sname_array[sindex][cindex]) != '\0')
 				{
-					namedoublearray[sindex] += 1.0*((int) c)/(256.0*cindex);
+					namedoublearray[sindex] += 1.0*((int) (c+1))/(256.0*cindex);
 					cindex++;
 				}
 			}
-			quick_sort2l(namedoublearray, larray, NBsindex);
+		//	quick_sort2l(namedoublearray, larray, NBsindex);
 			 endwin();//TEST
 			for(dindex=0;dindex<NBsindex;dindex++)
 			{
