@@ -888,7 +888,13 @@ int_fast8_t streamCTRL_CTRLscreen()
                             }
                             streamOpenPIDarray_cnt[sindex] = NBpid;
                         }
-
+                        
+                        if(fuserUpdate == 2)
+                        {
+							printw(" --- NOT SCANNED ---");
+						}
+						else
+						{
                         printw(" OPENED BY procs: ");
                         int pidIndex;
                         for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[sindex] ; pidIndex++)
@@ -897,16 +903,25 @@ int_fast8_t streamCTRL_CTRLscreen()
                             if( (getpgid(pid) >= 0) && (pid != getpid()) )
                                 printw(" %s(%d)", get_process_name_by_pid(pid), (int) pid);
                         }
+					}
                     }
-
 
                     printw("\n");
 
                     if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
+					
+
                     if(fuserUpdate==1)
+                    {
                         refresh();
+						if(data.signal_INT == 1) // stop scan 
+						{							
+							fuserUpdate = 2;     // complete loop without scan
+							data.signal_INT = 0; // reset
+						}
+					}
 
                     if(dindex>NBsinfodisp-1)
                         sOK = 0;
