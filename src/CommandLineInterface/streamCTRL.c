@@ -550,11 +550,14 @@ int_fast8_t streamCTRL_CTRLscreen()
 			quick_sort2l(namedoublearray, larray, NBsindex);
 			
 			for(dindex=0;dindex<NBsindex;dindex++)
+			{
 				ssindex[dindex] = larray[dindex];
-				
+				printf("%5ld  %20f  %s\n", dindex, namedoublearray[dindex], sname_array[dindex]);
+			}
+			
 			free(larray);
 			free(namedoublearray);
-
+exit(0);//TEST
 
 
             
