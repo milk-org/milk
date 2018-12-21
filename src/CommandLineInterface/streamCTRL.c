@@ -862,7 +862,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
                             if (fp == NULL) {
-                                printf("Failed to run command\n" );
+								endwin();
+                                printf("Failed to run command : \"%s\"\n", command);
                                 exit(1);
                             }
                             /* Read the output a line at a time - output it. */
