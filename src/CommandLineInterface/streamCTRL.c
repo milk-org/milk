@@ -563,6 +563,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 			
 			free(larray);
 			free(namedoublearray);
+			free(cindexarray);
 exit(0);//TEST
 
 
