@@ -152,20 +152,22 @@ static int initncurses()
 
 static const char* get_process_name_by_pid(const int pid)
 {
-    char* fname = (char*)calloc(1024,sizeof(char));
-    char* pname = (char*)calloc(1024,sizeof(char));
+    char* fname = (char*) calloc(1024, sizeof(char));
+    char* pname = (char*) calloc(1024, sizeof(char));
 
     sprintf(fname, "/proc/%d/cmdline",pid);
-    FILE* f = fopen(fname,"r");
-    if(f) {
+    FILE* fp = fopen(fname,"r");
+    if(fp) {
         size_t size;
         size = fread(pname, sizeof(char), 1024, f);
         if(size>0) {
             if('\n'==pname[size-1])
                 pname[size-1]='\0';
         }
-        fclose(f);
+        fclose(fp);
     }
+    else
+		fclose(fp);
 
     return pname;
 }
@@ -240,10 +242,10 @@ int_fast8_t streamCTRL_CTRLscreen()
     int sOK;
 
     int SORTING = 0;
-	int SORT_TOGGLE = 0;
+    int SORT_TOGGLE = 0;
 
-	// timing
-	struct timespec t0;
+    // timing
+    struct timespec t0;
     struct timespec t1;
     double tdiffv;
     struct timespec tdiff;
@@ -255,13 +257,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
-	int streamOpenPIDarray_status[streamNBID_MAX];
+    int streamOpenPIDarray_status[streamNBID_MAX];
 
     int atype_array[streamNBID_MAX];
     long long cnt0_array[streamNBID_MAX];
 
     double updatevaluearray[streamNBID_MAX]; // higher value = more actively recent updates [Hz]
-	double updatevaluearray_frozen[streamNBID_MAX];
+    double updatevaluearray_frozen[streamNBID_MAX];
 
     long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
     long deltacnt0[streamNBID_MAX];
@@ -293,9 +295,9 @@ int_fast8_t streamCTRL_CTRLscreen()
     int fuserScan = 0;
 
     clear();
-	clock_gettime(CLOCK_REALTIME, &t0);
-    
-    
+    clock_gettime(CLOCK_REALTIME, &t0);
+
+
     while( loopOK == 1 )
     {
         int pid;
@@ -306,12 +308,12 @@ int_fast8_t streamCTRL_CTRLscreen()
         int ch = getch();
 
 
-		// timing measurement
-		clock_gettime(CLOCK_REALTIME, &t1);
+        // timing measurement
+        clock_gettime(CLOCK_REALTIME, &t1);
         tdiff = info_time_diff(t0, t1);
         tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-		clock_gettime(CLOCK_REALTIME, &t0);
-		
+        clock_gettime(CLOCK_REALTIME, &t0);
+
 
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -332,7 +334,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             if(dindexSelected > NBsindex-1)
                 dindexSelected = NBsindex-1;
             break;
-            
+
         case KEY_PPAGE:
             dindexSelected -= 10;
             if(dindexSelected<0)
@@ -344,7 +346,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             if(dindexSelected > NBsindex-1)
                 dindexSelected = NBsindex-1;
             break;
-            
+
 
         // Set Display Mode
 
@@ -389,26 +391,26 @@ int_fast8_t streamCTRL_CTRLscreen()
             SORTING = 1;
             break;
 
-        case '2': // sorting by update freq 
+        case '2': // sorting by update freq
             SORTING = 2;
             SORT_TOGGLE = 1;
             break;
-            
-            
+
+
         case '+': // faster update
             frequ *= 2.0;
             if(frequ < 1.0)
-				frequ = 1.0;
-			if(frequ > 64.0)
-				frequ = 64.0;
+                frequ = 1.0;
+            if(frequ > 64.0)
+                frequ = 64.0;
             break;
 
         case '-': // slower update
             frequ *= 0.5;
             if(frequ < 1.0)
-				frequ = 1.0;
-			if(frequ > 64.0)
-				frequ = 64.0;
+                frequ = 1.0;
+            if(frequ > 64.0)
+                frequ = 64.0;
             break;
 
         }
@@ -469,16 +471,16 @@ int_fast8_t streamCTRL_CTRLscreen()
 
             printw("\n");
             printw("============ DISPLAY \n");
-            
+
             attron(attrval);
             printw("    +");
             attroff(attrval);
-            printw("    Increase update frequency\n");            
+            printw("    Increase update frequency\n");
 
             attron(attrval);
             printw("    -");
             attroff(attrval);
-            printw("    Decrease update frequency\n");    
+            printw("    Decrease update frequency\n");
 
             attron(attrval);
             printw("    1");
@@ -549,7 +551,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-			printw("Update frequ = %d Hz\n", (int) (frequ+0.5));
+            printw("Update frequ = %d Hz\n", (int) (frequ+0.5));
             if(DisplayMode==5)
             {
                 if(fuserScan==1)
@@ -661,14 +663,14 @@ int_fast8_t streamCTRL_CTRLscreen()
                 double *varray;
                 larray = (long*) malloc(sizeof(long)*NBsindex);
                 varray = (double*) malloc(sizeof(double)*NBsindex);
-                
+
                 if(SORT_TOGGLE == 1)
                 {
-					for(sindex=0; sindex<NBsindex; sindex++)
-						updatevaluearray_frozen[IDarray[sindex]] = updatevaluearray[IDarray[sindex]];
-					SORT_TOGGLE = 0;
-				}
-                
+                    for(sindex=0; sindex<NBsindex; sindex++)
+                        updatevaluearray_frozen[IDarray[sindex]] = updatevaluearray[IDarray[sindex]];
+                    SORT_TOGGLE = 0;
+                }
+
                 for(sindex=0; sindex<NBsindex; sindex++)
                 {
                     larray[sindex] = sindex;
@@ -778,7 +780,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             printw(" %10ld", data.image[ID].md[0].cnt0);
                             attroff(COLOR_PAIR(2));
                         }
-                        
+
                         printw("  %7.2f Hz", updatevaluearray[ID]);
                     }
 
@@ -861,9 +863,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                             char fuseroutline[1035];
                             char command[2000];
 
-							int NBpid = 0;
-                            
-                            
+                            int NBpid = 0;
+
+
                             /* Open the command for reading. */
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
@@ -871,82 +873,82 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 streamOpenPIDarray_status[ID] = 2; // failed
                             }
                             else
-                            {                           
-                            /* Read the output a line at a time - output it. */
-                            if (fgets(fuseroutline, sizeof(fuseroutline)-1, fp) != NULL) {
-                                //printw("  OPEN BY: %-30s", fuseroutline);
-                            }
-                            pclose(fp);
-
-
-                            char * pch;
-
-                            pch = strtok (fuseroutline," ");
-
-                            while (pch != NULL) {
-                                if(NBpid<streamOpenNBpid_MAX) {
-                                    streamOpenPIDarray[ID][NBpid] = atoi(pch);
-                                    if(getpgid(pid) >= 0)
-                                        NBpid++;
+                            {
+                                /* Read the output a line at a time - output it. */
+                                if (fgets(fuseroutline, sizeof(fuseroutline)-1, fp) != NULL) {
+                                    //printw("  OPEN BY: %-30s", fuseroutline);
                                 }
-                                pch = strtok (NULL, " ");
+                                pclose(fp);
+
+
+                                char * pch;
+
+                                pch = strtok (fuseroutline," ");
+
+                                while (pch != NULL) {
+                                    if(NBpid<streamOpenNBpid_MAX) {
+                                        streamOpenPIDarray[ID][NBpid] = atoi(pch);
+                                        if(getpgid(pid) >= 0)
+                                            NBpid++;
+                                    }
+                                    pch = strtok (NULL, " ");
+                                }
+                                streamOpenPIDarray_status[ID] = 1; // success
                             }
-                            streamOpenPIDarray_status[ID] = 1; // success 
-							}
-                            
+
                             streamOpenPIDarray_cnt[ID] = NBpid;
                         }
-                        
+
                         if(fuserUpdate == 2)
                         {
-							streamOpenPIDarray_status[ID] = 0; // not scanned						
-						}
-					
-					
-					
+                            streamOpenPIDarray_status[ID] = 0; // not scanned
+                        }
+
+
+
                         printw(" ");
                         int pidIndex;
-                        
+
                         switch (streamOpenPIDarray_status[ID]) {
-						
-						case 1:
-                        for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
-                        {
-                            pid_t pid = streamOpenPIDarray[ID][pidIndex];
-                            if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                                printw(" %8s(%d)", get_process_name_by_pid(pid), (int) pid);
-                        }
-                        break;
-                        
+
+                        case 1:
+                            for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
+                            {
+                                pid_t pid = streamOpenPIDarray[ID][pidIndex];
+                                if( (getpgid(pid) >= 0) && (pid != getpid()) )
+                                    printw(" (%5d)%8s", (int) pid, get_process_name_by_pid(pid));
+                            }
+                            break;
+
                         case 2:
-                        printw("FAILED");
-                        break;
+                            printw("FAILED");
+                            break;
 
                         default:
-                        printw("NOT SCANNED");
-                        break;
-                        
-					}
-					
-					}
-                    
+                            printw("NOT SCANNED");
+                            break;
+
+                        }
+
+                    }
+
 
                     printw("\n");
 
                     if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
-					
+
 
                     if(fuserUpdate==1)
                     {
                         refresh();
-						if(data.signal_INT == 1) // stop scan 
-						{							
-							fuserUpdate = 2;     // complete loop without scan
-							data.signal_INT = 0; // reset
-						}
-					}
+                        if(data.signal_INT == 1) // stop scan
+                        {
+                            fuserUpdate = 2;     // complete loop without scan
+                            data.signal_INT = 0; // reset
+                        }
+                    }
 
                     if(dindex>NBsinfodisp-1)
                         sOK = 0;
