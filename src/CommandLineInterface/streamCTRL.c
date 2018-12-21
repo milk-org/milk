@@ -239,6 +239,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     int sOK;
 
     int SORTING = 0;
+	int SORT_TOGGLE = 0;
 
     // data arrays
     char sname_array[streamNBID_MAX][200];
@@ -249,6 +250,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     long long cnt0_array[streamNBID_MAX];
 
     double updatevaluearray[streamNBID_MAX]; // higher value = more actively recent updates
+	double updatevaluearray_frozen[streamNBID_MAX];
 
     long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
     long deltacnt0[streamNBID_MAX];
@@ -359,6 +361,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         case '2': // sorting
             SORTING = 2;
+            SORT_TOGGLE = 1;
             break;
 
         }
@@ -538,6 +541,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             ID = read_sharedmem_image(sname_array[sindex]);
                             deltacnt0[ID] = 1;
                             updatevaluearray[ID] = 1.0;
+                            updatevaluearray_frozen[ID] = 1.0;
                         }
                         else
                         {
@@ -598,10 +602,18 @@ int_fast8_t streamCTRL_CTRLscreen()
                 double *varray;
                 larray = (long*) malloc(sizeof(long)*NBsindex);
                 varray = (double*) malloc(sizeof(double)*NBsindex);
+                
+                if(SORT_TOGGLE == 1)
+                {
+					for(sindex=0; sindex<NBsindex; sindex++)
+						updatevaluearray_frozen[IDarray[sindex]] = updatevaluearray[IDarray[sindex]];
+					SORT_TOGGLE = 0;
+				}
+                
                 for(sindex=0; sindex<NBsindex; sindex++)
                 {
                     larray[sindex] = sindex;
-                    varray[sindex] = updatevaluearray[IDarray[sindex]];
+                    varray[sindex] = updatevaluearray_frozen[IDarray[sindex]];
                 }
 
                 quick_sort2l(varray, larray, NBsindex);
