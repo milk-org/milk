@@ -645,7 +645,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         attron(A_REVERSE);
 
 
-                    printw("%03ld %4ld  %-36s ", sindex, IDarray[sindex], sname_array[sindex]);
+                    printw("%-36s ", sname_array[sindex]);
 
 
 
