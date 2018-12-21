@@ -909,7 +909,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         
                         switch (streamOpenPIDarray_status[ID]) {
 						
-						case 0:
+						case 1:
                         for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                         {
                             pid_t pid = streamOpenPIDarray[ID][pidIndex];
@@ -918,13 +918,14 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                         break;
                         
-                        case 1:
-                        printw("NOT SCANNED");
-                        break;
-                        
                         case 2:
                         printw("FAILED");
                         break;
+
+                        default:
+                        printw("NOT SCANNED");
+                        break;
+                        
 					}
 					
 					}
