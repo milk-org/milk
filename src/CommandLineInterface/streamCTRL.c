@@ -166,8 +166,7 @@ static const char* get_process_name_by_pid(const int pid)
         }
         fclose(fp);
     }
-    else
-		fclose(fp);
+
 
     return pname;
 }
