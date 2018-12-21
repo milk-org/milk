@@ -607,7 +607,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 quick_sort2l(varray, larray, NBsindex);
 
                 for(dindex=0; dindex<NBsindex; dindex++)
-                    ssindex[dindex] = larray[dindex];
+                    ssindex[NBsindex-dindex-1] = larray[dindex];
 
                 free(larray);
                 free(varray);
