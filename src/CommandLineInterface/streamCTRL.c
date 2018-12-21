@@ -154,20 +154,19 @@ static const char* get_process_name_by_pid(const int pid)
 {
     char* fname = (char*)calloc(1024,sizeof(char));
     char* pname = (char*)calloc(1024,sizeof(char));
-    
-    if(name) {
-        sprintf(fname, "/proc/%d/cmdline",pid);
-        FILE* f = fopen(fname,"r");
-        if(f) {
-            size_t size;
-            size = fread(pname, sizeof(char), 1024, f);
-            if(size>0) {
-                if('\n'==pname[size-1])
-                    pname[size-1]='\0';
-            }
-            fclose(f);
+
+    sprintf(fname, "/proc/%d/cmdline",pid);
+    FILE* f = fopen(fname,"r");
+    if(f) {
+        size_t size;
+        size = fread(pname, sizeof(char), 1024, f);
+        if(size>0) {
+            if('\n'==pname[size-1])
+                pname[size-1]='\0';
         }
+        fclose(f);
     }
+
     return pname;
 }
 
