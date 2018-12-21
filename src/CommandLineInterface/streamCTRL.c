@@ -238,6 +238,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     int sOK;
 
+    int SORTING = 0;
 
     // data arrays
     char sname_array[streamNBID_MAX][200];
@@ -247,9 +248,10 @@ int_fast8_t streamCTRL_CTRLscreen()
     int atype_array[streamNBID_MAX];
     long long cnt0_array[streamNBID_MAX];
 
+    double updatevaluearray[streamNBID_MAX]; // higher value = more actively recent updates
 
     long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
-
+    long deltacnt0[streamNBID_MAX];
 
     setlocale(LC_ALL, "");
 
@@ -350,6 +352,15 @@ int_fast8_t streamCTRL_CTRLscreen()
             ImageStreamIO_destroyIm( &data.image[IDarray[dindexSelected]]);
             break;
 
+
+        case '1': // sorting
+            SORTING = 1;
+            break;
+
+        case '2': // sorting
+            SORTING = 2;
+            break;
+
         }
 
         erase();
@@ -398,10 +409,26 @@ int_fast8_t streamCTRL_CTRLscreen()
             attroff(attrval);
             printw("   stream open by processes ...\n");
 
+            printw("\n");
+            printw("============ ACTIONS \n");
+
             attron(attrval);
-            printw("SPACE");
+            printw("R");
             attroff(attrval);
-            printw("    Select this stream\n");
+            printw("    Remove stream\n");
+
+            printw("\n");
+            printw("============ SORTING \n");
+
+            attron(attrval);
+            printw("1");
+            attroff(attrval);
+            printw("    Stream name (alphabetical)\n");
+
+            attron(attrval);
+            printw("2");
+            attroff(attrval);
+            printw("    Recently updated\n");
 
 
 
@@ -507,7 +534,19 @@ int_fast8_t streamCTRL_CTRLscreen()
                         // connect to stream
                         ID = image_ID(sname_array[sindex]);
                         if(ID == -1)
+                        {
                             ID = read_sharedmem_image(sname_array[sindex]);
+                            deltacnt0[ID] = 1;
+                            updatevaluearray[ID] = 1.0;
+                        }
+                        else
+                        {
+                            float gainv = 0.9;
+                            deltacnt0[ID] = data.image[ID].md[0].cnt0 - cnt0array[ID];
+                            updatevaluearray[ID] = gainv * updatevaluearray[ID] + (1.0-gainv) * (deltacnt0[ID]);
+                        }
+                        cnt0array[ID] = data.image[ID].md[0].cnt0; // keep memory of cnt0
+
                         IDarray[sindex] = ID;
 
                         atype_array[sindex] = data.image[ID].md[0].atype;
@@ -519,59 +558,87 @@ int_fast8_t streamCTRL_CTRLscreen()
                 NBsindex = sindex;
             }
 
-			
-			
-			// SORT
-			// default : no sorting
-			for(dindex=0; dindex<NBsindex; dindex++)
-			{
-				ssindex[dindex] = dindex;
-			}
-			
-			// alphabetical sorting
-			long *larray;
-			larray = (long*) malloc(sizeof(long)*NBsindex);
-			for(sindex=0;sindex<NBsindex;sindex++)
-				larray[sindex] = sindex;
-
-			int sindex0, sindex1;
-			for(sindex0=0; sindex0<NBsindex-1; sindex0++)
-			{
-				for(sindex1=sindex0+1; sindex1<NBsindex; sindex1++)
-				{
-					if( strcmp(sname_array[larray[sindex0]], sname_array[larray[sindex1]]) > 0)
-					{
-						int tmpindex = larray[sindex0];
-						larray[sindex0] = larray[sindex1];
-						larray[sindex1] = tmpindex;
-					}
-				}
-			}
-
-			for(dindex=0;dindex<NBsindex;dindex++)
-				ssindex[dindex] = larray[dindex];
-			free(larray);
 
 
+            // SORT
+            // default : no sorting
+            for(dindex=0; dindex<NBsindex; dindex++)
+                ssindex[dindex] = dindex;
 
-            
+            if(SORTING == 1) // alphabetical sorting
+            {
+                long *larray;
+                larray = (long*) malloc(sizeof(long)*NBsindex);
+                for(sindex=0; sindex<NBsindex; sindex++)
+                    larray[sindex] = sindex;
+
+                int sindex0, sindex1;
+                for(sindex0=0; sindex0<NBsindex-1; sindex0++)
+                {
+                    for(sindex1=sindex0+1; sindex1<NBsindex; sindex1++)
+                    {
+                        if( strcmp(sname_array[larray[sindex0]], sname_array[larray[sindex1]]) > 0)
+                        {
+                            int tmpindex = larray[sindex0];
+                            larray[sindex0] = larray[sindex1];
+                            larray[sindex1] = tmpindex;
+                        }
+                    }
+                }
+
+                for(dindex=0; dindex<NBsindex; dindex++)
+                    ssindex[dindex] = larray[dindex];
+                free(larray);
+            }
+
+
+            if(SORTING == 2) // recent update
+            {
+                long *larray;
+                double *varray;
+                larray = (long*) malloc(sizeof(long)*NBsindex);
+                varray = (double*) malloc(sizeof(double)*NBsindex);
+                for(sindex=0; sindex<NBsindex; sindex++)
+                {
+                    larray[sindex] = sindex;
+                    varray[sindex] = updatevaluearray[sindex];
+                }
+
+                quick_sort2l(varray, larray, NBsindex);
+
+                for(dindex=0; dindex<NBsindex; dindex++)
+                    ssindex[dindex] = larray[dindex];
+
+                free(larray);
+                free(varray);
+            }
+
+
+
+
+
             // DISPLAY
-            
+
             sOK = 1;
             for(dindex=0; dindex < NBsindex; dindex++)
+            {
+                long ID;
+                sindex = ssindex[dindex];
+                ID = IDarray[sindex];
+
+
                 if(sOK == 1)
                 {
-                    long ID;
-                    
-                    sindex = ssindex[dindex];
-
-                    ID = IDarray[sindex];
-
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
 
 
                     printw("%03ld %4ld  %-36s ", sindex, IDarray[sindex], sname_array[sindex]);
+
+
+
+
+
 
 
                     if(DisplayMode < 5)
@@ -627,9 +694,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                        cnt0_array[sindex] = data.image[ID].md[0].cnt0;
+                        //                        cnt0_array[sindex] = data.image[ID].md[0].cnt0;
                         // counter and semaphores
-                        if(data.image[ID].md[0].cnt0 == cnt0array[ID]) // has not changed
+                        //                        if(data.image[ID].md[0].cnt0 == cnt0array[ID]) // has not changed
+                        if(deltacnt0[ID] == 0)
                         {
                             printw(" %10ld", data.image[ID].md[0].cnt0);
                         }
@@ -639,8 +707,6 @@ int_fast8_t streamCTRL_CTRLscreen()
                             printw(" %10ld", data.image[ID].md[0].cnt0);
                             attroff(COLOR_PAIR(2));
                         }
-                        cnt0array[ID] = data.image[ID].md[0].cnt0;
-
                     }
 
 
@@ -775,6 +841,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(dindex>NBsinfodisp-1)
                         sOK = 0;
                 }
+
+
+            }
 
 
             fuserUpdate = 0;
