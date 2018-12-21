@@ -159,7 +159,7 @@ static const char* get_process_name_by_pid(const int pid)
     FILE* fp = fopen(fname,"r");
     if(fp) {
         size_t size;
-        size = fread(pname, sizeof(char), 1024, f);
+        size = fread(pname, sizeof(char), 1024, fp);
         if(size>0) {
             if('\n'==pname[size-1])
                 pname[size-1]='\0';
