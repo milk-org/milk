@@ -543,7 +543,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 				
 				while( (c = sname_array[sindex][cindex]) != '\0')
 				{
-					namedoublearray[sindex] += 1.0*((int) (c+1))/(256.0*cindex);
+					namedoublearray[sindex] += 1.0*((int) (c))/(256.0*(1+cindex));
 					cindex++;
 				}
 			}
