@@ -540,12 +540,14 @@ int_fast8_t streamCTRL_CTRLscreen()
 				namedoublearray[sindex] = 0.0;
 				int cindex = 0; // character index
 				char c;
+				float coeff = 1.0;
 //				c = sname_array[sindex][cindex];
 				
 				while( (c = sname_array[sindex][cindex]) != '\0')
 				{
-					namedoublearray[sindex] += 1.0*((int) (c))/(256.0*(1+cindex));
+					namedoublearray[sindex] += 1.0*((int) (c)) * coeff;
 					cindex++;
+					coeff /= 256.0;
 				}
 			}
 			quick_sort2l(namedoublearray, larray, NBsindex);
