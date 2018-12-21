@@ -165,6 +165,7 @@ int get_process_name_by_pid(const int pid, char *pname)
         }
         fclose(fp);
     }
+    
     free(fname);
 
     return 0;
@@ -917,7 +918,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 {
 									char* pname = (char*) calloc(1024, sizeof(char));
                                     get_process_name_by_pid(pid, pname);
-                                    printw(" (%5d)%-.*s", (int) pid, 12, pname);
+                                    printw(" (%5d)%-20s", (int) pid, pname);
                                     free(pname);
 								}
                             }
