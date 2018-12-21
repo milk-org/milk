@@ -529,41 +529,33 @@ int_fast8_t streamCTRL_CTRLscreen()
 			}
 			
 			// alphabetical sorting
-			double *namedoublearray;
 			long *larray;
-			int *cindexarray;//TEST
-			namedoublearray = (double*) malloc(sizeof(double)*NBsindex);
 			larray = (long*) malloc(sizeof(long)*NBsindex);
-			cindexarray = (int*) malloc(sizeof(int)*NBsindex);
-			for(sindex=0; sindex<NBsindex; sindex++)
-			{
+			for(sindex=0;sindex<NBsindex;sindex++)
 				larray[sindex] = sindex;
-				
-				namedoublearray[sindex] = 0.0;
-				int cindex = 0; // character index
-				char c;
-				float coeff = 1.0;
-//				c = sname_array[sindex][cindex];
-				
-				while( (c = sname_array[sindex][cindex]) != '\0')
+
+			int sindex0, sindex1;
+			for(sindex0=0; sindex0<NBsindex-1; sindex0++)
+			{
+				for(sindex1=sindex0+1; sindex1<NBsindex; sindex1++)
 				{
-					namedoublearray[sindex] += 1.0*((int) (c)) * coeff;
-					cindex++;
-					coeff /= 256.0;
+					if( strcmp(sname_array[larray[sindex0]], sname_array[larray[sindex1]]) > 0)
+					{
+						int tmpindex = larray[sindex0];
+						larray[sindex0] = larray[sindex1];
+						larray[sindex1] = tmpindex;
+					}
 				}
-				cindexarray[sindex] = cindex;
 			}
-			quick_sort2l(namedoublearray, larray, NBsindex);
+
 			 endwin();//TEST
 			for(dindex=0;dindex<NBsindex;dindex++)
 			{
 				ssindex[dindex] = larray[dindex];
-				printf("%5ld  %30.20f  %3d  %s\n", dindex, namedoublearray[dindex], cindexarray[ssindex[dindex]], sname_array[ssindex[dindex]]);
+				printf("%5ld  %s\n", dindex, sname_array[ssindex[dindex]]);
 			}
 			
 			free(larray);
-			free(namedoublearray);
-			free(cindexarray);
 exit(0);//TEST
 
 
