@@ -548,7 +548,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 //					cindex++;
 //				}
 			}
-		//	quick_sort2l(namedoublearray, larray, NBsindex);
+			quick_sort2l(namedoublearray, larray, NBsindex);
 			 endwin();//TEST
 			for(dindex=0;dindex<NBsindex;dindex++)
 			{
