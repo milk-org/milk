@@ -909,8 +909,11 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(fuserUpdate==1)
                     {
                         refresh();
-						if(data.signal_TERM == 1)
+						if(data.signal_INT == 1) // stop scan 
+						{
 							fuserUpdate = 0;
+							data.signal_INT = 0; // reset
+						}
 					}
 
                     if(dindex>NBsinfodisp-1)
