@@ -227,13 +227,14 @@ int_fast8_t streamCTRL_CTRLscreen()
 {
     long sindex;  // scan index
     long dindex;  // display index
+    long ssindex[streamNBID_MAX]; // sorted index array
 
     long index;
 
     float frequ = 30.0; // Hz
     char  monstring[200];
 
-    long IDmax = 10000;
+    long IDmax = streamNBID_MAX;
 
     int sOK;
 
@@ -247,7 +248,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     long long cnt0_array[streamNBID_MAX];
 
 
-    long long cnt0array[IDmax]; // used to check if cnt0 has changed
+    long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
 
 
     setlocale(LC_ALL, "");
@@ -264,7 +265,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     long cnt = 0;
 
 
-    int sindexSelected = 0;
+    int dindexSelected = 0;
 
     int DisplayMode = 1;
     // display modes:
@@ -299,15 +300,15 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
         case KEY_UP:
-            sindexSelected --;
-            if(sindexSelected<0)
-                sindexSelected = 0;
+            dindexSelected --;
+            if(dindexSelected<0)
+                dindexSelected = 0;
             break;
 
         case KEY_DOWN:
-            sindexSelected ++;
-            if(sindexSelected>NBsindex-1)
-                sindexSelected = NBsindex-1;
+            dindexSelected ++;
+            if(dindexSelected>NBsindex-1)
+                dindexSelected = NBsindex-1;
             break;
 
 
@@ -346,7 +347,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
         case 'R': // remove stream
-            ImageStreamIO_destroyIm( &data.image[IDarray[sindexSelected]]);
+            ImageStreamIO_destroyIm( &data.image[IDarray[dindexSelected]]);
             break;
 
         }
@@ -518,20 +519,32 @@ int_fast8_t streamCTRL_CTRLscreen()
                 NBsindex = sindex;
             }
 
+			
+			
+			// SORT
+			for(dindex=0; dindex<NBsindex; dindex++)
+			{
+				ssindex[dindex] = dindex;
+			}
+			
+			
 
 
 
-
+            
             // DISPLAY
+            
             sOK = 1;
-            for(sindex=0; sindex < NBsindex; sindex++)
+            for(dindex=0; dindex < NBsindex; dindex++)
                 if(sOK == 1)
                 {
                     long ID;
+                    
+                    sindex = ssindex[dindex];
 
                     ID = IDarray[sindex];
 
-                    if(sindex == sindexSelected)
+                    if(dindex == dindexSelected)
                         attron(A_REVERSE);
 
 
@@ -730,21 +743,15 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     printw("\n");
 
-                    if(sindex == sindexSelected)
+                    if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
                     if(fuserUpdate==1)
                         refresh();
 
-                    if(sindex>NBsinfodisp-1)
+                    if(dindex>NBsinfodisp-1)
                         sOK = 0;
                 }
-
-
-
-
-
-
 
 
             fuserUpdate = 0;
