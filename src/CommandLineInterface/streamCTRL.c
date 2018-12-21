@@ -150,10 +150,9 @@ static int initncurses()
 
 
 
-static const char* get_process_name_by_pid(const int pid)
+int get_process_name_by_pid(const int pid, char *pname)
 {
     char* fname = (char*) calloc(1024, sizeof(char));
-    char* pname = (char*) calloc(1024, sizeof(char));
 
     sprintf(fname, "/proc/%d/cmdline",pid);
     FILE* fp = fopen(fname,"r");
@@ -166,9 +165,9 @@ static const char* get_process_name_by_pid(const int pid)
         }
         fclose(fp);
     }
+    free(fname);
 
-
-    return pname;
+    return 0;
 }
 
 
@@ -915,7 +914,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                             {
                                 pid_t pid = streamOpenPIDarray[ID][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                                    printw(" (%5d)%8s", (int) pid, get_process_name_by_pid(pid));
+                                {
+									char* pname = (char*) calloc(1024, sizeof(char));
+                                    get_process_name_by_pid(pid, pname);
+                                    printw(" (%5d)%-.*s", (int) pid, 12, pname);
+                                    free(pname);
+								}
                             }
                             break;
 
