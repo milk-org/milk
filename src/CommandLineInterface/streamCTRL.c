@@ -231,7 +231,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     long index;
 
-    float frequ = 30.0; // Hz
+    float frequ = 16.0; // Hz
     char  monstring[200];
 
     long IDmax = streamNBID_MAX;
@@ -369,13 +369,30 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
 
-        case '1': // sorting
+        case '1': // sorting by stream name
             SORTING = 1;
             break;
 
-        case '2': // sorting
+        case '2': // sorting by update freq 
             SORTING = 2;
             SORT_TOGGLE = 1;
+            break;
+            
+            
+        case '+': // faster update
+            frequ *= 2.0;
+            if(frequ < 1.0)
+				frequ = 1.0;
+			if(frequ > 64.0)
+				frequ = 64.0;
+            break;
+
+        case '-': // slower update
+            frequ *= 0.5;
+            if(frequ < 1.0)
+				frequ = 1.0;
+			if(frequ > 64.0)
+				frequ = 64.0;
             break;
 
         }
@@ -435,17 +452,27 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("    Remove stream\n");
 
             printw("\n");
-            printw("============ SORTING \n");
+            printw("============ DISPLAY \n");
+            
+            attron(attrval);
+            printw("    +");
+            attroff(attrval);
+            printw("    Increase update frequency\n");            
 
             attron(attrval);
-            printw("1");
+            printw("    -");
             attroff(attrval);
-            printw("    Stream name (alphabetical)\n");
+            printw("    Decrease update frequency\n");    
 
             attron(attrval);
-            printw("2");
+            printw("    1");
             attroff(attrval);
-            printw("    Recently updated\n");
+            printw("    Sort by stream name (alphabetical)\n");
+
+            attron(attrval);
+            printw("    2");
+            attroff(attrval);
+            printw("    Sort by recently updated\n");
 
 
 
@@ -505,6 +532,8 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("   ");
             printw("\n");
 
+
+			printw("Update frequ = %d Hz\n", (int) (frequ+0.5));
             if(DisplayMode==5)
             {
                 if(fuserScan==1)
