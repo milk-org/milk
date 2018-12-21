@@ -325,10 +325,22 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         case KEY_DOWN:
             dindexSelected ++;
-            if(dindexSelected>NBsindex-1)
+            if(dindexSelected > NBsindex-1)
                 dindexSelected = NBsindex-1;
             break;
+            
+        case KEY_PPAGE:
+            dindexSelected =- 10;
+            if(dindexSelected<0)
+                dindexSelected = 0;
+            break;
 
+        case KEY_NPAGE:
+            dindexSelected += 10;
+            if(dindexSelected > NBsindex-1)
+                dindexSelected = NBsindex-1;
+            break;
+            
 
         // Set Display Mode
 
