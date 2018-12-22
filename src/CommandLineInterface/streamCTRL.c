@@ -119,6 +119,7 @@ static int initncurses()
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
 
+	nonl();
 
 
     init_color(COLOR_GREEN, 700, 1000, 700);
@@ -1089,8 +1090,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     sprintf(lstring, "%s %6d:%-*.*s", lstring, (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
-//                                printw("%s", lstring);
-                                addchstr("this is a test for lstring");
+                                printw("%s", lstring);
+//                                addchstr("this is a test for lstring");
                             }
                             break;
 
