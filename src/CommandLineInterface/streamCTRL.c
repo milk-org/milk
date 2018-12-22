@@ -688,7 +688,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 							SymLink_array[ID] = 1;						
 							readlink (dir->d_name, linknamefull, 200);
 							linkname = basename(linknamefull);
-							strncpy(linkname_array[sindex], linkname, strlen(linkname));
+							strncpy(linkname_array[sindex], linkname, strlen(linkname)-strlen(".im.shm"));
+							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 						}
 						else
 							SymLink_array[ID] = 0;
