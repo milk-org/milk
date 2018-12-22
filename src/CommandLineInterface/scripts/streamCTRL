@@ -90,4 +90,4 @@ fi
 SF="shmimmonstartup"
 echo "streamCTRL" >$SF
 echo "exitCLI" >> $SF
-milk -n procCTRL -f procctrlfifo -s $SF
+milk -n streamCTRL -f procctrlfifo -s $SF
