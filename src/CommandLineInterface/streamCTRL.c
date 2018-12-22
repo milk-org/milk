@@ -641,7 +641,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     retv = stat (dir->d_name, &buf);
 
 
-                    if((pch)&&(S_ISREG(buf.st_mode)))
+                    if((pch)&&(!S_ISLNK(buf.st_mode)))
                     {
                         long ID;
 
