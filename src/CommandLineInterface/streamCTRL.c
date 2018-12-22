@@ -680,9 +680,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         atype_array[sindex] = data.image[ID].md[0].atype;
 
-						if (S_ISLNK(buf.st_mode))
+						if (S_ISLNK(buf.st_mode)) // resolve link name
 						{
-							char *linknamefull;
+							char linknamefull[200];
 							char *linkname;
 							
 							SymLink_array[ID] = 1;						
