@@ -700,10 +700,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 							
 							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 							
-							printf("linknamefull            : %s\n", linknamefull);
-							printf("linkname                : %s\n", linkname);
-							printf("linkname_array[sindex]  : %s\n", linkname_array[sindex]);
-							exit(0);
+							printf("\n");
+							printf("%30.30s  -> ", linknamefull);
+							printf("%20.20s  -> ", linkname);
+							printf("%20.20s\n", linkname_array[sindex]);
+							
 
 
 						}
@@ -715,6 +716,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
+            exit(0);
 
 
 
