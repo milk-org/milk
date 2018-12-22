@@ -1092,7 +1092,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                // printw("%s", lstring);
 
-								const char * lstring1 = "This is a test";
+								const chtype * lstring1 = "This is a test";
                                 addchstr(lstring1);
                             }
                             break;
