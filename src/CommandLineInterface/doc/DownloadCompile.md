@@ -5,9 +5,7 @@
 
 ---
 
-# Libraries, pre-requisistes
-
-## 1.1 Pre-requisites
+## Libraries
 
 Libraries required :
 
@@ -32,7 +30,7 @@ Install above libraries (Ubuntu):
 		sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
 
 
-## 1.2 FITSIO install
+### FITSIO install
 
 For reading and writing FITS image files
 
@@ -44,16 +42,16 @@ There is the fitsio.h in it. Move it to usr :
 		make 
 		sudo make install 
 
-## 1.3 GPU acceleration (optional, but highly recommended)
+## GPU acceleration (optional, but highly recommended)
 
 Required libraries:
 
 - install **NVIDIA driver**
 - install **CUDA**
-- install **MAGMA**, version 2.x
+- install **MAGMA**
 
 
-## 1.4 Shared Memory Image Stream Viewer
+## Shared Memory Image Stream Viewer
 
 Two options:
 
@@ -65,23 +63,9 @@ Two options:
 ---
 
 
-# 2 Compilation 
+## Compilation 
 
-## 2.1 Additional libraries
-
-### 2.1.1 CentOS
-
-Install Development tools, use the command bellow. This will search the yum repositories, and install the tools from the closest repo.
-
-		sudo yum groupinstall "Development tools"
-
-### 2.1.2 Ubuntu
-
-		sudo apt-get install autoconf libtool git
-
-
-
-## 2.2 Compilation 
+### Installing cmake
 
 Use cmake version 3.xx.
 
@@ -89,6 +73,9 @@ To install cmake on centOS system (cmake executable will be cmake3):
 
 	sudo yum install cmake3
 	
+
+### Compile cacao
+
 To compile using cmake
 
 	cd cacao
@@ -98,6 +85,9 @@ To compile using cmake
 	make
 	sudo make install
 
+
+### Post-installation configuration
+
 You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 
 	echo "/usr/local/lib" > usrlocal.conf
@@ -105,13 +95,20 @@ You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 	sudo ldconfig -v
 
 
+Add milk executable scripts to PATH environment variable. Add this line to the .bashrc file (change source code location as needed):
+
+	export PATH=$PATH:/home/myname/src/cacao/src/CommandLineInterface/scripts
+
+	
+
+
 
 ---
 
-# 3 Troubleshooting and FAQs
+## Troubleshooting and FAQs
 
 
-## Configure error: "No package 'magma' found"
+### No package 'magma' found
 
 configure script uses pkg-config to find the package. You need to add in .bashrc :
 
