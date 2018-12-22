@@ -696,7 +696,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 								nchar = nameNBchar-1; 
 							strncpy(linkname_array[sindex], linkname, nchar);
 							
-//							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
+							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 						}
 						else
 							SymLink_array[ID] = 0;
