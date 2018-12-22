@@ -24,7 +24,7 @@ To compile :
 # Details {#page_installation_details}
 
 
-## Libraries
+## Libraries {#page_installation_details_libraries}
 
 Libraries required :
 
@@ -49,7 +49,7 @@ Install above libraries (Ubuntu):
 		sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
 
 
-### FITSIO install
+### FITSIO install {#page_installation_details_libraries_fitsio}
 
 For reading and writing FITS image files
 
@@ -61,7 +61,11 @@ There is the fitsio.h in it. Move it to usr :
 		make 
 		sudo make install 
 
-## GPU acceleration (optional, but highly recommended)
+
+---
+
+
+## GPU acceleration (optional, but highly recommended) {#page_installation_details_gpuacceleration}
 
 Required libraries:
 
@@ -70,7 +74,12 @@ Required libraries:
 - install **MAGMA**
 
 
-## Shared Memory Image Stream Viewer
+---
+
+
+
+
+## Shared Memory Image Stream Viewer {#page_installation_details_sharedmemviewer}
 
 Two options:
 
@@ -82,7 +91,7 @@ Two options:
 ---
 
 
-## Compilation 
+## Compilation  {#page_installation_details_compilation}
 
 ### Installing cmake
 
