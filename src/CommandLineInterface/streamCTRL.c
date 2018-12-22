@@ -63,8 +63,7 @@
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 50
 
-#define PIDmax 32768
-#define PIDnameStringLen 12
+
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -212,6 +211,22 @@ int streamCTRL_CatchSignals()
 
 
 
+static int get_PIDmax()
+{
+	FILE *fp;
+	int PIDmax;
+	
+	fp = fopen("/proc/sys/kernel/pid_max", "r");
+	fscanf(fp, "%d", &PIDmax);
+	fclose(fp);
+	
+	return PIDmax;
+}
+
+
+
+
+
 
 
 
@@ -229,6 +244,8 @@ int streamCTRL_CatchSignals()
 
 int_fast8_t streamCTRL_CTRLscreen()
 {
+	int PIDnameStringLen = 12;
+	
     long sindex;  // scan index
     long dindex;  // display index
     long ssindex[streamNBID_MAX]; // sorted index array
@@ -269,7 +286,19 @@ int_fast8_t streamCTRL_CTRLscreen()
     long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
     long deltacnt0[streamNBID_MAX];
 
-	char PIDname_array[PIDmax][PIDnameStringLen];
+
+	
+	//[PIDmax][PIDnameStringLen];
+
+
+
+	// create PID name table
+	char **PIDname_array;
+	int PIDmax;
+	
+	PIDmax = get_PIDmax();
+	PIDname_array = malloc(sizeof(char*)*PIDmax);
+
 
 
 
@@ -914,6 +943,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 {
 									char* pname = (char*) calloc(1024, sizeof(char));
                                     get_process_name_by_pid(pid, pname);
+                                    
+                                    if(PIDname_array[pid] == NULL)
+										PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
                                     strncpy(PIDname_array[pid], pname, PIDnameStringLen);
                                     free(pname);
 								}
