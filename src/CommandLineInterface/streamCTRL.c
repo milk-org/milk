@@ -682,6 +682,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 						if (S_ISLNK(buf.st_mode)) // resolve link name
 						{
+							endwin(); //TEST
+
 							char linknamefull[200];
 							char linkname[200];
 							int nchar;
@@ -697,6 +699,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 							strncpy(linkname_array[sindex], linkname, nchar);
 							
 							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
+							
+							printf("linknamefull            : %s\n", linknamefull);
+							printf("linkname                : %s\n", linkname);
+							printf("linkname_array[sindex]  : %s\n", linkname_array[sindex]);
+							exit(0);
+
+
 						}
 						else
 							SymLink_array[ID] = 0;
@@ -806,7 +815,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 						sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
 						
 						attron(COLOR_PAIR(5));
-						printw("%-36s", namestring);
+						printw("%-36s ", namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
