@@ -1013,7 +1013,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     size_t len = 0;
 
                                     //if(getline(&plistoutline, &len, fp) != -1) {
-									if(fgets(&plistoutline, 2000, fp) != NULL)
+									if(fgets(plistoutline, 2000, fp) != NULL) {
 										printw(" B \"%s (%d)\"", plistoutline, len);
                                     }
                                     else
