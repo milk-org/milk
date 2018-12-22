@@ -274,7 +274,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     // data arrays
-    char sname_array[streamNBID_MAX][200];
+    char sname_array[streamNBID_MAX][100];
+    char linkname_array[streamNBID_MAX][100];
+    
     long IDarray[streamNBID_MAX];
     int SymLink_array[streamNBID_MAX];
 
@@ -679,7 +681,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                         atype_array[sindex] = data.image[ID].md[0].atype;
 
 						if (S_ISLNK(buf.st_mode))
-							SymLink_array[ID] = 1;
+						{
+							SymLink_array[ID] = 1;						
+							readlink (dir->d_name, linkname_array[sindex], 20);
+						}
 						else
 							SymLink_array[ID] = 0;
 
@@ -783,9 +788,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                         attron(A_REVERSE);
                         
                     if(SymLink_array[ID] == 1)
-                    {
+                    {						
 						attron(COLOR_PAIR(5));
-						printw("%-36s ", sname_array[sindex]);
+						printw("%-16.16s -> %-16.16s", sname_array[sindex], linkname_array[sindex]);
                         attroff(COLOR_PAIR(5));
                     }
                     else
@@ -985,6 +990,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 streamOpenPIDarray_status[ID] = 1; // success
                             }
+                            if(fp != NULL)
+								pclose(fp);
 
                             streamOpenPIDarray_cnt[ID] = NBpid;
                             
