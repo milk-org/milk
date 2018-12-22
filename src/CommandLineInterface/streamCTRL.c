@@ -700,9 +700,9 @@ endwin(); //TEST
 							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 							
 							printf("\n");
-							printf("%30.30s  -> ", linknamefull);
-							printf("%20.20s  -> ", linkname);
-							printf("%20.20s\n", linkname_array[sindex]);
+							printf("%s -> ", linknamefull);
+							printf("%s -> ", linkname);
+							printf("%s |\n", linkname_array[sindex]);
 							
 
 
