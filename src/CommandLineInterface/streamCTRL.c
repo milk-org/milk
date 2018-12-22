@@ -35,6 +35,8 @@
 #include <sys/types.h>
 
 #include <sys/stat.h>
+#include <sys/types.h>
+
 
 #include <ncurses.h>
 #include <fcntl.h> 
@@ -624,7 +626,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
             // COLLECT DATA
-
+ endwin();//TEST
             if(d)
             {
                 sindex = 0;
@@ -633,7 +635,19 @@ int_fast8_t streamCTRL_CTRLscreen()
                 {
                     char *pch = strstr(dir->d_name, ".im.shm");
 
-                    if(pch)
+					// is file sym link ?
+                    struct stat buf;
+                    int retv;
+                    retv = stat (dir->d_name, &buf);
+                    
+                    
+                    
+                    printf("%-20s  ", dir->d_name);
+                    if (S_ISLNK(buf.st_mode)) printf (" stat says link");
+                    if (S_ISREG(buf.st_mode)) printf (" stat says file");
+                    printf("\n");
+
+                    if( (pch) && (!S_ISLNK(buf.st_mode)) )
                     {
                         long ID;
 
@@ -641,6 +655,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                         strncpy(sname_array[sindex], dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         sname_array[sindex][strlen(dir->d_name)-strlen(".im.shm")] = '\0';
                         ID = image_ID(sname_array[sindex]);
+                        
+
+                        
+                        
                         // connect to stream
                         ID = image_ID(sname_array[sindex]);
                         if(ID == -1)
@@ -668,7 +686,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-
+exit(0);//TEST
 
 
 
@@ -922,7 +940,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             char command[2000];
 
                             int NBpid = 0;
-
+														
 
                             /* Open the command for reading. */
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
