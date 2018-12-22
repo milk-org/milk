@@ -44,6 +44,8 @@
 
 #include <wchar.h>
 #include <locale.h>
+#include <errno.h>
+
 
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
@@ -925,7 +927,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                             /* Open the command for reading. */
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
-                            if (fp == NULL) {								
+                            if (fp == NULL) {
+								endwin();		
+								perror("Error: ");
+                                exit(0);
                                 streamOpenPIDarray_status[ID] = 2; // failed
                             }
                             else
