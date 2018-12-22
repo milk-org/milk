@@ -626,7 +626,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
             // COLLECT DATA
- endwin();//TEST
             if(d)
             {
                 sindex = 0;
@@ -643,17 +642,15 @@ int_fast8_t streamCTRL_CTRLscreen()
 						perror("ERROR: ");
                     
                     
-                    printf("%-20.20s  %d ", dir->d_name, retv);
+               /*     printf("%-20.20s  %d ", dir->d_name, retv);
                     if (S_ISLNK(buf.st_mode)) printf (" LINK");
                     if (S_ISREG(buf.st_mode)) printf (" REG ");
                     if (S_ISDIR(buf.st_mode)) printf (" DIR ");
                     if (S_ISBLK(buf.st_mode)) printf (" BLK ");
                     if (S_ISFIFO(buf.st_mode)) printf (" FIFO");
                     if (S_ISSOCK(buf.st_mode)) printf (" SOCK");
-
-
                     printf("\n");
-
+*/
                     if( (pch) && (!S_ISLNK(buf.st_mode)) )
                     {
                         long ID;
@@ -693,7 +690,6 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-exit(0);//TEST
 
 
 
