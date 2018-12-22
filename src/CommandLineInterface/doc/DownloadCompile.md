@@ -93,7 +93,7 @@ Two options:
 
 ## Compilation  {#page_installation_details_compilation}
 
-### Installing cmake
+### Installing cmake {#page_installation_details_compilation_installingcmake}
 
 Use cmake version 3.xx.
 
@@ -102,7 +102,7 @@ To install cmake on centOS system (cmake executable will be cmake3):
 	sudo yum install cmake3
 	
 
-### Compile cacao
+### Compile source code {#page_installation_details_compilation_compilesourcecode}
 
 To compile using cmake
 
@@ -114,7 +114,8 @@ To compile using cmake
 	sudo make install
 
 
-### Post-installation configuration
+
+### Post-installation configuration {#page_installation_details_compilation_postinstall}
 
 You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 
@@ -133,7 +134,7 @@ Add milk executable scripts to PATH environment variable. Add this line to the .
 
 ---
 
-## Troubleshooting and FAQs
+## Troubleshooting and FAQs {#page_installation_details_troubleshooting}
 
 
 ### No package 'magma' found
