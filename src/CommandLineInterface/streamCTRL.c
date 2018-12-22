@@ -822,7 +822,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         attroff(COLOR_PAIR(5));
                     }
                     else
-                        printw("%-*s ", DispName_NBchar, sname_array[sindex]);
+                        printw("%-*.*s ", DispName_NBchar, DispName_NBchar, sname_array[sindex]);
+                    
                     
                     linecharcnt += DispName_NBchar+1;
 
