@@ -155,7 +155,6 @@ static int initncurses()
 
 
 
-
 int get_process_name_by_pid(const int pid, char *pname)
 {
     char* fname = (char*) calloc(1024, sizeof(char));
@@ -826,9 +825,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                     
                     if(strlen(sname_array[sindex]) > DispName_NBchar)
                     {
-						attron(COLOR_PAIR(8));
+						attron(COLOR_PAIR(9));
 						printw("+");
-						attroff(COLOR_PAIR(8));
+						attroff(COLOR_PAIR(9));
 					}
 					else
 						printw(" ");
