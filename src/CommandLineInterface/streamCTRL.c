@@ -689,9 +689,20 @@ printf("\n");
 							
 							SymLink_array[ID] = 1;						
 							readlink (dir->d_name, linknamefull, 200-1);							
-printf("%s (%d) -> ", linknamefull, strlen(linknamefull));	
+printf("%s (%d) -> ", linknamefull, strlen(linknamefull));
 							
 							strcpy(linkname, basename(linknamefull));
+							
+							int lOK = 1;
+							int ii = 0;
+							while((lOK == 1)&&(ii<strlen(linkname)))
+							{
+								if(linkname[ii] == '.')
+								{
+									linkname[ii] = '\0';
+									lOK = 0;
+								}								
+							}
 							
 							nchar = strlen(linkname)-strlen(".im.shm");
 							if(nchar > nameNBchar-1)
