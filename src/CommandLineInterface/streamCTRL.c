@@ -1019,7 +1019,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                             {
                                 // filesystem option
                                 char plistfname[200];
-                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
+                                
+                                
+                                system("mkdir ~/.streamCTRL");
+                                sprintf(plistfname, "~/.streamCTRL/%s.shmplist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
                                 
