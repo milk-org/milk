@@ -1,9 +1,7 @@
-{#page_installation}
-
 [TOC]
 
 
-# Summary 
+# Summary {#page_installation}
 
 @note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
 
