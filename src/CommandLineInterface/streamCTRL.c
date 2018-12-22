@@ -1075,7 +1075,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         printw(" ");
                         int pidIndex;
-                        char lstring[200];
+                        char lstring[2000];
 
                         switch (streamOpenPIDarray_status[ID]) {
 
@@ -1089,7 +1089,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     sprintf(lstring, "%s %6d:%-*.*s", lstring, (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
-                                printw("%s", lstring);
+//                                printw("%s", lstring);
+                                addchstr(lstring);
                             }
                             break;
 
