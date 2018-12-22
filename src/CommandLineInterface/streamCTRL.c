@@ -930,6 +930,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             if (fp == NULL) {
 								endwin();		
 								perror("Error: ");
+								printf("command : \"%s\"\n", command);
+								system(command);
                                 exit(0);
                                 streamOpenPIDarray_status[ID] = 2; // failed
                             }
