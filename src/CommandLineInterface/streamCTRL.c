@@ -1013,7 +1013,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     size_t len = 0;
 
                                     if(getline(&plistoutline, &len, fp) != -1) {
-										printw(" B");
+										printw(" B \"%s (%d)\"", plistoutline, len);
                                     }
                                     else
                                     {
@@ -1022,7 +1022,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 									}
 
 
-                                    pclose(fp);
+                                    fclose(fp);
                                 }
                             }
 
