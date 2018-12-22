@@ -119,6 +119,7 @@ static int initncurses()
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
 
+	nonl();
 
 
     init_color(COLOR_GREEN, 700, 1000, 700);
@@ -977,7 +978,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                            int PReadMode = 0;
+                            int PReadMode = 1;
 
                             if(PReadMode == 0)
                             {
@@ -989,6 +990,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 else
                                 {
+									streamOpenPIDarray_status[ID] = 1;
                                     /* Read the output a line at a time - output it. */
                                     if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
                                     }
@@ -1002,21 +1004,28 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
+                                
                                 fp = fopen(plistfname, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
+                                    printw(" [%s] ", plistfname);
                                 }
                                 else
                                 {
                                     size_t len = 0;
 
-                                    if(getline(&plistoutline, &len, fp) != -1) {
-                                    }
-                                    else
+									if(fgets(plistoutline, 2000, fp) == NULL)
                                         sprintf(plistoutline, " ");
-                                        pclose(fp);
-                                    }
+
+
+                                    fclose(fp);
+                                }
+                                
+                            //    sprintf(command, "rm %s", plistfname);
+                            //    system(command);
                             }
+
+
 
                             if(streamOpenPIDarray_status[ID] != 2)
                             {
@@ -1067,19 +1076,26 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         printw(" ");
                         int pidIndex;
+                        char lstring[2000];
 
                         switch (streamOpenPIDarray_status[ID]) {
 
                         case 1:
+							sprintf(lstring, "");
                             streamOpenPIDarray_cnt1[ID] = 0;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
-                            {
+                            {								
                                 pid_t pid = streamOpenPIDarray[ID][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) ) {
-                                    printw(" %6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                    sprintf(lstring, "%s %6d:%-*.*s", lstring, (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
-                            }
+							}
+                            printw("%s", lstring);
+
+								//const chtype * lstring1 = "This is a test";
+                                //addchstr(lstring1);
+                            
                             break;
 
                         case 2:
