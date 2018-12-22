@@ -297,7 +297,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-    //[PIDmax][PIDnameStringLen];
+	// display
+	int DispName_NBchar = 36;
+	int DispName_NBchar = 20;
 
 
 
@@ -804,6 +806,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                 if(sOK == 1)
                 {
+					char line[200];
+					int linecharcnt = 0; // keeping track of number of characters in line
+					
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
 
@@ -813,11 +818,13 @@ int_fast8_t streamCTRL_CTRLscreen()
                         sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
 
                         attron(COLOR_PAIR(5));
-                        printw("%-36s ", namestring);
+                        printw("%-*s ", DispName_NBchar, namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
-                        printw("%-36s ", sname_array[sindex]);
+                        printw("%-*s ", DispName_NBchar, sname_array[sindex]);
+                    
+                    linecharcnt += DispName_NBchar+1;
 
 
 
@@ -863,6 +870,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         if(atype_array[sindex]==_DATATYPE_COMPLEX_DOUBLE)
                             printw("CDBL");
+						
+						linecharcnt += 4;
+
 
                         sprintf(str, " [%3ld", (long) data.image[ID].md[0].size[0]);
 
@@ -874,8 +884,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         sprintf(str1, "%s]", str);
                         strcpy(str, str1);
 
-                        printw("%-20s ", str);
-
+                        printw("%-*s ", DispSize_NBchar, str);
+						linecharcnt += DispName_NBchar+1;
 
 
                         //                        cnt0_array[sindex] = data.image[ID].md[0].cnt0;
@@ -1135,18 +1145,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(dindex>NBsinfodisp-1)
                         sOK = 0;
                 }
-
-
             }
-
-
             fuserUpdate = 0;
             fuserUpdate0 = 0;
         }
-
-
-
-
 
         refresh();
 
