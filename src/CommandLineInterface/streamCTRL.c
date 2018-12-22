@@ -626,7 +626,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
             // COLLECT DATA
-
+ endwin();//TEST
             if(d)
             {
                 sindex = 0;
@@ -639,9 +639,15 @@ int_fast8_t streamCTRL_CTRLscreen()
                     struct stat buf;
                     int retv;
                     retv = stat (dir->d_name, &buf);
+                    
+                    
+                    
+                    printf("%-20s  ", dir->d_name);
+                    if (S_ISLNK(buf.st_mode)) printf (" stat says link");
+                    if (S_ISREG(buf.st_mode)) printf (" stat says file");
+                    printf("\n");
 
-
-                    if((pch)&&(!S_ISLNK(buf.st_mode)))
+                    if( (pch) && (!S_ISLNK(buf.st_mode)) )
                     {
                         long ID;
 
@@ -680,7 +686,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-
+exit(0);//TEST
 
 
 
