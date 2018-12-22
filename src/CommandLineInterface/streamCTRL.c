@@ -953,13 +953,14 @@ int_fast8_t streamCTRL_CTRLscreen()
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
                             if (fp == NULL) {
-								endwin();
+/*								endwin();
 								printf("FILE %ld\n", dindex);		
 								perror("Error: ");
 								printf("command : \"%s\"\n", command);
 								system(command);
-                                exit(0);
+                                exit(0);*/
                                 streamOpenPIDarray_status[ID] = 2; // failed
+                                usleep(100000);
                             }
                             else
                             {
