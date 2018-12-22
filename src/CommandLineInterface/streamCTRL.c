@@ -918,7 +918,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 {
 									char* pname = (char*) calloc(1024, sizeof(char));
                                     get_process_name_by_pid(pid, pname);
-                                    printw(" (%5d)%-20s", (int) pid, pname);
+                                    printw(" %5d:%-12s", (int) pid, pname);
                                     free(pname);
 								}
                             }
