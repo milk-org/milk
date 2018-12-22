@@ -1,6 +1,3 @@
-@note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
-
-
 # Installation {#page_installation}
 
 @note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
@@ -8,7 +5,7 @@
 
 ---
 
-# Libraries, Pre-requisistes
+# Libraries, pre-requisistes
 
 ## 1.1 Pre-requisites
 
