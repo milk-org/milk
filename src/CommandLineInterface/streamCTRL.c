@@ -1021,8 +1021,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     fclose(fp);
                                 }
                                 
-                                sprintf(command, "rm %s", plistfname);
-                                system(command);
+                            //    sprintf(command, "rm %s", plistfname);
+                            //    system(command);
                             }
 
 
