@@ -21,7 +21,7 @@ To compile :
 ---
 ---
 
-# Details
+# Details {#page_installation_details}
 
 
 ## Libraries
