@@ -312,7 +312,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
+	char *homedir = getenv("HOME");
+    
     setlocale(LC_ALL, "");
 
 
@@ -622,11 +623,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
-
             DIR *d;
             struct dirent *dir;
             d = opendir("/tmp/");
+
+
 
 
             // COLLECT DATA
@@ -637,7 +638,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 while((sOK == 1)&&((dir = readdir(d)) != NULL))
                 {
                     char *pch = strstr(dir->d_name, ".im.shm");
-
+				
 
                     if(pch)
                     {
@@ -646,10 +647,15 @@ int_fast8_t streamCTRL_CTRLscreen()
                         // is file sym link ?
                         struct stat buf;
                         int retv;
-                        retv = lstat (dir->d_name, &buf);
+                        char fullname[200];
+                        
+                        sprintf(fullname, "/tmp/%s", dir->d_name);
+                        retv = lstat (fullname, &buf);
                         if (retv == -1 ) {
                             endwin();
-                            perror("ERROR: ");
+                            sprintf("File \"%s\"", dir->d_name);
+                            perror("Error running lstat on file ");
+                            exit(0);
                         }
 
 
@@ -710,11 +716,11 @@ int_fast8_t streamCTRL_CTRLscreen()
                             SymLink_array[ID] = 0;
 
                         sindex++;
-                    }
+                    }                    
                 }
                 NBsindex = sindex;
             }
-
+            
 
 
 
@@ -1019,7 +1025,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                             {
                                 // filesystem option
                                 char plistfname[200];
-                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
+                                
+                                
+                                system("mkdir -p ~/.streamCTRL");
+                                sprintf(plistfname, "%s/.streamCTRL/%s.shmplist", homedir, sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
                                 
@@ -1029,7 +1038,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     
                                     endwin();
                                     printf(" [%s] ", plistfname); //TEST
-                                    perror("Error: ");
+                                    perror("Error reading fuser output file ");
                                     exit(0);
                                 }
                                 else
