@@ -275,6 +275,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
+    int streamOpenPIDarray_cnt1[streamNBID_MAX];                       // number of processes accessing stream
     int streamOpenPIDarray_status[streamNBID_MAX];
 
     int atype_array[streamNBID_MAX];
@@ -431,6 +432,11 @@ int_fast8_t streamCTRL_CTRLscreen()
             SORT_TOGGLE = 1;
             break;
 
+        case '3': // sort by number of processes accessing
+            SORTING = 3;
+            SORT_TOGGLE = 1;
+            break;
+
 
         case '+': // faster update
             frequ *= 2.0;
@@ -500,7 +506,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("============ ACTIONS \n");
 
             attron(attrval);
-            printw("R");
+            printw("    R");
             attroff(attrval);
             printw("    Remove stream\n");
 
@@ -527,7 +533,10 @@ int_fast8_t streamCTRL_CTRLscreen()
             attroff(attrval);
             printw("    Sort by recently updated\n");
 
-
+            attron(attrval);
+            printw("    3");
+            attroff(attrval);
+            printw("    Sort by processes access\n");
 
             printw("\n\n");
         }
@@ -660,7 +669,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
+
+
             // SORT
+
             // default : no sorting
             for(dindex=0; dindex<NBsindex; dindex++)
                 ssindex[dindex] = dindex;
@@ -692,7 +704,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             }
 
 
-            if(SORTING == 2) // recent update
+            if((SORTING == 2)||(SORTING == 3)) // recent update and process access
             {
                 long *larray;
                 double *varray;
@@ -703,7 +715,14 @@ int_fast8_t streamCTRL_CTRLscreen()
                 {
                     for(sindex=0; sindex<NBsindex; sindex++)
                         updatevaluearray_frozen[IDarray[sindex]] = updatevaluearray[IDarray[sindex]];
-                    SORT_TOGGLE = 0;
+                    
+                    if(SORTING==3)
+                    {
+						for(sindex=0; sindex<NBsindex; sindex++)
+							updatevaluearray_frozen[IDarray[sindex]] += 10000.0*streamOpenPIDarray_cnt1[IDarray[sindex]];
+					}
+                    
+                    SORT_TOGGLE = 0;                    
                 }
 
                 for(sindex=0; sindex<NBsindex; sindex++)
@@ -720,6 +739,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                 free(larray);
                 free(varray);
             }
+
+            
 
 
 
@@ -967,11 +988,14 @@ int_fast8_t streamCTRL_CTRLscreen()
                         switch (streamOpenPIDarray_status[ID]) {
 
                         case 1:
+							streamOpenPIDarray_cnt1[ID] = 0;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                             {
 								pid_t pid = streamOpenPIDarray[ID][pidIndex];
-								if( (getpgid(pid) >= 0) && (pid != getpid()) )
+								if( (getpgid(pid) >= 0) && (pid != getpid()) ){
 									printw(" %6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+									streamOpenPIDarray_cnt1[ID]++;
+								}
                             }
                             break;
 
