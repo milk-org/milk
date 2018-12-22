@@ -638,7 +638,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 					// is file sym link ?
                     struct stat buf;
                     int retv;
-                    retv = stat (dir->d_name, &buf);
+                    retv = lstat (dir->d_name, &buf);
                     if (retv == -1 )
 						perror("ERROR: ");
                     
