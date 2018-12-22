@@ -129,7 +129,7 @@ static int initncurses()
 
 
 
-    //  color background
+    //  colored background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
@@ -144,7 +144,6 @@ static int initncurses()
 
     return 0;
 }
-
 
 
 
@@ -818,12 +817,20 @@ int_fast8_t streamCTRL_CTRLscreen()
                         sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
 
                         attron(COLOR_PAIR(5));
-                        printw("%-*s ", DispName_NBchar, namestring);
+                        printw("%-*s", DispName_NBchar, namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
-                        printw("%-*.*s ", DispName_NBchar, DispName_NBchar, sname_array[sindex]);
+                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, sname_array[sindex]);
                     
+                    if(strlen(sname_array[sindex]) > DispName_NBchar)
+                    {
+						attron(COLOR_PAIR(9));
+						printw("+");
+						attroff(COLOR_PAIR(9));
+					}
+					else
+						printw(" ");
                     
                     linecharcnt += DispName_NBchar+1;
 
