@@ -299,7 +299,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 	// display
 	int DispName_NBchar = 36;
-	int DispName_NBchar = 20;
+	int DispSize_NBchar = 20;
 
 
 
