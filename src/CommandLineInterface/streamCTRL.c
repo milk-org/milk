@@ -989,6 +989,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 else
                                 {
+									streamOpenPIDarray_status[ID] = 1;
                                     /* Read the output a line at a time - output it. */
                                     if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
                                     }
