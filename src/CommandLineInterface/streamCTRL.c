@@ -1090,7 +1090,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
 //                                printw("%s", lstring);
-                                addchstr(lstring);
+                                addchstr("this is a test for lstring");
                             }
                             break;
 
