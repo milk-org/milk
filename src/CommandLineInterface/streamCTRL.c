@@ -642,7 +642,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     
                     
                     
-                    printf("%-20.20s  ", dir->d_name);
+                    printf("%-20.20s  %d ", dir->d_name, retv);
                     if (S_ISLNK(buf.st_mode)) printf (" LINK");
                     if (S_ISREG(buf.st_mode)) printf (" REG ");
                     if (S_ISDIR(buf.st_mode)) printf (" DIR ");
