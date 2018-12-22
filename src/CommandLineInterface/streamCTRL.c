@@ -1002,21 +1002,31 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
+                                
                                 fp = fopen(plistfname, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
+                                    printw(" A");
                                 }
                                 else
                                 {
                                     size_t len = 0;
 
                                     if(getline(&plistoutline, &len, fp) != -1) {
+										printw(" B");
                                     }
                                     else
-                                        sprintf(plistoutline, " ");
-                                        pclose(fp);
-                                    }
+                                    {
+                                        sprintf(plistoutline, "-");
+                                        printw(" C");
+									}
+
+
+                                    pclose(fp);
+                                }
                             }
+
+
 
                             if(streamOpenPIDarray_status[ID] != 2)
                             {
