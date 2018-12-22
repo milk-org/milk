@@ -586,13 +586,13 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-            printw("Update frequ = %d Hz\n", (int) (frequ+0.5));
+            printw("PIDmax = %d    Update frequ = %d Hz\n", PIDmax, (int) (frequ+0.5));
             if(DisplayMode==5)
             {
                 if(fuserScan==1)
-                    printw("Last scan on  %02d:%02d:%02d  - Press F5 again to re-scan\n", uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
+                    printw("Last scan on  %02d:%02d:%02d  - Press F5 again to re-scan    C-c to stop scan\n", uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
                 else
-                    printw("Last scan on  XX:XX:XX  - Press F5 again to scan\n");
+                    printw("Last scan on  XX:XX:XX  - Press F5 again to scan             C-c to stop scan\n");
             }
             else
                 printw("\n");
@@ -971,7 +971,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             {
 								pid_t pid = streamOpenPIDarray[ID][pidIndex];
 								if( (getpgid(pid) >= 0) && (pid != getpid()) )
-									printw(" %5d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+									printw(" %6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                             }
                             break;
 
