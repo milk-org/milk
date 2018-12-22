@@ -705,12 +705,10 @@ printf("%s (%d) -> ", linknamefull, strlen(linknamefull));
 								ii++;								
 							}
 							
-							nchar = strlen(linkname)-strlen(".im.shm");
-							if(nchar > nameNBchar-1)
-								nchar = nameNBchar-1; 
-							strncpy(linkname_array[sindex], linkname, nchar);
+
+							strncpy(linkname_array[sindex], linkname, nameNBchar);
 							
-							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
+//							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 							
 
 							printf("%s (%d) -> ", linkname, strlen(linkname));
