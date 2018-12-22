@@ -977,7 +977,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                            int PReadMode = 0;
+                            int PReadMode = 1;
 
                             if(PReadMode == 0)
                             {
