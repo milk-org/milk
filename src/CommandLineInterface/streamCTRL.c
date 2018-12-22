@@ -276,6 +276,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // data arrays
     char sname_array[streamNBID_MAX][200];
     long IDarray[streamNBID_MAX];
+    int SymLink_array[streamNBID_MAX];
 
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
@@ -634,34 +635,27 @@ int_fast8_t streamCTRL_CTRLscreen()
                 {
                     char *pch = strstr(dir->d_name, ".im.shm");
 
-					// is file sym link ?
-                    struct stat buf;
-                    int retv;
-                    retv = lstat (dir->d_name, &buf);
-                    if (retv == -1 )
-						perror("ERROR: ");
-                    
-                    
-               /*     printf("%-20.20s  %d ", dir->d_name, retv);
-                    if (S_ISLNK(buf.st_mode)) printf (" LINK");
-                    if (S_ISREG(buf.st_mode)) printf (" REG ");
-                    if (S_ISDIR(buf.st_mode)) printf (" DIR ");
-                    if (S_ISBLK(buf.st_mode)) printf (" BLK ");
-                    if (S_ISFIFO(buf.st_mode)) printf (" FIFO");
-                    if (S_ISSOCK(buf.st_mode)) printf (" SOCK");
-                    printf("\n");
-*/
-                    if( (pch) && (!S_ISLNK(buf.st_mode)) )
+
+                    if(pch)
                     {
                         long ID;
+                        
+                        // is file sym link ?
+                        struct stat buf;
+						int retv;
+						retv = lstat (dir->d_name, &buf);
+						if (retv == -1 ){
+							endwin();
+							perror("ERROR: ");
+						}
+						
+						
 
                         // get stream name and ID
                         strncpy(sname_array[sindex], dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         sname_array[sindex][strlen(dir->d_name)-strlen(".im.shm")] = '\0';
                         ID = image_ID(sname_array[sindex]);
-                        
-
-                        
+                                                
                         
                         // connect to stream
                         ID = image_ID(sname_array[sindex]);
@@ -684,6 +678,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         atype_array[sindex] = data.image[ID].md[0].atype;
 
+						if (S_ISLNK(buf.st_mode))
+							SymLink_array[ID] = 1;
+						else
+							SymLink_array[ID] = 0;
 
                         sindex++;
                     }
@@ -783,8 +781,14 @@ int_fast8_t streamCTRL_CTRLscreen()
                 {
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
-
-
+                        
+                    if(SymLink_array[ID] == 1)
+                    {
+						attron(COLOR_PAIR(5));
+						printw("%-36s ", sname_array[sindex]);
+                        attroff(COLOR_PAIR(5));
+                    }
+                    else
                     printw("%-36s ", sname_array[sindex]);
 
 
