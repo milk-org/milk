@@ -626,7 +626,6 @@ int_fast8_t streamCTRL_CTRLscreen()
             struct dirent *dir;
             d = opendir("/tmp/");
 
-endwin(); //TEST
 
             // COLLECT DATA
             if(d)
@@ -682,14 +681,12 @@ endwin(); //TEST
 
 						if (S_ISLNK(buf.st_mode)) // resolve link name
 						{
-printf("\n");
 							char linknamefull[200];
 							char linkname[200];
 							int nchar;
 							
 							SymLink_array[ID] = 1;						
 							readlink (dir->d_name, linknamefull, 200-1);							
-printf("%s (%d) -> ", linknamefull, strlen(linknamefull));
 							
 							strcpy(linkname, basename(linknamefull));
 							
@@ -705,17 +702,7 @@ printf("%s (%d) -> ", linknamefull, strlen(linknamefull));
 								ii++;								
 							}
 							
-
 							strncpy(linkname_array[sindex], linkname, nameNBchar);
-							
-//							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
-							
-
-							printf("%s (%d) -> ", linkname, strlen(linkname));
-							printf("%s |\n", linkname_array[sindex]);
-							
-
-
 						}
 						else
 							SymLink_array[ID] = 0;
@@ -725,7 +712,6 @@ printf("%s (%d) -> ", linknamefull, strlen(linknamefull));
                 }
                 NBsindex = sindex;
             }
-            exit(0);//TEST
 
 
 
