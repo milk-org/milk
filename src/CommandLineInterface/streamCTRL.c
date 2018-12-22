@@ -789,7 +789,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         attroff(COLOR_PAIR(5));
                     }
                     else
-                    printw("%-36s ", sname_array[sindex]);
+						printw("%-36s ", sname_array[sindex]);
 
 
 
@@ -953,7 +953,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
                             if (fp == NULL) {
-								endwin();		
+								endwin();
+								printf("FILE %ld\n", dindex);		
 								perror("Error: ");
 								printf("command : \"%s\"\n", command);
 								system(command);
