@@ -1090,10 +1090,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     sprintf(lstring, "%s %6d:%-*.*s", lstring, (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
-                               // printw("%s", lstring);
+                               printw("%s", lstring);
 
-								const chtype * lstring1 = "This is a test";
-                                addchstr(lstring1);
+								//const chtype * lstring1 = "This is a test";
+                                //addchstr(lstring1);
                             }
                             break;
 
