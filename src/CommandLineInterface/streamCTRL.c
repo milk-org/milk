@@ -1075,18 +1075,21 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         printw(" ");
                         int pidIndex;
+                        char lstring[200];
 
                         switch (streamOpenPIDarray_status[ID]) {
 
                         case 1:
+							sprintf(lstring, "");
                             streamOpenPIDarray_cnt1[ID] = 0;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
-                            {
+                            {								
                                 pid_t pid = streamOpenPIDarray[ID][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) ) {
-                                    printw(" %6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                    sprintf(lstring, "%s %6d:%-*.*s", lstring, (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
+                                printw("%s", lstring);
                             }
                             break;
 
