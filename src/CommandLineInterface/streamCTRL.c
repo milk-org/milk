@@ -682,13 +682,14 @@ endwin(); //TEST
 
 						if (S_ISLNK(buf.st_mode)) // resolve link name
 						{
-
+printf("\n");
 							char linknamefull[200];
 							char linkname[200];
 							int nchar;
 							
 							SymLink_array[ID] = 1;						
-							readlink (dir->d_name, linknamefull, 200-1);
+							readlink (dir->d_name, linknamefull, 200-1);							
+printf("%s (%d) -> ", linknamefull, strlen(linknamefull));	
 							
 							strcpy(linkname, basename(linknamefull));
 							
@@ -699,9 +700,8 @@ endwin(); //TEST
 							
 							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 							
-							printf("\n");
-							printf("%s -> ", linknamefull);
-							printf("%s -> ", linkname);
+
+							printf("%s (%d) -> ", linkname, strlen(linkname));
 							printf("%s |\n", linkname_array[sindex]);
 							
 
