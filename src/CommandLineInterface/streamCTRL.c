@@ -682,8 +682,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 						if (S_ISLNK(buf.st_mode))
 						{
+							char *linknamefull;
+							char *linkname;
+							
 							SymLink_array[ID] = 1;						
-							readlink (dir->d_name, linkname_array[sindex], 20);
+							readlink (dir->d_name, linknamefull, 200);
+							linkname = basename(linknamefull);
+							strncpy(sname_array[sindex], linkname, strlen(linkname));
 						}
 						else
 							SymLink_array[ID] = 0;
@@ -789,8 +794,11 @@ int_fast8_t streamCTRL_CTRLscreen()
                         
                     if(SymLink_array[ID] == 1)
                     {						
+						char namestring[40];
+						sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
+						
 						attron(COLOR_PAIR(5));
-						printw("%-16.16s -> %-16.16s", sname_array[sindex], linkname_array[sindex]);
+						printw("%-36s", namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
