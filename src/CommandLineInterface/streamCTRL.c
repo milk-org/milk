@@ -1006,6 +1006,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 fp = fopen(plistfname, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
+                                    printw(" %s ", plistfname);
                                 }
                                 else
                                 {
