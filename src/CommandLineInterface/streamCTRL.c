@@ -639,7 +639,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                     struct stat buf;
                     int retv;
                     retv = stat (dir->d_name, &buf);
-                    
+                    if (retv == -1 )
+						perror("ERROR: ");
                     
                     
                     printf("%-20.20s  %d ", dir->d_name, retv);
