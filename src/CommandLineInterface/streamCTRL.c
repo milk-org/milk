@@ -319,7 +319,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // INITIALIZE ncurses
     initncurses();
 
-    int NBsinfodisp = wrow-5;
+    int NBsinfodisp = wrow-6;
     int NBsindex = 0;
     int loopOK = 1;
     long cnt = 0;
@@ -970,37 +970,39 @@ int_fast8_t streamCTRL_CTRLscreen()
                         if(fuserUpdate==1)
                         {
                             FILE *fp;
-                            char fuseroutline[1035];
+                            char plistoutline[2000];
                             char command[2000];
 
                             int NBpid = 0;
 														
 
+
+							
+
                             /* Open the command for reading. */
-                            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
+                            // popen option
+                            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);                            
                             fp = popen(command, "r");
                             if (fp == NULL) {
-/*								endwin();
-								printf("FILE %ld\n", dindex);		
-								perror("Error: ");
-								printf("command : \"%s\"\n", command);
-								system(command);
-                                exit(0);*/
                                 streamOpenPIDarray_status[ID] = 2; // failed
-                                usleep(100000);
                             }
                             else
                             {
                                 /* Read the output a line at a time - output it. */
-                                if (fgets(fuseroutline, sizeof(fuseroutline)-1, fp) != NULL) {
-                                    //printw("  OPEN BY: %-30s", fuseroutline);
+                                if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
                                 }
                                 pclose(fp);
-
-
+							}
+							
+							
+							
+							
+							
+							if(streamOpenPIDarray_status[ID] != 2)
+							{
                                 char * pch;
 
-                                pch = strtok (fuseroutline," ");
+                                pch = strtok (plistoutline," ");
 
                                 while (pch != NULL) {
                                     if(NBpid<streamOpenNBpid_MAX) {
@@ -1012,8 +1014,6 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 streamOpenPIDarray_status[ID] = 1; // success
                             }
-//                            if(fp != NULL)
-//								pclose(fp);
 
                             streamOpenPIDarray_cnt[ID] = NBpid;
                             
