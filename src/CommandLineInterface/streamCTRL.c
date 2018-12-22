@@ -626,7 +626,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             struct dirent *dir;
             d = opendir("/tmp/");
 
-
+endwin(); //TEST
 
             // COLLECT DATA
             if(d)
@@ -682,7 +682,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 						if (S_ISLNK(buf.st_mode)) // resolve link name
 						{
-							endwin(); //TEST
 
 							char linknamefull[200];
 							char linkname[200];
@@ -716,7 +715,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-            exit(0);
+            exit(0);//TEST
 
 
 
