@@ -3,7 +3,21 @@
 @note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
 
 
+To compile :
+
+	cd cacao
+	mkdir _build
+	cd _build
+	cmake ..
+	make
+	sudo make install
+
+
+
+
 ---
+
+
 
 ## Libraries
 
