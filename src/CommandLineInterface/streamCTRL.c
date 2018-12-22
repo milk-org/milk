@@ -63,6 +63,8 @@
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 50
 
+#define PIDmax 32768
+#define PIDnameStringLen 12
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -266,6 +268,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
     long deltacnt0[streamNBID_MAX];
+
+	char PIDname_array[PIDmax][PIDnameStringLen];
+
+
+
 
     setlocale(LC_ALL, "");
 
@@ -868,10 +875,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             /* Open the command for reading. */
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
-                            if (fp == NULL) {
-								
+                            if (fp == NULL) {								
                                 streamOpenPIDarray_status[ID] = 2; // failed
-								pclose(fp);
                             }
                             else
                             {
@@ -898,6 +903,23 @@ int_fast8_t streamCTRL_CTRLscreen()
                             }
 
                             streamOpenPIDarray_cnt[ID] = NBpid;
+                            
+                            
+                            // Get PID names
+                            int pidIndex;
+                            for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
+                            {
+                                pid_t pid = streamOpenPIDarray[ID][pidIndex];
+                                if( (getpgid(pid) >= 0) && (pid != getpid()) )
+                                {
+									char* pname = (char*) calloc(1024, sizeof(char));
+                                    get_process_name_by_pid(pid, pname);
+                                    strncpy(PIDname_array[pid], pname, PIDnameStringLen);
+                                    free(pname);
+								}
+                            }
+                            
+                            
                         }
 
                         if(fuserUpdate == 2)
@@ -915,14 +937,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         case 1:
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                             {
-                                pid_t pid = streamOpenPIDarray[ID][pidIndex];
-                                if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                                {
-									char* pname = (char*) calloc(1024, sizeof(char));
-                                    get_process_name_by_pid(pid, pname);
-                                    printw(" %5d:%-12.12s", (int) pid, pname);
-                                    free(pname);
-								}
+								pid_t pid = streamOpenPIDarray[ID][pidIndex];
+                                printw(" %5d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                             }
                             break;
 
