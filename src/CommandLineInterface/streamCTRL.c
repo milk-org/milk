@@ -701,7 +701,8 @@ printf("%s (%d) -> ", linknamefull, strlen(linknamefull));
 								{
 									linkname[ii] = '\0';
 									lOK = 0;
-								}								
+								}
+								ii++;								
 							}
 							
 							nchar = strlen(linkname)-strlen(".im.shm");
