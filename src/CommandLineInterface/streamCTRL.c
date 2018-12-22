@@ -649,7 +649,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         retv = lstat (dir->d_name, &buf);
                         if (retv == -1 ) {
                             endwin();
-                            perror("ERROR: ");
+                            sprintf("File \"dir->d_name\"");
+                            perror("Error running lstat on file ");
                         }
 
 
@@ -1032,7 +1033,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     
                                     endwin();
                                     printf(" [%s] ", plistfname); //TEST
-                                    perror("Error: ");
+                                    perror("Error reading fuser output file ");
                                     exit(0);
                                 }
                                 else
