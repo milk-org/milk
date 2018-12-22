@@ -649,7 +649,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         retv = lstat (dir->d_name, &buf);
                         if (retv == -1 ) {
                             endwin();
-                            sprintf("File \"dir->d_name\"");
+                            sprintf("File \"%s\"", dir->d_name);
                             perror("Error running lstat on file ");
                         }
 
