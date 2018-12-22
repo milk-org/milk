@@ -66,7 +66,7 @@
 
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 50
-
+#define nameNBchar 30
 
 
 /* =============================================================================================== */
@@ -217,14 +217,14 @@ int streamCTRL_CatchSignals()
 
 static int get_PIDmax()
 {
-	FILE *fp;
-	int PIDmax;
-	
-	fp = fopen("/proc/sys/kernel/pid_max", "r");
-	fscanf(fp, "%d", &PIDmax);
-	fclose(fp);
-	
-	return PIDmax;
+    FILE *fp;
+    int PIDmax;
+
+    fp = fopen("/proc/sys/kernel/pid_max", "r");
+    fscanf(fp, "%d", &PIDmax);
+    fclose(fp);
+
+    return PIDmax;
 }
 
 
@@ -248,8 +248,8 @@ static int get_PIDmax()
 
 int_fast8_t streamCTRL_CTRLscreen()
 {
-	int PIDnameStringLen = 12;
-	
+    int PIDnameStringLen = 12;
+
     long sindex;  // scan index
     long dindex;  // display index
     long ssindex[streamNBID_MAX]; // sorted index array
@@ -274,8 +274,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     // data arrays
-    char sname_array[streamNBID_MAX][200];
+    char sname_array[streamNBID_MAX][nameNBchar];
+    char linkname_array[streamNBID_MAX][nameNBchar];
+
     long IDarray[streamNBID_MAX];
+    int SymLink_array[streamNBID_MAX];
 
     pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
     int streamOpenPIDarray_cnt[streamNBID_MAX];
@@ -292,17 +295,17 @@ int_fast8_t streamCTRL_CTRLscreen()
     long deltacnt0[streamNBID_MAX];
 
 
-	
-	//[PIDmax][PIDnameStringLen];
+
+    //[PIDmax][PIDnameStringLen];
 
 
 
-	// create PID name table
-	char **PIDname_array;
-	int PIDmax;
-	
-	PIDmax = get_PIDmax();
-	PIDname_array = malloc(sizeof(char*)*PIDmax);
+    // create PID name table
+    char **PIDname_array;
+    int PIDmax;
+
+    PIDmax = get_PIDmax();
+    PIDname_array = malloc(sizeof(char*)*PIDmax);
 
 
 
@@ -316,7 +319,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // INITIALIZE ncurses
     initncurses();
 
-    int NBsinfodisp = wrow-5;
+    int NBsinfodisp = wrow-6;
     int NBsindex = 0;
     int loopOK = 1;
     long cnt = 0;
@@ -624,9 +627,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             d = opendir("/tmp/");
 
 
-
             // COLLECT DATA
- endwin();//TEST
             if(d)
             {
                 sindex = 0;
@@ -635,37 +636,28 @@ int_fast8_t streamCTRL_CTRLscreen()
                 {
                     char *pch = strstr(dir->d_name, ".im.shm");
 
-					// is file sym link ?
-                    struct stat buf;
-                    int retv;
-                    retv = stat (dir->d_name, &buf);
-                    if (retv == -1 )
-						perror("ERROR: ");
-                    
-                    
-                    printf("%-20.20s  %d ", dir->d_name, retv);
-                    if (S_ISLNK(buf.st_mode)) printf (" LINK");
-                    if (S_ISREG(buf.st_mode)) printf (" REG ");
-                    if (S_ISDIR(buf.st_mode)) printf (" DIR ");
-                    if (S_ISBLK(buf.st_mode)) printf (" BLK ");
-                    if (S_ISFIFO(buf.st_mode)) printf (" FIFO");
-                    if (S_ISSOCK(buf.st_mode)) printf (" SOCK");
 
-
-                    printf("\n");
-
-                    if( (pch) && (!S_ISLNK(buf.st_mode)) )
+                    if(pch)
                     {
                         long ID;
+
+                        // is file sym link ?
+                        struct stat buf;
+                        int retv;
+                        retv = lstat (dir->d_name, &buf);
+                        if (retv == -1 ) {
+                            endwin();
+                            perror("ERROR: ");
+                        }
+
+
 
                         // get stream name and ID
                         strncpy(sname_array[sindex], dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         sname_array[sindex][strlen(dir->d_name)-strlen(".im.shm")] = '\0';
                         ID = image_ID(sname_array[sindex]);
-                        
 
-                        
-                        
+
                         // connect to stream
                         ID = image_ID(sname_array[sindex]);
                         if(ID == -1)
@@ -687,13 +679,39 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         atype_array[sindex] = data.image[ID].md[0].atype;
 
+                        if (S_ISLNK(buf.st_mode)) // resolve link name
+                        {
+                            char linknamefull[200];
+                            char linkname[200];
+                            int nchar;
+
+                            SymLink_array[ID] = 1;
+                            readlink (dir->d_name, linknamefull, 200-1);
+
+                            strcpy(linkname, basename(linknamefull));
+
+                            int lOK = 1;
+                            int ii = 0;
+                            while((lOK == 1)&&(ii<strlen(linkname)))
+                            {
+                                if(linkname[ii] == '.')
+                                {
+                                    linkname[ii] = '\0';
+                                    lOK = 0;
+                                }
+                                ii++;
+                            }
+
+                            strncpy(linkname_array[sindex], linkname, nameNBchar);
+                        }
+                        else
+                            SymLink_array[ID] = 0;
 
                         sindex++;
                     }
                 }
                 NBsindex = sindex;
             }
-exit(0);//TEST
 
 
 
@@ -742,14 +760,14 @@ exit(0);//TEST
                 {
                     for(sindex=0; sindex<NBsindex; sindex++)
                         updatevaluearray_frozen[IDarray[sindex]] = updatevaluearray[IDarray[sindex]];
-                    
+
                     if(SORTING==3)
                     {
-						for(sindex=0; sindex<NBsindex; sindex++)
-							updatevaluearray_frozen[IDarray[sindex]] += 10000.0*streamOpenPIDarray_cnt1[IDarray[sindex]];
-					}
-                    
-                    SORT_TOGGLE = 0;                    
+                        for(sindex=0; sindex<NBsindex; sindex++)
+                            updatevaluearray_frozen[IDarray[sindex]] += 10000.0*streamOpenPIDarray_cnt1[IDarray[sindex]];
+                    }
+
+                    SORT_TOGGLE = 0;
                 }
 
                 for(sindex=0; sindex<NBsindex; sindex++)
@@ -767,7 +785,7 @@ exit(0);//TEST
                 free(varray);
             }
 
-            
+
 
 
 
@@ -788,8 +806,17 @@ exit(0);//TEST
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
 
+                    if(SymLink_array[ID] == 1)
+                    {
+                        char namestring[40];
+                        sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
 
-                    printw("%-36s ", sname_array[sindex]);
+                        attron(COLOR_PAIR(5));
+                        printw("%-36s ", namestring);
+                        attroff(COLOR_PAIR(5));
+                    }
+                    else
+                        printw("%-36s ", sname_array[sindex]);
 
 
 
@@ -943,35 +970,59 @@ exit(0);//TEST
                         if(fuserUpdate==1)
                         {
                             FILE *fp;
-                            char fuseroutline[1035];
+                            char plistoutline[2000];
                             char command[2000];
 
                             int NBpid = 0;
-														
 
-                            /* Open the command for reading. */
-                            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
-                            fp = popen(command, "r");
-                            if (fp == NULL) {
-								endwin();		
-								perror("Error: ");
-								printf("command : \"%s\"\n", command);
-								system(command);
-                                exit(0);
-                                streamOpenPIDarray_status[ID] = 2; // failed
+
+
+                            int PReadMode = 0;
+
+                            if(PReadMode == 0)
+                            {
+                                // popen option
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
+                                fp = popen(command, "r");
+                                if (fp == NULL) {
+                                    streamOpenPIDarray_status[ID] = 2; // failed
+                                }
+                                else
+                                {
+                                    /* Read the output a line at a time - output it. */
+                                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
+                                    }
+                                    pclose(fp);
+                                }
                             }
                             else
                             {
-                                /* Read the output a line at a time - output it. */
-                                if (fgets(fuseroutline, sizeof(fuseroutline)-1, fp) != NULL) {
-                                    //printw("  OPEN BY: %-30s", fuseroutline);
+                                // filesystem option
+                                char plistfname[200];
+                                sprintf(plistfname, "/tmp/%s.im.shm.plist", sname_array[sindex]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
+                                system(command);
+                                fp = fopen(plistfname, "r");
+                                if (fp == NULL) {
+                                    streamOpenPIDarray_status[ID] = 2; // failed
                                 }
-                                pclose(fp);
+                                else
+                                {
+                                    size_t len = 0;
 
+                                    if(getline(&plistoutline, &len, fp) != -1) {
+                                    }
+                                    else
+                                        sprintf(plistoutline, " ");
+                                        pclose(fp);
+                                    }
+                            }
 
+                            if(streamOpenPIDarray_status[ID] != 2)
+                            {
                                 char * pch;
 
-                                pch = strtok (fuseroutline," ");
+                                pch = strtok (plistoutline," ");
 
                                 while (pch != NULL) {
                                     if(NBpid<streamOpenNBpid_MAX) {
@@ -985,8 +1036,8 @@ exit(0);//TEST
                             }
 
                             streamOpenPIDarray_cnt[ID] = NBpid;
-                            
-                            
+
+
                             // Get PID names
                             int pidIndex;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
@@ -994,17 +1045,17 @@ exit(0);//TEST
                                 pid_t pid = streamOpenPIDarray[ID][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) )
                                 {
-									char* pname = (char*) calloc(1024, sizeof(char));
+                                    char* pname = (char*) calloc(1024, sizeof(char));
                                     get_process_name_by_pid(pid, pname);
-                                    
+
                                     if(PIDname_array[pid] == NULL)
-										PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
+                                        PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
                                     strncpy(PIDname_array[pid], pname, PIDnameStringLen);
                                     free(pname);
-								}
+                                }
                             }
-                            
-                            
+
+
                         }
 
                         if(fuserUpdate == 2)
@@ -1020,14 +1071,14 @@ exit(0);//TEST
                         switch (streamOpenPIDarray_status[ID]) {
 
                         case 1:
-							streamOpenPIDarray_cnt1[ID] = 0;
+                            streamOpenPIDarray_cnt1[ID] = 0;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                             {
-								pid_t pid = streamOpenPIDarray[ID][pidIndex];
-								if( (getpgid(pid) >= 0) && (pid != getpid()) ){
-									printw(" %6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
-									streamOpenPIDarray_cnt1[ID]++;
-								}
+                                pid_t pid = streamOpenPIDarray[ID][pidIndex];
+                                if( (getpgid(pid) >= 0) && (pid != getpid()) ) {
+                                    printw(" %6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                    streamOpenPIDarray_cnt1[ID]++;
+                                }
                             }
                             break;
 
