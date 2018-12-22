@@ -66,7 +66,7 @@
 
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 50
-#dfine nameNBchar 30
+#define nameNBchar 30
 
 
 /* =============================================================================================== */
@@ -274,7 +274,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     // data arrays
-    char sname_array[streamNBID_MAX][nambeNBchar];
+    char sname_array[streamNBID_MAX][nameNBchar];
     char linkname_array[streamNBID_MAX][nameNBchar];
     
     long IDarray[streamNBID_MAX];
@@ -688,12 +688,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 							
 							SymLink_array[ID] = 1;						
 							readlink (dir->d_name, linknamefull, 200-1);
-							linkname = basename(linknamefull);
+							
+							strcpy(linkname, basename(linknamefull));
 							
 							nchar = strlen(linkname)-strlen(".im.shm");
 							if(nchar > nameNBchar-1)
-								nchar = nbameNBchar-1; 
-							strncpy(linkname_array[sindex], linkname, nbchar);
+								nchar = nameNBchar-1; 
+							strncpy(linkname_array[sindex], linkname, nchar);
 							
 //							linkname_array[sindex][strlen(linkname)-strlen(".im.shm")] = '\0';
 						}
