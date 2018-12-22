@@ -1006,25 +1006,20 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 fp = fopen(plistfname, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
-                                    printw(" A  %s", plistfname);
                                 }
                                 else
                                 {
                                     size_t len = 0;
 
-                                    //if(getline(&plistoutline, &len, fp) != -1) {
-									if(fgets(plistoutline, 2000, fp) != NULL) {
-										printw(" B \"%s (%d)\"", plistoutline, len);
-                                    }
-                                    else
-                                    {
-                                        sprintf(plistoutline, "-");
-                                        printw(" C");
-									}
+									if(fgets(plistoutline, 2000, fp) == NULL)
+                                        sprintf(plistoutline, " ");
 
 
                                     fclose(fp);
                                 }
+                                
+                                sprintf(command, "rm %s", plistfname);
+                                system(command);
                             }
 
 
