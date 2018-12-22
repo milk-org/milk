@@ -1001,6 +1001,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 sprintf(plistfname, "/tmp/%s.im.shm.plist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
+                                system(command);
                                 fp = fopen(plistfname, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
