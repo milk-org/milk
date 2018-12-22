@@ -824,7 +824,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     else
                         printw("%-*.*s", DispName_NBchar, DispName_NBchar, sname_array[sindex]);
                     
-                    if(strlen(sname_array[sindex]>DispName_NBchar)
+                    if(strlen(sname_array[sindex]) > DispName_NBchar)
                     {
 						attron(COLOR_PAIR(8));
 						printw("+");
