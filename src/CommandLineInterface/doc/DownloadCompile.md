@@ -1,3 +1,6 @@
+[TOC]
+
+
 # Installation {#page_installation}
 
 @note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
@@ -14,7 +17,6 @@ To compile :
 
 
 
-[TOC]
 
 ---
 ---
