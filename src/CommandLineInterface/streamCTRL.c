@@ -938,7 +938,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
                             {
 								pid_t pid = streamOpenPIDarray[ID][pidIndex];
-                                printw(" %5d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+								if( (getpgid(pid) >= 0) && (pid != getpid()) )
+									printw(" %5d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                             }
                             break;
 
