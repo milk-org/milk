@@ -869,7 +869,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                             sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
                             fp = popen(command, "r");
                             if (fp == NULL) {
+								
                                 streamOpenPIDarray_status[ID] = 2; // failed
+								pclose(fp);
                             }
                             else
                             {
