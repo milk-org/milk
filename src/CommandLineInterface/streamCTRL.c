@@ -715,8 +715,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-
-
+            
+                            endwin();
+                            sprintf("%d files found", NBindex);
+exit(0);
 
 
             // SORT
