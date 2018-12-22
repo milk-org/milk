@@ -1006,8 +1006,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 streamOpenPIDarray_status[ID] = 1; // success
                             }
-                            if(fp != NULL)
-								pclose(fp);
+//                            if(fp != NULL)
+//								pclose(fp);
 
                             streamOpenPIDarray_cnt[ID] = NBpid;
                             
