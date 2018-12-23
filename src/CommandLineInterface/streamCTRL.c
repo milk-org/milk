@@ -877,7 +877,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                    if(DisplayMode < 5)
+                    if(DisplayMode < -1) //5)
                     {
                         char str[200];
                         char str1[200];
@@ -962,7 +962,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                    if(DisplayMode == 2) // sem vals
+                    if(DisplayMode == -1) //2) // sem vals
                     {
 
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
@@ -1057,14 +1057,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                     }
 
+
+
                     if(DisplayMode == 5) // list processes that are accessing streams
                     {
-
-
-
-
-
-
                         if(fuserUpdate == 2)
                         {
                             streaminfo[sindex].streamOpenPID_status = 0; // not scanned
