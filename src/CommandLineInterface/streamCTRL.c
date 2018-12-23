@@ -602,7 +602,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     long index;
 
-    float frequ = 16.0; // Hz
+    float frequ = 32.0; // Hz
     char  monstring[200];
 
     long IDmax = streamNBID_MAX;
