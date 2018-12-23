@@ -745,7 +745,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                         else
                             streaminfo[sindex].SymLink = 0;
-                            */
+                            
 
                         sindex++;
                     }
