@@ -307,6 +307,9 @@ void *streamCTRL_scan(void* thptr)
 
 	streaminfoproc->loopcnt = 0;
 
+
+
+
     while(streaminfoproc->loop == 1)
     {
 
