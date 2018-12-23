@@ -1047,7 +1047,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(DisplayMode == 5) // list processes that are accessing streams
                     {
                         if(fuserUpdate==1)
-                        {														
+                        {										
                             FILE *fp;
                             char plistoutline[2000];
                             char command[2000];
@@ -1056,8 +1056,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                             
                             int sindexscan1 = ssindex[sindexscan];
                             IDscan = IDarray[sindexscan1];
-
-
+                            
+                            refresh();
 
                             int PReadMode = 1;
 
