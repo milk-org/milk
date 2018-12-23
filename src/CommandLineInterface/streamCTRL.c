@@ -902,11 +902,11 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-            printw("PIDmax = %d    Update frequ = %2d Hz", PIDmax, (int) (frequ+0.5));
+            printw("PIDmax = %d    Update frequ = %2d Hz  Scan #%ld  ", PIDmax, (int) (frequ+0.5), streaminfoproc.loopcnt);
             if(streaminfoproc.fuserUpdate == 1)
             {
 				attron(COLOR_PAIR(9));
-                printw("  fuser scan ongoing  %4d  / %4d   ", streaminfoproc.sindexscan, NBsindex);
+                printw("fuser scan ongoing  %4d  / %4d   ", streaminfoproc.sindexscan, NBsindex);
 				attroff(COLOR_PAIR(9));
             }
             if(DisplayMode==5)
