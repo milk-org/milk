@@ -1045,10 +1045,10 @@ int_fast8_t streamCTRL_CTRLscreen()
             // DISPLAY
 
             sOK = 1;
-            for(dindex=0; dindex < NBsindex; dindex++)
+            for(dindex=doffsetindex; dindex < NBsindex; dindex++)
             {
                 long ID;
-                sindex = ssindex[dindex+doffsetindex];
+                sindex = ssindex[dindex];
                 ID = streaminfo[sindex].ID;
 
 
