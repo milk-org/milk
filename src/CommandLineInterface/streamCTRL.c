@@ -454,14 +454,15 @@ void *streamCTRL_scan(void* thptr)
                 {
                     streaminfo[sindexscan1].streamOpenPID_status = 1;
                     
-                    if (fgets(plistoutline, 2000-1, fp) != NULL) {}
+                    if (fgets(plistoutline, 2000-1, fp) == NULL)
+						sprintf(plistoutline, " ");
                     pclose(fp);
                 }
             }
             else
             {
                 // filesystem option
-                char plistfname[200];
+                char plistfname[2000];
 
 
                 sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
