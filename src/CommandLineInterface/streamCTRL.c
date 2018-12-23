@@ -66,6 +66,8 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+#define STRINGLENMAX  32
+
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 100
 #define nameNBchar 100
@@ -118,6 +120,9 @@ typedef struct
 		
 	int loop;   // 1 : loop     0 : exit
 	long loopcnt;
+	
+	int filter;           // 1 if applying filter to name
+	char namefilter[STRINGLENMAX];
 	
 	STREAMINFO *sinfo;
 	long NBstream;
@@ -338,9 +343,21 @@ void *streamCTRL_scan(void* thptr)
             while(((dir = readdir(d)) != NULL))
             {
                 char *pch = strstr(dir->d_name, ".im.shm");
+                
+                int matchOK = 0;
+                
+				// name filtering
+				if(streaminfoproc->filter == 1)
+				{
+					if(strstr(dir->d_name, streaminfoproc->namefilter) != NULL)
+						matchOK = 1;
+				}
+				else
+					matchOK = 1;
+								
 
 
-                if(pch)
+                if((pch) && (matchOK == 1))
                 {
                     long ID;
 
@@ -642,6 +659,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     time_t rawtime;
     int fuserScan = 0;
     
+    streaminfoproc.filter = 0;
 	streaminfoproc.NBstream = 0;
     streaminfoproc.twaitus = 50000; // 20 Hz
     streaminfoproc.fuserUpdate0 = 1; //update on first instance
@@ -652,6 +670,9 @@ int_fast8_t streamCTRL_CTRLscreen()
     // Start scan thread
 	streaminfoproc.loop = 1;
 	pthread_create( &threadscan, NULL, streamCTRL_scan, (void*) &streaminfoproc);
+
+	char c; // for user input
+	int stringindex;
 
     while( loopOK == 1 )
     {
@@ -673,6 +694,7 @@ int_fast8_t streamCTRL_CTRLscreen()
         case 'x':     // Exit control screen
             loopOK=0;
             break;
+
 
         case KEY_UP:
             dindexSelected --;
@@ -699,7 +721,8 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
 
-        // Set Display Mode
+
+            // ============ SCREENS
 
         case 'h': // help
             DisplayMode = 1;
@@ -734,10 +757,49 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
 
+
+            // ============ ACTIONS
+
         case 'R': // remove stream
             ImageStreamIO_destroyIm( &data.image[streaminfo[dindexSelected].ID]);
             break;
 
+
+
+            // ============ SCANNING
+
+        case '{': // slower scan update
+            streaminfoproc.twaitus = (int) (1.2*streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus > 1000000)
+                streaminfoproc.twaitus = 1000000;
+            break;
+
+        case '}': // faster scan update
+            streaminfoproc.twaitus = (int) (0.83333333333333333333*streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus < 1000)
+                streaminfoproc.twaitus = 1000;
+            break;
+
+
+
+            // ============ DISPLAY
+
+        case '-': // slower display update
+            frequ *= 0.5;
+            if(frequ < 1.0)
+                frequ = 1.0;
+            if(frequ > 64.0)
+                frequ = 64.0;
+            break;
+
+
+        case '+': // faster display update
+            frequ *= 2.0;
+            if(frequ < 1.0)
+                frequ = 1.0;
+            if(frequ > 64.0)
+                frequ = 64.0;
+            break;
 
         case '1': // sorting by stream name
             SORTING = 1;
@@ -754,25 +816,31 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
 
-        case '+': // faster display update
-            frequ *= 2.0;
-            if(frequ < 1.0)
-                frequ = 1.0;
-            if(frequ > 64.0)
-                frequ = 64.0;
+        case 'f': // stream name filter toggle
+            if(streaminfoproc.filter == 0)
+				streaminfoproc.filter = 1;
+			else
+				streaminfoproc.filter = 0;
             break;
 
-        case '{': // slower scan update
-            streaminfoproc.twaitus = (int) (1.2*streaminfoproc.twaitus);
-            if(streaminfoproc.twaitus > 1000000)
-                streaminfoproc.twaitus = 1000000;
+        case 'F': // set stream name filter string
+			endwin();
+            if(system("clear") != 0) // clear screen
+					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+			printf("Enter string: ");
+			fflush(stdout);
+			stringindex = 0;
+			while(((c = getchar()) != 13)&&(stringindex<STRINGLENMAX-2))
+			{
+				streaminfoproc.namefilter[stringindex] = c;
+				stringindex++;
+				putchar(c);  // echo on screen
+			}
+			streaminfoproc.namefilter[stringindex] = '\0';
+			initncurses();
             break;
 
-        case '}': // faster scan update
-            streaminfoproc.twaitus = (int) (0.83333333333333333333*streaminfoproc.twaitus);
-            if(streaminfoproc.twaitus < 1000)
-                streaminfoproc.twaitus = 1000;
-            break;
+
 
         }
 
@@ -950,9 +1018,16 @@ int_fast8_t streamCTRL_CTRLscreen()
             lastindex = doffsetindex+NBsinfodisp;
             if(lastindex > NBsindex-1)
 				lastindex = NBsindex-1;
-            printw("%4d streams    Currently displaying %4d-%4d   Selected %d\n", NBsindex, doffsetindex, lastindex, dindexSelected);
+            printw("%4d streams    Currently displaying %4d-%4d   Selected %d ", NBsindex, doffsetindex, lastindex, dindexSelected);    
+            
+            if(streaminfoproc.filter == 1)
+            {
+				attron(COLOR_PAIR(9));
+				printw("  Filter = \"%s\"", streaminfoproc.namefilter);
+				attroff(COLOR_PAIR(9));
+			}
 
-            printw("\n");
+            printw("\n\n");
 
 
 
