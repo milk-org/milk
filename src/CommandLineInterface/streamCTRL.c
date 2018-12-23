@@ -1032,7 +1032,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 
                                 
-                                sprintf(plistfname, "/tmp/.streamCTRL/%s.shmplist", sname_array[sindex]);
+                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
                                 
