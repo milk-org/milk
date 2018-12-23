@@ -688,7 +688,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
                         ID = image_ID(streaminfo[sindex].sname);
-
+/*
 
                         // connect to stream
                         ID = image_ID(streaminfo[sindex].sname);
@@ -711,7 +711,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         streaminfo[sindex].atype = data.image[ID].md[0].atype;
 
-/*
+
                         if (S_ISLNK(buf.st_mode)) // resolve link name
                         {
                             char fullname[200];
