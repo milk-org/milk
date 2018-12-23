@@ -68,14 +68,7 @@
 #define streamOpenNBpid_MAX 50
 #define nameNBchar 30
 
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define BLU   "\x1B[34m"
-#define MAG   "\x1B[35m"
-#define CYN   "\x1B[36m"
-#define WHT   "\x1B[37m"
-#define RESET "\x1B[0m"
+
 
 
 /* =============================================================================================== */
@@ -830,7 +823,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 					char line[200];
 					char string[200];
 					int charcnt = 0; // how many chars are about to be printed
-					int linecharcnt = 0; // keeping track of number of characters in line
+					int linecharcnt = 1; // keeping track of number of characters in line
 					
 					
 					charcnt = DispName_NBchar+1;
@@ -856,8 +849,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 						attroff(COLOR_PAIR(9));
 					}
 					else
-						printw(" ");
-                    
+						printw(" ");        
                     linecharcnt += charcnt;
 
 
@@ -872,39 +864,42 @@ int_fast8_t streamCTRL_CTRLscreen()
                         char str1[200];
                         int j;
                         
-                        charcnt = 4;
+                        
                         if(atype_array[sindex]==_DATATYPE_UINT8)
-                            printw(" UI8");
+                            charcnt = sprintf(string, " UI8");
                         if(atype_array[sindex]==_DATATYPE_INT8)
-                            printw("  I8");
+                            charcnt = sprintf(string, "  I8");
 
                         if(atype_array[sindex]==_DATATYPE_UINT16)
-                            printw("UI16");
+                            charcnt = sprintf(string, "UI16");
                         if(atype_array[sindex]==_DATATYPE_INT16)
-                            printw(" I16");
+                            charcnt = sprintf(string, " I16");
 
                         if(atype_array[sindex]==_DATATYPE_UINT32)
-                            printw("UI32");
+                            charcnt = sprintf(string, "UI32");
                         if(atype_array[sindex]==_DATATYPE_INT32)
-                            printw(" I32");
+                            charcnt = sprintf(string, " I32");
 
                         if(atype_array[sindex]==_DATATYPE_UINT64)
-                            printw("UI64");
+                            charcnt = sprintf(string, "UI64");
                         if(atype_array[sindex]==_DATATYPE_INT64)
-                            printw(" I64");
+                            charcnt = sprintf(string, " I64");
 
                         if(atype_array[sindex]==_DATATYPE_FLOAT)
-                            printw(" FLT");
+                            charcnt = sprintf(string, " FLT");
 
                         if(atype_array[sindex]==_DATATYPE_DOUBLE)
-                            printw(" DBL");
+                            charcnt = sprintf(string, " DBL");
 
                         if(atype_array[sindex]==_DATATYPE_COMPLEX_FLOAT)
-                            printw("CFLT");
+                            charcnt = sprintf(string, "CFLT");
 
                         if(atype_array[sindex]==_DATATYPE_COMPLEX_DOUBLE)
-                            printw("CDBL");						
+                            charcnt = sprintf(string, "CDBL");
+                        
 						linecharcnt += charcnt;
+						if(linecharcnt < wcol)
+							printw(string);
 
 
                         sprintf(str, " [%3ld", (long) data.image[ID].md[0].size[0]);
@@ -920,10 +915,13 @@ int_fast8_t streamCTRL_CTRLscreen()
                         
                         
                         charcnt = sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
-						printw(string);
 						linecharcnt += charcnt;
+						if(linecharcnt < wcol)
+							printw(string);
 						
 						charcnt = sprintf(string, " %10ld", data.image[ID].md[0].cnt0);
+                        linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
                         if(deltacnt0[ID] == 0)
                         {
                             printw(string);
@@ -934,11 +932,13 @@ int_fast8_t streamCTRL_CTRLscreen()
                             printw(string);
                             attroff(COLOR_PAIR(2));
                         }
-						linecharcnt += charcnt;
+						
                         
                         charcnt = sprintf(string, "  %7.2f Hz", updatevaluearray[ID]);
-                        printw(string);
                         linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+							printw(string);
+                        
                     }
 
 
@@ -947,8 +947,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                     {
 						
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
-                        printw(string);
                         linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+							printw(string);
                         
                         int s;
                         for(s=0; s<data.image[ID].md[0].sem; s++)
@@ -956,23 +957,28 @@ int_fast8_t streamCTRL_CTRLscreen()
                             int semval;
                             sem_getvalue(data.image[ID].semptr[s], &semval);
                             charcnt = sprintf(string, " %7d", semval);
-                            printw(string);
 							linecharcnt += charcnt;
+							if(linecharcnt < wcol)
+								printw(string);
                         }                        
                     }
 
                     if(DisplayMode == 3) // sem write PIDs
                     {
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
-                        printw(string);
                         linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+							printw(string);
                         
                         int s;
                         for(s=0; s<data.image[ID].md[0].sem; s++)
                         {
                             pid_t pid = data.image[ID].semWritePID[s];
                             charcnt = sprintf(string, "%7d", pid);
-                                                        
+                            linecharcnt += charcnt+1;
+                            
+                            if(linecharcnt < wcol)
+                            {                            
                             if(getpgid(pid) >= 0)
                             {
                                 attron(COLOR_PAIR(2));
@@ -989,25 +995,27 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                                 else
                                     printw(string);
-                            }
-                            
+                            }                            
                             printw(" ");
-                            linecharcnt += charcnt+1;
+							}
                         }
                     }
 
                     if(DisplayMode == 4) // sem read PIDs
                     {
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
-                        printw(string);
                         linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+							printw(string);
                         
                         int s;
                         for(s=0; s<data.image[ID].md[0].sem; s++)
                         {
                             pid_t pid = data.image[ID].semReadPID[s];
                             charcnt = sprintf(string, "%7d", pid);
-                            
+                            linecharcnt += charcnt+1;
+                            if(linecharcnt < wcol)
+                            {
                             if(getpgid(pid) >= 0)
                             {
                                 attron(COLOR_PAIR(2));
@@ -1026,7 +1034,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                     printw(string);
                             }
                             printw(" ");
-                            linecharcnt += charcnt+1;
+							}
                         }
                     }
 
@@ -1034,6 +1042,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                     {
                         if(fuserUpdate==1)
                         {
+							int sindexraw = 0;
+							
+							printw("\n SCANNING \n");
+							
+							for(sindexraw=0; sindexraw < NBsindex; sindexraw++)
+							{
                             FILE *fp;
                             char plistoutline[2000];
                             char command[2000];
@@ -1047,7 +1061,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             if(PReadMode == 0)
                             {
                                 // popen option
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexraw]);
                                 fp = popen(command, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
@@ -1067,8 +1081,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 
                                 
-                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
+                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexraw]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexraw], plistfname);
                                 system(command);
                                 
                                 fp = fopen(plistfname, "r");
@@ -1131,8 +1145,11 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                             }
 
-
+							}
+                            fuserUpdate = 0;
                         }
+
+
 
                         if(fuserUpdate == 2)
                         {
@@ -1154,8 +1171,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) ) {
 									
                                     charcnt = sprintf(string, "%6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
-                                    printw(string);
                                     linecharcnt += charcnt;
+                                    if(linecharcnt < wcol)
+										printw(string);
+                                    
                                     
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
@@ -1168,27 +1187,33 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         case 2:
                             charcnt = sprintf(string, "FAILED");
-                            printw(string);
                             linecharcnt += charcnt;
+                            if(linecharcnt < wcol)
+								printw(string);
                             break;
 
                         default:
                             charcnt = sprintf(string, "NOT SCANNED");
-                            printw(string);
                             linecharcnt += charcnt;
+                            if(linecharcnt < wcol)
+								printw(string);
                             break;
 
                         }
 
                     }
 
-
-                    printw("\n");
-
                     if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
-
+					if(linecharcnt > wcol)
+					{
+						attron(COLOR_PAIR(9));
+						printw("+");
+						attroff(COLOR_PAIR(9));
+					}
+					printw("\n");
+					
 
                     if(fuserUpdate==1)
                     {
