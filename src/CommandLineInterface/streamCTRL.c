@@ -877,7 +877,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                    if(DisplayMode < -1) //5)
+                    if(DisplayMode < -1) //5) //TEST
                     {
                         char str[200];
                         char str1[200];
@@ -962,7 +962,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                    if(DisplayMode == -1) //2) // sem vals
+                    if(DisplayMode == -1) //2) // sem vals //TEST
                     {
 
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
@@ -1149,7 +1149,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-        if(fuserUpdate==1)
+        if(fuserUpdate==10) //==1) //TEST
         {
             FILE *fp;
             char plistoutline[2000];
