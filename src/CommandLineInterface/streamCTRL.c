@@ -484,6 +484,7 @@ void *streamCTRL_scan(void* thptr)
                 }
             }
 
+/*
             if(streaminfo[sindexscan1].streamOpenPID_status != 2)
             {
                 char * pch;
@@ -518,7 +519,7 @@ void *streamCTRL_scan(void* thptr)
                     free(pname);
                 }
             }
-
+*/
             streaminfoproc->sindexscan++;
             if(streaminfoproc->sindexscan == NBsindex)
             {
