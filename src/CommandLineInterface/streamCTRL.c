@@ -65,8 +65,8 @@
 /* =============================================================================================== */
 
 #define streamNBID_MAX 10000
-#define streamOpenNBpid_MAX 50
-#define nameNBchar 50
+#define streamOpenNBpid_MAX 100
+#define nameNBchar 100
 
 
 
@@ -647,7 +647,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
- endwin();//TEST
+
 
 
 
@@ -672,7 +672,6 @@ int_fast8_t streamCTRL_CTRLscreen()
                         struct stat buf;
                         int retv;
                         char fullname[200];
-                        char streamfname[200];
 
                         sprintf(fullname, "/tmp/%s", dir->d_name);
                         retv = lstat (fullname, &buf);
@@ -686,22 +685,12 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
                         // get stream name and ID
-                        printf("%5d  ->  %20s\n", sindex, dir->d_name);
-						fflush(stdout);
-                        
-
-                        
                         strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
-                        
-                        printf("        %20s  %20s\n", dir->d_name, streaminfo[sindex].sname);
-						fflush(stdout);
-                        
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
  
-						printf("        %20s  %20s\n", dir->d_name, streaminfo[sindex].sname);
-						fflush(stdout);
+
 						
- /*                     
+                      
                         ID = image_ID(streaminfo[sindex].sname);
 
 
@@ -765,7 +754,6 @@ int_fast8_t streamCTRL_CTRLscreen()
             }
             closedir(d);
 
-exit(0);//TEST
 
             // SORT
 
@@ -774,7 +762,7 @@ exit(0);//TEST
                 ssindex[dindex] = dindex;
 
 
-/*
+
             if(SORTING == 1) // alphabetical sorting
             {
                 long *larray;
@@ -837,7 +825,7 @@ exit(0);//TEST
                 free(larray);
                 free(varray);
             }
-*/
+
 
 
 
