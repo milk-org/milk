@@ -113,7 +113,9 @@ typedef struct
 
 typedef struct
 {
-	int twaitus; 
+	int twaitus; // sleep time between scans
+	double dtscan; // measured time interval between scans [s]
+		
 	int loop;   // 1 : loop     0 : exit
 	long loopcnt;
 	
@@ -310,7 +312,6 @@ void *streamCTRL_scan(void* thptr)
 
 
 
-
     while(streaminfoproc->loop == 1)
     {
 
@@ -326,6 +327,7 @@ void *streamCTRL_scan(void* thptr)
             tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
         }
         clock_gettime(CLOCK_REALTIME, &t0);
+        streaminfoproc->dtscan = diffv;
 
 
         // COLLECT DATA
@@ -907,7 +909,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-            printw("PIDmax = %d    Update frequ = %2d Hz  Scan #%ld  ", PIDmax, (int) (frequ+0.5), streaminfoproc.loopcnt);
+            printw("PIDmax = %d    Update frequ = %2d Hz  Scan #%5ld (fscan=%5.2 Hz) ", PIDmax, (int) (frequ+0.5), streaminfoproc.loopcnt, 1.0/streaminfoproc.dtscan);
             if(streaminfoproc.fuserUpdate == 1)
             {
 				attron(COLOR_PAIR(9));
