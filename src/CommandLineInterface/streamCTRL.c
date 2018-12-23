@@ -711,6 +711,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         streaminfo[sindex].atype = data.image[ID].md[0].atype;
 
+/*
                         if (S_ISLNK(buf.st_mode)) // resolve link name
                         {
                             char fullname[200];
@@ -740,6 +741,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                         else
                             streaminfo[sindex].SymLink = 0;
+                            */
 
                         sindex++;
                     }
