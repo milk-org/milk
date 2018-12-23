@@ -945,7 +945,12 @@ int_fast8_t streamCTRL_CTRLscreen()
             }
             else
                 printw("\n");
-            printw("dindexSelected = %3d    doffsetindex = %3d    NBsinfodisp = %3d\n", dindexSelected, doffsetindex, NBsinfodisp);
+            
+            int lastindex;
+            lastindex = doffsetindex+NBsinfodisp;
+            if(lastindex > NBsindex-1)
+				lastindex = NBsindex-1;
+            printw("%4d streams    Currently displaying %4d-%4d   Selected %d\n", NBsindex, doffsetindex, lastindex, dindexSelected);
 
             printw("\n");
 
