@@ -359,8 +359,9 @@ int_fast8_t streamCTRL_CTRLscreen()
         int pid;
         char command[200];
         
-        if(fuserUpdate != 1) // don't wait if ongoing fuser scan
-			usleep((long) (1000000.0/frequ));
+        //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
+		
+		usleep((long) (1000000.0/frequ));
         int ch = getch();
 
 
