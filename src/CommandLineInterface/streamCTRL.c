@@ -624,7 +624,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // INITIALIZE ncurses
     initncurses();
 
-    int NBsinfodisp = wrow-6;
+    int NBsinfodisp = wrow-7;
     int NBsindex = 0;
     int loopOK = 1;
     long cnt = 0;
@@ -945,6 +945,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             }
             else
                 printw("\n");
+            printw("dindexSelected = %3d    doffsetindex = %3d    NBsinfodisp = %3d\n", dindexSelected, doffsetindex, NBsinfodisp);
 
             printw("\n");
 
