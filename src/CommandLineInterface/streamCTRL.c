@@ -253,7 +253,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     int PIDnameStringLen = 12;
 
     long sindex;  // scan index
-    long sindexscan; // for fuser scan
+    long sindexscan, sindexscan1; // for fuser scan
     long IDscan;
     long dindex;  // display index
     long ssindex[streamNBID_MAX]; // sorted index array
@@ -300,9 +300,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-	// display
-	int DispName_NBchar = 36;
-	int DispSize_NBchar = 20;
+    // display
+    int DispName_NBchar = 36;
+    int DispSize_NBchar = 20;
 
 
 
@@ -316,8 +316,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-	char *homedir = getenv("HOME");
-    
+    char *homedir = getenv("HOME");
+
     setlocale(LC_ALL, "");
 
 
@@ -352,16 +352,16 @@ int_fast8_t streamCTRL_CTRLscreen()
     DIR *d;
     struct dirent *dir;
 
-            
+
 
     while( loopOK == 1 )
     {
         int pid;
         char command[200];
-        
+
         //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
-		
-		usleep((long) (1000000.0/frequ));
+
+        usleep((long) (1000000.0/frequ));
         int ch = getch();
 
 
@@ -617,7 +617,11 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-            printw("PIDmax = %d    Update frequ = %d Hz\n", PIDmax, (int) (frequ+0.5));
+            printw("PIDmax = %d    Update frequ = %2d Hz", PIDmax, (int) (frequ+0.5));
+            if(fuserUpdate == 1)
+				{
+					printw("  fuser scan ongoing  %4d  %4d  / %4d", sindexscan1, sindexscan, NBsindex);
+				}
             if(DisplayMode==5)
             {
                 if(fuserScan==1)
@@ -637,7 +641,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-			
+
 
 
             // COLLECT DATA
@@ -649,7 +653,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 while((sOK == 1)&&((dir = readdir(d)) != NULL))
                 {
                     char *pch = strstr(dir->d_name, ".im.shm");
-				
+
 
                     if(pch)
                     {
@@ -659,7 +663,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         struct stat buf;
                         int retv;
                         char fullname[200];
-                        
+
                         sprintf(fullname, "/tmp/%s", dir->d_name);
                         retv = lstat (fullname, &buf);
                         if (retv == -1 ) {
@@ -700,7 +704,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         if (S_ISLNK(buf.st_mode)) // resolve link name
                         {
-							char fullname[200];
+                            char fullname[200];
                             char linknamefull[200];
                             char linkname[200];
                             int nchar;
@@ -729,7 +733,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             SymLink_array[ID] = 0;
 
                         sindex++;
-                    }                    
+                    }
                 }
                 NBsindex = sindex;
             }
@@ -824,15 +828,15 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                 if(sOK == 1)
                 {
-					char line[200];
-					char string[200];
-					int charcnt = 0; // how many chars are about to be printed
-					int linecharcnt = 1; // keeping track of number of characters in line
-					
-					
-					printw("%4d ", sindex);
-					
-					charcnt = DispName_NBchar+1;
+                    char line[200];
+                    char string[200];
+                    int charcnt = 0; // how many chars are about to be printed
+                    int linecharcnt = 1; // keeping track of number of characters in line
+
+
+                    printw("%4d ", sindex);
+
+                    charcnt = DispName_NBchar+1;
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
 
@@ -847,15 +851,15 @@ int_fast8_t streamCTRL_CTRLscreen()
                     }
                     else
                         printw("%-*.*s", DispName_NBchar, DispName_NBchar, sname_array[sindex]);
-                    
+
                     if(strlen(sname_array[sindex]) > DispName_NBchar)
                     {
-						attron(COLOR_PAIR(9));
-						printw("+");
-						attroff(COLOR_PAIR(9));
-					}
-					else
-						printw(" ");        
+                        attron(COLOR_PAIR(9));
+                        printw("+");
+                        attroff(COLOR_PAIR(9));
+                    }
+                    else
+                        printw(" ");
                     linecharcnt += charcnt;
 
 
@@ -869,8 +873,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         char str[200];
                         char str1[200];
                         int j;
-                        
-                        
+
+
                         if(atype_array[sindex]==_DATATYPE_UINT8)
                             charcnt = sprintf(string, " UI8");
                         if(atype_array[sindex]==_DATATYPE_INT8)
@@ -902,10 +906,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         if(atype_array[sindex]==_DATATYPE_COMPLEX_DOUBLE)
                             charcnt = sprintf(string, "CDBL");
-                        
-						linecharcnt += charcnt;
-						if(linecharcnt < wcol)
-							printw(string);
+
+                        linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+                            printw(string);
 
 
                         sprintf(str, " [%3ld", (long) data.image[ID].md[0].size[0]);
@@ -917,56 +921,56 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                         sprintf(str1, "%s]", str);
                         strcpy(str, str1);
-                        
-                        
-                        
+
+
+
                         charcnt = sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
-						linecharcnt += charcnt;
-						if(linecharcnt < wcol)
-							printw(string);
-						
-						charcnt = sprintf(string, " %10ld", data.image[ID].md[0].cnt0);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
-                        if(deltacnt0[ID] == 0)
-                        {
                             printw(string);
-                        }
-                        else
-                        {
-                            attron(COLOR_PAIR(2));
-                            printw(string);
-                            attroff(COLOR_PAIR(2));
-                        }
-						
-                        
+
+                        charcnt = sprintf(string, " %10ld", data.image[ID].md[0].cnt0);
+                        linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+                            if(deltacnt0[ID] == 0)
+                            {
+                                printw(string);
+                            }
+                            else
+                            {
+                                attron(COLOR_PAIR(2));
+                                printw(string);
+                                attroff(COLOR_PAIR(2));
+                            }
+
+
                         charcnt = sprintf(string, "  %7.2f Hz", updatevaluearray[ID]);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
-							printw(string);
-                        
+                            printw(string);
+
                     }
 
 
 
                     if(DisplayMode == 2) // sem vals
                     {
-						
+
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
-							printw(string);
-                        
+                            printw(string);
+
                         int s;
                         for(s=0; s<data.image[ID].md[0].sem; s++)
                         {
                             int semval;
                             sem_getvalue(data.image[ID].semptr[s], &semval);
                             charcnt = sprintf(string, " %7d", semval);
-							linecharcnt += charcnt;
-							if(linecharcnt < wcol)
-								printw(string);
-                        }                        
+                            linecharcnt += charcnt;
+                            if(linecharcnt < wcol)
+                                printw(string);
+                        }
                     }
 
                     if(DisplayMode == 3) // sem write PIDs
@@ -974,36 +978,36 @@ int_fast8_t streamCTRL_CTRLscreen()
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
-							printw(string);
-                        
+                            printw(string);
+
                         int s;
                         for(s=0; s<data.image[ID].md[0].sem; s++)
                         {
                             pid_t pid = data.image[ID].semWritePID[s];
                             charcnt = sprintf(string, "%7d", pid);
                             linecharcnt += charcnt+1;
-                            
+
                             if(linecharcnt < wcol)
-                            {                            
-                            if(getpgid(pid) >= 0)
                             {
-                                attron(COLOR_PAIR(2));
-                                printw(string);
-                                attroff(COLOR_PAIR(2));
-                            }
-                            else
-                            {
-                                if(pid>0)
+                                if(getpgid(pid) >= 0)
                                 {
-                                    attron(COLOR_PAIR(4));
+                                    attron(COLOR_PAIR(2));
                                     printw(string);
-                                    attroff(COLOR_PAIR(4));
+                                    attroff(COLOR_PAIR(2));
                                 }
                                 else
-                                    printw(string);
-                            }                            
-                            printw(" ");
-							}
+                                {
+                                    if(pid>0)
+                                    {
+                                        attron(COLOR_PAIR(4));
+                                        printw(string);
+                                        attroff(COLOR_PAIR(4));
+                                    }
+                                    else
+                                        printw(string);
+                                }
+                                printw(" ");
+                            }
                         }
                     }
 
@@ -1012,8 +1016,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
-							printw(string);
-                        
+                            printw(string);
+
                         int s;
                         for(s=0; s<data.image[ID].md[0].sem; s++)
                         {
@@ -1022,31 +1026,31 @@ int_fast8_t streamCTRL_CTRLscreen()
                             linecharcnt += charcnt+1;
                             if(linecharcnt < wcol)
                             {
-                            if(getpgid(pid) >= 0)
-                            {
-                                attron(COLOR_PAIR(2));
-                                printw(string);
-                                attroff(COLOR_PAIR(2));
-                            }
-                            else
-                            {
-                                if(pid>0)
+                                if(getpgid(pid) >= 0)
                                 {
-                                    attron(COLOR_PAIR(4));
+                                    attron(COLOR_PAIR(2));
                                     printw(string);
-                                    attroff(COLOR_PAIR(4));
+                                    attroff(COLOR_PAIR(2));
                                 }
                                 else
-                                    printw(string);
+                                {
+                                    if(pid>0)
+                                    {
+                                        attron(COLOR_PAIR(4));
+                                        printw(string);
+                                        attroff(COLOR_PAIR(4));
+                                    }
+                                    else
+                                        printw(string);
+                                }
+                                printw(" ");
                             }
-                            printw(" ");
-							}
                         }
                     }
 
                     if(DisplayMode == 5) // list processes that are accessing streams
                     {
-						
+
 
 
 
@@ -1059,45 +1063,45 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                        
+
                         int pidIndex;
 
                         switch (streamOpenPIDarray_status[ID]) {
 
-                        case 1:							
+                        case 1:
                             streamOpenPIDarray_cnt1[ID] = 0;
                             for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
-                            {								
+                            {
                                 pid_t pid = streamOpenPIDarray[ID][pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) ) {
-									
+
                                     charcnt = sprintf(string, "%6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                     linecharcnt += charcnt;
                                     if(linecharcnt < wcol)
-										printw(string);
-                                    
-                                    
+                                        printw(string);
+
+
                                     streamOpenPIDarray_cnt1[ID]++;
                                 }
-							}
+                            }
 
-								//const chtype * lstring1 = "This is a test";
-                                //addchstr(lstring1);
-                            
+                            //const chtype * lstring1 = "This is a test";
+                            //addchstr(lstring1);
+
                             break;
 
                         case 2:
                             charcnt = sprintf(string, "FAILED");
                             linecharcnt += charcnt;
                             if(linecharcnt < wcol)
-								printw(string);
+                                printw(string);
                             break;
 
                         default:
                             charcnt = sprintf(string, "NOT SCANNED");
                             linecharcnt += charcnt;
                             if(linecharcnt < wcol)
-								printw(string);
+                                printw(string);
                             break;
 
                         }
@@ -1107,18 +1111,18 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
-					if(linecharcnt > wcol)
-					{
-						attron(COLOR_PAIR(9));
-						printw("+");
-						attroff(COLOR_PAIR(9));
-					}
-					printw("\n");
-					
+                    if(linecharcnt > wcol)
+                    {
+                        attron(COLOR_PAIR(9));
+                        printw("+");
+                        attroff(COLOR_PAIR(9));
+                    }
+                    printw("\n");
+
 
                     if(fuserUpdate==1)
                     {
-                  //      refresh();
+                        //      refresh();
                         if(data.signal_INT == 1) // stop scan
                         {
                             fuserUpdate = 2;     // complete loop without scan
@@ -1130,8 +1134,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         sOK = 0;
                 }
             }
-            
-            
+
+
         }
 
         refresh();
@@ -1140,110 +1144,110 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                        if(fuserUpdate==1)
-                        {										
-                            FILE *fp;
-                            char plistoutline[2000];
-                            char command[2000];
+        if(fuserUpdate==1)
+        {
+            FILE *fp;
+            char plistoutline[2000];
+            char command[2000];
 
-                            int NBpid = 0;
-                            
-                            int sindexscan1 = ssindex[sindexscan];
-                            IDscan = IDarray[sindexscan1];
-                            
+            int NBpid = 0;
 
-                            int PReadMode = 1;
-
-                            if(PReadMode == 0)
-                            {
-                                // popen option
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexscan1]);
-                                fp = popen(command, "r");
-                                if (fp == NULL) {
-                                    streamOpenPIDarray_status[IDscan] = 2; // failed
-                                }
-                                else
-                                {
-									streamOpenPIDarray_status[IDscan] = 1;
-                                    /* Read the output a line at a time - output it. */
-                                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
-                                    }
-                                    pclose(fp);
-                                }
-                            }
-                            else
-                            {
-                                // filesystem option
-                                char plistfname[200];
-                                
-                                
-                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexscan1]);
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexscan1], plistfname);
-                                system(command);
-                                
-                                fp = fopen(plistfname, "r");
-                                if (fp == NULL) {
-                                    streamOpenPIDarray_status[IDscan] = 2; // failed
-                                    
-                                    endwin();
-                                    printf(" [%s] ", plistfname); //TEST
-                                    perror("Error reading fuser output file ");
-                                    exit(0);
-                                }
-                                else
-                                {
-                                    size_t len = 0;
-
-									if(fgets(plistoutline, 2000, fp) == NULL)
-                                        sprintf(plistoutline, " ");
+            sindexscan1 = ssindex[sindexscan];
+            IDscan = IDarray[sindexscan1];
 
 
-                                    fclose(fp);
-                                }                                
-                            }
-                            
-                                                        if(streamOpenPIDarray_status[IDscan] != 2)
-                            {
-                                char * pch;
+            int PReadMode = 1;
 
-                                pch = strtok (plistoutline," ");
+            if(PReadMode == 0)
+            {
+                // popen option
+                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexscan1]);
+                fp = popen(command, "r");
+                if (fp == NULL) {
+                    streamOpenPIDarray_status[IDscan] = 2; // failed
+                }
+                else
+                {
+                    streamOpenPIDarray_status[IDscan] = 1;
+                    /* Read the output a line at a time - output it. */
+                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
+                    }
+                    pclose(fp);
+                }
+            }
+            else
+            {
+                // filesystem option
+                char plistfname[200];
 
-                                while (pch != NULL) {
-                                    if(NBpid<streamOpenNBpid_MAX) {
-                                        streamOpenPIDarray[IDscan][NBpid] = atoi(pch);
-                                        if(getpgid(pid) >= 0)
-                                            NBpid++;
-                                    }
-                                    pch = strtok (NULL, " ");
-                                }
-                                streamOpenPIDarray_status[IDscan] = 1; // success
-                            }
 
-                            streamOpenPIDarray_cnt[IDscan] = NBpid;
-						                            // Get PID names
-                            int pidIndex;
-                            for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[IDscan] ; pidIndex++)
-                            {
-                                pid_t pid = streamOpenPIDarray[IDscan][pidIndex];
-                                if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                                {
-                                    char* pname = (char*) calloc(1024, sizeof(char));
-                                    get_process_name_by_pid(pid, pname);
+                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexscan1]);
+                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexscan1], plistfname);
+                system(command);
 
-                                    if(PIDname_array[pid] == NULL)
-                                        PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
-                                    strncpy(PIDname_array[pid], pname, PIDnameStringLen);
-                                    free(pname);
-                                }
-                            }
-                            
-                            sindexscan++;
-							if(sindexscan == NBsindex)
-							{
-								fuserUpdate = 0;
-								fuserUpdate0 = 0;
-							}
-                        }
+                fp = fopen(plistfname, "r");
+                if (fp == NULL) {
+                    streamOpenPIDarray_status[IDscan] = 2; // failed
+
+                    endwin();
+                    printf(" [%s] ", plistfname); //TEST
+                    perror("Error reading fuser output file ");
+                    exit(0);
+                }
+                else
+                {
+                    size_t len = 0;
+
+                    if(fgets(plistoutline, 2000, fp) == NULL)
+                        sprintf(plistoutline, " ");
+
+
+                    fclose(fp);
+                }
+            }
+
+            if(streamOpenPIDarray_status[IDscan] != 2)
+            {
+                char * pch;
+
+                pch = strtok (plistoutline," ");
+
+                while (pch != NULL) {
+                    if(NBpid<streamOpenNBpid_MAX) {
+                        streamOpenPIDarray[IDscan][NBpid] = atoi(pch);
+                        if(getpgid(pid) >= 0)
+                            NBpid++;
+                    }
+                    pch = strtok (NULL, " ");
+                }
+                streamOpenPIDarray_status[IDscan] = 1; // success
+            }
+
+            streamOpenPIDarray_cnt[IDscan] = NBpid;
+            // Get PID names
+            int pidIndex;
+            for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[IDscan] ; pidIndex++)
+            {
+                pid_t pid = streamOpenPIDarray[IDscan][pidIndex];
+                if( (getpgid(pid) >= 0) && (pid != getpid()) )
+                {
+                    char* pname = (char*) calloc(1024, sizeof(char));
+                    get_process_name_by_pid(pid, pname);
+
+                    if(PIDname_array[pid] == NULL)
+                        PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
+                    strncpy(PIDname_array[pid], pname, PIDnameStringLen);
+                    free(pname);
+                }
+            }
+
+            sindexscan++;
+            if(sindexscan == NBsindex)
+            {
+                fuserUpdate = 0;
+                fuserUpdate0 = 0;
+            }
+        }
 
 
         cnt++;
