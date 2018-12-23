@@ -67,7 +67,7 @@
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 100
 #define nameNBchar 100
-
+#define PIDnameStringLen 12
 
 
 
@@ -82,7 +82,7 @@ static int wrow, wcol;
 
 
 
-// index is 
+
 typedef struct
 {
 	char sname[nameNBchar];      // stream name
@@ -108,6 +108,15 @@ typedef struct
 } STREAMINFO;
 
 
+
+typedef struct
+{
+	STREAMINFO *sinfo;
+	int fuserUpdate;
+	int sindexscan;
+	char **PIDtable; // stores names of PIDs
+	
+} STREAMINFOPROC;
 
 
 
@@ -264,22 +273,28 @@ static int get_PIDmax()
 
 
 
-long streamCTRL_scan(STREAMINFO* streaminfo)
+long streamCTRL_scan(STREAMINFOPROC* streaminfoproc)
 {
     long NBsindex = 0;
     long sindex = 0;
 
+	STREAMINFO *streaminfo;
+	char **PIDname_array;
+    
     DIR *d;
     struct dirent *dir;
 
     // timing
-    static firstIter = 1;
+    static int firstIter = 1;
     static struct timespec t0;
     struct timespec t1;
     double tdiffv;
     struct timespec tdiff;
 
 
+
+	streaminfo = streaminfoproc->sinfo;
+	PIDname_array = streaminfoproc->PIDtable;
 
     // timing measurement
     clock_gettime(CLOCK_REALTIME, &t1);
@@ -399,6 +414,108 @@ long streamCTRL_scan(STREAMINFO* streaminfo)
     firstIter = 0;
 
 
+
+    if(streaminfoproc->fuserUpdate==1)
+    {
+        FILE *fp;
+        char plistoutline[2000];
+        char command[2000];
+
+        int NBpid = 0;
+
+        //            sindexscan1 = ssindex[sindexscan];
+        int sindexscan1 = streaminfoproc->sindexscan;
+
+        int PReadMode = 1;
+
+        if(PReadMode == 0)
+        {
+            // popen option
+            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
+            fp = popen(command, "r");
+            if (fp == NULL) {
+                streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
+            }
+            else
+            {
+                streaminfo[sindexscan1].streamOpenPID_status = 1;
+                /* Read the output a line at a time - output it. */
+                if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
+                }
+                pclose(fp);
+            }
+        }
+        else
+        {
+            // filesystem option
+            char plistfname[200];
+
+
+            sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
+            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
+            system(command);
+
+            fp = fopen(plistfname, "r");
+            if (fp == NULL) {
+                streaminfo[sindexscan1].streamOpenPID_status = 2;
+            }
+            else
+            {
+                size_t len = 0;
+
+                if(fgets(plistoutline, 2000, fp) == NULL)
+                    sprintf(plistoutline, " ");
+
+
+                fclose(fp);
+            }
+        }
+
+        if(streaminfo[sindexscan1].streamOpenPID_status != 2)
+        {
+            char * pch;
+
+            pch = strtok (plistoutline," ");
+
+            while (pch != NULL) {
+                if(NBpid<streamOpenNBpid_MAX) {
+                    streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
+                    if(getpgid(streaminfo[sindexscan1].streamOpenPID[NBpid]) >= 0)
+                        NBpid++;
+                }
+                pch = strtok (NULL, " ");
+            }
+            streaminfo[sindexscan1].streamOpenPID_status = 1; // success
+        }
+
+        streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
+        // Get PID names
+        int pidIndex;
+        for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
+        {
+            pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
+            if( (getpgid(pid) >= 0) && (pid != getpid()) )
+            {
+                char* pname = (char*) calloc(1024, sizeof(char));
+                get_process_name_by_pid(pid, pname);
+
+                if(PIDname_array[pid] == NULL)
+                    PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
+                strncpy(PIDname_array[pid], pname, PIDnameStringLen);
+                free(pname);
+            }
+        }
+
+        streaminfoproc->sindexscan++;
+        if(streaminfoproc->sindexscan == NBsindex)
+        {
+            streaminfoproc->fuserUpdate = 0;
+        //    fuserUpdate0 = 0;
+        }
+    }
+
+
+
     return NBsindex;
 }
 
@@ -428,11 +545,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 {
     // Display fields
     STREAMINFO *streaminfo;
-
-    int PIDnameStringLen = 12;
+	STREAMINFOPROC streaminfoproc;
 
     long sindex;  // scan index
-    long sindexscan, sindexscan1; // for fuser scan
+//    long sindexscan, sindexscan1; // for fuser scan
     long IDscan;
     long dindex;  // display index
     long ssindex[streamNBID_MAX]; // sorted index array
@@ -468,7 +584,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     streaminfo = (STREAMINFO*) malloc(sizeof(STREAMINFO)*streamNBID_MAX);
-
+	streaminfoproc.sinfo = streaminfo;
+	
+	streaminfoproc.PIDtable = PIDname_array;
+	
 
     setlocale(LC_ALL, "");
 
@@ -491,7 +610,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // 1: overview
 
     int fuserUpdate0 = 1; //update on first instance
-    int fuserUpdate = 1;
+  //  int fuserUpdate = 1;
     struct tm *uttime_lastScan;
     time_t rawtime;
     int fuserScan = 0;
@@ -566,11 +685,11 @@ int_fast8_t streamCTRL_CTRLscreen()
         case KEY_F(5): // read PIDs
             if((DisplayMode == 5)||(fuserUpdate0==1))
             {
-                fuserUpdate = 1;
+                streaminfoproc.fuserUpdate = 1;
                 time(&rawtime);
                 uttime_lastScan = gmtime(&rawtime);
                 fuserScan = 1;
-                sindexscan = 0;
+                streaminfoproc.sindexscan = 0;
             }
 
             DisplayMode = 5;
@@ -758,10 +877,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
             printw("PIDmax = %d    Update frequ = %2d Hz", PIDmax, (int) (frequ+0.5));
-            if(fuserUpdate == 1)
+            if(streaminfoproc.fuserUpdate == 1)
             {
 				attron(COLOR_PAIR(9));
-                printw("  fuser scan ongoing  %4d  %4d  / %4d   ", sindexscan1, sindexscan, NBsindex);
+                printw("  fuser scan ongoing  %4d  / %4d   ", streaminfoproc.sindexscan, NBsindex);
 				attroff(COLOR_PAIR(9));
             }
             if(DisplayMode==5)
@@ -781,7 +900,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-			NBsindex = streamCTRL_scan(streaminfo);
+			NBsindex = streamCTRL_scan(&streaminfoproc);
 
 
 
@@ -1096,7 +1215,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     if(DisplayMode == 5) // list processes that are accessing streams
                     {
-                        if(fuserUpdate == 2)
+                        if(streaminfoproc.fuserUpdate == 2)
                         {
                             streaminfo[sindex].streamOpenPID_status = 0; // not scanned
                         }
@@ -1160,12 +1279,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                     printw("\n");
 
 
-                    if(fuserUpdate==1)
+                    if(streaminfoproc.fuserUpdate==1)
                     {
                         //      refresh();
                         if(data.signal_INT == 1) // stop scan
                         {
-                            fuserUpdate = 2;     // complete loop without scan
+                            streaminfoproc.fuserUpdate = 2;     // complete loop without scan
                             data.signal_INT = 0; // reset
                         }
                     }
@@ -1184,111 +1303,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-        if(fuserUpdate==1)
-        {
-            FILE *fp;
-            char plistoutline[2000];
-            char command[2000];
 
-            int NBpid = 0;
-
-            //            sindexscan1 = ssindex[sindexscan];
-            sindexscan1 = sindexscan;
-            IDscan = streaminfo[sindexscan1].ID;
-
-
-            int PReadMode = 1;
-
-            if(PReadMode == 0)
-            {
-                // popen option
-                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
-                fp = popen(command, "r");
-                if (fp == NULL) {
-                    streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
-                }
-                else
-                {
-                    streaminfo[sindexscan1].streamOpenPID_status = 1;
-                    /* Read the output a line at a time - output it. */
-                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
-                    }
-                    pclose(fp);
-                }
-            }
-            else
-            {
-                // filesystem option
-                char plistfname[200];
-
-
-                sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
-                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
-                system(command);
-
-                fp = fopen(plistfname, "r");
-                if (fp == NULL) {
-                    streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
-
-                    endwin();
-                    printf(" [%s] ", plistfname); //TEST
-                    perror("Error reading fuser output file ");
-                    exit(0);
-                }
-                else
-                {
-                    size_t len = 0;
-
-                    if(fgets(plistoutline, 2000, fp) == NULL)
-                        sprintf(plistoutline, " ");
-
-
-                    fclose(fp);
-                }
-            }
-
-            if(streaminfo[sindexscan1].streamOpenPID_status != 2)
-            {
-                char * pch;
-
-                pch = strtok (plistoutline," ");
-
-                while (pch != NULL) {
-                    if(NBpid<streamOpenNBpid_MAX) {
-                        streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
-                        if(getpgid(pid) >= 0)
-                            NBpid++;
-                    }
-                    pch = strtok (NULL, " ");
-                }
-                streaminfo[sindexscan1].streamOpenPID_status = 1; // success
-            }
-
-            streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
-            // Get PID names
-            int pidIndex;
-            for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
-            {
-                pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
-                if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                {
-                    char* pname = (char*) calloc(1024, sizeof(char));
-                    get_process_name_by_pid(pid, pname);
-
-                    if(PIDname_array[pid] == NULL)
-                        PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
-                    strncpy(PIDname_array[pid], pname, PIDnameStringLen);
-                    free(pname);
-                }
-            }
-
-            sindexscan++;
-            if(sindexscan == NBsindex)
-            {
-                fuserUpdate = 0;
-                fuserUpdate0 = 0;
-            }
-        }
 
 
         cnt++;
