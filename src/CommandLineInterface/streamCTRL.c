@@ -1349,7 +1349,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                     }
 
-                    if(dindex>NBsinfodisp-1)
+                    if(dindex-doffsetindex>NBsinfodisp-1)
                         sOK = 0;
                 }
             }
