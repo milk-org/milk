@@ -927,7 +927,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-            printw("PIDmax = %d    Update frequ = %2d Hz  fscan=%5.2 Hz ( %5.2 Hz ) ", PIDmax, (int) (frequ+0.5), 1.0/streaminfoproc.dtscan, 1000000.0/streaminfoproc.twaitus);
+            printw("PIDmax = %d    Update frequ = %2d Hz  fscan=%5.2f Hz ( %5.2f Hz ) ", PIDmax, (int) (frequ+0.5), 1.0/streaminfoproc.dtscan, 1000000.0/streaminfoproc.twaitus);
             if(streaminfoproc.fuserUpdate == 1)
             {
 				attron(COLOR_PAIR(9));
