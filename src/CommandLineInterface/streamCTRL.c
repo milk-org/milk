@@ -309,6 +309,7 @@ void *streamCTRL_scan(void* thptr)
 
     while(streaminfoproc->loop == 1)
     {
+
         // timing measurement
         clock_gettime(CLOCK_REALTIME, &t1);
         if(firstIter == 1)
@@ -528,9 +529,7 @@ void *streamCTRL_scan(void* thptr)
         }
 		streaminfoproc->NBstream = NBsindex;
 		streaminfoproc->loopcnt++;
-		usleep(streaminfoproc->twaitus);
-		
-		//streaminfoproc->loop = 0; //TEST
+		usleep(streaminfoproc->twaitus);		
     }
 
 
@@ -635,7 +634,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     int fuserScan = 0;
     
 	streaminfoproc.NBstream = 0;
-    streaminfoproc.twaitus = 1000;
+    streaminfoproc.twaitus = 50000; // 20 Hz
     
     clear();
     
