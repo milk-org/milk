@@ -275,9 +275,9 @@ static int get_PIDmax()
 
 int_fast8_t streamCTRL_CTRLscreen()
 {
-	// Display fields
+    // Display fields
     STREAMINFO *streaminfo;
-	
+
     int PIDnameStringLen = 12;
 
     long sindex;  // scan index
@@ -323,8 +323,8 @@ int_fast8_t streamCTRL_CTRLscreen()
     PIDmax = get_PIDmax();
     PIDname_array = malloc(sizeof(char*)*PIDmax);
 
-	
-	streaminfo = (STREAMINFO*) malloc(sizeof(STREAMINFO)*streamNBID_MAX);
+
+    streaminfo = (STREAMINFO*) malloc(sizeof(STREAMINFO)*streamNBID_MAX);
 
 
     setlocale(LC_ALL, "");
@@ -628,9 +628,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
             printw("PIDmax = %d    Update frequ = %2d Hz", PIDmax, (int) (frequ+0.5));
             if(fuserUpdate == 1)
-				{
-					printw("  fuser scan ongoing  %4d  %4d  / %4d", sindexscan1, sindexscan, NBsindex);
-				}
+            {
+                printw("  fuser scan ongoing  %4d  %4d  / %4d", sindexscan1, sindexscan, NBsindex);
+            }
             if(DisplayMode==5)
             {
                 if(fuserScan==1)
@@ -1161,7 +1161,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
             int NBpid = 0;
 
-            sindexscan1 = ssindex[sindexscan];
+            //            sindexscan1 = ssindex[sindexscan];
+            sindexscan1 = sindexscan;
             IDscan = streaminfo[sindexscan1].ID;
 
 
@@ -1232,7 +1233,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 streaminfo[sindexscan1].streamOpenPID_status = 1; // success
             }
 
-            streaminfo[sindex].streamOpenPID_cnt = NBpid;
+            streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
             // Get PID names
             int pidIndex;
             for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
@@ -1267,7 +1268,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     endwin();
 
-	free(streaminfo);
+    free(streaminfo);
 
     return 0;
 }
