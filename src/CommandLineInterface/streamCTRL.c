@@ -440,7 +440,7 @@ void *streamCTRL_scan(void* thptr)
             //            sindexscan1 = ssindex[sindexscan];
             int sindexscan1 = streaminfoproc->sindexscan;
 
-            int PReadMode = 1;
+            int PReadMode = 0;
 
             if(PReadMode == 0)
             {
@@ -479,7 +479,6 @@ void *streamCTRL_scan(void* thptr)
 
                     if(fgets(plistoutline, 2000, fp) == NULL)
                         sprintf(plistoutline, " ");
-
 
                     fclose(fp);
                 }
