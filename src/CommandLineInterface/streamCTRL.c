@@ -824,7 +824,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     if(SymLink_array[ID] == 1)
                     {
-                        char namestring[40];
+                        char namestring[200];
                         sprintf(namestring, "%s->%s", sname_array[sindex], linkname_array[sindex]);
 
                         attron(COLOR_PAIR(5));
