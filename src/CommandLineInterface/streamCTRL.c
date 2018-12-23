@@ -1031,10 +1031,12 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 			// compute doffsetindex
-			if(dindexSelected-doffsetindex > NBsinfodisp) // scroll to bottom
+			if(dindexSelected-doffsetindex > NBsinfodisp-5) // scroll to bottom
 				doffsetindex ++;
-			else
+			
+			if(dindexSelected-doffsetindex < NBsinfodisp-10) // scroll back to top
 				doffsetindex --;
+
 			if(doffsetindex<0)
 				doffsetindex = 0;
 
