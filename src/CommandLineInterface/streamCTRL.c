@@ -344,6 +344,12 @@ int_fast8_t streamCTRL_CTRLscreen()
     clock_gettime(CLOCK_REALTIME, &t0);
 
 
+
+    DIR *d;
+    struct dirent *dir;
+
+            
+
     while( loopOK == 1 )
     {
         int pid;
@@ -623,14 +629,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-            DIR *d;
-            struct dirent *dir;
-            d = opendir("/tmp/");
 
 
+			
 
 
             // COLLECT DATA
+            d = opendir("/tmp/");
             if(d)
             {
                 sindex = 0;
@@ -720,7 +725,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-            
+            closedir(d);
 
 
 
@@ -1027,8 +1032,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 
                                 
-                                system("mkdir -p ~/.streamCTRL");
-                                sprintf(plistfname, "%s/.streamCTRL/%s.shmplist", homedir, sname_array[sindex]);
+                                sprintf(plistfname, "/tmp/.streamCTRL/%s.shmplist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
                                 
