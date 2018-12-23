@@ -647,14 +647,12 @@ int_fast8_t streamCTRL_CTRLscreen()
     int NBsinfodisp = wrow-7;
     int NBsindex = 0;
     int loopOK = 1;
-    long cnt = 0;
+    long long loopcnt = 0;
 
 
     int dindexSelected = 0;
 
-    int DisplayMode = 1;
-    // display modes:
-    // 1: overview
+    int DisplayMode = 2;
 
 
 
@@ -677,10 +675,17 @@ int_fast8_t streamCTRL_CTRLscreen()
     char c; // for user input
     int stringindex;
 
+	loopcnt = 0;
     while( loopOK == 1 )
     {
         int pid;
         char command[200];
+
+		if(streaminfoproc.loopcnt == 1)
+		{
+            SORTING = 2;
+            SORT_TOGGLE = 1;
+		}
 
         //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
 
@@ -808,7 +813,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             SORTING = 1;
             break;
 
-        case '2': // sorting by update freq
+        case '2': // sorting by update freq (default)
             SORTING = 2;
             SORT_TOGGLE = 1;
             break;
@@ -1475,7 +1480,7 @@ int_fast8_t streamCTRL_CTRLscreen()
         refresh();
 
 
-        cnt++;
+        loopcnt++;
 
         if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
             loopOK = 0;
