@@ -358,9 +358,9 @@ int_fast8_t streamCTRL_CTRLscreen()
     {
         int pid;
         char command[200];
-
-
-        usleep((long) (1000000.0/frequ));
+        
+        if(fuserUpdate != 1) // don't wait if ongoing fuser scan
+			usleep((long) (1000000.0/frequ));
         int ch = getch();
 
 
@@ -828,6 +828,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 					int charcnt = 0; // how many chars are about to be printed
 					int linecharcnt = 1; // keeping track of number of characters in line
 					
+					
+					printw("%4d ", sindex);
 					
 					charcnt = DispName_NBchar+1;
                     if(dindex == dindexSelected)
