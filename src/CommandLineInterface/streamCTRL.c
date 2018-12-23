@@ -576,6 +576,8 @@ int_fast8_t streamCTRL_CTRLscreen()
     long sindex;  // scan index
     long IDscan;
     long dindex;  // display index
+    long doffsetindex = 0; // offset index if more entries than can be displayed
+    
     long ssindex[streamNBID_MAX]; // sorted index array
 
     long index;
@@ -622,7 +624,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // INITIALIZE ncurses
     initncurses();
 
-    int NBsinfodisp = wrow-6;
+    int NBsinfodisp = wrow-7;
     int NBsindex = 0;
     int loopOK = 1;
     long cnt = 0;
@@ -829,7 +831,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("    Remove stream\n");
 
             printw("\n");
-            printw("============ ACTIONS \n");
+            printw("============ SCANNING \n");
 
             attron(attrval);
             printw("    }");
@@ -943,6 +945,12 @@ int_fast8_t streamCTRL_CTRLscreen()
             }
             else
                 printw("\n");
+            
+            int lastindex;
+            lastindex = doffsetindex+NBsinfodisp;
+            if(lastindex > NBsindex-1)
+				lastindex = NBsindex-1;
+            printw("%4d streams    Currently displaying %4d-%4d   Selected %d\n", NBsindex, doffsetindex, lastindex, dindexSelected);
 
             printw("\n");
 
@@ -1028,13 +1036,21 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
+			// compute doffsetindex
+			while(dindexSelected-doffsetindex > NBsinfodisp-5) // scroll down
+				doffsetindex ++;
+			
+			while(dindexSelected-doffsetindex < NBsinfodisp-10) // scroll up
+				doffsetindex --;
 
+			if(doffsetindex<0)
+				doffsetindex = 0;
 
 
             // DISPLAY
 
             sOK = 1;
-            for(dindex=0; dindex < NBsindex; dindex++)
+            for(dindex=doffsetindex; dindex < NBsindex; dindex++)
             {
                 long ID;
                 sindex = ssindex[dindex];
@@ -1338,7 +1354,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
                     }
 
-                    if(dindex>NBsinfodisp-1)
+                    if(dindex-doffsetindex>NBsinfodisp-1)
                         sOK = 0;
                 }
             }
