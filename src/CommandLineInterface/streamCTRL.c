@@ -649,7 +649,7 @@ int_fast8_t streamCTRL_CTRLscreen()
         usleep((long) (1000000.0/frequ));
         int ch = getch();
 
-		
+		streaminfoproc.loop = 1;
 		streamCTRL_scan(&streaminfoproc);
 
 
