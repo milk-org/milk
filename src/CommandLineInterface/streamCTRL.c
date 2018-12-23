@@ -280,7 +280,7 @@ static int get_PIDmax()
 
 
 
-long streamCTRL_scan(STREAMINFOPROC* streaminfoproc)
+void *streamCTRL_scan(void* thptr)
 {
     long NBsindex = 0;
     long sindex = 0;
@@ -298,7 +298,9 @@ long streamCTRL_scan(STREAMINFOPROC* streaminfoproc)
     double tdiffv;
     struct timespec tdiff;
 
-
+	STREAMINFOPROC* streaminfoproc;
+	
+	streaminfoproc = (STREAMINFOPROC*) thptr;
 
     streaminfo = streaminfoproc->sinfo;
     PIDname_array = streaminfoproc->PIDtable;
@@ -528,12 +530,12 @@ long streamCTRL_scan(STREAMINFOPROC* streaminfoproc)
 		streaminfoproc->loopcnt++;
 		usleep(streaminfoproc->twaitus);
 		
-		streaminfoproc->loop = 0; //TEST
+		//streaminfoproc->loop = 0; //TEST
     }
 
 
 
-    return NBsindex;
+    return NULL;
 }
 
 
@@ -636,8 +638,11 @@ int_fast8_t streamCTRL_CTRLscreen()
     
     
     clear();
-
-
+    
+    
+    // Start scan thread
+	streaminfoproc.loop = 1;
+	pthread_create( &threadscan, NULL, streamCTRL_scan, (void*) &streaminfoproc);
 
     while( loopOK == 1 )
     {
@@ -648,9 +653,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
-
-		streaminfoproc.loop = 1;
-		streamCTRL_scan(&streaminfoproc);
 
 
 		NBsindex = streaminfoproc.NBstream;
@@ -1335,6 +1337,9 @@ int_fast8_t streamCTRL_CTRLscreen()
     }
 
     endwin();
+    
+	streaminfoproc.loop = 0;
+	pthread_join(threadscan, NULL);
 
     free(streaminfo);
 
