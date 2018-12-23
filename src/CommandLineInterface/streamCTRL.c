@@ -845,10 +845,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     printw("%4d ", sindex);
 
+
                     charcnt = DispName_NBchar+1;
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
-
+/*
                     if(streaminfo[sindex].SymLink == 1)
                     {
                         char namestring[200];
@@ -872,7 +873,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     linecharcnt += charcnt;
 
 
-
+*/
 
 
 
