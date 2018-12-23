@@ -1053,8 +1053,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                             int NBpid = 0;
                             
-                            
-                            IDscan = IDarray[sindexscan];;
+                            int sindexscan1 = ssindex[sindexscan];
+                            IDscan = IDarray[sindexscan1];
 
 
 
@@ -1063,7 +1063,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             if(PReadMode == 0)
                             {
                                 // popen option
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexscan]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexscan1]);
                                 fp = popen(command, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[IDscan] = 2; // failed
@@ -1083,8 +1083,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 
                                 
-                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexscan]);
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexscan], plistfname);
+                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexscan1]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexscan1], plistfname);
                                 system(command);
                                 
                                 fp = fopen(plistfname, "r");
