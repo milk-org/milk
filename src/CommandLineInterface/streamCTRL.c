@@ -398,10 +398,10 @@ void *streamCTRL_scan(void* thptr)
                     }
                     else
                     {
-                        float gainv = 0.9;
+                        float gainv = 1.0;
                         streaminfo[sindex].deltacnt0 = data.image[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
                         if(firstIter == 0)
-                            streaminfo[sindex].updatevalue = gainv * streaminfo[sindex].updatevalue + (1.0-gainv) * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
+                            streaminfo[sindex].updatevalue = (1.0 - gainv) * streaminfo[sindex].updatevalue + gainv * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
                     }
                     streaminfo[sindex].cnt0 = data.image[ID].md[0].cnt0; // keep memory of cnt0
 
