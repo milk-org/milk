@@ -647,7 +647,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
+ endwin();//TEST
 
 
 
@@ -748,7 +748,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             }
             closedir(d);
 
-
+exit(0);//TEST
 
             // SORT
 
@@ -756,6 +756,8 @@ int_fast8_t streamCTRL_CTRLscreen()
             for(dindex=0; dindex<NBsindex; dindex++)
                 ssindex[dindex] = dindex;
 
+
+/*
             if(SORTING == 1) // alphabetical sorting
             {
                 long *larray;
@@ -818,7 +820,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 free(larray);
                 free(varray);
             }
-
+*/
 
 
 
