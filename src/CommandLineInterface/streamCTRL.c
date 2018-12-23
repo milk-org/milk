@@ -454,7 +454,7 @@ void *streamCTRL_scan(void* thptr)
                 {
                     streaminfo[sindexscan1].streamOpenPID_status = 1;
                     
-                   // if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {}
+                    if (fgets(plistoutline, 2000-1, fp) != NULL) {}
                     pclose(fp);
                 }
             }
