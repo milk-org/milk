@@ -856,7 +856,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     charcnt = DispName_NBchar+1;
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
-/*
+
                     if(streaminfo[sindex].SymLink == 1)
                     {
                         char namestring[200];
@@ -880,12 +880,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                     linecharcnt += charcnt;
 
 
-*/
 
 
 
 
-                    if(DisplayMode < -1) //5) //TEST
+
+                    if(DisplayMode < 5) 
                     {
                         char str[200];
                         char str1[200];
@@ -970,7 +970,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-                    if(DisplayMode == -1) //2) // sem vals //TEST
+                    if(DisplayMode == 2) // sem vals 
                     {
 
                         charcnt = sprintf(string, " %3d sems ", data.image[ID].md[0].sem);
@@ -1157,7 +1157,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-        if(fuserUpdate==10) //==1) //TEST
+        if(fuserUpdate==1)
         {
             FILE *fp;
             char plistoutline[2000];
