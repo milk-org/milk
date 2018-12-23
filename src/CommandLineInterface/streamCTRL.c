@@ -833,8 +833,18 @@ int_fast8_t streamCTRL_CTRLscreen()
 			while(((c = getchar()) != 13)&&(stringindex<STRINGLENMAX-2))
 			{
 				streaminfoproc.namefilter[stringindex] = c;
-				stringindex++;
-				putchar(c);  // echo on screen
+				if(c == 127) // delete key
+				{
+					putchar (0x8); 
+					putchar (' '); 
+					putchar (0x8);
+					stringindex --;
+				}
+				else
+				{
+					putchar(c);  // echo on screen
+					stringindex++;
+				}
 			}
 			streaminfoproc.namefilter[stringindex] = '\0';
 			initncurses();
@@ -939,6 +949,17 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("    3");
             attroff(attrval);
             printw("    Sort by processes access\n");
+
+            attron(attrval);
+            printw("    F");
+            attroff(attrval);
+            printw("    Set match string pattern\n");
+
+            attron(attrval);
+            printw("    f");
+            attroff(attrval);
+            printw("    Toggle apply match string to stream\n");
+
 
             printw("\n\n");
         }
