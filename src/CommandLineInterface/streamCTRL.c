@@ -823,7 +823,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 					char line[200];
 					char string[200];
 					int charcnt = 0; // how many chars are about to be printed
-					int linecharcnt = 0; // keeping track of number of characters in line
+					int linecharcnt = 1; // keeping track of number of characters in line
 					
 					
 					charcnt = DispName_NBchar+1;
@@ -1042,6 +1042,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                     {
                         if(fuserUpdate==1)
                         {
+							int sindexraw = 0;
+							
+							printw("\n SCANNING \n");
+							
+							for(sindexraw=0; sindexraw < NBsindex; sindexraw++)
+							{
                             FILE *fp;
                             char plistoutline[2000];
                             char command[2000];
@@ -1055,7 +1061,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             if(PReadMode == 0)
                             {
                                 // popen option
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindex]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexraw]);
                                 fp = popen(command, "r");
                                 if (fp == NULL) {
                                     streamOpenPIDarray_status[ID] = 2; // failed
@@ -1075,8 +1081,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 
                                 
-                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
-                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
+                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexraw]);
+                                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexraw], plistfname);
                                 system(command);
                                 
                                 fp = fopen(plistfname, "r");
@@ -1139,8 +1145,11 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 }
                             }
 
-
+							}
+                            fuserUpdate = 0;
                         }
+
+
 
                         if(fuserUpdate == 2)
                         {
@@ -1194,13 +1203,17 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     }
 
-
-                    printw("\n");
-
                     if(dindex == dindexSelected)
                         attroff(A_REVERSE);
 
-
+					if(linecharcnt > wcol)
+					{
+						attron(COLOR_PAIR(9));
+						printw("+");
+						attroff(COLOR_PAIR(9));
+					}
+					printw("\n");
+					
 
                     if(fuserUpdate==1)
                     {
