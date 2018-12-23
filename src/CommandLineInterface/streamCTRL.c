@@ -527,7 +527,7 @@ void *streamCTRL_scan(void* thptr)
             if(streaminfoproc->sindexscan == NBsindex)
             {
                 streaminfoproc->fuserUpdate = 0;
-                //    fuserUpdate0 = 0;
+                fuserUpdate0 = 0;
             }
         }
         
@@ -632,7 +632,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // 1: overview
 
     int fuserUpdate0 = 1; //update on first instance
-  //  int fuserUpdate = 1;
+ 
     struct tm *uttime_lastScan;
     time_t rawtime;
     int fuserScan = 0;
