@@ -752,7 +752,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
 
-        case '+': // faster update
+        case '+': // faster display update
             frequ *= 2.0;
             if(frequ < 1.0)
                 frequ = 1.0;
@@ -760,12 +760,16 @@ int_fast8_t streamCTRL_CTRLscreen()
                 frequ = 64.0;
             break;
 
-        case '-': // slower update
-            frequ *= 0.5;
-            if(frequ < 1.0)
-                frequ = 1.0;
-            if(frequ > 64.0)
-                frequ = 64.0;
+        case '{': // slower scan update
+            streaminfoproc.twaitus = (int) (1.2*streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus > 1000000)
+                streaminfoproc.twaitus = 1000000;
+            break;
+
+        case '}': // faster scan update
+            streaminfoproc.twaitus = (int) (1.2*streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus < 1000)
+                streaminfoproc.twaitus = 1000;
             break;
 
         }
@@ -825,17 +829,31 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("    Remove stream\n");
 
             printw("\n");
+            printw("============ ACTIONS \n");
+
+            attron(attrval);
+            printw("    }");
+            attroff(attrval);
+            printw("    Increase scan frequency\n");
+
+            attron(attrval);
+            printw("    {");
+            attroff(attrval);
+            printw("    Decrease scan frequency\n");
+
+
+            printw("\n");
             printw("============ DISPLAY \n");
 
             attron(attrval);
             printw("    +");
             attroff(attrval);
-            printw("    Increase update frequency\n");
+            printw("    Increase display frequency\n");
 
             attron(attrval);
             printw("    -");
             attroff(attrval);
-            printw("    Decrease update frequency\n");
+            printw("    Decrease display frequency\n");
 
             attron(attrval);
             printw("    1");
@@ -909,7 +927,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("\n");
 
 
-            printw("PIDmax = %d    Update frequ = %2d Hz  Scan #%5ld (fscan=%5.2 Hz) ", PIDmax, (int) (frequ+0.5), streaminfoproc.loopcnt, 1.0/streaminfoproc.dtscan);
+            printw("PIDmax = %d    Update frequ = %2d Hz  fscan=%5.2 Hz ( %5.2 Hz ) ", PIDmax, (int) (frequ+0.5), 1.0/streaminfoproc.dtscan, 1000000.0/streaminfoproc.twaitus);
             if(streaminfoproc.fuserUpdate == 1)
             {
 				attron(COLOR_PAIR(9));
