@@ -312,7 +312,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
+	char *homedir = getenv("HOME");
+    
     setlocale(LC_ALL, "");
 
 
@@ -622,11 +623,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
-
             DIR *d;
             struct dirent *dir;
             d = opendir("/tmp/");
+
+
 
 
             // COLLECT DATA
@@ -637,7 +638,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 while((sOK == 1)&&((dir = readdir(d)) != NULL))
                 {
                     char *pch = strstr(dir->d_name, ".im.shm");
-
+				
 
                     if(pch)
                     {
@@ -646,7 +647,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                         // is file sym link ?
                         struct stat buf;
                         int retv;
-                        retv = lstat (dir->d_name, &buf);
+                        char fullname[200];
+                        
+                        sprintf(fullname, "/tmp/%s", dir->d_name);
+                        retv = lstat (fullname, &buf);
                         if (retv == -1 ) {
                             endwin();
                             sprintf("File \"%s\"", dir->d_name);
@@ -712,13 +716,14 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         sindex++;
                     }
+                    
+                    printf("\n");
+					fflush(stdout);
                 }
                 NBsindex = sindex;
             }
             
-                            endwin();
-                            sprintf("%d files found", NBsindex);
-exit(0);
+
 
 
             // SORT
@@ -1024,8 +1029,8 @@ exit(0);
                                 char plistfname[200];
                                 
                                 
-                                system("mkdir ~/.streamCTRL");
-                                sprintf(plistfname, "~/.streamCTRL/%s.shmplist", sname_array[sindex]);
+                                system("mkdir -p ~/.streamCTRL");
+                                sprintf(plistfname, "%s/.streamCTRL/%s.shmplist", homedir, sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
                                 
