@@ -683,10 +683,15 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
 
 
-/*
+
                         // get stream name and ID
                         strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
+ 
+						printf("%5d  ->  %20s  %20s\n", sindex, dir->d_name, streaminfo[sindex].sname);
+						fflush(stdout);
+						
+ /*                     
                         ID = image_ID(streaminfo[sindex].sname);
 
 
