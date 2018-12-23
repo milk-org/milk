@@ -825,10 +825,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(SymLink_array[ID] == 1)
                     {
                         char namestring[40];
-                        sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
+                        sprintf(namestring, "%s->%s", sname_array[sindex], linkname_array[sindex]);
 
                         attron(COLOR_PAIR(5));
-                        printw("%-*s", DispName_NBchar, namestring);
+                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
@@ -907,9 +907,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 						linecharcnt += DispName_NBchar+1;
 
 
-                        //                        cnt0_array[sindex] = data.image[ID].md[0].cnt0;
-                        // counter and semaphores
-                        //                        if(data.image[ID].md[0].cnt0 == cnt0array[ID]) // has not changed
                         if(deltacnt0[ID] == 0)
                         {
                             printw(" %10ld", data.image[ID].md[0].cnt0);
@@ -1054,10 +1051,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
                                     fclose(fp);
-                                }
-                                
-                            //    sprintf(command, "rm %s", plistfname);
-                            //    system(command);
+                                }                                
                             }
 
 
