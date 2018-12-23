@@ -847,11 +847,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                     char line[200];
                     char string[200];
                     int charcnt = 0; // how many chars are about to be printed
-                    int linecharcnt = 5; // keeping track of number of characters in line
-
-
-                    printw("%4d ", sindex);
-
+                    int linecharcnt = 0; // keeping track of number of characters in line
 
                     charcnt = DispName_NBchar+1;
                     if(dindex == dindexSelected)
