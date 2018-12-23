@@ -1224,7 +1224,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     if(fuserUpdate==1)
                     {
-                        refresh();
+                  //      refresh();
                         if(data.signal_INT == 1) // stop scan
                         {
                             fuserUpdate = 2;     // complete loop without scan
