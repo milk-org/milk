@@ -307,6 +307,9 @@ void *streamCTRL_scan(void* thptr)
 
 	streaminfoproc->loopcnt = 0;
 
+
+
+
     while(streaminfoproc->loop == 1)
     {
 
@@ -440,7 +443,7 @@ void *streamCTRL_scan(void* thptr)
             //            sindexscan1 = ssindex[sindexscan];
             int sindexscan1 = streaminfoproc->sindexscan;
 
-            int PReadMode = 0;
+            int PReadMode = 1;
 
             if(PReadMode == 0)
             {
@@ -453,16 +456,16 @@ void *streamCTRL_scan(void* thptr)
                 else
                 {
                     streaminfo[sindexscan1].streamOpenPID_status = 1;
-                    /* Read the output a line at a time - output it. */
-                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
-                    }
+                    
+                    if (fgets(plistoutline, 2000-1, fp) == NULL)
+						sprintf(plistoutline, " ");
                     pclose(fp);
                 }
             }
             else
             {
                 // filesystem option
-                char plistfname[200];
+                char plistfname[2000];
 
 
                 sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
@@ -477,7 +480,7 @@ void *streamCTRL_scan(void* thptr)
                 {
                     size_t len = 0;
 
-                    if(fgets(plistoutline, 2000, fp) == NULL)
+                    if(fgets(plistoutline, 2000-1, fp) == NULL)
                         sprintf(plistoutline, " ");
 
                     fclose(fp);
@@ -527,6 +530,7 @@ void *streamCTRL_scan(void* thptr)
                 //    fuserUpdate0 = 0;
             }
         }
+        
 		streaminfoproc->NBstream = NBsindex;
 		streaminfoproc->loopcnt++;
 		usleep(streaminfoproc->twaitus);		
