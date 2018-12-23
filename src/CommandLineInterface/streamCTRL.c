@@ -78,12 +78,34 @@
 /* =============================================================================================== */
 
 
-
-static PROCESSINFOLIST *pinfolist;
-
 static int wrow, wcol;
 
 
+
+// index is 
+typedef struct
+{
+	char sname[nameNBchar];      // stream name
+
+    long ID;
+    
+    int SymLink;
+    char linkname[nameNBchar];   // if stream is sym link, resolve link name
+
+    pid_t streamOpenPID[streamOpenNBpid_MAX];
+    int streamOpenPID_cnt;
+    int streamOpenPID_cnt1;                       // number of processes accessing stream
+    int streamOpenPID_status;
+
+    int atype;
+
+    double updatevalue; // higher value = more actively recent updates [Hz]
+    double updatevalue_frozen;
+
+    long long cnt0; // used to check if cnt0 has changed
+    long deltacnt0;
+	
+} STREAMINFO;
 
 
 
@@ -236,6 +258,9 @@ static int get_PIDmax()
 
 
 
+
+
+
 /**
  * ## Purpose
  *
@@ -250,6 +275,9 @@ static int get_PIDmax()
 
 int_fast8_t streamCTRL_CTRLscreen()
 {
+	// Display fields
+    STREAMINFO *streaminfo;
+	
     int PIDnameStringLen = 12;
 
     long sindex;  // scan index
@@ -278,25 +306,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     // data arrays
-    char sname_array[streamNBID_MAX][nameNBchar];
-    char linkname_array[streamNBID_MAX][nameNBchar];
 
-    long IDarray[streamNBID_MAX];
-    int SymLink_array[streamNBID_MAX];
-
-    pid_t streamOpenPIDarray[streamNBID_MAX][streamOpenNBpid_MAX];
-    int streamOpenPIDarray_cnt[streamNBID_MAX];
-    int streamOpenPIDarray_cnt1[streamNBID_MAX];                       // number of processes accessing stream
-    int streamOpenPIDarray_status[streamNBID_MAX];
-
-    int atype_array[streamNBID_MAX];
-    long long cnt0_array[streamNBID_MAX];
-
-    double updatevaluearray[streamNBID_MAX]; // higher value = more actively recent updates [Hz]
-    double updatevaluearray_frozen[streamNBID_MAX];
-
-    long long cnt0array[streamNBID_MAX]; // used to check if cnt0 has changed
-    long deltacnt0[streamNBID_MAX];
 
 
 
@@ -313,10 +323,9 @@ int_fast8_t streamCTRL_CTRLscreen()
     PIDmax = get_PIDmax();
     PIDname_array = malloc(sizeof(char*)*PIDmax);
 
+	
+	streaminfo = (STREAMINFO*) malloc(sizeof(STREAMINFO)*streamNBID_MAX);
 
-
-
-    char *homedir = getenv("HOME");
 
     setlocale(LC_ALL, "");
 
@@ -441,7 +450,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
         case 'R': // remove stream
-            ImageStreamIO_destroyIm( &data.image[IDarray[dindexSelected]]);
+            ImageStreamIO_destroyIm( &data.image[streaminfo[dindexSelected].ID]);
             break;
 
 
@@ -676,31 +685,31 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
                         // get stream name and ID
-                        strncpy(sname_array[sindex], dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
-                        sname_array[sindex][strlen(dir->d_name)-strlen(".im.shm")] = '\0';
-                        ID = image_ID(sname_array[sindex]);
+                        strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
+                        streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
+                        ID = image_ID(streaminfo[sindex].sname);
 
 
                         // connect to stream
-                        ID = image_ID(sname_array[sindex]);
+                        ID = image_ID(streaminfo[sindex].sname);
                         if(ID == -1)
                         {
-                            ID = read_sharedmem_image(sname_array[sindex]);
-                            deltacnt0[ID] = 1;
-                            updatevaluearray[ID] = 1.0;
-                            updatevaluearray_frozen[ID] = 1.0;
+                            ID = read_sharedmem_image(streaminfo[sindex].sname);
+                            streaminfo[sindex].deltacnt0 = 1;
+                            streaminfo[sindex].updatevalue = 1.0;
+                            streaminfo[sindex].updatevalue_frozen = 1.0;
                         }
                         else
                         {
                             float gainv = 0.9;
-                            deltacnt0[ID] = data.image[ID].md[0].cnt0 - cnt0array[ID];
-                            updatevaluearray[ID] = gainv * updatevaluearray[ID] + (1.0-gainv) * (1.0*deltacnt0[ID]/tdiffv);
+                            streaminfo[sindex].deltacnt0 = data.image[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
+                            streaminfo[sindex].updatevalue = gainv * streaminfo[sindex].updatevalue + (1.0-gainv) * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
                         }
-                        cnt0array[ID] = data.image[ID].md[0].cnt0; // keep memory of cnt0
+                        streaminfo[sindex].cnt0 = data.image[ID].md[0].cnt0; // keep memory of cnt0
 
-                        IDarray[sindex] = ID;
+                        streaminfo[sindex].ID = ID;
 
-                        atype_array[sindex] = data.image[ID].md[0].atype;
+                        streaminfo[sindex].atype = data.image[ID].md[0].atype;
 
                         if (S_ISLNK(buf.st_mode)) // resolve link name
                         {
@@ -709,7 +718,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             char linkname[200];
                             int nchar;
 
-                            SymLink_array[ID] = 1;
+                            streaminfo[sindex].SymLink = 1;
                             sprintf(fullname, "/tmp/%s", dir->d_name);
                             readlink (fullname, linknamefull, 200-1);
 
@@ -727,10 +736,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 ii++;
                             }
 
-                            strncpy(linkname_array[sindex], linkname, nameNBchar);
+                            strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
                         }
                         else
-                            SymLink_array[ID] = 0;
+                            streaminfo[sindex].SymLink = 0;
 
                         sindex++;
                     }
@@ -759,7 +768,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 {
                     for(sindex1=sindex0+1; sindex1<NBsindex; sindex1++)
                     {
-                        if( strcmp(sname_array[larray[sindex0]], sname_array[larray[sindex1]]) > 0)
+                        if( strcmp(streaminfo[larray[sindex0]].sname, streaminfo[larray[sindex1]].sname) > 0)
                         {
                             int tmpindex = larray[sindex0];
                             larray[sindex0] = larray[sindex1];
@@ -784,12 +793,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                 if(SORT_TOGGLE == 1)
                 {
                     for(sindex=0; sindex<NBsindex; sindex++)
-                        updatevaluearray_frozen[IDarray[sindex]] = updatevaluearray[IDarray[sindex]];
+                        streaminfo[sindex].updatevalue_frozen = streaminfo[sindex].updatevalue;
 
                     if(SORTING==3)
                     {
                         for(sindex=0; sindex<NBsindex; sindex++)
-                            updatevaluearray_frozen[IDarray[sindex]] += 10000.0*streamOpenPIDarray_cnt1[IDarray[sindex]];
+                            streaminfo[sindex].updatevalue_frozen += 10000.0*streaminfo[sindex].streamOpenPID_cnt1;
                     }
 
                     SORT_TOGGLE = 0;
@@ -798,7 +807,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 for(sindex=0; sindex<NBsindex; sindex++)
                 {
                     larray[sindex] = sindex;
-                    varray[sindex] = updatevaluearray_frozen[IDarray[sindex]];
+                    varray[sindex] = streaminfo[sindex].updatevalue_frozen;
                 }
 
                 quick_sort2l(varray, larray, NBsindex);
@@ -823,7 +832,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             {
                 long ID;
                 sindex = ssindex[dindex];
-                ID = IDarray[sindex];
+                ID = streaminfo[sindex].ID;
 
 
                 if(sOK == 1)
@@ -840,19 +849,19 @@ int_fast8_t streamCTRL_CTRLscreen()
                     if(dindex == dindexSelected)
                         attron(A_REVERSE);
 
-                    if(SymLink_array[ID] == 1)
+                    if(streaminfo[sindex].SymLink == 1)
                     {
                         char namestring[200];
-                        sprintf(namestring, "%s->%s", sname_array[sindex], linkname_array[sindex]);
+                        sprintf(namestring, "%s->%s", streaminfo[sindex].sname, streaminfo[sindex].linkname);
 
                         attron(COLOR_PAIR(5));
                         printw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
-                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, sname_array[sindex]);
+                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
 
-                    if(strlen(sname_array[sindex]) > DispName_NBchar)
+                    if(strlen(streaminfo[sindex].sname) > DispName_NBchar)
                     {
                         attron(COLOR_PAIR(9));
                         printw("+");
@@ -875,36 +884,36 @@ int_fast8_t streamCTRL_CTRLscreen()
                         int j;
 
 
-                        if(atype_array[sindex]==_DATATYPE_UINT8)
+                        if(streaminfo[sindex].atype ==_DATATYPE_UINT8)
                             charcnt = sprintf(string, " UI8");
-                        if(atype_array[sindex]==_DATATYPE_INT8)
+                        if(streaminfo[sindex].atype ==_DATATYPE_INT8)
                             charcnt = sprintf(string, "  I8");
 
-                        if(atype_array[sindex]==_DATATYPE_UINT16)
+                        if(streaminfo[sindex].atype ==_DATATYPE_UINT16)
                             charcnt = sprintf(string, "UI16");
-                        if(atype_array[sindex]==_DATATYPE_INT16)
+                        if(streaminfo[sindex].atype ==_DATATYPE_INT16)
                             charcnt = sprintf(string, " I16");
 
-                        if(atype_array[sindex]==_DATATYPE_UINT32)
+                        if(streaminfo[sindex].atype ==_DATATYPE_UINT32)
                             charcnt = sprintf(string, "UI32");
-                        if(atype_array[sindex]==_DATATYPE_INT32)
+                        if(streaminfo[sindex].atype ==_DATATYPE_INT32)
                             charcnt = sprintf(string, " I32");
 
-                        if(atype_array[sindex]==_DATATYPE_UINT64)
+                        if(streaminfo[sindex].atype ==_DATATYPE_UINT64)
                             charcnt = sprintf(string, "UI64");
-                        if(atype_array[sindex]==_DATATYPE_INT64)
+                        if(streaminfo[sindex].atype ==_DATATYPE_INT64)
                             charcnt = sprintf(string, " I64");
 
-                        if(atype_array[sindex]==_DATATYPE_FLOAT)
+                        if(streaminfo[sindex].atype ==_DATATYPE_FLOAT)
                             charcnt = sprintf(string, " FLT");
 
-                        if(atype_array[sindex]==_DATATYPE_DOUBLE)
+                        if(streaminfo[sindex].atype ==_DATATYPE_DOUBLE)
                             charcnt = sprintf(string, " DBL");
 
-                        if(atype_array[sindex]==_DATATYPE_COMPLEX_FLOAT)
+                        if(streaminfo[sindex].atype ==_DATATYPE_COMPLEX_FLOAT)
                             charcnt = sprintf(string, "CFLT");
 
-                        if(atype_array[sindex]==_DATATYPE_COMPLEX_DOUBLE)
+                        if(streaminfo[sindex].atype ==_DATATYPE_COMPLEX_DOUBLE)
                             charcnt = sprintf(string, "CDBL");
 
                         linecharcnt += charcnt;
@@ -932,7 +941,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                         charcnt = sprintf(string, " %10ld", data.image[ID].md[0].cnt0);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
-                            if(deltacnt0[ID] == 0)
+                            if(streaminfo[sindex].deltacnt0 == 0)
                             {
                                 printw(string);
                             }
@@ -944,7 +953,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             }
 
 
-                        charcnt = sprintf(string, "  %7.2f Hz", updatevaluearray[ID]);
+                        charcnt = sprintf(string, "  %7.2f Hz", streaminfo[sindex].updatevalue);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
                             printw(string);
@@ -1058,7 +1067,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         if(fuserUpdate == 2)
                         {
-                            streamOpenPIDarray_status[ID] = 0; // not scanned
+                            streaminfo[sindex].streamOpenPID_status = 0; // not scanned
                         }
 
 
@@ -1066,13 +1075,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         int pidIndex;
 
-                        switch (streamOpenPIDarray_status[ID]) {
+                        switch (streaminfo[sindex].streamOpenPID_status) {
 
                         case 1:
-                            streamOpenPIDarray_cnt1[ID] = 0;
-                            for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[ID] ; pidIndex++)
+                            streaminfo[sindex].streamOpenPID_cnt1 = 0;
+                            for(pidIndex=0; pidIndex<streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
                             {
-                                pid_t pid = streamOpenPIDarray[ID][pidIndex];
+                                pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
                                 if( (getpgid(pid) >= 0) && (pid != getpid()) ) {
 
                                     charcnt = sprintf(string, "%6d:%-*.*s", (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
@@ -1081,7 +1090,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                         printw(string);
 
 
-                                    streamOpenPIDarray_cnt1[ID]++;
+                                    streaminfo[sindex].streamOpenPID_cnt1 ++;
                                 }
                             }
 
@@ -1153,7 +1162,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             int NBpid = 0;
 
             sindexscan1 = ssindex[sindexscan];
-            IDscan = IDarray[sindexscan1];
+            IDscan = streaminfo[sindexscan1].ID;
 
 
             int PReadMode = 1;
@@ -1161,14 +1170,14 @@ int_fast8_t streamCTRL_CTRLscreen()
             if(PReadMode == 0)
             {
                 // popen option
-                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", sname_array[sindexscan1]);
+                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
                 fp = popen(command, "r");
                 if (fp == NULL) {
-                    streamOpenPIDarray_status[IDscan] = 2; // failed
+                    streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
                 }
                 else
                 {
-                    streamOpenPIDarray_status[IDscan] = 1;
+                    streaminfo[sindexscan1].streamOpenPID_status = 1;
                     /* Read the output a line at a time - output it. */
                     if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
                     }
@@ -1181,13 +1190,13 @@ int_fast8_t streamCTRL_CTRLscreen()
                 char plistfname[200];
 
 
-                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindexscan1]);
-                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindexscan1], plistfname);
+                sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
+                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
                 system(command);
 
                 fp = fopen(plistfname, "r");
                 if (fp == NULL) {
-                    streamOpenPIDarray_status[IDscan] = 2; // failed
+                    streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
 
                     endwin();
                     printf(" [%s] ", plistfname); //TEST
@@ -1206,7 +1215,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
             }
 
-            if(streamOpenPIDarray_status[IDscan] != 2)
+            if(streaminfo[sindexscan1].streamOpenPID_status != 2)
             {
                 char * pch;
 
@@ -1214,21 +1223,21 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                 while (pch != NULL) {
                     if(NBpid<streamOpenNBpid_MAX) {
-                        streamOpenPIDarray[IDscan][NBpid] = atoi(pch);
+                        streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
                         if(getpgid(pid) >= 0)
                             NBpid++;
                     }
                     pch = strtok (NULL, " ");
                 }
-                streamOpenPIDarray_status[IDscan] = 1; // success
+                streaminfo[sindexscan1].streamOpenPID_status = 1; // success
             }
 
-            streamOpenPIDarray_cnt[IDscan] = NBpid;
+            streaminfo[sindex].streamOpenPID_cnt = NBpid;
             // Get PID names
             int pidIndex;
-            for(pidIndex=0; pidIndex<streamOpenPIDarray_cnt[IDscan] ; pidIndex++)
+            for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
             {
-                pid_t pid = streamOpenPIDarray[IDscan][pidIndex];
+                pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
                 if( (getpgid(pid) >= 0) && (pid != getpid()) )
                 {
                     char* pname = (char*) calloc(1024, sizeof(char));
@@ -1258,7 +1267,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     endwin();
 
-
+	free(streaminfo);
 
     return 0;
 }
