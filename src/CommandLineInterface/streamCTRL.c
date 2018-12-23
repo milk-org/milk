@@ -781,7 +781,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-			streamCTRL_scan(streaminfo);
+			NBsindex = streamCTRL_scan(streaminfo);
 
 
 
