@@ -66,7 +66,7 @@
 
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 50
-#define nameNBchar 30
+#define nameNBchar 50
 
 
 
