@@ -344,6 +344,12 @@ int_fast8_t streamCTRL_CTRLscreen()
     clock_gettime(CLOCK_REALTIME, &t0);
 
 
+
+    DIR *d;
+    struct dirent *dir;
+
+            
+
     while( loopOK == 1 )
     {
         int pid;
@@ -623,14 +629,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-            DIR *d;
-            struct dirent *dir;
-            d = opendir("/tmp/");
 
 
+			
 
 
             // COLLECT DATA
+            d = opendir("/tmp/");
             if(d)
             {
                 sindex = 0;
@@ -720,7 +725,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                 }
                 NBsindex = sindex;
             }
-            
+            closedir(d);
 
 
 
@@ -819,11 +824,11 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                     if(SymLink_array[ID] == 1)
                     {
-                        char namestring[40];
-                        sprintf(namestring, "%s -> %s", sname_array[sindex], linkname_array[sindex]);
+                        char namestring[200];
+                        sprintf(namestring, "%s->%s", sname_array[sindex], linkname_array[sindex]);
 
                         attron(COLOR_PAIR(5));
-                        printw("%-*s", DispName_NBchar, namestring);
+                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
@@ -902,9 +907,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 						linecharcnt += DispName_NBchar+1;
 
 
-                        //                        cnt0_array[sindex] = data.image[ID].md[0].cnt0;
-                        // counter and semaphores
-                        //                        if(data.image[ID].md[0].cnt0 == cnt0array[ID]) // has not changed
                         if(deltacnt0[ID] == 0)
                         {
                             printw(" %10ld", data.image[ID].md[0].cnt0);
@@ -1027,8 +1029,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 char plistfname[200];
                                 
                                 
-                                system("mkdir -p ~/.streamCTRL");
-                                sprintf(plistfname, "%s/.streamCTRL/%s.shmplist", homedir, sname_array[sindex]);
+                                sprintf(plistfname, "/tmp/%s.shmplist", sname_array[sindex]);
                                 sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", sname_array[sindex], plistfname);
                                 system(command);
                                 
@@ -1050,10 +1051,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
                                     fclose(fp);
-                                }
-                                
-                            //    sprintf(command, "rm %s", plistfname);
-                            //    system(command);
+                                }                                
                             }
 
 
