@@ -441,7 +441,7 @@ void *streamCTRL_scan(void* thptr)
             int sindexscan1 = streaminfoproc->sindexscan;
 
             int PReadMode = 0;
-/*
+
             if(PReadMode == 0)
             {
                 // popen option
@@ -452,10 +452,9 @@ void *streamCTRL_scan(void* thptr)
                 }
                 else
                 {
-                    streaminfo[sindexscan1].streamOpenPID_status = 1;
+                   // streaminfo[sindexscan1].streamOpenPID_status = 1;
                     
-                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
-                    }
+                   // if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {}
                     pclose(fp);
                 }
             }
@@ -484,7 +483,7 @@ void *streamCTRL_scan(void* thptr)
                 }
             }
 
-
+/*
             if(streaminfo[sindexscan1].streamOpenPID_status != 2)
             {
                 char * pch;
