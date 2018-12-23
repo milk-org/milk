@@ -655,6 +655,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             endwin();
                             sprintf("File \"%s\"", dir->d_name);
                             perror("Error running lstat on file ");
+                            exit(0);
                         }
 
 
@@ -715,10 +716,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             SymLink_array[ID] = 0;
 
                         sindex++;
-                    }
-                    
-                    printf("\n");
-					fflush(stdout);
+                    }                    
                 }
                 NBsindex = sindex;
             }
