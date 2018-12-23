@@ -629,7 +629,9 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("PIDmax = %d    Update frequ = %2d Hz", PIDmax, (int) (frequ+0.5));
             if(fuserUpdate == 1)
             {
-                printw("  fuser scan ongoing  %4d  %4d  / %4d", sindexscan1, sindexscan, NBsindex);
+				attron(COLOR_PAIR(9));
+                printw("  fuser scan ongoing  %4d  %4d  / %4d   ", sindexscan1, sindexscan, NBsindex);
+				attroff(COLOR_PAIR(9));
             }
             if(DisplayMode==5)
             {
@@ -957,7 +959,7 @@ int_fast8_t streamCTRL_CTRLscreen()
                             }
 
 
-                        charcnt = sprintf(string, "  %7.2f Hz", streaminfo[sindex].updatevalue);
+                        charcnt = sprintf(string, "  %8.2f Hz", streaminfo[sindex].updatevalue);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
                             printw(string);
