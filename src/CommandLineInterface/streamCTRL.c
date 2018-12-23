@@ -528,9 +528,10 @@ void *streamCTRL_scan(void* thptr)
             if(streaminfoproc->sindexscan == NBsindex)
             {
                 streaminfoproc->fuserUpdate = 0;
-                streaminfoproc->fuserUpdate0 = 0;
             }
         }
+        
+        streaminfoproc->fuserUpdate0 = 0;
         
 		streaminfoproc->NBstream = NBsindex;
 		streaminfoproc->loopcnt++;
