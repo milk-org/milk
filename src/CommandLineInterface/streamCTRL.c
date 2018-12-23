@@ -261,6 +261,157 @@ static int get_PIDmax()
 
 
 
+
+
+
+long streamCTRL_scan(STREAMINFO* streaminfo)
+{
+    long NBsindex = 0;
+    long sindex = 0;
+
+    DIR *d;
+    struct dirent *dir;
+
+    // timing
+    static firstIter = 1;
+    static struct timespec t0;
+    struct timespec t1;
+    double tdiffv;
+    struct timespec tdiff;
+
+
+
+    // timing measurement
+    clock_gettime(CLOCK_REALTIME, &t1);
+    if(firstIter == 1)
+    {
+        tdiffv = 0.1;
+    }
+    else
+    {
+        tdiff = info_time_diff(t0, t1);
+        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+    }
+    clock_gettime(CLOCK_REALTIME, &t0);
+
+
+    // COLLECT DATA
+    d = opendir("/tmp/");
+    if(d)
+    {
+        sindex = 0;
+        while(((dir = readdir(d)) != NULL))
+        {
+            char *pch = strstr(dir->d_name, ".im.shm");
+
+
+            if(pch)
+            {
+                long ID;
+
+                // is file sym link ?
+                struct stat buf;
+                int retv;
+                char fullname[200];
+
+                sprintf(fullname, "/tmp/%s", dir->d_name);
+                retv = lstat (fullname, &buf);
+                if (retv == -1 ) {
+                    endwin();
+                    printf("File \"%s\"", dir->d_name);
+                    perror("Error running lstat on file ");
+                    exit(0);
+                }
+
+
+
+                // get stream name and ID
+                strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
+                streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
+
+
+
+
+                ID = image_ID(streaminfo[sindex].sname);
+
+
+                // connect to stream
+                ID = image_ID(streaminfo[sindex].sname);
+                if(ID == -1)
+                {
+                    ID = read_sharedmem_image(streaminfo[sindex].sname);
+                    streaminfo[sindex].deltacnt0 = 1;
+                    streaminfo[sindex].updatevalue = 1.0;
+                    streaminfo[sindex].updatevalue_frozen = 1.0;
+                }
+                else
+                {
+                    float gainv = 0.9;
+                    streaminfo[sindex].deltacnt0 = data.image[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
+                    if(firstIter == 0)
+                        streaminfo[sindex].updatevalue = gainv * streaminfo[sindex].updatevalue + (1.0-gainv) * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
+                }
+                streaminfo[sindex].cnt0 = data.image[ID].md[0].cnt0; // keep memory of cnt0
+
+                streaminfo[sindex].ID = ID;
+
+                streaminfo[sindex].atype = data.image[ID].md[0].atype;
+
+
+                if (S_ISLNK(buf.st_mode)) // resolve link name
+                {
+                    char fullname[200];
+                    char linknamefull[200];
+                    char linkname[200];
+                    int nchar;
+
+                    streaminfo[sindex].SymLink = 1;
+                    sprintf(fullname, "/tmp/%s", dir->d_name);
+                    readlink (fullname, linknamefull, 200-1);
+
+                    strcpy(linkname, basename(linknamefull));
+
+                    int lOK = 1;
+                    int ii = 0;
+                    while((lOK == 1)&&(ii<strlen(linkname)))
+                    {
+                        if(linkname[ii] == '.')
+                        {
+                            linkname[ii] = '\0';
+                            lOK = 0;
+                        }
+                        ii++;
+                    }
+
+                    strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
+                }
+                else
+                    streaminfo[sindex].SymLink = 0;
+
+
+                sindex++;
+            }
+        }
+        NBsindex = sindex;
+    }
+    closedir(d);
+
+    firstIter = 0;
+
+
+    return NBsindex;
+}
+
+
+
+
+
+
+
+
+
+
+
 /**
  * ## Purpose
  *
@@ -298,14 +449,6 @@ int_fast8_t streamCTRL_CTRLscreen()
     int SORTING = 0;
     int SORT_TOGGLE = 0;
 
-    // timing
-    struct timespec t0;
-    struct timespec t1;
-    double tdiffv;
-    struct timespec tdiff;
-
-
-    // data arrays
 
 
 
@@ -354,12 +497,6 @@ int_fast8_t streamCTRL_CTRLscreen()
     int fuserScan = 0;
 
     clear();
-    clock_gettime(CLOCK_REALTIME, &t0);
-
-
-
-    DIR *d;
-    struct dirent *dir;
 
 
 
@@ -373,12 +510,6 @@ int_fast8_t streamCTRL_CTRLscreen()
         usleep((long) (1000000.0/frequ));
         int ch = getch();
 
-
-        // timing measurement
-        clock_gettime(CLOCK_REALTIME, &t1);
-        tdiff = info_time_diff(t0, t1);
-        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-        clock_gettime(CLOCK_REALTIME, &t0);
 
 
 
@@ -650,111 +781,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
+			streamCTRL_scan(streaminfo);
 
 
-
-
-
-            // COLLECT DATA
-            d = opendir("/tmp/");
-            if(d)
-            {
-                sindex = 0;
-                sOK = 1;
-                while((sOK == 1)&&((dir = readdir(d)) != NULL))
-                {
-                    char *pch = strstr(dir->d_name, ".im.shm");
-
-
-                    if(pch)
-                    {
-                        long ID;
-
-                        // is file sym link ?
-                        struct stat buf;
-                        int retv;
-                        char fullname[200];
-
-                        sprintf(fullname, "/tmp/%s", dir->d_name);
-                        retv = lstat (fullname, &buf);
-                        if (retv == -1 ) {
-                            endwin();
-                            printf("File \"%s\"", dir->d_name);
-                            perror("Error running lstat on file ");
-                            exit(0);
-                        }
-
-
-
-                        // get stream name and ID
-                        strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
-                        streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
- 
-
-						
-                      
-                        ID = image_ID(streaminfo[sindex].sname);
-
-
-                        // connect to stream
-                        ID = image_ID(streaminfo[sindex].sname);
-                        if(ID == -1)
-                        {
-                            ID = read_sharedmem_image(streaminfo[sindex].sname);
-                            streaminfo[sindex].deltacnt0 = 1;
-                            streaminfo[sindex].updatevalue = 1.0;
-                            streaminfo[sindex].updatevalue_frozen = 1.0;
-                        }
-                        else
-                        {
-                            float gainv = 0.9;
-                            streaminfo[sindex].deltacnt0 = data.image[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
-                            streaminfo[sindex].updatevalue = gainv * streaminfo[sindex].updatevalue + (1.0-gainv) * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
-                        }
-                        streaminfo[sindex].cnt0 = data.image[ID].md[0].cnt0; // keep memory of cnt0
-
-                        streaminfo[sindex].ID = ID;
-
-                        streaminfo[sindex].atype = data.image[ID].md[0].atype;
-
-
-                        if (S_ISLNK(buf.st_mode)) // resolve link name
-                        {
-                            char fullname[200];
-                            char linknamefull[200];
-                            char linkname[200];
-                            int nchar;
-
-                            streaminfo[sindex].SymLink = 1;
-                            sprintf(fullname, "/tmp/%s", dir->d_name);
-                            readlink (fullname, linknamefull, 200-1);
-
-                            strcpy(linkname, basename(linknamefull));
-
-                            int lOK = 1;
-                            int ii = 0;
-                            while((lOK == 1)&&(ii<strlen(linkname)))
-                            {
-                                if(linkname[ii] == '.')
-                                {
-                                    linkname[ii] = '\0';
-                                    lOK = 0;
-                                }
-                                ii++;
-                            }
-
-                            strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
-                        }
-                        else
-                            streaminfo[sindex].SymLink = 0;
-                            
-
-                        sindex++;
-                    }
-                }
-                NBsindex = sindex;
-            }
-            closedir(d);
 
 
             // SORT
