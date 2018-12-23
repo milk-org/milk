@@ -1149,7 +1149,10 @@ int_fast8_t streamCTRL_CTRLscreen()
                             
                             sindexscan++;
 							if(sindexscan == NBsindex)
+							{
 								fuserUpdate = 0;
+								fuserUpdate0 = 0;
+							}
                         }
 
 
@@ -1232,8 +1235,8 @@ int_fast8_t streamCTRL_CTRLscreen()
                         sOK = 0;
                 }
             }
-            fuserUpdate = 0;
-            fuserUpdate0 = 0;
+            
+            
         }
 
         refresh();
