@@ -767,7 +767,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
         case '}': // faster scan update
-            streaminfoproc.twaitus = (int) (1.2*streaminfoproc.twaitus);
+            streaminfoproc.twaitus = (int) (0.83333333333333333333*streaminfoproc.twaitus);
             if(streaminfoproc.twaitus < 1000)
                 streaminfoproc.twaitus = 1000;
             break;
