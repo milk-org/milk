@@ -865,7 +865,7 @@ int_fast8_t streamCTRL_CTRLscreen()
         erase();
 
         attron(A_BOLD);
-        sprintf(monstring, "PRESS x TO STOP MONITOR");
+        sprintf(monstring, "STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP");
         print_header(monstring, '-');
         attroff(A_BOLD);
 
