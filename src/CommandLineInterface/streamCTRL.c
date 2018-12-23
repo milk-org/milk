@@ -635,7 +635,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     int fuserScan = 0;
     
 	streaminfoproc.NBstream = 0;
-    
+    streaminfoproc.twaitus = 1000;
     
     clear();
     
