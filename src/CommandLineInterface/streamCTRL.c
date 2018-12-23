@@ -528,6 +528,7 @@ void *streamCTRL_scan(void* thptr)
             streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
             // Get PID names
             int pidIndex;
+            int cnt1 = 0;
             for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
             {
                 pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
@@ -540,8 +541,10 @@ void *streamCTRL_scan(void* thptr)
                         PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
                     strncpy(PIDname_array[pid], pname, PIDnameStringLen);
                     free(pname);
+					cnt1++;
                 }
             }
+            streaminfo[sindexscan1].streamOpenPID_cnt1 = cnt1;
 
             streaminfoproc->sindexscan++;
             if(streaminfoproc->sindexscan == NBsindex)
@@ -1410,7 +1413,6 @@ int_fast8_t streamCTRL_CTRLscreen()
                                 linecharcnt += charcnt;
                                 if(linecharcnt < wcol)
                                     printw(string);
-
 
                                 streaminfo[sindex].streamOpenPID_cnt1 ++;
                             }
