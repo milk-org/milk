@@ -48,6 +48,8 @@
 #include <locale.h>
 #include <errno.h>
 
+#include <pthread.h>
+
 
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
@@ -111,7 +113,12 @@ typedef struct
 
 typedef struct
 {
+	int twaitus; 
+	int loop;   // 1 : loop     0 : exit
+	long loopcnt;
+	
 	STREAMINFO *sinfo;
+	long NBstream;
 	int fuserUpdate;
 	int sindexscan;
 	char **PIDtable; // stores names of PIDs
@@ -278,9 +285,9 @@ long streamCTRL_scan(STREAMINFOPROC* streaminfoproc)
     long NBsindex = 0;
     long sindex = 0;
 
-	STREAMINFO *streaminfo;
-	char **PIDname_array;
-    
+    STREAMINFO *streaminfo;
+    char **PIDname_array;
+
     DIR *d;
     struct dirent *dir;
 
@@ -293,225 +300,235 @@ long streamCTRL_scan(STREAMINFOPROC* streaminfoproc)
 
 
 
-	streaminfo = streaminfoproc->sinfo;
-	PIDname_array = streaminfoproc->PIDtable;
+    streaminfo = streaminfoproc->sinfo;
+    PIDname_array = streaminfoproc->PIDtable;
 
-    // timing measurement
-    clock_gettime(CLOCK_REALTIME, &t1);
-    if(firstIter == 1)
-    {
-        tdiffv = 0.1;
-    }
-    else
-    {
-        tdiff = info_time_diff(t0, t1);
-        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-    }
-    clock_gettime(CLOCK_REALTIME, &t0);
+	streaminfoproc->loopcnt = 0;
 
-
-    // COLLECT DATA
-    d = opendir("/tmp/");
-    if(d)
+    while(streaminfoproc->loop == 1)
     {
-        sindex = 0;
-        while(((dir = readdir(d)) != NULL))
+        // timing measurement
+        clock_gettime(CLOCK_REALTIME, &t1);
+        if(firstIter == 1)
         {
-            char *pch = strstr(dir->d_name, ".im.shm");
-
-
-            if(pch)
-            {
-                long ID;
-
-                // is file sym link ?
-                struct stat buf;
-                int retv;
-                char fullname[200];
-
-                sprintf(fullname, "/tmp/%s", dir->d_name);
-                retv = lstat (fullname, &buf);
-                if (retv == -1 ) {
-                    endwin();
-                    printf("File \"%s\"", dir->d_name);
-                    perror("Error running lstat on file ");
-                    exit(0);
-                }
-
-
-
-                // get stream name and ID
-                strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
-                streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
-
-
-
-
-                ID = image_ID(streaminfo[sindex].sname);
-
-
-                // connect to stream
-                ID = image_ID(streaminfo[sindex].sname);
-                if(ID == -1)
-                {
-                    ID = read_sharedmem_image(streaminfo[sindex].sname);
-                    streaminfo[sindex].deltacnt0 = 1;
-                    streaminfo[sindex].updatevalue = 1.0;
-                    streaminfo[sindex].updatevalue_frozen = 1.0;
-                }
-                else
-                {
-                    float gainv = 0.9;
-                    streaminfo[sindex].deltacnt0 = data.image[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
-                    if(firstIter == 0)
-                        streaminfo[sindex].updatevalue = gainv * streaminfo[sindex].updatevalue + (1.0-gainv) * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
-                }
-                streaminfo[sindex].cnt0 = data.image[ID].md[0].cnt0; // keep memory of cnt0
-
-                streaminfo[sindex].ID = ID;
-
-                streaminfo[sindex].atype = data.image[ID].md[0].atype;
-
-
-                if (S_ISLNK(buf.st_mode)) // resolve link name
-                {
-                    char fullname[200];
-                    char linknamefull[200];
-                    char linkname[200];
-                    int nchar;
-
-                    streaminfo[sindex].SymLink = 1;
-                    sprintf(fullname, "/tmp/%s", dir->d_name);
-                    readlink (fullname, linknamefull, 200-1);
-
-                    strcpy(linkname, basename(linknamefull));
-
-                    int lOK = 1;
-                    int ii = 0;
-                    while((lOK == 1)&&(ii<strlen(linkname)))
-                    {
-                        if(linkname[ii] == '.')
-                        {
-                            linkname[ii] = '\0';
-                            lOK = 0;
-                        }
-                        ii++;
-                    }
-
-                    strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
-                }
-                else
-                    streaminfo[sindex].SymLink = 0;
-
-
-                sindex++;
-            }
-        }
-        NBsindex = sindex;
-    }
-    closedir(d);
-
-    firstIter = 0;
-
-
-
-    if(streaminfoproc->fuserUpdate==1)
-    {
-        FILE *fp;
-        char plistoutline[2000];
-        char command[2000];
-
-        int NBpid = 0;
-
-        //            sindexscan1 = ssindex[sindexscan];
-        int sindexscan1 = streaminfoproc->sindexscan;
-
-        int PReadMode = 1;
-
-        if(PReadMode == 0)
-        {
-            // popen option
-            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
-            fp = popen(command, "r");
-            if (fp == NULL) {
-                streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
-            }
-            else
-            {
-                streaminfo[sindexscan1].streamOpenPID_status = 1;
-                /* Read the output a line at a time - output it. */
-                if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
-                }
-                pclose(fp);
-            }
+            tdiffv = 0.1;
         }
         else
         {
-            // filesystem option
-            char plistfname[200];
+            tdiff = info_time_diff(t0, t1);
+            tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+        }
+        clock_gettime(CLOCK_REALTIME, &t0);
 
 
-            sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
-            sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
-            system(command);
+        // COLLECT DATA
+        d = opendir("/tmp/");
+        if(d)
+        {
+            sindex = 0;
+            while(((dir = readdir(d)) != NULL))
+            {
+                char *pch = strstr(dir->d_name, ".im.shm");
 
-            fp = fopen(plistfname, "r");
-            if (fp == NULL) {
-                streaminfo[sindexscan1].streamOpenPID_status = 2;
+
+                if(pch)
+                {
+                    long ID;
+
+                    // is file sym link ?
+                    struct stat buf;
+                    int retv;
+                    char fullname[200];
+
+                    sprintf(fullname, "/tmp/%s", dir->d_name);
+                    retv = lstat (fullname, &buf);
+                    if (retv == -1 ) {
+                        endwin();
+                        printf("File \"%s\"", dir->d_name);
+                        perror("Error running lstat on file ");
+                        exit(0);
+                    }
+
+
+
+                    // get stream name and ID
+                    strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
+                    streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
+
+
+
+
+                    ID = image_ID(streaminfo[sindex].sname);
+
+
+                    // connect to stream
+                    ID = image_ID(streaminfo[sindex].sname);
+                    if(ID == -1)
+                    {
+                        ID = read_sharedmem_image(streaminfo[sindex].sname);
+                        streaminfo[sindex].deltacnt0 = 1;
+                        streaminfo[sindex].updatevalue = 1.0;
+                        streaminfo[sindex].updatevalue_frozen = 1.0;
+                    }
+                    else
+                    {
+                        float gainv = 0.9;
+                        streaminfo[sindex].deltacnt0 = data.image[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
+                        if(firstIter == 0)
+                            streaminfo[sindex].updatevalue = gainv * streaminfo[sindex].updatevalue + (1.0-gainv) * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
+                    }
+                    streaminfo[sindex].cnt0 = data.image[ID].md[0].cnt0; // keep memory of cnt0
+
+                    streaminfo[sindex].ID = ID;
+
+                    streaminfo[sindex].atype = data.image[ID].md[0].atype;
+
+
+                    if (S_ISLNK(buf.st_mode)) // resolve link name
+                    {
+                        char fullname[200];
+                        char linknamefull[200];
+                        char linkname[200];
+                        int nchar;
+
+                        streaminfo[sindex].SymLink = 1;
+                        sprintf(fullname, "/tmp/%s", dir->d_name);
+                        readlink (fullname, linknamefull, 200-1);
+
+                        strcpy(linkname, basename(linknamefull));
+
+                        int lOK = 1;
+                        int ii = 0;
+                        while((lOK == 1)&&(ii<strlen(linkname)))
+                        {
+                            if(linkname[ii] == '.')
+                            {
+                                linkname[ii] = '\0';
+                                lOK = 0;
+                            }
+                            ii++;
+                        }
+
+                        strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
+                    }
+                    else
+                        streaminfo[sindex].SymLink = 0;
+
+
+                    sindex++;
+                }
+            }
+            NBsindex = sindex;
+        }
+        closedir(d);
+
+        firstIter = 0;
+
+
+
+        if(streaminfoproc->fuserUpdate==1)
+        {
+            FILE *fp;
+            char plistoutline[2000];
+            char command[2000];
+
+            int NBpid = 0;
+
+            //            sindexscan1 = ssindex[sindexscan];
+            int sindexscan1 = streaminfoproc->sindexscan;
+
+            int PReadMode = 1;
+
+            if(PReadMode == 0)
+            {
+                // popen option
+                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
+                fp = popen(command, "r");
+                if (fp == NULL) {
+                    streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
+                }
+                else
+                {
+                    streaminfo[sindexscan1].streamOpenPID_status = 1;
+                    /* Read the output a line at a time - output it. */
+                    if (fgets(plistoutline, sizeof(plistoutline)-1, fp) != NULL) {
+                    }
+                    pclose(fp);
+                }
             }
             else
             {
-                size_t len = 0;
-
-                if(fgets(plistoutline, 2000, fp) == NULL)
-                    sprintf(plistoutline, " ");
+                // filesystem option
+                char plistfname[200];
 
 
-                fclose(fp);
-            }
-        }
+                sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
+                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
+                system(command);
 
-        if(streaminfo[sindexscan1].streamOpenPID_status != 2)
-        {
-            char * pch;
-
-            pch = strtok (plistoutline," ");
-
-            while (pch != NULL) {
-                if(NBpid<streamOpenNBpid_MAX) {
-                    streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
-                    if(getpgid(streaminfo[sindexscan1].streamOpenPID[NBpid]) >= 0)
-                        NBpid++;
+                fp = fopen(plistfname, "r");
+                if (fp == NULL) {
+                    streaminfo[sindexscan1].streamOpenPID_status = 2;
                 }
-                pch = strtok (NULL, " ");
-            }
-            streaminfo[sindexscan1].streamOpenPID_status = 1; // success
-        }
+                else
+                {
+                    size_t len = 0;
 
-        streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
-        // Get PID names
-        int pidIndex;
-        for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
-        {
-            pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
-            if( (getpgid(pid) >= 0) && (pid != getpid()) )
+                    if(fgets(plistoutline, 2000, fp) == NULL)
+                        sprintf(plistoutline, " ");
+
+
+                    fclose(fp);
+                }
+            }
+
+            if(streaminfo[sindexscan1].streamOpenPID_status != 2)
             {
-                char* pname = (char*) calloc(1024, sizeof(char));
-                get_process_name_by_pid(pid, pname);
+                char * pch;
 
-                if(PIDname_array[pid] == NULL)
-                    PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
-                strncpy(PIDname_array[pid], pname, PIDnameStringLen);
-                free(pname);
+                pch = strtok (plistoutline," ");
+
+                while (pch != NULL) {
+                    if(NBpid<streamOpenNBpid_MAX) {
+                        streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
+                        if(getpgid(streaminfo[sindexscan1].streamOpenPID[NBpid]) >= 0)
+                            NBpid++;
+                    }
+                    pch = strtok (NULL, " ");
+                }
+                streaminfo[sindexscan1].streamOpenPID_status = 1; // success
+            }
+
+            streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
+            // Get PID names
+            int pidIndex;
+            for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
+            {
+                pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
+                if( (getpgid(pid) >= 0) && (pid != getpid()) )
+                {
+                    char* pname = (char*) calloc(1024, sizeof(char));
+                    get_process_name_by_pid(pid, pname);
+
+                    if(PIDname_array[pid] == NULL)
+                        PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
+                    strncpy(PIDname_array[pid], pname, PIDnameStringLen);
+                    free(pname);
+                }
+            }
+
+            streaminfoproc->sindexscan++;
+            if(streaminfoproc->sindexscan == NBsindex)
+            {
+                streaminfoproc->fuserUpdate = 0;
+                //    fuserUpdate0 = 0;
             }
         }
-
-        streaminfoproc->sindexscan++;
-        if(streaminfoproc->sindexscan == NBsindex)
-        {
-            streaminfoproc->fuserUpdate = 0;
-        //    fuserUpdate0 = 0;
-        }
+		streaminfoproc->NBstream = NBsindex;
+		streaminfoproc->loopcnt++;
+		usleep(streaminfoproc->twaitus);
+		
+		streaminfoproc->loop = 0; //TEST
     }
 
 
@@ -566,7 +583,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     int SORT_TOGGLE = 0;
 
 
-
+	pthread_t threadscan;
 
 
     // display
@@ -614,7 +631,10 @@ int_fast8_t streamCTRL_CTRLscreen()
     struct tm *uttime_lastScan;
     time_t rawtime;
     int fuserScan = 0;
-
+    
+	streaminfoproc.NBstream = 0;
+    
+    
     clear();
 
 
@@ -629,7 +649,11 @@ int_fast8_t streamCTRL_CTRLscreen()
         usleep((long) (1000000.0/frequ));
         int ch = getch();
 
+		
+		streamCTRL_scan(&streaminfoproc);
 
+
+		NBsindex = streaminfoproc.NBstream;
 
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -898,9 +922,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
-
-			NBsindex = streamCTRL_scan(&streaminfoproc);
+			
 
 
 
