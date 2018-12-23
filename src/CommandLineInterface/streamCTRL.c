@@ -683,12 +683,12 @@ int_fast8_t streamCTRL_CTRLscreen()
                         }
 
 
-
+/*
                         // get stream name and ID
                         strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
                         ID = image_ID(streaminfo[sindex].sname);
-/*
+
 
                         // connect to stream
                         ID = image_ID(streaminfo[sindex].sname);
