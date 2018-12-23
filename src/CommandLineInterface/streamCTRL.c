@@ -327,7 +327,7 @@ void *streamCTRL_scan(void* thptr)
             tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
         }
         clock_gettime(CLOCK_REALTIME, &t0);
-        streaminfoproc->dtscan = diffv;
+        streaminfoproc->dtscan = tdiffv;
 
 
         // COLLECT DATA
