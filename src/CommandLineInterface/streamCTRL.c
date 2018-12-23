@@ -576,6 +576,8 @@ int_fast8_t streamCTRL_CTRLscreen()
     long sindex;  // scan index
     long IDscan;
     long dindex;  // display index
+    long doffsetindex = 0; // offset index if more entries than can be displayed
+    
     long ssindex[streamNBID_MAX]; // sorted index array
 
     long index;
@@ -829,7 +831,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("    Remove stream\n");
 
             printw("\n");
-            printw("============ ACTIONS \n");
+            printw("============ SCANNING \n");
 
             attron(attrval);
             printw("    }");
@@ -1028,7 +1030,13 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
 
-
+			// compute doffsetindex
+			if(dindexSelected-doffsetindex > NBsinfodisp) // scroll to bottom
+				doffsetindex ++;
+			else
+				doffsetindex --;
+			if(doffsetindex<0)
+				doffsetindex = 0;
 
 
             // DISPLAY
@@ -1037,7 +1045,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             for(dindex=0; dindex < NBsindex; dindex++)
             {
                 long ID;
-                sindex = ssindex[dindex];
+                sindex = ssindex[dindex+doffsetindex];
                 ID = streaminfo[sindex].ID;
 
 
