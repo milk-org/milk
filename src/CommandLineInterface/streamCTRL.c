@@ -120,6 +120,7 @@ typedef struct
 	STREAMINFO *sinfo;
 	long NBstream;
 	int fuserUpdate;
+	int fuserUpdate0;
 	int sindexscan;
 	char **PIDtable; // stores names of PIDs
 	
@@ -527,7 +528,7 @@ void *streamCTRL_scan(void* thptr)
             if(streaminfoproc->sindexscan == NBsindex)
             {
                 streaminfoproc->fuserUpdate = 0;
-                fuserUpdate0 = 0;
+                streaminfoproc->fuserUpdate0 = 0;
             }
         }
         
@@ -570,7 +571,6 @@ int_fast8_t streamCTRL_CTRLscreen()
 	STREAMINFOPROC streaminfoproc;
 
     long sindex;  // scan index
-//    long sindexscan, sindexscan1; // for fuser scan
     long IDscan;
     long dindex;  // display index
     long ssindex[streamNBID_MAX]; // sorted index array
@@ -631,7 +631,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     // display modes:
     // 1: overview
 
-    int fuserUpdate0 = 1; //update on first instance
+    
  
     struct tm *uttime_lastScan;
     time_t rawtime;
@@ -639,6 +639,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     
 	streaminfoproc.NBstream = 0;
     streaminfoproc.twaitus = 50000; // 20 Hz
+    streaminfoproc.fuserUpdate0 = 1; //update on first instance
     
     clear();
     
@@ -712,7 +713,7 @@ int_fast8_t streamCTRL_CTRLscreen()
             break;
 
         case KEY_F(5): // read PIDs
-            if((DisplayMode == 5)||(fuserUpdate0==1))
+            if((DisplayMode == 5)||(streaminfoproc.fuserUpdate0==1))
             {
                 streaminfoproc.fuserUpdate = 1;
                 time(&rawtime);
