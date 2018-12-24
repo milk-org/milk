@@ -275,6 +275,23 @@ typedef struct
 
 
 
+
+typedef struct
+{
+	int loop;   // 1 : loop     0 : exit
+	long loopcnt;
+	
+	int twaitus; // sleep time between scans
+	double dtscan; // measured time interval between scans [s]
+		
+	PROCESSINFOLIST *pinfolist;
+	PROCESSINFODISP *pinfodisp;
+	
+} PROCINFOPROC;
+
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
@@ -1736,36 +1753,59 @@ int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 
         if((selected<0)||(selected>NBelem-1))
         {
-            printf("Error: number not valid. Must be >= 0 and < %d\n", NBelem);
+            printf("\nError: number not valid. Must be >= 0 and < %d\n", NBelem);
             inputOK = 0;
         }
         else
             inputOK = 1;
     }
-    /*
-        if (fgets(buff, sizeof(buff), stdin) != NULL)
-        {
-            selected = strtol(buff, &p, 10);
-
-            if (buff[0] != '\n' && (*p == '\n' || *p == '\0'))
-                inputOK = 1;
-            else  inputOK = 0;
-        }
-
-        if(inputOK == 1)
-        {
-    		if(selected < 0)
-    			selected = 0;
-    		if(selected > NBelem-1)
-    			selected = 0;
-    	}
-    	*/
 
     printf("Selected entry : %s\n", StringList[selected].name);
 
 
     return selected;
 }
+
+
+
+
+
+
+
+
+
+
+/**
+ * ## Purpose
+ * 
+ * Scan function for processinfo CTRL
+ *
+ * ## Description
+ * 
+ * Runs in background loop as thread initiated by processinfo_CTRL
+ * 
+ */ 
+void *processinfo_scan(void *thptr)
+{
+	PROCINFOPROC* pinfop;
+	
+	pinfop = (PROCINFOPROC*) thptr;
+	
+
+
+	pinfop->loopcnt = 0;
+
+    while(pinfop->loop == 1)
+    {
+	
+		pinfop->loopcnt++;
+		usleep(pinfop->twaitus);		
+    }
+	printf("Process info scan ended cleanly: %ld scans completed\n", pinfop->loopcnt);
+	
+	return NULL;
+}
+
 
 
 
@@ -1787,7 +1827,9 @@ int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
-
+	PROCINFOPROC procinfoproc;  // Main structure - holds everything that needs to be shared with other functions and scan thread
+    pthread_t threadscan;
+     
     //
     // these arrays are indexed together
     // the index is different from the displayed order
@@ -1795,9 +1837,9 @@ int_fast8_t processinfo_CTRLscreen()
     //
     PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
     int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-    pid_t         PIDarray[PROCESSINFOLISTSIZE];  // used to track changes
-    int           updatearray[PROCESSINFOLISTSIZE];   // 0: don't load, 1: (re)load
-    int           fdarray[PROCESSINFOLISTSIZE];     // file descriptors
+    pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
+    int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
+    int           fdarray[PROCESSINFOLISTSIZE];                  // file descriptors
     long          loopcntarray[PROCESSINFOLISTSIZE];
     long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
     int           selectedarray[PROCESSINFOLISTSIZE];
@@ -1865,6 +1907,19 @@ int_fast8_t processinfo_CTRLscreen()
 
     NBcpus = GetNumberCPUs();
     GetCPUloads();
+
+
+
+    // Start scan thread
+    procinfoproc.loop = 1;
+    procinfoproc.twaitus = 1000000; // 1 sec
+    pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
+
+
+
+
+
+
 
     // INITIALIZE ncurses
     initncurses();
@@ -3488,6 +3543,9 @@ int_fast8_t processinfo_CTRLscreen()
     }
 
     free(pinfodisp);
+
+    procinfoproc.loop = 0;
+    pthread_join(threadscan, NULL);
 
     return 0;
 }
