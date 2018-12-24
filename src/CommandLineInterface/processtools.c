@@ -3669,7 +3669,6 @@ int_fast8_t processinfo_CTRLscreen()
             }
             clock_gettime(CLOCK_REALTIME, &t06loop);
 
-            refresh();
 
             clock_gettime(CLOCK_REALTIME, &t07loop);
 
@@ -3682,8 +3681,12 @@ int_fast8_t processinfo_CTRLscreen()
               tdiff = info_time_diff(t1loop, t2loop);
               double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
-              printw("Loop time = %9.8f s\n", tdiffvloop);
+              printw("\nLoop time = %9.8f s\n", tdiffvloop);
 
+			refresh();
+
+
+/*
             tdiff = info_time_diff(t1loop, t01loop);
             tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
             printw(" loop time 01  : %9.8f\n", tdiffvloop);
@@ -3720,7 +3723,7 @@ int_fast8_t processinfo_CTRLscreen()
             printw("     %9.8f  scantime_top\n", scantime_top);
             printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
             printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
-            
+  */          
 
 
         }
