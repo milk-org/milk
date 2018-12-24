@@ -3307,7 +3307,6 @@ int_fast8_t processinfo_CTRLscreen()
                                 char cpustring[16];
 
 
-
                                 //HERE
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
@@ -3316,10 +3315,12 @@ int_fast8_t processinfo_CTRLscreen()
                                 }
                                 else
                                 {
+									
                                     int spindex; // sub process index, 0 for main
                                     for(spindex = 0; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
                                     {
                                         int TID; // thread ID
+                                        /*
 
                                         if(spindex>0)
                                         {
@@ -3499,10 +3500,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         attroff(COLOR_PAIR(memColor));
-
-
-
-
+                                        */
+                                        
+                                        
                                         printw("\n");
 
                                         if(pindex == pindexSelected)
