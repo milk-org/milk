@@ -350,7 +350,7 @@ static int wrow, wcol, NBcores, NBcpus;
 
 #define NBtopMax 5000
 
-
+/*
 static int   toparray_PID[NBtopMax];
 static char  toparray_USER[NBtopMax][32];
 static char  toparray_PR[NBtopMax][8];
@@ -365,7 +365,7 @@ static char  toparray_TIME[NBtopMax][32];
 static char  toparray_COMMAND[NBtopMax][32];
 
 static int NBtopP; // number of processes scanned by top
-
+*/
 
 
 
@@ -1189,8 +1189,8 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 
 
 
-
-
+// unused
+/*
 
 
 static long getTopOutput()
@@ -1248,6 +1248,8 @@ static long getTopOutput()
 }
 
 
+
+*/
 
 
 
@@ -1821,12 +1823,143 @@ void *processinfo_scan(void *thptr)
 	
 	pinfop = (PROCINFOPROC*) thptr;
 	
-
+	long pindex;
 
 	pinfop->loopcnt = 0;
 
     while(pinfop->loop == 1)
     {
+		
+		
+		
+		
+		
+                // LOAD / UPDATE process information
+
+
+                for(pindex=0; pindex<pinfop->NBpinfodisp; pindex++)
+                {
+                    char SM_fname[200];    // shared memory file name
+                    struct stat file_stat;
+
+
+
+                    // SHOULD WE (RE)LOAD ?
+                    if(pinfolist->active[pindex] == 0) // inactive
+                        pinfop->updatearray[pindex] = 0;
+
+                    if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
+                    {
+                        if(pinfolist->PIDarray[pindex] == pinfop->PIDarray[pindex] ) // don't reload if PID same as before
+                            pinfop->updatearray[pindex] = 0;
+                        else
+                        {
+                            pinfop->updatearray[pindex] = 1;
+                            pinfop->PIDarray[pindex] = pinfolist->PIDarray[pindex];
+                        }
+                    }
+                    //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
+                    //        updatearray[pindex] = 1;
+
+                    if(pinfolist->active[pindex] == 3) // file has gone away
+                        pinfop->updatearray[pindex] = 0;
+
+
+
+
+
+                    // check if process info file exists
+
+                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+
+                    // Does file exist ?
+                    if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
+                    {
+                        // if not, don't (re)load and remove from process info list
+                        pinfolist->active[pindex] = 0;
+                        pinfop->updatearray[pindex] = 0;
+                    }
+
+
+                    if(pinfolist->active[pindex] == 1)
+                    {
+                        // check if process still exists
+                        struct stat sts;
+                        char procfname[200];
+
+                        sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+                        if (stat(procfname, &sts) == -1 && errno == ENOENT) {
+                            // process doesn't exist -> flag as inactive
+                            pinfolist->active[pindex] = 2;
+                        }
+                    }
+
+
+
+
+
+                    if((pinfop->updatearray[pindex] == 1)&&(pindex<pinfop->NBpinfodisp))
+                    {
+                        // (RE)LOAD
+                        struct stat file_stat;
+
+                        // if already mmapped, first unmap
+                        if(pinfop->pinfommapped[pindex] == 1)
+                        {
+                            fstat(pinfop->fdarray[pindex], &file_stat);
+                            munmap(pinfop->pinfoarray[pindex], file_stat.st_size);
+                            close(pinfop->fdarray[pindex]);
+                            pinfop->pinfommapped[pindex] == 0;
+                        }
+
+
+                        // COLLECT INFORMATION FROM PROCESSINFO FILE
+
+                        pinfop->fdarray[pindex] = open(SM_fname, O_RDWR);
+                        fstat(pinfop->fdarray[pindex], &file_stat);
+                        pinfop->pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, pinfop->fdarray[pindex], 0);
+                        if (pinfop->pinfoarray[pindex] == MAP_FAILED) {
+                            close(pinfop->fdarray[pindex]);
+                            endwin();
+                            fprintf(stderr, "[%d] Error mapping file %s\n", __LINE__, SM_fname);
+                            pinfolist->active[pindex] = 3;
+                        }
+                        else
+                        {
+                            pinfop->pinfommapped[pindex] = 1;
+                            strncpy(pinfop->pinfodisp[pindex].name, pinfop->pinfoarray[pindex]->name, 40-1);
+
+                            struct tm *createtm;
+                            createtm      = gmtime(&pinfop->pinfoarray[pindex]->createtime.tv_sec);
+                            pinfop->pinfodisp[pindex].createtime_hr = createtm->tm_hour;
+                            pinfop->pinfodisp[pindex].createtime_min = createtm->tm_min;
+                            pinfop->pinfodisp[pindex].createtime_sec = createtm->tm_sec;
+                            pinfop->pinfodisp[pindex].createtime_ns = pinfop->pinfoarray[pindex]->createtime.tv_nsec;
+
+                            pinfop->pinfodisp[pindex].loopcnt = pinfop->pinfoarray[pindex]->loopcnt;
+                        }
+
+                        pinfop->pinfodisp[pindex].active = pinfolist->active[pindex];
+                        pinfop->pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
+                        pinfop->pinfodisp[pindex].NBsubprocesses = 0;
+
+                        pinfop->pinfodisp[pindex].updatecnt ++;
+
+                    }
+                }
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 	
 		pinfop->loopcnt++;
 		usleep(pinfop->twaitus);		
@@ -2636,121 +2769,7 @@ int_fast8_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
-                // LOAD / UPDATE process information
-
-
-                for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
-                {
-                    char SM_fname[200];    // shared memory file name
-                    struct stat file_stat;
-
-
-
-                    // SHOULD WE (RE)LOAD ?
-                    if(pinfolist->active[pindex] == 0) // inactive
-                        procinfoproc.updatearray[pindex] = 0;
-
-                    if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
-                    {
-                        if(pinfolist->PIDarray[pindex] == procinfoproc.PIDarray[pindex] ) // don't reload if PID same as before
-                            procinfoproc.updatearray[pindex] = 0;
-                        else
-                        {
-                            procinfoproc.updatearray[pindex] = 1;
-                            procinfoproc.PIDarray[pindex] = pinfolist->PIDarray[pindex];
-                        }
-                    }
-                    //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
-                    //        updatearray[pindex] = 1;
-
-                    if(pinfolist->active[pindex] == 3) // file has gone away
-                        procinfoproc.updatearray[pindex] = 0;
-
-
-
-
-
-                    // check if process info file exists
-
-                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
-
-                    // Does file exist ?
-                    if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
-                    {
-                        // if not, don't (re)load and remove from process info list
-                        pinfolist->active[pindex] = 0;
-                        procinfoproc.updatearray[pindex] = 0;
-                    }
-
-
-                    if(pinfolist->active[pindex] == 1)
-                    {
-                        // check if process still exists
-                        struct stat sts;
-                        char procfname[200];
-
-                        sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
-                        if (stat(procfname, &sts) == -1 && errno == ENOENT) {
-                            // process doesn't exist -> flag as inactive
-                            pinfolist->active[pindex] = 2;
-                        }
-                    }
-
-
-
-
-
-                    if((procinfoproc.updatearray[pindex] == 1)&&(pindex<procinfoproc.NBpinfodisp))
-                    {
-                        // (RE)LOAD
-                        struct stat file_stat;
-
-                        // if already mmapped, first unmap
-                        if(procinfoproc.pinfommapped[pindex] == 1)
-                        {
-                            fstat(procinfoproc.fdarray[pindex], &file_stat);
-                            munmap(procinfoproc.pinfoarray[pindex], file_stat.st_size);
-                            close(procinfoproc.fdarray[pindex]);
-                            procinfoproc.pinfommapped[pindex] == 0;
-                        }
-
-
-                        // COLLECT INFORMATION FROM PROCESSINFO FILE
-
-                        procinfoproc.fdarray[pindex] = open(SM_fname, O_RDWR);
-                        fstat(procinfoproc.fdarray[pindex], &file_stat);
-                        procinfoproc.pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, procinfoproc.fdarray[pindex], 0);
-                        if (procinfoproc.pinfoarray[pindex] == MAP_FAILED) {
-                            close(procinfoproc.fdarray[pindex]);
-                            endwin();
-                            fprintf(stderr, "[%d] Error mapping file %s\n", __LINE__, SM_fname);
-                            pinfolist->active[pindex] = 3;
-                        }
-                        else
-                        {
-                            procinfoproc.pinfommapped[pindex] = 1;
-                            strncpy(procinfoproc.pinfodisp[pindex].name, procinfoproc.pinfoarray[pindex]->name, 40-1);
-
-                            struct tm *createtm;
-                            createtm      = gmtime(&procinfoproc.pinfoarray[pindex]->createtime.tv_sec);
-                            procinfoproc.pinfodisp[pindex].createtime_hr = createtm->tm_hour;
-                            procinfoproc.pinfodisp[pindex].createtime_min = createtm->tm_min;
-                            procinfoproc.pinfodisp[pindex].createtime_sec = createtm->tm_sec;
-                            procinfoproc.pinfodisp[pindex].createtime_ns = procinfoproc.pinfoarray[pindex]->createtime.tv_nsec;
-
-                            procinfoproc.pinfodisp[pindex].loopcnt = procinfoproc.pinfoarray[pindex]->loopcnt;
-                        }
-
-                        procinfoproc.pinfodisp[pindex].active = pinfolist->active[pindex];
-                        procinfoproc.pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-                        procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
-
-                        procinfoproc.pinfodisp[pindex].updatecnt ++;
-
-                    }
-                }
-
-
+//HERE
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
