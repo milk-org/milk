@@ -288,12 +288,30 @@ typedef struct
 	int twaitus; // sleep time between scans
 	double dtscan; // measured time interval between scans [s]
 		
-	PROCESSINFOLIST *pinfolist;  // copy of pointer -> static PROCESSINFOLIST *pinfolist
+	PROCESSINFOLIST *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
 
 	long NBpinfodisp;
 	PROCESSINFODISP *pinfodisp;
 	
 	int DisplayMode;
+	
+	
+    //
+    // these arrays are indexed together
+    // the index is different from the displayed order
+    // new process takes first available free index
+    //
+    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
+    pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
+    int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
+    int           fdarray[PROCESSINFOLISTSIZE];                  // file descriptors
+    long          loopcntarray[PROCESSINFOLISTSIZE];
+    long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
+    int           selectedarray[PROCESSINFOLISTSIZE];
+
+    int           sorted_pindex_time[PROCESSINFOLISTSIZE];
+		
 	
 } PROCINFOPROC;
 
@@ -1845,22 +1863,6 @@ int_fast8_t processinfo_CTRLscreen()
 	PROCINFOPROC procinfoproc;  // Main structure - holds everything that needs to be shared with other functions and scan thread
     pthread_t threadscan;
      
-    //
-    // these arrays are indexed together
-    // the index is different from the displayed order
-    // new process takes first available free index
-    //
-    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
-    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-    pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
-    int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
-    int           fdarray[PROCESSINFOLISTSIZE];                  // file descriptors
-    long          loopcntarray[PROCESSINFOLISTSIZE];
-    long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
-    int           selectedarray[PROCESSINFOLISTSIZE];
-
-    int           sorted_pindex_time[PROCESSINFOLISTSIZE];
-
 
 
     char syscommand[200];
@@ -1904,10 +1906,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
-        updatearray[pindex]   = 1; // initialize: load all
-        pinfommapped[pindex]  = 0;
-        selectedarray[pindex] = 0; // initially not selected
-        loopcntoffsetarray[pindex] = 0;
+        procinfoproc.updatearray[pindex]   = 1; // initialize: load all
+        procinfoproc.pinfommapped[pindex]  = 0;
+        procinfoproc.selectedarray[pindex] = 0; // initially not selected
+        procinfoproc.loopcntoffsetarray[pindex] = 0;
     }
 
 	STRINGLISTENTRY *CPUsetList;
@@ -2017,17 +2019,17 @@ int_fast8_t processinfo_CTRLscreen()
 
         case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
             pindex = pindexSelected;
-            if(selectedarray[pindex] == 1)
-                selectedarray[pindex] = 0;
+            if(procinfoproc.selectedarray[pindex] == 1)
+                procinfoproc.selectedarray[pindex] = 0;
             else
-                selectedarray[pindex] = 1;
+                procinfoproc.selectedarray[pindex] = 1;
             break;
 
         case 'u':    // undelect all
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                selectedarray[pindex] = 0;
+                procinfoproc.selectedarray[pindex] = 0;
             }
             break;
 
@@ -2039,7 +2041,7 @@ int_fast8_t processinfo_CTRLscreen()
             if(TimeSorted == 0)
                 pindexSelected = pindexActive[pindexActiveSelected];
             else
-                pindexSelected = sorted_pindex_time[pindexActiveSelected];
+                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
 
         case KEY_DOWN:
@@ -2049,14 +2051,14 @@ int_fast8_t processinfo_CTRLscreen()
             if(TimeSorted == 0)
                 pindexSelected = pindexActive[pindexActiveSelected];
             else
-                pindexSelected = sorted_pindex_time[pindexActiveSelected];
+                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
 
         case 'T':
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
                     pid = pinfolist->PIDarray[pindex];
@@ -2075,7 +2077,7 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
                     pid = pinfolist->PIDarray[pindex];
@@ -2094,7 +2096,7 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
                     pid = pinfolist->PIDarray[pindex];
@@ -2113,7 +2115,7 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
                     if(pinfolist->active[pindex]!=1)
@@ -2154,22 +2156,22 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    if(pinfoarray[pindex]->CTRLval == 0)
-                        pinfoarray[pindex]->CTRLval = 1;
+                    if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 1;
                     else
-                        pinfoarray[pindex]->CTRLval = 0;
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                if(pinfoarray[pindex]->CTRLval == 0)
-                    pinfoarray[pindex]->CTRLval = 1;
+                if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 1;
                 else
-                    pinfoarray[pindex]->CTRLval = 0;
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 0;
             }
             break;
 
@@ -2177,16 +2179,16 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pinfoarray[pindex]->CTRLval = 2;
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 2;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pinfoarray[pindex]->CTRLval = 2;
+                procinfoproc.pinfoarray[pindex]->CTRLval = 2;
             }
             break;
 
@@ -2227,16 +2229,16 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    pinfoarray[pindex]->CTRLval = 3;
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 3;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                pinfoarray[pindex]->CTRLval = 3;
+                procinfoproc.pinfoarray[pindex]->CTRLval = 3;
             }
             break;
 
@@ -2245,16 +2247,16 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    loopcntoffsetarray[pindex] = pinfoarray[pindex]->loopcnt;
+                    procinfoproc.loopcntoffsetarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                loopcntoffsetarray[pindex] = pinfoarray[pindex]->loopcnt;
+                procinfoproc.loopcntoffsetarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
             }
             break;
 
@@ -2262,22 +2264,22 @@ int_fast8_t processinfo_CTRLscreen()
             for(index=0; index<NBpindexActive; index++)
             {
                 pindex = pindexActive[index];
-                if(selectedarray[pindex] == 1)
+                if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
-                    loopcntoffsetarray[pindex] = 0;
+                    procinfoproc.loopcntoffsetarray[pindex] = 0;
                 }
             }
             if(selectedOK == 0)
             {
                 pindex = pindexSelected;
-                loopcntoffsetarray[pindex] = 0;
+                procinfoproc.loopcntoffsetarray[pindex] = 0;
             }
             break;
 
         case 't':
             endwin();
-            sprintf(syscommand, "tmux a -t %s", pinfoarray[pindexSelected]->tmuxname);
+            sprintf(syscommand, "tmux a -t %s", procinfoproc.pinfoarray[pindexSelected]->tmuxname);
 			if(system(syscommand) != 0)
 				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
@@ -2318,37 +2320,37 @@ int_fast8_t processinfo_CTRLscreen()
 
         case 'L': // toggle time limit (iter)
             pindex = pindexSelected;
-            ToggleValue = pinfoarray[pindex]->dtiter_limit_enable;
+            ToggleValue = procinfoproc.pinfoarray[pindex]->dtiter_limit_enable;
             if(ToggleValue==0)
             {
-                pinfoarray[pindex]->dtiter_limit_enable = 1;
-                pinfoarray[pindex]->dtiter_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_iter_ns);
-                pinfoarray[pindex]->dtiter_limit_cnt = 0;
+                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = 1;
+                procinfoproc.pinfoarray[pindex]->dtiter_limit_value = (long) (1.5*procinfoproc.pinfoarray[pindex]->dtmedian_iter_ns);
+                procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt = 0;
             }
             else
             {
                 ToggleValue ++;
                 if(ToggleValue==3)
                     ToggleValue = 0;
-                pinfoarray[pindex]->dtiter_limit_enable = ToggleValue;
+                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = ToggleValue;
             }
             break;;
 
         case 'M' : // toggle time limit (exec)
             pindex = pindexSelected;
-            ToggleValue = pinfoarray[pindex]->dtexec_limit_enable;
+            ToggleValue = procinfoproc.pinfoarray[pindex]->dtexec_limit_enable;
             if(ToggleValue==0)
             {
-                pinfoarray[pindex]->dtexec_limit_enable = 1;
-                pinfoarray[pindex]->dtexec_limit_value = (long) (1.5*pinfoarray[pindex]->dtmedian_exec_ns + 20000);
-                pinfoarray[pindex]->dtexec_limit_cnt = 0;
+                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = 1;
+                procinfoproc.pinfoarray[pindex]->dtexec_limit_value = (long) (1.5*procinfoproc.pinfoarray[pindex]->dtmedian_exec_ns + 20000);
+                procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt = 0;
             }
             else
             {
                 ToggleValue ++;
                 if(ToggleValue==3)
                     ToggleValue = 0;
-                pinfoarray[pindex]->dtexec_limit_enable = ToggleValue;
+                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = ToggleValue;
             }
             break;;
 
@@ -2358,7 +2360,7 @@ int_fast8_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
-                sprintf(syscommand, "clear; tail -f %s", pinfoarray[pindex]->logfilename);
+                sprintf(syscommand, "clear; tail -f %s", procinfoproc.pinfoarray[pindex]->logfilename);
                 //sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
                 if(system(syscommand) != 0)
 					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
@@ -2604,12 +2606,12 @@ int_fast8_t processinfo_CTRLscreen()
 
 				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, procinfoproc.DisplayMode);
 
-                if(pinfommapped[pindexSelected] == 1)
+                if(procinfoproc.pinfommapped[pindexSelected] == 1)
                 {
 
-                    strcpy(pselected_FILE, pinfoarray[pindexSelected]->source_FILE);
-                    strcpy(pselected_FUNCTION, pinfoarray[pindexSelected]->source_FUNCTION);
-                    pselected_LINE = pinfoarray[pindexSelected]->source_LINE;
+                    strcpy(pselected_FILE, procinfoproc.pinfoarray[pindexSelected]->source_FILE);
+                    strcpy(pselected_FUNCTION, procinfoproc.pinfoarray[pindexSelected]->source_FUNCTION);
+                    pselected_LINE = procinfoproc.pinfoarray[pindexSelected]->source_LINE;
 
                     printw("Source Code: %s line %d (function %s)\n", pselected_FILE,  pselected_LINE, pselected_FUNCTION);
                 }
@@ -2641,23 +2643,23 @@ int_fast8_t processinfo_CTRLscreen()
 
                     // SHOULD WE (RE)LOAD ?
                     if(pinfolist->active[pindex] == 0) // inactive
-                        updatearray[pindex] = 0;
+                        procinfoproc.updatearray[pindex] = 0;
 
                     if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
                     {
-                        if(pinfolist->PIDarray[pindex] == PIDarray[pindex] ) // don't reload if PID same as before
-                            updatearray[pindex] = 0;
+                        if(pinfolist->PIDarray[pindex] == procinfoproc.PIDarray[pindex] ) // don't reload if PID same as before
+                            procinfoproc.updatearray[pindex] = 0;
                         else
                         {
-                            updatearray[pindex] = 1;
-                            PIDarray[pindex] = pinfolist->PIDarray[pindex];
+                            procinfoproc.updatearray[pindex] = 1;
+                            procinfoproc.PIDarray[pindex] = pinfolist->PIDarray[pindex];
                         }
                     }
                     //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
                     //        updatearray[pindex] = 1;
 
                     if(pinfolist->active[pindex] == 3) // file has gone away
-                        updatearray[pindex] = 0;
+                        procinfoproc.updatearray[pindex] = 0;
 
 
 
@@ -2672,7 +2674,7 @@ int_fast8_t processinfo_CTRLscreen()
                     {
                         // if not, don't (re)load and remove from process info list
                         pinfolist->active[pindex] = 0;
-                        updatearray[pindex] = 0;
+                        procinfoproc.updatearray[pindex] = 0;
                     }
 
 
@@ -2693,45 +2695,45 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-                    if((updatearray[pindex] == 1)&&(pindex<procinfoproc.NBpinfodisp))
+                    if((procinfoproc.updatearray[pindex] == 1)&&(pindex<procinfoproc.NBpinfodisp))
                     {
                         // (RE)LOAD
                         struct stat file_stat;
 
                         // if already mmapped, first unmap
-                        if(pinfommapped[pindex] == 1)
+                        if(procinfoproc.pinfommapped[pindex] == 1)
                         {
-                            fstat(fdarray[pindex], &file_stat);
-                            munmap(pinfoarray[pindex], file_stat.st_size);
-                            close(fdarray[pindex]);
-                            pinfommapped[pindex] == 0;
+                            fstat(procinfoproc.fdarray[pindex], &file_stat);
+                            munmap(procinfoproc.pinfoarray[pindex], file_stat.st_size);
+                            close(procinfoproc.fdarray[pindex]);
+                            procinfoproc.pinfommapped[pindex] == 0;
                         }
 
 
                         // COLLECT INFORMATION FROM PROCESSINFO FILE
 
-                        fdarray[pindex] = open(SM_fname, O_RDWR);
-                        fstat(fdarray[pindex], &file_stat);
-                        pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdarray[pindex], 0);
-                        if (pinfoarray[pindex] == MAP_FAILED) {
-                            close(fdarray[pindex]);
+                        procinfoproc.fdarray[pindex] = open(SM_fname, O_RDWR);
+                        fstat(procinfoproc.fdarray[pindex], &file_stat);
+                        procinfoproc.pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, procinfoproc.fdarray[pindex], 0);
+                        if (procinfoproc.pinfoarray[pindex] == MAP_FAILED) {
+                            close(procinfoproc.fdarray[pindex]);
                             endwin();
                             fprintf(stderr, "[%d] Error mapping file %s\n", __LINE__, SM_fname);
                             pinfolist->active[pindex] = 3;
                         }
                         else
                         {
-                            pinfommapped[pindex] = 1;
-                            strncpy(procinfoproc.pinfodisp[pindex].name, pinfoarray[pindex]->name, 40-1);
+                            procinfoproc.pinfommapped[pindex] = 1;
+                            strncpy(procinfoproc.pinfodisp[pindex].name, procinfoproc.pinfoarray[pindex]->name, 40-1);
 
                             struct tm *createtm;
-                            createtm      = gmtime(&pinfoarray[pindex]->createtime.tv_sec);
+                            createtm      = gmtime(&procinfoproc.pinfoarray[pindex]->createtime.tv_sec);
                             procinfoproc.pinfodisp[pindex].createtime_hr = createtm->tm_hour;
                             procinfoproc.pinfodisp[pindex].createtime_min = createtm->tm_min;
                             procinfoproc.pinfodisp[pindex].createtime_sec = createtm->tm_sec;
-                            procinfoproc.pinfodisp[pindex].createtime_ns = pinfoarray[pindex]->createtime.tv_nsec;
+                            procinfoproc.pinfodisp[pindex].createtime_ns = procinfoproc.pinfoarray[pindex]->createtime.tv_nsec;
 
-                            procinfoproc.pinfodisp[pindex].loopcnt = pinfoarray[pindex]->loopcnt;
+                            procinfoproc.pinfodisp[pindex].loopcnt = procinfoproc.pinfoarray[pindex]->loopcnt;
                         }
 
                         procinfoproc.pinfodisp[pindex].active = pinfolist->active[pindex];
@@ -2768,12 +2770,12 @@ int_fast8_t processinfo_CTRLscreen()
                 for(index=0; index<NBpindexActive; index++)
                 {
                     pindex = pindexActive[index];
-                    if(pinfommapped[pindex] == 1)
+                    if(procinfoproc.pinfommapped[pindex] == 1)
                     {
                         indexarray[index] = pindex;
                         // minus sign for most recent first
                         //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
-                        timearray[index] = -1.0*pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfoarray[pindex]->createtime.tv_nsec;
+                        timearray[index] = -1.0*procinfoproc.pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*procinfoproc.pinfoarray[pindex]->createtime.tv_nsec;
                         listcnt++;
                     }
                 }
@@ -2781,7 +2783,7 @@ int_fast8_t processinfo_CTRLscreen()
                 quick_sort2l_double(timearray, indexarray, NBpindexActive);
 
                 for(index=0; index<NBpindexActive; index++)
-                    sorted_pindex_time[index] = indexarray[index];
+                    procinfoproc.sorted_pindex_time[index] = indexarray[index];
 
                 free(timearray);
                 free(indexarray);
@@ -2975,7 +2977,7 @@ int_fast8_t processinfo_CTRLscreen()
                     if(TimeSorted == 0)
                         pindex = dispindex;
                     else
-                        pindex = sorted_pindex_time[dispindex];
+                        pindex = procinfoproc.sorted_pindex_time[dispindex];
 
                     if(pindex<procinfoproc.NBpinfodisp)
                     {
@@ -2983,7 +2985,7 @@ int_fast8_t processinfo_CTRLscreen()
                         if(pindex == pindexSelected)
                             attron(A_REVERSE);
 
-                        if(selectedarray[pindex]==1)
+                        if(procinfoproc.selectedarray[pindex]==1)
                             printw("*");
                         else
                             printw(" ");
@@ -2999,7 +3001,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                         if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
                         {
-                            if(pinfoarray[pindex]->loopstat == 3) // clean exit
+                            if(procinfoproc.pinfoarray[pindex]->loopstat == 3) // clean exit
                             {
                                 attron(COLOR_PAIR(3));
                                 printw(" STOPPED");
@@ -3030,7 +3032,7 @@ int_fast8_t processinfo_CTRLscreen()
                             // ================ DISPLAY MODE 2 ==================
                             if( procinfoproc.DisplayMode == 2)
                             {
-                                switch (pinfoarray[pindex]->loopstat)
+                                switch (procinfoproc.pinfoarray[pindex]->loopstat)
                                 {
                                 case 0:
                                     printw("INIT");
@@ -3056,7 +3058,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     printw(" ?? ");
                                 }
 
-                                printw(" C%d", pinfoarray[pindex]->CTRLval );
+                                printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
 
                                 printw(" %02d:%02d:%02d.%03d",
                                        procinfoproc.pinfodisp[pindex].createtime_hr,
@@ -3064,29 +3066,29 @@ int_fast8_t processinfo_CTRLscreen()
                                        procinfoproc.pinfodisp[pindex].createtime_sec,
                                        (int) (0.000001*(procinfoproc.pinfodisp[pindex].createtime_ns)));
 
-                                printw(" %26s", pinfoarray[pindex]->tmuxname);
+                                printw(" %26s", procinfoproc.pinfoarray[pindex]->tmuxname);
 
 
-                                if(pinfoarray[pindex]->loopcnt==loopcntarray[pindex])
+                                if(procinfoproc.pinfoarray[pindex]->loopcnt==procinfoproc.loopcntarray[pindex])
                                 {   // loopcnt has not changed
-                                    printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                                    printw("  %10ld", procinfoproc.pinfoarray[pindex]->loopcnt-procinfoproc.loopcntoffsetarray[pindex]);
                                 }
                                 else
                                 {   // loopcnt has changed
                                     attron(COLOR_PAIR(2));
-                                    printw("  %10ld", pinfoarray[pindex]->loopcnt-loopcntoffsetarray[pindex]);
+                                    printw("  %10ld", procinfoproc.pinfoarray[pindex]->loopcnt-procinfoproc.loopcntoffsetarray[pindex]);
                                     attroff(COLOR_PAIR(2));
                                 }
 
-                                loopcntarray[pindex] = pinfoarray[pindex]->loopcnt;
+                                procinfoproc.loopcntarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
                                 
                                 
-                                printw("  %25s", pinfoarray[pindex]->description);
+                                printw("  %25s", procinfoproc.pinfoarray[pindex]->description);
 
-                                if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                                if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attron(COLOR_PAIR(4));
-                                printw("  %78s", pinfoarray[pindex]->statusmsg);
-                                if(pinfoarray[pindex]->loopstat == 4) // ERROR
+                                printw("  %78s", procinfoproc.pinfoarray[pindex]->statusmsg);
+                                if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
 
@@ -3333,15 +3335,15 @@ int_fast8_t processinfo_CTRLscreen()
                             if( procinfoproc.DisplayMode == 4)
                             {
 
-                                printw(" %d", pinfoarray[pindex]->MeasureTiming);
-                                if(pinfoarray[pindex]->MeasureTiming == 1)
+                                printw(" %d", procinfoproc.pinfoarray[pindex]->MeasureTiming);
+                                if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
                                 {
                                     long *dtiter_array;
                                     long *dtexec_array;
                                     int dtindex;
 
 
-                                    printw(" %3d ..%02ld  ", pinfoarray[pindex]->timerindex, pinfoarray[pindex]->timingbuffercnt % 100);
+                                    printw(" %3d ..%02ld  ", procinfoproc.pinfoarray[pindex]->timerindex, procinfoproc.pinfoarray[pindex]->timingbuffercnt % 100);
 
                                     // compute timing stat
                                     dtiter_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
@@ -3355,7 +3357,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     {
                                         int ti0, ti1;
 
-                                        ti1 = pinfoarray[pindex]->timerindex - tindex;
+                                        ti1 = procinfoproc.pinfoarray[pindex]->timerindex - tindex;
                                         ti0 = ti1 - 1;
 
                                         if(ti0<0)
@@ -3364,9 +3366,9 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(ti1<0)
 											ti1 += PROCESSINFO_NBtimer;
                                             
-                                        dtiter_array[tindex] = (pinfoarray[pindex]->texecstart[ti1].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecstart[ti1].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
+                                        dtiter_array[tindex] = (procinfoproc.pinfoarray[pindex]->texecstart[ti1].tv_nsec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(procinfoproc.pinfoarray[pindex]->texecstart[ti1].tv_sec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_sec);
                                         
-                                        dtexec_array[tindex] = (pinfoarray[pindex]->texecend[ti0].tv_nsec - pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(pinfoarray[pindex]->texecend[ti0].tv_sec - pinfoarray[pindex]->texecstart[ti0].tv_sec);
+                                        dtexec_array[tindex] = (procinfoproc.pinfoarray[pindex]->texecend[ti0].tv_nsec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(procinfoproc.pinfoarray[pindex]->texecend[ti0].tv_sec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_sec);
                                     }
                                     
                                   
@@ -3376,38 +3378,38 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     int colorcode;
 
-                                    if(pinfoarray[pindex]->dtiter_limit_enable!=0)
+                                    if(procinfoproc.pinfoarray[pindex]->dtiter_limit_enable!=0)
                                     {
-                                        if(pinfoarray[pindex]->dtiter_limit_cnt==0)
+                                        if(procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt==0)
                                             colorcode = COLOR_PAIR(2);
                                         else
                                             colorcode = COLOR_PAIR(4);
                                         attron(colorcode);
                                     }
-                                    printw("ITERlim %d/%5ld/%4ld", pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*pinfoarray[pindex]->dtiter_limit_value), pinfoarray[pindex]->dtiter_limit_cnt);
-                                    if(pinfoarray[pindex]->dtiter_limit_enable!=0)
+                                    printw("ITERlim %d/%5ld/%4ld", procinfoproc.pinfoarray[pindex]->dtiter_limit_enable, (long) (0.001*procinfoproc.pinfoarray[pindex]->dtiter_limit_value), procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt);
+                                    if(procinfoproc.pinfoarray[pindex]->dtiter_limit_enable!=0)
                                         attroff(colorcode);
 
                                     printw("  ");
 
-                                    if(pinfoarray[pindex]->dtexec_limit_enable!=0)
+                                    if(procinfoproc.pinfoarray[pindex]->dtexec_limit_enable!=0)
                                     {
-                                        if(pinfoarray[pindex]->dtexec_limit_cnt==0)
+                                        if(procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt==0)
                                             colorcode = COLOR_PAIR(2);
                                         else
                                             colorcode = COLOR_PAIR(4);
                                         attron(colorcode);
                                     }
 
-                                    printw("EXEClim %d/%5ld/%4ld ", pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*pinfoarray[pindex]->dtexec_limit_value), pinfoarray[pindex]->dtexec_limit_cnt);
-                                    if(pinfoarray[pindex]->dtexec_limit_enable!=0)
+                                    printw("EXEClim %d/%5ld/%4ld ", procinfoproc.pinfoarray[pindex]->dtexec_limit_enable, (long) (0.001*procinfoproc.pinfoarray[pindex]->dtexec_limit_value), procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt);
+                                    if(procinfoproc.pinfoarray[pindex]->dtexec_limit_enable!=0)
                                         attroff(colorcode);
 
 
                                     float tval;
 
                                     tval = 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
-                                    pinfoarray[pindex]->dtmedian_iter_ns = dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
+                                    procinfoproc.pinfoarray[pindex]->dtmedian_iter_ns = dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)];
                                     if(tval > 9999.9)
                                         printw(" ITER    >10ms ");
                                     else
@@ -3427,7 +3429,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                     tval = 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
-                                    pinfoarray[pindex]->dtmedian_exec_ns = dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
+                                    procinfoproc.pinfoarray[pindex]->dtmedian_exec_ns = dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)];
                                     if(tval > 9999.9)
                                         printw(" EXEC    >10ms ");
                                     else
@@ -3548,14 +3550,14 @@ int_fast8_t processinfo_CTRLscreen()
     // cleanup
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
     {
-        if(pinfommapped[pindex] == 1)
+        if(procinfoproc.pinfommapped[pindex] == 1)
         {
             struct stat file_stat;
 
-            fstat(fdarray[pindex], &file_stat);
-            munmap(pinfoarray[pindex], file_stat.st_size);
-            pinfommapped[pindex] == 0;
-            close(fdarray[pindex]);
+            fstat(procinfoproc.fdarray[pindex], &file_stat);
+            munmap(procinfoproc.pinfoarray[pindex], file_stat.st_size);
+            procinfoproc.pinfommapped[pindex] == 0;
+            close(procinfoproc.fdarray[pindex]);
         }
 
     }
