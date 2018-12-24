@@ -198,6 +198,10 @@
 #include <wchar.h>
 #include <locale.h>
 
+#include <pthread.h>
+
+
+
 #ifdef STANDALONE
 #include "standalone_dependencies.h"
 #else
