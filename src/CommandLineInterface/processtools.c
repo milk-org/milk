@@ -1827,10 +1827,29 @@ void *processinfo_scan(void *thptr)
 
     pinfop->loopcnt = 0;
 
+    // timing
+    static int firstIter = 1;
+    static struct timespec t0;
+    struct timespec t1;
+    double tdiffv;
+    struct timespec tdiff;
+
+
     while(pinfop->loop == 1)
     {
-
-
+        // timing measurement
+        clock_gettime(CLOCK_REALTIME, &t1);
+        if(firstIter == 1)
+        {
+            tdiffv = 0.1;
+        }
+        else
+        {
+            tdiff = info_time_diff(t0, t1);
+            tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+        }
+        clock_gettime(CLOCK_REALTIME, &t0);
+        pinfop->dtscan = tdiffv;
 
 
 
