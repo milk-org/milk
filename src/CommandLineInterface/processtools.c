@@ -2022,23 +2022,62 @@ void *processinfo_scan(void *thptr)
         if(pinfop->DisplayMode == 3)
         {
             GetCPUloads(pinfop);
-            
-            
+
+
             // collect required info for display
             for(pindex=0; pindex<PROCESSINFOLISTSIZE ; pindex++)
             {
-				if(pinfolist->active[pindex] != 0)
-					pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(pinfop->pinfodisp[pindex].PID, pindex, pinfop->pinfodisp, 0); 
-			}
-        }//HERE00
+                if(pinfolist->active[pindex] != 0)
+                {
+                    pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(pinfop->pinfodisp[pindex].PID, pindex, pinfop->pinfodisp, 0);
 
 
+                    if(pinfop->psysinfostatus[pindex] != -1)
+                    {
+                        int spindex; // sub process index, 0 for main
+                        for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                        {
+                            int TID; // thread ID
+
+                            if(spindex>0)
+                            {
+                                TID = pinfop->pinfodisp[pindex].subprocPIDarray[spindex];
+                                PIDcollectSystemInfo(pinfop->pinfodisp[pindex].subprocPIDarray[spindex], pindex, pinfop->pinfodisp, 1);
+                            }
+                            else
+                            {
+                                TID = pinfop->pinfodisp[pindex].PID;
+                                pinfop->pinfodisp[pindex].subprocPIDarray[0] = pinfop->pinfodisp[pindex].PID;
+                            }
+
+                            // place info in subprocess arrays
+                            pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
+                            pinfop->pinfodisp[pindex].sampletimearray[spindex]      = pinfop->pinfodisp[pindex].sampletime;
+                            pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]      = pinfop->pinfodisp[pindex].cpuloadcnt;
+                            pinfop->pinfodisp[pindex].VmRSSarray[spindex]           = pinfop->pinfodisp[pindex].VmRSS;
+
+                            // Context Switches
+
+                            pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary;
+                            pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary;
 
 
+                            // CPU use
 
+                            // get CPU and MEM load
+                            pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]);
 
+                            pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
 
+                            pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
+                        }
+                    }
 
+                }
+            }
+        } // end of DisplayMode 3
+        
+        
         pinfop->loopcnt++;
         usleep(pinfop->twaitus);
     }
@@ -2222,10 +2261,10 @@ int_fast8_t processinfo_CTRLscreen()
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
         {
-			
-			
-			
-			
+
+
+
+
         case 'f':     // Freeze screen (toggle)
             if(freeze==0)
                 freeze = 1;
@@ -2677,8 +2716,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         // ============ DISPLAY
-        
-       case '-': // slower display update
+
+        case '-': // slower display update
             frequ *= 0.5;
             if(frequ < 1.0)
                 frequ = 1.0;
@@ -2693,7 +2732,7 @@ int_fast8_t processinfo_CTRLscreen()
                 frequ = 1.0;
             if(frequ > 64.0)
                 frequ = 64.0;
-            break;        
+            break;
 
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
@@ -2774,15 +2813,15 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("\n");
                 printw("============ DISPLAY \n");
 
-            attron(attrval);
-            printw("    +");
-            attroff(attrval);
-            printw("    Increase display frequency\n");
+                attron(attrval);
+                printw("    +");
+                attroff(attrval);
+                printw("    Increase display frequency\n");
 
-            attron(attrval);
-            printw("    -");
-            attroff(attrval);
-            printw("    Decrease display frequency\n");
+                attron(attrval);
+                printw("    -");
+                attroff(attrval);
+                printw("    Decrease display frequency\n");
 
                 attron(attrval);
                 printw("    f");
@@ -2946,7 +2985,7 @@ int_fast8_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
-                
+
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
@@ -3172,6 +3211,13 @@ int_fast8_t processinfo_CTRLscreen()
                                 attroff(COLOR_PAIR(4));
                             }
                         }
+                        
+                        
+                        
+                        
+                        
+                
+
 
 
 
@@ -3259,7 +3305,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 int cpu;
                                 char cpuliststring[200];
                                 char cpustring[16];
-                                
+
 
 
                                 //HERE
@@ -3278,8 +3324,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(spindex>0)
                                         {
                                             TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
-                                            printw("               |---%6d                        ", procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex]);
-                                            PIDcollectSystemInfo(procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex], pindex, procinfoproc.pinfodisp, 1);  //MOVE
+                                            printw("               |---%6d                        ", procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex]);                                           
                                         }
                                         else
                                         {
@@ -3291,11 +3336,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         printw(" %-10s ", procinfoproc.pinfodisp[pindex].cpuset);
                                         printw(" %2dx ", procinfoproc.pinfodisp[pindex].threads);
 
-                                        // place info in subprocess arrays
-                                        procinfoproc.pinfodisp[pindex].sampletimearray_prev[spindex] = procinfoproc.pinfodisp[pindex].sampletimearray[spindex];
-                                        procinfoproc.pinfodisp[pindex].sampletimearray[spindex] = procinfoproc.pinfodisp[pindex].sampletime;
-                                        procinfoproc.pinfodisp[pindex].cpuloadcntarray[spindex] = procinfoproc.pinfodisp[pindex].cpuloadcnt;
-                                        procinfoproc.pinfodisp[pindex].VmRSSarray[spindex] = procinfoproc.pinfodisp[pindex].VmRSS;
+ 
 
 
                                         // Context Switches
@@ -3315,24 +3356,11 @@ int_fast8_t processinfo_CTRLscreen()
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary)
                                             attroff(COLOR_PAIR(3));
 
-                                        procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] = procinfoproc.pinfodisp[pindex].ctxtsw_voluntary;
-                                        procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary;
-
-
-
 
                                         printw(" ");
 
 
                                         // CPU use
-
-                                        // get CPU and MEM load
-                                        procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*procinfoproc.pinfodisp[pindex].cpuloadcntarray[spindex]-procinfoproc.pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( procinfoproc.pinfodisp[pindex].sampletimearray[spindex] - procinfoproc.pinfodisp[pindex].sampletimearray_prev[spindex]);
-
-                                        procinfoproc.pinfodisp[pindex].cpuloadcntarray_prev[spindex] = procinfoproc.pinfodisp[pindex].cpuloadcntarray[spindex];
-
-                                        procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spindex];
-
 
                                         int cpuColor = 0;
 
