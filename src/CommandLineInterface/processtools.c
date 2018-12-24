@@ -2068,9 +2068,9 @@ int_fast8_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
-	PROCINFOPROC procinfoproc;  // Main structure - holds everything that needs to be shared with other functions and scan thread
+    PROCINFOPROC procinfoproc;  // Main structure - holds everything that needs to be shared with other functions and scan thread
     pthread_t threadscan;
-     
+
 
 
     char syscommand[200];
@@ -2092,7 +2092,7 @@ int_fast8_t processinfo_CTRLscreen()
     struct timespec t07loop;
 
 
-    float frequ = 10.0; // Hz
+    float frequ = 16.0; // Hz
     char  monstring[200];
 
     // list of active indices
@@ -2100,12 +2100,12 @@ int_fast8_t processinfo_CTRLscreen()
     int   pindexSelected;
 
 
-	int listindex;
+    int listindex;
 
     int ToggleValue;
 
 
-	processinfo_CatchSignals();
+    processinfo_CatchSignals();
 
     setlocale(LC_ALL, "");
 
@@ -2118,18 +2118,18 @@ int_fast8_t processinfo_CTRLscreen()
         procinfoproc.loopcntoffsetarray[pindex] = 0;
     }
 
-	STRINGLISTENTRY *CPUsetList;
-	int NBCPUset;
-	CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
-	NBCPUset = processinfo_CPUsets_List(CPUsetList);
+    STRINGLISTENTRY *CPUsetList;
+    int NBCPUset;
+    CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
+    NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
 
     // Create / read process list
     processinfo_shm_list_create();
-    
+
     // copy pointer
     procinfoproc.pinfolist = pinfolist;
-    
+
 
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
@@ -2143,9 +2143,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-	// wait for first scan to be completed
-	while( procinfoproc.loopcnt < 1 )
-		usleep(100);
+    // wait for first scan to be completed
+    while( procinfoproc.loopcnt < 1 )
+        usleep(100);
 
 
 
@@ -2214,6 +2214,10 @@ int_fast8_t processinfo_CTRLscreen()
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
         {
+			
+			
+			
+			
         case 'f':     // Freeze screen (toggle)
             if(freeze==0)
                 freeze = 1;
@@ -2431,29 +2435,29 @@ int_fast8_t processinfo_CTRLscreen()
             {
                 endwin();
                 if(system("clear") != 0) // clear screen
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
                 sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
                 if(system(syscommand) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
-			}
+            }
             break;
 
         case '<': // move to same cpuset
             pindex = pindexSelected;
             if(pinfolist->active[pindex]==1)
             {
-				endwin();
-				sprintf(syscommand,"sudo cset proc -m %d root &> /dev/null", pinfolist->PIDarray[pindex]);
+                endwin();
+                sprintf(syscommand,"sudo cset proc -m %d root &> /dev/null", pinfolist->PIDarray[pindex]);
                 if(system(syscommand) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
-				sprintf(syscommand,"sudo cset proc --force -m %d %s &> /dev/null", pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                sprintf(syscommand,"sudo cset proc --force -m %d %s &> /dev/null", pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
                 if(system(syscommand) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
-			}
+            }
             break;
 
 
@@ -2512,8 +2516,8 @@ int_fast8_t processinfo_CTRLscreen()
         case 't':
             endwin();
             sprintf(syscommand, "tmux a -t %s", procinfoproc.pinfoarray[pindexSelected]->tmuxname);
-			if(system(syscommand) != 0)
-				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+            if(system(syscommand) != 0)
+                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
@@ -2523,8 +2527,8 @@ int_fast8_t processinfo_CTRLscreen()
             {
                 endwin();
                 sprintf(syscommand, "watch -n 0.1 cat /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
-				if(system(syscommand) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                if(system(syscommand) != 0)
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
             }
             break;
@@ -2536,7 +2540,7 @@ int_fast8_t processinfo_CTRLscreen()
                 endwin();
                 sprintf(syscommand, "watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
                 if(system(syscommand) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
             }
             break;
@@ -2595,7 +2599,7 @@ int_fast8_t processinfo_CTRLscreen()
                 sprintf(syscommand, "clear; tail -f %s", procinfoproc.pinfoarray[pindex]->logfilename);
                 //sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
                 if(system(syscommand) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
                 initncurses();
             }
             break;
@@ -2626,7 +2630,7 @@ int_fast8_t processinfo_CTRLscreen()
             endwin();
             sprintf(syscommand, "htop");
             if(system(syscommand) != 0)
-				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
@@ -2634,7 +2638,7 @@ int_fast8_t processinfo_CTRLscreen()
             endwin();
             sprintf(syscommand, "sudo iotop -o");
             if(system(syscommand) != 0)
-				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
@@ -2642,7 +2646,7 @@ int_fast8_t processinfo_CTRLscreen()
             endwin();
             sprintf(syscommand, "sudo atop");
             if(system(syscommand) != 0)
-				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
 
@@ -2664,6 +2668,24 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
 
+        // ============ DISPLAY
+        
+       case '-': // slower display update
+            frequ *= 0.5;
+            if(frequ < 1.0)
+                frequ = 1.0;
+            if(frequ > 64.0)
+                frequ = 64.0;
+            break;
+
+
+        case '+': // faster display update
+            frequ *= 2.0;
+            if(frequ < 1.0)
+                frequ = 1.0;
+            if(frequ > 64.0)
+                frequ = 64.0;
+            break;        
 
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
@@ -2684,7 +2706,7 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    Exit\n");
 
 
-				printw("\n");
+                printw("\n");
                 printw("============ SCREENS \n");
 
                 attron(attrval);
@@ -2696,7 +2718,7 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    F2");
                 attroff(attrval);
                 printw("   Process control screen\n");
-                
+
                 attron(attrval);
                 printw("    F3");
                 attroff(attrval);
@@ -2706,44 +2728,54 @@ int_fast8_t processinfo_CTRLscreen()
                 printw("    F4");
                 attroff(attrval);
                 printw("   Process timing screen\n");
-                
+
                 attron(attrval);
                 printw("    F5");
                 attroff(attrval);
                 printw("   htop        Type F10 to exit\n");
-                
+
                 attron(attrval);
                 printw("    F6");
                 attroff(attrval);
                 printw("   iotop       Type q to exit\n");
-                
+
                 attron(attrval);
                 printw("    F7");
                 attroff(attrval);
                 printw("   atop        Type q to exit\n");
-                
 
 
 
-            printw("\n");
-            printw("============ SCANNING \n");
 
-            attron(attrval);
-            printw("    }");
-            attroff(attrval);
-            printw("    Increase scan frequency\n");
+                printw("\n");
+                printw("============ SCANNING \n");
 
-            attron(attrval);
-            printw("    {");
-            attroff(attrval);
-            printw("    Decrease scan frequency\n");
+                attron(attrval);
+                printw("    }");
+                attroff(attrval);
+                printw("    Increase scan frequency\n");
+
+                attron(attrval);
+                printw("    {");
+                attroff(attrval);
+                printw("    Decrease scan frequency\n");
 
 
 
-                
-				printw("\n");
+
+                printw("\n");
                 printw("============ DISPLAY \n");
-                                
+
+            attron(attrval);
+            printw("    +");
+            attroff(attrval);
+            printw("    Increase display frequency\n");
+
+            attron(attrval);
+            printw("    -");
+            attroff(attrval);
+            printw("    Decrease display frequency\n");
+
                 attron(attrval);
                 printw("    f");
                 attroff(attrval);
@@ -2752,134 +2784,134 @@ int_fast8_t processinfo_CTRLscreen()
                 attron(attrval);
                 printw("    r");
                 attroff(attrval);
-                printw("    Remove selected inactive process log\n");     
+                printw("    Remove selected inactive process log\n");
 
                 attron(attrval);
                 printw("    R");
                 attroff(attrval);
-                printw("    Remove all inactive processes logs\n");     
-                              
+                printw("    Remove all inactive processes logs\n");
+
                 attron(attrval);
                 printw("    o");
                 attroff(attrval);
-                printw("    sort processes (toggle)\n");   
+                printw("    sort processes (toggle)\n");
 
                 attron(attrval);
                 printw("SPACE");
                 attroff(attrval);
                 printw("    Select this process\n");
-                   
+
                 attron(attrval);
                 printw("    u");
                 attroff(attrval);
-                printw("    Unselect all processes\n");   
+                printw("    Unselect all processes\n");
 
 
 
-				printw("\n");
+                printw("\n");
                 printw("============ PROCESS DETAILS \n");
 
                 attron(attrval);
                 printw("    t");
                 attroff(attrval);
-                printw("    Connect to tmux session\n");    
+                printw("    Connect to tmux session\n");
 
                 attron(attrval);
                 printw("    a");
                 attroff(attrval);
-                printw("    process stat\n");   
+                printw("    process stat\n");
 
                 attron(attrval);
                 printw("    d");
                 attroff(attrval);
-                printw("    process sched\n");   
+                printw("    process sched\n");
 
 
 
 
-				printw("\n");
+                printw("\n");
                 printw("============ LOOP CONTROL \n");
 
                 attron(attrval);
                 printw("    p");
                 attroff(attrval);
-                printw("    pause\n");   
+                printw("    pause\n");
 
                 attron(attrval);
                 printw("    s");
                 attroff(attrval);
-                printw("    step\n");   
+                printw("    step\n");
 
                 attron(attrval);
                 printw("    e");
                 attroff(attrval);
-                printw("    clean exit\n");   
+                printw("    clean exit\n");
 
                 attron(attrval);
                 printw("    T");
                 attroff(attrval);
-                printw("    SIGTERM\n");                
-                
+                printw("    SIGTERM\n");
+
                 attron(attrval);
                 printw("    K");
                 attroff(attrval);
-                printw("    SIGKILL\n");                   
-                
+                printw("    SIGKILL\n");
+
                 attron(attrval);
                 printw("    I");
                 attroff(attrval);
-                printw("    SIGINT\n");  
+                printw("    SIGINT\n");
 
 
 
 
-				printw("\n");
+                printw("\n");
                 printw("============ COUNTERS, TIMERS \n");
 
                 attron(attrval);
                 printw("    z");
                 attroff(attrval);
-                printw("    zero this selected counter\n");   
+                printw("    zero this selected counter\n");
 
                 attron(attrval);
                 printw("    Z");
                 attroff(attrval);
-                printw("    zero all selected counters\n");   
+                printw("    zero all selected counters\n");
 
                 attron(attrval);
                 printw("    L");
                 attroff(attrval);
-                printw("    Enable iteration time limit\n");   
+                printw("    Enable iteration time limit\n");
 
                 attron(attrval);
                 printw("    M");
                 attroff(attrval);
-                printw("    Enable execution time limit\n"); 
-                
-                
+                printw("    Enable execution time limit\n");
 
-				printw("\n");
+
+
+                printw("\n");
                 printw("============ AFFINITY \n");
 
                 attron(attrval);
                 printw("    >");
                 attroff(attrval);
-                printw("    Move to other CPU set\n");   
+                printw("    Move to other CPU set\n");
 
                 attron(attrval);
                 printw("    <");
                 attroff(attrval);
-                printw("    Move back to same CPU set\n");   
+                printw("    Move back to same CPU set\n");
 
-                
+
                 printw("\n\n");
             }
             else
             {
 
-				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
-				printw("Update frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
-				
+                printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+                printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
+
 
                 if(procinfoproc.pinfommapped[pindexSelected] == 1)
                 {
@@ -2906,12 +2938,12 @@ int_fast8_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
-//HERE
+                //HERE
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
 
- 
+
 
                 clock_gettime(CLOCK_REALTIME, &t04loop);
 
@@ -2932,7 +2964,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                 if(procinfoproc.DisplayMode == 3)
-                {                   
+                {
                     int cpu;
 
                     // List CPUs
@@ -2967,7 +2999,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                     // List CPU # processes
                     printw("                                                                         PROCESSES  ", procinfoproc.NBcpus);
-          for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++) 
+                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                     {
                         int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
                         if(vint>99)
@@ -2991,7 +3023,7 @@ int_fast8_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(ColorCode));
                     }
                     printw("|    |");
-          for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++) 
+                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                     {
                         int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
                         if(vint>99)
@@ -3023,7 +3055,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                     // Print CPU LOAD
                     printw("                                                                          CPU LOAD  ", procinfoproc.NBcpus);
-          for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++) 
+                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                     {
                         int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
                         if(vint>99)
@@ -3047,7 +3079,7 @@ int_fast8_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(ColorCode));
                     }
                     printw("|    |");
-          for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++) 
+                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                     {
                         int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
                         if(vint>99)
@@ -3199,8 +3231,8 @@ int_fast8_t processinfo_CTRLscreen()
                                 }
 
                                 procinfoproc.loopcntarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
-                                
-                                
+
+
                                 printw("  %25s", procinfoproc.pinfoarray[pindex]->description);
 
                                 if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
@@ -3313,7 +3345,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // First group of cores (physical CPU 0)
-                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++) 
+                                        for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                                         {
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
@@ -3349,7 +3381,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // Second group of cores (physical CPU 0)
-                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
+                                        for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                                         {
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
@@ -3469,7 +3501,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     int tindex;
                                     dtindex = 0;
-                                    
+
                                     // we exclude the current timerindex, as timers may not all be written
                                     for(tindex=0; tindex<PROCESSINFO_NBtimer-1; tindex++)
                                     {
@@ -3482,14 +3514,14 @@ int_fast8_t processinfo_CTRLscreen()
                                             ti0 += PROCESSINFO_NBtimer;
 
                                         if(ti1<0)
-											ti1 += PROCESSINFO_NBtimer;
-                                            
+                                            ti1 += PROCESSINFO_NBtimer;
+
                                         dtiter_array[tindex] = (procinfoproc.pinfoarray[pindex]->texecstart[ti1].tv_nsec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(procinfoproc.pinfoarray[pindex]->texecstart[ti1].tv_sec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_sec);
-                                        
+
                                         dtexec_array[tindex] = (procinfoproc.pinfoarray[pindex]->texecend[ti0].tv_nsec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_nsec) + 1000000000*(procinfoproc.pinfoarray[pindex]->texecend[ti0].tv_sec - procinfoproc.pinfoarray[pindex]->texecstart[ti0].tv_sec);
                                     }
-                                    
-                                  
+
+
 
                                     quick_sort_long(dtiter_array, PROCESSINFO_NBtimer-1);
                                     quick_sort_long(dtexec_array, PROCESSINFO_NBtimer-1);
@@ -3657,8 +3689,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 #ifndef STANDALONE
-	    if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
-			loopOK = 0;
+        if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
+            loopOK = 0;
 #endif
 
     }
@@ -3684,7 +3716,7 @@ int_fast8_t processinfo_CTRLscreen()
     procinfoproc.loop = 0;
     pthread_join(threadscan, NULL);
 
-	free(procinfoproc.pinfodisp);
+    free(procinfoproc.pinfodisp);
 
     return 0;
 }
