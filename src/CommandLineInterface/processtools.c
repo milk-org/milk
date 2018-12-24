@@ -3681,7 +3681,7 @@ int_fast8_t processinfo_CTRLscreen()
               tdiff = info_time_diff(t1loop, t2loop);
               double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
-              printw("\nLoop time = %9.8f s  ( max rate = %7.2 Hz)\n", tdiffvloop, 1.0/tdiffvloop);
+              printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop, 1.0/tdiffvloop);
 
 			refresh();
 
