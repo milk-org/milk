@@ -224,6 +224,7 @@
 /* =============================================================================================== */
 
 #define MAXNBSUBPROCESS 50
+#define MAXNBCPU 100
 
 typedef struct
 {
@@ -242,6 +243,7 @@ typedef struct
 	
 	char          cpuset[16];       /**< cpuset name  */
 	char          cpusallowed[20];
+	int           cpuOKarray[MAXNBCPU];
 	int           threads;
 	
 	double        sampletime;
@@ -2072,12 +2074,45 @@ void *processinfo_scan(void *thptr)
                             pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
                         }
                     }
+                    
+                    
+                    char cpuliststring[200];
+                    char cpustring[16];
+                    
+                    sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
+                    
+                    int cpu;
+                    for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+                    {
+                        int cpuOK = 0;
+                        int cpumin, cpumax;
+
+                        sprintf(cpustring, ",%lld,", pinfop->CPUids[cpu]);
+                        if(strstr(cpuliststring, cpustring) != NULL)
+                            cpuOK = 1;
+
+
+                        for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
+                            for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
+                            {
+                                sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+                                if(strstr(cpuliststring, cpustring) != NULL)
+                                    cpuOK = 1;
+                            }
+                        pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
+                    }
 
                 }
             }
+
+
+
+
+
+
         } // end of DisplayMode 3
-        
-        
+
+
         pinfop->loopcnt++;
         usleep(pinfop->twaitus);
     }
@@ -3303,9 +3338,6 @@ int_fast8_t processinfo_CTRLscreen()
                             if( procinfoproc.DisplayMode == 3)
                             {
                                 int cpu;
-                                char cpuliststring[200];
-                                char cpustring[16];
-
 
                                 //HERE
 
@@ -3376,105 +3408,49 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]<1.0)
                                             cpuColor = 5;
 
-                                        sprintf(cpuliststring, ",%s,", procinfoproc.pinfodisp[pindex].cpusallowed);
+                                        
                                         
                                         
                                         // TIME = 0.11 ms
                                         
-                                        int cpuOKarray[100];
-                                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
-                                        {
-											int cpuOK = 0;
-											int cpumin, cpumax;
-											
-											sprintf(cpustring, ",%lld,", procinfoproc.CPUids[cpu]);
-                                            if(strstr(cpuliststring, cpustring) != NULL)
-                                                cpuOK = 1;
+                                        
 
-
-                                            for(cpumin=0; cpumin<=procinfoproc.CPUids[cpu]; cpumin++)
-                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<procinfoproc.NBcpus; cpumax++)
-                                                {
-                                                    sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-                                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                                        cpuOK = 1;
-                                                }
-                                           cpuOKarray[cpu] = cpuOK;                                           
-										}
                                         
                                         
                                         
                                         // First group of cores (physical CPU 0)                                        
                                         for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                                         {
-                                        /*    int cpuOK = 0;
-                                            int cpumin, cpumax;
-
-                                            sprintf(cpustring, ",%lld,", procinfoproc.CPUids[cpu]);
-                                            if(strstr(cpuliststring, cpustring) != NULL)
-                                                cpuOK = 1;
-
-
-                                            for(cpumin=0; cpumin<=procinfoproc.CPUids[cpu]; cpumin++)
-                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<procinfoproc.NBcpus; cpumax++)
-                                                {
-                                                    sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-                                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                                        cpuOK = 1;
-                                                }
-                                                */ 
-
-
                                             printw("|");
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
                                                 attron(COLOR_PAIR(cpuColor));
 
-                                            if(cpuOKarray[cpu] == 1)
+                                            if(procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] == 1)
                                                 printw("%2d", procinfoproc.CPUids[cpu]);
                                             else
                                                 printw("  ");
 
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
                                                 attroff(COLOR_PAIR(cpuColor));
-
                                         }
                                         printw("|    ");
-                                        
-                                        // TIME = 22 ms
                                         
                                         
                                         
                                         // Second group of cores (physical CPU 0)
                                         for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                                         {
-/*                                            int cpuOK = 0;
-                                            int cpumin, cpumax;
-
-                                            sprintf(cpustring, ",%lld,", procinfoproc.CPUids[cpu]);
-                                            if(strstr(cpuliststring, cpustring) != NULL)
-                                                cpuOK = 1;
-
-                                            for(cpumin=0; cpumin<=procinfoproc.CPUids[cpu]; cpumin++)
-                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<procinfoproc.NBcpus; cpumax++)
-                                                {
-                                                    sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-                                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                                        cpuOK = 1;
-                                                }*/
-
-
                                             printw("|");
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
                                                 attron(COLOR_PAIR(cpuColor));
 
-                                            if(cpuOKarray[cpu] == 1)
+                                            if(procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] == 1)
                                                 printw("%2d", procinfoproc.CPUids[cpu]);
                                             else
                                                 printw("  ");
 
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
                                                 attroff(COLOR_PAIR(cpuColor));
-
                                         }
                                         printw("| ");
 
