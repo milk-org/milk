@@ -325,6 +325,9 @@ typedef struct
 	long long CPUids[100];
 	int CPUpcnt[100];	
 	
+	int NBpindexActive;
+	int pindexActive[PROCESSINFOLISTSIZE];
+	
 	
 } PROCINFOPROC;
 
@@ -1970,6 +1973,46 @@ void *processinfo_scan(void *thptr)
 
 
 
+        /** ### Build a time-sorted list of processes
+          *
+          *
+          *
+          */
+        int index;
+
+        pinfop->NBpindexActive = 0;
+        for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
+            if(pinfolist->active[pindex] != 0)
+            {
+                pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
+                pinfop->NBpindexActive++;
+            }
+        double *timearray;
+        long *indexarray;
+        timearray  = (double*) malloc(sizeof(double)*pinfop->NBpindexActive);
+        indexarray = (long*)   malloc(sizeof(long)  *pinfop->NBpindexActive);
+        int listcnt = 0;
+        for(index=0; index<pinfop->NBpindexActive; index++)
+        {
+            pindex = pinfop->pindexActive[index];
+            if(pinfop->pinfommapped[pindex] == 1)
+            {
+                indexarray[index] = pindex;
+                // minus sign for most recent first
+                //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+                timearray[index] = -1.0*pinfop->pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*pinfop->pinfoarray[pindex]->createtime.tv_nsec;
+                listcnt++;
+            }
+        }
+        pinfop->NBpindexActive = listcnt;
+        quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
+
+        for(index=0; index<pinfop->NBpindexActive; index++)
+            pinfop->sorted_pindex_time[index] = indexarray[index];
+
+        free(timearray);
+        free(indexarray);
+
 
 
 
@@ -2049,8 +2092,7 @@ int_fast8_t processinfo_CTRLscreen()
     // list of active indices
     int   pindexActiveSelected;
     int   pindexSelected;
-    int   pindexActive[PROCESSINFOLISTSIZE];
-    int   NBpindexActive;
+
 
 	int listindex;
 
@@ -2095,7 +2137,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-
+	// wait for first scan to be completed
+	while( procinfoproc.loopcnt < 1 )
+		usleep(100);
 
 
 
@@ -2184,9 +2228,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'u':    // undelect all
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 procinfoproc.selectedarray[pindex] = 0;
             }
             break;
@@ -2197,17 +2241,17 @@ int_fast8_t processinfo_CTRLscreen()
             if(pindexActiveSelected<0)
                 pindexActiveSelected = 0;
             if(TimeSorted == 0)
-                pindexSelected = pindexActive[pindexActiveSelected];
+                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
             else
                 pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
 
         case KEY_DOWN:
             pindexActiveSelected ++;
-            if(pindexActiveSelected>NBpindexActive-1)
-                pindexActiveSelected = NBpindexActive-1;
+            if(pindexActiveSelected>procinfoproc.NBpindexActive-1)
+                pindexActiveSelected = procinfoproc.NBpindexActive-1;
             if(TimeSorted == 0)
-                pindexSelected = pindexActive[pindexActiveSelected];
+                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
             else
                 pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
@@ -2217,17 +2261,17 @@ int_fast8_t processinfo_CTRLscreen()
             if(pindexActiveSelected<0)
                 pindexActiveSelected = 0;
             if(TimeSorted == 0)
-                pindexSelected = pindexActive[pindexActiveSelected];
+                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
             else
                 pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
 
         case KEY_NPAGE:
             pindexActiveSelected += 10;
-            if(pindexActiveSelected>NBpindexActive-1)
-                pindexActiveSelected = NBpindexActive-1;
+            if(pindexActiveSelected>procinfoproc.NBpindexActive-1)
+                pindexActiveSelected = procinfoproc.NBpindexActive-1;
             if(TimeSorted == 0)
-                pindexSelected = pindexActive[pindexActiveSelected];
+                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
             else
                 pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
@@ -2237,9 +2281,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         case 'T':
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2256,9 +2300,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'K':
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2275,9 +2319,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'I':
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2294,9 +2338,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'r':
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2321,9 +2365,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'R':
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(pinfolist->active[pindex]!=1)
                 {
                     char SM_fname[200];
@@ -2335,9 +2379,9 @@ int_fast8_t processinfo_CTRLscreen()
 
         // loop controls
         case 'p': // pause
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2358,9 +2402,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 's': // step
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2408,9 +2452,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
         case 'e': // exit
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2426,9 +2470,9 @@ int_fast8_t processinfo_CTRLscreen()
 
         case 'z': // apply current value as offset (zero loop counter)
             selectedOK = 0;
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2443,9 +2487,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'Z': // revert to original counter value
-            for(index=0; index<NBpindexActive; index++)
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
-                pindex = pindexActive[index];
+                pindex = procinfoproc.pindexActive[index];
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
                     selectedOK = 1;
@@ -2827,7 +2871,7 @@ int_fast8_t processinfo_CTRLscreen()
             else
             {
 
-				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, procinfoproc.DisplayMode);
+				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 				printw("Update frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy ) ", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 				
 
@@ -2861,45 +2905,7 @@ int_fast8_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
 
-                /** ### Build a time-sorted list of processes
-                 *
-                 *
-                 *
-                 */
-                NBpindexActive = 0;
-                for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
-                    if(pinfolist->active[pindex] != 0)
-                    {
-                        pindexActive[NBpindexActive] = pindex;
-                        NBpindexActive++;
-                    }
-                double *timearray;
-                long *indexarray;
-                timearray  = (double*) malloc(sizeof(double)*NBpindexActive);
-                indexarray = (long*)   malloc(sizeof(long)  *NBpindexActive);
-                int listcnt = 0;
-                for(index=0; index<NBpindexActive; index++)
-                {
-                    pindex = pindexActive[index];
-                    if(procinfoproc.pinfommapped[pindex] == 1)
-                    {
-                        indexarray[index] = pindex;
-                        // minus sign for most recent first
-                        //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
-                        timearray[index] = -1.0*procinfoproc.pinfoarray[pindex]->createtime.tv_sec - 1.0e-9*procinfoproc.pinfoarray[pindex]->createtime.tv_nsec;
-                        listcnt++;
-                    }
-                }
-                NBpindexActive = listcnt;
-                quick_sort2l_double(timearray, indexarray, NBpindexActive);
-
-                for(index=0; index<NBpindexActive; index++)
-                    procinfoproc.sorted_pindex_time[index] = indexarray[index];
-
-                free(timearray);
-                free(indexarray);
-
-
+ 
 
                 clock_gettime(CLOCK_REALTIME, &t04loop);
 
@@ -2917,7 +2923,7 @@ int_fast8_t processinfo_CTRLscreen()
                 if(TimeSorted == 0)
                     dispindexMax = wrow-4;
                 else
-                    dispindexMax = NBpindexActive;
+                    dispindexMax = procinfoproc.NBpindexActive;
 
                 if(procinfoproc.DisplayMode == 3)
                 {
