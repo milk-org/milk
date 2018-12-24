@@ -3360,7 +3360,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                         printw(" ");
                                         
-                                        /*
+                                        
                                         // CPU use
 
                                         int cpuColor = 0;
@@ -3413,8 +3413,9 @@ int_fast8_t processinfo_CTRLscreen()
 
                                         }
                                         printw("|    ");
-
-
+                                        
+                                        
+                                        /*
                                         // Second group of cores (physical CPU 0)
                                         for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                                         {
