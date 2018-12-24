@@ -2212,6 +2212,30 @@ int_fast8_t processinfo_CTRLscreen()
                 pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
 
+        case KEY_PPAGE:
+            pindexActiveSelected -= 10;
+            if(pindexActiveSelected<0)
+                pindexActiveSelected = 0;
+            if(TimeSorted == 0)
+                pindexSelected = pindexActive[pindexActiveSelected];
+            else
+                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
+            break;
+
+        case KEY_NPAGE:
+            pindexActiveSelected += 10;
+            if(pindexActiveSelected>NBpindexActive-1)
+                pindexActiveSelected = NBpindexActive-1;
+            if(TimeSorted == 0)
+                pindexSelected = pindexActive[pindexActiveSelected];
+            else
+                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
+            break;
+
+
+
+
+
         case 'T':
             for(index=0; index<NBpindexActive; index++)
             {
@@ -2526,7 +2550,11 @@ int_fast8_t processinfo_CTRLscreen()
             }
             break;
 
-        // Set Display Mode
+
+
+
+
+        // ============ SCREENS
 
         case 'h': // help
             procinfoproc.DisplayMode = 1;
@@ -2567,6 +2595,25 @@ int_fast8_t processinfo_CTRLscreen()
 				printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
             initncurses();
             break;
+
+
+
+
+        // ============ SCANNING
+
+        case '{': // slower scan update
+            procinfoproc.twaitus = (int) (1.2*procinfoproc.twaitus);
+            if(procinfoproc.twaitus > 1000000)
+                procinfoproc.twaitus = 1000000;
+            break;
+
+        case '}': // faster scan update
+            procinfoproc.twaitus = (int) (0.83333333333333333333*procinfoproc.twaitus);
+            if(procinfoproc.twaitus < 1000)
+                procinfoproc.twaitus = 1000;
+            break;
+
+
 
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
@@ -2625,6 +2672,24 @@ int_fast8_t processinfo_CTRLscreen()
                 attroff(attrval);
                 printw("   atop        Type q to exit\n");
                 
+
+
+
+            printw("\n");
+            printw("============ SCANNING \n");
+
+            attron(attrval);
+            printw("    }");
+            attroff(attrval);
+            printw("    Increase scan frequency\n");
+
+            attron(attrval);
+            printw("    {");
+            attroff(attrval);
+            printw("    Decrease scan frequency\n");
+
+
+
                 
 				printw("\n");
                 printw("============ DISPLAY \n");
