@@ -3377,8 +3377,10 @@ int_fast8_t processinfo_CTRLscreen()
                                             cpuColor = 5;
 
                                         sprintf(cpuliststring, ",%s,", procinfoproc.pinfodisp[pindex].cpusallowed);
-
-
+                                        
+                                        
+                                        
+                                        /*
                                         // First group of cores (physical CPU 0)
                                         for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                                         {
@@ -3415,7 +3417,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         printw("|    ");
                                         
                                         
-                                        /*
+                                        
                                         // Second group of cores (physical CPU 0)
                                         for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                                         {
