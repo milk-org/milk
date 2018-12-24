@@ -1172,7 +1172,7 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 	NBcores = 2;
 	NBcpus = atoi(outstring);
     for(pu_index=0; pu_index<NBcpus; pu_index+=2){
-      prinfop->CPUids[tmp_index] = pu_index;
+      pinfop->CPUids[tmp_index] = pu_index;
       ++tmp_index;
     }
     for(pu_index=1; pu_index<NBcpus; pu_index+=2){
