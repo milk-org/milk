@@ -266,6 +266,7 @@ typedef struct
 	long          VmRSSarray[MAXNBSUBPROCESS];
 	
 	int           processor;
+	int           processorarray[MAXNBSUBPROCESS];
 	int           rt_priority;
 	float         memload;
 	
@@ -2057,6 +2058,7 @@ void *processinfo_scan(void *thptr)
                             pinfop->pinfodisp[pindex].sampletimearray[spindex]      = pinfop->pinfodisp[pindex].sampletime;
                             pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]      = pinfop->pinfodisp[pindex].cpuloadcnt;
                             pinfop->pinfodisp[pindex].VmRSSarray[spindex]           = pinfop->pinfodisp[pindex].VmRSS;
+                            pinfop->pinfodisp[pindex].processorarray[spindex]       = pinfop->pinfodisp[pindex].processor;
 
                             // Context Switches
 
@@ -2174,7 +2176,7 @@ int_fast8_t processinfo_CTRLscreen()
     struct timespec t07loop;
 
 
-    float frequ = 16.0; // Hz
+    float frequ = 32.0; // Hz
     char  monstring[200];
 
     // list of active indices
@@ -3422,7 +3424,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                                         {
                                             printw("|");
-                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
+                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attron(COLOR_PAIR(cpuColor));
 
                                             if(procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] == 1)
@@ -3430,7 +3432,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             else
                                                 printw("  ");
 
-                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
+                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attroff(COLOR_PAIR(cpuColor));
                                         }
                                         printw("|    ");
@@ -3441,7 +3443,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                                         {
                                             printw("|");
-                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
+                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attron(COLOR_PAIR(cpuColor));
 
                                             if(procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] == 1)
@@ -3449,7 +3451,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             else
                                                 printw("  ");
 
-                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processor)
+                                            if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attroff(COLOR_PAIR(cpuColor));
                                         }
                                         printw("| ");
@@ -3684,48 +3686,6 @@ int_fast8_t processinfo_CTRLscreen()
               printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop, 1.0/tdiffvloop);
 
 			refresh();
-
-
-/*
-            tdiff = info_time_diff(t1loop, t01loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 01  : %9.8f\n", tdiffvloop);
-
-            tdiff = info_time_diff(t01loop, t02loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 02  : %9.8f\n", tdiffvloop);
-
-            tdiff = info_time_diff(t02loop, t03loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 03  : %9.8f\n", tdiffvloop);
-
-            tdiff = info_time_diff(t03loop, t04loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 04  : %9.8f\n", tdiffvloop);
-
-            tdiff = info_time_diff(t04loop, t05loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 05  : %9.8f\n", tdiffvloop);
-
-            tdiff = info_time_diff(t05loop, t06loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 06  : %9.8f\n", tdiffvloop);
-
-            tdiff = info_time_diff(t06loop, t07loop);
-            tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-            printw(" loop time 07  : %9.8f\n", tdiffvloop);
-
-
-            printw("     %9.8f  scantime_cpuset\n", scantime_cpuset);
-            printw("     %9.8f  scantime_status\n", scantime_status);
-            printw("     %9.8f  scantime_stat\n", scantime_stat);
-            printw("     %9.8f  scantime_pstree\n", scantime_pstree);
-            printw("     %9.8f  scantime_top\n", scantime_top);
-            printw("     %9.8f  scantime_CPUload\n", scantime_CPUload);
-            printw("     %9.8f  scantime_CPUpcnt\n", scantime_CPUpcnt);
-  */          
-
-
         }
 
 
