@@ -288,7 +288,7 @@ typedef struct
 	int twaitus; // sleep time between scans
 	double dtscan; // measured time interval between scans [s]
 		
-	PROCESSINFOLIST *pinfolist;
+	PROCESSINFOLIST *pinfolist;  // copy of pointer -> static PROCESSINFOLIST *pinfolist
 
 	long NBpinfodisp;
 	PROCESSINFODISP *pinfodisp;
@@ -381,6 +381,7 @@ static double scantime_CPUpcnt;
  * 
  * If list exists, return first available index
  * 
+ * 
  */
 
 long processinfo_shm_list_create()
@@ -434,7 +435,6 @@ long processinfo_shm_list_create()
             perror("Error mmapping the file");
             exit(0);
         }
-        
         
         for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
 			pinfolist->active[pindex] = 0;
@@ -1910,6 +1910,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     // Create / read process list
     processinfo_shm_list_create();
+    
+    // copy pointer
+    procinfoproc.pinfolist = pinfolist;
+    
 
     NBcpus = GetNumberCPUs();
     GetCPUloads();
