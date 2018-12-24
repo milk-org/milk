@@ -1842,6 +1842,7 @@ void *processinfo_scan(void *thptr)
         if(firstIter == 1)
         {
             tdiffv = 0.1;
+            firstIter = 0;
         }
         else
         {
