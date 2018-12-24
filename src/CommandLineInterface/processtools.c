@@ -3320,7 +3320,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     for(spindex = 0; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
                                     {
                                         int TID; // thread ID
-                                        /*
+                                        
 
                                         if(spindex>0)
                                         {
@@ -3359,8 +3359,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         printw(" ");
-
-
+                                        
+                                        /*
                                         // CPU use
 
                                         int cpuColor = 0;
