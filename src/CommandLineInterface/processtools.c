@@ -312,6 +312,10 @@ typedef struct
 
     int           sorted_pindex_time[PROCESSINFOLISTSIZE];
 		
+		
+	int NBcpus;
+	int NBcores;
+	
 	float CPUload[100];
 	long long CPUcnt0[100];
 	long long CPUcnt1[100];
@@ -344,7 +348,7 @@ typedef struct
 
 static PROCESSINFOLIST *pinfolist;
 
-static int wrow, wcol, NBcores, NBcpus;
+static int wrow, wcol;
 
 
 
@@ -1141,10 +1145,10 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
   hwloc_topology_load(topology);
 
   depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
-  NBcores = hwloc_get_nbobjs_by_depth(topology, depth);
+  pinfop->NBcores = hwloc_get_nbobjs_by_depth(topology, depth);
 
   depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
-  NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
+  pinfop->NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
 
   hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth, 0);
   do {
@@ -1172,20 +1176,20 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 		pclose(fpout);
 	}
 
-	NBcores = 2;
-	NBcpus = atoi(outstring);
-    for(pu_index=0; pu_index<NBcpus; pu_index+=2){
+	pinfop->NBcores = 2;
+	pinfop->NBcpus = atoi(outstring);
+    for(pu_index=0; pu_index<pinfop->NBcpus; pu_index+=2){
       pinfop->CPUids[tmp_index] = pu_index;
       ++tmp_index;
     }
-    for(pu_index=1; pu_index<NBcpus; pu_index+=2){
+    for(pu_index=1; pu_index<pinfop->NBcpus; pu_index+=2){
       pinfop->CPUids[tmp_index] = pu_index;
       ++tmp_index;
     }
 
 #endif
 
-	return(NBcpus);
+	return(pinfop->NBcpus);
 }
 
 
@@ -1283,7 +1287,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
         exit(0);
     }
 
-    while (((read = getline(&line, &len, fp)) != -1)&&(cpu<NBcpus)) {
+    while (((read = getline(&line, &len, fp)) != -1)&&(cpu<pinfop->NBcpus)) {
 
         sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 
@@ -1323,7 +1327,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
     char command[200];
 
 
-    for(cpu=0; cpu<NBcpus; cpu++)
+    for(cpu=0; cpu<pinfop->NBcpus; cpu++)
     {
         char outstring[200];
         FILE * fpout;
@@ -2067,7 +2071,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
     char syscommand[200];
-    int  NBcpus = 0;
     char pselected_FILE[200];
     char pselected_FUNCTION[200];
     int  pselected_LINE;
@@ -2125,7 +2128,7 @@ int_fast8_t processinfo_CTRLscreen()
     procinfoproc.pinfolist = pinfolist;
     
 
-    NBcpus = GetNumberCPUs(&procinfoproc);
+    procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
 
@@ -2871,7 +2874,7 @@ int_fast8_t processinfo_CTRLscreen()
             else
             {
 
-				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 				printw("Update frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy ) ", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 				
 
@@ -2918,16 +2921,16 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                 int dispindex;
-                //            for(dispindex=0; dispindex<NBpinfodisp; dispindex++)
-
                 if(TimeSorted == 0)
                     dispindexMax = wrow-4;
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
+
+
                 if(procinfoproc.DisplayMode == 3)
                 {
-                    NBcpus = GetCPUloads(&procinfoproc);
+                    GetCPUloads(&procinfoproc);
                     int cpu;
 
                     // List CPUs
@@ -2956,17 +2959,17 @@ int_fast8_t processinfo_CTRLscreen()
                     printw(
                         "                                                                "
                         "  %2d Cores %2d CPUs  ",
-                        NBcores, NBcpus);
-                    for (cpu = 0; cpu < NBcpus / NBcores; cpu++)
+                        procinfoproc.NBcores, procinfoproc.NBcpus);
+                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                         printw("|%02d", procinfoproc.CPUids[cpu]);
                     printw("|    |");
-                    for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++)
+                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                         printw("%02d|", procinfoproc.CPUids[cpu]);
                     printw("\n");
 
                     // List CPU # processes
-                    printw("                                                                         PROCESSES  ", NBcpus);
-          for (cpu = 0; cpu < NBcpus / NBcores; cpu++) 
+                    printw("                                                                         PROCESSES  ", procinfoproc.NBcpus);
+          for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++) 
                     {
                         int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
                         if(vint>99)
@@ -2990,7 +2993,7 @@ int_fast8_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(ColorCode));
                     }
                     printw("|    |");
-          for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++) 
+          for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++) 
                     {
                         int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
                         if(vint>99)
@@ -3021,8 +3024,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                     // Print CPU LOAD
-                    printw("                                                                          CPU LOAD  ", NBcpus);
-          for (cpu = 0; cpu < NBcpus / NBcores; cpu++) 
+                    printw("                                                                          CPU LOAD  ", procinfoproc.NBcpus);
+          for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++) 
                     {
                         int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
                         if(vint>99)
@@ -3046,7 +3049,7 @@ int_fast8_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(ColorCode));
                     }
                     printw("|    |");
-          for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++) 
+          for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++) 
                     {
                         int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
                         if(vint>99)
@@ -3312,7 +3315,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // First group of cores (physical CPU 0)
-                    for (cpu = 0; cpu < NBcpus / NBcores; cpu++) 
+                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++) 
                                         {
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
@@ -3323,7 +3326,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                             for(cpumin=0; cpumin<=procinfoproc.CPUids[cpu]; cpumin++)
-                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<NBcpus; cpumax++)
+                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<procinfoproc.NBcpus; cpumax++)
                                                 {
                                                     sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
                                                     if(strstr(cpuliststring, cpustring) != NULL)
@@ -3348,7 +3351,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // Second group of cores (physical CPU 0)
-                    for (cpu = NBcpus / NBcores; cpu < NBcpus; cpu++)
+                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
                                         {
                                             int cpuOK = 0;
                                             int cpumin, cpumax;
@@ -3358,7 +3361,7 @@ int_fast8_t processinfo_CTRLscreen()
                                                 cpuOK = 1;
 
                                             for(cpumin=0; cpumin<=procinfoproc.CPUids[cpu]; cpumin++)
-                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<NBcpus; cpumax++)
+                                                for(cpumax=procinfoproc.CPUids[cpu]; cpumax<procinfoproc.NBcpus; cpumax++)
                                                 {
                                                     sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
                                                     if(strstr(cpuliststring, cpustring) != NULL)
