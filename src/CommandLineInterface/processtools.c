@@ -2019,9 +2019,9 @@ void *processinfo_scan(void *thptr)
 
 
 
-        if(procinfoproc.DisplayMode == 3)
+        if(pinfop->DisplayMode == 3)
         {
-            GetCPUloads(&procinfoproc);
+            GetCPUloads(pinfop);
         }
 
 
