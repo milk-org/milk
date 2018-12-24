@@ -331,7 +331,7 @@ typedef struct
 	
 	int NBpindexActive;
 	int pindexActive[PROCESSINFOLISTSIZE];
-	
+	int psysinfostatus[PROCESSINFOLISTSIZE];
 	
 } PROCINFOPROC;
 
@@ -2022,7 +2022,15 @@ void *processinfo_scan(void *thptr)
         if(pinfop->DisplayMode == 3)
         {
             GetCPUloads(pinfop);
-        }
+            
+            
+            // collect required info for display
+            for(pindex=0; pindex<PROCESSINFOLISTSIZE ; pindex++)
+            {
+				if(pinfolist->active[pindex] != 0)
+					pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(pinfop->pinfodisp[pindex].PID, pindex, pinfop->pinfodisp, 0); 
+			}
+        }//HERE00
 
 
 
@@ -2938,7 +2946,7 @@ int_fast8_t processinfo_CTRLscreen()
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
 
-                //HERE
+                
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
@@ -3122,7 +3130,7 @@ int_fast8_t processinfo_CTRLscreen()
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
                 // ===========================================================================
 
-                for(dispindex=0; dispindex<dispindexMax; dispindex++)
+                for(dispindex=0; dispindex < dispindexMax; dispindex++)
                 {
                     if(TimeSorted == 0)
                         pindex = dispindex;
@@ -3251,14 +3259,12 @@ int_fast8_t processinfo_CTRLscreen()
                                 int cpu;
                                 char cpuliststring[200];
                                 char cpustring[16];
-                                int  psysinfostatus;
+                                
 
 
+                                //HERE
 
-                                // collect required info for display
-                                psysinfostatus = PIDcollectSystemInfo(procinfoproc.pinfodisp[pindex].PID, pindex, procinfoproc.pinfodisp, 0);
-
-                                if(psysinfostatus == -1)
+                                if(procinfoproc.psysinfostatus[pindex] == -1)
                                 {
                                     printw(" no process info available\n");
                                 }
@@ -3273,7 +3279,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         {
                                             TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
                                             printw("               |---%6d                        ", procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex]);
-                                            PIDcollectSystemInfo(procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex], pindex, procinfoproc.pinfodisp, 1);
+                                            PIDcollectSystemInfo(procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex], pindex, procinfoproc.pinfodisp, 1);  //MOVE
                                         }
                                         else
                                         {
