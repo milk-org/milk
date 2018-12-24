@@ -3382,7 +3382,7 @@ int_fast8_t processinfo_CTRLscreen()
                                         // TIME = 0.11 ms
                                         
                                         
-                                        // First group of cores (physical CPU 0)
+                                        // First group of cores (physical CPU 0)                                        
                                         for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
                                         {
                                             int cpuOK = 0;
@@ -3417,7 +3417,9 @@ int_fast8_t processinfo_CTRLscreen()
                                         }
                                         printw("|    ");
                                         
-                                        /*
+                                        // TIME = 22 ms
+                                        
+                                        
                                         
                                         // Second group of cores (physical CPU 0)
                                         for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
@@ -3504,7 +3506,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         attroff(COLOR_PAIR(memColor));
-                                        */
+                                        
                                         
                                         
                                         printw("\n");
