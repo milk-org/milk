@@ -2762,7 +2762,7 @@ int_fast8_t processinfo_CTRLscreen()
             {
 
 				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, procinfoproc.DisplayMode);
-				printw("Update frequ = %2d Hz  fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy ) ", (int) (frequ+0.5), 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
+				printw("Update frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy ) ", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 				
 
                 if(procinfoproc.pinfommapped[pindexSelected] == 1)
