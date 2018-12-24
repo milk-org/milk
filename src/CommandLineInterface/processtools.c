@@ -293,6 +293,8 @@ typedef struct
 	long NBpinfodisp;
 	PROCESSINFODISP *pinfodisp;
 	
+	int DisplayMode;
+	
 } PROCINFOPROC;
 
 
@@ -1817,6 +1819,13 @@ void *processinfo_scan(void *thptr)
 
 
 
+
+
+
+
+
+
+
 /**
  * ## Purpose
  *
@@ -1852,8 +1861,7 @@ int_fast8_t processinfo_CTRLscreen()
 
     int           sorted_pindex_time[PROCESSINFOLISTSIZE];
 
-    // Display fields
-    // PROCESSINFODISP *pinfodisp;
+
 
     char syscommand[200];
     int  NBcpus = 0;
@@ -1959,7 +1967,7 @@ int_fast8_t processinfo_CTRLscreen()
 
     pindexActiveSelected = 0;
 
-    int DisplayMode = 1;
+    procinfoproc.DisplayMode = 1;
     // display modes:
     // 1: overview
     // 2: CPU affinity
@@ -2361,19 +2369,19 @@ int_fast8_t processinfo_CTRLscreen()
         // Set Display Mode
 
         case 'h': // help
-            DisplayMode = 1;
+            procinfoproc.DisplayMode = 1;
             break;
 
         case KEY_F(2): // control
-            DisplayMode = 2;
+            procinfoproc.DisplayMode = 2;
             break;
 
         case KEY_F(3): // resources
-            DisplayMode = 3;
+            procinfoproc.DisplayMode = 3;
             break;
 
         case KEY_F(4): // timing
-            DisplayMode = 4;
+            procinfoproc.DisplayMode = 4;
             break;
 
         case KEY_F(5): // htop
@@ -2409,7 +2417,7 @@ int_fast8_t processinfo_CTRLscreen()
             erase();
 
 
-            if(DisplayMode == 1)
+            if(procinfoproc.DisplayMode == 1)
             {
                 int attrval = A_BOLD;
 
@@ -2594,7 +2602,7 @@ int_fast8_t processinfo_CTRLscreen()
             else
             {
 
-				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, DisplayMode);
+				printw("%2d cpus   %2d processes tracked    Display Mode %d\n", NBcpus, NBpindexActive, procinfoproc.DisplayMode);
 
                 if(pinfommapped[pindexSelected] == 1)
                 {
@@ -2798,7 +2806,7 @@ int_fast8_t processinfo_CTRLscreen()
                 else
                     dispindexMax = NBpindexActive;
 
-                if(DisplayMode == 3)
+                if(procinfoproc.DisplayMode == 3)
                 {
                     NBcpus = GetCPUloads();
                     int cpu;
@@ -3020,7 +3028,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                             // ================ DISPLAY MODE 2 ==================
-                            if( DisplayMode == 2)
+                            if( procinfoproc.DisplayMode == 2)
                             {
                                 switch (pinfoarray[pindex]->loopstat)
                                 {
@@ -3086,7 +3094,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                             // ================ DISPLAY MODE 3 ==================
-                            if( DisplayMode == 3)
+                            if( procinfoproc.DisplayMode == 3)
                             {
                                 int cpu;
                                 char cpuliststring[200];
@@ -3322,7 +3330,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                             // ================ DISPLAY MODE 4 ==================
-                            if( DisplayMode == 4)
+                            if( procinfoproc.DisplayMode == 4)
                             {
 
                                 printw(" %d", pinfoarray[pindex]->MeasureTiming);
@@ -3461,9 +3469,9 @@ int_fast8_t processinfo_CTRLscreen()
 
                     }
 
-                    if(DisplayMode == 2)
+                    if(procinfoproc.DisplayMode == 2)
                         printw("\n");
-                    if(DisplayMode == 4)
+                    if(procinfoproc.DisplayMode == 4)
                         printw("\n");
 
                 }
