@@ -1688,42 +1688,81 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 {
     int selected = 0;
-	long i;
-	char buff[100];
-	int inputOK;
-	char *p;
+    long i;
+    char buff[100];
+    int inputOK;
+    char *p;
+    int strlenmax = 20;
 
-	printf("%d entries in list:\n", NBelem);
-	fflush(stdout);
-	for(i=0;i<NBelem;i++)
-	{
-		printf("   %3ld   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
-		fflush(stdout);
-	}
-	
-    printf ("\nEnter a number: ");
+    printf("%d entries in list:\n", NBelem);
     fflush(stdout);
-	inputOK = 0;
-
-    if (fgets(buff, sizeof(buff), stdin) != NULL)
+    for(i=0; i<NBelem; i++)
     {
-        selected = strtol(buff, &p, 10);
-
-        if (buff[0] != '\n' && (*p == '\n' || *p == '\0'))
-            inputOK = 1;
-        else  inputOK = 0;
+        printf("   %3ld   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
+        fflush(stdout);
     }
-    
-    if(inputOK == 1)
+
+
+    inputOK = 0;
+
+    while(inputOK == 0)
     {
-		if(selected < 0)
-			selected = 0;
-		if(selected > NBelem-1)
-			selected = 0;
-	}
-	 
-	printf("Selected entry : %s\n", StringList[selected].name);
-	
+        printf ("\nEnter a number: ");
+        fflush(stdout);
+
+        int stringindex = 0;
+        char c;
+        while( ((c = getchar()) != 13) && (stringindex<strlenmax-1) )
+        {
+            buff[stringindex] = c;
+            if(c == 127) // delete key
+            {
+                putchar (0x8);
+                putchar (' ');
+                putchar (0x8);
+                stringindex --;
+            }
+            else
+            {
+                putchar(c);  // echo on screen
+                stringindex++;
+            }
+            if(stringindex<0)
+                stringindex = 0;
+        }
+        buff[stringindex] = '\0';
+
+        selected = strtol(buff, &p, strlenmax);
+
+        if((selected<0)||(selected>NBelem-1))
+        {
+            printf("Error: number not valid. Must be >= 0 and < %d\n", NBelem);
+            inputOK = 0;
+        }
+        else
+            inputOK = 1;
+    }
+    /*
+        if (fgets(buff, sizeof(buff), stdin) != NULL)
+        {
+            selected = strtol(buff, &p, 10);
+
+            if (buff[0] != '\n' && (*p == '\n' || *p == '\0'))
+                inputOK = 1;
+            else  inputOK = 0;
+        }
+
+        if(inputOK == 1)
+        {
+    		if(selected < 0)
+    			selected = 0;
+    		if(selected > NBelem-1)
+    			selected = 0;
+    	}
+    	*/
+
+    printf("Selected entry : %s\n", StringList[selected].name);
+
 
     return selected;
 }
