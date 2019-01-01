@@ -1,5 +1,7 @@
 # Working with git {#page_WorkingWithGit}
 
+@note This file: ./src/CommandLineInterface/doc/WorkingWithGit.md
+
 ## Modules
 
 Most of milk's code is in a set of modules. Each module is compiled as a shared object loaded by the main process at runtime.

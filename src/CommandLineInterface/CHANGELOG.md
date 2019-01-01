@@ -1,4 +1,6 @@
-# Change Log
+# CommandLineInterface Change Log {#page_CommandLineInterface_ChangeLog}
+
+@note This file: ./src/CommandLineInterface/CHANGELOG.md
 
 All notable changes to this project will be documented in this file.
 

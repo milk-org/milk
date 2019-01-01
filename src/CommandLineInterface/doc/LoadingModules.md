@@ -1,5 +1,7 @@
 # Loading and Creating Modules {#page_LoadingModules}
 
+@note This file: ./src/CommandLineInterface/doc/LoadingModules.md
+
 
 Users can create additional modules, and bu following a few milk-specific conventions, link their functions to the milk CLI. Additional modules can be added to the existing build process (see "Compiling and linking modules with Autotools") or compiled separately and then loaded at runtime (see "Linking at runtime").
 
