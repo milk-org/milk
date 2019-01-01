@@ -53,14 +53,13 @@
  *
  */
 typedef struct {
-    char name[200];  // process name (human-readable)
+    char name[200];             /// process name (human-readable)
 
-    char source_FUNCTION[200];  // source code function
-    char source_FILE[200];      // source code file
-    int source_LINE;            // source code line
+    char source_FUNCTION[200];  /// source code function
+    char source_FILE[200];      /// source code file
+    int source_LINE;            /// source code line
 
-    pid_t PID;  // process ID
-    // file name is /tmp/proc.PID.shm
+    pid_t PID;                  /// process ID; file name is /tmp/proc.PID.shm
 
     struct timespec createtime;  // time at which pinfo was created
 

@@ -1,10 +1,8 @@
-[TOC]
-
-
 # Install {#page_installation}
 
 @note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
 
+[TOC]
 
 To compile :
 
@@ -14,7 +12,6 @@ To compile :
 	cmake ..
 	make
 	sudo make install
-
 
 
 

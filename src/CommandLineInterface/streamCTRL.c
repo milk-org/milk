@@ -306,14 +306,14 @@ void *streamCTRL_scan(void* thptr)
     double tdiffv;
     struct timespec tdiff;
 
-	STREAMINFOPROC* streaminfoproc;
-	
-	streaminfoproc = (STREAMINFOPROC*) thptr;
+    STREAMINFOPROC* streaminfoproc;
+
+    streaminfoproc = (STREAMINFOPROC*) thptr;
 
     streaminfo = streaminfoproc->sinfo;
     PIDname_array = streaminfoproc->PIDtable;
 
-	streaminfoproc->loopcnt = 0;
+    streaminfoproc->loopcnt = 0;
 
 
 
@@ -343,18 +343,18 @@ void *streamCTRL_scan(void* thptr)
             while(((dir = readdir(d)) != NULL))
             {
                 char *pch = strstr(dir->d_name, ".im.shm");
-                
+
                 int matchOK = 0;
-                
-				// name filtering
-				if(streaminfoproc->filter == 1)
-				{
-					if(strstr(dir->d_name, streaminfoproc->namefilter) != NULL)
-						matchOK = 1;
-				}
-				else
-					matchOK = 1;
-								
+
+                // name filtering
+                if(streaminfoproc->filter == 1)
+                {
+                    if(strstr(dir->d_name, streaminfoproc->namefilter) != NULL)
+                        matchOK = 1;
+                }
+                else
+                    matchOK = 1;
+
 
 
                 if((pch) && (matchOK == 1))
@@ -463,101 +463,105 @@ void *streamCTRL_scan(void* thptr)
             //            sindexscan1 = ssindex[sindexscan];
             int sindexscan1 = streaminfoproc->sindexscan;
 
-            int PReadMode = 1;
 
-            if(PReadMode == 0)
-            {
-                // popen option
-                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
-                fp = popen(command, "r");
-                if (fp == NULL) {
-                    streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
-                }
-                else
-                {
-                    streaminfo[sindexscan1].streamOpenPID_status = 1;
-                    
-                    if (fgets(plistoutline, 2000-1, fp) == NULL)
-						sprintf(plistoutline, " ");
-                    pclose(fp);
-                }
-            }
-            else
-            {
-                // filesystem option
-                char plistfname[2000];
-
-
-                sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
-                sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
-                system(command);
-
-                fp = fopen(plistfname, "r");
-                if (fp == NULL) {
-                    streaminfo[sindexscan1].streamOpenPID_status = 2;
-                }
-                else
-                {
-                    size_t len = 0;
-
-                    if(fgets(plistoutline, 2000-1, fp) == NULL)
-                        sprintf(plistoutline, " ");
-
-                    fclose(fp);
-                }
-            }
-
-
-            if(streaminfo[sindexscan1].streamOpenPID_status != 2)
-            {
-                char * pch;
-
-                pch = strtok (plistoutline," ");
-
-                while (pch != NULL) {
-                    if(NBpid<streamOpenNBpid_MAX) {
-                        streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
-                        if(getpgid(streaminfo[sindexscan1].streamOpenPID[NBpid]) >= 0)
-                            NBpid++;
-                    }
-                    pch = strtok (NULL, " ");
-                }
-                streaminfo[sindexscan1].streamOpenPID_status = 1; // success
-            }
-
-            streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
-            // Get PID names
-            int pidIndex;
-            int cnt1 = 0;
-            for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
-            {
-                pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
-                if( (getpgid(pid) >= 0) && (pid != getpid()) )
-                {
-                    char* pname = (char*) calloc(1024, sizeof(char));
-                    get_process_name_by_pid(pid, pname);
-
-                    if(PIDname_array[pid] == NULL)
-                        PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
-                    strncpy(PIDname_array[pid], pname, PIDnameStringLen);
-                    free(pname);
-					cnt1++;
-                }
-            }
-            streaminfo[sindexscan1].streamOpenPID_cnt1 = cnt1;
-
-            streaminfoproc->sindexscan++;
-            if(streaminfoproc->sindexscan == NBsindex)
+            if(streaminfoproc->sindexscan > NBsindex-1)
             {
                 streaminfoproc->fuserUpdate = 0;
             }
+            else
+            {
+                int PReadMode = 1;
+
+                if(PReadMode == 0)
+                {
+                    // popen option
+                    sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
+                    fp = popen(command, "r");
+                    if (fp == NULL) {
+                        streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
+                    }
+                    else
+                    {
+                        streaminfo[sindexscan1].streamOpenPID_status = 1;
+
+                        if (fgets(plistoutline, 2000-1, fp) == NULL)
+                            sprintf(plistoutline, " ");
+                        pclose(fp);
+                    }
+                }
+                else
+                {
+                    // filesystem option
+                    char plistfname[2000];
+
+
+                    sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
+                    sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
+                    system(command);
+
+                    fp = fopen(plistfname, "r");
+                    if (fp == NULL) {
+                        streaminfo[sindexscan1].streamOpenPID_status = 2;
+                    }
+                    else
+                    {
+                        size_t len = 0;
+
+                        if(fgets(plistoutline, 2000-1, fp) == NULL)
+                            sprintf(plistoutline, " ");
+
+                        fclose(fp);
+                    }
+                }
+
+
+                if(streaminfo[sindexscan1].streamOpenPID_status != 2)
+                {
+                    char * pch;
+
+                    pch = strtok (plistoutline," ");
+
+                    while (pch != NULL) {
+                        if(NBpid<streamOpenNBpid_MAX) {
+                            streaminfo[sindexscan1].streamOpenPID[NBpid] = atoi(pch);
+                            if(getpgid(streaminfo[sindexscan1].streamOpenPID[NBpid]) >= 0)
+                                NBpid++;
+                        }
+                        pch = strtok (NULL, " ");
+                    }
+                    streaminfo[sindexscan1].streamOpenPID_status = 1; // success
+                }
+
+                streaminfo[sindexscan1].streamOpenPID_cnt = NBpid;
+                // Get PID names
+                int pidIndex;
+                int cnt1 = 0;
+                for(pidIndex=0; pidIndex<streaminfo[sindexscan1].streamOpenPID_cnt; pidIndex++)
+                {
+                    pid_t pid = streaminfo[sindexscan1].streamOpenPID[pidIndex];
+                    if( (getpgid(pid) >= 0) && (pid != getpid()) )
+                    {
+                        char* pname = (char*) calloc(1024, sizeof(char));
+                        get_process_name_by_pid(pid, pname);
+
+                        if(PIDname_array[pid] == NULL)
+                            PIDname_array[pid] = (char*) malloc(sizeof(char)*(PIDnameStringLen+1));
+                        strncpy(PIDname_array[pid], pname, PIDnameStringLen);
+                        free(pname);
+                        cnt1++;
+                    }
+                }
+                streaminfo[sindexscan1].streamOpenPID_cnt1 = cnt1;
+
+                streaminfoproc->sindexscan++;
+            }
         }
-        
+
         streaminfoproc->fuserUpdate0 = 0;
-        
-		streaminfoproc->NBstream = NBsindex;
-		streaminfoproc->loopcnt++;
-		usleep(streaminfoproc->twaitus);		
+
+        streaminfoproc->NBstream = NBsindex;
+        streaminfoproc->loopcnt++;
+        usleep(streaminfoproc->twaitus);
     }
 
 

@@ -3,6 +3,7 @@
  * @file processtools.c
  * @brief Tools to manage processes
  * 
+ * 
  * Manages structure PROCESSINFO.
  * 
  * The PROCESSINFO structures allow fine-grained management of real-time loop processes.\n
@@ -89,13 +90,13 @@
   @endcode
  * 
  * 
- 
-  
-  
- // At loop code
-  
-  
-      if(data.processinfo==1)
+ * 
+ * ## At loop code
+ * 
+ * 
+ * @code
+ * 
+ * if(data.processinfo==1)
         processinfo->loopstat = 1;  // Notify processinfo that we are entering loop
     
    
@@ -116,7 +117,7 @@
                 loopOK = 0;
             }
         }
-    
+
     
     // LOOP CODE GOES HERE
     
@@ -153,7 +154,7 @@
     if((data.processinfo==1)&&(processinfo->loopstat != 4))
         processinfo_cleanExit(processinfo);
 
-
+ * @endcode
  * 
  * 
  * 
