@@ -1,5 +1,6 @@
 #include <wyrm>
 #include "processtools.h"
+#include "streamCTRL.h"
 
 class pyPROCESSINFO {
   PROCESSINFO *m_pinfo;
@@ -54,7 +55,8 @@ namespace py = pybind11;
 PYBIND11_MODULE(CacaoProcessTools, m) {
   m.doc() = "CacaoProcessTools library module";
 
-  m.def("ctrlScreen", &processinfo_CTRLscreen);
+  m.def("processCTRL", &processinfo_CTRLscreen);
+  m.def("streamCTRL", &streamCTRL_CTRLscreen);
 
   py::class_<timespec>(m, "timespec")
       .def(py::init<time_t, long>())

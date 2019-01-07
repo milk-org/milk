@@ -1403,17 +1403,17 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 	scantime_cpuset += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    char string0[200];
+    char string1[200];
+
     // read /proc/PID/status
 	for(int spindex = 0; spindex < pinfodisp->NBsubprocesses; spindex++)
     {
     	clock_gettime(CLOCK_REALTIME, &t1);
         PID = pinfodisp->subprocPIDarray[spindex];
-
-        char * line = NULL;
-        size_t len = 0;
-        ssize_t read;
-        char string0[200];
-        char string1[200];
 
 
 
@@ -1457,6 +1457,8 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         fclose(fp);
         if (line)
             free(line);
+        line = NULL;
+        
         clock_gettime(CLOCK_REALTIME, &t2);
         tdiff = info_time_diff(t1, t2);
         scantime_status += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;

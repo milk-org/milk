@@ -15,6 +15,7 @@
 #include <ncurses.h>
 #include <string.h>
 #include <time.h>
+#include "streamCTRL.h"
 
 static int wrow, wcol;
 int C_ERRNO=0;
@@ -49,6 +50,43 @@ int print_header(const char *str, char c) {
   attroff(A_BOLD);
 
   return (0);
+}
+
+void qs2l(double *array, long *array1, long left, long right)
+{
+    register long i,j;
+    double x,y;
+    long l1;
+
+    i = left;
+    j = right;
+    x = array[(left+right)/2];
+
+    do {
+        while(array[i]<x && i<right) i++;
+        while(x<array[j] && j>left) j--;
+
+        if(i<=j) {
+            y = array[i];
+            array[i] = array[j];
+            array[j] = y;
+
+            l1 = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
+
+            i++;
+            j--;
+        }
+    } while(i<=j);
+
+    if(left<j) qs2l(array,array1,left,j);
+    if(i<right) qs2l(array,array1,i,right);
+}
+
+void quick_sort2l(double *array, long *array1, long count)
+{
+    qs2l(array, array1, 0, count-1);
 }
 
 void qs2l_double(double *array, long *array1, long left, long right) {
@@ -157,6 +195,43 @@ int printERROR(const char *file, const char *func, int line, char *errmessage)
     C_ERRNO = 0;
 
     return(0);
+}
+
+long image_ID_from_images(IMAGE* images, const char *name) /* ID number corresponding to a name */
+{
+    long i;
+    struct timespec timenow;
+
+    i = 0;
+    do {
+        if(images[i].used == 1)
+        {
+            if((strncmp(name, images[i].name, strlen(name))==0) && (images[i].name[strlen(name)]=='\0'))
+            {
+                clock_gettime(CLOCK_REALTIME, &timenow);
+                images[i].md[0].last_access = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
+                return i;
+            }
+        }
+        i++;
+    } while(i != streamNBID_MAX);
+
+    return -1;
+}
+
+long image_get_first_ID_available_from_images(IMAGE* images)
+{
+    long i;
+    struct timespec timenow;
+
+    i = 0;
+    do {
+        if(images[i].used == 0)
+            return i;
+        i++;
+    } while(i != streamNBID_MAX);
+
+    return -1;
 }
 
 /* ===============================================================================================
