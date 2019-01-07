@@ -226,11 +226,14 @@ long image_get_first_ID_available_from_images(IMAGE* images)
 
     i = 0;
     do {
-        if(images[i].used == 0)
-            return i;
-        i++;
+      if(images[i].used == 0){
+        images[i].used = 1;
+        return i;
+      }
+      i++;
     } while(i != streamNBID_MAX);
-
+    printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
+    printf("NB_MAX_IMAGE should be increased above current value (%ld)\n", streamNBID_MAX);
     return -1;
 }
 
