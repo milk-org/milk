@@ -43,11 +43,16 @@ link_directories( ${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS} )
 # main
 add_library(CLIcore SHARED
 processtools.c
+streamCTRL.c
 ${CORE_FILES}
 )
 
 if(${PYTHON_STANDALONE})
+    set(USE_CUDA ON)
+    add_subdirectory(../ImageStreamIO ImageStreamIO)
     target_compile_definitions(CLIcore PRIVATE STANDALONE)
+    target_include_directories(CLIcore PUBLIC ${CUDA_INCLUDE_DIRS} ../ImageStreamIO)
+    target_link_libraries (CLIcore PUBLIC ImageStreamIO)
 else()
     target_include_directories(CLIcore PUBLIC
     ${PROJECT_SOURCE_DIR}/..
