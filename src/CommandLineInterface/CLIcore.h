@@ -335,4 +335,64 @@ int_fast8_t processinfo_CTRLscreen();
 
 int_fast8_t streamCTRL_CTRLscreen();
 
+
+
+
+
+
+
+// function can use this structure to expose parameters for external control or monitoring
+// the structure describes how user can interact with parameter, so it allows for control GUIs to connect to parameters
+
+#define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN   16
+#define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL     6
+
+#define FUNCTION_PARAMETER_TYPE_UNDEF         0
+#define FUNCTION_PARAMETER_TYPE_INT64         1
+#define FUNCTION_PARAMETER_TYPE_FLOAT64       2
+#define FUNCTION_PARAMETER_TYPE_PID           3
+#define FUNCTION_PARAMETER_TYPE_TIMESPEC      4
+#define FUNCTION_PARAMETER_TYPE_FILENAME      5
+#define FUNCTION_PARAMETER_TYPE_DIRNAME       6
+#define FUNCTION_PARAMETER_TYPE_STREAMNAME    7
+#define FUNCTION_PARAMETER_TYPE_STRING        8
+
+#define FUNCTION_PARAMETER_DESCR_STRMAXLEN   64
+#define FUNCTION_PARAMETER_STRMAXLEN         64
+
+#define FUNCTION_PARAMETER_MASK_WRITECONF     0    // can user change value at configuration time ?
+#define FUNCTION_PARAMETER_MASK_WRITERUN      2    // can user change value at run time ?
+#define FUNCTION_PARAMETER_MASK_LOG           4    // log on change
+#define FUNCTION_PARAMETER_MASK_SAVE          8    // save to disk on change
+#define FUNCTION_PARAMETER_MASK_MINLIMIT     16    // enforce min limit
+#define FUNCTION_PARAMETER_MASK_MAXLIMIT     32    // enforce max limit
+#define FUNCTION_PARAMETER_MASK_CHECKSTREAM  64    // check stream, read size and type
+
+
+typedef struct {
+
+	// Parameter name 
+	char keyword[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN][FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+	int keywordlevel; // number of levels in keyword
+	
+	char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+	
+	int type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
+	uint64_t flags;  // 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
+	
+	union
+	{
+		int64_t         l[3];  // value, min (inclusive), max (inclusive)
+		double          f[3];  // value, min, max
+		pid_t           pid;
+		struct timespec ts;
+		char            string[FUNCTION_PARAMETER_STRMAXLEN];
+	} val;
+	
+	uint32_t  streamID; // if type is stream and MASK_CHECKSTREAM
+
+} FUNCTION_PARAMETER;
+
+
+
 #endif
