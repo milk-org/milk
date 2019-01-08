@@ -11,10 +11,10 @@ class pyPROCESSINFO {
   pyPROCESSINFO(char *pname, int CTRLval) { create(pname, CTRLval); }
 
   ~pyPROCESSINFO() {
-    // if (m_pinfo != nullptr) {
-    //   processinfo_cleanExit(m_pinfo);
-    //   m_pinfo = nullptr;
-    // }
+    if (m_pinfo != nullptr) {
+      processinfo_cleanExit(m_pinfo);
+      m_pinfo = nullptr;
+    }
   }
 
   PROCESSINFO *operator->() { return m_pinfo; }

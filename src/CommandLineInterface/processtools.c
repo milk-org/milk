@@ -1409,6 +1409,47 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     char string0[200];
     char string1[200];
 
+	clock_gettime(CLOCK_REALTIME, &t1);
+    if(level == 0)
+    {
+        FILE *fpout;
+        char command[200];
+        char outstring[200];
+
+        pinfodisp->subprocPIDarray[0] = PID;
+        pinfodisp->NBsubprocesses = 1;
+
+        if(pinfodisp->threads > 1) // look for children
+        {
+			DIR *dp;
+			struct dirent *ep;
+			char dirname[200];
+			
+			sprintf(dirname, "/proc/%d/task/", PID);
+			dp = opendir (dirname);
+
+			if (dp != NULL)
+			{
+				while (ep = readdir (dp))
+					{
+						if(ep->d_name[0] != '.')
+						{
+                            int subPID = atoi(ep->d_name);
+                            if(subPID != PID){
+                                pinfodisp->subprocPIDarray[pinfodisp->NBsubprocesses] = atoi(ep->d_name);
+                                pinfodisp->NBsubprocesses++;
+                            }
+						}
+					}
+				(void) closedir (dp);
+			}
+        }   
+	}
+	clock_gettime(CLOCK_REALTIME, &t2);
+	tdiff = info_time_diff(t1, t2);
+	scantime_pstree += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+
+
     // read /proc/PID/status
 	for(int spindex = 0; spindex < pinfodisp->NBsubprocesses; spindex++)
     {
@@ -1638,46 +1679,6 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
     }
 
-    PID = pinfodisp->PID;
-
-	clock_gettime(CLOCK_REALTIME, &t1);
-    if(level == 0)
-    {
-        FILE *fpout;
-        char command[200];
-        char outstring[200];
-
-        pinfodisp->subprocPIDarray[0] = PID;
-        pinfodisp->NBsubprocesses = 1;
-
-        if(pinfodisp->threads > 1) // look for children
-        {
-			DIR *dp;
-			struct dirent *ep;
-			char dirname[200];
-			
-			sprintf(dirname, "/proc/%d/task/", PID);
-			dp = opendir (dirname);
-
-			if (dp != NULL)
-			{
-				while (ep = readdir (dp))
-					{
-						if(ep->d_name[0] != '.')
-						{
-							pinfodisp->subprocPIDarray[pinfodisp->NBsubprocesses] = atoi(ep->d_name);
-							pinfodisp->NBsubprocesses++;
-						}
-					}
-				(void) closedir (dp);
-			}
-        }   
-	}
-	clock_gettime(CLOCK_REALTIME, &t2);
-	tdiff = info_time_diff(t1, t2);
-	scantime_pstree += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
-
-
     return 0;
 
 }
@@ -1874,6 +1875,7 @@ void *processinfo_scan(void *thptr)
             struct stat file_stat;
 
 
+            pinfop->PIDarray[pindex] = pinfolist->PIDarray[pindex];
 
             // SHOULD WE (RE)LOAD ?
             if(pinfolist->active[pindex] == 0) // inactive
@@ -1881,13 +1883,8 @@ void *processinfo_scan(void *thptr)
 
             if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
             {
-                if(pinfolist->PIDarray[pindex] == pinfop->PIDarray[pindex] ) // don't reload if PID same as before
-                    pinfop->updatearray[pindex] = 0;
-                else
-                {
                     pinfop->updatearray[pindex] = 1;
-                    pinfop->PIDarray[pindex] = pinfolist->PIDarray[pindex];
-                }
+
             }
             //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
             //        updatearray[pindex] = 1;
@@ -1929,7 +1926,7 @@ void *processinfo_scan(void *thptr)
 
 
 
-            if((pinfop->updatearray[pindex] == 1)&&(pindex<pinfop->NBpinfodisp))
+            if((pindex<pinfop->NBpinfodisp)&&(pinfop->updatearray[pindex] == 1))
             {
                 // (RE)LOAD
                 struct stat file_stat;
@@ -2033,9 +2030,9 @@ void *processinfo_scan(void *thptr)
             {
                 if(pinfolist->active[pindex] != 0)
                 {
+                    int spindex; // sub process index, 0 for main
                     if(pinfop->psysinfostatus[pindex] != -1)
                     {
-                        int spindex; // sub process index, 0 for main
                         for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
                         {
                             // place info in subprocess arrays
@@ -2050,7 +2047,13 @@ void *processinfo_scan(void *thptr)
                             pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
 
                         }
-                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                    }
+                    pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                    if(pinfop->psysinfostatus[pindex] != -1)
+                    {
+                        char cpuliststring[200];
+                        char cpustring[16];
+                        
                         for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
                         {
                             if( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]) {
@@ -2059,35 +2062,33 @@ void *processinfo_scan(void *thptr)
                                 pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
                             }
                         }
+
+                        sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
+                        
+                        int cpu;
+                        for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+                        {
+                            int cpuOK = 0;
+                            int cpumin, cpumax;
+
+                            sprintf(cpustring, ",%lld,", pinfop->CPUids[cpu]);
+                            if(strstr(cpuliststring, cpustring) != NULL)
+                                cpuOK = 1;
+
+
+                            for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
+                                for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
+                                {
+                                    sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+                                    if(strstr(cpuliststring, cpustring) != NULL)
+                                        cpuOK = 1;
+                                }
+                            pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
+                        }
+
                     }
                     
                     
-                    char cpuliststring[200];
-                    char cpustring[16];
-                    
-                    sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
-                    
-                    int cpu;
-                    for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
-                    {
-                        int cpuOK = 0;
-                        int cpumin, cpumax;
-
-                        sprintf(cpustring, ",%lld,", pinfop->CPUids[cpu]);
-                        if(strstr(cpuliststring, cpustring) != NULL)
-                            cpuOK = 1;
-
-
-                        for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
-                            for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
-                            {
-                                sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-                                if(strstr(cpuliststring, cpustring) != NULL)
-                                    cpuOK = 1;
-                            }
-                        pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
-                    }
-
                 }
             }
 
@@ -2172,7 +2173,6 @@ int_fast8_t processinfo_CTRLscreen()
 
     int ToggleValue;
 
-
     processinfo_CatchSignals();
 
     setlocale(LC_ALL, "");
@@ -2202,21 +2202,6 @@ int_fast8_t processinfo_CTRLscreen()
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
-
-
-    // Start scan thread
-    procinfoproc.loop = 1;
-    procinfoproc.twaitus = 1000000; // 1 sec
-    pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
-
-
-
-    // wait for first scan to be completed
-    while( procinfoproc.loopcnt < 1 )
-        usleep(100);
-
-
-
     // INITIALIZE ncurses
     initncurses();
 
@@ -2229,8 +2214,24 @@ int_fast8_t processinfo_CTRLscreen()
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
     }
 
-    // Get number of cpus on system
-    // getconf _NPROCESSORS_ONLN
+    pindexActiveSelected = 0;
+
+    procinfoproc.DisplayMode = 3;
+    // display modes:
+    // 2: overview
+    // 3: CPU affinity
+
+    // Start scan thread
+    procinfoproc.loop = 1;
+    procinfoproc.twaitus = 1000000; // 1 sec
+    pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
+
+
+
+    // wait for first scan to be completed
+    while( procinfoproc.loopcnt < 1 )
+        usleep(10000);
+
 
 
 
@@ -2242,13 +2243,6 @@ int_fast8_t processinfo_CTRLscreen()
     int TimeSorted = 1;  // by default, sort processes by start time (most recent at top)
     int dispindexMax = 0;
 
-
-    pindexActiveSelected = 0;
-
-    procinfoproc.DisplayMode = 1;
-    // display modes:
-    // 1: overview
-    // 2: CPU affinity
 
     clear();
 
@@ -3335,12 +3329,12 @@ int_fast8_t processinfo_CTRLscreen()
                                 {
 									
                                     int spindex; // sub process index, 0 for main
-                                    for(spindex = 1; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
+                                    for(spindex = 0; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
                                     {
                                         int TID; // thread ID
 
 
-                                        if(spindex>1)
+                                        if(spindex>0)
                                         {
                                             TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
                                             printw("               |---%6d                        ", procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex]);                                           
