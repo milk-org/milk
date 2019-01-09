@@ -42,13 +42,28 @@ class pyPROCESSINFO {
     return EXIT_FAILURE;
   }
 
-  int writeMessage(char *message) {
+  int writeMessage(const char *message) {
     if (m_pinfo != nullptr) {
       return processinfo_WriteMessage(m_pinfo, message);
     }
     return EXIT_FAILURE;
   };
+
+  int exec_start() {
+    if ( (m_pinfo != nullptr) && (m_pinfo->MeasureTiming==1) ) {
+      return processinfo_exec_start(m_pinfo);
+    }
+    return EXIT_FAILURE;
+  };
+
+  int exec_end() {
+    if ( (m_pinfo != nullptr) && (m_pinfo->MeasureTiming==1) ) {
+      return processinfo_exec_end(m_pinfo);
+    }
+    return EXIT_FAILURE;
+  };
 };
+
 
 namespace py = pybind11;
 
@@ -69,6 +84,8 @@ PYBIND11_MODULE(CacaoProcessTools, m) {
       .def("create", &pyPROCESSINFO::create)
       .def("sigexit", &pyPROCESSINFO::sigexit)
       .def("writeMessage", &pyPROCESSINFO::writeMessage)
+      .def("exec_start", &pyPROCESSINFO::exec_start)
+      .def("exec_end", &pyPROCESSINFO::exec_end)
       .def_property("name",
                     [](pyPROCESSINFO &p) { return std::string(p->name); },
                     [](pyPROCESSINFO &p, std::string name) {

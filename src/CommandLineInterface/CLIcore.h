@@ -325,7 +325,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
 PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval);
 int processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
-int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring);
+int processinfo_WriteMessage(PROCESSINFO *processinfo, const char* msgstring);
 
 int processinfo_exec_start(PROCESSINFO *processinfo);
 int processinfo_exec_end(PROCESSINFO *processinfo);

@@ -220,126 +220,6 @@
 
 /* =============================================================================================== */
 /* =============================================================================================== */
-/*                                      DEFINES, MACROS                                            */
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-#define MAXNBSUBPROCESS 50
-#define MAXNBCPU 100
-
-typedef struct
-{
-	int           active;
-	pid_t         PID;
-	char          name[40];
-	long          updatecnt;
-
-	long          loopcnt;
-	int           loopstat;
-	
-	int           createtime_hr;
-	int           createtime_min;
-	int           createtime_sec;
-	long          createtime_ns;
-	
-	char          cpuset[16];       /**< cpuset name  */
-	char          cpusallowed[20];
-	int           cpuOKarray[MAXNBCPU];
-	int           threads;
-	
-	double        sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
-	double        sampletimearray_prev[MAXNBSUBPROCESS];
-	
-	long          ctxtsw_voluntary[MAXNBSUBPROCESS];
-	long          ctxtsw_nonvoluntary[MAXNBSUBPROCESS];
-	long          ctxtsw_voluntary_prev[MAXNBSUBPROCESS];
-	long          ctxtsw_nonvoluntary_prev[MAXNBSUBPROCESS];
-	
-	long long     cpuloadcntarray[MAXNBSUBPROCESS];
-	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
-	float         subprocCPUloadarray[MAXNBSUBPROCESS];
-	float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
-	
-	
-	long          VmRSSarray[MAXNBSUBPROCESS];
-	
-	int           processorarray[MAXNBSUBPROCESS];
-	int           rt_priority;
-	float         memload;
-	
-	
-	int           NBsubprocesses;
-	int           subprocPIDarray[MAXNBSUBPROCESS];
-	
-	char          statusmsg[200];
-	char          tmuxname[100];
-	
-} PROCESSINFODISP;
-
-
-
-
-
-typedef struct
-{
-	int loop;   // 1 : loop     0 : exit
-	long loopcnt;
-	
-	int twaitus; // sleep time between scans
-	double dtscan; // measured time interval between scans [s]
-		
-	PROCESSINFOLIST *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
-
-	long NBpinfodisp;
-	PROCESSINFODISP *pinfodisp;
-	
-	int DisplayMode;
-	
-	
-    //
-    // these arrays are indexed together
-    // the index is different from the displayed order
-    // new process takes first available free index
-    //
-    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
-    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-    pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
-    int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
-    int           fdarray[PROCESSINFOLISTSIZE];                  // file descriptors
-    long          loopcntarray[PROCESSINFOLISTSIZE];
-    long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
-    int           selectedarray[PROCESSINFOLISTSIZE];
-
-    int           sorted_pindex_time[PROCESSINFOLISTSIZE];
-		
-		
-	int NBcpus;
-	int NBcores;
-	
-	float CPUload[100];
-	long long CPUcnt0[100];
-	long long CPUcnt1[100];
-	long long CPUcnt2[100];
-	long long CPUcnt3[100];
-	long long CPUcnt4[100];
-	long long CPUcnt5[100];
-	long long CPUcnt6[100];
-	long long CPUcnt7[100];
-	long long CPUcnt8[100];
-	long long CPUids[100];
-	int CPUpcnt[100];	
-	
-	int NBpindexActive;
-	int pindexActive[PROCESSINFOLISTSIZE];
-	int psysinfostatus[PROCESSINFOLISTSIZE];
-	
-} PROCINFOPROC;
-
-
-
-
-/* =============================================================================================== */
-/* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -635,7 +515,7 @@ PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
 	
 
 	
-	char msgstring[200];
+	char msgstring[300];
 	sprintf(msgstring, "LOG START %s", pinfo->logfilename);
 	processinfo_WriteMessage(pinfo, msgstring);
 	
@@ -848,7 +728,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 
 
-int processinfo_WriteMessage(PROCESSINFO *processinfo, char* msgstring)
+int processinfo_WriteMessage(PROCESSINFO *processinfo, const char* msgstring)
 {
     struct timespec tnow;
     struct tm *tmnow;
@@ -1407,7 +1287,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     size_t len = 0;
     ssize_t read;
     char string0[200];
-    char string1[200];
+    char string1[300];
 
 	clock_gettime(CLOCK_REALTIME, &t1);
     if(level == 0)
@@ -1419,18 +1299,19 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         pinfodisp->subprocPIDarray[0] = PID;
         pinfodisp->NBsubprocesses = 1;
 
-        if(pinfodisp->threads > 1) // look for children
-        {
+        // if(pinfodisp->threads > 1) // look for children
+        // {
 			DIR *dp;
 			struct dirent *ep;
 			char dirname[200];
 			
+            // fprintf(stderr, "reading /proc/%d/task\n", PID);
 			sprintf(dirname, "/proc/%d/task/", PID);
-			dp = opendir (dirname);
+			dp = opendir(dirname);
 
 			if (dp != NULL)
 			{
-				while (ep = readdir (dp))
+				while (ep = readdir(dp))
 					{
 						if(ep->d_name[0] != '.')
 						{
@@ -1441,9 +1322,13 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
                             }
 						}
 					}
-				(void) closedir (dp);
-			}
+				closedir(dp);
+			} else {
+                return -1;
         }   
+        // }   
+        // fprintf(stderr, "%d threads found\n", pinfodisp->NBsubprocesses);
+        pinfodisp->threads = pinfodisp->NBsubprocesses;
 	}
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
@@ -1464,41 +1349,40 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
             return -1;
 
         while ((read = getline(&line, &len, fp)) != -1) {
-
-            sscanf(line, "%s %s", string0, string1);
+            if (sscanf(line, "%31[^:]: %s", string0, string1) == 2){
             if(spindex == 0 ) {
-                if(strcmp(string0, "Cpus_allowed_list:") == 0)
+                    if(strcmp(string0, "Cpus_allowed_list") == 0)
                 {
                     strcpy(pinfodisp->cpusallowed, string1);
                 }
                 
-                if(strcmp(string0, "Threads:") == 0)
+                    if(strcmp(string0, "Threads") == 0)
                 {
                     pinfodisp->threads = atoi(string1);
                 }
             }
 
-            if(strcmp(string0, "VmRSS:") == 0)
+                if(strcmp(string0, "VmRSS") == 0)
             {
                 pinfodisp->VmRSSarray[spindex] = atol(string1);
             }
             
-            if(strcmp(string0, "voluntary_ctxt_switches:") == 0)
+                if(strcmp(string0, "nonvoluntary_ctxt_switches") == 0)
+                {
+                    pinfodisp->ctxtsw_nonvoluntary[spindex] = atoi(string1);
+                }
+                if(strcmp(string0, "voluntary_ctxt_switches") == 0)
             {
                 pinfodisp->ctxtsw_voluntary[spindex] = atoi(string1);
             }
-
-            if(strcmp(string0, "nonvoluntary_ctxt_switches:") == 0)
-            {
-                pinfodisp->ctxtsw_nonvoluntary[spindex] = atoi(string1);
             }
-
         }
 
         fclose(fp);
         if (line)
             free(line);
         line = NULL;
+        len = 0;
         
         clock_gettime(CLOCK_REALTIME, &t2);
         tdiff = info_time_diff(t1, t2);
@@ -1969,7 +1853,6 @@ void *processinfo_scan(void *thptr)
 
                 pinfop->pinfodisp[pindex].active = pinfolist->active[pindex];
                 pinfop->pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
-                pinfop->pinfodisp[pindex].NBsubprocesses = 0;
 
                 pinfop->pinfodisp[pindex].updatecnt ++;
 
@@ -2142,7 +2025,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
 
-    char syscommand[200];
+    char syscommand[300];
     char pselected_FILE[200];
     char pselected_FUNCTION[200];
     int  pselected_LINE;
