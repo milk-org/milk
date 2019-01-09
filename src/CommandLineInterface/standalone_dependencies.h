@@ -42,10 +42,6 @@ void quick_sort2l_double(double *array, long *array1, long count);
 void quick_sort_long(long *array, long count);
 int printERROR(const char *file, const char *func, int line, char *errmessage);
 
-long image_ID_from_images(IMAGE* images, const char *name);
-
-long image_get_first_ID_available_from_images(IMAGE* images);
-
 #ifdef __cplusplus
 }
 #endif
