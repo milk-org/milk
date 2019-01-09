@@ -1,4 +1,5 @@
 #include <wyrm>
+#include "standalone_dependencies.h"
 #include "processtools.h"
 #include "streamCTRL.h"
 

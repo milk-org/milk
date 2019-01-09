@@ -166,6 +166,12 @@ void *streamCTRL_scan(void* thptr);
 
 int_fast8_t streamCTRL_CTRLscreen();
 
+
+long image_ID_from_images(IMAGE* images, const char *name);
+
+long image_get_first_ID_available_from_images(IMAGE* images);
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -50,8 +50,6 @@
 
 #include <pthread.h>
 
-#include "streamCTRL.h"
-
 #ifdef STANDALONE
 #include "standalone_dependencies.h"
 #else
@@ -61,6 +59,8 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "info/info.h"
 #endif
+
+#include "streamCTRL.h"
 
 
 
@@ -153,6 +153,46 @@ static int initncurses()
 
 
 
+
+long image_ID_from_images(IMAGE* images, const char *name) /* ID number corresponding to a name */
+{
+    long i;
+    struct timespec timenow;
+
+    i = 0;
+    do {
+        if(images[i].used == 1)
+        {
+            if((strncmp(name, images[i].name, strlen(name))==0) && (images[i].name[strlen(name)]=='\0'))
+            {
+                clock_gettime(CLOCK_REALTIME, &timenow);
+                images[i].md[0].last_access = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
+                return i;
+            }
+        }
+        i++;
+    } while(i != streamNBID_MAX);
+
+    return -1;
+}
+
+long image_get_first_ID_available_from_images(IMAGE* images)
+{
+    long i;
+    struct timespec timenow;
+
+    i = 0;
+    do {
+      if(images[i].used == 0){
+        images[i].used = 1;
+        return i;
+      }
+      i++;
+    } while(i != streamNBID_MAX);
+    printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
+    printf("NB_MAX_IMAGE should be increased above current value (%ld)\n", streamNBID_MAX);
+    return -1;
+}
 
 
 int get_process_name_by_pid(const int pid, char *pname)
