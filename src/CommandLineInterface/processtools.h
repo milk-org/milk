@@ -11,6 +11,12 @@
  *
  */
 
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                      DEFINES, MACROS                                            */
+/* =============================================================================================== */
+/* =============================================================================================== */
+
 #ifndef _PROCESSTOOLS_H
 #define _PROCESSTOOLS_H
 
@@ -28,6 +34,8 @@
 #define SHAREDMEMDIR "/tmp" /**< location of file mapped semaphores */
 #endif
 
+#define MAXNBSUBPROCESS 50
+#define MAXNBCPU 100
 // timing info for real-time loop processes
 #define PROCESSINFO_NBtimer 100
 
@@ -130,6 +138,115 @@ typedef struct {
 
 } PROCESSINFOLIST;
 
+typedef struct
+{
+	int           active;
+	pid_t         PID;
+	char          name[40];
+	long          updatecnt;
+
+	long          loopcnt;
+	int           loopstat;
+	
+	int           createtime_hr;
+	int           createtime_min;
+	int           createtime_sec;
+	long          createtime_ns;
+	
+	char          cpuset[16];       /**< cpuset name  */
+	char          cpusallowed[20];
+	int           cpuOKarray[MAXNBCPU];
+	int           threads;
+	
+	double        sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
+	double        sampletimearray_prev[MAXNBSUBPROCESS];
+	
+	long          ctxtsw_voluntary[MAXNBSUBPROCESS];
+	long          ctxtsw_nonvoluntary[MAXNBSUBPROCESS];
+	long          ctxtsw_voluntary_prev[MAXNBSUBPROCESS];
+	long          ctxtsw_nonvoluntary_prev[MAXNBSUBPROCESS];
+	
+	long long     cpuloadcntarray[MAXNBSUBPROCESS];
+	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray[MAXNBSUBPROCESS];
+	float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
+	
+	
+	long          VmRSSarray[MAXNBSUBPROCESS];
+	
+	int           processorarray[MAXNBSUBPROCESS];
+	int           rt_priority;
+	float         memload;
+	
+	
+	int           NBsubprocesses;
+	int           subprocPIDarray[MAXNBSUBPROCESS];
+	
+	char          statusmsg[200];
+	char          tmuxname[100];
+	
+} PROCESSINFODISP;
+
+
+
+
+
+typedef struct
+{
+	int loop;   // 1 : loop     0 : exit
+	long loopcnt;
+	
+	int twaitus; // sleep time between scans
+	double dtscan; // measured time interval between scans [s]
+		
+	PROCESSINFOLIST *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
+
+	long NBpinfodisp;
+	PROCESSINFODISP *pinfodisp;
+	
+	int DisplayMode;
+	
+	
+    //
+    // these arrays are indexed together
+    // the index is different from the displayed order
+    // new process takes first available free index
+    //
+    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
+    pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
+    int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
+    int           fdarray[PROCESSINFOLISTSIZE];                  // file descriptors
+    long          loopcntarray[PROCESSINFOLISTSIZE];
+    long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
+    int           selectedarray[PROCESSINFOLISTSIZE];
+
+    int           sorted_pindex_time[PROCESSINFOLISTSIZE];
+		
+		
+	int NBcpus;
+	int NBcores;
+	
+	float CPUload[100];
+	long long CPUcnt0[100];
+	long long CPUcnt1[100];
+	long long CPUcnt2[100];
+	long long CPUcnt3[100];
+	long long CPUcnt4[100];
+	long long CPUcnt5[100];
+	long long CPUcnt6[100];
+	long long CPUcnt7[100];
+	long long CPUcnt8[100];
+	long long CPUids[100];
+	int CPUpcnt[100];	
+	
+	int NBpindexActive;
+	int pindexActive[PROCESSINFOLISTSIZE];
+	int psysinfostatus[PROCESSINFOLISTSIZE];
+	
+} PROCINFOPROC;
+
+
 // ---------------------  -------------------------------
 
 typedef struct {
@@ -146,7 +263,9 @@ extern "C" {
 PROCESSINFO *processinfo_shm_create(char *pname, int CTRLval);
 int processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
-int processinfo_WriteMessage(PROCESSINFO *processinfo, char *msgstring);
+int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring);
+int processinfo_exec_start(PROCESSINFO *processinfo);
+int processinfo_exec_end(PROCESSINFO *processinfo);
 
 
 int_fast8_t processinfo_CTRLscreen();
