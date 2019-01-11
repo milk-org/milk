@@ -508,7 +508,10 @@ long processinfo_shm_list_create()
  * 
 */
 
-PROCESSINFO* processinfo_shm_create(char *pname, int CTRLval)
+PROCESSINFO* processinfo_shm_create(
+	char *pname, 
+	int CTRLval
+	)
 {
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
