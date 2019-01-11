@@ -563,6 +563,20 @@ int_fast8_t cfits_usleep_cli()
 }
 
 
+int_fast8_t functionparameter_CTRLscreen_cli()
+{
+    if((data.cmdargtoken[1].type == 3) || (data.cmdargtoken[1].type == 4) || (data.cmdargtoken[1].type == 5))
+    {
+        functionparameter_CTRLscreen(data.cmdargtoken[1].val.string);
+        return 0;
+    }
+    else
+    {
+		printf("Wrong args (%d)\n", data.cmdargtoken[1].type);
+	}
+        return 1;
+}
+
 
 
 
@@ -1612,6 +1626,14 @@ void main_init()
   strcpy(data.cmd[data.NBcmd].Ccall,"streamCTRL_CTRLscreen()");
   data.NBcmd++;
 
+  strcpy(data.cmd[data.NBcmd].key,"fparamCTRL");
+  strcpy(data.cmd[data.NBcmd].module,__FILE__);
+  data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen_cli;
+  strcpy(data.cmd[data.NBcmd].info,"function parameters control screen");
+  strcpy(data.cmd[data.NBcmd].syntax,"function parameter structure name");
+  strcpy(data.cmd[data.NBcmd].example,"fparamCTRL fpsname");
+  strcpy(data.cmd[data.NBcmd].Ccall,"int_fast8_t functionparameter_CTRLstreen(char *fpsname)");
+  data.NBcmd++;
 
   strcpy(data.cmd[data.NBcmd].key,"usleep");
   strcpy(data.cmd[data.NBcmd].module,__FILE__);
@@ -2470,5 +2492,9 @@ int CLI_checkarg_noerrmsg(int argnum, int argtype)
 	rval = CLI_checkarg0(argnum, argtype, 0);
 	return rval;
 }
+
+
+
+
 
 

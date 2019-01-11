@@ -345,40 +345,53 @@ int_fast8_t streamCTRL_CTRLscreen();
 // the structure describes how user can interact with parameter, so it allows for control GUIs to connect to parameters
 
 #define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN   16
-#define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL     6
+#define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL    20
 
-#define FUNCTION_PARAMETER_TYPE_UNDEF         0
-#define FUNCTION_PARAMETER_TYPE_INT64         1
-#define FUNCTION_PARAMETER_TYPE_FLOAT64       2
-#define FUNCTION_PARAMETER_TYPE_PID           3
-#define FUNCTION_PARAMETER_TYPE_TIMESPEC      4
-#define FUNCTION_PARAMETER_TYPE_FILENAME      5
-#define FUNCTION_PARAMETER_TYPE_DIRNAME       6
-#define FUNCTION_PARAMETER_TYPE_STREAMNAME    7
-#define FUNCTION_PARAMETER_TYPE_STRING        8
+// Note that notation allows parameter to have more than one type
+// ... to be used with caution: most of the time, use type exclusively
+#define FUNCTION_PARAMETER_TYPE_UNDEF         0x0001
+#define FUNCTION_PARAMETER_TYPE_INT64         0x0002
+#define FUNCTION_PARAMETER_TYPE_FLOAT64       0x0004
+#define FUNCTION_PARAMETER_TYPE_PID           0x0008
+#define FUNCTION_PARAMETER_TYPE_TIMESPEC      0x0010
+#define FUNCTION_PARAMETER_TYPE_FILENAME      0x0020
+#define FUNCTION_PARAMETER_TYPE_DIRNAME       0x0040
+#define FUNCTION_PARAMETER_TYPE_STREAMNAME    0x0080
+#define FUNCTION_PARAMETER_TYPE_STRING        0x0100
 
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN   64
 #define FUNCTION_PARAMETER_STRMAXLEN         64
 
-#define FUNCTION_PARAMETER_MASK_WRITECONF     0    // can user change value at configuration time ?
-#define FUNCTION_PARAMETER_MASK_WRITERUN      2    // can user change value at run time ?
-#define FUNCTION_PARAMETER_MASK_LOG           4    // log on change
-#define FUNCTION_PARAMETER_MASK_SAVE          8    // save to disk on change
-#define FUNCTION_PARAMETER_MASK_MINLIMIT     16    // enforce min limit
-#define FUNCTION_PARAMETER_MASK_MAXLIMIT     32    // enforce max limit
-#define FUNCTION_PARAMETER_MASK_CHECKSTREAM  64    // check stream, read size and type
+// status flags
+#define FUNCTION_PARAMETER_STATUS_ACTIVE        0x0001    // is this entry used ?
+#define FUNCTION_PARAMETER_STATUS_VISIBLE       0x0002    // is this entry visible (=displayed) ?
+#define FUNCTION_PARAMETER_STATUS_WRITECONF     0x0004    // can user change value at configuration time ?
+#define FUNCTION_PARAMETER_STATUS_WRITERUN      0x0008    // can user change value at run time ?
+#define FUNCTION_PARAMETER_STATUS_LOG           0x0010    // log on change
+#define FUNCTION_PARAMETER_STATUS_SAVEONCHANGE  0x0020    // save to disk on change
+#define FUNCTION_PARAMETER_STATUS_SAVEONCLOSE   0x0040    // save to disk on close
+#define FUNCTION_PARAMETER_STATUS_MINLIMIT      0x0080    // enforce min limit
+#define FUNCTION_PARAMETER_STATUS_MAXLIMIT      0x0100    // enforce max limit
+#define FUNCTION_PARAMETER_STATUS_CHECKSTREAM   0x0200    // check stream, read size and type
+#define FUNCTION_PARAMETER_STATUS_IMPORTED      0x0400    // is this entry imported from another parameter ?
+
+#define FUNCTION_PARAMETER_NBPARAM_DEFAULT    100       // size of dynamically allocated array of parameters
 
 
 typedef struct {
+	uint64_t status;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
 
-	// Parameter name 
-	char keyword[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN][FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+	// Parameter name
+	char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+	char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
 	int keywordlevel; // number of levels in keyword
+	
+	// if this parameter value imported from another parameter, source is:
+	char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
 	
 	char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 	
 	int type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
-	uint64_t flags;  // 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
 	
 	union
 	{
@@ -390,9 +403,50 @@ typedef struct {
 	} val;
 	
 	uint32_t  streamID; // if type is stream and MASK_CHECKSTREAM
+	
+	long cnt0; // increments when changed
 
 } FUNCTION_PARAMETER;
 
 
+
+
+
+
+
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CONF       0x0001   // has configuration been done ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_RUN        0x0002   // is process running ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP    0x0004   // is process loop running ?
+
+// metadata
+typedef struct {
+	char                name[100];
+	pid_t               confpid;      // PID of process owning parameter structure configuration
+	pid_t               runpid;       // PID of process running on this fps
+	uint32_t            pstatus;      // process status
+	int                 NBparam;      // size of parameter array (= max number of parameter supported)		
+} FUNCTION_PARAMETER_STRUCT_MD;
+
+typedef struct {
+	FUNCTION_PARAMETER_STRUCT_MD *md;
+	FUNCTION_PARAMETER           *parray;   // array of function parameters
+} FUNCTION_PARAMETER_STRUCT;
+
+
+
+
+
+
+
+int function_parameter_struct_create(int NBparam, char *name);
+long function_parameter_struct_connect(char *name, FUNCTION_PARAMETER_STRUCT *fps);
+int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct, int NBparam);
+
+
+int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
+int function_parameter_add_entry(FUNCTION_PARAMETER *funcparamarray, char *keywordstring, char *descriptionstring, uint64_t type, int NBparam, void *dataptr);
+
+
+int_fast8_t functionparameter_CTRLscreen(char *fpsname);
 
 #endif
