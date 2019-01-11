@@ -1,5 +1,7 @@
 #include <wyrm>
+#include "standalone_dependencies.h"
 #include "processtools.h"
+#include "streamCTRL.h"
 
 class pyPROCESSINFO {
   PROCESSINFO *m_pinfo;
@@ -10,10 +12,10 @@ class pyPROCESSINFO {
   pyPROCESSINFO(char *pname, int CTRLval) { create(pname, CTRLval); }
 
   ~pyPROCESSINFO() {
-    // if (m_pinfo != nullptr) {
-    //   processinfo_cleanExit(m_pinfo);
-    //   m_pinfo = nullptr;
-    // }
+    if (m_pinfo != nullptr) {
+      processinfo_cleanExit(m_pinfo);
+      m_pinfo = nullptr;
+    }
   }
 
   PROCESSINFO *operator->() { return m_pinfo; }
@@ -41,20 +43,36 @@ class pyPROCESSINFO {
     return EXIT_FAILURE;
   }
 
-  int writeMessage(char *message) {
+  int writeMessage(const char *message) {
     if (m_pinfo != nullptr) {
       return processinfo_WriteMessage(m_pinfo, message);
     }
     return EXIT_FAILURE;
   };
+
+  int exec_start() {
+    if ( (m_pinfo != nullptr) && (m_pinfo->MeasureTiming==1) ) {
+      return processinfo_exec_start(m_pinfo);
+    }
+    return EXIT_FAILURE;
+  };
+
+  int exec_end() {
+    if ( (m_pinfo != nullptr) && (m_pinfo->MeasureTiming==1) ) {
+      return processinfo_exec_end(m_pinfo);
+    }
+    return EXIT_FAILURE;
+  };
 };
+
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(CacaoProcessTools, m) {
   m.doc() = "CacaoProcessTools library module";
 
-  m.def("ctrlScreen", &processinfo_CTRLscreen);
+  m.def("processCTRL", &processinfo_CTRLscreen);
+  m.def("streamCTRL", &streamCTRL_CTRLscreen);
 
   py::class_<timespec>(m, "timespec")
       .def(py::init<time_t, long>())
@@ -67,6 +85,8 @@ PYBIND11_MODULE(CacaoProcessTools, m) {
       .def("create", &pyPROCESSINFO::create)
       .def("sigexit", &pyPROCESSINFO::sigexit)
       .def("writeMessage", &pyPROCESSINFO::writeMessage)
+      .def("exec_start", &pyPROCESSINFO::exec_start)
+      .def("exec_end", &pyPROCESSINFO::exec_end)
       .def_property("name",
                     [](pyPROCESSINFO &p) { return std::string(p->name); },
                     [](pyPROCESSINFO &p, std::string name) {

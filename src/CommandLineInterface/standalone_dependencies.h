@@ -28,6 +28,7 @@
 
 #include <time.h>
 #include <errno.h>
+#include "ImageStreamIO.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +37,7 @@ extern int C_ERRNO;			// C errno (from errno.h)
 
 struct timespec info_time_diff(struct timespec start, struct timespec end);
 int print_header(const char *str, char c);
+void quick_sort2l(double *array, long *array1, long count);
 void quick_sort2l_double(double *array, long *array1, long count);
 void quick_sort_long(long *array, long count);
 int printERROR(const char *file, const char *func, int line, char *errmessage);

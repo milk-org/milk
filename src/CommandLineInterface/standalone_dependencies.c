@@ -15,6 +15,7 @@
 #include <ncurses.h>
 #include <string.h>
 #include <time.h>
+#include "streamCTRL.h"
 
 static int wrow, wcol;
 int C_ERRNO=0;
@@ -49,6 +50,43 @@ int print_header(const char *str, char c) {
   attroff(A_BOLD);
 
   return (0);
+}
+
+void qs2l(double *array, long *array1, long left, long right)
+{
+    register long i,j;
+    double x,y;
+    long l1;
+
+    i = left;
+    j = right;
+    x = array[(left+right)/2];
+
+    do {
+        while(array[i]<x && i<right) i++;
+        while(x<array[j] && j>left) j--;
+
+        if(i<=j) {
+            y = array[i];
+            array[i] = array[j];
+            array[j] = y;
+
+            l1 = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
+
+            i++;
+            j--;
+        }
+    } while(i<=j);
+
+    if(left<j) qs2l(array,array1,left,j);
+    if(i<right) qs2l(array,array1,i,right);
+}
+
+void quick_sort2l(double *array, long *array1, long count)
+{
+    qs2l(array, array1, 0, count-1);
 }
 
 void qs2l_double(double *array, long *array1, long left, long right) {
