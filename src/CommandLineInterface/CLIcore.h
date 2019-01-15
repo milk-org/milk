@@ -418,9 +418,15 @@ typedef struct {
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUN        0x0002   // is process running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP    0x0004   // is process loop running ?
 
+#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN    0x0001   // keep running configuration process
+
 // metadata
 typedef struct {
 	char                name[100];
+	
+	uint64_t            signal;       // Used to send signals to configuration process
+	uint64_t            confwaitus;   // configuration wait timer value [us]
+	
 	pid_t               confpid;      // PID of process owning parameter structure configuration
 	pid_t               runpid;       // PID of process running on this fps
 	uint32_t            pstatus;      // process status

@@ -1336,7 +1336,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
                         if(linecharcnt < wcol)
                         {
-                            if(getpgid(pid) >= 0)
+                            if(getpgid(pid) >= 0) // check if pid active
                             {
                                 attron(COLOR_PAIR(2));
                                 printw(string);

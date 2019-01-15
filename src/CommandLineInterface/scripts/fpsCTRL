@@ -2,7 +2,7 @@
 
 
 # number of arguments to script
-NBARGS=0
+NBARGS=1
 
 # ======================= PROCESS NAME =================================
 pname=`echo "$0" | sed "s/\.\///g"`
@@ -11,12 +11,12 @@ echo "pname = $pname"
 
 function printHELP {
 echo "------------------------------------------------------------------------"
-echo "$(tput bold) $pname : loop processes control  $(tput sgr0)"
+echo "$(tput bold) $pname : function parameters control  $(tput sgr0)"
 echo "------------------------------------------------------------------------"
-echo "  Monitors and controls loop processes"
+echo "  Monitors and controls function parameters"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-h]"
+echo "     $0 [-h] <stringfilter>"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -24,7 +24,7 @@ echo "------------------------------------------------------------------------"
 
 printHELP1 ()
 {
-	printf "%20s       Monitor and control loop processes\n" "$0" 
+	printf "%20s       Monitor and control function parameters\n" "$0" 
 }
 
 
@@ -87,7 +87,7 @@ fi
 
 
 
-SF="procctrlstartup"
-echo "procCTRL" > $SF
+SF="fpsctrlstartup"
+echo "fparamCTRL $1" > $SF
 echo "exitCLI" >> $SF
-milk -n procCTRL -f procctrlfifo -s $SF
+milk -n procCTRL -f fpsctrlfifo -s $SF

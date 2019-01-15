@@ -69,7 +69,7 @@
 
 #define NB_FPS_MAX 100
 
-
+#define MAXNBLEVELS 20
 
 
 /* =============================================================================================== */
@@ -186,11 +186,17 @@ int function_parameter_struct_create(
     
     sprintf(funcparamstruct.md->name, name);
 
+    funcparamstruct.md->signal = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
+	funcparamstruct.md->confwaitus = (uint64_t) 1000; // 1 kHz default
+
 	munmap(funcparamstruct.md, sharedsize);
     
 
     return 0;
 }
+
+
+
 
 
 
@@ -256,78 +262,78 @@ int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstr
 
 
 int function_parameter_printlist(
-	FUNCTION_PARAMETER  *funcparamarray,
-	int NBparam
-	)
+    FUNCTION_PARAMETER  *funcparamarray,
+    int NBparam
+)
 {
-	int pindex = 0;
-	int pcnt = 0;
-	
-	printf("\n");
-	for(pindex=0; pindex<NBparam; pindex++)
-	{
-		if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_ACTIVE)
-		{
-			int kl;
-			
-			printf("Parameter %4d : %s\n", pindex, funcparamarray[pindex].keywordfull);
-			/*for(kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
-				printf("  %s", funcparamarray[pindex].keyword[kl]);
-			printf("\n");*/
-			printf("    %s\n", funcparamarray[pindex].description);
-			
-			// STATUS FLAGS
-			printf("    STATUS FLAGS (0x%02hhx) :", (int) funcparamarray[pindex].status);
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_VISIBLE)
-				printf(" VISIBLE");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_WRITECONF)
-				printf(" WRITECONF");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_WRITERUN)
-				printf(" WRITERUN");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_LOG)
-				printf(" LOG");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_SAVEONCHANGE)
-				printf(" SAVEONCHANGE");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_SAVEONCLOSE)
-				printf(" SAVEONCLOSE");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_MINLIMIT)
-				printf(" MINLIMIT");
-			if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_MAXLIMIT)
-				printf(" MAXLIMIT");
-			printf("\n");
-			
-			// DATA TYPE
-//			printf("    TYPE : 0x%02hhx\n", (int) funcparamarray[pindex].type);
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_UNDEF)
-				printf("    TYPE = UNDEF\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_INT64)
-			{
-				printf("    TYPE  = INT64\n");
-				printf("    VALUE = %ld\n", (long) funcparamarray[pindex].val.l[0]);
-			}
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_FLOAT64)
-				printf("    TYPE = FLOAT64\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_PID)
-				printf("    TYPE = PID\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_TIMESPEC)
-				printf("    TYPE = TIMESPEC\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_FILENAME)
-				printf("    TYPE = FILENAME\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_DIRNAME)
-				printf("    TYPE = DIRNAME\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_STREAMNAME)
-				printf("    TYPE = STREAMNAME\n");
-			if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_STRING)
-				printf("    TYPE = STRING\n");
-			
-			pcnt ++;
-		}
-	}
-	printf("\n");
-	printf("%d parameters\n", pcnt);
-	printf("\n");
-	
-	return 0;
+    int pindex = 0;
+    int pcnt = 0;
+
+    printf("\n");
+    for(pindex=0; pindex<NBparam; pindex++)
+    {
+        if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_ACTIVE)
+        {
+            int kl;
+
+            printf("Parameter %4d : %s\n", pindex, funcparamarray[pindex].keywordfull);
+            /*for(kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
+            	printf("  %s", funcparamarray[pindex].keyword[kl]);
+            printf("\n");*/
+            printf("    %s\n", funcparamarray[pindex].description);
+
+            // STATUS FLAGS
+            printf("    STATUS FLAGS (0x%02hhx) :", (int) funcparamarray[pindex].status);
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_VISIBLE)
+                printf(" VISIBLE");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_WRITECONF)
+                printf(" WRITECONF");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_WRITERUN)
+                printf(" WRITERUN");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_LOG)
+                printf(" LOG");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_SAVEONCHANGE)
+                printf(" SAVEONCHANGE");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_SAVEONCLOSE)
+                printf(" SAVEONCLOSE");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_MINLIMIT)
+                printf(" MINLIMIT");
+            if(funcparamarray[pindex].status & FUNCTION_PARAMETER_STATUS_MAXLIMIT)
+                printf(" MAXLIMIT");
+            printf("\n");
+
+            // DATA TYPE
+            //			printf("    TYPE : 0x%02hhx\n", (int) funcparamarray[pindex].type);
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_UNDEF)
+                printf("    TYPE = UNDEF\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_INT64)
+            {
+                printf("    TYPE  = INT64\n");
+                printf("    VALUE = %ld\n", (long) funcparamarray[pindex].val.l[0]);
+            }
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_FLOAT64)
+                printf("    TYPE = FLOAT64\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_PID)
+                printf("    TYPE = PID\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_TIMESPEC)
+                printf("    TYPE = TIMESPEC\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_FILENAME)
+                printf("    TYPE = FILENAME\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_DIRNAME)
+                printf("    TYPE = DIRNAME\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_STREAMNAME)
+                printf("    TYPE = STREAMNAME\n");
+            if(funcparamarray[pindex].type & FUNCTION_PARAMETER_TYPE_STRING)
+                printf("    TYPE = STRING\n");
+
+            pcnt ++;
+        }
+    }
+    printf("\n");
+    printf("%d parameters\n", pcnt);
+    printf("\n");
+
+    return 0;
 }
 
 
@@ -338,7 +344,7 @@ int function_parameter_printlist(
  * Add parameter to database with default settings
  *
  * If entry already exists, do not modify it
- * 
+ *
  */
 
 int function_parameter_add_entry(
@@ -410,14 +416,105 @@ int function_parameter_add_entry(
     // type
     funcparamarray[pindex].type = type;
 
-    // Read value
-    if(funcparamarray[pindex].type == FUNCTION_PARAMETER_TYPE_INT64)
-    {
-        int64_t *valueptr_INT64;
-        valueptr_INT64 = (int64_t *) valueptr;
-        funcparamarray[pindex].val.l[0] = *valueptr_INT64;
+
+
+    // Allocate value
+    funcparamarray[pindex].cnt0 = 0; // not allocated
+
+    // Default values
+    switch (funcparamarray[pindex].type) {
+    case FUNCTION_PARAMETER_TYPE_INT64 :
+        funcparamarray[pindex].val.l[0] = 0;
+        break;
+    case FUNCTION_PARAMETER_TYPE_FLOAT64 :
+        funcparamarray[pindex].val.f[0] = 0.0;
+        break;
+    case FUNCTION_PARAMETER_TYPE_PID :
+        funcparamarray[pindex].val.pid = 0;
+        break;
+    case FUNCTION_PARAMETER_TYPE_TIMESPEC :
+        funcparamarray[pindex].val.ts.tv_sec = 0;
+        funcparamarray[pindex].val.ts.tv_nsec = 0;
+        break;
+    case FUNCTION_PARAMETER_TYPE_FILENAME :
+        sprintf(funcparamarray[pindex].val.string, "NULL");
+        break;
+    case FUNCTION_PARAMETER_TYPE_DIRNAME :
+        sprintf(funcparamarray[pindex].val.string, "NULL");
+        break;
+    case FUNCTION_PARAMETER_TYPE_STREAMNAME :
+        sprintf(funcparamarray[pindex].val.string, "NULL");
+        break;
+    case FUNCTION_PARAMETER_TYPE_STRING :
+        sprintf(funcparamarray[pindex].val.string, "NULL");
+        break;
     }
 
+    if(valueptr == NULL)
+    {
+        // attempt to read value for filesystem
+        char fname[200];
+        FILE *fp;
+
+        sprintf(fname, "FPCONF/%s", funcparamarray[pindex].keywordfull);
+        if ( (fp = fopen(fname, "r")) != NULL)
+        {
+            switch (funcparamarray[pindex].type) {
+            case FUNCTION_PARAMETER_TYPE_INT64 :
+                if ( fscanf(fp, "%ld", &funcparamarray[pindex].val.l[0]) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_FLOAT64 :
+                if ( fscanf(fp, "%lf", &funcparamarray[pindex].val.f[0]) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_PID :
+                if ( fscanf(fp, "%d", &funcparamarray[pindex].val.pid) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_TIMESPEC :
+                if ( fscanf(fp, "%ld %ld", &funcparamarray[pindex].val.ts.tv_sec, &funcparamarray[pindex].val.ts.tv_nsec) == 2)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_FILENAME :
+                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_DIRNAME :
+                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_STREAMNAME :
+                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            case FUNCTION_PARAMETER_TYPE_STRING :
+                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string) == 1)
+                    funcparamarray[pindex].cnt0++;
+                break;
+            }
+            fclose(fp);
+        }
+    }
+    else
+    {
+        int64_t *valueptr_INT64;
+        double *valueptr_FLOAT64;
+
+        switch (funcparamarray[pindex].type) {
+        case FUNCTION_PARAMETER_TYPE_INT64 :
+            valueptr_INT64 = (int64_t *) valueptr;
+            funcparamarray[pindex].val.l[0] = *valueptr_INT64;
+            funcparamarray[pindex].cnt0++;
+            break;
+        case FUNCTION_PARAMETER_TYPE_FLOAT64 :
+            valueptr_FLOAT64 = (double *) valueptr;
+            funcparamarray[pindex].val.f[0] = *valueptr_FLOAT64;
+            funcparamarray[pindex].cnt0++;
+            break;
+        }
+
+    }
     return pindex;
 }
 
@@ -448,11 +545,11 @@ static int initncurses()
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
 
-    nonl();
+   // nonl();
 
 
     init_color(COLOR_GREEN, 700, 1000, 700);
-    init_color(COLOR_YELLOW, 1000, 1000, 700);
+    //init_color(COLOR_YELLOW, 1000, 1000, 1000);
 
     start_color();
 
@@ -463,7 +560,8 @@ static int initncurses()
     init_pair(2, COLOR_BLACK, COLOR_GREEN);
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
     init_pair(4, COLOR_WHITE, COLOR_RED);
-    init_pair(5, COLOR_WHITE, COLOR_BLUE);
+    init_pair(5, COLOR_WHITE, COLOR_BLUE); // DIRECTORY
+	init_pair(10, COLOR_BLACK, COLOR_CYAN);
 
     init_pair(6, COLOR_GREEN, COLOR_BLACK);
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
@@ -471,9 +569,88 @@ static int initncurses()
     init_pair(9, COLOR_BLACK, COLOR_RED);
 
 
+
     return 0;
 }
 
+
+
+
+
+
+int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry)
+{
+	int inputOK;
+	int strlenmax = 20;
+	char buff[100];
+	
+	printf("name : %s\n", fpsentry->md->name);
+	
+	
+	/*
+    int selected = 0;
+    long i;
+    char *p;
+
+    printf("%d entries in list:\n", NBelem);
+    fflush(stdout);
+    for(i=0; i<NBelem; i++)
+    {
+        printf("   %3ld   : %16s   %s\n", i, StringList[i].name, StringList[i].description);
+        fflush(stdout);
+    }
+
+*/
+    inputOK = 0;
+	fflush(stdout);
+    
+    while(inputOK == 0)
+    {
+        printf ("\nEnter value: ");
+        fflush(stdout);
+
+        int stringindex = 0;
+        char c;
+        while( ((c = getchar()) != 10) && ((c = getchar()) != 13) && (stringindex<strlenmax-1) )
+        {
+            buff[stringindex] = c;
+            if(c == 127) // delete key
+            {
+                putchar (0x8);
+                putchar (' ');
+                putchar (0x8);
+                stringindex --;
+            }
+            else
+            {
+                putchar(c);  // echo on screen
+                //printf("[%d]", (int) c);
+                stringindex++;
+            }
+            if(stringindex<0)
+                stringindex = 0;
+        }
+        buff[stringindex] = '\0';
+        printf("VALUE ENTERED\n");
+
+	
+/*
+        selected = strtol(buff, &p, strlenmax);
+
+        if((selected<0)||(selected>NBelem-1))
+        {
+            printf("\nError: number not valid. Must be >= 0 and < %d\n", NBelem);
+            inputOK = 0;
+        }
+        else*/
+            inputOK = 1;
+    }
+
+    printf("Entered : %s\n", buff);
+	sleep(5);
+
+    return 0;
+}
 
 
 
@@ -518,9 +695,9 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
     long long loopcnt = 0;
 
 
-	int nodechain[100];
+	int nodechain[MAXNBLEVELS];
 
-    int iSelected = 0;
+    int iSelected[MAXNBLEVELS];
 
     //    NBparam = function_parameter_struct_connect(fpsname, &fps[fpsindex]);
 
@@ -721,7 +898,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
     NBfps = fpsindex;
     NBpindex = pindex;
-    NBkwn = kwnindex;
+    
 
     // print keywords
     printf("Found %d keyword node(s)\n", NBkwn);
@@ -781,39 +958,57 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             break;
 
         case KEY_UP:
-            iSelected --;
-            if(iSelected<0)
-                iSelected = 0;
+            iSelected[currentlevel] --;
+            if(iSelected[currentlevel]<0)
+                iSelected[currentlevel] = 0;
             break;
 
         case KEY_DOWN:
-            iSelected ++;
-            if(iSelected > NBindex-1)
-                iSelected = NBindex-1;
+            iSelected[currentlevel] ++;
+            if(iSelected[currentlevel] > NBindex-1)
+                iSelected[currentlevel] = NBindex-1;
             break;
 
         case KEY_PPAGE:
-            iSelected -= 10;
-            if(iSelected<0)
-                iSelected = 0;
+            iSelected[currentlevel] -= 10;
+            if(iSelected[currentlevel]<0)
+                iSelected[currentlevel] = 0;
             break;
 
         case KEY_NPAGE:
-            iSelected += 10;
-            if(iSelected > NBindex-1)
-                iSelected = NBindex-1;
+            iSelected[currentlevel] += 10;
+            if(iSelected[currentlevel] > NBindex-1)
+                iSelected[currentlevel] = NBindex-1;
             break;
 
 
         case KEY_RIGHT:
-            if(keywnode[keywnode[currentnode].child[iSelected]].leaf == 0)
-                currentnode = keywnode[currentnode].child[iSelected];
+            if(keywnode[keywnode[currentnode].child[iSelected[currentlevel]]].leaf == 0)
+            {
+				//iSelected = 0;
+                currentnode = keywnode[currentnode].child[iSelected[currentlevel]];
+            }
             break;
 
         case KEY_LEFT:
             if(currentnode != 0) // ROOT has no parent
                 currentnode = keywnode[currentnode].parent_index;
             break;
+
+
+		case 's': // set value (if allowed)
+			endwin();
+                if(system("clear") != 0) // clear screen
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+				functionparameter_UserInputSetParamValue(&fps[keywnode[iSelected[currentlevel]].fpsindex]);
+                initncurses();
+			break;
+		
+
+        case 'K': // kill conf process
+			fps[keywnode[iSelected[currentlevel]].fpsindex].md->signal = 0;
+            break;
+
         }
 
         erase();
@@ -824,7 +1019,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         attroff(A_BOLD);
         printw("\n");
 
-        printw("Selected = %d/%d   Current node [%3d]: ", iSelected, NBindex, currentnode);
+        printw("currentlevel = %d   Selected = %d/%d   Current node [%3d]: ", currentlevel, iSelected[currentlevel], NBindex, currentnode);
         if(currentnode==0)
         {
             printw("ROOT");
@@ -853,7 +1048,6 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         
         pcnt = 0;
 
-imax = 20;
 
 
         for(i=0; i<imax; i++)
@@ -861,24 +1055,43 @@ imax = 20;
 			
 			for(l=0;l<currentlevel;l++)
 			{
+				if(keywnode[nodechain[l]].NBchild > imax)
+					imax = keywnode[nodechain[l]].NBchild;
+					
 				if(i<keywnode[nodechain[l]].NBchild)
 				{
 					int snode = 0; // selected node
-					
+					int ii;
 					
 					if(keywnode[nodechain[l]].child[i] == nodechain[l+1])
 						snode = 1;
+						
+					attron(A_REVERSE);
+					printw(" ");
+					attroff(A_REVERSE);		
 
 					if(snode == 1)
 						attron(A_REVERSE);
-										
-					printw("%-10s ", keywnode[keywnode[nodechain[l]].child[i]].keyword[l]);
-				
+					
+					
+					ii = keywnode[nodechain[l]].child[i];
+					
+					if(keywnode[ii].leaf == 0) // directory
+						attron(COLOR_PAIR(5));
+					
+					printw("%-8s ", keywnode[keywnode[nodechain[l]].child[i]].keyword[l]);
+					
+					if(keywnode[ii].leaf == 0) // directory
+						attroff(COLOR_PAIR(5));
+					
 					if(snode == 1)
 						attroff(A_REVERSE);					
+
+
+
 				}
 				else
-					printw("           ");
+					printw("          ");
 			}
 
 			
@@ -890,19 +1103,29 @@ imax = 20;
 
                 ii = keywnode[currentnode].child[i];
 
+					attron(A_REVERSE);
+					printw(" ");
+					attroff(A_REVERSE);	
 
-                if(i == iSelected)
-                {
+
+                
+	
+					
+                if(keywnode[ii].leaf == 0) // Directory
+                { 	
+				if(i == iSelected[currentlevel])
                     attron(A_REVERSE);
-                }
 
-
-                if(keywnode[ii].leaf == 0)
-                {
+					attron(COLOR_PAIR(5));
                     l = keywnode[ii].keywordlevel;
-                    printw("%s ->", keywnode[ii].keyword[l-1]);
+                    printw("%s", keywnode[ii].keyword[l-1]);
+                    attroff(COLOR_PAIR(5));
+                    
+                    if(i == iSelected[currentlevel])
+						attroff(A_REVERSE);
+                    
                 }
-                else
+                else // parameter
                 {
                     fpsindex = keywnode[ii].fpsindex;
                     pindex = keywnode[ii].pindex;
@@ -911,17 +1134,47 @@ imax = 20;
                     if(fps[fpsindex].parray[pindex].status & FUNCTION_PARAMETER_STATUS_ACTIVE)
                     {
                         int kl;
-
-
-
-                        printw("%-20s", fps[fpsindex].parray[pindex].keywordfull);
-
-
-
-
-                        // DATA TYPE
-
-
+                        
+                         if(i == iSelected[currentlevel])
+                         {
+							attron(COLOR_PAIR(10)|A_BOLD);
+						}
+						
+						
+						l = keywnode[ii].keywordlevel;
+                        printw("%-16s", fps[fpsindex].parray[pindex].keyword[l-1]);
+                        
+                    if(i == iSelected[currentlevel])
+						attroff(COLOR_PAIR(10));
+                        
+                        printw("   ");
+                        
+                        pid_t pid;
+                        pid = fps[fpsindex].md->confpid;
+                        if((getpgid(pid) >= 0)&&(pid>0))
+                        {
+							attron(COLOR_PAIR(2));
+							printw("%5d ", (int) pid);
+							attroff(COLOR_PAIR(2));
+						}
+						else
+							printw("----- ");
+                        
+                        pid = fps[fpsindex].md->runpid;
+                        if((getpgid(pid) >= 0)&&(pid>0))
+                        {
+							attron(COLOR_PAIR(2));
+							printw("%5d ", (int) pid);                        
+							attroff(COLOR_PAIR(2));
+						}
+						else
+							printw("----- ");
+                        
+                        
+                        // VALUE
+                        
+                        if(fps[fpsindex].parray[pindex].cnt0 == 0) // has not been initialized
+							attron(COLOR_PAIR(4));
 
                         if(fps[fpsindex].parray[pindex].type & FUNCTION_PARAMETER_TYPE_UNDEF)
                             printw("  %s", "-undef-");
@@ -950,13 +1203,15 @@ imax = 20;
                         if(fps[fpsindex].parray[pindex].type & FUNCTION_PARAMETER_TYPE_STRING)
                             printw("  %10s", fps[fpsindex].parray[pindex].val.string);
 
-
+                        if(fps[fpsindex].parray[pindex].cnt0 == 0) // has not been initialized
+							attroff(COLOR_PAIR(4));
 
                         printw("    %s", fps[fpsindex].parray[pindex].description);
 
 
 
-
+                    if(i == iSelected[currentlevel])
+						attroff(A_BOLD);
 
 
                         pcnt++;
@@ -964,14 +1219,13 @@ imax = 20;
                     }
                 }
 
-                printw("\n");
+                
 
-                if(i == iSelected)
-                    attroff(A_REVERSE);
                 icnt++;
                 
                 
             }
+            printw("\n");
         }
 
         NBindex = icnt;
