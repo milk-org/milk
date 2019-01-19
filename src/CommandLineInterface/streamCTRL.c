@@ -31,7 +31,7 @@
 #include <time.h>
 #include <signal.h>
 
-#include <unistd.h>    // getpid()
+#include <unistd.h>    // getpid() access()
 #include <sys/types.h>
 
 #include <sys/stat.h>
@@ -281,10 +281,13 @@ struct arg_struct {
 
 
 
+
+
 void *streamCTRL_scan(void* argptr)
 {
     long NBsindex = 0;
     long sindex = 0;
+    long scancnt = 0;
 
     STREAMINFO *streaminfo;
     char **PIDname_array;
@@ -333,8 +336,10 @@ void *streamCTRL_scan(void* argptr)
         if(d)
         {
             sindex = 0;
+
             while(((dir = readdir(d)) != NULL))
             {
+				int scanentryOK = 1;
                 char *pch = strstr(dir->d_name, ".im.shm");
 
                 int matchOK = 0;
@@ -359,6 +364,8 @@ void *streamCTRL_scan(void* argptr)
                     int retv;
                     char fullname[200];
 
+
+
                     sprintf(fullname, "/tmp/%s", dir->d_name);
                     retv = lstat (fullname, &buf);
                     if (retv == -1 ) {
@@ -370,41 +377,6 @@ void *streamCTRL_scan(void* argptr)
 
 
 
-                    // get stream name and ID
-                    strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
-                    streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
-
-
-
-
-                    ID = image_ID_from_images(images, streaminfo[sindex].sname);
-
-
-                    // connect to stream
-                    if(ID == -1)
-                    {
-                        ID = image_get_first_ID_available_from_images(images);
-                        if(ID<0)
-                            return NULL;
-                        ImageStreamIO_read_sharedmem_image_toIMAGE(streaminfo[sindex].sname, &images[ID]);
-                        streaminfo[sindex].deltacnt0 = 1;
-                        streaminfo[sindex].updatevalue = 1.0;
-                        streaminfo[sindex].updatevalue_frozen = 1.0;
-                    }
-                    else
-                    {
-                        float gainv = 1.0;
-                        streaminfo[sindex].deltacnt0 = images[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
-                        if(firstIter == 0)
-                            streaminfo[sindex].updatevalue = (1.0 - gainv) * streaminfo[sindex].updatevalue + gainv * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
-                    }
-                    streaminfo[sindex].cnt0 = images[ID].md[0].cnt0; // keep memory of cnt0
-
-                    streaminfo[sindex].ID = ID;
-
-                    streaminfo[sindex].atype = images[ID].md[0].atype;
-
-
                     if (S_ISLNK(buf.st_mode)) // resolve link name
                     {
                         char fullname[200];
@@ -412,10 +384,15 @@ void *streamCTRL_scan(void* argptr)
                         char linkname[200];
                         int nchar;
 
+
                         streaminfo[sindex].SymLink = 1;
                         sprintf(fullname, "/tmp/%s", dir->d_name);
                         readlink (fullname, linknamefull, 200-1);
 
+						if(access(linknamefull, R_OK )) // file cannot be read
+							scanentryOK = 0;
+						else
+						{
                         strcpy(linkname, basename(linknamefull));
 
                         int lOK = 1;
@@ -429,21 +406,65 @@ void *streamCTRL_scan(void* argptr)
                             }
                             ii++;
                         }
-
                         strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
+						}
+ 
                     }
                     else
+                    {
                         streaminfo[sindex].SymLink = 0;
+                    }
 
 
-                    sindex++;
+
+                    // get stream name and ID
+                    if(scanentryOK == 1)
+                    {
+                        strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
+                        streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
+                    }
+
+
+                    if(scanentryOK == 1)
+                    {
+                        ID = image_ID_from_images(images, streaminfo[sindex].sname);
+
+                        // connect to stream
+                        if(ID == -1)
+                        {
+                            ID = image_get_first_ID_available_from_images(images);
+                            if(ID<0)
+                                return NULL;
+                            ImageStreamIO_read_sharedmem_image_toIMAGE(streaminfo[sindex].sname, &images[ID]);
+                            streaminfo[sindex].deltacnt0 = 1;
+                            streaminfo[sindex].updatevalue = 1.0;
+                            streaminfo[sindex].updatevalue_frozen = 1.0;
+                        }
+                        else
+                        {
+                            float gainv = 1.0;
+                            streaminfo[sindex].deltacnt0 = images[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
+                            if(firstIter == 0)
+                                streaminfo[sindex].updatevalue = (1.0 - gainv) * streaminfo[sindex].updatevalue + gainv * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
+
+
+                            streaminfo[sindex].cnt0 = images[ID].md[0].cnt0; // keep memory of cnt0
+                            streaminfo[sindex].ID = ID;
+                            streaminfo[sindex].atype = images[ID].md[0].atype;
+
+                            sindex++;
+                        }
+                    }
                 }
             }
+
             NBsindex = sindex;
         }
         closedir(d);
 
         firstIter = 0;
+
+
 
 
 
@@ -557,6 +578,8 @@ void *streamCTRL_scan(void* argptr)
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
         usleep(streaminfoproc->twaitus);
+
+        scancnt ++;
     }
 
 
@@ -610,6 +633,8 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     int SORTING = 0;
     int SORT_TOGGLE = 0;
+    
+
 
 
     pthread_t threadscan;
