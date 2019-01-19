@@ -629,6 +629,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     PIDname_array = malloc(sizeof(char*)*PIDmax);
 
 
+
     streaminfo = (STREAMINFO*) malloc(sizeof(STREAMINFO)*streamNBID_MAX);
     streaminfoproc.sinfo = streaminfo;
 
@@ -669,12 +670,17 @@ int_fast8_t streamCTRL_CTRLscreen()
     streaminfoproc.twaitus = 50000; // 20 Hz
     streaminfoproc.fuserUpdate0 = 1; //update on first instance
 
+
+
     clear();
 
 
     // Start scan thread
     streaminfoproc.loop = 1;
     pthread_create( &threadscan, NULL, streamCTRL_scan, (void*) &args);
+
+
+
 
     char c; // for user input
     int stringindex;
@@ -699,6 +705,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         NBsindex = streaminfoproc.NBstream;
 
+	
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
@@ -866,12 +873,16 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         }
 
-        erase();
+
+	
+		erase();
 
         attron(A_BOLD);
         sprintf(monstring, "STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP");
         print_header(monstring, '-');
         attroff(A_BOLD);
+
+	
 
 
         if(DisplayMode == 1) // help
@@ -1483,6 +1494,9 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         }
 
+
+
+
         refresh();
 
 
@@ -1493,10 +1507,12 @@ int_fast8_t streamCTRL_CTRLscreen()
 #endif
     }
 
+
     endwin();
 
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
+
 
     free(streaminfo);
 
