@@ -962,7 +962,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     //    sprintf(promptname, "%s", data.processname);
     
     if(strlen(promptstring)>0)
-		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, promptstring, 0x1B, 0);
+    {
+		if(data.processnameflag==0)
+			sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, promptstring, 0x1B, 0);
+		else	
+			sprintf(prompt,"%c[%d;%dm%s-%s >%c[%dm ",0x1B, 1, 36, promptstring, data.processname, 0x1B, 0);
+	}
     else
 		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
 
@@ -1632,7 +1637,7 @@ void main_init()
   strcpy(data.cmd[data.NBcmd].info,"function parameters control screen");
   strcpy(data.cmd[data.NBcmd].syntax,"function parameter structure name");
   strcpy(data.cmd[data.NBcmd].example,"fparamCTRL fpsname");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int_fast8_t functionparameter_CTRLstreen(char *fpsname)");
+  strcpy(data.cmd[data.NBcmd].Ccall,"int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
   data.NBcmd++;
 
   strcpy(data.cmd[data.NBcmd].key,"usleep");
@@ -1870,6 +1875,7 @@ int command_line( int argc, char **argv)
 
 
     data.fifoON = 0; // default
+	data.processnameflag = 0; // default
 
     while (1)
     {
@@ -1934,6 +1940,16 @@ int command_line( int argc, char **argv)
         case 'n':
             printf("process name '%s'\n", optarg);
             strcpy(data.processname, optarg);
+            data.processnameflag = 1; // this process has been named
+            
+            // extract first word before '.'
+            // it can be used to name processinfo and function parameter structure for process
+            char tmpstring[200];
+			strcpy(tmpstring, data.processname);
+			char *firstword;			
+			firstword = strtok (tmpstring, ".");
+			strcpy(data.processname0, firstword);
+            
             memcpy((void *)argv[0], optarg, sizeof(optarg));
 #ifdef __linux__
      prctl(PR_SET_NAME, optarg, 0, 0, 0);

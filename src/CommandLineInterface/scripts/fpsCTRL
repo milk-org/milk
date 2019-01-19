@@ -90,4 +90,4 @@ fi
 SF="fpsctrlstartup"
 echo "fparamCTRL $1" > $SF
 echo "exitCLI" >> $SF
-milk -n procCTRL -f fpsctrlfifo -s $SF
+milk -n fpsCTRL -f fpsctrlfifo -s $SF

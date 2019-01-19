@@ -239,6 +239,8 @@ typedef struct
     // Command Line Interface (CLI) INPUT
     int fifoON;
     char processname[100];
+    char processname0[100];
+    int processnameflag;
     char fifoname[100];
     uint_fast16_t NBcmd;
     
@@ -341,10 +343,20 @@ int_fast8_t streamCTRL_CTRLscreen();
 
 
 
+
+
+// *************************** FUNCTION PARAMETERS *********************************************
+
+
+#define CMDCODE_CONFSTART          0x0001  // run configuration loop
+#define CMDCODE_CONFSTOP           0x0002  // stop configuration process
+#define CMDCODE_CONFINIT           0x0004  // (re-)create FPS even if it exists
+
+
 // function can use this structure to expose parameters for external control or monitoring
 // the structure describes how user can interact with parameter, so it allows for control GUIs to connect to parameters
 
-#define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN   16
+#define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN   32
 #define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL    20
 
 // Note that notation allows parameter to have more than one type
@@ -358,22 +370,29 @@ int_fast8_t streamCTRL_CTRLscreen();
 #define FUNCTION_PARAMETER_TYPE_DIRNAME       0x0040
 #define FUNCTION_PARAMETER_TYPE_STREAMNAME    0x0080
 #define FUNCTION_PARAMETER_TYPE_STRING        0x0100
+#define FUNCTION_PARAMETER_TYPE_ONOFF         0x0200
+#define FUNCTION_PARAMETER_TYPE_PROCESS       0x0400
 
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN   64
 #define FUNCTION_PARAMETER_STRMAXLEN         64
 
 // status flags
-#define FUNCTION_PARAMETER_STATUS_ACTIVE        0x0001    // is this entry used ?
-#define FUNCTION_PARAMETER_STATUS_VISIBLE       0x0002    // is this entry visible (=displayed) ?
-#define FUNCTION_PARAMETER_STATUS_WRITECONF     0x0004    // can user change value at configuration time ?
-#define FUNCTION_PARAMETER_STATUS_WRITERUN      0x0008    // can user change value at run time ?
-#define FUNCTION_PARAMETER_STATUS_LOG           0x0010    // log on change
-#define FUNCTION_PARAMETER_STATUS_SAVEONCHANGE  0x0020    // save to disk on change
-#define FUNCTION_PARAMETER_STATUS_SAVEONCLOSE   0x0040    // save to disk on close
-#define FUNCTION_PARAMETER_STATUS_MINLIMIT      0x0080    // enforce min limit
-#define FUNCTION_PARAMETER_STATUS_MAXLIMIT      0x0100    // enforce max limit
-#define FUNCTION_PARAMETER_STATUS_CHECKSTREAM   0x0200    // check stream, read size and type
-#define FUNCTION_PARAMETER_STATUS_IMPORTED      0x0400    // is this entry imported from another parameter ?
+#define FUNCTION_PARAMETER_STATUS_ACTIVE        0x0001    // is this entry registered ?
+#define FUNCTION_PARAMETER_STATUS_USED          0x0002    // is this entry used ?
+#define FUNCTION_PARAMETER_STATUS_VISIBLE       0x0004    // is this entry visible (=displayed) ?
+#define FUNCTION_PARAMETER_STATUS_WRITE         0x0008    // is value writable when neither CONF and RUN are active
+#define FUNCTION_PARAMETER_STATUS_WRITECONF     0x0010    // can user change value at configuration time ?
+#define FUNCTION_PARAMETER_STATUS_WRITERUN      0x0020    // can user change value at run time ?
+#define FUNCTION_PARAMETER_STATUS_LOG           0x0040    // log on change
+#define FUNCTION_PARAMETER_STATUS_SAVEONCHANGE  0x0080    // save to disk on change
+#define FUNCTION_PARAMETER_STATUS_SAVEONCLOSE   0x0100    // save to disk on close
+#define FUNCTION_PARAMETER_STATUS_MINLIMIT      0x0200    // enforce min limit
+#define FUNCTION_PARAMETER_STATUS_MAXLIMIT      0x0400    // enforce max limit
+#define FUNCTION_PARAMETER_STATUS_CHECKSTREAM   0x0800    // check stream, read size and type
+#define FUNCTION_PARAMETER_STATUS_IMPORTED      0x1000    // is this entry imported from another parameter ?
+#define FUNCTION_PARAMETER_STATUS_CURRENT       0x2000    // is there a separate current value that may differ from request ?
+#define FUNCTION_PARAMETER_STATUS_ERROR         0x4000    // is current parameter value OK ?
+#define FUNCTION_PARAMETER_STATUS_ONOFF         0x8000    // bit controlled under TYPE_ONOFF
 
 #define FUNCTION_PARAMETER_NBPARAM_DEFAULT    100       // size of dynamically allocated array of parameters
 
@@ -395,11 +414,13 @@ typedef struct {
 	
 	union
 	{
-		int64_t         l[3];  // value, min (inclusive), max (inclusive)
-		double          f[3];  // value, min, max
-		pid_t           pid;
-		struct timespec ts;
-		char            string[FUNCTION_PARAMETER_STRMAXLEN];
+		int64_t         l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
+		double          f[4];  // value, min, max, current state (if different from request)
+		pid_t           pid[2]; // first value is set point, second is current state
+		struct timespec ts[2]; // first value is set point, second is current state
+		
+		char            string[2][FUNCTION_PARAMETER_STRMAXLEN]; // first value is set point, second is current state
+		// if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
 	} val;
 	
 	uint32_t  streamID; // if type is stream and MASK_CHECKSTREAM
@@ -413,29 +434,58 @@ typedef struct {
 
 
 
+#define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  1000
 
-#define FUNCTION_PARAMETER_STRUCT_STATUS_CONF       0x0001   // has configuration been done ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CONF       0x0001   // is configuration running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUN        0x0002   // is process running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP    0x0004   // is process loop running ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK    0x0008   // Are parameter values OK to run loop process ? (1=OK, 0=not OK)
 
-#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN    0x0001   // keep running configuration process
+#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN    0x0001   // configuration process
+//#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFSTOP   0x0002   // stop configuration process
+#define FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE     0x0004   // re-run check of parameter
 
 // metadata
 typedef struct {
-	char                name[100];
+	// process name
+	char                name[200];       // example: pname-01-32 
+
+	char                pname[100];      // example: pname
+	int                 nameindex[10];   // example: 01 32
+	int                 NBnameindex;     // example: 2
+
+	// configuration will run in tmux session pname-XX-conf
+	// process       will run in tmux session pname-XX-run
+	// expected commands to start and stop process : 
+	//   ./cmdproc/<pname>-conf-start XX YY (in tmux session)
+	//   ./cmdproc/<pname>-run-start XX YY  (in tmux session)
+	//   ./cmdproc/<pname>-run-stop XX YY
+	//
+	
+	pid_t               confpid;            // PID of process owning parameter structure configuration
+	pid_t               runpid;             // PID of process running on this fps
+	
 	
 	uint64_t            signal;       // Used to send signals to configuration process
-	uint64_t            confwaitus;   // configuration wait timer value [us]
-	
-	pid_t               confpid;      // PID of process owning parameter structure configuration
-	pid_t               runpid;       // PID of process running on this fps
-	uint32_t            pstatus;      // process status
+	uint64_t            confwaitus;   // configuration wait timer value [us]	
+	uint32_t            status;       // conf and process status
 	int                 NBparam;      // size of parameter array (= max number of parameter supported)		
+
+	char                          message[FUNCTION_PARAMETER_STRUCT_MSG_SIZE];
+	long                          msgcnt;
+	long                          errcnt;
+	
 } FUNCTION_PARAMETER_STRUCT_MD;
 
+
+
+
 typedef struct {
+
 	FUNCTION_PARAMETER_STRUCT_MD *md;
+
 	FUNCTION_PARAMETER           *parray;   // array of function parameters
+
 } FUNCTION_PARAMETER_STRUCT;
 
 
@@ -446,12 +496,14 @@ typedef struct {
 
 int function_parameter_struct_create(int NBparam, char *name);
 long function_parameter_struct_connect(char *name, FUNCTION_PARAMETER_STRUCT *fps);
-int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct, int NBparam);
+int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
 int function_parameter_add_entry(FUNCTION_PARAMETER *funcparamarray, char *keywordstring, char *descriptionstring, uint64_t type, int NBparam, void *dataptr);
-
+int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
+int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 
 int_fast8_t functionparameter_CTRLscreen(char *fpsname);
 
