@@ -339,7 +339,7 @@ void *streamCTRL_scan(void* argptr)
 
             while(((dir = readdir(d)) != NULL))
             {
-				int scanentryOK = 1;
+                int scanentryOK = 1;
                 char *pch = strstr(dir->d_name, ".im.shm");
 
                 int matchOK = 0;
@@ -389,26 +389,26 @@ void *streamCTRL_scan(void* argptr)
                         sprintf(fullname, "/tmp/%s", dir->d_name);
                         readlink (fullname, linknamefull, 200-1);
 
-						if(access(linknamefull, R_OK )) // file cannot be read
-							scanentryOK = 0;
-						else
-						{
-                        strcpy(linkname, basename(linknamefull));
-
-                        int lOK = 1;
-                        int ii = 0;
-                        while((lOK == 1)&&(ii<strlen(linkname)))
+                        if(access(linknamefull, R_OK )) // file cannot be read
+                            scanentryOK = 0;
+                        else
                         {
-                            if(linkname[ii] == '.')
+                            strcpy(linkname, basename(linknamefull));
+
+                            int lOK = 1;
+                            int ii = 0;
+                            while((lOK == 1)&&(ii<strlen(linkname)))
                             {
-                                linkname[ii] = '\0';
-                                lOK = 0;
+                                if(linkname[ii] == '.')
+                                {
+                                    linkname[ii] = '\0';
+                                    lOK = 0;
+                                }
+                                ii++;
                             }
-                            ii++;
+                            strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
                         }
-                        strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
-						}
- 
+
                     }
                     else
                     {
