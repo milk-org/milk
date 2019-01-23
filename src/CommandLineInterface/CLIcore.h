@@ -361,38 +361,64 @@ int_fast8_t streamCTRL_CTRLscreen();
 
 // Note that notation allows parameter to have more than one type
 // ... to be used with caution: most of the time, use type exclusively
-#define FUNCTION_PARAMETER_TYPE_UNDEF         0x0001
-#define FUNCTION_PARAMETER_TYPE_INT64         0x0002
-#define FUNCTION_PARAMETER_TYPE_FLOAT64       0x0004
-#define FUNCTION_PARAMETER_TYPE_PID           0x0008
-#define FUNCTION_PARAMETER_TYPE_TIMESPEC      0x0010
-#define FUNCTION_PARAMETER_TYPE_FILENAME      0x0020
-#define FUNCTION_PARAMETER_TYPE_DIRNAME       0x0040
-#define FUNCTION_PARAMETER_TYPE_STREAMNAME    0x0080
-#define FUNCTION_PARAMETER_TYPE_STRING        0x0100
-#define FUNCTION_PARAMETER_TYPE_ONOFF         0x0200
-#define FUNCTION_PARAMETER_TYPE_PROCESS       0x0400
+#define FPTYPE_UNDEF         0x0001
+#define FPTYPE_INT64         0x0002
+#define FPTYPE_FLOAT64       0x0004
+#define FPTYPE_PID           0x0008
+#define FPTYPE_TIMESPEC      0x0010
+#define FPTYPE_FILENAME      0x0020
+#define FPTYPE_DIRNAME       0x0040
+#define FPTYPE_STREAMNAME    0x0080
+#define FPTYPE_STRING        0x0100
+#define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively
+#define FPTYPE_PROCESS       0x0400
 
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN   64
 #define FUNCTION_PARAMETER_STRMAXLEN         64
 
-// status flags
-#define FUNCTION_PARAMETER_STATUS_ACTIVE        0x0001    // is this entry registered ?
-#define FUNCTION_PARAMETER_STATUS_USED          0x0002    // is this entry used ?
-#define FUNCTION_PARAMETER_STATUS_VISIBLE       0x0004    // is this entry visible (=displayed) ?
-#define FUNCTION_PARAMETER_STATUS_WRITE         0x0008    // is value writable when neither CONF and RUN are active
-#define FUNCTION_PARAMETER_STATUS_WRITECONF     0x0010    // can user change value at configuration time ?
-#define FUNCTION_PARAMETER_STATUS_WRITERUN      0x0020    // can user change value at run time ?
-#define FUNCTION_PARAMETER_STATUS_LOG           0x0040    // log on change
-#define FUNCTION_PARAMETER_STATUS_SAVEONCHANGE  0x0080    // save to disk on change
-#define FUNCTION_PARAMETER_STATUS_SAVEONCLOSE   0x0100    // save to disk on close
-#define FUNCTION_PARAMETER_STATUS_MINLIMIT      0x0200    // enforce min limit
-#define FUNCTION_PARAMETER_STATUS_MAXLIMIT      0x0400    // enforce max limit
-#define FUNCTION_PARAMETER_STATUS_CHECKSTREAM   0x0800    // check stream, read size and type
-#define FUNCTION_PARAMETER_STATUS_IMPORTED      0x1000    // is this entry imported from another parameter ?
-#define FUNCTION_PARAMETER_STATUS_CURRENT       0x2000    // is there a separate current value that may differ from request ?
-#define FUNCTION_PARAMETER_STATUS_ERROR         0x4000    // is current parameter value OK ?
-#define FUNCTION_PARAMETER_STATUS_ONOFF         0x8000    // bit controlled under TYPE_ONOFF
+
+
+// STATUS FLAGS
+
+// parameter use and visibility
+#define FPFLAG_ACTIVE        0x00000001    // is this entry registered ?
+#define FPFLAG_USED          0x00000002    // is this entry used ?
+#define FPFLAG_VISIBLE       0x00000004    // is this entry visible (=displayed) ?
+
+// write permission
+#define FPFLAG_WRITE         0x00000010    // is value writable when neither CONF and RUN are active
+#define FPFLAG_WRITECONF     0x00000020    // can user change value at configuration time ?
+#define FPFLAG_WRITERUN      0x00000040    // can user change value at run time ?
+#define FPFLAG_WRITESTATUS   0x00000080    // current write status (computed from above flags)
+
+// logging and saving
+#define FPFLAG_LOG           0x00000100    // log on change
+#define FPFLAG_SAVEONCHANGE  0x00000200    // save to disk on change
+#define FPFLAG_SAVEONCLOSE   0x00000400    // save to disk on close
+
+// special types
+#define FPFLAG_IMPORTED      0x00001000    // is this entry imported from another parameter ?
+#define FPFLAG_FEEDBACK      0x00002000    // is there a separate current value feedback ?
+#define FPFLAG_ONOFF         0x00004000    // bit controlled under TYPE_ONOFF
+
+// parameter testing
+#define FPFLAG_CHECKINIT     0x00010000    // should parameter be initialized prior to function start ?
+#define FPFLAG_CHECKSTREAM   0x00040000    // check stream, read size and type
+#define FPFLAG_MINLIMIT      0x00080000    // enforce min limit
+#define FPFLAG_MAXLIMIT      0x00100000    // enforce max limit
+#define FPFLAG_ERROR         0x00200000    // is current parameter value OK ?
+
+
+
+// PRE-ASSEMBLED DEFAULT FLAGS
+
+// input parameter (used as default when adding entry)
+#define FPFLAG_DFT_INPUT      FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
+
+// status parameters, no logging, read only
+#define FPFLAG_DFT_STATUS     FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
+
+
 
 #define FUNCTION_PARAMETER_NBPARAM_DEFAULT    100       // size of dynamically allocated array of parameters
 
@@ -438,8 +464,14 @@ typedef struct {
 
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CONF       0x0001   // is configuration running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUN        0x0002   // is process running ?
-#define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP    0x0004   // is process loop running ?
-#define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK    0x0008   // Are parameter values OK to run loop process ? (1=OK, 0=not OK)
+
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF    0x0010   // should configuration be running ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN     0x0020   // should process be running ?
+
+#define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP    0x0100   // is process loop running ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK    0x0200   // Are parameter values OK to run loop process ? (1=OK, 0=not OK)
+
+
 
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN    0x0001   // configuration process
 //#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFSTOP   0x0002   // stop configuration process
@@ -500,8 +532,21 @@ int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstr
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
-int function_parameter_add_entry(FUNCTION_PARAMETER *funcparamarray, char *keywordstring, char *descriptionstring, uint64_t type, int NBparam, void *dataptr);
+int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, void *dataptr);
+
 int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+
+long functionparameter_GetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+long * functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+
+double functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+double * functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+
+char * functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+
+int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+
+
 int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 
