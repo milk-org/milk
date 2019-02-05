@@ -370,7 +370,7 @@ int_fast8_t streamCTRL_CTRLscreen();
 #define FPTYPE_DIRNAME       0x0040
 #define FPTYPE_STREAMNAME    0x0080
 #define FPTYPE_STRING        0x0100
-#define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively
+#define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
 #define FPTYPE_PROCESS       0x0400
 
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN   64
@@ -458,9 +458,9 @@ typedef struct {
 
 
 
+#define FPS_CWD_MAX 500
 
-
-#define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  1000
+#define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  500
 
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CONF       0x0001   // is configuration running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUN        0x0002   // is process running ?
@@ -477,11 +477,32 @@ typedef struct {
 //#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFSTOP   0x0002   // stop configuration process
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE     0x0004   // re-run check of parameter
 
+
+
+// ERROR AND WARNING MESSAGES
+
+#define FPS_NB_MSG                          100 // max number of messages
+#define FUNCTION_PARAMETER_STRUCT_MSG_LEN   500
+
+
+#define FPS_MSG_FLAG_NOTINITIALIZED         0x0001
+#define FPS_MSG_FLAG_BELOWMIN               0x0002
+#define FPS_MSG_FLAG_ABOVEMAX               0x0004
+
+// by default, a message is a warning
+#define FPS_MSG_FLAG_ERROR                  0x0008  // if ERROR, then cannot start function
+#define FPS_MSG_FLAG_INFO                   0x0010
+
+
+
 // metadata
 typedef struct {
 	// process name
-	char                name[200];       // example: pname-01-32 
+	// Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
+	char                name[200];         // example: pname-01-32 
+	char                fpsdirectory[FPS_CWD_MAX]; // where should the parameter values be saved to disk ?
 
+	// the name and indices are automatically parsed in the following format
 	char                pname[100];      // example: pname
 	int                 nameindex[10];   // example: 01 32
 	int                 NBnameindex;     // example: 2
@@ -503,7 +524,9 @@ typedef struct {
 	uint32_t            status;       // conf and process status
 	int                 NBparam;      // size of parameter array (= max number of parameter supported)		
 
-	char                          message[FUNCTION_PARAMETER_STRUCT_MSG_SIZE];
+	char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];      
+	int                           msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
+	uint32_t                      msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
 	long                          msgcnt;
 	long                          errcnt;
 	
@@ -526,29 +549,41 @@ typedef struct {
 
 
 
-int function_parameter_struct_create(int NBparam, char *name);
-long function_parameter_struct_connect(char *name, FUNCTION_PARAMETER_STRUCT *fps);
+int function_parameter_struct_create(int NBparam, const char *name);
+long function_parameter_struct_connect(const char *name, FUNCTION_PARAMETER_STRUCT *fps);
 int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
-int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, void *dataptr);
+int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t status, void *dataptr);
 
-int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
-long functionparameter_GetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
-long * functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+long functionparameter_GetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int functionparameter_SetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, long value);
+long * functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
-double functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
-double * functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+double functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int functionparameter_SetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, double value);
+double * functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
-char * functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+char * functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+char *functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, const char *stringvalue);
 
-int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, char *paramname);
+int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, int ONOFFvalue);
 
 
 int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
+
+
+
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode, uint16_t *loopstatus);
+uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus );
+uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
+
+int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 
 int_fast8_t functionparameter_CTRLscreen(char *fpsname);
 
