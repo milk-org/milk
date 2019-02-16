@@ -1021,12 +1021,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
         char * libname;
         char * fname;
-        libname = strtok (CLI_ADD_LIBS, " ,");
+        libname = strtok (CLI_ADD_LIBS, " ,;");
 
         while (libname != NULL) {
             printf ("--- CLI Adding library: %s\n", libname);
             load_sharedobj(libname);
-            libname = strtok (NULL, " ,");
+            libname = strtok (NULL, " ,;");
         }
         printf("\n");
     }
@@ -2131,13 +2131,15 @@ static int_fast8_t load_module_shared(char *modulename)
 
     sprintf(modulenameLC, "%s", modulename);
     
-    for(n=0; n<strlen(modulenameLC); n++)
+/*    for(n=0; n<strlen(modulenameLC); n++)
     {
         c = modulenameLC[n];
         modulenameLC[n] = tolower(c);
     }
+*/
 
-    sprintf(libname, "%s/lib/lib%s.so", data.sourcedir, modulenameLC);
+//    sprintf(libname, "%s/lib/lib%s.so", data.sourcedir, modulenameLC);
+    sprintf(libname, "/usr/local/lib/lib%s.so", modulenameLC);
     printf("libname = %s\n", libname);
 
 
@@ -2163,7 +2165,7 @@ static int_fast8_t load_module_shared_ALL()
     int loopOK;
     int itermax;
     
-    sprintf(dirname, "%s/../lib", data.sourcedir);
+    sprintf(dirname, "%s/lib", data.sourcedir);
 	printf("LOAD MODULES SHARED ALL: %s\n", dirname);
 
     loopOK = 0;
@@ -2180,7 +2182,7 @@ static int_fast8_t load_module_shared_ALL()
 			char *dot = strrchr(dir->d_name, '.');
 			if (dot && !strcmp(dot, ".so"))
 				{
-					sprintf(libname, "%s/../lib/%s", data.sourcedir, dir->d_name);
+					sprintf(libname, "%s/lib/%s", data.sourcedir, dir->d_name);
 					//printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
 					//fflush(stdout);
 					

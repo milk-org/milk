@@ -1,66 +1,129 @@
-# Loading and Creating Modules {#page_LoadingModules}
+# Loading, Creating Additional Modules {#page_LoadingModules}
 
 @note This file: ./src/CommandLineInterface/doc/LoadingModules.md
 
-
-Users can create additional modules, and bu following a few milk-specific conventions, link their functions to the milk CLI. Additional modules can be added to the existing build process (see "Compiling and linking modules with Autotools") or compiled separately and then loaded at runtime (see "Linking at runtime").
-
-The second option is more flexible, and allows user to choose compiliation options, and when/if to load the module. It will however require to pay attention to dependencies.
-
-
-
----
-
-## Compiling and linking modules with Autotools
-
-Source code is organized in modules. Modules are compiled and linked using the libtool / autotools process, as shared libtool convenience libraries. 
-
-See : https://www.gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html
-
-The list of modules currently appears in multiple files associated with the build process. The build process uses autotools, which has the advantage of supporting many platforms. 
-
-Users adding modules are required to add the modules to 3 files, as described below.
-
-### Adding modules to `configure.ac`
- 
-Modules are listed in file `<srcdir>/configure.ac` under the "AC_CONFIG_FILES"
-
-see: https://www.gnu.org/savannah-checkouts/gnu/autoconf/manual/autoconf-2.69/html_node/Configuration-Files.html
-
-
-### Adding module functions to the command line interface
-
-Modules are listed in file `<srcdir>/src/initmodules.c`
-
-The init_modules() function in this file is executed to register commands provided in each modules in the command line interface
-
-### Including modules in the recursive build and link process
-
-Modules are listed in file `<srcdir>/src/Makefile.am`
-
-This tells autotools' recursive build process to add the module directory in the list of subdirectories
-
-This adds the library to the list of object files linked to the executable
-
+[TOC]
 
 
 
 
 ---
 
-## Linking at runtime with dlopen()
+Users can create additional modules, and bu following a few milk-specific conventions, link their functions to the milk CLI. Additional modules can be added to the existing build process or compiled separately and then loaded at runtime.
 
-### Loading modules into milk
 
-Alternatively, users may create their own libraries and link them at runtime using the `soload` or function of the command line interface. At any time, a module can be loaded from the CLI using:
+---
 
-	milk > soload <mymodulename.so>
 
-See: http://www.linux-mag.com/id/1028/ for instructions to create shared libraries that can be loaded as modules. 
 
-The library should include a function `initlib_<modulename>` to be executed when the module is loaded. This function should register functions to the command line interface, as done for all other modules that are part of the distribution.
+# Loading modules {#page_LoadingModules_Loading}
 
-### Example code
+
+## Automatic loading from `./lib/` directory {#page_LoadingModules_loading_libdir}
+
+Any shared object in the `./lib/` subdirectory of source code will be loaded upon startup.
+
+
+
+
+## Loading module from within CLI with soload {#page_LoadingModules_loading_soload}
+
+Pre-compiled modules can be loaded with the `soload` command within the CLI:
+
+	milk> soload <fullsoname>
+
+The `fullsoname` is the shared object file name, path relative to current directory. For example "../mylib/myodule.so".
+
+Provided that the module follows milk conventions, loading the module will add the corresponding functions to the CLI. This can be checked by probing the module functions:
+
+	milk> m? <modulename>
+	
+
+	
+## Loading module from within CLI with mload {#page_LoadingModules_loading_mload}
+
+By default, modules shared objects are installed in `/usr/local/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be loaded with the `mload` command:
+
+	milk> mload <modulename>
+
+
+
+## Using environment variable `CLI_ADD_LIBS` to load shared objects {#page_LoadingModules_loading_envvar}
+
+Upon startup, milk will read the CLI_ADD_LIBS environment variable to load shared objects. For example:
+
+	CLI_ADD_LIBS="/usr/local/libs/libMyFirstModule.so /usr/local/libs/libMySecondModule.so" milk
+	
+will load modules `MyFirstModule` and `MySecondModule`.
+
+@note Shared object names can be separated by space, semicolumn, or comma.
+
+
+
+
+
+---
+
+
+# Writing and compiling milk modules {#page_LoadingModules_compiling}
+
+
+
+## Principles {#page_LoadingModules_compiling_principles}
+
+Modules that are always loaded upon startup are explicitely listed in CLImain.c. Additional modules may be loaded using the C dlopen() command. The library should include a function `initlib_<modulename>` to be executed when the module is loaded. This function should register functions to the command line interface, as done for all other modules that are part of the distribution.
+
+\see http://www.linux-mag.com/id/1028/ for instructions to create shared libraries that can be loaded as modules. 
+\see https://www.gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html
+
+
+
+
+
+## Adding modules to the main package compilation {#page_LoadingModules_compiling_compiling_cmake}
+
+The preferred way to add modules is to have them within the main source code directory alongside default modules, following the same conventions and locations as the default modules. A new module should then have the following files in the `./src/<ModuleName>/` directory:
+
+- `CMakeLists.txt` file
+- source code files (.c and .h files)
+
+
+The `EXTRAMODULES` option is then used to add entry(ies) to the list of compiled modules. For example:
+
+	cmake .. -DEXTRAMODULES="WFpropagate;OpticsMaterials"
+
+will compile modules `WFpropagate` and `OpticsMaterials` in addition to default modules. The extra modules shared objects will be `/usr/local/lib/libWFpropagate.so` and `/usr/local/lib/libOpticsMaterials.so`, and can be loaded with any of the methods described in @ref page_LoadingModules_Loading.
+
+
+@attention Adding entries with the EXTRAMODULES option will compile the corresponding shared objects, but will not have them loaded upon execution of the main executable. See next section for automatic loading.
+
+
+
+
+
+## Automatic loading
+
+Several options are available to have the additional module(s) automatically loaded every time:
+
+- Copy or link the shared object to the `./src/lib/` directory (see @ref page_LoadingModules_loading_libdir). 
+
+For example:
+
+	ln -s /usr/local/lib/libWFpropagate.so ~./lib/libWFpropagate.so
+
+
+- Create a system-wide environment variable CLI_ADD_LIBS in `~/.bashrc` (see @ref page_LoadingModules_loading_envvar)
+
+@note Several versions of the executable can also be defined, each with its own set of automatically loaded modules. For example, the following line can be saved as an executable script:
+
+	CLI_ADD_LIBS="/usr/local/libs/libWFpropagate.so" milk
+
+
+
+
+## Custom compilation: Example code {#page_LoadingModules_compiling_examplecode}
+
+Additional modules may also be compiled independently from the main compile process. This is not the preferred option, and there is a performance hit, as the benefits of link-time optimization will be lost.
 
 An example module is included in milk, in directory exampleModule.
 
@@ -80,3 +143,8 @@ Alternatively, you can load it from the CLI at anytime:
 
 	milk > soload "<pathtomilk>/src/exampleModule/libexamplemodule.so"
 	
+
+
+---
+
+
