@@ -42,11 +42,24 @@ To synchronize master to latest dev:
 	git submodule foreach "(git checkout master; git push)"
 	git push
 
-When updating master, it's good practice to also issue a git tag
 
-	git tag -a v0.1.23 -m "Version 0.1.23"
-	git push origin v0.1.23
+## Releasing a new version
 
+In dev branch:
+- Update version number in the CMakeList.txt
+- Edit version number in README.md
+
+Update master branch to current dev branch.
+
+Issue a git tag for the version:
+
+	git tag -a vX.YY.ZZ -m "milk version X.YY.ZZ"
+	git push origin vX.YY.ZZ
+
+Issue tags for submodules (optional, but helpful to track which submodule version makes it into package version):
+
+	git submodule foreach git tag -a milk_vX.Y.ZZ -m "milk version X.YY.ZZ"
+	git submodule foreach git push origin milk_vX.Y.ZZ
 
 
 
