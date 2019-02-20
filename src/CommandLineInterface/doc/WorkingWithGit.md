@@ -58,23 +58,30 @@ Issue a git tag for the version:
 
 Issue tags for submodules (optional, but helpful to track which submodule version makes it into package version):
 
-	git submodule foreach git tag -a milk_vX.Y.ZZ -m "milk version X.YY.ZZ"
-	git submodule foreach git push origin milk_vX.Y.ZZ
+	git submodule foreach git tag -a milk-vX.Y.ZZ -m "milk version X.YY.ZZ"
+	git submodule foreach git push origin milk-vX.Y.ZZ
+
+@note Modules inherit version numbers from the package(s) to which they belong. Consequently, modules that are shared between packages can have parallel version number histories. For example, the version history for a module may be: milk-v0.1.01 -> cacao-v0.1.01 -> cacao-v0.1.02 -> cacao-v0.2.00 -> milk-v0.1.02. Any new version, regardless of which package it is associated with, still includes all previous changes: there is a single version thread.
+
+
 
 
 
 ## Documentation
 
-Documentation tree can be locally built on dev branch with doxygen from main directory and pushed by :
+Documentation tree can be locally built on dev branch with doxygen from main directory  :
 
 	git checkout dev
 	doxygen
-	git add html
+
+To push it on the origin :	
+
+	cd dochtml/html
+	git add *
 	git commit -am 'updated doxygen documentation'
 	git push
 
-Same should be done on branch master.
 
-When switching branches, you may get an error message "The following untracked working tree files would be overwritten by checkout" preventing branch switch. If the error only lists files in the html directory, you can safely use the -f option to force branch change.
+@note When switching branches, you may get an error message "The following untracked working tree files would be overwritten by checkout" preventing branch switch. If the error only lists files in the html directory, you can safely use the -f option to force branch change.
 
 
