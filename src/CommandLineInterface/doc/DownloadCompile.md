@@ -6,7 +6,7 @@
 
 To compile :
 
-	cd cacao
+	cd milk
 	mkdir _build
 	cd _build
 	cmake ..
@@ -17,6 +17,7 @@ To compile :
 
 ---
 
+@warning This page describes installation of the core package milk. If you install application package (cacao or coffee), replace "milk" with "cacao" in these instructions.
 
 
 # Details {#page_installation_details}
@@ -104,7 +105,7 @@ To install cmake on centOS system (cmake executable will be cmake3):
 
 To compile using cmake
 
-	cd cacao
+	cd milk
 	mkdir _build
 	cd _build
 	cmake ..
@@ -124,7 +125,7 @@ You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 
 Add milk executable scripts to PATH environment variable. Add this line to the .bashrc file (change source code location as needed):
 
-	export PATH=$PATH:/home/myname/src/cacao/src/CommandLineInterface/scripts
+	export PATH=$PATH:/home/myname/src/milk/src/CommandLineInterface/scripts
 
 	
 

@@ -1008,71 +1008,86 @@ static int initncurses()
 
 static int GetNumberCPUs(PROCINFOPROC *pinfop)
 {
-  unsigned int pu_index = 0;
+    unsigned int pu_index = 0;
 
 #ifdef USE_HWLOC
 
-  unsigned int depth = 0;
-  hwloc_topology_t topology;
+    unsigned int depth = 0;
+    hwloc_topology_t topology;
 
-  /* Allocate and initialize topology object. */
-  hwloc_topology_init(&topology);
+    /* Allocate and initialize topology object. */
+    hwloc_topology_init(&topology);
 
-  /* ... Optionally, put detection configuration here to ignore
-     some objects types, define a synthetic topology, etc....
-     The default is to detect all the objects of the machine that
-     the caller is allowed to access.  See Configure Topology
-     Detection. */
+    /* ... Optionally, put detection configuration here to ignore
+       some objects types, define a synthetic topology, etc....
+       The default is to detect all the objects of the machine that
+       the caller is allowed to access.  See Configure Topology
+       Detection. */
 
-  /* Perform the topology detection. */
-  hwloc_topology_load(topology);
+    /* Perform the topology detection. */
+    hwloc_topology_load(topology);
 
-  depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
-  pinfop->NBcores = hwloc_get_nbobjs_by_depth(topology, depth);
+    depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
+    pinfop->NBcores = hwloc_get_nbobjs_by_depth(topology, depth);
 
-  depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
-  pinfop->NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
+    depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+    pinfop->NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
 
-  hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth, 0);
-  do {
-    pinfop->CPUids[pu_index] = obj->os_index;
-    ++pu_index;
-    obj = obj->next_cousin;
-  } while (obj != NULL);
+    hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth, 0);
+    do {
+        pinfop->CPUids[pu_index] = obj->os_index;
+        ++pu_index;
+        obj = obj->next_cousin;
+    } while (obj != NULL);
 
 #else
 
-	FILE *fpout;	
-	char outstring[16];
+    FILE *fpout;
+    char outstring[16];
 
     unsigned int tmp_index = 0;
-	
-	fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
-	if(fpout==NULL)
-	{
-		printf("WARNING: cannot run command \"tmuxsessionname\"\n");
-	}
-	else
-	{
-		if(fgets(outstring, 16, fpout)== NULL)
-			printf("WARNING: fgets error\n");
-		pclose(fpout);
-	}
 
-	pinfop->NBcores = 2;
-	pinfop->NBcpus = atoi(outstring);
-    for(pu_index=0; pu_index<pinfop->NBcpus; pu_index+=2){
-      pinfop->CPUids[tmp_index] = pu_index;
-      ++tmp_index;
+    fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
+    if(fpout==NULL)
+    {
+        printf("WARNING: cannot run command \"tmuxsessionname\"\n");
     }
-    for(pu_index=1; pu_index<pinfop->NBcpus; pu_index+=2){
-      pinfop->CPUids[tmp_index] = pu_index;
-      ++tmp_index;
+    else
+    {
+        if(fgets(outstring, 16, fpout)== NULL)
+            printf("WARNING: fgets error\n");
+        pclose(fpout);
     }
+    pinfop->NBcpus = atoi(outstring);
+
+   // fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print \$NF }'");
+
+
+    pinfop->NBcores = 2; // assumption
+
+	/*
+    for(pu_index=0; pu_index < pinfop->NBcpus; pu_index+=2) {
+        pinfop->CPUids[tmp_index] = pu_index;
+        ++tmp_index;
+    }
+    for(pu_index=1; pu_index < pinfop->NBcpus; pu_index+=2) {
+        pinfop->CPUids[tmp_index] = pu_index;
+        ++tmp_index;
+    }
+*/
+    for(pu_index=0; pu_index < pinfop->NBcpus/2; pu_index++) {
+        pinfop->CPUids[tmp_index] = pu_index;
+        ++tmp_index;
+    }
+    for(pu_index=pinfop->NBcpus/2; pu_index < pinfop->NBcpus; pu_index++) {
+        pinfop->CPUids[tmp_index] = pu_index;
+        ++tmp_index;
+    }
+
 
 #endif
 
-	return(pinfop->NBcpus);
+    return(pinfop->NBcpus);
 }
 
 
