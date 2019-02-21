@@ -3116,25 +3116,24 @@ int_fast8_t processinfo_CTRLscreen()
                 if(procinfoproc.DisplayMode == 2)
                 {
 					printw("\n");
-					printw("\n");
-					
+					printw("\n");					
 					printw("   STATUS    PID   process name                    run status                        tmuxSession     loopcnt        Description                                  Message                                               \n");
-					
 					printw("\n");
 				}
              
-
-
-
-
-
- 
+                // print header for display mode 4
+                if(procinfoproc.DisplayMode == 4)
+                {
+					printw("\n");
+					printw("\n");					
+					printw("   STATUS    PID   process name                    \n");
+			//      printw("   ACTIVE   31418  dm00-comb                      1   0 ..00  ITERlim 0/    0/   0  EXEClim 0/    0/   0  ITER    0.0us [   0.0us -    0.0us ] EXEC    0.0us [   0.0us -    0.0us ]  busy =   0.00 %");
+					printw("\n");
+				}
 
 
 
                 clock_gettime(CLOCK_REALTIME, &t05loop);
-
-
 
 
 
@@ -3635,9 +3634,30 @@ int_fast8_t processinfo_CTRLscreen()
     endwin();
 
 
+	// Why did we exit ?
+	
+	printf("loopOK = 0 -> exit\n");
+	
+	
     if ( Xexit == 1 ) // normal exit
         printf("User typed x -> exiting\n");
-
+    else if (data.signal_TERM == 1 )
+		printf("Received signal TERM\n");
+    else if (data.signal_INT == 1 )
+		printf("Received signal INT\n");
+    else if (data.signal_ABRT == 1 )
+		printf("Received signal ABRT\n");
+    else if (data.signal_BUS == 1 )
+		printf("Received signal BUS\n");
+    else if (data.signal_SEGV == 1 )
+		printf("Received signal SEGV\n");
+    else if (data.signal_HUP == 1 )
+		printf("Received signal HUP\n");
+    else if (data.signal_PIPE == 1 )
+		printf("Received signal PIPE\n");
+		
+		
+		
     // cleanup
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
     {
