@@ -1028,7 +1028,7 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
     hwloc_topology_load(topology);
 
     depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
-    pinfop->NBcores = hwloc_get_nbobjs_by_depth(topology, depth);
+    pinfop->NBcpusocket = hwloc_get_nbobjs_by_depth(topology, depth);
 
     depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
     pinfop->NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
@@ -1063,16 +1063,19 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 
 	fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'", "r");
 	pu_index = 0;
+	pinfop->NBcpusocket = 1;
 	while ((fgets(buf, sizeof(buf), fpout) != NULL)&&(pu_index<pinfop->NBcpus)) {
 		pinfop->CPUids[pu_index] = pu_index;
 		pinfop->CPUphys[pu_index] = atoi(buf);
 		
-//		printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
+		printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
+		if(pinfop->CPUphys[pu_index]+1 > pinfop->NBcpusocket)
+			pinfop->NBcpusocket = pinfop->CPUphys[pu_index]+1;
 		
 		pu_index++;
 	}
 
-    pinfop->NBcores = 2; // assumption
+
 
 	/*
     for(pu_index=0; pu_index < pinfop->NBcpus; pu_index+=2) {
@@ -2050,7 +2053,7 @@ int_fast8_t processinfo_CTRLscreen()
     PROCINFOPROC procinfoproc;  // Main structure - holds everything that needs to be shared with other functions and scan thread
     pthread_t threadscan;
 
-
+    int cpusocket;
 
     char syscommand[300];
     char pselected_FILE[200];
@@ -2884,82 +2887,82 @@ int_fast8_t processinfo_CTRLscreen()
             {
 
                 printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
-                
-                 if(procinfoproc.DisplayMode==1)
-            {
-                attron(A_REVERSE);
-                printw("[h] Help");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[h] Help");
-            printw("   ");
 
-            if(procinfoproc.DisplayMode==2)
-            {
-                attron(A_REVERSE);
-                printw("[F2] CTRL");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[F2] CTRL");
-            printw("   ");
+                if(procinfoproc.DisplayMode==1)
+                {
+                    attron(A_REVERSE);
+                    printw("[h] Help");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[h] Help");
+                printw("   ");
 
-            if(procinfoproc.DisplayMode==3)
-            {
-                attron(A_REVERSE);
-                printw("[F3] Resources");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[F3] Resources");
-            printw("   ");
+                if(procinfoproc.DisplayMode==2)
+                {
+                    attron(A_REVERSE);
+                    printw("[F2] CTRL");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F2] CTRL");
+                printw("   ");
 
-            if(procinfoproc.DisplayMode==4)
-            {
-                attron(A_REVERSE);
-                printw("[F4] Timing");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[F4] Timing");
-            printw("   ");
+                if(procinfoproc.DisplayMode==3)
+                {
+                    attron(A_REVERSE);
+                    printw("[F3] Resources");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F3] Resources");
+                printw("   ");
 
-            if(procinfoproc.DisplayMode==5)
-            {
-                attron(A_REVERSE);
-                printw("[F5] htop (F10 to exit)");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[F5] htop (F10 to exit)");
-            printw("   ");
+                if(procinfoproc.DisplayMode==4)
+                {
+                    attron(A_REVERSE);
+                    printw("[F4] Timing");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F4] Timing");
+                printw("   ");
 
-            if(procinfoproc.DisplayMode==6)
-            {
-                attron(A_REVERSE);
-                printw("[F6] iotop (q to exit)");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[F6] iotop (q to exit)");
-            printw("   ");
+                if(procinfoproc.DisplayMode==5)
+                {
+                    attron(A_REVERSE);
+                    printw("[F5] htop (F10 to exit)");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F5] htop (F10 to exit)");
+                printw("   ");
 
-            if(procinfoproc.DisplayMode==6)
-            {
-                attron(A_REVERSE);
-                printw("[F7] atop (q to exit)");
-                attroff(A_REVERSE);
-            }
-            else
-                printw("[F7] atop (q to exit)");
-            printw("   ");
+                if(procinfoproc.DisplayMode==6)
+                {
+                    attron(A_REVERSE);
+                    printw("[F6] iotop (q to exit)");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F6] iotop (q to exit)");
+                printw("   ");
+
+                if(procinfoproc.DisplayMode==6)
+                {
+                    attron(A_REVERSE);
+                    printw("[F7] atop (q to exit)");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F7] atop (q to exit)");
+                printw("   ");
 
 
-            printw("\n");
+                printw("\n");
 
-                
-                
+
+
                 printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 
 
@@ -3038,64 +3041,81 @@ int_fast8_t processinfo_CTRLscreen()
                     // List CPUs
                     printw(
                         "                                                                "
-                        "  %2d Cores %2d CPUs  ",
-                        procinfoproc.NBcores, procinfoproc.NBcpus);
-                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
-                        printw("|%02d", procinfoproc.CPUids[cpu]);
-                    printw("|    |");
-                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
-                        printw("%02d|", procinfoproc.CPUids[cpu]);
+                        "%2d CPUsock %2d CPUs  ",
+                        procinfoproc.NBcpusocket, procinfoproc.NBcpus);
+
+                    for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
+                    {
+                        if(cpusocket>0)
+                            printw("    |");
+                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
+                            if(procinfoproc.CPUphys[cpu] == cpusocket)
+                                printw("|%02d", procinfoproc.CPUids[cpu]);
+                        printw("|");
+                    }
+                    //for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
+                    //    printw("%02d|", procinfoproc.CPUids[cpu]);
                     printw("\n");
 
                     // List CPU # processes
                     printw("                                                                         PROCESSES  ", procinfoproc.NBcpus);
-                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
+
+
+                    for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
-                        int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
-                        if(vint>99)
-                            vint = 99;
+                        if(cpusocket>0)
+                            printw("    |");
 
-                        ColorCode = 0;
-                        if(vint>CPUpcntLim1)
-                            ColorCode = 2;
-                        if(vint>CPUpcntLim2)
-                            ColorCode = 3;
-                        if(vint>CPUpcntLim3)
-                            ColorCode = 4;
-                        if(vint<CPUpcntLim0)
-                            ColorCode = 5;
+                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
+                            if(procinfoproc.CPUphys[cpu] == cpusocket)
+                            {
+                                int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
+                                if(vint>99)
+                                    vint = 99;
 
-                        printw("|");
-                        if(ColorCode != 0)
-                            attron(COLOR_PAIR(ColorCode));
-                        printw("%02d", vint);
-                        if(ColorCode != 0)
-                            attroff(COLOR_PAIR(ColorCode));
-                    }
-                    printw("|    |");
-                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
-                    {
-                        int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
-                        if(vint>99)
-                            vint = 99;
+                                ColorCode = 0;
+                                if(vint>CPUpcntLim1)
+                                    ColorCode = 2;
+                                if(vint>CPUpcntLim2)
+                                    ColorCode = 3;
+                                if(vint>CPUpcntLim3)
+                                    ColorCode = 4;
+                                if(vint<CPUpcntLim0)
+                                    ColorCode = 5;
 
-                        ColorCode = 0;
-                        if(vint>CPUpcntLim1)
-                            ColorCode = 2;
-                        if(vint>CPUpcntLim2)
-                            ColorCode = 3;
-                        if(vint>CPUpcntLim3)
-                            ColorCode = 4;
-                        if(vint<CPUpcntLim0)
-                            ColorCode = 5;
-
-                        if(ColorCode != 0)
-                            attron(COLOR_PAIR(ColorCode));
-                        printw("%02d", vint);
-                        if(ColorCode != 0)
-                            attroff(COLOR_PAIR(ColorCode));
+                                printw("|");
+                                if(ColorCode != 0)
+                                    attron(COLOR_PAIR(ColorCode));
+                                printw("%02d", vint);
+                                if(ColorCode != 0)
+                                    attroff(COLOR_PAIR(ColorCode));
+                            }
                         printw("|");
                     }
+                    /*  printw("|    |");
+                      for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
+                      {
+                          int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
+                          if(vint>99)
+                              vint = 99;
+
+                          ColorCode = 0;
+                          if(vint>CPUpcntLim1)
+                              ColorCode = 2;
+                          if(vint>CPUpcntLim2)
+                              ColorCode = 3;
+                          if(vint>CPUpcntLim3)
+                              ColorCode = 4;
+                          if(vint<CPUpcntLim0)
+                              ColorCode = 5;
+
+                          if(ColorCode != 0)
+                              attron(COLOR_PAIR(ColorCode));
+                          printw("%02d", vint);
+                          if(ColorCode != 0)
+                              attroff(COLOR_PAIR(ColorCode));
+                          printw("|");
+                      }*/
 
                     printw("\n");
 
@@ -3105,7 +3125,38 @@ int_fast8_t processinfo_CTRLscreen()
 
                     // Print CPU LOAD
                     printw("                                                                          CPU LOAD  ", procinfoproc.NBcpus);
-                    for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
+                    for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
+                    {
+                        if(cpusocket>0)
+                            printw("    |");
+                        for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu++)
+                            if(procinfoproc.CPUphys[cpu] == cpusocket)
+                            {
+                                int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
+                                if(vint>99)
+                                    vint = 99;
+
+                                ColorCode = 0;
+                                if(vint>CPUloadLim1)
+                                    ColorCode = 2;
+                                if(vint>CPUloadLim2)
+                                    ColorCode = 3;
+                                if(vint>CPUloadLim3)
+                                    ColorCode = 4;
+                                if(vint<CPUloadLim0)
+                                    ColorCode = 5;
+
+                                printw("|");
+                                if(ColorCode != 0)
+                                    attron(COLOR_PAIR(ColorCode));
+                                printw("%02d", vint);
+                                if(ColorCode != 0)
+                                    attroff(COLOR_PAIR(ColorCode));
+                            }
+                        printw("|");
+                    }
+                    /*printw("|    |");
+                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
                     {
                         int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
                         if(vint>99)
@@ -3121,37 +3172,13 @@ int_fast8_t processinfo_CTRLscreen()
                         if(vint<CPUloadLim0)
                             ColorCode = 5;
 
-                        printw("|");
-                        if(ColorCode != 0)
-                            attron(COLOR_PAIR(ColorCode));
-                        printw("%02d", vint);
-                        if(ColorCode != 0)
-                            attroff(COLOR_PAIR(ColorCode));
-                    }
-                    printw("|    |");
-                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
-                    {
-                        int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
-                        if(vint>99)
-                            vint = 99;
-
-                        ColorCode = 0;
-                        if(vint>CPUloadLim1)
-                            ColorCode = 2;
-                        if(vint>CPUloadLim2)
-                            ColorCode = 3;
-                        if(vint>CPUloadLim3)
-                            ColorCode = 4;
-                        if(vint<CPUloadLim0)
-                            ColorCode = 5;
-
                         if(ColorCode != 0)
                             attron(COLOR_PAIR(ColorCode));
                         printw("%02d", vint);
                         if(ColorCode != 0)
                             attroff(COLOR_PAIR(ColorCode));
                         printw("|");
-                    }
+                    }*/
 
                     printw("\n");
                     printw("\n");
@@ -3214,12 +3241,12 @@ int_fast8_t processinfo_CTRLscreen()
                                 attroff(COLOR_PAIR(4));
                             }
                         }
-                        
-                        
-                        
-                        
-                        
-                
+
+
+
+
+
+
 
 
 
@@ -3315,7 +3342,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 }
                                 else
                                 {
-									
+
                                     int spindex; // sub process index, 0 for main
                                     for(spindex = 0; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
                                     {
@@ -3325,19 +3352,19 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(spindex>0)
                                         {
                                             TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
-                                            printw("               |---%6d                        ", procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex]);                                           
+                                            printw("               |---%6d                        ", procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex]);
                                         }
                                         else
                                         {
                                             TID = procinfoproc.pinfodisp[pindex].PID;
                                             procinfoproc.pinfodisp[pindex].subprocPIDarray[0] = procinfoproc.pinfodisp[pindex].PID;
                                         }
-                                        
+
                                         printw(" %2d", procinfoproc.pinfodisp[pindex].rt_priority);
                                         printw(" %-10s ", procinfoproc.pinfodisp[pindex].cpuset);
                                         printw(" %2dx ", procinfoproc.pinfodisp[pindex].threads);
 
- 
+
 
 
                                         // Context Switches
@@ -3359,8 +3386,8 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         printw(" ");
-                                        
-                                        
+
+
                                         // CPU use
 
                                         int cpuColor = 0;
@@ -3376,18 +3403,18 @@ int_fast8_t processinfo_CTRLscreen()
                                         if(procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]<1.0)
                                             cpuColor = 5;
 
-                                        
-                                        
-                                        
-                                        // TIME = 0.11 ms
-                                        
-                                        
 
-                                        
-                                        
-                                        
-                                        // First group of cores (physical CPU 0)                                        
-                                        for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcores; cpu++)
+
+
+                                        // TIME = 0.11 ms
+
+
+
+
+
+
+                                        // First group of cores (physical CPU 0)
+                                        for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu++)
                                         {
                                             printw("|");
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
@@ -3402,11 +3429,11 @@ int_fast8_t processinfo_CTRLscreen()
                                                 attroff(COLOR_PAIR(cpuColor));
                                         }
                                         printw("|    ");
-                                        
-                                        
-                                        
+
+
+
                                         // Second group of cores (physical CPU 0)
-                                        for (cpu = procinfoproc.NBcpus / procinfoproc.NBcores; cpu < procinfoproc.NBcpus; cpu++)
+                                        for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
                                         {
                                             printw("|");
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
@@ -3473,9 +3500,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         attroff(COLOR_PAIR(memColor));
-                                        
-                                        
-                                        
+
+
+
                                         printw("\n");
 
                                         if(pindex == pindexSelected)
@@ -3646,12 +3673,12 @@ int_fast8_t processinfo_CTRLscreen()
 
             clock_gettime(CLOCK_REALTIME, &t2loop);
 
-              tdiff = info_time_diff(t1loop, t2loop);
-              double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            tdiff = info_time_diff(t1loop, t2loop);
+            double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
-              printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop, 1.0/tdiffvloop);
+            printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop, 1.0/tdiffvloop);
 
-			refresh();
+            refresh();
         }
 
 
@@ -3665,8 +3692,8 @@ int_fast8_t processinfo_CTRLscreen()
     endwin();
 
 
-	if ( Xexit == 1 ) // normal exit
-		printf("User typed x -> exiting\n");
+    if ( Xexit == 1 ) // normal exit
+        printf("User typed x -> exiting\n");
 
     // cleanup
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)

@@ -225,7 +225,7 @@ typedef struct
 		
 		
 	int NBcpus;
-	int NBcores;
+	int NBcpusocket;
 	
 	float CPUload[MAXNBCPU];
 	long long CPUcnt0[MAXNBCPU];
