@@ -558,6 +558,8 @@ int function_parameter_printlist(
 
 
 
+
+
 int functionparameter_GetFileName(FUNCTION_PARAMETER *fparam, char *outfname, char *tagname)
 {
     char fname[500];
@@ -2314,6 +2316,28 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         {
         case 'x':     // Exit control screen
             loopOK=0;
+            break;
+
+        case 'h':     // help
+            endwin();
+            system("clear");            
+            
+            printf("Function Parameter Structure (FPS) Control \n");
+            printf("\n");
+            printf("  Arrow keys     NAVIGATE\n");
+            printf("  ENTER          Select parameter to read/set\n");
+            printf("\n");
+            printf("  R              start run process\n");
+            printf("  r              stop run process\n");
+            printf("  C              start config process\n");
+            printf("  c              stop config process\n");
+            
+            printf("\n");
+            printf("  (x)            Exit\n");
+            printf("\n");
+            printf("Press Any Key to Continue\n");  
+			getchar();  
+            initncurses();
             break;
 
         case KEY_UP:
