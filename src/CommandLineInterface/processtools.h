@@ -227,18 +227,21 @@ typedef struct
 	int NBcpus;
 	int NBcores;
 	
-	float CPUload[100];
-	long long CPUcnt0[100];
-	long long CPUcnt1[100];
-	long long CPUcnt2[100];
-	long long CPUcnt3[100];
-	long long CPUcnt4[100];
-	long long CPUcnt5[100];
-	long long CPUcnt6[100];
-	long long CPUcnt7[100];
-	long long CPUcnt8[100];
-	long long CPUids[100];
-	int CPUpcnt[100];	
+	float CPUload[MAXNBCPU];
+	long long CPUcnt0[MAXNBCPU];
+	long long CPUcnt1[MAXNBCPU];
+	long long CPUcnt2[MAXNBCPU];
+	long long CPUcnt3[MAXNBCPU];
+	long long CPUcnt4[MAXNBCPU];
+	long long CPUcnt5[MAXNBCPU];
+	long long CPUcnt6[MAXNBCPU];
+	long long CPUcnt7[MAXNBCPU];
+	long long CPUcnt8[MAXNBCPU];
+
+	int CPUids[MAXNBCPU];  // individual cpus (same cores)
+	int CPUphys[MAXNBCPU]; // Physical CPU socket
+
+	int CPUpcnt[MAXNBCPU];	
 	
 	int NBpindexActive;
 	int pindexActive[PROCESSINFOLISTSIZE];
