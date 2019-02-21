@@ -2320,7 +2320,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
         case 'h':     // help
             endwin();
-            clrscr();            
+            system("clear");            
             printf("Help\n");
             printf("Press Any Key to Continue\n");  
 			getchar();  
