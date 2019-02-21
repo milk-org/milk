@@ -1044,7 +1044,8 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 
     FILE *fpout;
     char outstring[16];
-
+	char buf[100];
+	
     unsigned int tmp_index = 0;
 
     fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
@@ -1060,8 +1061,12 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
     }
     pinfop->NBcpus = atoi(outstring);
 
-   // fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print \$NF }'");
-
+	fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print \$NF }'", "r");
+	pu_index = 0;
+	while ((fgets(buf, sizeof(buf), fpout) != NULL)&&(pu_index<pinfop->NBcpus)) {
+		infop->CPUids[tmp_index] = atoi(buf);
+		pu_index++;
+	}
 
     pinfop->NBcores = 2; // assumption
 
@@ -1074,7 +1079,7 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
         pinfop->CPUids[tmp_index] = pu_index;
         ++tmp_index;
     }
-*/
+
     for(pu_index=0; pu_index < pinfop->NBcpus/2; pu_index++) {
         pinfop->CPUids[tmp_index] = pu_index;
         ++tmp_index;
@@ -1083,7 +1088,7 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
         pinfop->CPUids[tmp_index] = pu_index;
         ++tmp_index;
     }
-
+*/
 
 #endif
 
@@ -2146,6 +2151,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
     clear();
+    int Xexit = 0; // toggles to 1 when users types x
 
     while( loopOK == 1 )
     {
@@ -2189,7 +2195,8 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         case 'x':     // Exit control screen
-            loopOK=0;
+            loopOK = 0;
+            Xexit = 1;
             break;
 
         case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
@@ -2873,6 +2880,82 @@ int_fast8_t processinfo_CTRLscreen()
             {
 
                 printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+                
+                 if(procinfoproc.DisplayMode==1)
+            {
+                attron(A_REVERSE);
+                printw("[h] Help");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[h] Help");
+            printw("   ");
+
+            if(procinfoproc.DisplayMode==2)
+            {
+                attron(A_REVERSE);
+                printw("[F2] CTRL");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[F2] CTRL");
+            printw("   ");
+
+            if(procinfoproc.DisplayMode==3)
+            {
+                attron(A_REVERSE);
+                printw("[F3] Resources");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[F3] Resources");
+            printw("   ");
+
+            if(procinfoproc.DisplayMode==4)
+            {
+                attron(A_REVERSE);
+                printw("[F4] Timing");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[F4] Timing");
+            printw("   ");
+
+            if(procinfoproc.DisplayMode==5)
+            {
+                attron(A_REVERSE);
+                printw("[F5] htop (F10 to exit)");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[F5] htop (F10 to exit)");
+            printw("   ");
+
+            if(procinfoproc.DisplayMode==6)
+            {
+                attron(A_REVERSE);
+                printw("[F6] iotop (q to exit)");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[F6] iotop (q to exit)");
+            printw("   ");
+
+            if(procinfoproc.DisplayMode==6)
+            {
+                attron(A_REVERSE);
+                printw("[F7] atop (q to exit)");
+                attroff(A_REVERSE);
+            }
+            else
+                printw("[F7] atop (q to exit)");
+            printw("   ");
+
+
+            printw("\n");
+
+                
+                
                 printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 
 
@@ -3577,6 +3660,9 @@ int_fast8_t processinfo_CTRLscreen()
     }
     endwin();
 
+
+	if ( Xexit == 1 ) // normal exit
+		printf("User typed x -> exiting\n");
 
     // cleanup
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
