@@ -1010,7 +1010,7 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 {
     unsigned int pu_index = 0;
 
-#ifdef USE_HWLOC
+#ifdef USED_HWLOC
 
     unsigned int depth = 0;
     hwloc_topology_t topology;
@@ -1061,10 +1061,13 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
     }
     pinfop->NBcpus = atoi(outstring);
 
-	fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print \$NF }'", "r");
+	fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'", "r");
 	pu_index = 0;
 	while ((fgets(buf, sizeof(buf), fpout) != NULL)&&(pu_index<pinfop->NBcpus)) {
-		infop->CPUids[tmp_index] = atoi(buf);
+		pinfop->CPUids[pu_index] = atoi(buf);
+		
+//		printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUids[pu_index] );
+		
 		pu_index++;
 	}
 
