@@ -1075,28 +1075,6 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 		pu_index++;
 	}
 
-
-
-	/*
-    for(pu_index=0; pu_index < pinfop->NBcpus; pu_index+=2) {
-        pinfop->CPUids[tmp_index] = pu_index;
-        ++tmp_index;
-    }
-    for(pu_index=1; pu_index < pinfop->NBcpus; pu_index+=2) {
-        pinfop->CPUids[tmp_index] = pu_index;
-        ++tmp_index;
-    }
-
-    for(pu_index=0; pu_index < pinfop->NBcpus/2; pu_index++) {
-        pinfop->CPUids[tmp_index] = pu_index;
-        ++tmp_index;
-    }
-    for(pu_index=pinfop->NBcpus/2; pu_index < pinfop->NBcpus; pu_index++) {
-        pinfop->CPUids[tmp_index] = pu_index;
-        ++tmp_index;
-    }
-*/
-
 #endif
 
     return(pinfop->NBcpus);
@@ -1984,7 +1962,7 @@ void *processinfo_scan(void *thptr)
                             int cpuOK = 0;
                             int cpumin, cpumax;
 
-                            sprintf(cpustring, ",%lld,", pinfop->CPUids[cpu]);
+                            sprintf(cpustring, ",%d,", pinfop->CPUids[cpu]);
                             if(strstr(cpuliststring, cpustring) != NULL)
                                 cpuOK = 1;
 
@@ -3041,7 +3019,7 @@ int_fast8_t processinfo_CTRLscreen()
                     // List CPUs
                     printw(
                         "                                                                "
-                        "%2d CPUsock %2d CPUs  ",
+                        "%2d sockets %2d CPUs  ",
                         procinfoproc.NBcpusocket, procinfoproc.NBcpus);
 
                     for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
@@ -3053,8 +3031,6 @@ int_fast8_t processinfo_CTRLscreen()
                                 printw("|%02d", procinfoproc.CPUids[cpu]);
                         printw("|");
                     }
-                    //for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
-                    //    printw("%02d|", procinfoproc.CPUids[cpu]);
                     printw("\n");
 
                     // List CPU # processes
@@ -3092,30 +3068,6 @@ int_fast8_t processinfo_CTRLscreen()
                             }
                         printw("|");
                     }
-                    /*  printw("|    |");
-                      for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
-                      {
-                          int vint = procinfoproc.CPUpcnt[procinfoproc.CPUids[cpu]];
-                          if(vint>99)
-                              vint = 99;
-
-                          ColorCode = 0;
-                          if(vint>CPUpcntLim1)
-                              ColorCode = 2;
-                          if(vint>CPUpcntLim2)
-                              ColorCode = 3;
-                          if(vint>CPUpcntLim3)
-                              ColorCode = 4;
-                          if(vint<CPUpcntLim0)
-                              ColorCode = 5;
-
-                          if(ColorCode != 0)
-                              attron(COLOR_PAIR(ColorCode));
-                          printw("%02d", vint);
-                          if(ColorCode != 0)
-                              attroff(COLOR_PAIR(ColorCode));
-                          printw("|");
-                      }*/
 
                     printw("\n");
 
@@ -3155,34 +3107,17 @@ int_fast8_t processinfo_CTRLscreen()
                             }
                         printw("|");
                     }
-                    /*printw("|    |");
-                    for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
-                    {
-                        int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
-                        if(vint>99)
-                            vint = 99;
-
-                        ColorCode = 0;
-                        if(vint>CPUloadLim1)
-                            ColorCode = 2;
-                        if(vint>CPUloadLim2)
-                            ColorCode = 3;
-                        if(vint>CPUloadLim3)
-                            ColorCode = 4;
-                        if(vint<CPUloadLim0)
-                            ColorCode = 5;
-
-                        if(ColorCode != 0)
-                            attron(COLOR_PAIR(ColorCode));
-                        printw("%02d", vint);
-                        if(ColorCode != 0)
-                            attroff(COLOR_PAIR(ColorCode));
-                        printw("|");
-                    }*/
 
                     printw("\n");
                     printw("\n");
                 }
+                else
+                {
+                    printw("\n");
+                    printw("\n");
+                    printw("\n");
+                    printw("\n");					
+				}
 
 
 
