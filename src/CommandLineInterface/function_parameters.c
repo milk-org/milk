@@ -2324,13 +2324,15 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             
             printf("Function Parameter Structure (FPS) Control \n");
             printf("\n");
+            printf("\n");
+            printf("\n");
             printf("  Arrow keys     NAVIGATE\n");
             printf("  ENTER          Select parameter to read/set\n");
             printf("\n");
-            printf("  R              start run process\n");
-            printf("  r              stop run process\n");
-            printf("  C              start config process\n");
-            printf("  c              stop config process\n");
+            printf("  (R)            start run process\n");
+            printf("  (r)            stop run process\n");
+            printf("  (C)            start config process\n");
+            printf("  (c)            stop config process\n");
             
             printf("\n");
             printf("  (x)            Exit\n");
@@ -2454,7 +2456,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         case 'C' : // start conf process
             printf("STEP %s %d\n", __FILE__, __LINE__);
             fflush(stdout);
-            /*
+            
             sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name);
             system(command);
 
@@ -2475,7 +2477,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             system(command);
             fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-            */
+            
             break;
 
         case 'c': // kill conf process
@@ -2939,8 +2941,8 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
     {
         function_parameter_struct_disconnect(&fps[fpsindex]);
     }
-    printf("STEP %s %d\n", __FILE__, __LINE__);
-    fflush(stdout);
+//    printf("STEP %s %d\n", __FILE__, __LINE__);
+//    fflush(stdout);
 
     return 0;
 }
