@@ -2321,7 +2321,20 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         case 'h':     // help
             endwin();
             system("clear");            
-            printf("Help\n");
+            
+            printf("Function Parameter Structure (FPS) Control \n");
+            printf("\n");
+            printf("  Arrow keys     NAVIGATE\n");
+            printf("  ENTER          Select parameter to read/set\n");
+            printf("\n");
+            printf("  R              start run process\n");
+            printf("  r              stop run process\n");
+            printf("  C              start config process\n");
+            printf("  c              stop config process\n");
+            
+            printf("\n");
+            printf("  (x)            Exit\n");
+            printf("\n");
             printf("Press Any Key to Continue\n");  
 			getchar();  
             initncurses();
