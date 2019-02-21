@@ -3111,16 +3111,24 @@ int_fast8_t processinfo_CTRLscreen()
                     printw("\n");
                     printw("\n");
                 }
-                else
+                
+                // print header for display mode 2
+                if(procinfoproc.DisplayMode == 2)
                 {
-                    printw("\n");
-                    printw("\n");
-                    printw("\n");
-                    printw("\n");					
+					printw("\n");
+					printw("\n");
+					
+					printw("   STATUS    PID   process name                    run status                        tmuxSession     loopcnt        Description                                  Message                                               \n");
+					
+					printw("\n");
 				}
+             
 
 
 
+
+
+ 
 
 
 
