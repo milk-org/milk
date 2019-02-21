@@ -3025,7 +3025,7 @@ int_fast8_t processinfo_CTRLscreen()
                     for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
                         if(cpusocket>0)
-                            printw("    |");
+                            printw("    ");
                         for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
                             if(procinfoproc.CPUphys[cpu] == cpusocket)
                                 printw("|%02d", procinfoproc.CPUids[cpu]);
@@ -3040,7 +3040,7 @@ int_fast8_t processinfo_CTRLscreen()
                     for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
                         if(cpusocket>0)
-                            printw("    |");
+                            printw("    ");
 
                         for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
                             if(procinfoproc.CPUphys[cpu] == cpusocket)
@@ -3080,7 +3080,7 @@ int_fast8_t processinfo_CTRLscreen()
                     for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
                         if(cpusocket>0)
-                            printw("    |");
+                            printw("    ");
                         for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
                             if(procinfoproc.CPUphys[cpu] == cpusocket)
                             {
