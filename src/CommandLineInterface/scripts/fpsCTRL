@@ -14,9 +14,15 @@ echo "------------------------------------------------------------------------"
 echo "$(tput bold) $pname : function parameters control  $(tput sgr0)"
 echo "------------------------------------------------------------------------"
 echo "  Monitors and controls function parameters"
+echo "  Connects to <name>.fps.shm shared memory structures"
+echo "  Argument is string match filter to select fps structures"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-h] <stringfilter>"
+echo "     $0 [-hl] <stringfilter>"
+echo ""
+echo " $(tput bold)OPTIONS:$(tput sgr0)"
+echo "     $(tput bold)-h$(tput sgr0)          help"
+echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -50,7 +56,7 @@ done
 
 
 
-while getopts :h FLAG; do
+while getopts :hl FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -60,6 +66,12 @@ while getopts :h FLAG; do
       fi
       exit
       ;;
+    l) # list fps structures
+	  echo ""
+	  ls -l /tmp/*.fps.shm
+	  echo ""
+	  exit
+    ;;
     \?) 
       echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
       printHELP
