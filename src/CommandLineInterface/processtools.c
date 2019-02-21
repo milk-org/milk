@@ -165,7 +165,9 @@
 
 
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 
 /* =============================================================================================== */
@@ -3639,6 +3641,7 @@ int_fast8_t processinfo_CTRLscreen()
 	printf("loopOK = 0 -> exit\n");
 	
 	
+#ifndef STANDALONE
     if ( Xexit == 1 ) // normal exit
         printf("User typed x -> exiting\n");
     else if (data.signal_TERM == 1 )
@@ -3655,6 +3658,7 @@ int_fast8_t processinfo_CTRLscreen()
 		printf("Received signal HUP\n");
     else if (data.signal_PIPE == 1 )
 		printf("Received signal PIPE\n");
+#endif
 		
 		
 		
