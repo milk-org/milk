@@ -2454,26 +2454,26 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
 
         case 'C' : // start conf process
-            printf("STEP %s %d\n", __FILE__, __LINE__);
-            fflush(stdout);
+            //printf("STEP %s %d\n", __FILE__, __LINE__);
+            //fflush(stdout);
             
             sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name);
             system(command);
 
-            printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
+            //printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
 
             sprintf(command, "tmux send-keys -t %s-conf \"./cmdproc/%s-conf-start", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name, fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
             for(nameindex=0; nameindex<fps[keywnode[iSelected[currentlevel]].fpsindex].md->NBnameindex; nameindex++)
             {
                 char tmpstring[20];
 
-                printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
+                //printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
 
                 sprintf(tmpstring, " %02d", fps[keywnode[iSelected[currentlevel]].fpsindex].md->nameindex[nameindex]);
                 strcat(command, tmpstring);
             }
             strcat(command, "\" C-m");
-            printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
+            //printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
             system(command);
             fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
