@@ -1068,7 +1068,7 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 		pinfop->CPUids[pu_index] = pu_index;
 		pinfop->CPUphys[pu_index] = atoi(buf);
 		
-		printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
+		//printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
 		if(pinfop->CPUphys[pu_index]+1 > pinfop->NBcpusocket)
 			pinfop->NBcpusocket = pinfop->CPUphys[pu_index]+1;
 		
@@ -3081,7 +3081,7 @@ int_fast8_t processinfo_CTRLscreen()
                     {
                         if(cpusocket>0)
                             printw("    |");
-                        for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu++)
+                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
                             if(procinfoproc.CPUphys[cpu] == cpusocket)
                             {
                                 int vint = (int) (100.0*procinfoproc.CPUload[procinfoproc.CPUids[cpu]]);
