@@ -558,6 +558,8 @@ int function_parameter_printlist(
 
 
 
+
+
 int functionparameter_GetFileName(FUNCTION_PARAMETER *fparam, char *outfname, char *tagname)
 {
     char fname[500];
@@ -2314,6 +2316,13 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         {
         case 'x':     // Exit control screen
             loopOK=0;
+            break;
+
+        case 'h':     // help
+            endwin();
+            printf("Help\n");
+            sleep(2);
+            initncurses();
             break;
 
         case KEY_UP:
