@@ -3,28 +3,7 @@
  * @file function_parameters.c
  * @brief Tools to help expose and control function parameters
  * 
- * 
- * # Description
- * 
- * Function parameters are saved in directory ./conf/KEYW0/KEYW1/KEYW2.txt
- * 
- * 
- * # Use Template
- * 
- * @code
- * 
- * #include 
- * 
- * 	// allocate and initialize function parameter array
- * NBparam = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
- * FUNCTION_PARAMETER *funcparam = (FUNCTION_PARAMETER *)malloc(sizeof(FUNCTION_PARAMETER)*NBparam);
- * function_parameter_initarray(funcparam, NBparam);
- * 
- * // add parameter (integer)
- * 
- * 
- * @endcode
- * 
+ * @see @ref page_FunctionParameterStructure
  * 
  * 
  */
