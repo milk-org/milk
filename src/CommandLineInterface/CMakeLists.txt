@@ -1,11 +1,9 @@
 cmake_minimum_required (VERSION 3.8)
 project (CLIcore C)
  
-option(PYTHON_STANDALONE "PYTHON_STANDALONE mode" OFF)
+option(python_build "PYTHON_STANDALONE mode" OFF)
 
-message(${PYTHON_STANDALONE})
-
-if(${PYTHON_STANDALONE})
+if(${python_build})
     set(CORE_FILES standalone_dependencies.c)
 else()
     include_directories ("${PROJECT_SOURCE_DIR}/src")
@@ -48,7 +46,7 @@ streamCTRL.c
 ${CORE_FILES}
 )
 
-if(${PYTHON_STANDALONE})
+if(${python_build})
     set(USE_CUDA ON)
     add_subdirectory(../ImageStreamIO ImageStreamIO)
     target_compile_definitions(CLIcore PRIVATE STANDALONE)
@@ -100,7 +98,7 @@ ${HWLOC_LIBRARIES}
 ${NCURSES_LIBRARIES}
 )
 
-if(${PYTHON_STANDALONE})
+if(${python_build})
     add_subdirectory(python_module)
 endif()
 
