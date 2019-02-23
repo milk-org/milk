@@ -2194,7 +2194,7 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
         // loop controls
-        case 'p': // pause
+        case 'p': // pause toggle
             for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
                 pindex = procinfoproc.pindexActive[index];
@@ -2217,6 +2217,29 @@ int_fast8_t processinfo_CTRLscreen()
             }
             break;
 
+        case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute) 
+            for(index=0; index<procinfoproc.NBpindexActive; index++)
+            {
+                pindex = procinfoproc.pindexActive[index];
+                if(procinfoproc.selectedarray[pindex] == 1)
+                {
+                    selectedOK = 1;
+                    if(procinfoproc.pinfoarray[pindex]->CTRLval == 0) // if running, turn compute to off
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 5;
+                    else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 0; 
+                }
+            }
+            if(selectedOK == 0)
+            {
+                pindex = pindexSelected;
+                if(procinfoproc.pinfoarray[pindex]->CTRLval == 0) // if running, turn compute to off
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 5;
+                else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 0; 
+            }
+            break;
+
         case 's': // step
             for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
@@ -2233,6 +2256,8 @@ int_fast8_t processinfo_CTRLscreen()
                 procinfoproc.pinfoarray[pindex]->CTRLval = 2;
             }
             break;
+
+		
 
 
         case '>': // move to other cpuset
@@ -2641,7 +2666,12 @@ int_fast8_t processinfo_CTRLscreen()
                 attron(attrval);
                 printw("    p");
                 attroff(attrval);
-                printw("    pause\n");
+                printw("    pause (toggle C0 - C1)\n");
+
+                attron(attrval);
+                printw("    c");
+                attroff(attrval);
+                printw("    compute on/off (toggle C0 - C5)\n");
 
                 attron(attrval);
                 printw("    s");

@@ -548,7 +548,7 @@ int functionparameter_GetFileName(FUNCTION_PARAMETER *fparam, char *outfname, ch
     int l;
 
 
-    sprintf(fname, "./fpconf");
+    sprintf(fname, "./fpsconf");
     sprintf(command, "mkdir -p %s", fname);
     ret = system(command);
 
@@ -2401,7 +2401,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
                 sprintf(command, "tmux new-session -d -s %s-run &> /dev/null", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name);
                 system(command);
 
-                sprintf(command, "tmux send-keys -t %s-run \"./cmdproc/%s-run-start", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name, fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
+                sprintf(command, "tmux send-keys -t %s-run \"./fpscmd/%s-run-start", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name, fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
                 for(nameindex=0; nameindex<fps[keywnode[iSelected[currentlevel]].fpsindex].md->NBnameindex; nameindex++)
                 {
                     char tmpstring[20];
@@ -2417,7 +2417,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             break;
 
         case 'r' : // stop run process
-            sprintf(command, "./cmdproc/%s-run-stop", fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
+            sprintf(command, "./fpscmd/%s-run-stop", fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
             for(nameindex=0; nameindex<fps[keywnode[iSelected[currentlevel]].fpsindex].md->NBnameindex; nameindex++)
             {
                 char tmpstring[20];
@@ -2441,7 +2441,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
             //printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
 
-            sprintf(command, "tmux send-keys -t %s-conf \"./cmdproc/%s-conf-start", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name, fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
+            sprintf(command, "tmux send-keys -t %s-conf \"./fpscmd/%s-conf-start", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name, fps[keywnode[iSelected[currentlevel]].fpsindex].md->pname);
             for(nameindex=0; nameindex<fps[keywnode[iSelected[currentlevel]].fpsindex].md->NBnameindex; nameindex++)
             {
                 char tmpstring[20];

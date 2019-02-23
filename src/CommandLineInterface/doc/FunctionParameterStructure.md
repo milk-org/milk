@@ -20,14 +20,72 @@
 
 # Overview {#page_FunctionParameterStructure_Overview}
 
+## Main elements
+
 A FPS-enabled function will have the following elements:
 - The shared memory FPS: /tmp/<fpsname>.fps.shm
 - A configuration process that manages the FPS entries
 - A run process (the function itself)
 
 
+
+
+## Naming conventions
+
+
+### FPS name
+
+<fpsname> consists of a root name (string), and a series of optional integers, each printed on two digits:
+
+	<fpsname> = <fpsnameroot>.<opt0>.<opt1>...
+
+Examples:
+
+	myfps            # simple name, no optional integers
+	myfps-00         # optional integer 00
+	myfps-43-20-02   # 3 optional integers
+	
+@warning The FPS name does not need to match the process or function name. FPS name is specified in the CLI function as described in @ref page_FunctionParameterStructure_WritingCLIfunc.
+
+
+
+
+### FPS-related entities
+
+name                                  | Type           | Description        | Origin
+--------------------------------------|----------------|--------------------|---------------------------------
+/tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
+./fpscmd/<fpsnameroot>-conf-init      | script         | Initialize FPS     | User-provided
+./fpscmd/<fpsnameroot>-conf-start     | script         | Start CONF process | User-provided 
+./fpscmd/<fpsnameroot>-run-start      | script         | Start RUN process  | User-provided 
+./fpscmd/<fpsnameroot>-run-stop       | script         | Stop RUN process   | User-provided 
+<fpsname>-conf                        | tmux session   | where CONF runs    | Set up by fpsCTRL
+<fpsname>-run                         | tmux session   | where RUN runs     | Set up by fpsCTRL
+./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | <TBD>
+
+
 ---
 
+
+# fpsCTRL tool (#page_FunctionParameterStructure_fpsCTRL}
+
+The FPS control tool is started from the command line :
+
+	fpsCTRL
+	
+
+
+
+---
+
+
+# Writing the fpscmd scripts {#page_FunctionParameterStructure_WritingFPSCMDscripts}
+
+
+
+
+
+---
 
 
 # Writing the CLI function (in <module>.c file)  {#page_FunctionParameterStructure_WritingCLIfunc}
@@ -35,19 +93,19 @@ A FPS-enabled function will have the following elements:
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
 - arg1: A command code
-- arg2+: Optional arguments 
+- arg2: Optional argument 
 
 The command code is a string, and will determine the action to be executed:
-- _CONFINIT_  : Initialize FPS for the function
-- _CONFSTART_ : Start the FPS configuration process
-- _CONFSTOP_  : Stop the FPS configuration process
-- _RUNSTART_  : Start the run process
-- _RUNSTOP_   : Stop the run process
+- `_CONFINIT_`  : Initialize FPS for the function
+- `_CONFSTART_` : Start the FPS configuration process
+- `_CONFSTOP_`  : Stop the FPS configuration process
+- `_RUNSTART_`  : Start the run process
+- `_RUNSTOP_`   : Stop the run process
  
  
  
-@note Why Optional Argument(s) ?
-@note Multiple instances of a C function may need to be running, each with its own FPS. Optional argument(s) provide a mechanism to differentiate the FPSs. It(they) is(are) appended to the FPS name.
+@note Why Optional argument to CLI function ?
+@note Multiple instances of a C function may need to be running, each with its own FPS. An optional argument provides a mechanism to differentiate the FPSs. It is appended to the FPS name following a dash. The optional argument can be a number (usually integer) or a string.
  
 
 Example source code below, assuming one optional long type argument:
@@ -120,7 +178,7 @@ int_fast8_t MyFunction_cli()
 
 
 
- ~~~~{.c}
+~~~~{.c}
 int MyFunction_FPCONF(char *fpsname, uint32_t CMDmode, long optarg00);
 int MyFunction_RUN(char *fpsname);
 ~~~~ 
@@ -446,10 +504,23 @@ int MyFunction_RUN(
 		// computation start here
 		if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
 			processinfo_exec_start(processinfo);
-			
+		
+		
+		// CTRLval = 5 will disable computations in loop (usually for testing)
+		int doComputation = 1;
+		if(data.processinfo == 1)
+			if(processinfo->CTRLval == 5)
+				doComputation = 0;
+				
+				
+		if(doComputation==1)
+		{
 		//
 		// Here we compute what we need...
 		//
+		}
+		
+		// Post semaphore(s) and counter(s) 
 		
 		// computation done
 		if((data.processinfo==1)&&(processinfo->MeasureTiming==1))

@@ -82,10 +82,11 @@ typedef struct {
     // "NULL"
     int loopstat;        // 0: initialization (before loop)
     // 1: in loop
-    // 2: paused
+    // 2: loop paused (do not iterate)
     // 3: terminated (clean exit)
-    // 4: ERROR (typically used when loop can't start, e.g. missing
-    // input)
+    // 4: ERROR (typically used when loop can't start, e.g. missing input)
+    // 5: do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
+
 
     char statusmsg[200];  // status message
     int statuscode;       // status code
