@@ -528,6 +528,7 @@ int MyFunction_RUN(
 		
 		
 		// process signals, end loop
+		processinfo_ProcessSignals(processinfo);
 		loopcnt++;
 		if(data.processinfo==1)
             processinfo->loopcnt = loopcnt;

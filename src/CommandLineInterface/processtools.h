@@ -272,6 +272,10 @@ int processinfo_exec_start(PROCESSINFO *processinfo);
 int processinfo_exec_end(PROCESSINFO *processinfo);
 
 
+int processinfo_CatchSignals();
+int processinfo_ProcessSignals(PROCESSINFO *processinfo);
+
+
 int_fast8_t processinfo_CTRLscreen();
 
 #ifdef __cplusplus
