@@ -3354,6 +3354,7 @@ int_fast8_t processinfo_CTRLscreen()
                             // ================ DISPLAY MODE 4 ==================
                             if( procinfoproc.DisplayMode == 4)
                             {
+								lastline = __LINE__; // testing
 
                                 printw(" %d", procinfoproc.pinfoarray[pindex]->MeasureTiming);
                                 if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
@@ -3361,6 +3362,9 @@ int_fast8_t processinfo_CTRLscreen()
                                     long *dtiter_array;
                                     long *dtexec_array;
                                     int dtindex;
+                                    
+                                    
+                                    lastline = __LINE__; // testing
 
 
                                     printw(" %3d ..%02ld  ", procinfoproc.pinfoarray[pindex]->timerindex, procinfoproc.pinfoarray[pindex]->timingbuffercnt % 100);
@@ -3481,6 +3485,8 @@ int_fast8_t processinfo_CTRLscreen()
 
                                     free(dtiter_array);
                                     free(dtexec_array);
+                                
+									lastline = __LINE__; // testing
                                 }
                             }
 
