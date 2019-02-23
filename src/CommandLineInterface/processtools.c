@@ -3114,8 +3114,17 @@ int_fast8_t processinfo_CTRLscreen()
                                 default:
                                     printw(" ?? ");
                                 }
+                                
+                                
+                                if(procinfoproc.pinfoarray[pindex]->CTRLval==0)
+                                {
+									attron(COLOR_PAIR(2));
+									printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
+									attroff(COLOR_PAIR(2));
+								}
+								else
+									printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
 
-                                printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
 
                                 printw(" %02d:%02d:%02d.%03d",
                                        procinfoproc.pinfodisp[pindex].createtime_hr,
