@@ -3489,6 +3489,7 @@ int_fast8_t processinfo_CTRLscreen()
 									lastline = __LINE__; // testing
                                 }
                             }
+                            lastline = __LINE__; // testing
 
                             if(pindex == pindexSelected)
                                 attroff(A_REVERSE);
