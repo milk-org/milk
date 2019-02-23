@@ -1988,12 +1988,14 @@ int_fast8_t processinfo_CTRLscreen()
 
     clear();
     int Xexit = 0; // toggles to 1 when users types x
-
+	int lastline = 0;
+	
     while( loopOK == 1 )
     {
         int pid;
         char command[200];
 
+		lastline = __LINE__; // testing
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
@@ -2019,10 +2021,6 @@ int_fast8_t processinfo_CTRLscreen()
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
         {
-
-
-
-
         case 'f':     // Freeze screen (toggle)
             if(freeze==0)
                 freeze = 1;
@@ -2526,7 +2524,8 @@ int_fast8_t processinfo_CTRLscreen()
         {
             erase();
 
-
+			lastline = __LINE__; // testing
+			
             if(procinfoproc.DisplayMode == 1)
             {
                 int attrval = A_BOLD;
@@ -2744,6 +2743,7 @@ int_fast8_t processinfo_CTRLscreen()
             }
             else
             {
+				lastline = __LINE__; // testing
 
                 printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
@@ -2843,9 +2843,8 @@ int_fast8_t processinfo_CTRLscreen()
                 }
 
                 printw("\n");
-
-
-
+                
+                lastline = __LINE__; // testing
 
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
@@ -3015,6 +3014,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                 clock_gettime(CLOCK_REALTIME, &t05loop);
+                
+                
+                lastline = __LINE__; // testing
 
 
 
@@ -3064,18 +3066,17 @@ int_fast8_t processinfo_CTRLscreen()
                                 attroff(COLOR_PAIR(4));
                             }
                         }
-
-
-
-
-
-
-
-
+                        
+                        
+                        
+                        
+                        lastline = __LINE__; // testing
 
 
                         if(pinfolist->active[pindex] != 0)
                         {
+							lastline = __LINE__; // testing
+							
                             if(pindex == pindexSelected)
                                 attron(A_REVERSE);
 
@@ -3157,9 +3158,10 @@ int_fast8_t processinfo_CTRLscreen()
                                 if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
-
-
-
+                            
+                            
+                            
+                            lastline = __LINE__; // testing
 
                             // ================ DISPLAY MODE 3 ==================
                             if( procinfoproc.DisplayMode == 3)
@@ -3344,7 +3346,9 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                             }
-
+                            
+                            
+                            lastline = __LINE__; // testing
 
 
                             // ================ DISPLAY MODE 4 ==================
@@ -3482,6 +3486,9 @@ int_fast8_t processinfo_CTRLscreen()
 
                             if(pindex == pindexSelected)
                                 attroff(A_REVERSE);
+                                
+                                
+                            lastline = __LINE__; // testing
 
                         }
 
@@ -3541,7 +3548,7 @@ int_fast8_t processinfo_CTRLscreen()
     else if (data.signal_BUS == 1 )
 		printf("Received signal BUS\n");
     else if (data.signal_SEGV == 1 )
-		printf("Received signal SEGV\n");
+		printf("Received signal SEGV - last line %d\n", lastline);
     else if (data.signal_HUP == 1 )
 		printf("Received signal HUP\n");
     else if (data.signal_PIPE == 1 )
