@@ -23,6 +23,7 @@ echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-h$(tput sgr0)          help"
 echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
+echo "     $(tput bold)-m$(tput sgr0)          must (m)atch list"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -55,8 +56,9 @@ done
 
 
 
+MODE="0"
 
-while getopts :hl FLAG; do
+while getopts :hlm FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -71,6 +73,9 @@ while getopts :hl FLAG; do
 	  ls -l /tmp/*.fps.shm
 	  echo ""
 	  exit
+    ;;
+    m)
+		MODE="1"
     ;;
     \?) 
       echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
@@ -97,7 +102,6 @@ printHELP
 fi
 
 
-MODE=0
 
 
 SF="fpsctrlstartup"

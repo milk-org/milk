@@ -2128,6 +2128,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 		int fpsi;
 		for(fpsi=0; fpsi<fpslistcnt; fpsi++)
 			printf("include FPS %s\n", FPSlist[fpsi]);
+		exit(0);
 	}
 
 	
