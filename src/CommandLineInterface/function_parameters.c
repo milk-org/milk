@@ -2095,7 +2095,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
 
 	// request match to file ./fpscomd/fpslist.txt
-	if ( mode & 0x00000001 )  
+	if ( mode == 1 )  
 	{
 		if( (fpfpslist = fopen("./fpscmd/fpslist.txt", "r")) == NULL)
 		{
