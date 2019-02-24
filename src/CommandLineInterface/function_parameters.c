@@ -2097,7 +2097,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 	// request match to file ./fpscomd/fpslist.txt
 	if ( mode == 1 )  
 	{
-		if( (fpfpslist = fopen("./fpscmd/fpslist.txt", "r")) == NULL)
+		if( (fpfpslist = fopen("fpscmd/fpslist.txt", "r")) != NULL)
 		{
 			char * FPSlistline = NULL;
             size_t len = 0;
@@ -2118,11 +2118,11 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 					}
 				}
 			}
+			fclose(fpfpslist);
 		}
 		else
 		{
-			printf("Cannot open file ./fpscmd/fpslist.txt\n");
-			fclose(fpfpslist);
+			printf("Cannot open file fpscmd/fpslist.txt\n");
 		}
 	
 		int fpsi;
