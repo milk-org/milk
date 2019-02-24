@@ -2078,6 +2078,12 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
     int pindexSelected = 0;
     int nodeSelected = 0;
 
+
+	// input command
+	FILE *fpinputcmd;
+
+
+
     for(l=0; l<MAXNBLEVELS; l++)
     {
         nodechain[l] = 0;
@@ -2547,16 +2553,37 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 			endwin();
             system("clear");            
             printf("FPS entries - Full list \n");
-            
             printf("\n");
-            
 			for(kwnindex=0; kwnindex<NBkwn; kwnindex++)
 			{
 				if(keywnode[kwnindex].leaf==1)
 					printf("%4d  %4d  %s\n", keywnode[kwnindex].fpsindex, keywnode[kwnindex].pindex, keywnode[kwnindex].keywordfull);
 			}
-
             printf("\n");
+            printf("Press Any Key to Continue\n");  
+			getchar();  
+            initncurses();
+			break;
+
+
+		case 'P': // process input command file
+			endwin();
+            system("clear");      
+			fpinputcmd = fopen("confscript", "r");
+			if(fpinputcmd != NULL)
+			{    
+				char * FPScmdline = NULL;
+				size_t len = 0;
+				ssize_t read;
+				
+				while ((read = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
+				printf("Retrieved line of length %zu:\n", read);
+				printf("%s", FPScmdline);
+				}
+
+				fclose(fpinputcmd);
+			}
+			printf("\n");
             printf("Press Any Key to Continue\n");  
 			getchar();  
             initncurses();
