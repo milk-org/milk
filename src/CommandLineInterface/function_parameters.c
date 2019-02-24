@@ -994,6 +994,7 @@ int function_parameter_add_entry(
 
     printf(" -------- FILE NAMES = %s %s %s\n", fname[0], fname[1], fname[2]);
     fflush(stdout);
+    exit(0);
 
     int index;
     // index = 0  : setval
