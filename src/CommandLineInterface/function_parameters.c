@@ -983,20 +983,12 @@ int function_parameter_add_entry(
 
 
     // attempt to read value for filesystem
-    char fname[200][3];
+    char fname[200];
     FILE *fp;
     long tmpl;
 
 
-    functionparameter_GetFileName(&funcparamarray[pindex], fname[0], "setval");
-    functionparameter_GetFileName(&funcparamarray[pindex], fname[1], "minval");
-    functionparameter_GetFileName(&funcparamarray[pindex], fname[2], "maxval");
 
-	char systemcmd[300];
-    sprintf(systemcmd, "echo  \"-------- FILE NAMES = %s %s %s\" >> tmplog.txt", fname[0], fname[1], fname[2]);
-    system(systemcmd);
-    
-   
 
     int index;
     // index = 0  : setval
@@ -1006,6 +998,25 @@ int function_parameter_add_entry(
 
     for(index=0; index<3; index++)
     {
+		char systemcmd[500];
+		
+		switch (index) {
+			
+			case 0 :
+			functionparameter_GetFileName(&funcparamarray[pindex], fname, "setval");
+			break;
+		
+			case 1 :
+			functionparameter_GetFileName(&funcparamarray[pindex], fname, "minval");
+			break;		
+
+			case 2 :
+			functionparameter_GetFileName(&funcparamarray[pindex], fname, "maxval");
+			break;
+
+		}
+		
+		
         if ( (fp = fopen(fname[index], "r")) != NULL)
         {
 			
