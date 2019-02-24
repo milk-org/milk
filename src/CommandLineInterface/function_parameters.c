@@ -2095,7 +2095,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
 
 	// request match to file ./fpscomd/fpslist.txt
-	if ( mode == 1 )  
+	if ( mode & 0x0001 )  
 	{
 		if( (fpfpslist = fopen("fpscmd/fpslist.txt", "r")) != NULL)
 		{
@@ -2176,7 +2176,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
             }
             
             
-            if(mode == 1) // enforce match to list
+            if(mode & 0x0001) // enforce match to list
             {
 				int matchOKlist = 0;
 				int fpsi;
