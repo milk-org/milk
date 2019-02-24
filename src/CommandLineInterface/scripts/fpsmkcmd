@@ -8,6 +8,7 @@ FPScmddir="fpscmd"
 mkdir -p ${FPScmddir}
 
 echo "#!/bin/bash" > fpsinitscript.txt
+chmod +x fpsinitscript.txt
 echo "" >> fpsinitscript.txt
 
 cat "$FPSlistfilename" | while read LINE; do
@@ -68,7 +69,7 @@ cat "$FPSlistfilename" | while read LINE; do
 				CLIcmdstring+=" \${arg$arg}"
 			done 
 			echo "" >> $fname
-			echo "pname=\"${pname}-${pnamestr}\"" >> $fname
+			echo "pname=\"${pname}.${pnamestr}\"" >> $fname
 			echo "" >> $fname
 			echo "cacao -n \${pname} << EOF" >> $fname
 			echo "$CLIcmdstring" >> $fname
