@@ -1355,8 +1355,8 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
     clock_gettime(CLOCK_REALTIME, &timenow);
     tid = syscall(SYS_gettid);
 
-    sprintf(timestring, "%8ld %04d%02d%02d_%02d%02d%02ld.%09ld [%6d %6d] %s", fpsentry->parray[pindex].cnt0,
-            1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec, getpid(), (int) tid, commentstr);
+    sprintf(timestring, "%04d%02d%02d_%02d%02d%02ld.%09ld %8ld [%6d %6d] %s",
+            1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec, fpsentry->parray[pindex].cnt0, getpid(), (int) tid, commentstr);
 
 
     if ( strcmp(tagname, "setval") == 0) // VALUE
@@ -1367,16 +1367,10 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
 
         case FPTYPE_INT64:
             fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.l[0], timestring);
-            //fprintf(fp, "%10ld   # Min value\n", fpsentry->parray[pindex].val.l[1]);
-            //fprintf(fp, "%10ld   # Max value\n", fpsentry->parray[pindex].val.l[2]);
-            //fprintf(fp, "%10ld   # Current value\n", fpsentry->parray[pindex].val.l[3]);
             break;
 
         case FPTYPE_FLOAT64:
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[0], timestring);
-            //fprintf(fp, "%18f   # Min value\n", fpsentry->parray[pindex].val.f[1]);
-            //fprintf(fp, "%18f   # Max value\n", fpsentry->parray[pindex].val.f[2]);
-            //fprintf(fp, "%18f   # Current value\n", fpsentry->parray[pindex].val.f[3]);
             break;
 
         case FPTYPE_PID:
@@ -1658,8 +1652,6 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
         fpsentry->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK;
     else
         fpsentry->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK;
-
-
 
 
 
@@ -2394,11 +2386,9 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             printf("  Arrow keys     NAVIGATE\n");
             printf("  ENTER          Select parameter to read/set\n");
             printf("\n");
-            printf("  (R)            start run process\n");
-            printf("  (r)            stop run process\n");
-            printf("  (C)            start config process\n");
-            printf("  (c)            stop config process\n");
-            
+            printf("  R/r            start/stop run process\n");
+            printf("  C/c            start/stop config process\n");
+            printf("  l              list all entries\n");
             printf("\n");
             printf("  (x)            Exit\n");
             printf("\n");
@@ -2552,6 +2542,29 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             break;
+            
+        case 'l': // list all parameters
+			endwin();
+            system("clear");            
+            printf("FPS entries - Full list \n");
+            
+			for(kwnindex=0; kwnindex<NBkwn; kwnindex++)
+			{
+				if(keywnode[kwnindex].leaf==1)
+				{
+					level = keywnode[kwnindex].keywordlevel;
+					printf("%s", keywnode[kwnindex].keyword[0]);
+					for(l=1; l<level; l++)
+						printf(".%s", keywnode[kwnindex].keyword[l]);
+					printf("\n");
+				}
+			}
+
+            printf("\n");
+            printf("Press Any Key to Continue\n");  
+			getchar();  
+            initncurses();
+			break;
 
         }
 
