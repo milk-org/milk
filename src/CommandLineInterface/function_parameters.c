@@ -2585,17 +2585,17 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 					int nbword = 0;
 					
 					pch = strtok (FPScmdline, " \t");
-					//strcpy( FPScommand, pch);
+					strcpy( FPScommand, pch);
 										
 					while (pch != NULL)
 					{
 						printf("%s ", pch);
 						nbword++;
 						pch = strtok (NULL, " \t");
-						/*if(nbword==1)
+						if(nbword==1)
 							strcpy(FPSentryname, pch);
 						if(nbword==2)
-							strcpy(FPSvaluestring, pch);*/
+							strcpy(FPSvaluestring, pch);
 					}
 					
 					printf("%d \n", nbword);
