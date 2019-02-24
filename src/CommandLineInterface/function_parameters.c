@@ -2071,9 +2071,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
 
     int nodechain[MAXNBLEVELS];
-
     int iSelected[MAXNBLEVELS];
-
 
     // current selection
     int fpsindexSelected = 0;
@@ -3212,11 +3210,11 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
         refresh();
 
 
+
         loopcnt++;
 
         if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
             loopOK = 0;
-
     }
     endwin();
 
