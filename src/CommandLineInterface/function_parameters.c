@@ -2041,7 +2041,7 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
  *
  *
  */
-int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
+int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
 {
     // function parameter structure(s)
     int NBfps;
@@ -2108,6 +2108,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
     DIR *d;
     struct dirent *dir;
 
+	
 
     d = opendir("/tmp/");
     if(d)
@@ -2120,7 +2121,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
             int matchOK = 0;
             // name filtering
-            if(strcmp(fpsnamemask, "ALL") == 0)
+            if(strcmp(fpsnamemask, "_ALL") == 0)
                 matchOK = 1;
             else
             {

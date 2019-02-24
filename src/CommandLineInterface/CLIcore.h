@@ -585,6 +585,6 @@ uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 
-int_fast8_t functionparameter_CTRLscreen(char *fpsname);
+int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsname);
 
 #endif
