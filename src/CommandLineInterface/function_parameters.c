@@ -2604,10 +2604,12 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
                         int kwnindexscan = 0;
                         while( (kwnindex==-1) && (kwnindexscan<NBkwn))
                         {
-                            if(strcmp(keywnode[kwnindex].keywordfull, FPSentryname)==0)
+                            if(strcmp(keywnode[kwnindexscan].keywordfull, FPSentryname)==0)
                                 kwnindex = kwnindexscan;
                             kwnindexscan ++;
                         }
+                        
+                        printf("[%4d]  ", kwnindex);
 
                         if(kwnindex!=-1)
                         {
@@ -2619,12 +2621,12 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
                             case FPTYPE_INT64:
                                 functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring));
-                                printf("setval  INT64    %40s  = %ld\n", FPSentryname, atol(FPSvaluestring));
+                                printf("setval  INT64    %40s  = %ld", FPSentryname, atol(FPSvaluestring));
                                 break;
 
                             case FPTYPE_FLOAT64:
                                 functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring));
-                                printf("setval  FLOAT64  %40s  = %ld\n", FPSentryname, atof(FPSvaluestring));
+                                printf("setval  FLOAT64  %40s  = %ld", FPSentryname, atof(FPSvaluestring));
                                 break;
 
                             case FPTYPE_PID:
@@ -2658,14 +2660,8 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
                             }
 
-
-                            if(strcmp(FPScommand, "setval")==0)
-                            {
-                                //	switch ()
-                                functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring));
-                                printf("Executing setval command : [%d] %40s = %s\n", kwnindex, FPSentryname, FPSvaluestring);
-                            }
                         }
+                        printf("\n");
                     }
 
                 }
