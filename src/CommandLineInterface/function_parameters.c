@@ -2548,16 +2548,12 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             system("clear");            
             printf("FPS entries - Full list \n");
             
+            printf("\n");
+            
 			for(kwnindex=0; kwnindex<NBkwn; kwnindex++)
 			{
 				if(keywnode[kwnindex].leaf==1)
-				{
-					level = keywnode[kwnindex].keywordlevel;
-					printf("%s", keywnode[kwnindex].keyword[0]);
-					for(l=1; l<level; l++)
-						printf(".%s", keywnode[kwnindex].keyword[l]);
-					printf("\n");
-				}
+					printf("%4d  %4d  %s\n", keywnode[kwnindex].fpsindex, keywnode[kwnindex].pindex, keywnode[kwnindex].keywordfull);
 			}
 
             printf("\n");
