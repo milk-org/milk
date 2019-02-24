@@ -2079,8 +2079,8 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
     int nodeSelected = 0;
 
 
-	// input command
-	FILE *fpinputcmd;
+    // input command
+    FILE *fpinputcmd;
 
 
 
@@ -2383,8 +2383,8 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
         case 'h':     // help
             endwin();
-            system("clear");            
-            
+            system("clear");
+
             printf("Function Parameter Structure (FPS) Control \n");
             printf("\n");
             printf("\n");
@@ -2398,8 +2398,8 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             printf("\n");
             printf("  (x)            Exit\n");
             printf("\n");
-            printf("Press Any Key to Continue\n");  
-			getchar();  
+            printf("Press Any Key to Continue\n");
+            getchar();
             initncurses();
             break;
 
@@ -2517,7 +2517,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
         case 'C' : // start conf process
             //printf("STEP %s %d\n", __FILE__, __LINE__);
             //fflush(stdout);
-            
+
             sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[keywnode[iSelected[currentlevel]].fpsindex].md->name);
             system(command);
 
@@ -2538,7 +2538,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             system(command);
             fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-            
+
             break;
 
         case 'c': // kill conf process
@@ -2548,74 +2548,135 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
             fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             break;
-            
+
         case 'l': // list all parameters
-			endwin();
-            system("clear");            
+            endwin();
+            system("clear");
             printf("FPS entries - Full list \n");
             printf("\n");
-			for(kwnindex=0; kwnindex<NBkwn; kwnindex++)
-			{
-				if(keywnode[kwnindex].leaf==1)
-					printf("%4d  %4d  %s\n", keywnode[kwnindex].fpsindex, keywnode[kwnindex].pindex, keywnode[kwnindex].keywordfull);
-			}
+            for(kwnindex=0; kwnindex<NBkwn; kwnindex++)
+            {
+                if(keywnode[kwnindex].leaf==1)
+                    printf("%4d  %4d  %s\n", keywnode[kwnindex].fpsindex, keywnode[kwnindex].pindex, keywnode[kwnindex].keywordfull);
+            }
             printf("\n");
-            printf("Press Any Key to Continue\n");  
-			getchar();  
+            printf("Press Any Key to Continue\n");
+            getchar();
             initncurses();
-			break;
+            break;
 
 
-		case 'P': // process input command file
-			endwin();
-            system("clear");      
-			fpinputcmd = fopen("confscript", "r");
-			if(fpinputcmd != NULL)
-			{    
-				char * FPScmdline = NULL;
-				size_t len = 0;
-				ssize_t read;
-				char FPScommand[50];
-				char FPSentryname[500];
-				char FPSvaluestring[200];
-				
-				while ((read = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
-					// break line in words
-					char * pch;
-					int nbword = 0;
-					
-					pch = strtok (FPScmdline, " \t");
-					sprintf( FPScommand, "%s", pch);
-										
-					while (pch != NULL)
-					{
-	//					printf("%s ", pch);
-						nbword++;
-						pch = strtok (NULL, " \t");
-						if(nbword==1)
-							sprintf(FPSentryname, "%s", pch);
-						if(nbword==2)
-							sprintf(FPSvaluestring, "%s", pch);
-					}
-//					printf("%d \n", nbword);
-					
-					if(nbword>2)
-					{
-						if(strcmp(FPScommand, "setval")==0)
-						{
-							printf("Executing setval command : %40s = %s\n", FPSentryname, FPSvaluestring);
-						}
-					}
-					
-				}
+        case 'P': // process input command file
+            endwin();
+            system("clear");
+            fpinputcmd = fopen("confscript", "r");
+            if(fpinputcmd != NULL)
+            {
+                char * FPScmdline = NULL;
+                size_t len = 0;
+                ssize_t read;
+                char FPScommand[50];
+                char FPSentryname[500];
+                char FPSvaluestring[200];
 
-				fclose(fpinputcmd);
-			}
-			printf("\n");
-            printf("Press Any Key to Continue\n");  
-			getchar();  
+                while ((read = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
+                    // break line in words
+                    char * pch;
+                    int nbword = 0;
+
+                    pch = strtok (FPScmdline, " \t");
+                    sprintf( FPScommand, "%s", pch);
+
+                    while (pch != NULL)
+                    {
+                        nbword++;
+                        pch = strtok (NULL, " \t");
+                        if(nbword==1)
+                            sprintf(FPSentryname, "%s", pch);
+                        if(nbword==2)
+                            sprintf(FPSvaluestring, "%s", pch);
+                    }
+
+                    if(nbword>2)
+                    {
+                        // look for entry
+                        int kwnindex = -1;
+                        int kwnindexscan = 0;
+                        while( (kwnindex==-1) && (kwnindexscan<NBkwn))
+                        {
+                            if(strcmp(keywnode[kwnindex].keywordfull, FPSentryname)==0)
+                                kwnindex = kwnindexscan;
+                            kwnindexscan ++;
+                        }
+
+                        if(kwnindex!=-1)
+                        {
+                            fpsindex = keywnode[kwnindex].fpsindex;
+                            pindex = keywnode[kwnindex].pindex;
+
+
+                            switch (fps[fpsindex].parray[pindex].type) {
+
+                            case FPTYPE_INT64:
+                                functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring));
+                                printf("setval  INT64    %40s  = %ld\n", FPSentryname, atol(FPSvaluestring));
+                                break;
+
+                            case FPTYPE_FLOAT64:
+                                functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring));
+                                printf("setval  FLOAT64  %40s  = %ld\n", FPSentryname, atof(FPSvaluestring));
+                                break;
+
+                            case FPTYPE_PID:
+                                //
+                                break;
+
+                            case FPTYPE_TIMESPEC:
+                                //
+                                break;
+
+                            case FPTYPE_FILENAME:
+                                functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                break;
+
+                            case FPTYPE_DIRNAME:
+                                functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                break;
+
+                            case FPTYPE_STREAMNAME:
+                                functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                break;
+
+                            case FPTYPE_STRING:
+                                functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                break;
+
+                                /*        case FPTYPE_ONOFF:
+                                            if( strcmp(FPSvaluestring,"ON") == 0)
+
+                                            break;*/
+
+                            }
+
+
+                            if(strcmp(FPScommand, "setval")==0)
+                            {
+                                //	switch ()
+                                functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring));
+                                printf("Executing setval command : [%d] %40s = %s\n", kwnindex, FPSentryname, FPSvaluestring);
+                            }
+                        }
+                    }
+
+                }
+                fclose(fpinputcmd);
+            }
+
+            printf("\n");
+            printf("Press Any Key to Continue\n");
+            getchar();
             initncurses();
-			break;
+            break;
 
         }
 
@@ -3070,8 +3131,8 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
     {
         function_parameter_struct_disconnect(&fps[fpsindex]);
     }
-//    printf("STEP %s %d\n", __FILE__, __LINE__);
-//    fflush(stdout);
+    //    printf("STEP %s %d\n", __FILE__, __LINE__);
+    //    fflush(stdout);
 
     return 0;
 }
