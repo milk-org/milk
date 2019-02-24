@@ -565,9 +565,9 @@ int_fast8_t cfits_usleep_cli()
 
 int_fast8_t functionparameter_CTRLscreen_cli()
 {
-    if((data.cmdargtoken[1].type == 3) || (data.cmdargtoken[1].type == 4) || (data.cmdargtoken[1].type == 5))
+    if((data.cmdargtoken[1].type == 2) && ((data.cmdargtoken[2].type == 3) || (data.cmdargtoken[2].type == 4) || (data.cmdargtoken[2].type == 5)))
     {
-        functionparameter_CTRLscreen(data.cmdargtoken[1].val.string);
+        functionparameter_CTRLscreen(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string);
         return 0;
     }
     else
