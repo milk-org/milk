@@ -2041,7 +2041,7 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
  *
  *
  */
-int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
+int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 {
     // function parameter structure(s)
     int NBfps;
@@ -2081,9 +2081,56 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
     int nodeSelected = 0;
 
 
+	// FPS list file
+	FILE *fpfpslist;
+	int fpslistcnt = 0;
+	char FPSlist[200][100];
+
     // input command
     FILE *fpinputcmd;
 
+
+	
+
+
+
+	// request match to file ./fpscomd/fpslist.txt
+	if ( mode & 0x00000001 )  
+	{
+		if( (fpfpslist = fopen("./fpscmd/fpslist.txt", "r")) == NULL)
+		{
+			char * FPSlistline = NULL;
+            size_t len = 0;
+            ssize_t read;
+            char FPSlistentry[200];
+            
+            while ((read = getline(&FPSlistline, &len, fpfpslist)) != -1) {
+				if(FPSlistline[0] != '#')
+				{
+				    char * pch;
+                    int nbword = 0;
+
+                    pch = strtok (FPSlistline, " \t\n\r");
+                    if(pch != NULL)
+                    {
+						sprintf( FPSlist[fpslistcnt], "%s", pch);
+						fpslistcnt++;
+					}
+				}
+			}
+		}
+		else
+		{
+			printf("Cannot open file ./fpscmd/fpslist.txt\n");
+			fclose(fpfpslist);
+		}
+	
+		int fpsi;
+		for(fpsi=0; fpsi<fpslistcnt; fpsi++)
+			printf("include FPS %s\n", FPSlist[fpsi]);
+	}
+
+	
 
 
     for(l=0; l<MAXNBLEVELS; l++)
@@ -2108,7 +2155,6 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
     DIR *d;
     struct dirent *dir;
 
-	
 
     d = opendir("/tmp/");
     if(d)
@@ -2290,14 +2336,8 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
                                 kwnindex ++;
                                 NBkwn = kwnindex;
                             }
-
-
-
-
                         }
-
                         pindex++;
-
                     }
                 }
 
