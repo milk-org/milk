@@ -2182,7 +2182,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 				int fpsi;
 				
 				for(fpsi=0; fpsi<fpslistcnt; fpsi++)
-					if(strncmp(dir->d_name, FPSlist[fpsi], strlen(FPSlist[fpsi]) == 0)
+					if(strncmp(dir->d_name, FPSlist[fpsi], strlen(FPSlist[fpsi])) == 0)
 						matchOKlist = 1;
 
 				matchOK *= matchOKlist;
