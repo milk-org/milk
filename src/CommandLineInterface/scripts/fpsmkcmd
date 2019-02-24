@@ -112,6 +112,7 @@ cat "$FPSlistfilename" | while read LINE; do
 
 
 		if [ "$CMDCODE" = "CONFINIT" ]; then
+			echo ""  >> ${FPScmddir}/fpsinitscript
 			cmdstring="$fname"
 			for arg in `seq 1 $nbarg`; do 
 				cmdstring+=" "${OPTARG[$arg]}
@@ -120,24 +121,28 @@ cat "$FPSlistfilename" | while read LINE; do
 		fi
 
 		if [ "$CMDCODE" = "CONFSTART" ]; then
+			echo "" >> ${FPScmddir}/fpsconfstartscript
 			cmdstring="$fname"
+			tmuxname="${FPSname}-conf"
+			echo "tmux new-session -d -s ${tmuxname}" >> ${FPScmddir}/fpsconfstartscript
 			for arg in `seq 1 $nbarg`; do 
 				cmdstring+=" "${OPTARG[$arg]}
 			done
-			echo "${cmdstring}" >> ${FPScmddir}/fpsconfstartscript
+			echo "tmux send-keys -t ${tmuxname} \"${cmdstring}\" C-m" >> ${FPScmddir}/fpsconfstartscript
 		fi
 		
 		if [ "$CMDCODE" = "CONFSTOP" ]; then
-			cmdstring="$fname"
-			for arg in `seq 1 $nbarg`; do 
-				cmdstring+=" "${OPTARG[$arg]}
-			done
-			echo "${cmdstring}" >> ${FPScmddir}/fpsconfstopscript
+			echo "" >> ${FPScmddir}/fpsconfstopscript
+			tmuxname="${FPSname}-conf"
+			echo "tmux send-keys -t ${tmuxname} C-c" >> ${FPScmddir}/fpsconfstopscript
 		fi
 
 
 		if [ "$CMDCODE" = "RUNSTART" ]; then
+			echo "" >> ${FPScmddir}/fpsrunstartscript
 			cmdstring="$fname"
+			tmuxname="${FPSname}-run"
+			echo "tmux new-session -d -s ${tmuxname}" >> ${FPScmddir}/fpsrunstartscript
 			for arg in `seq 1 $nbarg`; do 
 				cmdstring+=" "${OPTARG[$arg]}
 			done
@@ -145,6 +150,7 @@ cat "$FPSlistfilename" | while read LINE; do
 		fi
 		
 		if [ "$CMDCODE" = "RUNSTOP" ]; then
+			echo "" >> ${FPScmddir}/fpsrunstopscript
 			cmdstring="$fname"
 			for arg in `seq 1 $nbarg`; do 
 				cmdstring+=" "${OPTARG[$arg]}

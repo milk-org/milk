@@ -74,10 +74,11 @@ name                                  | Type           | Description        | Or
 
 Steps:
 
-	$ vim fpslist.txt  # Edit file, listing functions and corresponding FPS names that will be used
-	$ fpsmkcmd         # create FPS scripts in `./fpscmd/`
-	$ ./fpsinitscript` # script to create FPS shared memory structures
-	$ fpsCTRL -m _ALL  # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt) 
+	$ vim fpslist.txt               # Edit file, listing functions and corresponding FPS names that will be used
+	$ fpsmkcmd                      # create FPS scripts in `./fpscmd/`
+	$ ./fpscmd/fpsinitscript        # create FPS shared memory structure(s)
+	$ ./fpscmd/fpsconfstartscript   # start FPS configuration process(es)
+	$ fpsCTRL -m _ALL               # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt) 
 
 
 ## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
