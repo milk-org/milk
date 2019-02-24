@@ -2589,6 +2589,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 										
 					while (pch != NULL)
 					{
+						printf("%s ", pch);
 						nbword++;
 						pch = strtok (NULL, " ");
 						/*if(nbword==1)
