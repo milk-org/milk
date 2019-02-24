@@ -992,9 +992,11 @@ int function_parameter_add_entry(
     functionparameter_GetFileName(&funcparamarray[pindex], fname[1], "minval");
     functionparameter_GetFileName(&funcparamarray[pindex], fname[2], "maxval");
 
-    printf(" -------- FILE NAMES = %s %s %s\n", fname[0], fname[1], fname[2]);
+	char systemcmd[300];
+    sprintf(systemcmd, "echo  \"-------- FILE NAMES = %s %s %s\" > tmplog.txt", fname[0], fname[1], fname[2]);
+    system(systemcmd);
     fflush(stdout);
-    exit(0);
+   
 
     int index;
     // index = 0  : setval
