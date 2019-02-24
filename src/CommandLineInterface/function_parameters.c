@@ -2575,10 +2575,30 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 				char * FPScmdline = NULL;
 				size_t len = 0;
 				ssize_t read;
+				char *FPScommand;
+				char *FPSentryname;
+				char *FPSvaluestring;
 				
 				while ((read = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
-				printf("Retrieved line of length %zu:\n", read);
-				printf("%s", FPScmdline);
+					// break line in words
+					char * pch;
+					int nbword = 0;
+					
+					pch = strtok (FPScmdline, " ");
+					strcpy( FPScommand, pch);
+										
+					while (pch != NULL)
+					{
+						nbword++;
+						pch = strtok (NULL, " ");
+						if(nbword==1)
+							strcpy(FPSentryname, pch);
+						if(nbword==2)
+							strcpy(FPSvaluestring, pch);
+					}
+					
+					printf("%d \n", nbword);
+					
 				}
 
 				fclose(fpinputcmd);
