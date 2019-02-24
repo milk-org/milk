@@ -2127,8 +2127,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 	
 		int fpsi;
 		for(fpsi=0; fpsi<fpslistcnt; fpsi++)
-			printf("include FPS %s\n", FPSlist[fpsi]);
-		exit(0);
+			printf("FPSname must match %s\n", FPSlist[fpsi]);
 	}
 
 	
@@ -2175,6 +2174,21 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                 if(strncmp(dir->d_name, fpsnamemask, strlen(fpsnamemask)) == 0)
                     matchOK = 1;
             }
+            
+            
+            if(mode == 1) // enforce match to list
+            {
+				int matchOKlist = 0;
+				int fpsi;
+				
+				for(fpsi=0; fpsi<fpslistcnt; fpsi++)
+					if(strncmp(dir->d_name, FPSlist[fpsi], strlen(FPSlist[fpsi]) == 0)
+						matchOKlist = 1;
+
+				matchOK *= matchOKlist;
+			}
+
+
 
 
             if((pch) && (matchOK == 1))
