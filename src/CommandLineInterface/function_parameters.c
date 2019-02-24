@@ -993,9 +993,9 @@ int function_parameter_add_entry(
     functionparameter_GetFileName(&funcparamarray[pindex], fname[2], "maxval");
 
 	char systemcmd[300];
-    sprintf(systemcmd, "echo  \"-------- FILE NAMES = %s %s %s\" > tmplog.txt", fname[0], fname[1], fname[2]);
+    sprintf(systemcmd, "echo  \"-------- FILE NAMES = %s %s %s\" >> tmplog.txt", fname[0], fname[1], fname[2]);
     system(systemcmd);
-    fflush(stdout);
+    
    
 
     int index;
@@ -1008,6 +1008,10 @@ int function_parameter_add_entry(
     {
         if ( (fp = fopen(fname[index], "r")) != NULL)
         {
+			
+			sprintf(systemcmd, "echo  \"-------- FILE FOUND: %s \" >> tmplog.txt", fname[index]);
+			system(systemcmd);
+			
             switch (funcparamarray[pindex].type) {
 
             case FPTYPE_INT64 :
@@ -1106,6 +1110,11 @@ int function_parameter_add_entry(
             }
             fclose(fp);
         }
+		else
+		{
+			sprintf(systemcmd, "echo  \"-------- FILE NOT FOUND: %s \" >> tmplog.txt", fname[index]);
+			system(systemcmd);		
+		}
     }
 
 
