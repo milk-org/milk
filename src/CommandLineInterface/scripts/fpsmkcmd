@@ -9,6 +9,8 @@ FPScmdlogdir="fpscmdlog"
 mkdir -p ${FPScmddir}
 mkdir -p ${FPScmdlogdir}
 
+
+rm ${FPScmddir}/fpslist.txt &> /dev/null
 touch ${FPScmddir}/fpslist.txt
 
 
