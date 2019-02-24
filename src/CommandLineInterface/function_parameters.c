@@ -2508,8 +2508,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
                 sprintf(tmpstring, " %02d", fps[keywnode[iSelected[currentlevel]].fpsindex].md->nameindex[nameindex]);
                 strcat(command, tmpstring);
-            }
-            strcat(command, " &> /dev/null");
+            }          
             system(command);
             fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
