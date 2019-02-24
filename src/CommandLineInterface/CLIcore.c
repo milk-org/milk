@@ -569,7 +569,7 @@ int_fast8_t functionparameter_CTRLscreen_cli()
     
     if( (CLI_checkarg(1,2) == 0) && (CLI_checkarg(2,5) == 0))
     {
-        functionparameter_CTRLscreen(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string);
+        functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string);
         return 0;
     }
     else

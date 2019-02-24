@@ -2041,7 +2041,7 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
  *
  *
  */
-int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
+int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 {
     // function parameter structure(s)
     int NBfps;
@@ -2081,9 +2081,56 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
     int nodeSelected = 0;
 
 
+	// FPS list file
+	FILE *fpfpslist;
+	int fpslistcnt = 0;
+	char FPSlist[200][100];
+
     // input command
     FILE *fpinputcmd;
 
+
+	
+
+
+
+	// request match to file ./fpscomd/fpslist.txt
+	if ( mode & 0x0001 )  
+	{
+		if( (fpfpslist = fopen("fpscmd/fpslist.txt", "r")) != NULL)
+		{
+			char * FPSlistline = NULL;
+            size_t len = 0;
+            ssize_t read;
+            char FPSlistentry[200];
+            
+            while ((read = getline(&FPSlistline, &len, fpfpslist)) != -1) {
+				if(FPSlistline[0] != '#')
+				{
+				    char * pch;
+                    int nbword = 0;
+
+                    pch = strtok (FPSlistline, " \t\n\r");
+                    if(pch != NULL)
+                    {
+						sprintf( FPSlist[fpslistcnt], "%s", pch);
+						fpslistcnt++;
+					}
+				}
+			}
+			fclose(fpfpslist);
+		}
+		else
+		{
+			printf("Cannot open file fpscmd/fpslist.txt\n");
+		}
+	
+		int fpsi;
+		for(fpsi=0; fpsi<fpslistcnt; fpsi++)
+			printf("FPSname must match %s\n", FPSlist[fpsi]);
+	}
+
+	
 
 
     for(l=0; l<MAXNBLEVELS; l++)
@@ -2108,7 +2155,6 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
     DIR *d;
     struct dirent *dir;
 
-	
 
     d = opendir("/tmp/");
     if(d)
@@ -2128,6 +2174,21 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
                 if(strncmp(dir->d_name, fpsnamemask, strlen(fpsnamemask)) == 0)
                     matchOK = 1;
             }
+            
+            
+            if(mode & 0x0001) // enforce match to list
+            {
+				int matchOKlist = 0;
+				int fpsi;
+				
+				for(fpsi=0; fpsi<fpslistcnt; fpsi++)
+					if(strncmp(dir->d_name, FPSlist[fpsi], strlen(FPSlist[fpsi])) == 0)
+						matchOKlist = 1;
+
+				matchOK *= matchOKlist;
+			}
+
+
 
 
             if((pch) && (matchOK == 1))
@@ -2290,14 +2351,8 @@ int_fast8_t functionparameter_CTRLscreen(int mode, char *fpsnamemask)
                                 kwnindex ++;
                                 NBkwn = kwnindex;
                             }
-
-
-
-
                         }
-
                         pindex++;
-
                     }
                 }
 
