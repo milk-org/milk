@@ -40,7 +40,7 @@ cat "$FPSlistfilename" | while read LINE; do
 				i=$(( $arg + 1 ))				
 				OPTARG[$arg]=${stringarr[$i]}				                
                 echo "    Argument $arg =" ${OPTARG[$arg]}
-                FPSname+="."${OPTARG[$i]}
+                FPSname+="."${OPTARG[$arg]}
         done
         
         echo "    FPS name      = ${FPSname}"
