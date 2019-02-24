@@ -2589,20 +2589,23 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 										
 					while (pch != NULL)
 					{
-						printf("%s ", pch);
+	//					printf("%s ", pch);
 						nbword++;
 						pch = strtok (NULL, " \t");
 						if(nbword==1)
 							sprintf(FPSentryname, "%s", pch);
 						if(nbword==2)
 							sprintf(FPSvaluestring, "%s", pch);
-					}					
-					printf("%d \n", nbword);
+					}
+//					printf("%d \n", nbword);
 					
 					if(nbword>2)
 					{
-						
+						if(strcmp(FPScommand, "setval")==0)
+						{
+							printf("Executing setval command : %40s = %s\n", FPSentryname, FPSvaluestring);
 						}
+					}
 					
 				}
 
