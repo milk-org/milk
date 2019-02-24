@@ -2621,16 +2621,17 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
                             case FPTYPE_INT64:
                                 functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring));
-                                printf("setval  INT64    %40s  = %ld", FPSentryname, atol(FPSvaluestring));
+                                printf("setval  INT64       %40s  = %ld", FPSentryname, atol(FPSvaluestring));
                                 break;
 
                             case FPTYPE_FLOAT64:
                                 functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring));
-                                printf("setval  FLOAT64  %40s  = %ld", FPSentryname, atof(FPSvaluestring));
+                                printf("setval  FLOAT64     %40s  = %f", FPSentryname, atof(FPSvaluestring));
                                 break;
 
                             case FPTYPE_PID:
-                                //
+                                functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring));
+                                printf("setval  PID         %40s  = %ld", FPSentryname, atol(FPSvaluestring));
                                 break;
 
                             case FPTYPE_TIMESPEC:
@@ -2639,18 +2640,22 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
                             case FPTYPE_FILENAME:
                                 functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                printf("setval  FILENAME    %40s  = %s", FPSentryname, FPSvaluestring);
                                 break;
 
                             case FPTYPE_DIRNAME:
                                 functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                printf("setval  DIRNAME     %40s  = %s", FPSentryname, FPSvaluestring);
                                 break;
 
                             case FPTYPE_STREAMNAME:
                                 functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                printf("setval  STREAMNAME  %40s  = %s", FPSentryname, FPSvaluestring);
                                 break;
 
                             case FPTYPE_STRING:
                                 functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                printf("setval  STRING      %40s  = %s", FPSentryname, FPSvaluestring);
                                 break;
 
                                 /*        case FPTYPE_ONOFF:
