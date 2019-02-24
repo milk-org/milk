@@ -15,12 +15,14 @@
 **The fps is stored in shared memory, in /tmp/<fpsname>.fps.shm.**
 
 
+
+
 ---
 
 
-# Overview {#page_FunctionParameterStructure_Overview}
+# 1. Overview {#page_FunctionParameterStructure_Overview}
 
-## Main elements
+## 1.1. Main elements
 
 A FPS-enabled function will have the following elements:
 - The shared memory FPS: /tmp/<fpsname>.fps.shm
@@ -29,11 +31,7 @@ A FPS-enabled function will have the following elements:
 
 
 
-
-## Naming conventions
-
-
-### FPS name
+## 1.2. FPS name
 
 <fpsname> consists of a root name (string), and a series of optional integers, each printed on two digits:
 
@@ -49,16 +47,15 @@ Examples:
 
 
 
-
-### FPS-related entities
+## 1.3. FPS-related entities
 
 name                                  | Type           | Description        | Origin
 --------------------------------------|----------------|--------------------|---------------------------------
 /tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
-./fpscmd/<fpsnameroot>-conf-init      | script         | Initialize FPS     | User-provided
-./fpscmd/<fpsnameroot>-conf-start     | script         | Start CONF process | User-provided 
-./fpscmd/<fpsnameroot>-run-start      | script         | Start RUN process  | User-provided 
-./fpscmd/<fpsnameroot>-run-stop       | script         | Stop RUN process   | User-provided 
+./fpscmd/<fpsnameroot>-confinit       | script         | Initialize FPS     | Built by fpsmkcmd, can be user-edited
+./fpscmd/<fpsnameroot>-confstart      | script         | Start CONF process | Built by fpsmkcmd, can be user-edited
+./fpscmd/<fpsnameroot>-runstart       | script         | Start RUN process  | Built by fpsmkcmd, can be user-edited
+./fpscmd/<fpsnameroot>-runstop        | script         | Stop RUN process   | Built by fpsmkcmd, can be user-edited
 <fpsname>-conf                        | tmux session   | where CONF runs    | Set up by fpsCTRL
 <fpsname>-run                         | tmux session   | where RUN runs     | Set up by fpsCTRL
 ./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | <TBD>
@@ -67,28 +64,46 @@ name                                  | Type           | Description        | Or
 ---
 
 
-# fpsCTRL tool (#page_FunctionParameterStructure_fpsCTRL}
 
-The FPS control tool is started from the command line :
-
-	fpsCTRL
 	
 
 
 
+# 2. FPS user interface {#page_FunctionParameterStructure_UserInterface}
+
+
+## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
+
+
+The user-provided `fpslist.txt` file lists the functions and corresponding FPS names that will be in use:
+
+~~~
+# List of FPS-enabled function
+
+fpsrootname0	CLIcommand0
+fpsrootname1	CLIcommand1		optarg00	optarg01
+~~~
+
+FPS command scripts are built by
+
+	fpsmkcmd
+	
+The command will create the FPS command scripts in directory `./fpscmd/`, which are then called by the @ref page_FunctionParameterStructure_fpsCTRL to control the CONF and RUN processes.
+
+	
+
+## 2.2. fpsCTRL tool {#page_FunctionParameterStructure_fpsCTRL}
+
+The FPS control tool is started from the command line :
+
+	fpsCTRL
+
+
+
 ---
 
 
-# Writing the fpscmd scripts {#page_FunctionParameterStructure_WritingFPSCMDscripts}
-
-
-
-
-
----
-
-
-# Writing the CLI function (in <module>.c file)  {#page_FunctionParameterStructure_WritingCLIfunc}
+# 3. Writing the CLI function (in <module>.c file)  {#page_FunctionParameterStructure_WritingCLIfunc}
 
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
@@ -174,7 +189,7 @@ int_fast8_t MyFunction_cli()
 ---
 
 
-# Writing function prototypes (in <module>.h) {#page_FunctionParameterStructure_WritingPrototypes}
+# 4. Writing function prototypes (in <module>.h) {#page_FunctionParameterStructure_WritingPrototypes}
 
 
 
@@ -187,7 +202,7 @@ int MyFunction_RUN(char *fpsname);
 
 ---
 
-# Writing CONF function (in source .c file) {#page_FunctionParameterStructure_WritingCONFfunc}
+# 5. Writing CONF function (in source .c file) {#page_FunctionParameterStructure_WritingCONFfunc}
 
 
 
@@ -297,12 +312,12 @@ int MyFunction_FPCONF(
 
 
 
-# Writing RUN function (in source .c file) {#page_FunctionParameterStructure_WritingRUNfunc}
+# 6. Writing RUN function (in source .c file) {#page_FunctionParameterStructure_WritingRUNfunc}
 
 
 The RUN function will connect to the FPS and execute the run loop. 
 
-## A simple example {#page_FunctionParameterStructure_WritingRUNfunc_simple}
+## 6.1. A simple example {#page_FunctionParameterStructure_WritingRUNfunc_simple}
 
 
 ~~~~{.c}
@@ -372,7 +387,7 @@ int MyFunction_RUN(
 
 
 
-## RUN function with FPS and processinfo {#page_FunctionParameterStructure_WritingRUNfunc_processinfo}
+## 6.2. RUN function with FPS and processinfo {#page_FunctionParameterStructure_WritingRUNfunc_processinfo}
 
 
 In this example, the loop process supports both FPS and processinfo.

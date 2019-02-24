@@ -1,0 +1,97 @@
+#!/bin/bash
+# Write SPF command scripts
+
+
+FPSlistfilename="fpslist.txt"
+FPScmddir="fpscmd"
+
+mkdir -p ${FPScmddir}
+
+echo "#!/bin/bash" > fpsinitscript.txt
+echo "" >> fpsinitscript.txt
+
+cat "$FPSlistfilename" | while read LINE; do
+    nw=$( echo "$LINE" | wc -w )
+    if [ "$nw" -gt 1 ]; then
+    if [[ $LINE != \#* ]]; then
+
+	declare -a OPTARG
+
+		stringarr=($LINE)
+		nbarg=$(( $nw - 2 ))
+		
+		FPSrootname=${stringarr[0]}
+		#$( echo "$LINE" | awk '{print $1}' )
+		CLIname=${stringarr[1]}
+		#$( echo "$LINE" | awk '{print $2}' )
+		
+		echo "    FPS root name = ${FPSname}"
+		echo "    CLI cmd       = ${CLIname}"
+		
+		FPSname="${FPSrootname}"
+		for arg in `seq 1 $nbarg`;
+        do
+				i=$(( $arg + 1 ))				
+				OPTARG[$arg]=${stringarr[$i]}				                
+                echo "    Argument $arg =" ${OPTARG[$arg]}
+                FPSname+="."${OPTARG[$i]}
+        done
+        
+        echo "    FPS name      = ${FPSname}"
+
+
+	# write scripts
+	
+	for CMDCODE in "CONFINIT" "CONFSTART" "RUNSTART" "RUNSTOP"; do
+		
+		pnamestr="$(echo "$CMDCODE" | awk '{print tolower($0)}')"
+		
+		fname="./${FPScmddir}/${FPSrootname}-${pnamestr}"		
+		
+		if [ -f ${fname} ]; then
+			echo "File  $fname  exists - no write"
+		else
+			echo "Writing  $fname"
+			
+			echo "#!/bin/bash" > $fname
+			echo "# This script was automatically written by $0" >> $fname
+			echo "" >> $fname
+			for arg in `seq 1 $nbarg`;
+			do 
+				echo "arg${arg}=\"\$${arg}\"" >> $fname
+			done
+			
+			pname="${FPSrootname}"
+			CLIcmdstring="${CLIname} _${CMDCODE}_"
+			for arg in `seq 1 $nbarg`; do 
+				pname+="-\${arg$arg}"
+				CLIcmdstring+=" \${arg$arg}"
+			done 
+			echo "" >> $fname
+			echo "pname=\"${pname}-${pnamestr}\"" >> $fname
+			echo "" >> $fname
+			echo "cacao -n \${pname} << EOF" >> $fname
+			echo "$CLIcmdstring" >> $fname
+			echo "exitCLI" >> $fname
+			echo "EOF" >> $fname
+		
+			chmod +x $fname
+		fi
+		
+		if [ "$CMDCODE" = "CONFINIT" ]; then
+			cmdstring="$fname"
+			for arg in `seq 1 $nbarg`; do 
+				cmdstring+=" "${OPTARG[$arg]}
+			done
+			echo "${cmdstring}" >> fpsinitscript.txt
+		fi
+		
+		
+	done
+        
+
+        
+		echo ""
+    fi
+    fi
+done
