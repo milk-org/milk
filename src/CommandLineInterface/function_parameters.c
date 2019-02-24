@@ -2575,9 +2575,9 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 				char * FPScmdline = NULL;
 				size_t len = 0;
 				ssize_t read;
-				char *FPScommand;
-				char *FPSentryname;
-				char *FPSvaluestring;
+				char FPScommand[50];
+				char FPSentryname[500];
+				char FPSvaluestring[200];
 				
 				while ((read = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
 					// break line in words
@@ -2596,9 +2596,10 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 							strcpy(FPSentryname, pch);
 						if(nbword==2)
 							strcpy(FPSvaluestring, pch);
-					}
-					
+					}					
 					printf("%d \n", nbword);
+					
+					if(nbword>2)
 					
 				}
 
