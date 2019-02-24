@@ -2659,6 +2659,7 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
                                     break;
 
                                 case FPTYPE_ONOFF:
+									printf(" (%s) ", FPSvaluestring);
                                     if( strcmp(FPSvaluestring,"ON") == 0)
                                     {
                                         functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 1);
