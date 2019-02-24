@@ -65,11 +65,14 @@ cat "$FPSlistfilename" | while read LINE; do
 	echo "${FPSname}" >> ./${FPScmddir}/fpslist.txt
 
 	# write scripts
-	for CMDCODE in "CONFINIT" "CONFSTART" "RUNSTART" "RUNSTOP"; do
+	for CMDCODE in "CONFINIT" "CONFSTART" "CONFSTOP" "RUNSTART" "RUNSTOP"; do
 		
 		pnamestr="$(echo "$CMDCODE" | awk '{print tolower($0)}')"
 		
 		fname="./${FPScmddir}/${FPSrootname}-${pnamestr}"		
+		
+		if [ "$CMDCODE" != "CONFSTOP" ];  # CONFSTOP does not run a program. Instead, C-c char sent to tmux session
+		then
 		
 		if [ -f ${fname} ]; then
 			echo "File  $fname  exists - no write"
@@ -106,6 +109,8 @@ cat "$FPSlistfilename" | while read LINE; do
 			echo "EOF" >> $fname
 		
 			chmod +x $fname
+		fi
+		
 		fi
 		
 
