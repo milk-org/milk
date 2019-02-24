@@ -4,8 +4,11 @@
 
 FPSlistfilename="fpslist.txt"
 FPScmddir="fpscmd"
+FPScmdlogdir="fpscmdlog"
 
 mkdir -p ${FPScmddir}
+mkdir -p ${FPScmdlogdir}
+
 
 echo "#!/bin/bash" > fpsinitscript.txt
 chmod +x fpsinitscript.txt
@@ -71,7 +74,14 @@ cat "$FPSlistfilename" | while read LINE; do
 			echo "" >> $fname
 			echo "pname=\"${pname}.${pnamestr}\"" >> $fname
 			echo "" >> $fname
-			echo "cacao -n \${pname} << EOF" >> $fname
+			
+			redirect=""
+			if [ "$CMDCODE" = "RUNSTOP" ]; then
+			redirect="> ./${FPScmdlogdir}/${pname}.runstop.log"
+			fi
+			
+			echo "cacao -n \${pname} ${redirect} << EOF" >> $fname
+			
 			echo "$CLIcmdstring" >> $fname
 			echo "exitCLI" >> $fname
 			echo "EOF" >> $fname
