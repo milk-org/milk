@@ -9,6 +9,8 @@ FPScmdlogdir="fpscmdlog"
 mkdir -p ${FPScmddir}
 mkdir -p ${FPScmdlogdir}
 
+echo "" > ./${FPScmddir}/fpslist.txt
+
 
 echo "#!/bin/bash" > fpsinitscript.txt
 chmod +x fpsinitscript.txt
@@ -44,8 +46,10 @@ cat "$FPSlistfilename" | while read LINE; do
         echo "    FPS name      = ${FPSname}"
 
 
+	# write to list of FPS names
+	echo "${FPSname}" >> ./${FPScmddir}/fpslist.txt
+
 	# write scripts
-	
 	for CMDCODE in "CONFINIT" "CONFSTART" "RUNSTART" "RUNSTOP"; do
 		
 		pnamestr="$(echo "$CMDCODE" | awk '{print tolower($0)}')"
