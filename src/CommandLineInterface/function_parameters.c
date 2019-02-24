@@ -430,7 +430,7 @@ int function_parameter_SetValue_int64(char *keywordfull, long val)
 
     function_parameter_struct_disconnect(&fps);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -625,6 +625,7 @@ long functionparameter_GetParamValue_INT64(
     return value;
 }
 
+
 int functionparameter_SetParamValue_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
@@ -634,8 +635,9 @@ int functionparameter_SetParamValue_INT64(
 	int fpsi = functionparameter_GetParamIndex(fps, paramname);
 	fps->parray[fpsi].val.l[0] = value;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
+
 
 long *functionparameter_GetParamPtr_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -677,7 +679,7 @@ int functionparameter_SetParamValue_FLOAT64(
 	int fpsi = functionparameter_GetParamIndex(fps, paramname);
 	fps->parray[fpsi].val.f[0] = value;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 double *functionparameter_GetParamPtr_FLOAT64(
@@ -716,7 +718,7 @@ char *functionparameter_SetParamValue_STRING(
 
     strncpy(fps->parray[fpsi].val.string[0], stringvalue, FUNCTION_PARAMETER_STRMAXLEN);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 
@@ -748,7 +750,7 @@ int functionparameter_SetParamValue_ONOFF(
 	else
 		fps->parray[fpsi].status &= ~FPFLAG_ONOFF;
 	
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 
@@ -2629,19 +2631,24 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 
                             if(strcmp(FPScommand,"setval")==0)
                             {
+								int updated = 0;
+								
                                 switch (fps[fpsindex].parray[pindex].type) {
                                 case FPTYPE_INT64:
-                                    functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring));
+                                    if( functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring)) == EXIT_SUCCESS )
+										updated = 1;
                                     printf("setval  INT64       %40s  = %ld", FPSentryname, atol(FPSvaluestring));
                                     break;
 
                                 case FPTYPE_FLOAT64:
-                                    functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring));
+                                    if(functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring))==EXIT_SUCCESS)
+										updated = 1;
                                     printf("setval  FLOAT64     %40s  = %f", FPSentryname, atof(FPSvaluestring));
                                     break;
 
                                 case FPTYPE_PID:
-                                    functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring));
+                                    if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring))==EXIT_SUCCESS)
+										updated = 1;
                                     printf("setval  PID         %40s  = %ld", FPSentryname, atol(FPSvaluestring));
                                     break;
 
@@ -2650,39 +2657,50 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
                                     break;
 
                                 case FPTYPE_FILENAME:
-                                    functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring)==EXIT_SUCCESS)
+										updated = 1;
                                     printf("setval  FILENAME    %40s  = %s", FPSentryname, FPSvaluestring);
                                     break;
 
                                 case FPTYPE_DIRNAME:
-                                    functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring)==EXIT_SUCCESS)
+										updated = 1;
                                     printf("setval  DIRNAME     %40s  = %s", FPSentryname, FPSvaluestring);
                                     break;
 
                                 case FPTYPE_STREAMNAME:
-                                    functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring)==EXIT_SUCCESS)
+										updated = 1;
                                     printf("setval  STREAMNAME  %40s  = %s", FPSentryname, FPSvaluestring);
                                     break;
 
                                 case FPTYPE_STRING:
-                                    functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring);
+                                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring)==EXIT_SUCCESS)
+										updated = 1;
                                     printf("setval  STRING      %40s  = %s", FPSentryname, FPSvaluestring);
                                     break;
 
                                 case FPTYPE_ONOFF:
                                     if( strncmp(FPSvaluestring,"ON", 2) == 0)
                                     {
-                                        functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 1);
+                                        if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 1)==EXIT_SUCCESS)
+											updated = 1;
                                         printf("setval  ONOFF       %40s  = ON", FPSentryname);
                                     }
                                     if( strncmp(FPSvaluestring,"OFF", 3) == 0)
                                     {
-                                        functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 0);
+                                        if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 0)==EXIT_SUCCESS)
+											updated = 1;
                                         printf("setval  ONOFF       %40s  = OFF", FPSentryname);
                                     }
                                     break;
                                 }
+                                if(updated == 1)
+								{
+									functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval", "input command file");
+								}
                             }
+                            
 
                         }
                         printf("\n");
