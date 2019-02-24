@@ -992,7 +992,7 @@ int function_parameter_add_entry(
     functionparameter_GetFileName(&funcparamarray[pindex], fname[1], "minval");
     functionparameter_GetFileName(&funcparamarray[pindex], fname[2], "maxval");
 
-    printf(" FILE NAME = %s\n", fname[0]);
+    printf(" -------- FILE NAMES = %s %s %s\n", fname[0], fname[1], fname[2]);
     fflush(stdout);
 
     int index;
@@ -1118,9 +1118,9 @@ int function_parameter_add_entry(
     if(RVAL == 2) {
         functionparameter_WriteParameterToDisk(fps, pindex, "setval", "AddEntry argument");
         if(funcparamarray[pindex].status |= FPFLAG_MINLIMIT)
-            functionparameter_WriteParameterToDisk(fps, pindex, "minval", "AddEntry created");
+            functionparameter_WriteParameterToDisk(fps, pindex, "minval", "AddEntry argument");
         if(funcparamarray[pindex].status |= FPFLAG_MAXLIMIT)
-            functionparameter_WriteParameterToDisk(fps, pindex, "maxval", "AddEntry created");
+            functionparameter_WriteParameterToDisk(fps, pindex, "maxval", "AddEntry argument");
     }
 
     if(RVAL != 0)
