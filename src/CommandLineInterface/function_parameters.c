@@ -1017,7 +1017,7 @@ int function_parameter_add_entry(
 		}
 		
 		
-        if ( (fp = fopen(fname[index], "r")) != NULL)
+        if ( (fp = fopen(fname, "r")) != NULL)
         {
 			
 			sprintf(systemcmd, "echo  \"-------- FILE FOUND: %s \" >> tmplog.txt", fname);
