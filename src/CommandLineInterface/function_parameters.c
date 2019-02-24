@@ -777,31 +777,31 @@ int function_parameter_add_entry(
     void *               valueptr
 )
 {
-	int RVAL = 0; 
-	// 0: parameter initialized to default value
-	// 1: initialized using file value
-	// 2: initialized to function argument value
-	
+    int RVAL = 0;
+    // 0: parameter initialized to default value
+    // 1: initialized using file value
+    // 2: initialized to function argument value
+
     int pindex = 0;
     char *pch;
     char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-	FUNCTION_PARAMETER *funcparamarray;
-	
-	funcparamarray = fps->parray;
+    FUNCTION_PARAMETER *funcparamarray;
 
-	int NBparam = fps->md->NBparam;
+    funcparamarray = fps->parray;
 
-	
+    int NBparam = fps->md->NBparam;
 
 
 
-	// process keywordstring
-	// if string starts with ".", insert fps name
-	char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-	if(keywordstring[0] == '.')
-		sprintf(keywordstringC, "%s%s", fps->md->name, keywordstring);
-	else
-		strcpy(keywordstringC, keywordstring);
+
+
+    // process keywordstring
+    // if string starts with ".", insert fps name
+    char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    if(keywordstring[0] == '.')
+        sprintf(keywordstringC, "%s%s", fps->md->name, keywordstring);
+    else
+        strcpy(keywordstringC, keywordstring);
 
 
 
@@ -828,7 +828,8 @@ int function_parameter_add_entry(
         {
             printf("ERROR [%s line %d]: NBparam limit reached\n", __FILE__, __LINE__);
             fflush(stdout);
-            printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);	
+            printf("STEP %s %d\n", __FILE__, __LINE__);
+            fflush(stdout);
             exit(0);
         }
     }
@@ -837,7 +838,7 @@ int function_parameter_add_entry(
         printf("Found matching keyword: applying values to existing entry\n");
     }
 
-	funcparamarray[pindex].status = status;
+    funcparamarray[pindex].status = status;
 
 
 
@@ -906,84 +907,15 @@ int function_parameter_add_entry(
         sprintf(funcparamarray[pindex].val.string[1], "NULL");
         break;
     case FPTYPE_ONOFF :
-		funcparamarray[pindex].status &= ~FPFLAG_ONOFF; // initialize state to OFF
+        funcparamarray[pindex].status &= ~FPFLAG_ONOFF; // initialize state to OFF
         sprintf(funcparamarray[pindex].val.string[0], "OFF state");
         sprintf(funcparamarray[pindex].val.string[1], " ON state");
         break;
     }
 
-    if(valueptr == NULL)
-    {
-        // attempt to read value for filesystem
-        char fname[200];
-        FILE *fp;
-        long tmpl;
 
 
-        functionparameter_GetFileName(&funcparamarray[pindex], fname, "setval");
-        //sprintf(fname, "FPCONF/%s", funcparamarray[pindex].keywordfull);
-        printf(" FILE NAME = %s\n", fname);
-        fflush(stdout);
-
-        if ( (fp = fopen(fname, "r")) != NULL)
-        {
-            switch (funcparamarray[pindex].type) {
-            case FPTYPE_INT64 :
-                if ( fscanf(fp, "%ld", &funcparamarray[pindex].val.l[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_FLOAT64 :
-                if ( fscanf(fp, "%lf", &funcparamarray[pindex].val.f[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_PID :
-                if ( fscanf(fp, "%d", &funcparamarray[pindex].val.pid[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_TIMESPEC :
-                if ( fscanf(fp, "%ld %ld", &funcparamarray[pindex].val.ts[0].tv_sec, &funcparamarray[pindex].val.ts[0].tv_nsec) == 2)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_FILENAME :
-                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_DIRNAME :
-                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_STREAMNAME :
-                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_STRING :
-                if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-					RVAL = 1;
-                    funcparamarray[pindex].cnt0++;
-                break;
-            case FPTYPE_ONOFF :
-                if ( fscanf(fp, "%ld", &tmpl) == 1)
-                {
-					if(tmpl == 1)
-						funcparamarray[pindex].status |= FPFLAG_ONOFF;
-					else
-						funcparamarray[pindex].status &= ~FPFLAG_ONOFF;
-						
-                    funcparamarray[pindex].cnt0++;
-				}
-            }
-            fclose(fp);			
-        }
-			
-    }
-    else // allocate value requested by function call
+    if( valueptr != NULL )// allocate value requested by function call
     {
         int64_t *valueptr_INT64;
         double *valueptr_FLOAT64;
@@ -1040,32 +972,163 @@ int function_parameter_add_entry(
             strncpy(funcparamarray[pindex].val.string[0], (char*) valueptr,  FUNCTION_PARAMETER_STRMAXLEN);
             funcparamarray[pindex].cnt0++;
             break;
-            
+
         case FPTYPE_ONOFF : // already allocated through the status flag
-			break;
+            break;
         }
-        
-        RVAL = 2;
+
+        RVAL = 2;  // default value entered
     }
 
-	if(RVAL == 0){
-		functionparameter_WriteParameterToDisk(fps, pindex, "setval", "AddEntry created");
-	}
-	
-	if(RVAL == 2){
-		functionparameter_WriteParameterToDisk(fps, pindex, "setval", "AddEntry argument");
-	}
 
-	if(RVAL != 0)
-	{	
-		functionparameter_WriteParameterToDisk(fps, pindex, "fpsname", "AddEntry");	
-		functionparameter_WriteParameterToDisk(fps, pindex, "fpsdir", "AddEntry");
-		functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
-		if(funcparamarray[pindex].status |= FPFLAG_MINLIMIT)
-			functionparameter_WriteParameterToDisk(fps, pindex, "minval", "AddEntry");
-		if(funcparamarray[pindex].status |= FPFLAG_MAXLIMIT)
-			functionparameter_WriteParameterToDisk(fps, pindex, "maxval", "AddEntry");
-	}
+
+    // attempt to read value for filesystem
+    char fname[200][3];
+    FILE *fp;
+    long tmpl;
+
+
+    functionparameter_GetFileName(&funcparamarray[pindex], fname[0], "setval");
+    functionparameter_GetFileName(&funcparamarray[pindex], fname[1], "minval");
+    functionparameter_GetFileName(&funcparamarray[pindex], fname[2], "maxval");
+
+    printf(" FILE NAME = %s\n", fname[0]);
+    fflush(stdout);
+
+    int index;
+    // index = 0  : setval
+    // index = 1  : minval
+    // index = 2  : maxval
+
+
+    for(index=0; index<3; index++)
+    {
+        if ( (fp = fopen(fname[index], "r")) != NULL)
+        {
+            switch (funcparamarray[pindex].type) {
+
+            case FPTYPE_INT64 :
+                if ( fscanf(fp, "%ld", &funcparamarray[pindex].val.l[index]) == 1)
+                    if ( index == 0 )  // return value is set by setval, cnt0 tracks updates to setval, not to minval or maxval
+					{
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+                break;
+
+            case FPTYPE_FLOAT64 :
+                if ( fscanf(fp, "%lf", &funcparamarray[pindex].val.f[index]) == 1)
+                    if ( index == 0 )
+					{	
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+                break;
+
+            case FPTYPE_PID :
+                if(index==0)  // PID does not have min / max
+                {
+                    if ( fscanf(fp, "%d", &funcparamarray[pindex].val.pid[index]) == 1)
+                        RVAL = 1;
+                    funcparamarray[pindex].cnt0++;
+                }
+                break;
+
+            case FPTYPE_TIMESPEC :
+                if ( fscanf(fp, "%ld %ld", &funcparamarray[pindex].val.ts[index].tv_sec, &funcparamarray[pindex].val.ts[index].tv_nsec) == 2)
+                    if ( index == 0 )
+                    {
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+                break;
+
+            case FPTYPE_FILENAME :
+				if ( index == 0 ) // FILENAME does not have min / max
+				{
+					if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+					{
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+				}
+                break;
+                
+            case FPTYPE_DIRNAME :
+                if ( index == 0 ) // DIRNAME does not have min / max
+                {
+					if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                    {
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+				}
+                break;
+                
+            case FPTYPE_STREAMNAME :
+				if ( index == 0 ) // STREAMNAME does not have min / max
+				{
+					if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                    {
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+				}
+                break;
+            
+            case FPTYPE_STRING :
+				if ( index == 0 ) // STRING does not have min / max
+				{
+					if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                    {
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+				}
+                break;
+                
+            case FPTYPE_ONOFF :
+                if(index==0)
+                {
+					if ( fscanf(fp, "%ld", &tmpl) == 1)
+					{
+						if(tmpl == 1)
+							funcparamarray[pindex].status |= FPFLAG_ONOFF;
+						else
+							funcparamarray[pindex].status &= ~FPFLAG_ONOFF;
+
+						funcparamarray[pindex].cnt0++;
+					}
+                }
+            }
+            fclose(fp);
+        }
+    }
+
+
+
+    if(RVAL == 0) {
+        functionparameter_WriteParameterToDisk(fps, pindex, "setval", "AddEntry created");
+        if(funcparamarray[pindex].status |= FPFLAG_MINLIMIT)
+            functionparameter_WriteParameterToDisk(fps, pindex, "minval", "AddEntry created");
+        if(funcparamarray[pindex].status |= FPFLAG_MAXLIMIT)
+            functionparameter_WriteParameterToDisk(fps, pindex, "maxval", "AddEntry created");
+    }
+
+    if(RVAL == 2) {
+        functionparameter_WriteParameterToDisk(fps, pindex, "setval", "AddEntry argument");
+        if(funcparamarray[pindex].status |= FPFLAG_MINLIMIT)
+            functionparameter_WriteParameterToDisk(fps, pindex, "minval", "AddEntry created");
+        if(funcparamarray[pindex].status |= FPFLAG_MAXLIMIT)
+            functionparameter_WriteParameterToDisk(fps, pindex, "maxval", "AddEntry created");
+    }
+
+    if(RVAL != 0)
+    {
+        functionparameter_WriteParameterToDisk(fps, pindex, "fpsname", "AddEntry");
+        functionparameter_WriteParameterToDisk(fps, pindex, "fpsdir", "AddEntry");
+        functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
+    }
 
     return pindex;
 }
