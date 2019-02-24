@@ -1020,7 +1020,7 @@ int function_parameter_add_entry(
         if ( (fp = fopen(fname[index], "r")) != NULL)
         {
 			
-			sprintf(systemcmd, "echo  \"-------- FILE FOUND: %s \" >> tmplog.txt", fname[index]);
+			sprintf(systemcmd, "echo  \"-------- FILE FOUND: %s \" >> tmplog.txt", fname);
 			system(systemcmd);
 			
             switch (funcparamarray[pindex].type) {
@@ -1123,7 +1123,7 @@ int function_parameter_add_entry(
         }
 		else
 		{
-			sprintf(systemcmd, "echo  \"-------- FILE NOT FOUND: %s \" >> tmplog.txt", fname[index]);
+			sprintf(systemcmd, "echo  \"-------- FILE NOT FOUND: %s \" >> tmplog.txt", fname);
 			system(systemcmd);		
 		}
     }
