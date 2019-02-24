@@ -2584,14 +2584,14 @@ int_fast8_t functionparameter_CTRLscreen(char *fpsnamemask)
 					char * pch;
 					int nbword = 0;
 					
-					pch = strtok (FPScmdline, " ");
+					pch = strtok (FPScmdline, " \t");
 					//strcpy( FPScommand, pch);
 										
 					while (pch != NULL)
 					{
 						printf("%s ", pch);
 						nbword++;
-						pch = strtok (NULL, " ");
+						pch = strtok (NULL, " \t");
 						/*if(nbword==1)
 							strcpy(FPSentryname, pch);
 						if(nbword==2)
