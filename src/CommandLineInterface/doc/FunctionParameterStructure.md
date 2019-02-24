@@ -20,7 +20,7 @@
 ---
 
 
-# 1. Overview {#page_FunctionParameterStructure_Overview}
+# 1. Overview and background {#page_FunctionParameterStructure_Overview}
 
 ## 1.1. Main elements
 
@@ -72,6 +72,14 @@ name                                  | Type           | Description        | Or
 # 2. FPS user interface {#page_FunctionParameterStructure_UserInterface}
 
 
+Steps:
+
+	$ vim fpslist.txt  # Edit file, listing functions and corresponding FPS names that will be used
+	$ fpsmkcmd         # create FPS scripts in `./fpscmd/`
+	$ ./fpsinitscript` # script to create FPS shared memory structures
+	$ fpsCTRL -a       # FPS control tool, auto (-a) mode will read fpslist.txt 
+
+
 ## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
 
 
@@ -86,7 +94,7 @@ fpsrootname1	CLIcommand1		optarg00	optarg01
 
 FPS command scripts are built by
 
-	fpsmkcmd
+	$ fpsmkcmd
 	
 The command will create the FPS command scripts in directory `./fpscmd/`, which are then called by the @ref page_FunctionParameterStructure_fpsCTRL to control the CONF and RUN processes.
 
@@ -96,7 +104,7 @@ The command will create the FPS command scripts in directory `./fpscmd/`, which 
 
 The FPS control tool is started from the command line :
 
-	fpsCTRL
+	$ fpsCTRL
 
 
 
