@@ -1637,7 +1637,7 @@ void *processinfo_scan(void *thptr)
 
             if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
             {
-                    pinfop->updatearray[pindex] = 1;
+                pinfop->updatearray[pindex] = 1;
 
             }
             //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
@@ -1783,71 +1783,73 @@ void *processinfo_scan(void *thptr)
             {
                 if(pinfolist->active[pindex] != 0)
                 {
-                    
+
+                    if((procinfoproc.pinfodisp[pindex].NBsubprocesses != 0) // this always be the case
+                {
                     int spindex; // sub process index, 0 for main
                     if(pinfop->psysinfostatus[pindex] != -1)
-                    {
-                        for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
                         {
-                            // place info in subprocess arrays
-//                            pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
-                            // Context Switches
+                            for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                            {
+                                // place info in subprocess arrays
+                                pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
+                                // Context Switches
 
-//                            pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary[spindex];
-//                            pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary[spindex];
+                                pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary[spindex];
+                                pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary[spindex];
 
 
-                            // CPU use
-//                            pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
+                                // CPU use
+                                pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
 
-                        }
-                    }
-                    
-                    /*
-                    pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
-                    if(pinfop->psysinfostatus[pindex] != -1)
-                    {
-                        char cpuliststring[200];
-                        char cpustring[16];
-                        
-                        for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
-                        {
-                            if( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]) {
-                                // get CPU and MEM load
-                                pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]);
-                                pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
                             }
                         }
 
-                        sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
-                        
-                        int cpu;
-                        for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+
+                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                        if(pinfop->psysinfostatus[pindex] != -1)
                         {
-                            int cpuOK = 0;
-                            int cpumin, cpumax;
+                            char cpuliststring[200];
+                            char cpustring[16];
 
-                            sprintf(cpustring, ",%d,", pinfop->CPUids[cpu]);
-                            if(strstr(cpuliststring, cpustring) != NULL)
-                                cpuOK = 1;
-
-
-                            for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
-                                for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
-                                {
-                                    sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                        cpuOK = 1;
+                            for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                            {
+                                if( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]) {
+                                    // get CPU and MEM load
+                                    pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]);
+                                    pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
                                 }
-                            pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
-                        }
+                            }
 
-                    }*/
-                    
-                    
+                            sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
+
+                            int cpu;
+                            for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+                            {
+                                int cpuOK = 0;
+                                int cpumin, cpumax;
+
+                                sprintf(cpustring, ",%d,", pinfop->CPUids[cpu]);
+                                if(strstr(cpuliststring, cpustring) != NULL)
+                                    cpuOK = 1;
+
+
+                                for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
+                                    for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
+                                    {
+                                        sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+                                        if(strstr(cpuliststring, cpustring) != NULL)
+                                            cpuOK = 1;
+                                    }
+                                pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
+                            }
+
+                        }
+                    }
+
                 }
             }
-            
+
         } // end of DisplayMode 3
 
 
