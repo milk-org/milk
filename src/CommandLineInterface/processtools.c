@@ -1855,7 +1855,10 @@ void *processinfo_scan(void *thptr)
 
 
 
-
+void processinfo_CTRLscreen_atexit()
+{
+	endwin();
+}
 
 
 
@@ -1946,6 +1949,7 @@ int_fast8_t processinfo_CTRLscreen()
 
     // INITIALIZE ncurses
     initncurses();
+	atexit( processinfo_CTRLscreen_atexit );
 
 
     procinfoproc.NBpinfodisp = wrow-5;
