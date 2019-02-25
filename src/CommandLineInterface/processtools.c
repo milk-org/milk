@@ -1929,6 +1929,7 @@ CTRLscreenExitLine = __LINE__; //TEST
 
     setlocale(LC_ALL, "");
 
+CTRLscreenExitLine = __LINE__; //TEST
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
@@ -1943,23 +1944,28 @@ CTRLscreenExitLine = __LINE__; //TEST
     CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
+CTRLscreenExitLine = __LINE__; //TEST
 
     // Create / read process list
     processinfo_shm_list_create();
 
+CTRLscreenExitLine = __LINE__; //TEST
+
     // copy pointer
     procinfoproc.pinfolist = pinfolist;
 
+CTRLscreenExitLine = __LINE__; //TEST
 
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
-
+CTRLscreenExitLine = __LINE__; //TEST
 
     // INITIALIZE ncurses
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
-		
+
+CTRLscreenExitLine = __LINE__; //TEST		
 	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
@@ -1968,6 +1974,7 @@ CTRLscreenExitLine = __LINE__; //TEST
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
     }
+CTRLscreenExitLine = __LINE__; //TEST
 
     pindexActiveSelected = 0;
 
@@ -1981,7 +1988,7 @@ CTRLscreenExitLine = __LINE__; //TEST
     procinfoproc.twaitus = 1000000; // 1 sec
     pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
-
+CTRLscreenExitLine = __LINE__; //TEST
 
     // wait for first scan to be completed
     while( procinfoproc.loopcnt < 1 )
