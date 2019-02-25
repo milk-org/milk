@@ -1855,7 +1855,13 @@ void *processinfo_scan(void *thptr)
 
 
 
-
+void processinfo_CTRLscreen_atexit()
+{
+	echo();
+	endwin();
+	
+	printf("EXIT from processinfo_CTRLscreen\n");
+}
 
 
 
@@ -1944,10 +1950,13 @@ int_fast8_t processinfo_CTRLscreen()
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
+
+
     // INITIALIZE ncurses
     initncurses();
-
-
+	atexit( processinfo_CTRLscreen_atexit );
+		
+	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
