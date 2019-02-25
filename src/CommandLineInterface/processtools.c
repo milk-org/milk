@@ -1208,7 +1208,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 
     // read /proc/PID/status
-	#idef CMDPROC_PROCSTAT
+	#ifdef CMDPROC_PROCSTAT
 	for(int spindex = 0; spindex < pinfodisp->NBsubprocesses; spindex++)
     {
     	clock_gettime(CLOCK_REALTIME, &t1);
