@@ -10,11 +10,17 @@
 ---
 
 
-**The function  parameter structure (fps) exposes a function's internal variables for read and/or write.**
-
-**The fps is stored in shared memory, in /tmp/<fpsname>.fps.shm.**
+**The function  parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /tmp/<fpsname>.fps.shm.**
 
 
+Steps to run FPS-enabled processes:
+
+	$ vim fpslist.txt               # Edit file, listing functions and corresponding FPS names that will be used
+	$ fpsmkcmd                      # create FPS scripts in `./fpscmd/`
+	$ ./fpscmd/fpsinitscript        # create FPS shared memory structure(s)
+	$ ./fpscmd/fpsconfstartscript   # start FPS configuration process(es)
+	$ fpsCTRL -m _ALL               # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt)
+	Type 'P' to im(P)ort configuration
 
 
 ---
@@ -72,13 +78,6 @@ name                                  | Type           | Description        | Or
 # 2. FPS user interface {#page_FunctionParameterStructure_UserInterface}
 
 
-Steps:
-
-	$ vim fpslist.txt               # Edit file, listing functions and corresponding FPS names that will be used
-	$ fpsmkcmd                      # create FPS scripts in `./fpscmd/`
-	$ ./fpscmd/fpsinitscript        # create FPS shared memory structure(s)
-	$ ./fpscmd/fpsconfstartscript   # start FPS configuration process(es)
-	$ fpsCTRL -m _ALL               # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt) 
 
 
 ## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}

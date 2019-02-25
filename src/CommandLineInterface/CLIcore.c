@@ -256,39 +256,50 @@ static int_fast8_t help_command(char *cmdkey);
 void sig_handler(int signo)
 {
     switch ( signo ) {
+        
         case SIGINT:
            printf("received SIGINT\n");
            data.signal_INT = 1;
         break;
+        
         case SIGTERM:
            printf("received SIGTERM\n");
            data.signal_TERM = 1;
         break;
+        
         case SIGUSR1:
              printf("received SIGUSR1\n");
            data.signal_USR1 = 1;
         break;
+        
         case SIGUSR2:
              printf("received SIGUSR2\n");
            data.signal_USR2 = 1;
         break;
-         case SIGBUS:
+        
+         case SIGBUS: // exit program after SIGSEGV
            printf("received SIGBUS\n");
            data.signal_BUS = 1;
+           exit( EXIT_FAILURE );
         break;
+        
         case SIGABRT:
              printf("received SIGABRT\n");
            data.signal_ABRT = 1;
         break;
-        case SIGSEGV:
+        
+        case SIGSEGV: // exit program after SIGSEGV
              if(data.signal_SEGV == 0)
 				printf("received SIGSEGV\n");
            data.signal_SEGV = 1;
+           exit( EXIT_FAILURE );
         break;
+        
         case SIGHUP:
              printf("received SIGHUP\n");
            data.signal_HUP = 1;
         break;
+        
          case SIGPIPE:
              printf("received SIGPIPE\n");
            data.signal_PIPE = 1;
