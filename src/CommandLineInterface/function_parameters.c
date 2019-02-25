@@ -2441,6 +2441,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
         {
         case 'x':     // Exit control screen
             loopOK=0;
+            exit(0);
             break;
 
         case 'h':     // help
