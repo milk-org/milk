@@ -1168,7 +1168,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 			if( atexitfifoclose == 1)
 			{
 				atexit( fnExit_fifoclose );
-				fnExit_fifoclose = 1;
+				atexitfifoclose = 1;
 			}
 		}
         FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
