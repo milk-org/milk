@@ -1784,10 +1784,10 @@ void *processinfo_scan(void *thptr)
                 if(pinfolist->active[pindex] != 0)
                 {
 
-                    if((procinfoproc.pinfodisp[pindex].NBsubprocesses != 0) // this always be the case
-                {
-                    int spindex; // sub process index, 0 for main
-                    if(pinfop->psysinfostatus[pindex] != -1)
+                    if(pinfop->pinfodisp[pindex].NBsubprocesses != 0) // this always be the case
+                    {
+                        int spindex; // sub process index, 0 for main
+                        if(pinfop->psysinfostatus[pindex] != -1)
                         {
                             for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
                             {
