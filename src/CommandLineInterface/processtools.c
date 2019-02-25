@@ -1975,11 +1975,10 @@ int_fast8_t processinfo_CTRLscreen()
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
     {
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
-        procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
+        procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;  // by default, each process is assumed to be single-threaded
     }
 
     pindexActiveSelected = 0;
-
     procinfoproc.DisplayMode = 2;
     // display modes:
     // 2: overview
