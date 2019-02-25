@@ -3330,13 +3330,21 @@ int_fast8_t processinfo_CTRLscreen()
                                         attroff(COLOR_PAIR(memColor));
                                         #endif
 
-
+                                        if(pindex == pindexSelected)
+                                            attroff(A_REVERSE);
 
                                         printw("\n");
 
+
+                                    }
+                                    if(procinfoproc.pinfodisp[pindex].NBsubprocesses == 0)
+                                    {
+										printw("\n");
+
                                         if(pindex == pindexSelected)
                                             attroff(A_REVERSE);
-                                    }
+										}
+                                    
                                 }
 
 
