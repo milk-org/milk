@@ -1948,7 +1948,7 @@ int_fast8_t processinfo_CTRLscreen()
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
-	exit();
+	exit(0);
 
     // INITIALIZE ncurses
 	printf("testing exit ...\n");//test
