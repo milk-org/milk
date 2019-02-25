@@ -12,6 +12,7 @@
  */
 
 
+static int CTRLscreenExitLine = 0; // for debugging
 
 
 #ifndef _GNU_SOURCE
@@ -1860,7 +1861,7 @@ void processinfo_CTRLscreen_atexit()
 	echo();
 	endwin();
 	
-	printf("EXIT from processinfo_CTRLscreen\n");
+	printf("EXIT from processinfo_CTRLscreen at line %d\n", CTRLscreenExitLine);
 }
 
 
@@ -1921,10 +1922,14 @@ int_fast8_t processinfo_CTRLscreen()
 
     int ToggleValue;
 
+
+CTRLscreenExitLine = __LINE__; //TEST
+
     processinfo_CatchSignals();
 
     setlocale(LC_ALL, "");
 
+CTRLscreenExitLine = __LINE__; //TEST
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
@@ -1939,23 +1944,28 @@ int_fast8_t processinfo_CTRLscreen()
     CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
+CTRLscreenExitLine = __LINE__; //TEST
 
     // Create / read process list
     processinfo_shm_list_create();
 
+CTRLscreenExitLine = __LINE__; //TEST
+
     // copy pointer
     procinfoproc.pinfolist = pinfolist;
 
+CTRLscreenExitLine = __LINE__; //TEST
 
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
-
+CTRLscreenExitLine = __LINE__; //TEST
 
     // INITIALIZE ncurses
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
-		
+
+CTRLscreenExitLine = __LINE__; //TEST		
 	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
@@ -1964,6 +1974,7 @@ int_fast8_t processinfo_CTRLscreen()
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
     }
+CTRLscreenExitLine = __LINE__; //TEST
 
     pindexActiveSelected = 0;
 
@@ -1975,15 +1986,18 @@ int_fast8_t processinfo_CTRLscreen()
     // Start scan thread
     procinfoproc.loop = 1;
     procinfoproc.twaitus = 1000000; // 1 sec
-    pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
+  //  pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
 
+printf("procinfoproc.loopcnt = %ld\n", (long) procinfoproc.loopcnt);//TEST
+
+CTRLscreenExitLine = __LINE__; //TEST
 
     // wait for first scan to be completed
     while( procinfoproc.loopcnt < 1 )
         usleep(10000);
 
-
+CTRLscreenExitLine = __LINE__; //TEST
 
 
 
@@ -2018,6 +2032,8 @@ int_fast8_t processinfo_CTRLscreen()
         scantime_top = 0.0;
         scantime_CPUload = 0.0;
         scantime_CPUpcnt = 0.0;
+
+CTRLscreenExitLine = __LINE__; //TEST
 
         if(freeze==0)
         {
@@ -2528,6 +2544,7 @@ int_fast8_t processinfo_CTRLscreen()
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
+CTRLscreenExitLine = __LINE__; //TEST
 
         if(freeze==0)
         {
@@ -2881,6 +2898,7 @@ int_fast8_t processinfo_CTRLscreen()
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
+CTRLscreenExitLine = __LINE__; //TEST
 
 
                 if(procinfoproc.DisplayMode == 3)
@@ -3524,7 +3542,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             cnt++;
 
-
+CTRLscreenExitLine = __LINE__; //TEST
 
             clock_gettime(CLOCK_REALTIME, &t2loop);
 
