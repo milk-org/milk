@@ -1960,6 +1960,7 @@ int_fast8_t processinfo_CTRLscreen()
 	refresh();
 	
 	sleep(1);
+	echo();
 	endwin();
 	exit(0);//test
 	

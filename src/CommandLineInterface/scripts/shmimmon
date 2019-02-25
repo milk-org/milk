@@ -116,5 +116,5 @@ SF="shmimmonstartup"
 echo "csetpmove RTmon" >$SF
 echo "readshmim $1" >> $SF 
 echo "imgmon $1 10" >> $SF
-echo "exit" >> $SF
+echo "exitCLI" >> $SF
 milk -n shmimmon-$1 -f shmimmonfifo -s $SF
