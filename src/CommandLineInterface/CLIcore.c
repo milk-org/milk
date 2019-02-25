@@ -1108,7 +1108,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-		if( atexitfifoclose == 1)
+		if( atexitfifoclose == 0)
 			{
 				printf("Registering exit function fnExit_fifoclose\n");
 				atexit( fnExit_fifoclose );
