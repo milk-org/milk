@@ -1784,8 +1784,9 @@ void *processinfo_scan(void *thptr)
                 if(pinfolist->active[pindex] != 0)
                 {
 
-                    if(pinfop->pinfodisp[pindex].NBsubprocesses != 0) // this always be the case
+                    if(pinfop->pinfodisp[pindex].NBsubprocesses != 0) // this always should be the case
                     {
+						/*
                         int spindex; // sub process index, 0 for main
                         if(pinfop->psysinfostatus[pindex] != -1)
                         {
@@ -1843,8 +1844,8 @@ void *processinfo_scan(void *thptr)
                                     }
                                 pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
                             }
-
                         }
+                        */
                     }
 
                 }
