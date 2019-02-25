@@ -1858,6 +1858,7 @@ void *processinfo_scan(void *thptr)
 void processinfo_CTRLscreen_atexit()
 {
 	endwin();
+	printf("EXIT from processinfo_CTRLscreen\n");
 }
 
 
