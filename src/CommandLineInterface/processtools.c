@@ -1951,7 +1951,7 @@ int_fast8_t processinfo_CTRLscreen()
     // INITIALIZE ncurses
 	printf("testing exit ...\n");//test
     initncurses();
-	atexit( processinfo_CTRLscreen_atexit );
+//	atexit( processinfo_CTRLscreen_atexit );
 	
 	endwin();
 	exit(0);//test
