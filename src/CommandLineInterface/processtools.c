@@ -1787,18 +1787,18 @@ void *processinfo_scan(void *thptr)
                     int spindex; // sub process index, 0 for main
                     if(pinfop->psysinfostatus[pindex] != -1)
                     {
-                        for(spindex = 0; spindex < 1; spindex++) //pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                        for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
                         {
                             // place info in subprocess arrays
-                            pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
+//                            pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
                             // Context Switches
 
-                            pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary[spindex];
-                            pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary[spindex];
+//                            pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary[spindex];
+//                            pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary[spindex];
 
 
                             // CPU use
-                            pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
+//                            pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
 
                         }
                     }
