@@ -1783,6 +1783,7 @@ void *processinfo_scan(void *thptr)
             {
                 if(pinfolist->active[pindex] != 0)
                 {
+                    
                     int spindex; // sub process index, 0 for main
                     if(pinfop->psysinfostatus[pindex] != -1)
                     {
@@ -1801,6 +1802,8 @@ void *processinfo_scan(void *thptr)
 
                         }
                     }
+                    
+                    /*
                     pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
                     if(pinfop->psysinfostatus[pindex] != -1)
                     {
@@ -1839,7 +1842,7 @@ void *processinfo_scan(void *thptr)
                             pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
                         }
 
-                    }
+                    }*/
                     
                     
                 }
