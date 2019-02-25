@@ -1922,6 +1922,9 @@ int_fast8_t processinfo_CTRLscreen()
 
     int ToggleValue;
 
+
+CTRLscreenExitLine = __LINE__; //TEST
+
     processinfo_CatchSignals();
 
     setlocale(LC_ALL, "");
@@ -1984,7 +1987,7 @@ int_fast8_t processinfo_CTRLscreen()
     while( procinfoproc.loopcnt < 1 )
         usleep(10000);
 
-	CTRLscreenExitLine = __LINE__; //TEST
+CTRLscreenExitLine = __LINE__; //TEST
 
 
 
