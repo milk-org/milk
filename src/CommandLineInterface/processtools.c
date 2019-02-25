@@ -1834,12 +1834,6 @@ void *processinfo_scan(void *thptr)
                     
                 }
             }
-
-
-
-
-
-
         } // end of DisplayMode 3
 
 
@@ -1943,6 +1937,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
     // Create / read process list
+    //
     processinfo_shm_list_create();
 
 
@@ -1983,7 +1978,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     // wait for first scan to be completed
     while( procinfoproc.loopcnt < 1 )
-        usleep(10000);
+    {
+		printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
+        usleep(1000);
+	}
 
 
 
