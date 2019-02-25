@@ -73,9 +73,11 @@ static int CTRLscreenExitLine = 0; // for debugging
 
 
 // What do we want to compute/print ?
-//#define CMDPROC_CONTEXTSWITCH	1
-//#define CMDPROC_CPUUSE	1
-//#define CMDPROC_MEMUSE	1
+#define CMDPROC_CONTEXTSWITCH	1
+#define CMDPROC_CPUUSE	1
+#define CMDPROC_MEMUSE	1
+
+//#define CMDPROC_PROCSTAT 1
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -1206,6 +1208,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 
     // read /proc/PID/status
+	#ifdef CMDPROC_PROCSTAT
 	for(int spindex = 0; spindex < pinfodisp->NBsubprocesses; spindex++)
     {
     	clock_gettime(CLOCK_REALTIME, &t1);
@@ -1432,6 +1435,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         tdiff = info_time_diff(t1, t2);
         scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
     }
+    #endif
 
     return 0;
 
@@ -1637,7 +1641,7 @@ void *processinfo_scan(void *thptr)
 
             if((pinfolist->active[pindex] == 1)||(pinfolist->active[pindex] == 2)) // active or crashed
             {
-                    pinfop->updatearray[pindex] = 1;
+                pinfop->updatearray[pindex] = 1;
 
             }
             //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
@@ -1783,71 +1787,75 @@ void *processinfo_scan(void *thptr)
             {
                 if(pinfolist->active[pindex] != 0)
                 {
-                    
-                    int spindex; // sub process index, 0 for main
-                    if(pinfop->psysinfostatus[pindex] != -1)
+
+                    if(pinfop->pinfodisp[pindex].NBsubprocesses != 0) // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
                     {
-                        for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
-                        {
-                            // place info in subprocess arrays
-//                            pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
-                            // Context Switches
-
-//                            pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary[spindex];
-//                            pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary[spindex];
-
-
-                            // CPU use
-//                            pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
-
-                        }
-                    }
-                    
+						
+                        int spindex; // sub process index, 0 for main
                     /*
-                    pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
-                    if(pinfop->psysinfostatus[pindex] != -1)
-                    {
-                        char cpuliststring[200];
-                        char cpustring[16];
-                        
-                        for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                        if(pinfop->psysinfostatus[pindex] != -1)
                         {
-                            if( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]) {
-                                // get CPU and MEM load
-                                pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]);
-                                pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
+                            for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                            {
+                                // place info in subprocess arrays
+                                pinfop->pinfodisp[pindex].sampletimearray_prev[spindex] = pinfop->pinfodisp[pindex].sampletimearray[spindex];
+                                // Context Switches
+
+                                pinfop->pinfodisp[pindex].ctxtsw_voluntary_prev[spindex]    = pinfop->pinfodisp[pindex].ctxtsw_voluntary[spindex];
+                                pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] = pinfop->pinfodisp[pindex].ctxtsw_nonvoluntary[spindex];
+
+
+                                // CPU use
+                                pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex] = pinfop->pinfodisp[pindex].cpuloadcntarray[spindex];
+
                             }
                         }
+*/
 
-                        sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
-                        
-                        int cpu;
-                        for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                      /*  if(pinfop->psysinfostatus[pindex] != -1)
                         {
-                            int cpuOK = 0;
-                            int cpumin, cpumax;
+                            char cpuliststring[200];
+                            char cpustring[16];
 
-                            sprintf(cpustring, ",%d,", pinfop->CPUids[cpu]);
-                            if(strstr(cpuliststring, cpustring) != NULL)
-                                cpuOK = 1;
-
-
-                            for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
-                                for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
-                                {
-                                    sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
-                                    if(strstr(cpuliststring, cpustring) != NULL)
-                                        cpuOK = 1;
+                            for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
+                            {
+                                if( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]) {
+                                    // get CPU and MEM load
+                                    pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfop->pinfodisp[pindex].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindex].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfop->pinfodisp[pindex].sampletimearray[spindex] - pinfop->pinfodisp[pindex].sampletimearray_prev[spindex]);
+                                    pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindex].subprocCPUloadarray[spindex];
                                 }
-                            pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
-                        }
+                            }
 
-                    }*/
-                    
-                    
+                            sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindex].cpusallowed);
+
+                            int cpu;
+                            for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+                            {
+                                int cpuOK = 0;
+                                int cpumin, cpumax;
+
+                                sprintf(cpustring, ",%d,", pinfop->CPUids[cpu]);
+                                if(strstr(cpuliststring, cpustring) != NULL)
+                                    cpuOK = 1;
+
+
+                                for(cpumin=0; cpumin<=pinfop->CPUids[cpu]; cpumin++)
+                                    for(cpumax=pinfop->CPUids[cpu]; cpumax<pinfop->NBcpus; cpumax++)
+                                    {
+                                        sprintf(cpustring, ",%d-%d,", cpumin, cpumax);
+                                        if(strstr(cpuliststring, cpustring) != NULL)
+                                            cpuOK = 1;
+                                    }
+                                pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
+                            }
+                        }*/
+                        
+                    }
+
                 }
             }
-            
+
         } // end of DisplayMode 3
 
 
@@ -1972,11 +1980,10 @@ int_fast8_t processinfo_CTRLscreen()
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
     {
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
-        procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
+        procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;  // by default, each process is assumed to be single-threaded
     }
 
     pindexActiveSelected = 0;
-
     procinfoproc.DisplayMode = 2;
     // display modes:
     // 2: overview
@@ -3342,7 +3349,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     }
                                     if(procinfoproc.pinfodisp[pindex].NBsubprocesses == 0)
                                     {
-										printw("\n");
+										printw("  ERROR: procinfoproc.pinfodisp[pindex].NBsubprocesses = %d\n", (int) procinfoproc.pinfodisp[pindex].NBsubprocesses);
 
                                         if(pindex == pindexSelected)
                                             attroff(A_REVERSE);
