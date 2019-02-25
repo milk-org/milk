@@ -2032,6 +2032,11 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
 
 
 
+void functionparameter_CTRLscreen_atexit()
+{
+	endwin();
+}
+
 
 /**
  * ## Purpose
@@ -2407,6 +2412,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
     // INITIALIZE ncurses
     initncurses();
+	atexit( functionparameter_CTRLscreen_atexit );
     clear();
 
 
