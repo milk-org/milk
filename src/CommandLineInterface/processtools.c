@@ -1953,7 +1953,10 @@ int_fast8_t processinfo_CTRLscreen()
     initncurses();
 //	atexit( processinfo_CTRLscreen_atexit );
 	
-	erase();
+	clear();
+	
+	printw("This is a Test\n");
+	
 	refresh();
 	
 	sleep(1);
