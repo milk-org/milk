@@ -1834,12 +1834,6 @@ void *processinfo_scan(void *thptr)
                     
                 }
             }
-
-
-
-
-
-
         } // end of DisplayMode 3
 
 
@@ -1923,13 +1917,10 @@ int_fast8_t processinfo_CTRLscreen()
     int ToggleValue;
 
 
-CTRLscreenExitLine = __LINE__; //TEST
-
     processinfo_CatchSignals();
 
     setlocale(LC_ALL, "");
 
-CTRLscreenExitLine = __LINE__; //TEST
 
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
@@ -1944,28 +1935,23 @@ CTRLscreenExitLine = __LINE__; //TEST
     CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
-CTRLscreenExitLine = __LINE__; //TEST
 
     // Create / read process list
+    //
     processinfo_shm_list_create();
 
-CTRLscreenExitLine = __LINE__; //TEST
 
     // copy pointer
     procinfoproc.pinfolist = pinfolist;
 
-CTRLscreenExitLine = __LINE__; //TEST
-
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
-CTRLscreenExitLine = __LINE__; //TEST
 
     // INITIALIZE ncurses
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
 
-CTRLscreenExitLine = __LINE__; //TEST		
 	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
@@ -1974,7 +1960,6 @@ CTRLscreenExitLine = __LINE__; //TEST
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 0;
     }
-CTRLscreenExitLine = __LINE__; //TEST
 
     pindexActiveSelected = 0;
 
@@ -1986,18 +1971,18 @@ CTRLscreenExitLine = __LINE__; //TEST
     // Start scan thread
     procinfoproc.loop = 1;
     procinfoproc.twaitus = 1000000; // 1 sec
-  //  pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
+	pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
 
-printf("procinfoproc.loopcnt = %ld\n", (long) procinfoproc.loopcnt);//TEST
 
-CTRLscreenExitLine = __LINE__; //TEST
 
     // wait for first scan to be completed
     while( procinfoproc.loopcnt < 1 )
-        usleep(10000);
+    {
+		printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
+        usleep(1000);
+	}
 
-CTRLscreenExitLine = __LINE__; //TEST
 
 
 
@@ -2011,14 +1996,11 @@ CTRLscreenExitLine = __LINE__; //TEST
 
     clear();
     int Xexit = 0; // toggles to 1 when users types x
-	int lastline = 0;
 	
     while( loopOK == 1 )
     {
         int pid;
         char command[200];
-
-		lastline = __LINE__; // testing
 
         usleep((long) (1000000.0/frequ));
         int ch = getch();
@@ -2033,7 +2015,6 @@ CTRLscreenExitLine = __LINE__; //TEST
         scantime_CPUload = 0.0;
         scantime_CPUpcnt = 0.0;
 
-CTRLscreenExitLine = __LINE__; //TEST
 
         if(freeze==0)
         {
@@ -2544,13 +2525,11 @@ CTRLscreenExitLine = __LINE__; //TEST
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
-CTRLscreenExitLine = __LINE__; //TEST
+
 
         if(freeze==0)
         {
             erase();
-
-			lastline = __LINE__; // testing
 			
             if(procinfoproc.DisplayMode == 1)
             {
@@ -2769,7 +2748,6 @@ CTRLscreenExitLine = __LINE__; //TEST
             }
             else
             {
-				lastline = __LINE__; // testing
 
                 printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
@@ -2869,8 +2847,6 @@ CTRLscreenExitLine = __LINE__; //TEST
                 }
 
                 printw("\n");
-                
-                lastline = __LINE__; // testing
 
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
@@ -2898,7 +2874,6 @@ CTRLscreenExitLine = __LINE__; //TEST
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
-CTRLscreenExitLine = __LINE__; //TEST
 
 
                 if(procinfoproc.DisplayMode == 3)
@@ -3042,9 +3017,6 @@ CTRLscreenExitLine = __LINE__; //TEST
 
                 clock_gettime(CLOCK_REALTIME, &t05loop);
                 
-                
-                lastline = __LINE__; // testing
-
 
 
                 // ===========================================================================
@@ -3096,14 +3068,10 @@ CTRLscreenExitLine = __LINE__; //TEST
                         
                         
                         
-                        
-                        lastline = __LINE__; // testing
 
 
                         if(pinfolist->active[pindex] != 0)
                         {
-							lastline = __LINE__; // testing
-							
                             if(pindex == pindexSelected)
                                 attron(A_REVERSE);
 
@@ -3186,9 +3154,7 @@ CTRLscreenExitLine = __LINE__; //TEST
                                     attroff(COLOR_PAIR(4));
                             }
                             
-                            
-                            
-                            lastline = __LINE__; // testing
+
 
                             // ================ DISPLAY MODE 3 ==================
                             if( procinfoproc.DisplayMode == 3)
@@ -3374,14 +3340,12 @@ CTRLscreenExitLine = __LINE__; //TEST
 
                             }
                             
-                            
-                            lastline = __LINE__; // testing
+                           
 
 
                             // ================ DISPLAY MODE 4 ==================
                             if( procinfoproc.DisplayMode == 4)
                             {
-								lastline = __LINE__; // testing
 
                                 printw(" %d", procinfoproc.pinfoarray[pindex]->MeasureTiming);
                                 if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
@@ -3389,9 +3353,6 @@ CTRLscreenExitLine = __LINE__; //TEST
                                     long *dtiter_array;
                                     long *dtexec_array;
                                     int dtindex;
-                                    
-                                    
-                                    lastline = __LINE__; // testing
 
 
                                     printw(" %3d ..%02ld  ", procinfoproc.pinfoarray[pindex]->timerindex, procinfoproc.pinfoarray[pindex]->timingbuffercnt % 100);
@@ -3512,18 +3473,13 @@ CTRLscreenExitLine = __LINE__; //TEST
 
                                     free(dtiter_array);
                                     free(dtexec_array);
-                                
-									lastline = __LINE__; // testing
+
                                 }
                             }
-                            lastline = __LINE__; // testing
+
 
                             if(pindex == pindexSelected)
                                 attroff(A_REVERSE);
-                                
-                                
-                            lastline = __LINE__; // testing
-
                         }
 
                     }
@@ -3542,7 +3498,7 @@ CTRLscreenExitLine = __LINE__; //TEST
 
             cnt++;
 
-CTRLscreenExitLine = __LINE__; //TEST
+
 
             clock_gettime(CLOCK_REALTIME, &t2loop);
 
@@ -3582,7 +3538,7 @@ CTRLscreenExitLine = __LINE__; //TEST
     else if (data.signal_BUS == 1 )
 		printf("Received signal BUS\n");
     else if (data.signal_SEGV == 1 )
-		printf("Received signal SEGV - last line %d\n", lastline);
+		printf("Received signal SEGV\n");
     else if (data.signal_HUP == 1 )
 		printf("Received signal HUP\n");
     else if (data.signal_PIPE == 1 )
