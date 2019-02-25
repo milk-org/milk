@@ -1952,7 +1952,8 @@ int_fast8_t processinfo_CTRLscreen()
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
 
-
+	exit(0);//test
+	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
