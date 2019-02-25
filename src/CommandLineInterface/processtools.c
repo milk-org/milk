@@ -1986,7 +1986,7 @@ CTRLscreenExitLine = __LINE__; //TEST
     // Start scan thread
     procinfoproc.loop = 1;
     procinfoproc.twaitus = 1000000; // 1 sec
-    pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
+  //  pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
 
 printf("procinfoproc.loopcnt = %ld\n", (long) procinfoproc.loopcnt);//TEST
