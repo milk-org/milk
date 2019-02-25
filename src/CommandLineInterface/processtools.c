@@ -12,6 +12,7 @@
  */
 
 
+static int CTRLscreenExitLine = 0; // for debugging
 
 
 #ifndef _GNU_SOURCE
@@ -1860,7 +1861,7 @@ void processinfo_CTRLscreen_atexit()
 	echo();
 	endwin();
 	
-	printf("EXIT from processinfo_CTRLscreen\n");
+	printf("EXIT from processinfo_CTRLscreen line %d\n", CTRLscreenExitLine);
 }
 
 
@@ -1983,7 +1984,7 @@ int_fast8_t processinfo_CTRLscreen()
     while( procinfoproc.loopcnt < 1 )
         usleep(10000);
 
-
+	CTRLscreenExitLine = __LINE__; //TEST
 
 
 
@@ -2018,6 +2019,8 @@ int_fast8_t processinfo_CTRLscreen()
         scantime_top = 0.0;
         scantime_CPUload = 0.0;
         scantime_CPUpcnt = 0.0;
+
+CTRLscreenExitLine = __LINE__; //TEST
 
         if(freeze==0)
         {
@@ -2528,6 +2531,7 @@ int_fast8_t processinfo_CTRLscreen()
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
+CTRLscreenExitLine = __LINE__; //TEST
 
         if(freeze==0)
         {
@@ -2881,6 +2885,7 @@ int_fast8_t processinfo_CTRLscreen()
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
+CTRLscreenExitLine = __LINE__; //TEST
 
 
                 if(procinfoproc.DisplayMode == 3)
@@ -3524,7 +3529,7 @@ int_fast8_t processinfo_CTRLscreen()
 
             cnt++;
 
-
+CTRLscreenExitLine = __LINE__; //TEST
 
             clock_gettime(CLOCK_REALTIME, &t2loop);
 
