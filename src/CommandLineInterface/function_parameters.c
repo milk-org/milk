@@ -2415,7 +2415,8 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 	atexit( functionparameter_CTRLscreen_atexit );
     clear();
 
-
+	exit(0);//test
+	
     int currentnode = 0;
     int currentlevel = 0;
     NBindex = 0;
@@ -2441,7 +2442,6 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
         {
         case 'x':     // Exit control screen
             loopOK=0;
-            exit(0);
             break;
 
         case 'h':     // help
