@@ -190,8 +190,9 @@ char CLIstartupfilename[200] = "CLIstartup.txt";
 
 
 
-
-
+// fifo input
+static int fifofd;
+static fd_set cli_fdin_set;
 
 
 
@@ -821,6 +822,23 @@ uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CL
 
 
 
+void fnExit_fifoclose()
+{
+	if ( data.fifoON == 1)
+	{
+		if (fifofd == -1) {
+			close(fifofd);
+		}
+	}
+	
+	FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
+ //       if(data.fifoON==1)
+ //           FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+ //       FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+        
+}
+
+
 
 /**
  * @brief Command Line Interface (CLI) main\n 
@@ -852,9 +870,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     struct stat st;
     FILE *fpclififo;
     char buf[100];
-    int fifofd, c=0;
+    int c=0;
     int fdmax;
-    fd_set cli_fdin_set;
     int n;
 
     ssize_t bytes;
@@ -869,6 +886,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     int cliwaitus=100;
     struct timeval tv;   // sleep 100 us after reading FIFO
 
+	int atexitfifoclose = 0;
+	
+	
 		
     strcpy(data.processname, argv[0]);
 
@@ -1140,9 +1160,17 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         // -------------------------------------------------------------
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
+        
+        
         FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
-        if(data.fifoON==1)
+        if(data.fifoON==1){
             FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+			if( atexitfifoclose == 1)
+			{
+				atexit( fnExit_fifoclose );
+				fnExit_fifoclose = 1;
+			}
+		}
         FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
         
         
@@ -1210,7 +1238,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
                 }
             }
 
-            if(blockCLIinput == 0)
+            if(blockCLIinput == 0)  // revert to default mode
                 if (FD_ISSET(fileno(stdin), &cli_fdin_set)) {
                     rl_callback_read_char();
                 }
@@ -1724,6 +1752,8 @@ void fnExit1 (void)
 {
   //  
 }
+
+
 
 
 
