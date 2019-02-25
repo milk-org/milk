@@ -824,9 +824,10 @@ uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CL
 
 void fnExit_fifoclose()
 {
+	printf("Running atexit function fnExit_fifoclose\n");
 	if ( data.fifoON == 1)
 	{
-		if (fifofd == -1) {
+		if (fifofd != -1) {
 			close(fifofd);
 		}
 	}
