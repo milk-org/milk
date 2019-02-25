@@ -1861,7 +1861,7 @@ void processinfo_CTRLscreen_atexit()
 	echo();
 	endwin();
 	
-	printf("EXIT from processinfo_CTRLscreen line %d\n", CTRLscreenExitLine);
+	printf("EXIT from processinfo_CTRLscreen at line %d\n", CTRLscreenExitLine);
 }
 
 
