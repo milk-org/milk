@@ -1857,7 +1857,9 @@ void *processinfo_scan(void *thptr)
 
 void processinfo_CTRLscreen_atexit()
 {
+	echo();
 	endwin();
+	
 	printf("EXIT from processinfo_CTRLscreen\n");
 }
 
@@ -1951,7 +1953,6 @@ int_fast8_t processinfo_CTRLscreen()
 
 
     // INITIALIZE ncurses
-	printf("testing exit ...\n");//test
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
 		
