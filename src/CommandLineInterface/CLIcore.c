@@ -840,7 +840,7 @@ void fnExit_fifoclose()
 
 
 	// reset terminal properties
-	system("tset");
+//	system("tset");
 }
 
 
