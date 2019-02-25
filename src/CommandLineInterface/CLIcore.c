@@ -278,7 +278,7 @@ void sig_handler(int signo)
         break;
         
          case SIGBUS: // exit program after SIGSEGV
-           printf("received SIGBUS\n");
+           printf("received SIGBUS -> exit\n");
            data.signal_BUS = 1;
            exit( EXIT_FAILURE );
         break;
@@ -290,7 +290,7 @@ void sig_handler(int signo)
         
         case SIGSEGV: // exit program after SIGSEGV
              if(data.signal_SEGV == 0)
-				printf("received SIGSEGV\n");
+				printf("received SIGSEGV -> exit\n");
            data.signal_SEGV = 1;
            exit( EXIT_FAILURE );
         break;

@@ -2414,8 +2414,6 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
     initncurses();
 	atexit( functionparameter_CTRLscreen_atexit );
     clear();
-
-	exit(0);//test
 	
     int currentnode = 0;
     int currentlevel = 0;
