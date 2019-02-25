@@ -1951,7 +1951,8 @@ int_fast8_t processinfo_CTRLscreen()
     // INITIALIZE ncurses
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
-
+	
+	endwin();
 	exit(0);//test
 	
     procinfoproc.NBpinfodisp = wrow-5;
