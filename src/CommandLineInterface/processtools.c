@@ -73,9 +73,9 @@ static int CTRLscreenExitLine = 0; // for debugging
 
 
 // What do we want to compute/print ?
-//#define CMDPROC_CONTEXTSWITCH	1
-//#define CMDPROC_CPUUSE	1
-//#define CMDPROC_MEMUSE	1
+#define CMDPROC_CONTEXTSWITCH	1
+#define CMDPROC_CPUUSE	1
+#define CMDPROC_MEMUSE	1
 
 /* =============================================================================================== */
 /* =============================================================================================== */
