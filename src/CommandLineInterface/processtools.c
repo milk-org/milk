@@ -1769,7 +1769,7 @@ void *processinfo_scan(void *thptr)
 
 
             // collect required info for display
-            for(pindex=0; pindex<PROCESSINFOLISTSIZE ; pindex++)
+           /* for(pindex=0; pindex<PROCESSINFOLISTSIZE ; pindex++)
             {
                 if(pinfolist->active[pindex] != 0)
                 {
@@ -1834,6 +1834,7 @@ void *processinfo_scan(void *thptr)
                     
                 }
             }
+            */
         } // end of DisplayMode 3
 
 
