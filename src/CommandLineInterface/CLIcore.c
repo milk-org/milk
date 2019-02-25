@@ -1108,6 +1108,15 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
+		if( atexitfifoclose == 1)
+			{
+				printf("Registering exit function fnExit_fifoclose\n");
+				atexit( fnExit_fifoclose );
+				atexitfifoclose = 1;
+			}
+        
+
+
     for (;;) {
         FILE *fp;
 
@@ -1168,12 +1177,6 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
 		}
         FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-        
-		if( atexitfifoclose == 1)
-			{
-				atexit( fnExit_fifoclose );
-				atexitfifoclose = 1;
-			}
         
 
 
