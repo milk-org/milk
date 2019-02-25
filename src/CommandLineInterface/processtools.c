@@ -1808,7 +1808,7 @@ void *processinfo_scan(void *thptr)
                         }
 */
 
-                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                        //pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
                       /*  if(pinfop->psysinfostatus[pindex] != -1)
                         {
                             char cpuliststring[200];
