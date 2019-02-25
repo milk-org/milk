@@ -70,11 +70,21 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include <hwloc.h>
 #endif
 
+
+
+// What do we want to compute/print ?
+//#define CMDPROC_CONTEXTSWITCH	1
+//#define CMDPROC_CPUUSE	1
+//#define CMDPROC_MEMUSE	1
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
+
+
 
 
 
@@ -3164,7 +3174,6 @@ int_fast8_t processinfo_CTRLscreen()
                             {
                                 int cpu;
 
-                                //HERE
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
                                 {
@@ -3198,7 +3207,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
                                         // Context Switches
-
+										#ifdef CMDPROC_CONTEXTSWITCH
                                         if(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex])
                                             attron(COLOR_PAIR(4));
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex])
@@ -3213,13 +3222,13 @@ int_fast8_t processinfo_CTRLscreen()
                                             attroff(COLOR_PAIR(4));
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex])
                                             attroff(COLOR_PAIR(3));
-
-
                                         printw(" ");
+                                        #endif
 
 
+                                        
                                         // CPU use
-
+                                        #ifdef CMDPROC_CPUUSE
                                         int cpuColor = 0;
 
                                         //					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
@@ -3232,16 +3241,7 @@ int_fast8_t processinfo_CTRLscreen()
                                             cpuColor = 4;
                                         if(procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]<1.0)
                                             cpuColor = 5;
-
-
-
-
-                                        // TIME = 0.11 ms
-
-
-
-
-
+                                       
 
                                         // First group of cores (physical CPU 0)
                                         for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu++)
@@ -3279,16 +3279,16 @@ int_fast8_t processinfo_CTRLscreen()
                                         }
                                         printw("| ");
 
-
-
                                         attron(COLOR_PAIR(cpuColor));
                                         printw("%5.1f %6.2f",
                                                procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spindex],
                                                procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
                                         attroff(COLOR_PAIR(cpuColor));
+                                        #endif
 
 
-
+										// Memory use
+										#ifdef CMDPROC_MEMUSE
                                         int memColor = 0;
 
                                         int kBcnt, MBcnt, GBcnt;
@@ -3327,9 +3327,8 @@ int_fast8_t processinfo_CTRLscreen()
                                             printw("%4d kB ", kBcnt);
                                         else
                                             printw("       ");
-
-
                                         attroff(COLOR_PAIR(memColor));
+                                        #endif
 
 
 
