@@ -3342,7 +3342,7 @@ int_fast8_t processinfo_CTRLscreen()
                                     }
                                     if(procinfoproc.pinfodisp[pindex].NBsubprocesses == 0)
                                     {
-										printw("\n");
+										printw("  ERROR: procinfoproc.pinfodisp[pindex].NBsubprocesses = %d\n", (int) procinfoproc.pinfodisp[pindex].NBsubprocesses);
 
                                         if(pindex == pindexSelected)
                                             attroff(A_REVERSE);
