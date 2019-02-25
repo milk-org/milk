@@ -1949,11 +1949,15 @@ int_fast8_t processinfo_CTRLscreen()
     GetCPUloads(&procinfoproc);
 
     // INITIALIZE ncurses
+	printf("testing exit ...\n");//test
     initncurses();
 	atexit( processinfo_CTRLscreen_atexit );
 	
 	endwin();
 	exit(0);//test
+	
+	atexit( processinfo_CTRLscreen_atexit );
+	
 	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
