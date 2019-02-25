@@ -1788,6 +1788,7 @@ void *processinfo_scan(void *thptr)
                     {
 						
                         int spindex; // sub process index, 0 for main
+                    /*
                         if(pinfop->psysinfostatus[pindex] != -1)
                         {
                             for(spindex = 0; spindex < pinfop->pinfodisp[pindex].NBsubprocesses; spindex++)
@@ -1805,10 +1806,10 @@ void *processinfo_scan(void *thptr)
 
                             }
                         }
-
+*/
 
                         pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
-                        if(pinfop->psysinfostatus[pindex] != -1)
+                      /*  if(pinfop->psysinfostatus[pindex] != -1)
                         {
                             char cpuliststring[200];
                             char cpustring[16];
@@ -1844,7 +1845,7 @@ void *processinfo_scan(void *thptr)
                                     }
                                 pinfop->pinfodisp[pindex].cpuOKarray[cpu] = cpuOK;
                             }
-                        }
+                        }*/
                         
                     }
 
