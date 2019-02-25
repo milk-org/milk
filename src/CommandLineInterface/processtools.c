@@ -1963,7 +1963,7 @@ int_fast8_t processinfo_CTRLscreen()
 
     pindexActiveSelected = 0;
 
-    procinfoproc.DisplayMode = 3;
+    procinfoproc.DisplayMode = 2;
     // display modes:
     // 2: overview
     // 3: CPU affinity
@@ -1971,6 +1971,8 @@ int_fast8_t processinfo_CTRLscreen()
     // Start scan thread
     procinfoproc.loop = 1;
     procinfoproc.twaitus = 1000000; // 1 sec
+	
+	
 	pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
 
