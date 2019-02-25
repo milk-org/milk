@@ -1164,9 +1164,9 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 
 	// log for debugging
-	char logline[500];
-	sprintf(logline, "echo \"%5d   %5d   %20s\" >> PIDcollectSystemInfo.log", PID, level, pinfodisp->cpuset);
-	system(command);
+	char loglinecmd[500];
+	sprintf(loglinecmd, "echo \"%5d   %5d   %20s\" >> PIDcollectSystemInfo.log", PID, level, pinfodisp->cpuset);
+	system(loglinecmd);
 	
 
 	clock_gettime(CLOCK_REALTIME, &t1);
