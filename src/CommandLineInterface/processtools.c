@@ -1128,7 +1128,8 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
 
 
 
-// for Display Mode 2
+// for Display Modes 2 and 3
+// 
 
 static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 {
@@ -1160,6 +1161,13 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     ssize_t read;
     char string0[200];
     char string1[300];
+
+
+	// log for debugging
+	char loglinecmd[500];
+	sprintf(loglinecmd, "echo \"%5d   %5d   %20s\" >> PIDcollectSystemInfo.log", PID, level, pinfodisp->cpuset);
+	system(loglinecmd);
+	
 
 	clock_gettime(CLOCK_REALTIME, &t1);
     if(level == 0)
