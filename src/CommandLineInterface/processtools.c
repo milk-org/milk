@@ -77,6 +77,8 @@ static int CTRLscreenExitLine = 0; // for debugging
 #define CMDPROC_CPUUSE	1
 #define CMDPROC_MEMUSE	1
 
+//#define CMDPROC_PROCSTAT 1
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
@@ -1206,6 +1208,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 
     // read /proc/PID/status
+	#idef CMDPROC_PROCSTAT
 	for(int spindex = 0; spindex < pinfodisp->NBsubprocesses; spindex++)
     {
     	clock_gettime(CLOCK_REALTIME, &t1);
@@ -1432,6 +1435,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         tdiff = info_time_diff(t1, t2);
         scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
     }
+    #endif
 
     return 0;
 
@@ -1808,7 +1812,7 @@ void *processinfo_scan(void *thptr)
                         }
 */
 
-                        //pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
                       /*  if(pinfop->psysinfostatus[pindex] != -1)
                         {
                             char cpuliststring[200];
