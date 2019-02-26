@@ -1824,7 +1824,7 @@ void *processinfo_scan(void *thptr)
 
 			
             // collect required info for display
-            for(pindexdisp=0; pindexdisp<procinfoproc.NBpinfodisp ; pindexdisp++) 
+            for(pindexdisp=0; pindexdisp < pinfop->NBpinfodisp ; pindexdisp++) 
             {
 				//pindex = ;
 						#ifdef PROCCTRL_LOGDEBUG
