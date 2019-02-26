@@ -80,6 +80,7 @@ static int CTRLscreenExitLine = 0; // for debugging
 
 #define CMDPROC_PROCSTAT 1
 
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
@@ -1869,7 +1870,7 @@ void *processinfo_scan(void *thptr)
 
                             for(spindex = 0; spindex < pinfop->pinfodisp[pindexdisp].NBsubprocesses; spindex++)
                             {
-                                if( pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] - pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]) {
+                                if( pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] != pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]) {
                                     // get CPU and MEM load
                                     pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex] = 100.0*((1.0*pinfop->pinfodisp[pindexdisp].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindexdisp].cpuloadcntarray_prev[spindex])/sysconf(_SC_CLK_TCK)) /  ( pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] - pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]);
                                     pinfop->pinfodisp[pindexdisp].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindexdisp].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex];
@@ -2067,8 +2068,8 @@ int_fast8_t processinfo_CTRLscreen()
     // wait for first scan to be completed
     while( procinfoproc.loopcnt < 1 )
     {
-		printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
-        usleep(1000);
+		//printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
+        usleep(10000);
 	}
 
 
