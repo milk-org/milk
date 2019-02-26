@@ -139,6 +139,8 @@ typedef struct {
 
 } PROCESSINFOLIST;
 
+
+
 typedef struct
 {
 	int           active;
@@ -249,6 +251,9 @@ typedef struct
 	int psysinfostatus[PROCESSINFOLISTSIZE];
 	
 } PROCINFOPROC;
+
+
+
 
 
 // ---------------------  -------------------------------
