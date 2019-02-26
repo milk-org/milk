@@ -1444,6 +1444,11 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
     }
     #endif
+    
+	// log for debugging
+	sprintf(loglinecmd, "echo \"          %d  %d\" >> PIDcollectSystemInfo.log", level, pinfodisp->NBsubprocesses);
+	system(loglinecmd);
+    
 
     return 0;
 
