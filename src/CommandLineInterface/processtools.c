@@ -1812,11 +1812,16 @@ void *processinfo_scan(void *thptr)
             // collect required info for display
             for(pindex=0; pindex<PROCESSINFOLISTSIZE ; pindex++)
             {
+						#ifdef PROCCTRL_LOGDEBUG
+		// log for debugging
+		//char loglinecmd[500];
+		sprintf(loglinecmd, "echo \"%5d  %s    %ld/%ld  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex, PROCESSINFOLISTSIZE, pinfolist->active[pindex]);
+		system(loglinecmd);
+		#endif
+				
                 if(pinfolist->active[pindex] != 0)
                 {
 					
-					
-
                     if(pinfop->pinfodisp[pindex].NBsubprocesses != 0) // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
                     {
 						
