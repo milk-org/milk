@@ -1882,8 +1882,8 @@ void *processinfo_scan(void *thptr)
 
 void processinfo_CTRLscreen_atexit()
 {
-	echo();
-	endwin();
+	//echo();
+	//endwin();
 	
 	printf("EXIT from processinfo_CTRLscreen at line %d\n", CTRLscreenExitLine);
 }
@@ -1980,7 +1980,7 @@ int_fast8_t processinfo_CTRLscreen()
 
     // INITIALIZE ncurses
     initncurses();
-	atexit( processinfo_CTRLscreen_atexit );
+	//atexit( processinfo_CTRLscreen_atexit );
 
 	
     procinfoproc.NBpinfodisp = wrow-5;

@@ -824,19 +824,19 @@ uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CL
 
 void fnExit_fifoclose()
 {
-	printf("Running atexit function fnExit_fifoclose\n");
-	if ( data.fifoON == 1)
-	{
-		if (fifofd != -1) {
-			close(fifofd);
-		}
-	}
+//	printf("Running atexit function fnExit_fifoclose\n");
+//	if ( data.fifoON == 1)
+//	{
+//		if (fifofd != -1) {
+//			close(fifofd);
+//		}
+//	}
 
 	
-	FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
+//	FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
  //       if(data.fifoON==1)
  //           FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-    FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.       
+//    FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
 
 
 	// reset terminal properties
