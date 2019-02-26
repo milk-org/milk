@@ -11,6 +11,7 @@
  * 
  */
 
+#define PROCCTRL_LOGDEBUG 1
 
 static int CTRLscreenExitLine = 0; // for debugging
 
@@ -2020,7 +2021,7 @@ int_fast8_t processinfo_CTRLscreen()
     }
 
     pindexActiveSelected = 0;
-    procinfoproc.DisplayMode = 2;
+    procinfoproc.DisplayMode = 3; // default
     // display modes:
     // 2: overview
     // 3: CPU affinity
