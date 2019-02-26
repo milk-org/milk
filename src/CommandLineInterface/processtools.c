@@ -1625,6 +1625,7 @@ void *processinfo_scan(void *thptr)
     pinfop = (PROCINFOPROC*) thptr;
 
     long pindex;
+    long pindexdisp;
 
     pinfop->loopcnt = 0;
 
@@ -1794,7 +1795,7 @@ void *processinfo_scan(void *thptr)
         timearray  = (double*) malloc(sizeof(double)*pinfop->NBpindexActive);
         indexarray = (long*)   malloc(sizeof(long)  *pinfop->NBpindexActive);
         int listcnt = 0;
-        for(index=0; index<pinfop->NBpindexActive; index++)
+        for(index=0; index < pinfop->NBpindexActive; index++)
         {
             pindex = pinfop->pindexActive[index];
             if(pinfop->pinfommapped[pindex] == 1)
@@ -1817,25 +1818,26 @@ void *processinfo_scan(void *thptr)
 
 
 
-        if(pinfop->DisplayMode == 3)
+        if(pinfop->DisplayMode == 3)  // only compute of displayed processes
         {
             GetCPUloads(pinfop);
 
-
+			
             // collect required info for display
-            for(pindex=0; pindex<PROCESSINFOLISTSIZE ; pindex++)
+            for(pindexdisp=0; pindexdisp<procinfoproc.NBpinfodisp ; pindexdisp++) 
             {
+				//pindex = ;
 						#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging
 		//char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s    %ld/%ld  %d  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex, PROCESSINFOLISTSIZE, pinfolist->active[pindex], pinfop->pinfodisp[pindex].NBsubprocesses);
+		sprintf(loglinecmd, "echo \"%5d  %s    %ld/%ld  %d  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindexdisp, PROCESSINFOLISTSIZE, pindex, pinfolist->active[pindexdisp], pinfop->pinfodisp[pindexdisp].NBsubprocesses);
 		system(loglinecmd);
 		#endif
 				
-                if(pinfolist->active[pindex] != 0)
+                if(pinfolist->active[pindexdisp] != 0)
                 {
 					
-                    if(pinfop->pinfodisp[pindex].NBsubprocesses != 0) // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
+                    if(pinfop->pinfodisp[pindexdisp].NBsubprocesses != 0) // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
                     {
 						
                         int spindex; // sub process index, 0 for main
@@ -1859,7 +1861,7 @@ void *processinfo_scan(void *thptr)
                         }
 */
 
-                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindex]), 0);
+                        pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindexdisp]), 0);
                       /*  if(pinfop->psysinfostatus[pindex] != -1)
                         {
                             char cpuliststring[200];
@@ -1999,12 +2001,15 @@ int_fast8_t processinfo_CTRLscreen()
     setlocale(LC_ALL, "");
 
 
+	// initialize ALL entries
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
         procinfoproc.updatearray[pindex]   = 1; // initialize: load all
         procinfoproc.pinfommapped[pindex]  = 0;
         procinfoproc.selectedarray[pindex] = 0; // initially not selected
         procinfoproc.loopcntoffsetarray[pindex] = 0;
+    
+		
     }
 
     STRINGLISTENTRY *CPUsetList;
@@ -2030,6 +2035,8 @@ int_fast8_t processinfo_CTRLscreen()
 	//atexit( processinfo_CTRLscreen_atexit );
 
 	
+	
+	
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
@@ -2037,6 +2044,9 @@ int_fast8_t processinfo_CTRLscreen()
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;  // by default, each process is assumed to be single-threaded
     }
+    
+    
+    
 
     pindexActiveSelected = 0;
     procinfoproc.DisplayMode = 3; // default
