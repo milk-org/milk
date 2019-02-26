@@ -1873,7 +1873,7 @@ void *processinfo_scan(void *thptr)
                                 if( pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] != pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]) {
                                     // get CPU and MEM load
                                    
-                                    pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex] = 100.0*( pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] - pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]);
+                                    pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex] = 1.0*sysconf(_SC_CLK_TCK);
                                    
 //                                    pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex] = 100.0*( (1.0*pinfop->pinfodisp[pindexdisp].cpuloadcntarray[spindex]-pinfop->pinfodisp[pindexdisp].cpuloadcntarray_prev[spindex]) / sysconf(_SC_CLK_TCK) ) /  ( pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] - pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]);
                                     
