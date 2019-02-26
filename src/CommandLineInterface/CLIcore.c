@@ -994,7 +994,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
     //
     if( Verbose ) {
-        fprintf(stdout, "%s: compiled %s %s\n",__FILE__,__DATE__,__TIME__);
+        fprintf(stdout, "%s: compiled %s %s\n",__FILE__,__DATE__,__TIME__);        
     }
 
 
@@ -1012,7 +1012,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
 
 
-
+	printf("_SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
 # ifdef _OPENMP
     printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # else
@@ -1113,14 +1113,14 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-
+/*
 		if( atexitfifoclose == 0)
 			{
 				printf("Registering exit function fnExit_fifoclose\n");
 				atexit( fnExit_fifoclose );
 				atexitfifoclose = 1;
 			}
-        
+  */      
 
 
     for (;;) {
