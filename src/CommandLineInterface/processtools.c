@@ -1828,7 +1828,7 @@ void *processinfo_scan(void *thptr)
 						#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging
 		//char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s    %ld/%ld  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex, PROCESSINFOLISTSIZE, pinfolist->active[pindex]);
+		sprintf(loglinecmd, "echo \"%5d  %s    %ld/%ld  %d  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex, PROCESSINFOLISTSIZE, pinfolist->active[pindex], pinfop->pinfodisp[pindex].NBsubprocesses);
 		system(loglinecmd);
 		#endif
 				
