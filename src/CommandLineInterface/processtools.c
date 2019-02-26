@@ -1167,7 +1167,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 	#ifdef PROCCTRL_LOGDEBUG
 	// log for debugging
 	char loglinecmd[500];
-	sprintf(loglinecmd, "echo \"%5d    %5d   %5d   %20s\" >> procCTRL.log", __LINE__, PID, level, pinfodisp->cpuset);
+	sprintf(loglinecmd, "echo \"%5d  %s  %5d   %5d   %20s\" >> procCTRL.log", __LINE__, __FUNCTION__, PID, level, pinfodisp->cpuset);
 	system(loglinecmd);
 	#endif
 	
@@ -1451,7 +1451,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     
     #ifdef PROCCTRL_LOGDEBUG
 	// log for debugging
-	sprintf(loglinecmd, "echo \"%5d              %d  %d\" >> procCTRL.log", __LINE__, level, pinfodisp->NBsubprocesses);
+	sprintf(loglinecmd, "echo \"%5d  %s            %d  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, level, pinfodisp->NBsubprocesses);
 	system(loglinecmd);
     #endif
 
@@ -1628,7 +1628,7 @@ void *processinfo_scan(void *thptr)
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging
 		char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  processinfo_scan  %ld\" >> procCTRL.log", __LINE__, pinfop->loopcnt);
+		sprintf(loglinecmd, "echo \"%5d  %s  %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pinfop->loopcnt);
 		system(loglinecmd);
 		#endif
 	
@@ -1891,7 +1891,7 @@ void *processinfo_scan(void *thptr)
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging
 		//char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  processinfo_scan    %ld\" >> procCTRL.log", __LINE__, pinfop->loopcnt);
+		sprintf(loglinecmd, "echo \"%5d  %s    %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pinfop->loopcnt);
 		system(loglinecmd);
 		#endif
 		
@@ -2961,7 +2961,7 @@ int_fast8_t processinfo_CTRLscreen()
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging
 		char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  processinfo_CTRLscreen\" >> procCTRL.log", __LINE__);
+		sprintf(loglinecmd, "echo \"%5d  %s\" >> procCTRL.log", __LINE__,  __FUNCTION__);
 		system(loglinecmd);
 		#endif
 		
@@ -3088,7 +3088,7 @@ int_fast8_t processinfo_CTRLscreen()
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging
 		char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  processinfo_CTRLscreen\" >> procCTRL.log", __LINE__);
+		sprintf(loglinecmd, "echo \"%5d  %s\" >> procCTRL.log", __LINE__,  __FUNCTION__);
 		system(loglinecmd);
 		#endif
 
@@ -3237,7 +3237,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  processinfo_CTRLscreen   disp3  pindex %ld\" >> procCTRL.log", __LINE__, pindex);
+		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex);
 		system(loglinecmd);
 		#endif
 
@@ -3250,7 +3250,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 {
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  processinfo_CTRLscreen   disp3  pindex %ld\" >> procCTRL.log", __LINE__, pindex);
+		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex);
 		system(loglinecmd);
 		#endif
 
@@ -3262,7 +3262,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  processinfo_CTRLscreen   disp3  pindex %ld  spindex %d/%d\" >> procCTRL.log", __LINE__, pindex, spindex, procinfoproc.pinfodisp[pindex].NBsubprocesses);
+		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld  spindex %d/%d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex, spindex, procinfoproc.pinfodisp[pindex].NBsubprocesses);
 		system(loglinecmd);
 		#endif
 
@@ -3416,7 +3416,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 		#ifdef PROCCTRL_LOGDEBUG
 		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  processinfo_CTRLscreen   disp3  pindex %ld\" >> procCTRL.log", __LINE__, pindex);
+		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex);
 		system(loglinecmd);
 		#endif
 
