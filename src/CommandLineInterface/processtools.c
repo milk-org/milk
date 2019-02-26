@@ -1140,10 +1140,24 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     char fname[200];
 
 
+	#ifdef PROCCTRL_LOGDEBUG
+	// log for debugging
+	char loglinecmd[500];
+	sprintf(loglinecmd, "echo \"%5d  %s\" >> procCTRL.log", __LINE__, __FUNCTION__);
+	system(loglinecmd);
+	#endif
+
 
     // cpuset
     
     int PID = pinfodisp->PID;
+    
+  	#ifdef PROCCTRL_LOGDEBUG
+	// log for debugging
+	sprintf(loglinecmd, "echo \"%5d  %s  %5d\" >> procCTRL.log", __LINE__, __FUNCTION__, PID);
+	system(loglinecmd);
+	#endif
+    
     clock_gettime(CLOCK_REALTIME, &t1);
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
     fp=fopen(fname, "r");
@@ -1166,7 +1180,6 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 	#ifdef PROCCTRL_LOGDEBUG
 	// log for debugging
-	char loglinecmd[500];
 	sprintf(loglinecmd, "echo \"%5d  %s  %5d   %5d   %20s\" >> procCTRL.log", __LINE__, __FUNCTION__, PID, level, pinfodisp->cpuset);
 	system(loglinecmd);
 	#endif
