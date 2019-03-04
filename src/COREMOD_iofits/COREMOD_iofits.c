@@ -857,12 +857,12 @@ int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
 		uint32_t naxes[3];
 		long naxesl[3];
 		double *array;
-		uint8_t atype;
+		uint8_t datatype;
 		long naxis;
 		long i;
 		
 		 
-        atype = data.image[ID].md[0].atype;
+        datatype = data.image[ID].md[0].datatype;
         naxis = data.image[ID].md[0].naxis;
         for(i=0; i<naxis; i++)
         {
@@ -877,7 +877,7 @@ int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
             nelements *= naxes[i];
 
 
-        if (atype != _DATATYPE_DOUBLE) // data conversion required
+        if (datatype != _DATATYPE_DOUBLE) // data conversion required
 		{
 			 long ii;
 			
@@ -888,7 +888,7 @@ int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
                 exit(0);
             }
             
-            switch (atype)
+            switch (datatype)
             {
 				case _DATATYPE_UINT8 :
 				for (ii = 0; ii < nelements; ii++)
@@ -938,7 +938,7 @@ int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
 				default :
 				list_image_ID();
 				printERROR(__FILE__,__func__,__LINE__,"atype value not recognised");
-				printf("ID %ld  atype = %d\n", ID, atype);
+				printf("ID %ld  datatype = %d\n", ID, datatype);
 				free(array);
 				exit(0);
 				break;				
@@ -966,7 +966,7 @@ int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
             list_image_ID();
         }
 
-        if(atype == _DATATYPE_DOUBLE)
+        if(datatype == _DATATYPE_DOUBLE)
             fits_write_img(fptr, TDOUBLE, fpixel, nelements, data.image[ID].array.D, &FITSIO_status);
         else
         {    
@@ -1039,12 +1039,12 @@ int save_fl_fits(const char * restrict ID_name, const char * restrict file_name)
 
     if (ID!=-1)
     {
-	    uint8_t atype;
+	    uint8_t datatype;
         long naxesl[3];
         uint32_t naxes[3];
         long  fpixel = 1;
 		
-        atype = data.image[ID].md[0].atype;
+        datatype = data.image[ID].md[0].datatype;
         naxis = data.image[ID].md[0].naxis;
         for(i=0; i<naxis; i++)
         {    
@@ -1057,7 +1057,7 @@ int save_fl_fits(const char * restrict ID_name, const char * restrict file_name)
             nelements *= naxes[i];
 
 
-        if (atype != _DATATYPE_FLOAT) // data conversion required
+        if (datatype != _DATATYPE_FLOAT) // data conversion required
 		{
 			array = (float*) malloc(SIZEOF_DATATYPE_FLOAT*nelements);
 			if(array==NULL)
@@ -1066,7 +1066,7 @@ int save_fl_fits(const char * restrict ID_name, const char * restrict file_name)
                 exit(0);
             }
             
-            switch (atype)
+            switch (datatype)
             {
 				case _DATATYPE_UINT8 :
 				for (ii = 0; ii < nelements; ii++)
@@ -1116,7 +1116,7 @@ int save_fl_fits(const char * restrict ID_name, const char * restrict file_name)
 				default :
 				list_image_ID();
 				printERROR(__FILE__,__func__,__LINE__,"atype value not recognised");
-				printf("ID %ld  atype = %d\n", ID, atype);
+				printf("ID %ld  datatype = %d\n", ID, datatype);
 				free(array);
 				exit(0);
 				break;				
@@ -1150,7 +1150,7 @@ int save_fl_fits(const char * restrict ID_name, const char * restrict file_name)
             list_image_ID();
         }
 
-        if(atype==_DATATYPE_FLOAT)
+        if(datatype==_DATATYPE_FLOAT)
             fits_write_img(fptr, TFLOAT, fpixel, nelements, data.image[ID].array.F, &FITSIO_status);
         else
         {    
@@ -1198,13 +1198,11 @@ int save_sh_fits(const char * restrict ID_name, const char * restrict file_name)
     long ID;
     long ii;
     long i;
-    uint8_t atype;
+    uint8_t datatype;
     char file_name1[SBUFFERSIZE];
     int n;
 
-//TEST
-printf("STEP %s  %d  -> %s\n", __FILE__, __LINE__, file_name);
-fflush(stdout);
+
 
 
     if((data.overwrite == 1)&&(file_name[0]!='!')&&(file_exists(file_name)==1))
@@ -1229,7 +1227,7 @@ fflush(stdout);
 
     if (ID!=-1)
     {
-        atype = data.image[ID].md[0].atype;
+        datatype = data.image[ID].md[0].datatype;
         naxis=data.image[ID].md[0].naxis;
         for(i=0; i<naxis; i++)
         {
@@ -1241,7 +1239,7 @@ fflush(stdout);
         for(i=0; i<naxis; i++)
             nelements *= naxes[i];
             
-        if (atype != _DATATYPE_INT16) // data conversion required
+        if (datatype != _DATATYPE_INT16) // data conversion required
 		{
 			
 			printf("Data conversion required\n"); //TEST
@@ -1255,7 +1253,7 @@ fflush(stdout);
                 exit(0);
             }
             
-            switch (atype)
+            switch (datatype)
             {
 				case _DATATYPE_UINT8 :
 				for (ii = 0; ii < nelements; ii++)
@@ -1306,7 +1304,7 @@ fflush(stdout);
 				list_image_ID();
 				printERROR(__FILE__,__func__,__LINE__,"atype value not recognised");
 				free(array);
-				printf("ID %ld  atype = %d\n", ID, atype);
+				printf("ID %ld  datatype = %d\n", ID, datatype);
 				exit(0);
 				break;				
 			}            
@@ -1344,7 +1342,7 @@ fflush(stdout);
             list_image_ID();
         }
 
-        if(atype==_DATATYPE_INT16)
+        if(datatype==_DATATYPE_INT16)
         {
 			printf("Direct copy --- \n");
 			fflush(stdout);
@@ -1378,13 +1376,9 @@ fflush(stdout);
         fprintf(stderr,"%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n", (char) 27, 1, 31, ID_name, (char) 27, 0);
 
 
-//TEST
-printf("STEP %s  %d\n", __FILE__, __LINE__);
-fflush(stdout);
 
 
-
-    return(0);
+    return EXIT_SUCCESS;
 }
 
 
@@ -1404,7 +1398,7 @@ int save_ush_fits(const char * restrict ID_name, const char * restrict file_name
     long ID;
     long ii;
     long i;
-    uint8_t atype;
+    uint8_t datatype;
     char file_name1[SBUFFERSIZE];
     int n;
 
@@ -1431,7 +1425,7 @@ int save_ush_fits(const char * restrict ID_name, const char * restrict file_name
 
     if (ID!=-1)
     {
-        atype = data.image[ID].md[0].atype;
+        datatype = data.image[ID].md[0].datatype;
         naxis=data.image[ID].md[0].naxis;
         for(i=0; i<naxis; i++)
         {
@@ -1443,7 +1437,7 @@ int save_ush_fits(const char * restrict ID_name, const char * restrict file_name
         for(i=0; i<naxis; i++)
             nelements *= naxes[i];
             
-        if (atype != _DATATYPE_UINT16) // data conversion required
+        if (datatype != _DATATYPE_UINT16) // data conversion required
 		{
 			array = (uint16_t*) malloc(SIZEOF_DATATYPE_UINT16*nelements);
 			if(array==NULL)
@@ -1452,7 +1446,7 @@ int save_ush_fits(const char * restrict ID_name, const char * restrict file_name
                 exit(0);
             }
             
-            switch (atype)
+            switch (datatype)
             {
 				case _DATATYPE_UINT8 :
 				for (ii = 0; ii < nelements; ii++)
@@ -1503,7 +1497,7 @@ int save_ush_fits(const char * restrict ID_name, const char * restrict file_name
 				list_image_ID();
 				printERROR(__FILE__,__func__,__LINE__,"atype value not recognised");
 				free(array);
-				printf("ID %ld  atype = %d\n", ID, atype);
+				printf("ID %ld  datatype = %d\n", ID, datatype);
 				exit(0);
 				break;				
 			}            
@@ -1533,7 +1527,7 @@ int save_ush_fits(const char * restrict ID_name, const char * restrict file_name
             list_image_ID();
         }
 
-        if(atype == _DATATYPE_UINT16)
+        if(datatype == _DATATYPE_UINT16)
             fits_write_img(fptr, TUSHORT, fpixel, nelements, data.image[ID].array.UI16, &FITSIO_status);
         else
         {   
@@ -1596,7 +1590,7 @@ int save_fits(const char * restrict ID_name, const char * restrict file_name)
 int save_fits_atomic(const char * restrict ID_name, const char * restrict file_name)
 {
     long ID;
-    uint8_t atype;
+    uint8_t datatype;
     char fnametmp[1000];
     char savename[1000];
 	pthread_t self_id;
@@ -1616,8 +1610,8 @@ int save_fits_atomic(const char * restrict ID_name, const char * restrict file_n
     {
 		char command[2000];
 		
-        atype = data.image[ID].md[0].atype;
-        switch(atype) {
+        datatype = data.image[ID].md[0].datatype;
+        switch(datatype) {
         case _DATATYPE_UINT8:
             save_ush_fits(ID_name, savename);
             break;
