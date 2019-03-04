@@ -86,7 +86,7 @@ typedef struct
     int streamOpenPID_cnt1;                       // number of processes accessing stream
     int streamOpenPID_status;
 
-    int atype;
+    int datatype;
 
     double updatevalue; // higher value = more actively recent updates [Hz]
     double updatevalue_frozen;
