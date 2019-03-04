@@ -165,8 +165,8 @@ long image_ID_from_images(IMAGE* images, const char *name) /* ID number correspo
         {
             if((strncmp(name, images[i].name, strlen(name))==0) && (images[i].name[strlen(name)]=='\0'))
             {
-                clock_gettime(CLOCK_REALTIME, &timenow);
-                images[i].md[0].last_access = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
+                clock_gettime(CLOCK_REALTIME, &images[i].md[0].lastaccesstime);
+//                images[i].md[0].lastaccess = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
                 return i;
             }
         }
@@ -450,7 +450,7 @@ void *streamCTRL_scan(void* argptr)
 
                             streaminfo[sindex].cnt0 = images[ID].md[0].cnt0; // keep memory of cnt0
                             streaminfo[sindex].ID = ID;
-                            streaminfo[sindex].atype = images[ID].md[0].atype;
+                            streaminfo[sindex].datatype = images[ID].md[0].datatype;
 
                             sindex++;
                         }
@@ -1258,36 +1258,39 @@ int_fast8_t streamCTRL_CTRLscreen()
                     int j;
 
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_UINT8)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_UINT8)
                         charcnt = sprintf(string, " UI8");
-                    if(streaminfo[sindex].atype ==_DATATYPE_INT8)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_INT8)
                         charcnt = sprintf(string, "  I8");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_UINT16)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_UINT16)
                         charcnt = sprintf(string, "UI16");
-                    if(streaminfo[sindex].atype ==_DATATYPE_INT16)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_INT16)
                         charcnt = sprintf(string, " I16");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_UINT32)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_UINT32)
                         charcnt = sprintf(string, "UI32");
-                    if(streaminfo[sindex].atype ==_DATATYPE_INT32)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_INT32)
                         charcnt = sprintf(string, " I32");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_UINT64)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_UINT64)
                         charcnt = sprintf(string, "UI64");
-                    if(streaminfo[sindex].atype ==_DATATYPE_INT64)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_INT64)
                         charcnt = sprintf(string, " I64");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_FLOAT)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_HALF)
+                        charcnt = sprintf(string, " HLF");
+
+                    if(streaminfo[sindex].datatype ==_DATATYPE_FLOAT)
                         charcnt = sprintf(string, " FLT");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_DOUBLE)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_DOUBLE)
                         charcnt = sprintf(string, " DBL");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_COMPLEX_FLOAT)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_COMPLEX_FLOAT)
                         charcnt = sprintf(string, "CFLT");
 
-                    if(streaminfo[sindex].atype ==_DATATYPE_COMPLEX_DOUBLE)
+                    if(streaminfo[sindex].datatype ==_DATATYPE_COMPLEX_DOUBLE)
                         charcnt = sprintf(string, "CDBL");
 
                     linecharcnt += charcnt;

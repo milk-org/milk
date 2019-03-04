@@ -384,11 +384,11 @@ static int_fast8_t printInfo()
 	printf("   naxis                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, naxis), offsetof(IMAGE_METADATA, naxis));
 	printf("   size                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, size), offsetof(IMAGE_METADATA, size));
 	printf("   nelement                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, nelement), offsetof(IMAGE_METADATA, nelement));
-	printf("   atype                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atype), offsetof(IMAGE_METADATA, atype));
-	printf("   creation_time               = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, creation_time), offsetof(IMAGE_METADATA, creation_time));
-	printf("   last_access                 = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, last_access), offsetof(IMAGE_METADATA, last_access));		
-	printf("   atime.ts                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.ts), offsetof(IMAGE_METADATA, atime.ts));
-	printf("   atime.tsfixed               = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.tsfixed), offsetof(IMAGE_METADATA, atime.tsfixed));
+	printf("   datatype                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, datatype), offsetof(IMAGE_METADATA, datatype));
+	printf("   creationtime                = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, creationtime), offsetof(IMAGE_METADATA, creationtime));
+	printf("   lastaccesstime              = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, lastaccesstime), offsetof(IMAGE_METADATA, lastaccesstime));		
+	//printf("   atime.ts                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.ts), offsetof(IMAGE_METADATA, atime.ts));
+	//printf("   atime.tsfixed               = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.tsfixed), offsetof(IMAGE_METADATA, atime.tsfixed));
 	printf("   shared                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, shared), offsetof(IMAGE_METADATA, shared));
 	printf("   status                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, status), offsetof(IMAGE_METADATA, status));
 	printf("   logflag                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, logflag), offsetof(IMAGE_METADATA, logflag));
@@ -900,6 +900,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     strcpy(data.processname, argv[0]);
 
 
+	// NOTE: change to function call to ImageStreamIO_typename
     TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
     TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
     TYPESIZE[_DATATYPE_UINT16]                 = SIZEOF_DATATYPE_UINT16;
@@ -912,7 +913,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     TYPESIZE[_DATATYPE_DOUBLE]                 = SIZEOF_DATATYPE_DOUBLE;
     TYPESIZE[_DATATYPE_COMPLEX_FLOAT]          = SIZEOF_DATATYPE_COMPLEX_FLOAT;
     TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;
-    TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
+//    TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
     CLIPID = getpid();
     
