@@ -255,7 +255,7 @@ int_fast8_t create_image_cli()
     uint32_t *imsize;
     long naxis = 0;
     long i;
-    uint8_t atype;
+    uint8_t datatype;
 
 
 
@@ -282,57 +282,57 @@ int_fast8_t create_image_cli()
     }
     else if (CLI_checkarg(1,3)+CLI_checkarg(2,3)+CLI_checkarg(3,2)==0) // type option exists
     {
-        atype = 0;
+        datatype = 0;
 
         if(strcmp(data.cmdargtoken[2].val.string, "c")==0)
         {
             printf("type = CHAR\n");
-            atype = _DATATYPE_UINT8;
+            datatype = _DATATYPE_UINT8;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "i")==0)
         {
             printf("type = INT\n");
-            atype = _DATATYPE_INT32;
+            datatype = _DATATYPE_INT32;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "f")==0)
         {
             printf("type = FLOAT\n");
-            atype = _DATATYPE_FLOAT;
+            datatype = _DATATYPE_FLOAT;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "d")==0)
         {
             printf("type = DOUBLE\n");
-            atype = _DATATYPE_DOUBLE;
+            datatype = _DATATYPE_DOUBLE;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "cf")==0)
         {
             printf("type = COMPLEX_FLOAT\n");
-            atype = _DATATYPE_COMPLEX_FLOAT;
+            datatype = _DATATYPE_COMPLEX_FLOAT;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "cd")==0)
         {
             printf("type = COMPLEX_DOUBLE\n");
-            atype = _DATATYPE_COMPLEX_DOUBLE;
+            datatype = _DATATYPE_COMPLEX_DOUBLE;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "u")==0)
         {
             printf("type = USHORT\n");
-            atype = _DATATYPE_UINT16;
+            datatype = _DATATYPE_UINT16;
         }
 
         if(strcmp(data.cmdargtoken[2].val.string, "l")==0)
         {
             printf("type = LONG\n");
-            atype = _DATATYPE_INT64;
+            datatype = _DATATYPE_INT64;
         }
 
-        if(atype == 0)
+        if(datatype == 0)
         {
             printf("Data type \"%s\" not recognized\n", data.cmdargtoken[2].val.string);
             printf("must be : \n");
@@ -356,7 +356,7 @@ int_fast8_t create_image_cli()
             i++;
         }
 
-        create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, atype, data.SHARED_DFT, data.NBKEWORD_DFT);
+        create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, datatype, data.SHARED_DFT, data.NBKEWORD_DFT);
 
         free(imsize);
     }
@@ -1141,9 +1141,9 @@ int_fast8_t init_COREMOD_memory()
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-    RegisterCLIcommand("creaim", __FILE__, create_image_cli, "create image, default precision", "<name> <xsize> <ysize> <opt: zsize>", "creaim imname 512 512", "long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t atype, 0, 10)");
+    RegisterCLIcommand("creaim", __FILE__, create_image_cli, "create image, default precision", "<name> <xsize> <ysize> <opt: zsize>", "creaim imname 512 512", "long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t datatype, 0, 10)");
    
-    RegisterCLIcommand("creaimshm", __FILE__, create_image_shared_cli, "create image in shared mem, default precision", "<name> <xsize> <ysize> <opt: zsize>", "creaimshm imname 512 512", "long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t atype, 0, 10)");
+    RegisterCLIcommand("creaimshm", __FILE__, create_image_shared_cli, "create image in shared mem, default precision", "<name> <xsize> <ysize> <opt: zsize>", "creaimshm imname 512 512", "long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t datatype, 0, 10)");
     
     RegisterCLIcommand("creaushortimshm", __FILE__, create_ushort_image_shared_cli, "create unsigned short image in shared mem", "<name> <xsize> <ysize> <opt: zsize>", "creaushortimshm imname 512 512", "long create_image_ID(const char *name, long naxis, long *size, _DATATYPE_UINT16, 0, 10)");
     
@@ -1464,7 +1464,7 @@ long long compute_image_memory()
 	//	fflush(stdout);
 		
         if(data.image[i].used==1)
-            total += data.image[i].md[0].nelement * TYPESIZE[data.image[i].md[0].atype];
+            total += data.image[i].md[0].nelement * TYPESIZE[data.image[i].md[0].datatype];
     }
     
     
@@ -1509,8 +1509,8 @@ long image_ID(const char *name) /* ID number corresponding to a name */
             {
                 found = 1;
                 tmp = i;
-                clock_gettime(CLOCK_REALTIME, &timenow);
-                data.image[i].md[0].last_access = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
+                clock_gettime(CLOCK_REALTIME, &data.image[i].md[0].lastaccesstime );
+//                data.image[i].md[0].last_access = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
             }
         }
         i++;
@@ -1710,7 +1710,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
         }
         else
         {
-            if(data.image[ID].md[0].atype == _DATATYPE_UINT8)
+            if(data.image[ID].md[0].datatype == _DATATYPE_UINT8)
             {
                 if(data.image[ID].array.UI8 == NULL)
                 {
@@ -1720,7 +1720,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
                 free(data.image[ID].array.UI8);
                 data.image[ID].array.UI8 = NULL;
             }
-            if(data.image[ID].md[0].atype == _DATATYPE_INT32)
+            if(data.image[ID].md[0].datatype == _DATATYPE_INT32)
             {
                 if(data.image[ID].array.SI32 == NULL)
                 {
@@ -1730,7 +1730,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
                 free(data.image[ID].array.SI32);
                 data.image[ID].array.SI32 = NULL;
             }
-            if(data.image[ID].md[0].atype == _DATATYPE_FLOAT)
+            if(data.image[ID].md[0].datatype == _DATATYPE_FLOAT)
             {
                 if(data.image[ID].array.F == NULL)
                 {
@@ -1740,7 +1740,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
                 free(data.image[ID].array.F);
                 data.image[ID].array.F = NULL;
             }
-            if(data.image[ID].md[0].atype == _DATATYPE_DOUBLE)
+            if(data.image[ID].md[0].datatype == _DATATYPE_DOUBLE)
             {
                 if(data.image[ID].array.D == NULL)
                 {
@@ -1750,7 +1750,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
                 free(data.image[ID].array.D);
                 data.image[ID].array.D = NULL;
             }
-            if(data.image[ID].md[0].atype == _DATATYPE_COMPLEX_FLOAT)
+            if(data.image[ID].md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
             {
                 if(data.image[ID].array.CF == NULL)
                 {
@@ -1760,7 +1760,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
                 free(data.image[ID].array.CF);
                 data.image[ID].array.CF = NULL;
             }
-            if(data.image[ID].md[0].atype == _DATATYPE_COMPLEX_DOUBLE)
+            if(data.image[ID].md[0].datatype == _DATATYPE_COMPLEX_DOUBLE)
             {
                 if(data.image[ID].array.CD == NULL)
                 {
@@ -1879,7 +1879,7 @@ void *save_fits_function( void *ptr )
     
     uint32_t *imsizearray;
     uint32_t  xsize, ysize;
-    uint8_t   atype;
+    uint8_t   datatype;
     
     
     long IDc;
@@ -1924,7 +1924,7 @@ void *save_fits_function( void *ptr )
         //	list_image_ID();
 
         ID = image_ID(tmsg->iname);
-        atype = data.image[ID].md[0].atype;
+        datatype = data.image[ID].md[0].datatype;
         xsize = data.image[ID].md[0].size[0];
         ysize = data.image[ID].md[0].size[1];
 
@@ -1937,11 +1937,11 @@ void *save_fits_function( void *ptr )
 
 
 
-        IDc = create_image_ID("tmpsavecube", 3, imsizearray, atype, 0, 1);
+        IDc = create_image_ID("tmpsavecube", 3, imsizearray, datatype, 0, 1);
 
         // list_image_ID();
 
-        switch ( atype ) {
+        switch ( datatype ) {
 
         case _DATATYPE_UINT8:
             framesize = SIZEOF_DATATYPE_UINT8*xsize*ysize;
@@ -2383,7 +2383,7 @@ long create_image_ID(
 		const char *name, 
 		long        naxis, 
 		uint32_t   *size, 
-		uint8_t     atype, 
+		uint8_t     datatype, 
 		int         shared, 
 		int         NBkw
 		)
@@ -2412,14 +2412,14 @@ long create_image_ID(
     if(image_ID(name) == -1)
     {
         ID = next_avail_image_ID();
-        ImageStreamIO_createIm(&data.image[ID], name, naxis, size, atype, shared, NBkw);
+        ImageStreamIO_createIm(&data.image[ID], name, naxis, size, datatype, shared, NBkw);
     }
     else
     {
         // Cannot create image : name already in use
         ID = image_ID(name);
 
-        if(data.image[ID].md[0].atype != atype)
+        if(data.image[ID].md[0].datatype != datatype)
         {
             fprintf(stderr,"%c[%d;%dm ERROR: [ %s %s %d ] %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,"%c[%d;%dm Pre-existing image \"%s\" has wrong type %c[%d;m\n", (char) 27, 1, 31,name, (char) 27, 0);
@@ -2842,7 +2842,7 @@ long copy_image_ID(
     long ID, IDout;
     long naxis;
     uint32_t *size = NULL;
-    uint8_t atype;
+    uint8_t datatype;
     long nelement;
     long i;
     int newim = 0;
@@ -2869,7 +2869,7 @@ long copy_image_ID(
 
     for(i=0; i<naxis; i++)
         size[i] = data.image[ID].md[0].size[i];
-    atype  = data.image[ID].md[0].atype;
+    datatype  = data.image[ID].md[0].datatype;
 
     nelement = data.image[ID].md[0].nelement;
 
@@ -2883,7 +2883,7 @@ long copy_image_ID(
             fprintf(stderr,"ERROR [copy_image_ID]: images %s and %s do not have the same size -> deleting and re-creating image\n", name, newname);
             newim = 1;
         }
-        if(data.image[ID].md[0].atype!=data.image[IDout].md[0].atype)
+        if(data.image[ID].md[0].datatype!=data.image[IDout].md[0].datatype)
         {
             fprintf(stderr,"ERROR [copy_image_ID]: images %s and %s do not have the same type -> deleting and re-creating image\n", name, newname);
             newim = 1;
@@ -2901,7 +2901,7 @@ long copy_image_ID(
 
     if(IDout==-1)
     {
-        create_image_ID(newname, naxis, size, atype, shared, data.NBKEWORD_DFT);
+        create_image_ID(newname, naxis, size, datatype, shared, data.NBKEWORD_DFT);
         IDout = image_ID(newname);
     }
     else
@@ -2912,7 +2912,7 @@ long copy_image_ID(
             fprintf(stderr,"ERROR [copy_image_ID]: images %s and %s do not have the same size\n",name,newname);
             exit(0);
         }
-        if(data.image[ID].md[0].atype!=data.image[IDout].md[0].atype)
+        if(data.image[ID].md[0].datatype!=data.image[IDout].md[0].datatype)
         {
             fprintf(stderr,"ERROR [copy_image_ID]: images %s and %s do not have the same type\n",name,newname);
             exit(0);
@@ -2921,41 +2921,41 @@ long copy_image_ID(
     data.image[IDout].md[0].write = 1;
 
 
-    if(atype == _DATATYPE_UINT8)
+    if(datatype == _DATATYPE_UINT8)
         memcpy (data.image[IDout].array.UI8, data.image[ID].array.UI8, SIZEOF_DATATYPE_UINT8*nelement);
 
-    if(atype == _DATATYPE_INT8)
+    if(datatype == _DATATYPE_INT8)
         memcpy (data.image[IDout].array.SI8, data.image[ID].array.SI8, SIZEOF_DATATYPE_INT8*nelement);
 
-    if(atype == _DATATYPE_UINT16)
+    if(datatype == _DATATYPE_UINT16)
         memcpy (data.image[IDout].array.UI16, data.image[ID].array.UI16, SIZEOF_DATATYPE_UINT16*nelement);
 
-    if(atype == _DATATYPE_INT16)
+    if(datatype == _DATATYPE_INT16)
         memcpy (data.image[IDout].array.SI16, data.image[ID].array.SI16, SIZEOF_DATATYPE_INT8*nelement);
 
-    if(atype == _DATATYPE_UINT32)
+    if(datatype == _DATATYPE_UINT32)
         memcpy (data.image[IDout].array.UI32, data.image[ID].array.UI32, SIZEOF_DATATYPE_UINT32*nelement);
 
-    if(atype == _DATATYPE_INT32)
+    if(datatype == _DATATYPE_INT32)
         memcpy (data.image[IDout].array.SI32, data.image[ID].array.SI32, SIZEOF_DATATYPE_INT32*nelement);
 
-    if(atype == _DATATYPE_UINT64)
+    if(datatype == _DATATYPE_UINT64)
         memcpy (data.image[IDout].array.UI64, data.image[ID].array.UI64, SIZEOF_DATATYPE_UINT64*nelement);
 
-    if(atype == _DATATYPE_INT64)
+    if(datatype == _DATATYPE_INT64)
         memcpy (data.image[IDout].array.SI64, data.image[ID].array.SI64, SIZEOF_DATATYPE_INT64*nelement);
 
 
-    if(atype == _DATATYPE_FLOAT)
+    if(datatype == _DATATYPE_FLOAT)
         memcpy (data.image[IDout].array.F, data.image[ID].array.F, SIZEOF_DATATYPE_FLOAT*nelement);
 
-    if(atype == _DATATYPE_DOUBLE)
+    if(datatype == _DATATYPE_DOUBLE)
         memcpy (data.image[IDout].array.D, data.image[ID].array.D, SIZEOF_DATATYPE_DOUBLE*nelement);
 
-    if(atype == _DATATYPE_COMPLEX_FLOAT)
+    if(datatype == _DATATYPE_COMPLEX_FLOAT)
         memcpy (data.image[IDout].array.CF, data.image[ID].array.CF, SIZEOF_DATATYPE_COMPLEX_FLOAT*nelement);
 
-    if(atype == _DATATYPE_COMPLEX_DOUBLE)
+    if(datatype == _DATATYPE_COMPLEX_DOUBLE)
         memcpy (data.image[IDout].array.CD, data.image[ID].array.CD, SIZEOF_DATATYPE_COMPLEX_DOUBLE*nelement);
 
     COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
@@ -3005,7 +3005,7 @@ long COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)
 {
     long ID;
     long IDshm;
-    uint8_t atype;
+    uint8_t datatype;
     long naxis;
     uint32_t *sizearray;
     char *ptr1;
@@ -3020,7 +3020,7 @@ long COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)
 
 
     sizearray = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
-    atype = data.image[ID].md[0].atype;
+    datatype = data.image[ID].md[0].datatype;
     for(k=0; k<naxis; k++)
         sizearray[k] = data.image[ID].md[0].size[k];
 
@@ -3037,7 +3037,7 @@ long COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)
 					if(data.image[ID].md[0].size[axis]!=data.image[IDshm].md[0].size[axis])
 						shmOK = 0;
 			}
-		if(data.image[ID].md[0].atype!=data.image[IDshm].md[0].atype)
+		if(data.image[ID].md[0].datatype!=data.image[IDshm].md[0].datatype)
 			shmOK = 0;
 	
 		if(shmOK==0)
@@ -3048,7 +3048,7 @@ long COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)
 	}
 	
 	if(IDshm==-1)
-		IDshm = create_image_ID(IDshmname, naxis, sizearray, atype, 1, 0);
+		IDshm = create_image_ID(IDshmname, naxis, sizearray, datatype, 1, 0);
     free(sizearray);
 
     //data.image[IDshm].md[0].nelement = data.image[ID].md[0].nelement;
@@ -3056,7 +3056,7 @@ long COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)
 
 	data.image[IDshm].md[0].write = 1;
 
-    switch (atype) {
+    switch (datatype) {
 		
     case _DATATYPE_FLOAT :
         ptr1 = (char*) data.image[ID].array.F;
@@ -3186,7 +3186,7 @@ int_fast8_t list_image_ID_ncurses()
     long i, j;
     long long tmp_long;
     char type[STYPESIZE];
-    uint8_t atype;
+    uint8_t datatype;
     int n;
     long long sizeb, sizeKb, sizeMb, sizeGb;
 
@@ -3210,8 +3210,8 @@ int_fast8_t list_image_ID_ncurses()
     {
         if(data.image[i].used==1)
         {
-            atype = data.image[i].md[0].atype;
-            tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[atype];
+            datatype = data.image[i].md[0].datatype;
+            tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[datatype];
 
             if(data.image[i].md[0].shared == 1)
                 printw("%4ldS", i);
@@ -3243,29 +3243,29 @@ int_fast8_t list_image_ID_ncurses()
             attron(COLOR_PAIR(3));
             n = 0;
             
-            if(atype == _DATATYPE_UINT8)
+            if(datatype == _DATATYPE_UINT8)
                 n = snprintf(type,STYPESIZE,"UINT8  ");
-            if(atype == _DATATYPE_INT8)
+            if(datatype == _DATATYPE_INT8)
                 n = snprintf(type,STYPESIZE,"INT8   ");
-            if(atype == _DATATYPE_UINT16)
+            if(datatype == _DATATYPE_UINT16)
                 n = snprintf(type,STYPESIZE,"UINT16 ");
-            if(atype == _DATATYPE_INT16)
+            if(datatype == _DATATYPE_INT16)
                 n = snprintf(type,STYPESIZE,"INT16  ");
-            if(atype == _DATATYPE_UINT32)
+            if(datatype == _DATATYPE_UINT32)
                 n = snprintf(type,STYPESIZE,"UINT32 ");
-            if(atype == _DATATYPE_INT32)
+            if(datatype == _DATATYPE_INT32)
                 n = snprintf(type,STYPESIZE,"INT32  ");
-            if(atype == _DATATYPE_UINT64)
+            if(datatype == _DATATYPE_UINT64)
                 n = snprintf(type,STYPESIZE,"UINT64 ");
-            if(atype == _DATATYPE_INT64)
+            if(datatype == _DATATYPE_INT64)
                 n = snprintf(type,STYPESIZE,"INT64  ");
-            if(atype == _DATATYPE_FLOAT)
+            if(datatype == _DATATYPE_FLOAT)
                 n = snprintf(type,STYPESIZE,"FLOAT  ");            
-            if(atype == _DATATYPE_DOUBLE)
+            if(datatype == _DATATYPE_DOUBLE)
                 n = snprintf(type,STYPESIZE,"DOUBLE ");
-            if(atype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype == _DATATYPE_COMPLEX_FLOAT)
                 n = snprintf(type,STYPESIZE,"CFLOAT ");            
-            if(atype == _DATATYPE_COMPLEX_DOUBLE)
+            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
                 n = snprintf(type,STYPESIZE,"CDOUBLE");
             
             printw("%7s ", type);
@@ -3277,7 +3277,7 @@ int_fast8_t list_image_ID_ncurses()
 
             printw("%10ld Kb %6.2f   ", (long) (tmp_long/1024), (float) (100.0*tmp_long/sizeb));
 
-            timediff = (1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec) - data.image[i].md[0].last_access;
+            timediff = (1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec) - (1.0*data.image[i].md[0].lastaccesstime.tv_sec + 0.000000001*data.image[i].md[0].lastaccesstime.tv_nsec);
 
             if(timediff<0.01)
             {
@@ -3370,7 +3370,7 @@ int_fast8_t list_image_ID_ofp(FILE *fo)
     long i,j;
     long long tmp_long;
     char type[STYPESIZE];
-    uint8_t atype;
+    uint8_t datatype;
     int n;
     unsigned long long sizeb, sizeKb, sizeMb, sizeGb;
     char str[500];
@@ -3394,8 +3394,8 @@ int_fast8_t list_image_ID_ofp(FILE *fo)
     for (i=0; i<data.NB_MAX_IMAGE; i++)
         if(data.image[i].used==1)
         {
-            atype = data.image[i].md[0].atype;
-            tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[atype];
+            datatype = data.image[i].md[0].datatype;
+            tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[datatype];
 
             if(data.image[i].md[0].shared==1)
                 fprintf(fo, "%4ld %c[%d;%dm%14s%c[%d;m ",i, (char) 27, 1, 34, data.image[i].name, (char) 27, 0);
@@ -3417,29 +3417,29 @@ int_fast8_t list_image_ID_ofp(FILE *fo)
 
 
             n = 0;
-            if(atype == _DATATYPE_UINT8)
+            if(datatype == _DATATYPE_UINT8)
                 n = snprintf(type, STYPESIZE, "UINT8  ");
-            if(atype == _DATATYPE_INT8)
+            if(datatype == _DATATYPE_INT8)
                 n = snprintf(type, STYPESIZE, "INT8   ");
-            if(atype == _DATATYPE_UINT16)
+            if(datatype == _DATATYPE_UINT16)
                 n = snprintf(type, STYPESIZE, "UINT16 ");
-            if(atype == _DATATYPE_INT16)
+            if(datatype == _DATATYPE_INT16)
                 n = snprintf(type, STYPESIZE, "INT16  ");
-            if(atype == _DATATYPE_UINT32)
+            if(datatype == _DATATYPE_UINT32)
                 n = snprintf(type, STYPESIZE, "UINT32 ");
-            if(atype == _DATATYPE_INT32)
+            if(datatype == _DATATYPE_INT32)
                 n = snprintf(type, STYPESIZE, "INT32  ");
-            if(atype == _DATATYPE_UINT64)
+            if(datatype == _DATATYPE_UINT64)
                 n = snprintf(type, STYPESIZE, "UINT64 ");
-            if(atype == _DATATYPE_INT64)
+            if(datatype == _DATATYPE_INT64)
                 n = snprintf(type, STYPESIZE, "INT64  ");
-            if(atype == _DATATYPE_FLOAT)
+            if(datatype == _DATATYPE_FLOAT)
                 n = snprintf(type, STYPESIZE, "FLOAT  ");            
-            if(atype == _DATATYPE_DOUBLE)
+            if(datatype == _DATATYPE_DOUBLE)
                 n = snprintf(type, STYPESIZE, "DOUBLE ");
-            if(atype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype == _DATATYPE_COMPLEX_FLOAT)
                 n = snprintf(type, STYPESIZE, "CFLOAT ");            
-            if(atype == _DATATYPE_COMPLEX_DOUBLE)
+            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
                 n = snprintf(type, STYPESIZE, "CDOUBLE");
 
             fprintf(fo, "%7s ", type);
@@ -3450,7 +3450,7 @@ int_fast8_t list_image_ID_ofp(FILE *fo)
 
             fprintf(fo, "%10ld Kb %6.2f   ", (long) (tmp_long/1024), (float) (100.0*tmp_long/sizeb));
 
-            timediff = (1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec) - data.image[i].md[0].last_access;
+            timediff = (1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec) - ( 1.0*data.image[i].md[0].lastaccesstime.tv_sec + 0.000000001*data.image[i].md[0].lastaccesstime.tv_nsec);
 
             fprintf(fo, "%15.9f\n", timediff);
         }
@@ -3502,15 +3502,15 @@ int_fast8_t list_image_ID_ofp_simple(FILE *fo)
 {
     long i,j;
     long long tmp_long;
-    uint8_t atype;
+    uint8_t datatype;
 
     for (i=0; i<data.NB_MAX_IMAGE; i++)
         if(data.image[i].used==1)
         {
-            atype = data.image[i].md[0].atype;
-            tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[atype];
+            datatype = data.image[i].md[0].datatype;
+            tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[datatype];
 
-            fprintf(fo, "%20s %d %ld %d %4ld", data.image[i].name, atype, (long) data.image[i].md[0].naxis, data.image[i].md[0].shared, (long) data.image[i].md[0].size[0]);
+            fprintf(fo, "%20s %d %ld %d %4ld", data.image[i].name, datatype, (long) data.image[i].md[0].naxis, data.image[i].md[0].shared, (long) data.image[i].md[0].size[0]);
 
             for(j=1; j<data.image[i].md[0].naxis; j++)
                 fprintf(fo, " %4ld", (long) data.image[i].md[0].size[j]);
@@ -3545,7 +3545,7 @@ int_fast8_t list_image_ID_file(const char *fname)
 {
     FILE *fp;
     long i,j;
-    uint8_t atype;
+    uint8_t datatype;
     char type[STYPESIZE];
     int n;
 
@@ -3562,7 +3562,7 @@ int_fast8_t list_image_ID_file(const char *fname)
     for (i=0; i<data.NB_MAX_IMAGE; i++)
         if(data.image[i].used == 1)
         {
-            atype = data.image[i].md[0].atype;
+            datatype = data.image[i].md[0].datatype;
             fprintf(fp,"%ld %s", i, data.image[i].name);
             fprintf(fp," %ld", (long) data.image[i].md[0].naxis);
             for(j=0; j<data.image[i].md[0].naxis; j++)
@@ -3570,29 +3570,29 @@ int_fast8_t list_image_ID_file(const char *fname)
 
             n = 0;
 
-            if(atype == _DATATYPE_UINT8)
+            if(datatype == _DATATYPE_UINT8)
                 n = snprintf(type, STYPESIZE, "UINT8  ");
-            if(atype == _DATATYPE_INT8)
+            if(datatype == _DATATYPE_INT8)
                 n = snprintf(type, STYPESIZE, "INT8   ");
-            if(atype == _DATATYPE_UINT16)
+            if(datatype == _DATATYPE_UINT16)
                 n = snprintf(type, STYPESIZE, "UINT16 ");
-            if(atype == _DATATYPE_INT16)
+            if(datatype == _DATATYPE_INT16)
                 n = snprintf(type, STYPESIZE, "INT16  ");
-            if(atype == _DATATYPE_UINT32)
+            if(datatype == _DATATYPE_UINT32)
                 n = snprintf(type, STYPESIZE, "UINT32 ");
-            if(atype == _DATATYPE_INT32)
+            if(datatype == _DATATYPE_INT32)
                 n = snprintf(type, STYPESIZE, "INT32  ");
-            if(atype == _DATATYPE_UINT64)
+            if(datatype == _DATATYPE_UINT64)
                 n = snprintf(type, STYPESIZE, "UINT64 ");
-            if(atype == _DATATYPE_INT64)
+            if(datatype == _DATATYPE_INT64)
                 n = snprintf(type, STYPESIZE, "INT64  ");
-            if(atype == _DATATYPE_FLOAT)
+            if(datatype == _DATATYPE_FLOAT)
                 n = snprintf(type, STYPESIZE, "FLOAT  ");            
-            if(atype == _DATATYPE_DOUBLE)
+            if(datatype == _DATATYPE_DOUBLE)
                 n = snprintf(type, STYPESIZE, "DOUBLE ");
-            if(atype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype == _DATATYPE_COMPLEX_FLOAT)
                 n = snprintf(type, STYPESIZE, "CFLOAT ");            
-            if(atype == _DATATYPE_COMPLEX_DOUBLE)
+            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
                 n = snprintf(type, STYPESIZE, "CDOUBLE");
 
 
@@ -3661,13 +3661,13 @@ int_fast8_t mk_complex_from_reim(const char *re_name, const char *im_name, const
     long ii;
     long i;
     int n;
-    uint8_t atype_re, atype_im, atype_out;
+    uint8_t datatype_re, datatype_im, datatype_out;
 
     IDre = image_ID(re_name);
     IDim = image_ID(im_name);
 
-    atype_re = data.image[IDre].md[0].atype;
-    atype_im = data.image[IDim].md[0].atype;
+    datatype_re = data.image[IDre].md[0].datatype;
+    datatype_im = data.image[IDim].md[0].datatype;
     naxis = data.image[IDre].md[0].naxis;
 
     naxes = (uint32_t *) malloc(sizeof(uint32_t)*naxis);
@@ -3682,40 +3682,40 @@ int_fast8_t mk_complex_from_reim(const char *re_name, const char *im_name, const
     nelement = data.image[IDre].md[0].nelement;
 
 
-    if((atype_re == _DATATYPE_FLOAT)&&(atype_im == _DATATYPE_FLOAT))
+    if((datatype_re == _DATATYPE_FLOAT)&&(datatype_im == _DATATYPE_FLOAT))
     {
-        atype_out = _DATATYPE_COMPLEX_FLOAT;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_FLOAT;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         for(ii=0; ii<nelement; ii++)
         {
             data.image[IDout].array.CF[ii].re = data.image[IDre].array.F[ii];
             data.image[IDout].array.CF[ii].im = data.image[IDim].array.F[ii];
         }
     }
-    else if((atype_re == _DATATYPE_FLOAT)&&(atype_im == _DATATYPE_DOUBLE))
+    else if((datatype_re == _DATATYPE_FLOAT)&&(datatype_im == _DATATYPE_DOUBLE))
     {
-        atype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         for(ii=0; ii<nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.F[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
         }
     }
-    else if((atype_re == _DATATYPE_DOUBLE)&&(atype_im == _DATATYPE_FLOAT))
+    else if((datatype_re == _DATATYPE_DOUBLE)&&(datatype_im == _DATATYPE_FLOAT))
     {
-        atype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         for(ii=0; ii<nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.F[ii];
         }
     }
-    else if((atype_re == _DATATYPE_DOUBLE)&&(atype_im == _DATATYPE_DOUBLE))
+    else if((datatype_re == _DATATYPE_DOUBLE)&&(datatype_im == _DATATYPE_DOUBLE))
     {
-        atype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         for(ii=0; ii<nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
@@ -3750,23 +3750,23 @@ int_fast8_t mk_complex_from_amph(const char *am_name, const char *ph_name, const
     long nelement;
     long ii;
     long i;
-    uint8_t atype_am, atype_ph, atype_out;
+    uint8_t datatype_am, datatype_ph, datatype_out;
     int n;
 
     IDam = image_ID(am_name);
     IDph = image_ID(ph_name);
-    atype_am = data.image[IDam].md[0].atype;
-    atype_ph = data.image[IDph].md[0].atype;
+    datatype_am = data.image[IDam].md[0].datatype;
+    datatype_ph = data.image[IDph].md[0].datatype;
 
     naxis = data.image[IDam].md[0].naxis;
     for(i=0; i<naxis; i++)
         naxes[i] = data.image[IDam].md[0].size[i];
     nelement = data.image[IDam].md[0].nelement;
 
-    if((atype_am == _DATATYPE_FLOAT)&&(atype_ph == _DATATYPE_FLOAT))
+    if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
     {
-        atype_out = _DATATYPE_COMPLEX_FLOAT;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_FLOAT;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
@@ -3786,10 +3786,10 @@ int_fast8_t mk_complex_from_amph(const char *am_name, const char *ph_name, const
         data.image[IDout].md[0].write = 0;
 
     }
-    else if((atype_am == _DATATYPE_FLOAT)&&(atype_ph == _DATATYPE_DOUBLE))
+    else if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_DOUBLE))
     {
-        atype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -3807,10 +3807,10 @@ int_fast8_t mk_complex_from_amph(const char *am_name, const char *ph_name, const
         data.image[IDout].md[0].cnt0++;
         data.image[IDout].md[0].write = 0;
     }
-    else if((atype_am == _DATATYPE_DOUBLE)&&(atype_ph == _DATATYPE_FLOAT))
+    else if((datatype_am == _DATATYPE_DOUBLE) && (datatype_ph == _DATATYPE_FLOAT))
     {
-        atype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -3829,10 +3829,10 @@ int_fast8_t mk_complex_from_amph(const char *am_name, const char *ph_name, const
         data.image[IDout].md[0].write = 0;
 
     }
-    else if((atype_am == _DATATYPE_DOUBLE)&&(atype_ph == _DATATYPE_DOUBLE))
+    else if((datatype_am == _DATATYPE_DOUBLE) && (datatype_ph == _DATATYPE_DOUBLE))
     {
-        atype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, atype_out, sharedmem, data.NBKEWORD_DFT);
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem, data.NBKEWORD_DFT);
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -3873,17 +3873,17 @@ int_fast8_t mk_reim_from_complex(const char *in_name, const char *re_name, const
     long nelement;
     long ii;
     long i;
-    uint8_t atype;
+    uint8_t datatype;
     int n;
 
     IDin = image_ID(in_name);
-    atype = data.image[IDin].md[0].atype;
+    datatype = data.image[IDin].md[0].datatype;
     naxis = data.image[IDin].md[0].naxis;
     for(i=0; i<naxis; i++)
         naxes[i] = data.image[IDin].md[0].size[i];
     nelement = data.image[IDin].md[0].nelement;
 
-    if(atype == _DATATYPE_COMPLEX_FLOAT) // single precision
+    if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
         IDre = create_image_ID(re_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem, data.NBKEWORD_DFT);
         IDim = create_image_ID(im_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem, data.NBKEWORD_DFT);
@@ -3913,7 +3913,7 @@ int_fast8_t mk_reim_from_complex(const char *in_name, const char *re_name, const
         data.image[IDre].md[0].write = 0;
         data.image[IDim].md[0].write = 0;
     }
-    else if(atype == _DATATYPE_COMPLEX_DOUBLE) // double precision
+    else if(datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
     {
         IDre = create_image_ID(re_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem, data.NBKEWORD_DFT);
         IDim = create_image_ID(im_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem, data.NBKEWORD_DFT);
@@ -3970,18 +3970,18 @@ int_fast8_t mk_amph_from_complex(const char *in_name, const char *am_name, const
     long i;
     float amp_f,pha_f;
     double amp_d,pha_d;
-    uint8_t atype;
+    uint8_t datatype;
     int n;
 
     IDin = image_ID(in_name);
-    atype = data.image[IDin].md[0].atype;
+    datatype = data.image[IDin].md[0].datatype;
     naxis = data.image[IDin].md[0].naxis;
 
     for(i=0; i<naxis; i++)
         naxes[i] = data.image[IDin].md[0].size[i];
     nelement = data.image[IDin].md[0].nelement;
 
-    if(atype == _DATATYPE_COMPLEX_FLOAT) // single precision
+    if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
         IDam = create_image_ID(am_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem, data.NBKEWORD_DFT);
         IDph = create_image_ID(ph_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem, data.NBKEWORD_DFT);
@@ -4012,7 +4012,7 @@ int_fast8_t mk_amph_from_complex(const char *in_name, const char *am_name, const
         data.image[IDam].md[0].write = 0;
         data.image[IDph].md[0].write = 0;
     }
-    else if(atype == _DATATYPE_COMPLEX_DOUBLE) // double precision
+    else if(datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
     {
         IDam = create_image_ID(am_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem, data.NBKEWORD_DFT);
         IDph = create_image_ID(ph_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem, data.NBKEWORD_DFT);
@@ -4247,11 +4247,11 @@ int_fast8_t rotate_cube(const char *ID_name, const char *ID_out_name, int orient
     uint32_t xsize, ysize, zsize;
     uint32_t xsize1, ysize1, zsize1;
     uint32_t ii, jj, kk;
-    uint8_t atype;
+    uint8_t datatype;
     int n;
 
     ID = image_ID(ID_name);
-    atype = data.image[ID].md[0].atype;
+    datatype = data.image[ID].md[0].datatype;
 
     if(data.image[ID].md[0].naxis!=3)
     {
@@ -4266,7 +4266,7 @@ int_fast8_t rotate_cube(const char *ID_name, const char *ID_out_name, int orient
     ysize = data.image[ID].md[0].size[1];
     zsize = data.image[ID].md[0].size[2];
 
-    if(atype == _DATATYPE_FLOAT) // single precision
+    if(datatype == _DATATYPE_FLOAT) // single precision
     {
         if(orientation==0)
         {
@@ -4291,7 +4291,7 @@ int_fast8_t rotate_cube(const char *ID_name, const char *ID_out_name, int orient
                         data.image[IDout].array.F[kk*ysize1*xsize1+jj*xsize1+ii] = data.image[ID].array.F[jj*xsize*ysize+kk*xsize+ii];
         }
     }
-    else if(atype == _DATATYPE_DOUBLE)
+    else if(datatype == _DATATYPE_DOUBLE)
     {
         if(orientation==0)
         {
@@ -4910,7 +4910,7 @@ long COREMOD_MEMORY_streamPaste(
     long ii, jj;
     uint32_t *arraysize;
     long long cnt;
-    uint8_t atype;
+    uint8_t datatype;
     int FrameIndex;
 
     ID0 = image_ID(IDstream0_name);
@@ -4919,7 +4919,7 @@ long COREMOD_MEMORY_streamPaste(
     xsize = data.image[ID0].md[0].size[0];
     ysize = data.image[ID0].md[0].size[1];
     xysize = xsize*ysize;
-    atype = data.image[ID0].md[0].atype;
+    datatype = data.image[ID0].md[0].datatype;
 
     arraysize = (uint32_t*) malloc(sizeof(uint32_t)*2);
     arraysize[0] = 2*xsize;
@@ -4928,7 +4928,7 @@ long COREMOD_MEMORY_streamPaste(
     IDout = image_ID(IDstreamout_name);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDstreamout_name, 2, arraysize, atype, 1, 0);
+        IDout = create_image_ID(IDstreamout_name, 2, arraysize, datatype, 1, 0);
         COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
     }
     free(arraysize);
@@ -4970,7 +4970,7 @@ long COREMOD_MEMORY_streamPaste(
 		
         data.image[IDout].md[0].write = 1;
 				
-		switch(atype)
+		switch(datatype)
 		{
             case _DATATYPE_UINT8 :
             for(ii=0;ii<xsize;ii++)
@@ -5089,7 +5089,8 @@ long COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name, const char *IDs
 	long ii;
 	uint32_t *arraysize;
 	long long cnt;
-	uint8_t atype;
+	uint8_t datatype;
+	uint8_t datatypeout;
 	
 	
 	ID0 = image_ID(IDstream_name);
@@ -5107,16 +5108,56 @@ long COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name, const char *IDs
 	arraysize[0] = xsize;
 	arraysize[1] = ysize;
 	
+	datatype = data.image[ID0].md[0].datatype;
+	datatypeout = _DATATYPE_FLOAT;
+	switch ( datatype ) {
+
+		case _DATATYPE_UINT8:
+		datatypeout = _DATATYPE_INT16;
+		break;
+
+		case _DATATYPE_UINT16:
+		datatypeout = _DATATYPE_INT32;
+		break;
+
+		case _DATATYPE_UINT32:
+		datatypeout = _DATATYPE_INT64;
+		break;
+
+		case _DATATYPE_UINT64:
+		datatypeout = _DATATYPE_INT64;
+		break;
+	
+
+		case _DATATYPE_INT8:
+		datatypeout = _DATATYPE_INT16;
+		break;
+
+		case _DATATYPE_INT16:
+		datatypeout = _DATATYPE_INT32;
+		break;
+
+		case _DATATYPE_INT32:
+		datatypeout = _DATATYPE_INT64;
+		break;
+
+		case _DATATYPE_INT64:
+		datatypeout = _DATATYPE_INT64;
+		break;
+	
+		case _DATATYPE_DOUBLE:
+		datatypeout = _DATATYPE_DOUBLE;
+		break;			
+	}
+	
 	IDout = image_ID(IDstreamout_name);
 	if(IDout == -1)
 	{
-		IDout = create_image_ID(IDstreamout_name, 2, arraysize, _DATATYPE_FLOAT, 1, 0);
+		IDout = create_image_ID(IDstreamout_name, 2, arraysize, datatypeout, 1, 0);
 		COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
 	}
 
 	free(arraysize);
-	
-	atype = data.image[ID0].md[0].atype;
 	
 	
 	
@@ -5133,15 +5174,63 @@ long COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name, const char *IDs
             sem_wait(data.image[ID0].semptr[semtrig]);
 
         data.image[IDout].md[0].write = 1;
-        switch ( atype ) {
+
+        switch ( datatype ) {
+
+		case _DATATYPE_UINT8:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI16[ii] = data.image[ID0].array.UI8[ii] - data.image[ID0].array.UI8[xysize+ii];		        
+			break;
+
 		case _DATATYPE_UINT16:
 			for(ii=0;ii<xysize;ii++)
-				data.image[IDout].array.F[ii] = data.image[ID0].array.UI16[ii] - data.image[ID0].array.UI16[xysize+ii];		        
+				data.image[IDout].array.SI32[ii] = data.image[ID0].array.UI16[ii] - data.image[ID0].array.UI16[xysize+ii];		        
 			break;
+
+		case _DATATYPE_UINT32:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI64[ii] = data.image[ID0].array.UI32[ii] - data.image[ID0].array.UI32[xysize+ii];		        
+			break;
+
+		case _DATATYPE_UINT64:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI64[ii] = data.image[ID0].array.UI64[ii] - data.image[ID0].array.UI64[xysize+ii];		        
+			break;
+
+
+
+		case _DATATYPE_INT8:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI16[ii] = data.image[ID0].array.SI8[ii] - data.image[ID0].array.SI8[xysize+ii];		        
+			break;
+
+		case _DATATYPE_INT16:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI32[ii] = data.image[ID0].array.SI16[ii] - data.image[ID0].array.SI16[xysize+ii];		        
+			break;
+
+		case _DATATYPE_INT32:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI64[ii] = data.image[ID0].array.SI32[ii] - data.image[ID0].array.SI32[xysize+ii];		        
+			break;
+
+		case _DATATYPE_INT64:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.SI64[ii] = data.image[ID0].array.SI64[ii] - data.image[ID0].array.SI64[xysize+ii];		        
+			break;
+
+
+
 		case _DATATYPE_FLOAT:
 			for(ii=0;ii<xysize;ii++)
 				data.image[IDout].array.F[ii] = data.image[ID0].array.F[ii] - data.image[ID0].array.F[xysize+ii];		        
 			break;
+
+		case _DATATYPE_DOUBLE:
+			for(ii=0;ii<xysize;ii++)
+				data.image[IDout].array.D[ii] = data.image[ID0].array.D[ii] - data.image[ID0].array.D[xysize+ii];		        
+			break;
+
 		}
 
 		COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
@@ -5161,7 +5250,7 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 {
 	long IDout, IDout0;
 	long IDin;
-	uint8_t atype;
+	uint8_t datatype;
 	uint32_t xsize, ysize, xysize;
 	uint32_t *imsize;
 	int_fast8_t OKloop;
@@ -5171,7 +5260,7 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 	long cnt0, cnt0old;
 	
 	IDin = image_ID(IDstream_name);
-	atype = data.image[IDin].md[0].atype;
+	datatype = data.image[IDin].md[0].datatype;
 	xsize = data.image[IDin].md[0].size[0];
 	ysize = data.image[IDin].md[0].size[1];
 	xysize = xsize*ysize;
@@ -5209,7 +5298,7 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 		cnt0 = data.image[IDin].md[0].cnt0;
 		if(cnt0!=cnt0old)
 		{
-			switch ( atype )
+			switch ( datatype )
 			{
 				case _DATATYPE_UINT8 :
 				for(ii=0;ii<xysize;ii++)
@@ -5341,7 +5430,7 @@ long COREMOD_MEMORY_image_streamupdateloop(
     long kk;
     uint32_t *arraysize;
     long naxis;
-    uint8_t atype;
+    uint8_t datatype;
     char *ptr0s; // source start 3D array ptr
     char *ptr0; // source
     char *ptr1; // dest
@@ -5448,12 +5537,12 @@ long COREMOD_MEMORY_image_streamupdateloop(
 
 
 
-    atype = data.image[IDin[0]].md[0].atype;
+    datatype = data.image[IDin[0]].md[0].datatype;
 
     IDout = image_ID(IDoutname);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDoutname, 2, arraysize, atype, 1, 0);
+        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
@@ -5524,7 +5613,7 @@ long COREMOD_MEMORY_image_streamupdateloop(
         }
 
 
-        switch ( atype ) {
+        switch ( datatype ) {
 
         case _DATATYPE_INT8:
             ptr0s = (char*) data.image[IDin[cubeindex]].array.SI8;
@@ -5677,7 +5766,7 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
     
     uint32_t *arraysize;
     long naxis;
-    uint8_t atype;
+    uint8_t datatype;
     char *ptr0s; // source start 3D array ptr
     char *ptr0; // source
     char *ptr1; // dest
@@ -5715,16 +5804,16 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 
 
 
-    atype = data.image[IDin].md[0].atype;
+    datatype = data.image[IDin].md[0].datatype;
 
 	IDout = image_ID(IDoutname);
 	if(IDout == -1)
 	{
-		IDout = create_image_ID(IDoutname, 2, arraysize, atype, 1, 0);
+		IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0);
 		COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
 	}
 	
-    switch ( atype ) {
+    switch ( datatype ) {
 
     case _DATATYPE_INT8:
         ptr0s = (char*) data.image[IDin].array.SI8;
@@ -6348,7 +6437,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             NBslices = data.image[ID].md[0].size[2];
             
 
-    switch ( data.image[ID].md[0].atype ) {
+    switch ( data.image[ID].md[0].datatype ) {
 
     case _DATATYPE_INT8:
         framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
@@ -6388,14 +6477,14 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     default:
         printf("ERROR: WRONG DATA TYPE\n");
-        printf("data type = %d\n", data.image[ID].md[0].atype);
+        printf("data type = %d\n", data.image[ID].md[0].datatype);
         exit(0);
         break;
     }
 
     printf("IMAGE FRAME SIZE = %ld\n", framesize);
 
-    switch ( data.image[ID].md[0].atype ) {
+    switch ( data.image[ID].md[0].datatype ) {
 
     case _DATATYPE_INT8:
         ptr0 = (char*) data.image[ID].array.SI8;
@@ -6836,7 +6925,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 					if(imgmd[0].size[axis] != data.image[ID].md[0].size[axis])
 						OKim = 0;
 			}
-		if(imgmd[0].atype != data.image[ID].md[0].atype)
+		if(imgmd[0].datatype != data.image[ID].md[0].datatype)
 			OKim = 0;
 			
 		if(OKim==0)
@@ -6851,7 +6940,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 	if(OKim==0)
 	{
 		printf("IMAGE %s HAS TO BE CREATED\n", imgmd[0].name);
-		ID = create_image_ID(imgmd[0].name, imgmd[0].naxis, imgmd[0].size, imgmd[0].atype, imgmd[0].shared, 0);
+		ID = create_image_ID(imgmd[0].name, imgmd[0].naxis, imgmd[0].size, imgmd[0].datatype, imgmd[0].shared, 0);
 		printf("Created image stream %s - shared = %d\n", imgmd[0].name, imgmd[0].shared);
     }
     else
@@ -6873,7 +6962,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 
 	char typestring[8];
 	
-    switch ( data.image[ID].md[0].atype ) {
+    switch ( data.image[ID].md[0].datatype ) {
 
     case _DATATYPE_INT8:
         framesize = SIZEOF_DATATYPE_INT8*xsize*ysize;
@@ -6934,7 +7023,7 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
 
     printf("image frame size = %ld\n", framesize);
 
-    switch ( data.image[ID].md[0].atype ) {
+    switch ( data.image[ID].md[0].datatype ) {
 
     case _DATATYPE_INT8:
         ptr0 = (char*) data.image[ID].array.SI8;
@@ -7233,7 +7322,7 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     }
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
-    IDout = create_image_ID(IDout_name, 2, sizearray, data.image[IDin].md[0].atype, 1, 0);
+    IDout = create_image_ID(IDout_name, 2, sizearray, data.image[IDin].md[0].datatype, 1, 0);
     COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
     IDout_pixslice = create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0, 0);
 
@@ -7729,7 +7818,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     long index = 0;
     long cnt = -1;
     int buffer;
-    uint8_t atype;
+    uint8_t datatype;
     uint32_t *imsizearray;
     char fname[200];
     char iname[200];
@@ -7824,7 +7913,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     IDlogdata = image_ID(IDlogdata_name);
     if(IDlogdata!=-1)
     {
-        if(data.image[IDlogdata].md[0].atype != _DATATYPE_FLOAT)
+        if(data.image[IDlogdata].md[0].datatype != _DATATYPE_FLOAT)
             IDlogdata = -1;
     }
     printf("log data name = %s\n", IDlogdata_name);
@@ -7847,7 +7936,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     read_sharedmem_image(IDname);
     ID = image_ID(IDname);
-    atype = data.image[ID].md[0].atype;
+    datatype = data.image[ID].md[0].datatype;
     xsize = data.image[ID].md[0].size[0];
     ysize = data.image[ID].md[0].size[1];
 
@@ -7863,8 +7952,8 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
     sprintf(logb0name, "%s_logbuff0", IDname);
     sprintf(logb1name, "%s_logbuff1", IDname);
 
-    IDb0 = create_image_ID(logb0name, 3, imsizearray, atype, 1, 1);
-    IDb1 = create_image_ID(logb1name, 3, imsizearray, atype, 1, 1);
+    IDb0 = create_image_ID(logb0name, 3, imsizearray, datatype, 1, 1);
+    IDb1 = create_image_ID(logb1name, 3, imsizearray, datatype, 1, 1);
     COREMOD_MEMORY_image_set_semflush(logb0name, -1);
     COREMOD_MEMORY_image_set_semflush(logb1name, -1);
 
@@ -7880,7 +7969,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
     IDb = IDb0;
 
-    switch ( atype ) {
+    switch ( datatype ) {
 
     case _DATATYPE_FLOAT:
         framesize = SIZEOF_DATATYPE_FLOAT*xsize*ysize;
@@ -7941,7 +8030,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
 
 
 
-    switch ( atype ) {
+    switch ( datatype ) {
 
     case _DATATYPE_FLOAT:
         ptr1_0 = (char*) data.image[IDb].array.F;
@@ -8341,7 +8430,7 @@ long __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, 
             else
                 IDb = IDb1;
 
-            switch ( atype ) {
+            switch ( datatype ) {
 
             case _DATATYPE_FLOAT:
                 ptr1_0 = (char*) data.image[IDb].array.F;

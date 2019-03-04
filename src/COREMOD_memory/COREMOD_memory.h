@@ -93,7 +93,7 @@ int_fast8_t init_COREMOD_memory();
 
 //int ImageCreateSem(IMAGE *image, long NBsem);
 
-//int ImageCreate(IMAGE *image, const char *name, long naxis, uint32_t *size, uint8_t atype, int shared, int NBkw);
+//int ImageCreate(IMAGE *image, const char *name, long naxis, uint32_t *size, uint8_t datatype, int shared, int NBkw);
 
 
 int_fast8_t COREMOD_MEMORY_testfunc();
@@ -139,7 +139,7 @@ long create_variable_long_ID(const char *name, long value);
 
 long create_variable_string_ID(const char *name, const char *value);
 
-long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t atype, int shared, int nbkw);
+long create_image_ID(const char *name, long naxis, uint32_t *size, uint8_t datatype, int shared, int nbkw);
 
 int_fast8_t clearall();
 
