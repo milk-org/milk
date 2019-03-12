@@ -352,6 +352,7 @@ static int_fast8_t printInfo()
 
     printf("--------------- GENERAL ----------------------\n");
     printf("%s  %s\n",  data.package_name, data.package_version );
+    printf("IMAGESTRUCT_VERSION %s\n", IMAGESTRUCT_VERSION);
     printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
