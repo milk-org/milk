@@ -375,9 +375,7 @@ static int_fast8_t printInfo()
 	printf("sizeof(uint_fast16_t)          = %4ld bit\n", sizeof(uint_fast16_t)*8);
 	printf("sizeof(uint_fast32_t)          = %4ld bit\n", sizeof(uint_fast32_t)*8);
 	printf("sizeof(uint_fast64_t)          = %4ld bit\n", sizeof(uint_fast64_t)*8);
-	printf("sizeof(EVENT_UI8_UI8_UI16_UI8) = %4ld bit\n", sizeof(EVENT_UI8_UI8_UI16_UI8)*8);
 	printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD)*8);
-	printf("sizeof(TIMESPECFIXED)          = %4ld bit\n", sizeof(TIMESPECFIXED)*8);
 	
 	size_t offsetval = 0;
 	size_t offsetval0 = 0;
