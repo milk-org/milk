@@ -379,42 +379,140 @@ static int_fast8_t printInfo()
 	printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD)*8);
 	printf("sizeof(TIMESPECFIXED)          = %4ld bit\n", sizeof(TIMESPECFIXED)*8);
 	
-	printf("sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte\n", sizeof(IMAGE_METADATA)*8, sizeof(IMAGE_METADATA));
-	printf("   name                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, name), offsetof(IMAGE_METADATA, name));
-	printf("   naxis                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, naxis), offsetof(IMAGE_METADATA, naxis));
-	printf("   size                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, size), offsetof(IMAGE_METADATA, size));
-	printf("   nelement                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, nelement), offsetof(IMAGE_METADATA, nelement));
-	printf("   datatype                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, datatype), offsetof(IMAGE_METADATA, datatype));
-	printf("   creationtime                = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, creationtime), offsetof(IMAGE_METADATA, creationtime));
-	printf("   lastaccesstime              = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, lastaccesstime), offsetof(IMAGE_METADATA, lastaccesstime));		
-	//printf("   atime.ts                    = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.ts), offsetof(IMAGE_METADATA, atime.ts));
-	//printf("   atime.tsfixed               = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, atime.tsfixed), offsetof(IMAGE_METADATA, atime.tsfixed));
-	printf("   shared                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, shared), offsetof(IMAGE_METADATA, shared));
-	printf("   status                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, status), offsetof(IMAGE_METADATA, status));
-	printf("   logflag                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, logflag), offsetof(IMAGE_METADATA, logflag));
-	printf("   sem                         = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, sem), offsetof(IMAGE_METADATA, sem));
-	printf("   cnt0                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, cnt0), offsetof(IMAGE_METADATA, cnt0));
-	printf("   cnt1                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, cnt1), offsetof(IMAGE_METADATA, cnt1));
-	printf("   cnt2                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, cnt2), offsetof(IMAGE_METADATA, cnt2));
-	printf("   write                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, write), offsetof(IMAGE_METADATA, write));
-	printf("   NBkw                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_METADATA, NBkw), offsetof(IMAGE_METADATA, NBkw));
+	size_t offsetval = 0;
+	size_t offsetval0 = 0;
 	
-	printf("sizeof(IMAGE)                  = %4ld bit\n", sizeof(IMAGE)*8);
-	printf("   name                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, name), offsetof(IMAGE, name));
-	printf("   used                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, used), offsetof(IMAGE, used));
-	printf("   shmfd                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, shmfd), offsetof(IMAGE, shmfd));
-	printf("   memsize                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, memsize), offsetof(IMAGE, memsize));
-	printf("   semlog                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semlog), offsetof(IMAGE, semlog));
-	printf("   md                          = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, md), offsetof(IMAGE, md));
-	printf("   array                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, array), offsetof(IMAGE, array));
-	printf("   semptr                      = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semptr), offsetof(IMAGE, semptr));
-	printf("   kw                          = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, kw), offsetof(IMAGE, kw));
+	printf("sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte ------------------\n", sizeof(IMAGE_METADATA)*8, sizeof(IMAGE_METADATA));
+
+	offsetval = offsetof(IMAGE_METADATA, version);
+
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, name);
+	printf("   version                     offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
 	
-	printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD)*8);
-	printf("   name                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
-	printf("   type                        = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
-	printf("   value                       = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
-	printf("   comment                     = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, naxis);
+	printf("   name                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, size);
+	printf("   naxis                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, nelement);
+	printf("   size                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, datatype);
+	printf("   nelement                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, imagetype);
+	printf("   datatype                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, creationtime);
+	printf("   imagetype                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, lastaccesstime);
+	printf("   creationtime                offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, atime);
+	printf("   lastaccesstime              offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);		
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, atimearray);
+	printf("   atime                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, writetime);
+	printf("   atimearray                  offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, writetimearray);
+	printf("   writetime                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, shared);
+	printf("   writetimearray              offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, location);
+	printf("   shared                      offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, status);
+	printf("   location                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, flag);
+	printf("   status                      offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, flagarray);
+	printf("   flag                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, logflag);
+	printf("   flagarray                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, sem);
+	printf("   logflag                     offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, cnt0);
+	printf("   sem                         offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, cnt1);
+	printf("   cnt0                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, cnt2);
+	printf("   cnt1                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, cntarray);
+	printf("   cnt2                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, write);
+	printf("   cntarray                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, NBkw);
+	printf("   write                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	offsetval = offsetof(IMAGE_METADATA, cudaMemHandle);
+	printf("   NBkw                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+
+	offsetval0 = offsetval;
+	printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n", 8*offsetval0, offsetval0);
+
+
+	
+	printf("sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte ------------------\n", sizeof(IMAGE)*8, sizeof(IMAGE));
+	printf("   name                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, name),                      offsetof(IMAGE, name));
+	printf("   used                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, used),                      offsetof(IMAGE, used));
+	printf("   shmfd                       offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, shmfd),                     offsetof(IMAGE, shmfd));
+	printf("   memsize                     offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, memsize),                   offsetof(IMAGE, memsize));
+	printf("   semlog                      offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semlog),                    offsetof(IMAGE, semlog));
+	printf("   md                          offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, md),                        offsetof(IMAGE, md));
+	printf("   array                       offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, array),                     offsetof(IMAGE, array));
+	printf("   semptr                      offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semptr),                    offsetof(IMAGE, semptr));
+	printf("   kw                          offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, kw),                        offsetof(IMAGE, kw));
+	
+	printf("sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte ------------------\n", sizeof(IMAGE_KEYWORD)*8, sizeof(IMAGE_KEYWORD));
+	printf("   name                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
+	printf("   type                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
+	printf("   value                       offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
+	printf("   comment                     offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
 	
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
