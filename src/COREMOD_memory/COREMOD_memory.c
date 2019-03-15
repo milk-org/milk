@@ -2345,7 +2345,6 @@ long read_sharedmem_image(const char *name)
 	long IDmem = 0;
 	IMAGE *image;
 	
-	
 	IDmem = next_avail_image_ID();
 	
 	image = &data.image[IDmem];
