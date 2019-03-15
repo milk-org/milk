@@ -2348,10 +2348,10 @@ long read_sharedmem_image(const char *name)
 	IDmem = next_avail_image_ID();
 	
 	image = &data.image[IDmem];
-	if(ImageStreamIO_read_sharedmem_image_toIMAGE(name, image) == -1)
+	if ( ImageStreamIO_read_sharedmem_image_toIMAGE(name, image) == EXIT_FAILURE )
 		ID = -1;
 	else
-		ID = IDmem;
+		ID = image_ID(name);
 
     if(MEM_MONITOR == 1)
 		list_image_ID_ncurses();
