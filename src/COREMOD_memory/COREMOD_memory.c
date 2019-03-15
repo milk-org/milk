@@ -2342,13 +2342,17 @@ long read_sharedmem_image_size(const char *name, const char *fname)
 long read_sharedmem_image(const char *name)
 {
 	long ID = -1;
+	long IDmem = 0;
 	IMAGE *image;
 	
-	ID = next_avail_image_ID();
 	
-	image = &data.image[ID];
+	IDmem = next_avail_image_ID();
+	
+	image = &data.image[IDmem];
 	if(ImageStreamIO_read_sharedmem_image_toIMAGE(name, image) == -1)
 		ID = -1;
+	else
+		ID = IDmem;
 
     if(MEM_MONITOR == 1)
 		list_image_ID_ncurses();
