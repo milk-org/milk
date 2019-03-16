@@ -1014,7 +1014,7 @@ long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char 
 
 double arith_image_total(const char *ID_name)
 {
-    long double value;
+    long double lvalue; // uses long double internally
     long ID;
     long ii;
     long nelement;
@@ -1025,67 +1025,67 @@ double arith_image_total(const char *ID_name)
 
     nelement = data.image[ID].md[0].nelement;
 
-    value = 0.0;
+    lvalue = 0.0;
 
     if(datatype==_DATATYPE_UINT8)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.UI8[ii];
+            lvalue += (long double) data.image[ID].array.UI8[ii];
     }
     else if(datatype==_DATATYPE_INT32)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.SI32[ii];
+            lvalue += (long double) data.image[ID].array.SI32[ii];
     }
     else if(datatype==_DATATYPE_FLOAT)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.F[ii];
+            lvalue += (long double) data.image[ID].array.F[ii];
     }
     else if(datatype==_DATATYPE_DOUBLE)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.D[ii];
+            lvalue += (long double) data.image[ID].array.D[ii];
     }
     else if(datatype==_DATATYPE_UINT8)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.UI8[ii];
+            lvalue += (long double) data.image[ID].array.UI8[ii];
     }
     else if(datatype==_DATATYPE_UINT16)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.UI16[ii];
+            lvalue += (long double) data.image[ID].array.UI16[ii];
     }
     else if(datatype==_DATATYPE_UINT32)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.UI32[ii];
+            lvalue += (long double) data.image[ID].array.UI32[ii];
     }
     else if(datatype==_DATATYPE_UINT64)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.UI64[ii];
+            lvalue += (long double) data.image[ID].array.UI64[ii];
     }
     else if(datatype==_DATATYPE_INT8)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.SI8[ii];
+            lvalue += (long double) data.image[ID].array.SI8[ii];
     }
     else if(datatype==_DATATYPE_INT16)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.SI16[ii];
+            lvalue += (long double) data.image[ID].array.SI16[ii];
     }
     else if(datatype==_DATATYPE_INT32)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.SI32[ii];
+            lvalue += (long double) data.image[ID].array.SI32[ii];
     }
     else if(datatype==_DATATYPE_INT64)
     {
         for (ii = 0; ii < nelement; ii++)
-            value += (long double) data.image[ID].array.SI64[ii];
+            lvalue += (long double) data.image[ID].array.SI64[ii];
     }
     else
     {
@@ -1093,7 +1093,10 @@ double arith_image_total(const char *ID_name)
         exit(0);
     }
 
-    return((double) value);
+	double value;
+	value = (double) lvalue;
+
+    return(value);
 }
 
 
@@ -2849,7 +2852,7 @@ int arith_image_positive_inplace(const char *ID_name){ arith_image_function_1_1_
 
 int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const char *ID_out, double (*pt2function)(double, double))
 {
-    long ID1,ID2;
+    long ID1, ID2;
     long IDout;
     long ii, kk;
     uint32_t *naxes = NULL; // input, output
@@ -2868,6 +2871,8 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
     ID1 = image_ID(ID_name1);
     ID2 = image_ID(ID_name2);
 
+	list_image_ID(); //TEST
+	printf("IDs : %ld %ld\n", ID1, ID2);
 
     if(ID1==-1)
     {
@@ -2922,6 +2927,8 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
     nelement1 = data.image[ID1].md[0].nelement;
     nelement2 = data.image[ID2].md[0].nelement;
 
+	list_image_ID();
+
     // test if 3D 2D -> 3D operation
     //printf("naxis   %ld (%d)   %ld (%d)\n", naxis, atype1, naxis2, atype2);
     //fflush(stdout);
@@ -2965,15 +2972,16 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
 
 
 // ID1 datatype  UINT8
-
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_UINT8) )  // UINT8 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_UINT8)
+	{
+        if(datatype2==_DATATYPE_UINT8)  // UINT8 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
                 #pragma omp for
 # endif
                 for (ii = 0; ii < nelement; ii++)
-                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]),(double) (data.image[ID2].array.UI8[ii]));
+                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]), (double) (data.image[ID2].array.UI8[ii]));
 
             if(op3D2Dto3D == 1)
 # ifdef _OPENMP
@@ -2984,14 +2992,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_UINT16) )  // UINT8 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // UINT8 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
                 #pragma omp for
 # endif
                 for (ii = 0; ii < nelement; ii++)
-                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]),(double) (data.image[ID2].array.UI16[ii]));
+                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]), (double) (data.image[ID2].array.UI16[ii]));
 
             if(op3D2Dto3D == 1)
 # ifdef _OPENMP
@@ -3002,14 +3010,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_UINT32) )  // UINT8 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)  // UINT8 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
                 #pragma omp for
 # endif
                 for (ii = 0; ii < nelement; ii++)
-                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]),(double) (data.image[ID2].array.UI32[ii]));
+                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]), (double) (data.image[ID2].array.UI32[ii]));
 
             if(op3D2Dto3D == 1)
 # ifdef _OPENMP
@@ -3020,14 +3028,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_UINT64) )  // UINT8 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)  // UINT8 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
                 #pragma omp for
 # endif
                 for (ii = 0; ii < nelement; ii++)
-                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]),(double) (data.image[ID2].array.UI64[ii]));
+                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]), (double) (data.image[ID2].array.UI64[ii]));
 
             if(op3D2Dto3D == 1)
 # ifdef _OPENMP
@@ -3038,14 +3046,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_INT8) )  // UINT8 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)  // UINT8 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
                 #pragma omp for
 # endif
                 for (ii = 0; ii < nelement; ii++)
-                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]),(double) (data.image[ID2].array.SI8[ii]));
+                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]), (double) (data.image[ID2].array.SI8[ii]));
 
             if(op3D2Dto3D == 1)
 # ifdef _OPENMP
@@ -3056,14 +3064,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_INT16) )  // UINT8 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)  // UINT8 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
                 #pragma omp for
 # endif
                 for (ii = 0; ii < nelement; ii++)
-                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]),(double) (data.image[ID2].array.SI16[ii]));
+                    data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.UI8[ii]), (double) (data.image[ID2].array.SI16[ii]));
 
             if(op3D2Dto3D == 1)
 # ifdef _OPENMP
@@ -3074,7 +3082,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_INT32) )  // UINT8 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)  // UINT8 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3092,7 +3100,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_INT64) )  // UINT8 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)  // UINT8 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3110,7 +3118,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_FLOAT) )  // UINT8 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)  // UINT8 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3128,7 +3136,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT8) && (datatype2==_DATATYPE_DOUBLE) )  // UINT8 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)  // UINT8 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3145,13 +3153,15 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI8[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
-
+	}
 
 
 
 // ID1 datatype  UINT16
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_UINT8) )  // UINT16 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_UINT16)
+	{
+        if(datatype2==_DATATYPE_UINT8)  // UINT16 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3169,7 +3179,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_UINT16) )  // UINT16 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // UINT16 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3187,7 +3197,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_UINT32) )  // UINT16 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)  // UINT16 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3205,7 +3215,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_UINT64) )  // UINT16 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)  // UINT16 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3223,7 +3233,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_INT8) )  // UINT16 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)  // UINT16 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3241,7 +3251,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_INT16) )  // UINT16 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)  // UINT16 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3259,7 +3269,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_INT32) )  // UINT16 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)  // UINT16 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3277,7 +3287,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_INT64) )  // UINT16 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)  // UINT16 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3295,7 +3305,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_FLOAT) )  // UINT16 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)  // UINT16 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3313,7 +3323,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT16) && (datatype2==_DATATYPE_DOUBLE) )  // UINT16 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)  // UINT16 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3330,12 +3340,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI16[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
-
+	}
 
 
 // ID1 datatype  UINT32
+	if(datatype1==_DATATYPE_UINT32)
+	{
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_UINT8) )  // UINT32 UINT8 -> FLOAT
+        if(datatype2==_DATATYPE_UINT8)   // UINT32 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3353,7 +3365,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_UINT16) )  // UINT32 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)   // UINT32 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3371,7 +3383,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_UINT32) )  // UINT32 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)   // UINT32 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3389,7 +3401,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_UINT64) )  // UINT32 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)   // UINT32 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3407,7 +3419,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_INT8) )  // UINT32 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)   // UINT32 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3425,7 +3437,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_INT16) )  // UINT32 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)   // UINT32 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3443,7 +3455,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_INT32) )  // UINT32 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)   // UINT32 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3461,7 +3473,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_INT64) )  // UINT32 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)   // UINT32 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3479,7 +3491,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_FLOAT) )  // UINT32 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)   // UINT32 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3497,7 +3509,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT32) && (datatype2==_DATATYPE_DOUBLE) )  // UINT32 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)   // UINT32 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3514,12 +3526,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI32[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
+	}
 
 
 
 // ID1 datatype  UINT64
-
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_UINT8) )  // UINT64 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_UINT64)
+	{
+        if(datatype2==_DATATYPE_UINT8)  // UINT64 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3537,7 +3551,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_UINT16) )  // UINT64 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // UINT64 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3555,7 +3569,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_UINT32) )  // UINT64 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)  // UINT64 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3573,7 +3587,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_UINT64) )  // UINT64 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)  // UINT64 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3591,7 +3605,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_INT8) )  // UINT64 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)  // UINT64 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3609,7 +3623,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_INT16) )  // UINT64 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)  // UINT64 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3627,7 +3641,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_INT32) )  // UINT64 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)  // UINT64 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3645,7 +3659,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_INT64) )  // UINT64 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)  // UINT64 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3663,7 +3677,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_FLOAT) )  // UINT64 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)  // UINT64 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3681,7 +3695,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_UINT64) && (datatype2==_DATATYPE_DOUBLE) )  // UINT64 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)  // UINT64 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3698,22 +3712,15 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.UI64[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
-
-
-
-
-
-
-
-
-
-
+	}
 
 
 
 // ID1 datatype  INT8
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_UINT8) )  // INT8 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_INT8)
+	{
+        if(datatype2==_DATATYPE_UINT8)  // INT8 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3731,7 +3738,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_UINT16) )  // INT8 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // INT8 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3749,7 +3756,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_UINT32) )  // INT8 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)  // INT8 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3767,7 +3774,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_UINT64) )  // INT8 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)  // INT8 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3785,7 +3792,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_INT8) )  // INT8 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)  // INT8 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3803,7 +3810,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_INT16) )  // INT8 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)  // INT8 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3821,7 +3828,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_INT32) )  // INT8 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)  // INT8 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3839,7 +3846,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_INT64) )  // INT8 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)  // INT8 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3857,7 +3864,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_FLOAT) )  // INT8 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)  // INT8 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3875,7 +3882,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT8) && (datatype2==_DATATYPE_DOUBLE) )  // INT8 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)  // INT8 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3892,13 +3899,15 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI8[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
-
+	}
 
 
 
 // ID1 datatype  INT16
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_UINT8) )  // INT16 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_INT16)
+	{
+        if(datatype2==_DATATYPE_UINT8)  // INT16 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3916,7 +3925,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_UINT16) )  // INT16 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // INT16 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3934,7 +3943,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_UINT32) )  // INT16 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)  // INT16 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3952,7 +3961,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_UINT64) )  // INT16 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)  // INT16 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3970,7 +3979,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_INT8) )  // INT16 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)  // INT16 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -3988,7 +3997,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_INT16) )  // INT16 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)  // INT16 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4006,7 +4015,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_INT32) )  // INT16 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)   // INT16 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4024,7 +4033,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_INT64) )  // INT16 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)   // INT16 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4042,7 +4051,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_FLOAT) )  // INT16 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)   // INT16 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4060,7 +4069,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT16) && (datatype2==_DATATYPE_DOUBLE) )  // INT16 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)   // INT16 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4077,12 +4086,15 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI16[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
+	}
 
 
 
 // ID1 datatype  INT32
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_UINT8) )  // INT32 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_INT32)
+	{
+        if(datatype2==_DATATYPE_UINT8)   // INT32 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4100,7 +4112,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_UINT16) )  // INT32 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // INT32 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4118,7 +4130,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_UINT32) )  // INT32 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)   // INT32 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4136,7 +4148,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_UINT64) )  // INT32 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)   // INT32 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4154,7 +4166,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_INT8) )  // INT32 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)   // INT32 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4172,7 +4184,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_INT16) )  // INT32 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)   // INT32 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4190,7 +4202,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_INT32) )  // INT32 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)   // INT32 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4208,7 +4220,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_INT64) )  // INT32 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)   // INT32 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4226,7 +4238,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_FLOAT) )  // INT32 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)   // INT32 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4244,7 +4256,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT32) && (datatype2==_DATATYPE_DOUBLE) )  // INT32 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)   // INT32 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4261,12 +4273,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI32[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
+	}
 
 
 
 // ID1 datatype  INT64
-
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_UINT8) )  // INT64 UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_INT64)
+	{
+        if(datatype2==_DATATYPE_UINT8)   // INT64 UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4284,7 +4298,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_UINT16) )  // INT64 UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)  // INT64 UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4302,7 +4316,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_UINT32) )  // INT64 UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)   // INT64 UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4320,7 +4334,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_UINT64) )  // INT64 UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)   // INT64 UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4338,7 +4352,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_INT8) )  // INT64 INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)   // INT64 INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4356,7 +4370,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_INT16) )  // INT64 INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)   // INT64 INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4374,7 +4388,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_INT32) )  // INT64 INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)   // INT64 INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4392,7 +4406,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_INT64) )  // INT64 INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)   // INT64 INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4410,7 +4424,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_FLOAT) )  // INT64 FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)   // INT64 FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4428,7 +4442,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_INT64) && (datatype2==_DATATYPE_DOUBLE) )  // INT64 DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)   // INT64 DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4445,19 +4459,14 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.SI64[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
-
-
-
-
-
-
-
+	}
 
 
 
 // ID1 datatype  FLOAT
-
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT8) )  // FLOAT UINT8 -> FLOAT
+	if(datatype1==_DATATYPE_FLOAT)
+	{
+        if(datatype2==_DATATYPE_UINT8)   // FLOAT UINT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4475,7 +4484,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT16) )  // FLOAT UINT16 -> FLOAT
+        if(datatype2==_DATATYPE_UINT16)   // FLOAT UINT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4493,7 +4502,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT32) )  // FLOAT UINT32 -> FLOAT
+        if(datatype2==_DATATYPE_UINT32)   // FLOAT UINT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4511,7 +4520,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT64) )  // FLOAT UINT64 -> FLOAT
+        if(datatype2==_DATATYPE_UINT64)   // FLOAT UINT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4529,7 +4538,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT8) )  // FLOAT INT8 -> FLOAT
+        if(datatype2==_DATATYPE_INT8)   // FLOAT INT8 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4547,7 +4556,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT16) )  // FLOAT INT16 -> FLOAT
+        if(datatype2==_DATATYPE_INT16)   // FLOAT INT16 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4565,7 +4574,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT32) )  // FLOAT INT32 -> FLOAT
+        if(datatype2==_DATATYPE_INT32)   // FLOAT INT32 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4583,7 +4592,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT64) )  // FLOAT INT64 -> FLOAT
+        if(datatype2==_DATATYPE_INT64)   // FLOAT INT64 -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4601,7 +4610,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_FLOAT) )  // FLOAT FLOAT -> FLOAT
+        if(datatype2==_DATATYPE_FLOAT)   // FLOAT FLOAT -> FLOAT
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4619,7 +4628,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_DOUBLE) )  // FLOAT DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)  // FLOAT DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4636,21 +4645,16 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), data.image[ID2].array.D[ii]);
         }
-
-
-
-
-
-
-
-
+	}
 
 
 
 
 // ID1 datatype  DOUBLE
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT8) )  // DOUBLE UINT8 -> DOUBLE
+	if(datatype1==_DATATYPE_DOUBLE)
+	{
+        if(datatype2==_DATATYPE_UINT8)   // DOUBLE UINT8 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4668,7 +4672,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.UI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT16) )  // DOUBLE UINT16 -> DOUBLE
+        if(datatype2==_DATATYPE_UINT16)   // DOUBLE UINT16 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4686,7 +4690,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.UI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT32) )  // DOUBLE UINT32 -> DOUBLE
+        if(datatype2==_DATATYPE_UINT32)   // DOUBLE UINT32 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4704,7 +4708,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.UI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_UINT64) )  // DOUBLE UINT64 -> DOUBLE
+        if(datatype2==_DATATYPE_UINT64)   // DOUBLE UINT64 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4722,7 +4726,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.UI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT8) )  // DOUBLE INT8 -> DOUBLE
+        if(datatype2==_DATATYPE_INT8)  // DOUBLE INT8 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4740,7 +4744,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.SI8[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT16) )  // DOUBLE INT16 -> DOUBLE
+        if(datatype2==_DATATYPE_INT16)   // DOUBLE INT16 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4758,7 +4762,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.SI16[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT32) )  // DOUBLE INT32 -> DOUBLE
+        if(datatype2==_DATATYPE_INT32)  // DOUBLE INT32 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4776,7 +4780,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.SI32[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_INT64) )  // DOUBLE INT64 -> DOUBLE
+        if(datatype2==_DATATYPE_INT64)   // DOUBLE INT64 -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4794,7 +4798,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.SI64[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_FLOAT) )  // DOUBLE FLOAT -> DOUBLE
+        if(datatype2==_DATATYPE_FLOAT)   // DOUBLE FLOAT -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4812,7 +4816,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], (double) (data.image[ID2].array.F[ii]));
         }
 
-        if( (datatype1==_DATATYPE_FLOAT) && (datatype2==_DATATYPE_DOUBLE) )  // DOUBLE DOUBLE -> DOUBLE
+        if(datatype2==_DATATYPE_DOUBLE)   // DOUBLE DOUBLE -> DOUBLE
         {
             if(op3D2Dto3D == 0)
 # ifdef _OPENMP
@@ -4829,6 +4833,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.D[kk*xysize+ii] = pt2function(data.image[ID1].array.D[kk*xysize+ii], data.image[ID2].array.D[ii]);
         }
+	}
 
 
 
