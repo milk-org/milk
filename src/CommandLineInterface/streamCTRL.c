@@ -389,19 +389,20 @@ void *streamCTRL_scan(void* argptr)
                     if (S_ISLNK(buf.st_mode)) // resolve link name
                     {
                         char fullname[200];
-                        char linknamefull[200];
+                        char *linknamefull; //[200];
                         char linkname[200];
                         int nchar;
 
 
                         streaminfo[sindex].SymLink = 1;
                         sprintf(fullname, "/tmp/%s", dir->d_name);
-                        readlink (fullname, linknamefull, 200-1);
+//                        readlink (fullname, linknamefull, 200-1);
+                        linknamefull = realpath( fullname, NULL);
 
                         if(access(linknamefull, R_OK )) // file cannot be read
                         {
 							if(streaminfoproc->WriteFlistToFile == 1)
-								fprintf(fpfscan, " LINK %s CANNOT BE READ -> off", linknamefull);
+								fprintf(fpfscan, " %s <-> LINK %s CANNOT BE READ -> off", fullname, linknamefull);
                             scanentryOK = 0;
                         }
                         else
