@@ -167,6 +167,9 @@ long image_ID_from_images(IMAGE* images, const char *name) /* ID number correspo
     return -1;
 }
 
+
+
+
 long image_get_first_ID_available_from_images(IMAGE* images)
 {
     long i;
@@ -303,6 +306,11 @@ void *streamCTRL_scan(void* argptr)
     streaminfoproc->loopcnt = 0;
 
 
+    // if set, write file list to file on first scan
+    int WriteFlistToFile = 1;
+
+
+    FILE *fpfscan;
 
     while(streaminfoproc->loop == 1)
     {
@@ -322,7 +330,15 @@ void *streamCTRL_scan(void* argptr)
         streaminfoproc->dtscan = tdiffv;
 
 
+
+
         // COLLECT DATA
+        if(streaminfoproc->WriteFlistToFile == 1)
+        {
+            fpfscan = fopen("streamCTRL_filescan.dat", "w");
+        }
+
+
         d = opendir("/tmp/");
         if(d)
         {
@@ -356,6 +372,8 @@ void *streamCTRL_scan(void* argptr)
                     char fullname[200];
 
 
+                    if(streaminfoproc->WriteFlistToFile == 1)
+                        fprintf(fpfscan, "%4d  %20s ", sindex, dir->d_name);
 
                     sprintf(fullname, "/tmp/%s", dir->d_name);
                     retv = lstat (fullname, &buf);
@@ -363,7 +381,7 @@ void *streamCTRL_scan(void* argptr)
                         endwin();
                         printf("File \"%s\"", dir->d_name);
                         perror("Error running lstat on file ");
-                        exit(0);
+                        exit( EXIT_FAILURE );
                     }
 
 
@@ -381,7 +399,11 @@ void *streamCTRL_scan(void* argptr)
                         readlink (fullname, linknamefull, 200-1);
 
                         if(access(linknamefull, R_OK )) // file cannot be read
+                        {
+							if(streaminfoproc->WriteFlistToFile == 1)
+								fprintf(fpfscan, " LINK %s CANNOT BE READ -> off", linknamefull);
                             scanentryOK = 0;
+                        }
                         else
                         {
                             strcpy(linkname, basename(linknamefull));
@@ -413,12 +435,22 @@ void *streamCTRL_scan(void* argptr)
                     {
                         strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
-                    }
+                    
+						if(streaminfoproc->WriteFlistToFile == 1)
+						{
+						if( streaminfo[sindex].SymLink == 1)
+							fprintf(fpfscan, "| %12s -> [ %12s ] ", streaminfo[sindex].sname, streaminfo[sindex].linkname);
+						else
+							fprintf(fpfscan, "| %12s -> [ %12s ] ", streaminfo[sindex].sname, " ");
+						}
+					}
 
 
                     if(scanentryOK == 1)
                     {
-                        ID = image_ID_from_images(images, streaminfo[sindex].sname);
+					
+							ID = image_ID_from_images(images, streaminfo[sindex].sname);
+					
 
                         // connect to stream
                         if(ID == -1)
@@ -446,12 +478,22 @@ void *streamCTRL_scan(void* argptr)
                             sindex++;
                         }
                     }
+                    if(streaminfoproc->WriteFlistToFile == 1)
+                        fprintf(fpfscan, "\n");
                 }
             }
 
             NBsindex = sindex;
         }
         closedir(d);
+
+        if(streaminfoproc->WriteFlistToFile == 1)
+        {
+            fclose(fpfscan);
+        }
+
+        streaminfoproc->WriteFlistToFile = 0;
+
 
         firstIter = 0;
 
@@ -624,7 +666,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
     int SORTING = 0;
     int SORT_TOGGLE = 0;
-    
+
 
 
 
@@ -644,7 +686,7 @@ int_fast8_t streamCTRL_CTRLscreen()
     PIDmax = get_PIDmax();
     PIDname_array = malloc(sizeof(char*)*PIDmax);
 
-
+	streaminfoproc.WriteFlistToFile = 0;
 
     streaminfo = (STREAMINFO*) malloc(sizeof(STREAMINFO)*streamNBID_MAX);
     streaminfoproc.sinfo = streaminfo;
@@ -691,27 +733,27 @@ int_fast8_t streamCTRL_CTRLscreen()
     clear();
 
 
-	// redirect stdout and stderr to /dev/null
-	
-//	int backstdout, newstdout;
-	int backstderr, newstderr;
-	
-/*	fflush(stdout);
-	backstdout = dup(STDERR_FILENO);
-	newstdout = open("/dev/null", O_WRONLY);
-	dup2(newstdout, STDOUT_FILENO);
-	close(newstdout);
-*/
+    // redirect stdout and stderr to /dev/null
+
+    //	int backstdout, newstdout;
+    int backstderr, newstderr;
+
+    /*	fflush(stdout);
+    	backstdout = dup(STDERR_FILENO);
+    	newstdout = open("/dev/null", O_WRONLY);
+    	dup2(newstdout, STDOUT_FILENO);
+    	close(newstdout);
+    */
 
 
-	fflush(stderr);
-	backstderr = dup(STDERR_FILENO);
-	newstderr = open("/dev/null", O_WRONLY);
-	dup2(newstderr, STDERR_FILENO);
-	close(newstderr);
+    fflush(stderr);
+    backstderr = dup(STDERR_FILENO);
+    newstderr = open("/dev/null", O_WRONLY);
+    dup2(newstderr, STDERR_FILENO);
+    close(newstderr);
 
-	
-	
+
+
 
 
 
@@ -727,17 +769,17 @@ int_fast8_t streamCTRL_CTRLscreen()
     char c; // for user input
     int stringindex;
 
-	loopcnt = 0;
+    loopcnt = 0;
     while( loopOK == 1 )
     {
         int pid;
         char command[200];
 
-		if(streaminfoproc.loopcnt == 1)
-		{
+        if(streaminfoproc.loopcnt == 1)
+        {
             SORTING = 2;
             SORT_TOGGLE = 1;
-		}
+        }
 
         //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
 
@@ -747,7 +789,7 @@ int_fast8_t streamCTRL_CTRLscreen()
 
         NBsindex = streaminfoproc.NBstream;
 
-	
+
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
@@ -841,7 +883,9 @@ int_fast8_t streamCTRL_CTRLscreen()
                 streaminfoproc.twaitus = 1000;
             break;
 
-
+        case 'o': // output next scan to file
+            streaminfoproc.WriteFlistToFile = 1;
+            break;
 
         // ============ DISPLAY
 
@@ -916,15 +960,15 @@ int_fast8_t streamCTRL_CTRLscreen()
         }
 
 
-	
-		erase();
+
+        erase();
 
         attron(A_BOLD);
         sprintf(monstring, "STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP");
         print_header(monstring, '-');
         attroff(A_BOLD);
 
-	
+
 
 
         if(DisplayMode == 1) // help
@@ -985,6 +1029,11 @@ int_fast8_t streamCTRL_CTRLscreen()
             printw("    {");
             attroff(attrval);
             printw("    Decrease scan frequency\n");
+
+            attron(attrval);
+            printw("    o");
+            attroff(attrval);
+            printw("    output next scan to file\n");
 
 
             printw("\n");
@@ -1560,14 +1609,14 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     free(streaminfo);
-    
-   	fflush(stderr);
-	dup2(backstderr, STDERR_FILENO);
-	close(backstderr);
 
-/*   	fflush(stdout);
-	dup2(backstdout, STDOUT_FILENO);
-	close(backstdout);*/
+    fflush(stderr);
+    dup2(backstderr, STDERR_FILENO);
+    close(backstderr);
+
+    /*   	fflush(stdout);
+    	dup2(backstdout, STDOUT_FILENO);
+    	close(backstdout);*/
 
     return 0;
 }

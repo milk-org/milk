@@ -109,6 +109,8 @@ typedef struct
 	int filter;           // 1 if applying filter to name
 	char namefilter[STRINGLENMAX];
 	
+	int WriteFlistToFile; // 1 if output to file
+	
 	STREAMINFO *sinfo;
 	long NBstream;
 	int fuserUpdate;
