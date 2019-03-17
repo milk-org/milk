@@ -2280,10 +2280,9 @@ long read_sharedmem_image_size(const char *name, const char *fname)
     long ID;
 
 
-    if((ID=image_ID(name))==-1)
-    {
-		
-		
+	
+    if((ID = image_ID(name))==-1)
+    {		
         sprintf(SM_fname, "%s/%s.im.shm", SHAREDMEMDIR, name);
 
         SM_fd = open(SM_fname, O_RDWR);
@@ -2349,9 +2348,17 @@ long read_sharedmem_image(const char *name)
 	
 	image = &data.image[IDmem];
 	if ( ImageStreamIO_read_sharedmem_image_toIMAGE(name, image) == EXIT_FAILURE )
+	{
+		printf("read shared mem image failed -> ID = -1\n");
+		fflush(stdout); //TEST
 		ID = -1;
+	}
 	else
+	{
 		ID = image_ID(name);
+		printf("read shared mem image success -> ID = %ld\n", ID);
+		fflush(stdout); //TEST		
+	}
 
     if(MEM_MONITOR == 1)
 		list_image_ID_ncurses();
