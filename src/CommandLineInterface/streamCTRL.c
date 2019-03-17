@@ -691,13 +691,24 @@ int_fast8_t streamCTRL_CTRLscreen()
     clear();
 
 
+	// redirect stdout and stderr to /dev/null
+	
+	int backstdout, newstdout;
 	int backstderr, newstderr;
+	
+	fflush(stdout);
+	backstdout = dup(STDERR_FILENO);
+	newstdout = open("/dev/null", O_WRONLY);
+	dup2(newstdout, STDOUT_FILENO);
+	close(newstdout);
+
 	fflush(stderr);
 	backstderr = dup(STDERR_FILENO);
 	newstderr = open("/dev/null", O_WRONLY);
 	dup2(newstderr, STDERR_FILENO);
 	close(newstderr);
 
+	
 	
 
 
@@ -1549,8 +1560,12 @@ int_fast8_t streamCTRL_CTRLscreen()
     free(streaminfo);
     
    	fflush(stderr);
-	dup2(backstderr, 1);
+	dup2(backstderr, STDERR_FILENO);
 	close(backstderr);
+
+   	fflush(stdout);
+	dup2(backstdout, STDOUT_FILENO);
+	close(backstdout);
 
     return 0;
 }
