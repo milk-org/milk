@@ -2220,7 +2220,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
                     fps_symlink[fpsindex] = 1;
                     sprintf(fullname, "/tmp/%s", dir->d_name);
-                    ret = readlink (fullname, linknamefull, 200-1);
+                    ret = readlink (fullname, linknamefull, 200-1);  // todo: replace with realpath()
 
                     strcpy(linkname, basename(linknamefull));
 

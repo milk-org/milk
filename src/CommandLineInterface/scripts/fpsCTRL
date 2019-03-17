@@ -18,7 +18,10 @@ echo "  Connects to <name>.fps.shm shared memory structures"
 echo "  Argument is string match filter to select fps structures"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-hl] <stringfilter>"
+echo "     $0 [-hlm] <stringfilter>"
+echo ""
+echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
+echo "     <stringfilter>                      string filter (optional)"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-h$(tput sgr0)          help"
@@ -59,7 +62,7 @@ done
 
 MODE="0"
 
-while getopts :hlm FLAG; do
+while getopts :hlm: FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -90,11 +93,17 @@ shift $((OPTIND-1))
 ### End getopts code ###
 
 
+NBargInput="$#"
+arg1="$1"
+
+if [ "$#" -eq 0 ]; then
+arg1="_ALL"
+NBargInput="1"
+fi
 
 
 
-
-if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+if [ "$arg1" = "help" ] || [ "$NBargInput" -ne $NBARGS ]; then
 if [ "$#" -ne $NBARGS ]; then
     echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
 fi
@@ -106,6 +115,6 @@ fi
 
 
 SF="fpsctrlstartup"
-echo "fparamCTRL ${MODE} \"$1\"" > $SF
+echo "fparamCTRL ${MODE} \"$arg1\"" > $SF
 echo "exitCLI" >> $SF
 milk -n fpsCTRL -f fpsctrlfifo -s $SF
