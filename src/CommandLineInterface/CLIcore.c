@@ -3,9 +3,6 @@
  * @file CLIcore.c
  * @brief main C file
  * 
- * 
- * @author Olivier Guyon
- * @date Aug 2 2017
  */
 
 
@@ -256,53 +253,92 @@ static int_fast8_t help_command(char *cmdkey);
 
 void sig_handler(int signo)
 {
+	pid_t thisPID;
+	FILE *fpexit;
+	char fname[200];
+	
+	thisPID = getpid();
+	
     switch ( signo ) {
         
         case SIGINT:
-           printf("received SIGINT\n");
+           printf("sig_handler received SIGINT\n");
            data.signal_INT = 1;
         break;
         
         case SIGTERM:
-           printf("received SIGTERM\n");
+			printf("sig_handler received SIGTERM - see file exit.%d.log\n", thisPID);			
+			sprintf(fname, "exit.%d.log", thisPID);
+			fpexit = fopen( fname, "w");
+			if ( fpexit != NULL )
+			{
+				fprintf(fpexit, "SIGTERM %d\n", thisPID);
+				fprintf(fpexit, "Last exec step:\n");
+				fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+				fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+				fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+				fclose(fpexit);
+			}
            data.signal_TERM = 1;
         break;
         
         case SIGUSR1:
-             printf("received SIGUSR1\n");
+             printf("sig_handler received SIGUSR1\n");
            data.signal_USR1 = 1;
         break;
         
         case SIGUSR2:
-             printf("received SIGUSR2\n");
+             printf("sig_handler received SIGUSR2\n");
            data.signal_USR2 = 1;
         break;
         
          case SIGBUS: // exit program after SIGSEGV
-           printf("received SIGBUS -> exit\n");
+            printf("sig_handler received SIGBUS -> exit - see file exit.%d.log\n", thisPID);
+           	sprintf(fname, "exit.%d.log", thisPID);
+			fpexit = fopen( fname, "w");
+			if ( fpexit != NULL )
+			{
+				fprintf(fpexit, "SIGBUS %d\n", thisPID);
+				fprintf(fpexit, "Last exec step:\n");
+				fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+				fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+				fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+				fclose(fpexit);
+			}
            data.signal_BUS = 1;
            exit( EXIT_FAILURE );
         break;
         
         case SIGABRT:
-             printf("received SIGABRT\n");
+             printf("sig_handler received SIGABRT\n");
            data.signal_ABRT = 1;
         break;
         
         case SIGSEGV: // exit program after SIGSEGV
-             if(data.signal_SEGV == 0)
-				printf("received SIGSEGV -> exit\n");
-           data.signal_SEGV = 1;
+//             if(data.signal_SEGV == 0)
+			printf("sig_handler received SIGSEGV -> exit - see file exit.%d.log\n", thisPID);
+           	sprintf(fname, "exit.%d.log", thisPID);
+			fpexit = fopen( fname, "w");
+			if ( fpexit != NULL )
+			{
+				fprintf(fpexit, "SIGSEGV %d\n", thisPID);
+				fprintf(fpexit, "Last exec step:\n");
+				fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+				fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+				fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+				fclose(fpexit);
+			}
+			data.signal_SEGV = 1;
            exit( EXIT_FAILURE );
         break;
         
         case SIGHUP:
-             printf("received SIGHUP\n");
+             printf("sig_handler received SIGHUP\n");
            data.signal_HUP = 1;
         break;
         
          case SIGPIPE:
-             printf("received SIGPIPE\n");
+             printf("sig_handler received SIGPIPE\n");
            data.signal_PIPE = 1;
         break;
    }

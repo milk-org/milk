@@ -11,7 +11,7 @@
  * 
  */
 
-//#define PROCCTRL_LOGDEBUG 1
+#define PROCCTRL_LOGDEBUG 1
 
 static int CTRLscreenExitLine = 0; // for debugging
 
@@ -1142,10 +1142,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 
 	#ifdef PROCCTRL_LOGDEBUG
-	// log for debugging
-	char loglinecmd[500];
-	sprintf(loglinecmd, "echo \"%5d  %s\" >> procCTRL.log", __LINE__, __FUNCTION__);
-	system(loglinecmd);
+	data.execSRCline = __LINE__;
 	#endif
 
 
@@ -1154,9 +1151,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     int PID = pinfodisp->PID;
     
   	#ifdef PROCCTRL_LOGDEBUG
-	// log for debugging
-	sprintf(loglinecmd, "echo \"%5d  %s  %5d\" >> procCTRL.log", __LINE__, __FUNCTION__, PID);
-	system(loglinecmd);
+	data.execSRCline = __LINE__;
 	#endif
     
     clock_gettime(CLOCK_REALTIME, &t1);
@@ -1180,9 +1175,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 
 	#ifdef PROCCTRL_LOGDEBUG
-	// log for debugging
-	sprintf(loglinecmd, "echo \"%5d  %s  %5d   %5d   %20s\" >> procCTRL.log", __LINE__, __FUNCTION__, PID, level, pinfodisp->cpuset);
-	system(loglinecmd);
+	data.execSRCline = __LINE__;
 	#endif
 	
 
@@ -1464,9 +1457,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     
     
     #ifdef PROCCTRL_LOGDEBUG
-	// log for debugging
-	sprintf(loglinecmd, "echo \"%5d  %s            %d  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, level, pinfodisp->NBsubprocesses);
-	system(loglinecmd);
+	data.execSRCline = __LINE__;
     #endif
 
     return 0;
@@ -1638,13 +1629,12 @@ void *processinfo_scan(void *thptr)
     struct timespec tdiff;
 
 
+	pinfop->scanPID = getpid();
+
     while(pinfop->loop == 1)
     {
 		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging
-		char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s  %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pinfop->loopcnt);
-		system(loglinecmd);
+		data.execSRCline = __LINE__;
 		#endif
 	
 		
@@ -1666,7 +1656,23 @@ void *processinfo_scan(void *thptr)
 
 
 
+
+
+		pinfop->SCANBLOCK_requested = 1;  // request scan
+		//system("echo \"scanblock request write 1\" > steplog.sRQw1.txt");//TEST
+
+		while ( pinfop->SCANBLOCK_OK == 0 ) // wait for display to OK scan
+		{
+			//system("echo \"scanblock OK read 0\" > steplog.sOKr0.txt");//TEST
+			usleep(100);
+		}
+		pinfop->SCANBLOCK_requested = 0; // acknowledge that request has been granted
+        //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
+        
+        
         // LOAD / UPDATE process information
+        // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
+        //
 
 
         for(pindex=0; pindex<pinfop->NBpinfodisp; pindex++)
@@ -1724,9 +1730,7 @@ void *processinfo_scan(void *thptr)
 
 
 
-
-
-            if((pindex<pinfop->NBpinfodisp)&&(pinfop->updatearray[pindex] == 1))
+            if( (pindex<pinfop->NBpinfodisp) && (pinfop->updatearray[pindex] == 1) )
             {
                 // (RE)LOAD
                 struct stat file_stat;
@@ -1746,11 +1750,15 @@ void *processinfo_scan(void *thptr)
                 pinfop->fdarray[pindex] = open(SM_fname, O_RDWR);
                 fstat(pinfop->fdarray[pindex], &file_stat);
                 pinfop->pinfoarray[pindex] = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, pinfop->fdarray[pindex], 0);
+
+
+                
                 if (pinfop->pinfoarray[pindex] == MAP_FAILED) {
                     close(pinfop->fdarray[pindex]);
                     endwin();
                     fprintf(stderr, "[%d] Error mapping file %s\n", __LINE__, SM_fname);
                     pinfolist->active[pindex] = 3;
+                    pinfop->pinfommapped[pindex] = 0;
                 }
                 else
                 {
@@ -1771,11 +1779,12 @@ void *processinfo_scan(void *thptr)
                 pinfop->pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
 
                 pinfop->pinfodisp[pindex].updatecnt ++;
+                
+               // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
 
             }
         }
-
-
+        
 
         /** ### Build a time-sorted list of processes
           *
@@ -1817,6 +1826,17 @@ void *processinfo_scan(void *thptr)
         free(timearray);
         free(indexarray);
 
+		
+		pinfop->SCANBLOCK_OK = 0; // let display thread we're done
+		//system("echo \"scanblock OK write 0\" > steplog.sOKw0.txt");//TEST
+
+
+
+
+
+
+
+
 
 
         if(pinfop->DisplayMode == 3)  // only compute of displayed processes
@@ -1827,12 +1847,9 @@ void *processinfo_scan(void *thptr)
             // collect required info for display
             for(pindexdisp=0; pindexdisp < pinfop->NBpinfodisp ; pindexdisp++) 
             {
-						#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging
-		//char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s    %ld/%ld  %d  %d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindexdisp, PROCESSINFOLISTSIZE, pindex, pinfolist->active[pindexdisp], pinfop->pinfodisp[pindexdisp].NBsubprocesses);
-		system(loglinecmd);
-		#endif
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+				#endif
 				
                 if(pinfolist->active[pindexdisp] != 0)
                 {
@@ -1913,10 +1930,7 @@ void *processinfo_scan(void *thptr)
 
 
 		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging
-		//char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s    %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pinfop->loopcnt);
-		system(loglinecmd);
+		data.execSRCline = __LINE__;
 		#endif
 		
 
@@ -1959,7 +1973,7 @@ void processinfo_CTRLscreen_atexit()
  *
  */
 
-int_fast8_t processinfo_CTRLscreen()
+errno_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
@@ -1999,6 +2013,10 @@ int_fast8_t processinfo_CTRLscreen()
 
     int ToggleValue;
 
+	#ifdef PROCCTRL_LOGDEBUG
+	sprintf(data.execSRCfunc, "%s", __FUNCTION__); // for debugging and profiling
+	data.execSRCline = __LINE__;
+	#endif
 
     processinfo_CatchSignals();
 
@@ -2062,6 +2080,8 @@ int_fast8_t processinfo_CTRLscreen()
     procinfoproc.loop = 1;
     procinfoproc.twaitus = 1000000; // 1 sec
 	
+	procinfoproc.SCANBLOCK_requested = 0;
+	procinfoproc.SCANBLOCK_OK = 0;
 	
 	pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
@@ -2069,6 +2089,7 @@ int_fast8_t processinfo_CTRLscreen()
 
 
     // wait for first scan to be completed
+    procinfoproc.SCANBLOCK_OK = 1;
     while( procinfoproc.loopcnt < 1 )
     {
 		//printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
@@ -2094,6 +2115,29 @@ int_fast8_t processinfo_CTRLscreen()
         int pid;
         char command[200];
 
+		#ifdef PROCCTRL_LOGDEBUG
+		data.execSRCline = __LINE__;
+		#endif
+
+		if(procinfoproc.SCANBLOCK_requested == 1)
+		{
+			//system("echo \"scanblock request read 1\" > steplog.dQRr1.txt");//TEST
+			
+			procinfoproc.SCANBLOCK_OK = 1;  // issue OK to scan thread
+			//system("echo \"scanblock OK write 1\" > steplog.dOKw1.txt");//TEST
+			
+			// wait for scan thread to have completed scan
+			while ( procinfoproc.SCANBLOCK_OK == 1 )
+			{
+				//system("echo \"scanblock OK read 1\" > steplog.dOKr1.txt");//TEST
+				usleep(100);
+			}
+			//system("echo \"scanblock OK read 0\" > steplog.dOKr0.txt");//TEST
+		}
+//		else
+//			system("echo \"scanblock request read 0\" > steplog.dQRr0.txt");//TEST
+
+
         usleep((long) (1000000.0/frequ));
         int ch = getch();
 
@@ -2107,6 +2151,10 @@ int_fast8_t processinfo_CTRLscreen()
         scantime_CPUload = 0.0;
         scantime_CPUpcnt = 0.0;
 
+		#ifdef PROCCTRL_LOGDEBUG
+		data.execSRCline = __LINE__;
+		#endif
+		
 
         if(freeze==0)
         {
@@ -2532,7 +2580,9 @@ int_fast8_t processinfo_CTRLscreen()
             break;
 
 
-
+		#ifdef PROCCTRL_LOGDEBUG
+		data.execSRCline = __LINE__;
+		#endif
 
 
         // ============ SCREENS
@@ -2617,8 +2667,10 @@ int_fast8_t processinfo_CTRLscreen()
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
-
-
+		#ifdef PROCCTRL_LOGDEBUG
+		data.execSRCline = __LINE__;
+        #endif
+        
         if(freeze==0)
         {
             erase();
@@ -2840,8 +2892,11 @@ int_fast8_t processinfo_CTRLscreen()
             }
             else
             {
-
-                printw("%2d cpus   %2d processes tracked    Display Mode %d\n", procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+                #endif
+                
+                printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
                 if(procinfoproc.DisplayMode==1)
                 {
@@ -2916,10 +2971,16 @@ int_fast8_t processinfo_CTRLscreen()
 
                 printw("\n");
 
-
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+				#endif
 
                 printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 
+
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+				#endif
 
                 if(procinfoproc.pinfommapped[pindexSelected] == 1)
                 {
@@ -2942,8 +3003,9 @@ int_fast8_t processinfo_CTRLscreen()
 
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
-
-
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+				#endif
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
@@ -2966,7 +3028,9 @@ int_fast8_t processinfo_CTRLscreen()
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
-
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+				#endif
 
                 if(procinfoproc.DisplayMode == 3)
                 {
@@ -2989,13 +3053,10 @@ int_fast8_t processinfo_CTRLscreen()
                     int CPUpcntLim2 = 4;
                     int CPUpcntLim3 = 8;
 
+					#ifdef PROCCTRL_LOGDEBUG
+					data.execSRCline = __LINE__;
+					#endif
 
-		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging
-		char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s\" >> procCTRL.log", __LINE__,  __FUNCTION__);
-		system(loglinecmd);
-		#endif
 		
 
                     // List CPUs
@@ -3054,7 +3115,9 @@ int_fast8_t processinfo_CTRLscreen()
                     printw("\n");
 
 
-
+					#ifdef PROCCTRL_LOGDEBUG
+					data.execSRCline = __LINE__;
+					#endif
 
 
                     // Print CPU LOAD
@@ -3113,16 +3176,12 @@ int_fast8_t processinfo_CTRLscreen()
 					printw("\n");
 				}
 
-
+				#ifdef PROCCTRL_LOGDEBUG
+				data.execSRCline = __LINE__;
+				#endif
 
                 clock_gettime(CLOCK_REALTIME, &t05loop);
-                
-		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging
-		char loglinecmd[500];
-		sprintf(loglinecmd, "echo \"%5d  %s\" >> procCTRL.log", __LINE__,  __FUNCTION__);
-		system(loglinecmd);
-		#endif
+
 
                 // ===========================================================================
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
@@ -3136,7 +3195,11 @@ int_fast8_t processinfo_CTRLscreen()
                         pindex = procinfoproc.sorted_pindex_time[dispindex];
 
                     if(pindex<procinfoproc.NBpinfodisp)
-                    {
+                    {						
+						#ifdef PROCCTRL_LOGDEBUG
+						data.execSRCline = __LINE__;
+						sprintf(data.execSRCmessage, "%d %d   %d %d", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+						#endif
 
                         if(pindex == pindexSelected)
                             attron(A_REVERSE);
@@ -3147,6 +3210,11 @@ int_fast8_t processinfo_CTRLscreen()
                             printw(" ");
 
 
+						#ifdef PROCCTRL_LOGDEBUG
+						data.execSRCline = __LINE__;
+						sprintf(data.execSRCmessage, "procinfoproc.selectedarray[pindex] = %d", procinfoproc.selectedarray[pindex]);
+						#endif
+
 
                         if(pinfolist->active[pindex] == 1)
                         {
@@ -3154,6 +3222,11 @@ int_fast8_t processinfo_CTRLscreen()
                             printw("  ACTIVE");
                             attroff(COLOR_PAIR(2));
                         }
+
+						#ifdef PROCCTRL_LOGDEBUG
+						data.execSRCline = __LINE__;
+						sprintf(data.execSRCmessage, "pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
+						#endif
 
                         if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
                         {
@@ -3172,6 +3245,10 @@ int_fast8_t processinfo_CTRLscreen()
                         }
                         
                         
+						#ifdef PROCCTRL_LOGDEBUG
+						data.execSRCline = __LINE__;
+						sprintf(data.execSRCmessage, "%d %d   %d %d", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+						#endif
                         
 
 
@@ -3267,11 +3344,7 @@ int_fast8_t processinfo_CTRLscreen()
                                 int cpu;
 
 
-		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex);
-		system(loglinecmd);
-		#endif
+
 
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
@@ -3280,23 +3353,13 @@ int_fast8_t processinfo_CTRLscreen()
                                 }
                                 else
                                 {
-		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex);
-		system(loglinecmd);
-		#endif
+
 
                                     int spindex; // sub process index, 0 for main
                                     for(spindex = 0; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
                                     {
                                         int TID; // thread ID
 
-
-		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld  spindex %d/%d\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex, spindex, procinfoproc.pinfodisp[pindex].NBsubprocesses);
-		system(loglinecmd);
-		#endif
 
 
                                         if(spindex>0)
@@ -3446,11 +3509,7 @@ int_fast8_t processinfo_CTRLscreen()
 
                                         printw("\n");
 
-		#ifdef PROCCTRL_LOGDEBUG
-		// log for debugging	
-		sprintf(loglinecmd, "echo \"%5d  %s   disp3  pindex %ld\" >> procCTRL.log", __LINE__,  __FUNCTION__, pindex);
-		system(loglinecmd);
-		#endif
+
 
 
 
@@ -3622,6 +3681,10 @@ int_fast8_t processinfo_CTRLscreen()
             clock_gettime(CLOCK_REALTIME, &t06loop);
 
 
+			#ifdef PROCCTRL_LOGDEBUG
+			data.execSRCline = __LINE__;
+			#endif
+
             clock_gettime(CLOCK_REALTIME, &t07loop);
 
             cnt++;
@@ -3656,21 +3719,21 @@ int_fast8_t processinfo_CTRLscreen()
 	
 #ifndef STANDALONE
     if ( Xexit == 1 ) // normal exit
-        printf("User typed x -> exiting\n");
+        printf("[%4d] User typed x -> exiting\n", __LINE__);
     else if (data.signal_TERM == 1 )
-		printf("Received signal TERM\n");
+		printf("[%4d] Received signal TERM\n", __LINE__);
     else if (data.signal_INT == 1 )
-		printf("Received signal INT\n");
+		printf("[%4d] Received signal INT\n", __LINE__);
     else if (data.signal_ABRT == 1 )
-		printf("Received signal ABRT\n");
+		printf("[%4d] Received signal ABRT\n", __LINE__);
     else if (data.signal_BUS == 1 )
-		printf("Received signal BUS\n");
+		printf("[%4d] Received signal BUS\n", __LINE__);
     else if (data.signal_SEGV == 1 )
-		printf("Received signal SEGV\n");
+		printf("[%4d] Received signal SEGV\n", __LINE__);
     else if (data.signal_HUP == 1 )
-		printf("Received signal HUP\n");
+		printf("[%4d] Received signal HUP\n", __LINE__);
     else if (data.signal_PIPE == 1 )
-		printf("Received signal PIPE\n");
+		printf("[%4d] Received signal PIPE\n", __LINE__);
 #endif
 		
 		
@@ -3696,5 +3759,5 @@ int_fast8_t processinfo_CTRLscreen()
 
     free(procinfoproc.pinfodisp);
 
-    return 0;
+    return RETURN_SUCESS;
 }

@@ -166,7 +166,7 @@ void *streamCTRL_scan(void* thptr);
  *
  */
 
-int_fast8_t streamCTRL_CTRLscreen();
+errno_t streamCTRL_CTRLscreen();
 
 
 long image_ID_from_images(IMAGE* images, const char *name);
