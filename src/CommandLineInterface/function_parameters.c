@@ -1287,7 +1287,6 @@ static int initncurses()
 {
     if ( initscr() == NULL ) {
         fprintf(stderr, "Error initialising ncurses.\n");
-        printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);	
         exit(EXIT_FAILURE);
     }
     getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
@@ -1296,11 +1295,11 @@ static int initncurses()
     nodelay(stdscr, TRUE);
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
+	nonl();             // Do not translates newline into return and line-feed on output
 
-
-    start_color();
 
     init_color(COLOR_GREEN, 400, 1000, 400);
+    start_color();
 
     //  colored background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
@@ -1308,12 +1307,11 @@ static int initncurses()
     init_pair(3, COLOR_BLACK, COLOR_YELLOW); // parameter out of sync
     init_pair(4, COLOR_WHITE, COLOR_RED);
     init_pair(5, COLOR_WHITE, COLOR_BLUE); // DIRECTORY
-    init_pair(9, COLOR_BLACK, COLOR_RED);
-    init_pair(10, COLOR_BLACK, COLOR_CYAN);
-
     init_pair(6, COLOR_GREEN, COLOR_BLACK);
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
     init_pair(8, COLOR_RED, COLOR_BLACK);
+    init_pair(9, COLOR_BLACK, COLOR_RED);
+    init_pair(10, COLOR_BLACK, COLOR_CYAN);
 
     return 0;
 }
