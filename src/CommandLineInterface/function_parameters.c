@@ -2032,7 +2032,7 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
 
 void functionparameter_CTRLscreen_atexit()
 {
-	endwin();
+//	endwin();
 }
 
 
@@ -2207,7 +2207,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                     perror("Error running lstat on file ");
                     printf("STEP %s %d\n", __FILE__, __LINE__);
                     fflush(stdout);
-                    exit(0);
+                    exit( EXIT_FAILURE );
                 }
 
                 if (S_ISLNK(buf.st_mode)) // resolve link name
@@ -3225,8 +3225,10 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
     {
         function_parameter_struct_disconnect(&fps[fpsindex]);
     }
-    //    printf("STEP %s %d\n", __FILE__, __LINE__);
-    //    fflush(stdout);
+
+
+
+
 
     return 0;
 }
