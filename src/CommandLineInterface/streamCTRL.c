@@ -118,16 +118,11 @@ static int initncurses()
     nodelay(stdscr, TRUE);
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
-
-	nonl();
-
+	nonl();             // Do not translates newline into return and line-feed on output
 
     init_color(COLOR_GREEN, 700, 1000, 700);
     init_color(COLOR_YELLOW, 1000, 1000, 700);
-
     start_color();
-
-
 
     //  colored background
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
@@ -135,17 +130,13 @@ static int initncurses()
     init_pair(3, COLOR_BLACK, COLOR_YELLOW);
     init_pair(4, COLOR_WHITE, COLOR_RED);
     init_pair(5, COLOR_WHITE, COLOR_BLUE);
-
     init_pair(6, COLOR_GREEN, COLOR_BLACK);
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
     init_pair(8, COLOR_RED, COLOR_BLACK);
     init_pair(9, COLOR_BLACK, COLOR_RED);
 
-
     return 0;
 }
-
-
 
 
 
@@ -698,6 +689,19 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     clear();
+
+
+	int backstderr, newstderr;
+	fflush(stderr);
+	backstderr = dup(STDERR_FILENO);
+	newstderr = open("/dev/null", O_WRONLY);
+	dup2(newstderr, STDERR_FILENO);
+	close(newstderr);
+
+	
+
+
+
 
 
     // Start scan thread
@@ -1543,6 +1547,10 @@ int_fast8_t streamCTRL_CTRLscreen()
 
 
     free(streaminfo);
+    
+   	fflush(stderr);
+	dup2(backstderr, 1);
+	close(backstderr);
 
     return 0;
 }
