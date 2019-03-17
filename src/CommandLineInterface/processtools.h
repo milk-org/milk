@@ -40,7 +40,9 @@
 #define PROCESSINFO_NBtimer 100
 
 
-
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
 
 
 
@@ -201,6 +203,11 @@ typedef struct
 	
 	int twaitus; // sleep time between scans
 	double dtscan; // measured time interval between scans [s]
+	pid_t scanPID;
+	
+	// ensure list of process and mmap operation blocks display
+	int SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
+	int SCANBLOCK_OK;         // display thread toggles to 1 to let scan know it can proceed
 		
 	PROCESSINFOLIST *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
 
@@ -281,7 +288,7 @@ int processinfo_CatchSignals();
 int processinfo_ProcessSignals(PROCESSINFO *processinfo);
 
 
-int_fast8_t processinfo_CTRLscreen();
+errno_t processinfo_CTRLscreen();
 
 #ifdef __cplusplus
 }

@@ -643,7 +643,7 @@ void *streamCTRL_scan(void* argptr)
  *
  */
 
-int_fast8_t streamCTRL_CTRLscreen()
+errno_t streamCTRL_CTRLscreen()
 {
     // Display fields
     STREAMINFO *streaminfo;
@@ -1619,5 +1619,5 @@ int_fast8_t streamCTRL_CTRLscreen()
     	dup2(backstdout, STDOUT_FILENO);
     	close(backstdout);*/
 
-    return 0;
+    return RETURN_SUCESS;
 }

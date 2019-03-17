@@ -201,7 +201,7 @@ typedef struct
 
 
 
-int function_parameter_struct_create(
+errno_t function_parameter_struct_create(
     int NBparam,
     const char *name
 )
@@ -299,7 +299,7 @@ int function_parameter_struct_create(
     munmap(fps.md, sharedsize);
 
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -2044,7 +2044,7 @@ void functionparameter_CTRLscreen_atexit()
  *
  *
  */
-int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
+errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 {
     // function parameter structure(s)
     int NBfps;
@@ -2091,7 +2091,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
     FILE *fpinputcmd;
 
 
-	
+
 
 
 
@@ -3230,7 +3230,7 @@ int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
 
 
-    return 0;
+    return RETURN_SUCESS;
 }
 
 

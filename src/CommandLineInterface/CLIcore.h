@@ -4,8 +4,6 @@
  * 
  * Command line interface (CLI) definitions and function prototypes
  * 
- * @author  O. Guyon
- * @date    9 Jul 2017
  *
  * @bug No known bugs. 
  * 
@@ -19,6 +17,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -32,6 +31,13 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "processtools.h"
+
+
+
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
 
 
 #define PI 3.14159265358979323846264338328
@@ -209,6 +215,13 @@ typedef struct
     int signal_HUP;
     int signal_PIPE;
     
+    // can be used to trace program execution for runtime profiling and debugging
+    // todo: move to shared mem
+    int  execSRCline;
+    char execSRCfunc[200];
+    char execSRCmessage[500];
+    
+    
     int progStatus;  // main program status
     // 0: before automatic loading of shared objects
     // 1: after automatic loading of shared objects
@@ -296,8 +309,12 @@ extern DATA data;
 
 
 
-
-
+// *************************** FUNCTION RETURN VALUE *********************************************
+// For function returning type errno_t (= int) 
+//
+#define RETURN_SUCESS        0 
+#define RETURN_FAILURE       1   // generic error code
+#define RETURN_MISSINGFILE   2  
 
 
 
@@ -333,9 +350,9 @@ int processinfo_exec_start(PROCESSINFO *processinfo);
 int processinfo_exec_end(PROCESSINFO *processinfo);
 
 
-int_fast8_t processinfo_CTRLscreen();
+errno_t processinfo_CTRLscreen();
 
-int_fast8_t streamCTRL_CTRLscreen();
+errno_t streamCTRL_CTRLscreen();
 
 
 
@@ -549,7 +566,7 @@ typedef struct {
 
 
 
-int function_parameter_struct_create(int NBparam, const char *name);
+errno_t function_parameter_struct_create(int NBparam, const char *name);
 long function_parameter_struct_connect(const char *name, FUNCTION_PARAMETER_STRUCT *fps);
 int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
@@ -585,6 +602,6 @@ uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 
-int_fast8_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname);
+errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname);
 
 #endif
