@@ -4,9 +4,6 @@
  * 
  * Functions to handle images and streams
  *  
- * @author  O. Guyon
- * @date    9 Sept 2017
- *
  * 
  * @bug No known bugs.
  * 
@@ -1705,7 +1702,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
             remove(fname);
 
 
-            sprintf(command, "rm %s/%s.im.shm", SHAREDMEMDIR, imname);
+            sprintf(command, "rm %s/%s.im.shm", data.tmpfsdir, imname);
             r = system(command);
         }
         else
@@ -2283,7 +2280,7 @@ long read_sharedmem_image_size(const char *name, const char *fname)
 	
     if((ID = image_ID(name))==-1)
     {		
-        sprintf(SM_fname, "%s/%s.im.shm", SHAREDMEMDIR, name);
+        sprintf(SM_fname, "%s/%s.im.shm", data.tmpfsdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
         if(SM_fd==-1)
@@ -2350,14 +2347,14 @@ long read_sharedmem_image(const char *name)
 	if ( ImageStreamIO_read_sharedmem_image_toIMAGE(name, image) == EXIT_FAILURE )
 	{
 		printf("read shared mem image failed -> ID = -1\n");
-		fflush(stdout); //TEST
+		fflush(stdout); 
 		ID = -1;
 	}
 	else
 	{
 		ID = image_ID(name);
 		printf("read shared mem image success -> ID = %ld\n", ID);
-		fflush(stdout); //TEST		
+		fflush(stdout); 		
 	}
 
     if(MEM_MONITOR == 1)
@@ -7603,7 +7600,7 @@ LOGSHIM_CONF* COREMOD_MEMORY_logshim_create_SHMconf(const char *logshimname)
 
     sharedsize = sizeof(LOGSHIM_CONF);
 
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", SHAREDMEMDIR, logshimname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, logshimname);
     
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (SM_fd == -1) {
@@ -7655,7 +7652,7 @@ int_fast8_t COREMOD_MEMORY_logshim_printstatus(const char *IDname)
     struct stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", SHAREDMEMDIR, IDname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, IDname);
     printf("Importing mmap file \"%s\"\n",SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -7716,7 +7713,7 @@ int_fast8_t COREMOD_MEMORY_logshim_set_on(const char *IDname, int setv)
     struct stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", SHAREDMEMDIR, IDname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, IDname);
     printf("Importing mmap file \"%s\"\n",SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -7760,7 +7757,7 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
     struct stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", SHAREDMEMDIR, IDname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, IDname);
     printf("Importing mmap file \"%s\"\n",SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
