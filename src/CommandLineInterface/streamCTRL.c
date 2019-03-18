@@ -738,18 +738,22 @@ errno_t streamCTRL_CTRLscreen()
 
     // redirect stderr to /dev/null
 
-    int backstderr, newstderr;
+    int backstderr; 
+    int newstderr;
+    char newstderrfname[200];
+
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
-    newstderr = open("/dev/null", O_WRONLY);
+    sprintf(newstderrfname, "%s/stderr.cli.%d.txt", data.tmpfsdir, CLIPID);
+    
+    newstderr = open(newstderrfname, O_WRONLY | O_CREAT, 0644);
     dup2(newstderr, STDERR_FILENO);
     close(newstderr);
 
 
 
 	
-
 
 
 
