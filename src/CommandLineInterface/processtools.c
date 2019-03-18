@@ -163,7 +163,7 @@ long processinfo_shm_list_create()
     char  SM_fname[200];
 	long pindex = 0;
 
-    sprintf(SM_fname, "%s/processinfo.list.shm", SHAREDMEMDIR);
+    sprintf(SM_fname, "%s/processinfo.list.shm", data.tmpfsdir);
 
 
     /*
@@ -278,7 +278,7 @@ PROCESSINFO* processinfo_shm_create(
     
     
     
-    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) PID);    
+    sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) PID);    
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (SM_fd == -1) {
         perror("Error opening file for writing");
@@ -379,7 +379,7 @@ PROCESSINFO* processinfo_shm_create(
 	
     clock_gettime(CLOCK_REALTIME, &tnow);
  
-	sprintf(pinfo->logfilename, "/tmp/proc.%s.%06d.%09ld.logfile", pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+	sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.tmpfsdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
 	
 
@@ -1087,7 +1087,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
         FILE * fpout;
 
 
-        sprintf(command, "CORENUM=%d; cat _psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
+        sprintf(command, "CORENUM=%d; cat /milktmp/_psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
         fpout = popen (command, "r");
         if(fpout==NULL)
         {
@@ -1104,7 +1104,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
 
     //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
 
-    sprintf(command, "{ if [ ! -f _psOKlock ]; then touch _psOKlock; ps -e -o pid,psr,cpu,cmd > _psoutput.txt; fi; rm _psOKlock &> /dev/null; } &");
+    sprintf(command, "{ if [ ! -f /milktmp/_psOKlock ]; then touch /milktmp/_psOKlock; ps -e -o /milktmp/pid,psr,cpu,cmd > /milktmp/_psoutput.txt; fi; rm /milktmp/_psOKlock &> /dev/null; } &");
     if(system(command) != 0)
 		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 
@@ -1704,7 +1704,7 @@ void *processinfo_scan(void *thptr)
 
             // check if process info file exists
 
-            sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+            sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
 
             // Does file exist ?
             if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
@@ -2056,7 +2056,20 @@ errno_t processinfo_CTRLscreen()
     initncurses();
 	//atexit( processinfo_CTRLscreen_atexit );
 
+
+    clear();
+    
+    // redirect stderr to /dev/null
+
+    int backstderr, newstderr;
+
+    fflush(stderr);
+    backstderr = dup(STDERR_FILENO);
+    newstderr = open("/dev/null", O_WRONLY);
+    dup2(newstderr, STDERR_FILENO);
+    close(newstderr);
 	
+
 	
 	
     procinfoproc.NBpinfodisp = wrow-5;
@@ -2307,7 +2320,7 @@ errno_t processinfo_CTRLscreen()
                     if(pinfolist->active[pindex]!=1)
                     {
                         char SM_fname[200];
-                        sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                        sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
                         remove(SM_fname);
                     }
                 }
@@ -2318,7 +2331,7 @@ errno_t processinfo_CTRLscreen()
                 if(pinfolist->active[pindex]!=1)
                 {
                     char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
@@ -2331,7 +2344,7 @@ errno_t processinfo_CTRLscreen()
                 if(pinfolist->active[pindex]!=1)
                 {
                     char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDMEMDIR, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
@@ -3758,6 +3771,12 @@ errno_t processinfo_CTRLscreen()
     pthread_join(threadscan, NULL);
 
     free(procinfoproc.pinfodisp);
+
+
+    fflush(stderr);
+    dup2(backstderr, STDERR_FILENO);
+    close(backstderr);
+
 
     return RETURN_SUCESS;
 }

@@ -1050,8 +1050,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
     CLIPID = getpid();
     
-    printf("PID = %d\n", (int) CLIPID);
-    sprintf(command, "cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
+    printf("    PID = %d\n", (int) CLIPID);
+    sprintf(command, "echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
     if(system(command)!=0)
 		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
 
@@ -1146,16 +1146,61 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
 
 
-	printf("_SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
+
+	
+	
+	// tmp directory to be used
+	char tmpdirname[200];
+	char* CLI_TMP_DIR = getenv("CLI_TMP_DIR");
+    if(CLI_TMP_DIR != NULL){
+        printf(" [ CLI_TMP_DIR ] '%s'\n", CLI_TMP_DIR);
+		sprintf(tmpdirname, "%s", CLI_TMP_DIR);
+	}
+	else
+		sprintf(tmpdirname, "/mtmpfs"); // default
+
+
+	DIR* tmpfsdir = opendir(tmpdirname); 
+	// check if directory exists
+	if (tmpfsdir)
+	{
+		/* Directory exists. */
+		sprintf(data.tmpfsdir, "%s", tmpdirname);
+		closedir(tmpfsdir);
+		printf("    Using %s as temporary directory  (set with CLI_TMP_DIR env variable)\n", data.tmpfsdir);		
+	}
+	else if (ENOENT == errno) // directory does not exist
+	{
+		printf("    Directory %s does not exist\n", tmpdirname);
+		sprintf(data.tmpfsdir, "/tmp");
+		/* Directory does not exist. */
+		printf("    -> using %s as temporary directory   (set with CLI_TMP_DIR env variable)\n", data.tmpfsdir);
+		printf("    NOTE: Consider creating tmpfs directory /mtmpfs for improved performance :\n");
+		printf("        $ echo \"tmpfs \/mtmpfs tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n");
+		printf("        $ sudo mkdir \/mtmpfs\n");
+		printf("        $ sudo mount \/mtmpfs\n");
+	}
+	else
+	{
+		/* opendir() failed for some other reason. */
+		exit(EXIT_FAILURE);
+	}
+	
+
+
+
+
+
+//	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
 # ifdef _OPENMP
-    printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
+    printf("    Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # else
-	printf("        Compiled without openMP\n");
+	printf("    Compiled without openMP\n");
 # endif
 
 # ifdef _OPENACC
 	int openACC_devtype = acc_get_device_type();
-    printf("        Running with openACC version %d.  %d device(s), type %d\n", _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
+    printf("    Running with openACC version %d.  %d device(s), type %d\n", _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
 # endif
 
 
@@ -1182,16 +1227,16 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-
+	printf("\n");
 
 	// LOAD MODULES
 	load_module_shared_ALL();
 
 	// load other libs specified by environment variable CLI_ADD_LIBS
-    char* CLI_ADD_LIBS=getenv("CLI_ADD_LIBS");
-    if(CLI_ADD_LIBS!=NULL)
+    char* CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
+    if(CLI_ADD_LIBS != NULL)
     {
-        //printf("CLI_ADD_LIBS='%s'\n", CLI_ADD_LIBS);
+        printf(" [ CLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
 
         char * libname;
         char * fname;
@@ -1204,6 +1249,8 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         }
         printf("\n");
     }
+    else
+		printf(" [ CLI_ADD_LIBS ] not set\n");
 
 
 
