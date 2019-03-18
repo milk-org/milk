@@ -339,7 +339,7 @@ void *streamCTRL_scan(void* argptr)
         }
 
 
-        d = opendir("/tmp/");
+        d = opendir(data.tmpfsdir);
         if(d)
         {
             sindex = 0;
@@ -375,7 +375,7 @@ void *streamCTRL_scan(void* argptr)
                     if(streaminfoproc->WriteFlistToFile == 1)
                         fprintf(fpfscan, "%4d  %20s ", sindex, dir->d_name);
 
-                    sprintf(fullname, "/tmp/%s", dir->d_name);
+                    sprintf(fullname, "%s/%s", data.tmpfsdir, dir->d_name);
                     retv = lstat (fullname, &buf);
                     if (retv == -1 ) {
                         endwin();
@@ -395,7 +395,7 @@ void *streamCTRL_scan(void* argptr)
 
 
                         streaminfo[sindex].SymLink = 1;
-                        sprintf(fullname, "/tmp/%s", dir->d_name);
+                        sprintf(fullname, "%s/%s", data.tmpfsdir, dir->d_name);
 //                        readlink (fullname, linknamefull, 200-1);
                         linknamefull = realpath( fullname, NULL);
 
@@ -525,7 +525,7 @@ void *streamCTRL_scan(void* argptr)
                 if(PReadMode == 0)
                 {
                     // popen option
-                    sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null", streaminfo[sindexscan1].sname);
+                    sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null", data.tmpfsdir, streaminfo[sindexscan1].sname);
                     fp = popen(command, "r");
                     if (fp == NULL) {
                         streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
@@ -545,8 +545,8 @@ void *streamCTRL_scan(void* argptr)
                     char plistfname[2000];
 
 
-                    sprintf(plistfname, "/tmp/%s.shmplist", streaminfo[sindexscan1].sname);
-                    sprintf(command, "/bin/fuser /tmp/%s.im.shm 2>/dev/null > %s", streaminfo[sindexscan1].sname, plistfname);
+                    sprintf(plistfname, "%s/%s.shmplist", data.tmpfsdir, streaminfo[sindexscan1].sname);
+                    sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null > %s", data.tmpfsdir, streaminfo[sindexscan1].sname, plistfname);
                     system(command);
 
                     fp = fopen(plistfname, "r");
@@ -684,6 +684,14 @@ errno_t streamCTRL_CTRLscreen()
     char **PIDname_array;
     int PIDmax;
 
+
+	printf("starting CTRLscreen ...\n");
+	fflush(stdout);
+	
+	sleep(2);
+
+
+
     PIDmax = get_PIDmax();
     PIDname_array = malloc(sizeof(char*)*PIDmax);
 
@@ -734,18 +742,9 @@ errno_t streamCTRL_CTRLscreen()
     clear();
 
 
-    // redirect stdout and stderr to /dev/null
+    // redirect stderr to /dev/null
 
-    //	int backstdout, newstdout;
     int backstderr, newstderr;
-
-    /*	fflush(stdout);
-    	backstdout = dup(STDERR_FILENO);
-    	newstdout = open("/dev/null", O_WRONLY);
-    	dup2(newstdout, STDOUT_FILENO);
-    	close(newstdout);
-    */
-
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
@@ -1615,9 +1614,7 @@ errno_t streamCTRL_CTRLscreen()
     dup2(backstderr, STDERR_FILENO);
     close(backstderr);
 
-    /*   	fflush(stdout);
-    	dup2(backstdout, STDOUT_FILENO);
-    	close(backstdout);*/
+
 
     return RETURN_SUCESS;
 }

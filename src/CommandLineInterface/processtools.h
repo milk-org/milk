@@ -4,9 +4,6 @@
  *
  * Command line interface (CLI) definitions and function prototypes
  *
- * @author  O. Guyon
- * @date    9 Jul 2017
- *
  * @bug No known bugs.
  *
  */
@@ -30,9 +27,6 @@
 
 #define PROCESSINFOLISTSIZE 10000
 
-#ifndef SHAREDMEMDIR
-#define SHAREDMEMDIR "/tmp" /**< location of file mapped semaphores */
-#endif
 
 #define MAXNBSUBPROCESS 50
 #define MAXNBCPU 100
