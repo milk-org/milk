@@ -685,12 +685,6 @@ errno_t streamCTRL_CTRLscreen()
     int PIDmax;
 
 
-	printf("starting CTRLscreen ...\n");
-	fflush(stdout);
-	
-	sleep(2);
-
-
 
     PIDmax = get_PIDmax();
     PIDname_array = malloc(sizeof(char*)*PIDmax);
@@ -743,7 +737,7 @@ errno_t streamCTRL_CTRLscreen()
 
 
     // redirect stderr to /dev/null
-/*
+
     int backstderr, newstderr;
 
     fflush(stderr);
@@ -751,10 +745,10 @@ errno_t streamCTRL_CTRLscreen()
     newstderr = open("/dev/null", O_WRONLY);
     dup2(newstderr, STDERR_FILENO);
     close(newstderr);
-*/
 
 
 
+	
 
 
 
@@ -789,7 +783,7 @@ errno_t streamCTRL_CTRLscreen()
 
         NBsindex = streaminfoproc.NBstream;
 
-
+		
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch (ch)
@@ -1609,12 +1603,12 @@ errno_t streamCTRL_CTRLscreen()
 
 
     free(streaminfo);
-/*
+
     fflush(stderr);
     dup2(backstderr, STDERR_FILENO);
     close(backstderr);
 
-*/
+
 
     return RETURN_SUCESS;
 }
