@@ -1149,43 +1149,82 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 	
 	
-	// tmp directory to be used
-	char tmpdirname[200];
-	char* CLI_TMP_DIR = getenv("CLI_TMP_DIR");
-    if(CLI_TMP_DIR != NULL){
-        printf(" [ CLI_TMP_DIR ] '%s'\n", CLI_TMP_DIR);
-		sprintf(tmpdirname, "%s", CLI_TMP_DIR);
-	}
-	else
-		sprintf(tmpdirname, "/mtmpfs"); // default
+	// SHM directory to store shared memory
+	//
+	// If MILK_SHM_DIR environment variable exists, use it
+	// If fails -> use SHAREDMEMDIR defined in ImageStruct.h
+	// If fails -> use /tmp
+	//
+	char shmdirname[200];
+	int shmdirOK = 0; // toggles to 1 when directory is found
+	DIR *tmpdir;
 
-
-	DIR* tmpfsdir = opendir(tmpdirname); 
-	// check if directory exists
-	if (tmpfsdir)
-	{
-		/* Directory exists. */
-		sprintf(data.tmpfsdir, "%s", tmpdirname);
-		closedir(tmpfsdir);
-		printf("    Using %s as temporary directory  (set with CLI_TMP_DIR env variable)\n", data.tmpfsdir);		
-	}
-	else if (ENOENT == errno) // directory does not exist
-	{
-		printf("    Directory %s does not exist\n", tmpdirname);
-		sprintf(data.tmpfsdir, "/tmp");
-		/* Directory does not exist. */
-		printf("    -> using %s as temporary directory   (set with CLI_TMP_DIR env variable)\n", data.tmpfsdir);
-		printf("    NOTE: Consider creating tmpfs directory /mtmpfs for improved performance :\n");
-		printf("        $ echo \"tmpfs \/mtmpfs tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n");
-		printf("        $ sudo mkdir \/mtmpfs\n");
-		printf("        $ sudo mount \/mtmpfs\n");
+	// first, we try the env variable if it exists
+	char* MILK_SHM_DIR = getenv("MILK_SHM_DIR");
+    if(MILK_SHM_DIR != NULL){
+        printf(" [ MILK_SHM_DIR ] '%s'\n", MILK_SHM_DIR);
+		sprintf(shmdirname, "%s", MILK_SHM_DIR);
+		
+		// does this direcory exist ?
+		tmpdir = opendir(shmdirname);
+		if(tmpdir) // directory exits
+		{			
+			shmdirOK = 1;
+			closedir(tmpdir);
+			printf("    Using SHM directory %s\n", shmdirname);
+		}
+		else
+			printf("    Directory %s : %s\n", shmdirname, strerror(errno));
 	}
 	else
 	{
-		/* opendir() failed for some other reason. */
-		exit(EXIT_FAILURE);
+		printf("Note: User can specify SHM directory with env variable MILK_SHM_DIR\n");
 	}
 	
+	// second, we try SHAREDMEMDIR default
+	if(shmdirOK == 0)
+	{
+		tmpdir = opendir(SHAREDMEMDIR);
+		if(tmpdir) // directory exits
+		{
+			sprintf(shmdirname, "%s", SHAREDMEMDIR);
+			shmdirOK = 1;
+			closedir(tmpdir);
+			printf("    Using SHM directory %s\n", shmdirname);
+		}
+		else
+			printf("    Directory %s : %s\n", shmdirname, strerror(errno));
+	}
+	
+	// if all above fails, set to /tmp
+	if(shmdirOK == 0)
+	{
+		tmpdir = opendir("/tmp");
+		if ( !tmpdir )
+		{
+			printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			sprintf(shmdirname, "/tmp");
+			shmdirOK = 1;
+			printf("    Using SHM directory %s\n", shmdirname);
+					
+			printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
+			printf("        $ echo \"tmpfs \/mtmpfs tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n");
+			printf("        $ sudo mkdir \/mtmpfs\n");
+			printf("        $ sudo mount \/mtmpfs\n");
+		}
+	}
+	
+	sprintf(data.shmdir, shmdirname);
+		
+	
+
+
+
+
 
 
 

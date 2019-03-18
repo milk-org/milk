@@ -217,7 +217,7 @@ errno_t function_parameter_struct_create(
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
 
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.tmpfsdir, name);
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.shmdir, name);
     remove(SM_fname);
 
     printf("Creating file %s\n", SM_fname);
@@ -318,7 +318,7 @@ long function_parameter_struct_connect(
     int NBparam;
     char *mapv;
 
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.tmpfsdir, name);
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.shmdir, name);
     printf("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd==-1)
@@ -2157,7 +2157,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
     struct dirent *dir;
 
 
-    d = opendir(data.tmpfsdir);
+    d = opendir(data.shmdir);
     if(d)
     {
         fpsindex = 0;
@@ -2199,7 +2199,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                 int retv;
                 char fullname[200];
 
-                sprintf(fullname, "%s/%s", data.tmpfsdir, dir->d_name);
+                sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
                 retv = lstat (fullname, &buf);
                 if (retv == -1 ) {
                     endwin();
@@ -2219,7 +2219,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                     int ret;
 
                     fps_symlink[fpsindex] = 1;
-                    sprintf(fullname, "%s/%s", data.tmpfsdir, dir->d_name);
+                    sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
                     ret = readlink (fullname, linknamefull, 200-1);  // todo: replace with realpath()
 
                     strcpy(linkname, basename(linknamefull));
@@ -2365,7 +2365,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
     }
     else
     {
-        printf("ERROR: missing %s directory\n", data.tmpfsdir);
+        printf("ERROR: missing %s directory\n", data.shmdir);
         printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);

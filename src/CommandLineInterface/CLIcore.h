@@ -202,7 +202,7 @@ typedef struct
 	char configdir[100];
 	char sourcedir[100];
 	
-	char tmpfsdir[100];
+	char shmdir[100];
 	
     struct sigaction sigact; 
     // signals toggle flags

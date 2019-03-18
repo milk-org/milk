@@ -163,7 +163,7 @@ long processinfo_shm_list_create()
     char  SM_fname[200];
 	long pindex = 0;
 
-    sprintf(SM_fname, "%s/processinfo.list.shm", data.tmpfsdir);
+    sprintf(SM_fname, "%s/processinfo.list.shm", data.shmdir);
 
 
     /*
@@ -278,7 +278,7 @@ PROCESSINFO* processinfo_shm_create(
     
     
     
-    sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) PID);    
+    sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) PID);    
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (SM_fd == -1) {
         perror("Error opening file for writing");
@@ -379,7 +379,7 @@ PROCESSINFO* processinfo_shm_create(
 	
     clock_gettime(CLOCK_REALTIME, &tnow);
  
-	sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.tmpfsdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+	sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.shmdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 	pinfo->logFile = fopen(pinfo->logfilename, "w");
 	
 
@@ -1704,7 +1704,7 @@ void *processinfo_scan(void *thptr)
 
             // check if process info file exists
 
-            sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
+            sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
 
             // Does file exist ?
             if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
@@ -2320,7 +2320,7 @@ errno_t processinfo_CTRLscreen()
                     if(pinfolist->active[pindex]!=1)
                     {
                         char SM_fname[200];
-                        sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
+                        sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
                         remove(SM_fname);
                     }
                 }
@@ -2331,7 +2331,7 @@ errno_t processinfo_CTRLscreen()
                 if(pinfolist->active[pindex]!=1)
                 {
                     char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
@@ -2344,7 +2344,7 @@ errno_t processinfo_CTRLscreen()
                 if(pinfolist->active[pindex]!=1)
                 {
                     char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%06d.shm", data.tmpfsdir, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
