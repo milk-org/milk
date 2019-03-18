@@ -1614,5 +1614,5 @@ errno_t streamCTRL_CTRLscreen()
 
 
 
-    return RETURN_SUCESS;
+    return RETURN_SUCCESS;
 }

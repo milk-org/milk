@@ -3230,7 +3230,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 
 
 
-    return RETURN_SUCESS;
+    return RETURN_SUCCESS;
 }
 
 

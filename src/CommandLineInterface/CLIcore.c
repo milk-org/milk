@@ -1178,7 +1178,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 	}
 	else
 	{
-		printf("Note: User can specify SHM directory with env variable MILK_SHM_DIR\n");
+		printf("    Note: User can specify SHM directory with env variable MILK_SHM_DIR\n");
 	}
 	
 	// second, we try SHAREDMEMDIR default
@@ -1193,7 +1193,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 			printf("    Using SHM directory %s\n", shmdirname);
 		}
 		else
-			printf("    Directory %s : %s\n", shmdirname, strerror(errno));
+			printf("    Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
 	}
 	
 	// if all above fails, set to /tmp
@@ -1212,17 +1212,22 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 			printf("    Using SHM directory %s\n", shmdirname);
 					
 			printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
-			printf("        $ echo \"tmpfs \/mtmpfs tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n");
-			printf("        $ sudo mkdir \/mtmpfs\n");
-			printf("        $ sudo mount \/mtmpfs\n");
+			printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n", SHAREDMEMDIR);
+			printf("        $ sudo mkdir %s\n", SHAREDMEMDIR);
+			printf("        $ sudo mount %s\n", SHAREDMEMDIR);
 		}
 	}
 	
 	sprintf(data.shmdir, shmdirname);
 		
+	// change / to . and write to shmsemdirname
+	int stri;	
+	for(stri=0; stri<strlen(shmdirname); stri++)
+		if(shmdirname[stri] == '/') // replace '/' by '.'
+			shmdirname[stri] = '.';
 	
-
-
+	sprintf(data.shmsemdirname, shmdirname);
+	
 
 
 

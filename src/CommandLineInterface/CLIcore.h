@@ -203,6 +203,7 @@ typedef struct
 	char sourcedir[100];
 	
 	char shmdir[100];
+	char shmsemdirname[100]; // same ad above with .s instead of /s
 	
     struct sigaction sigact; 
     // signals toggle flags
@@ -313,7 +314,7 @@ extern DATA data;
 // *************************** FUNCTION RETURN VALUE *********************************************
 // For function returning type errno_t (= int) 
 //
-#define RETURN_SUCESS        0 
+#define RETURN_SUCCESS        0 
 #define RETURN_FAILURE       1   // generic error code
 #define RETURN_MISSINGFILE   2  
 
