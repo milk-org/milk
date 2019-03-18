@@ -1702,7 +1702,7 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
             remove(fname);
 
 
-            sprintf(command, "rm %s/%s.im.shm", data.tmpfsdir, imname);
+            sprintf(command, "rm %s/%s.im.shm", data.shmdir, imname);
             r = system(command);
         }
         else
@@ -2280,7 +2280,7 @@ long read_sharedmem_image_size(const char *name, const char *fname)
 	
     if((ID = image_ID(name))==-1)
     {		
-        sprintf(SM_fname, "%s/%s.im.shm", data.tmpfsdir, name);
+        sprintf(SM_fname, "%s/%s.im.shm", data.shmdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
         if(SM_fd==-1)
@@ -7600,7 +7600,7 @@ LOGSHIM_CONF* COREMOD_MEMORY_logshim_create_SHMconf(const char *logshimname)
 
     sharedsize = sizeof(LOGSHIM_CONF);
 
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, logshimname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, logshimname);
     
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (SM_fd == -1) {
@@ -7652,7 +7652,7 @@ int_fast8_t COREMOD_MEMORY_logshim_printstatus(const char *IDname)
     struct stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, IDname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
     printf("Importing mmap file \"%s\"\n",SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -7713,7 +7713,7 @@ int_fast8_t COREMOD_MEMORY_logshim_set_on(const char *IDname, int setv)
     struct stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, IDname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
     printf("Importing mmap file \"%s\"\n",SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -7757,7 +7757,7 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
     struct stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.tmpfsdir, IDname);
+    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
     printf("Importing mmap file \"%s\"\n",SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -7790,20 +7790,7 @@ int_fast8_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
 }
 
 
-/*
- 7079  Setting cube start time [index 0]
-sem_timedwait [index 10]: The call was interrupted by a signal handler
-sem_timedwait [index 10]: The call was interrupted by a signal handler
-sem_timedwait() timed out (5 sec) -> save (10)
- 6991  sem time elapsed -> Save current cube [index 10]
- 7154  Save image   [index  10]  [timeout 1] [zsize 100000]
- 7165  Building file name: ascii
- 7174  Building file name: fits
- 7202  PARTIAL CUBE
-   Number of missed frames =      -10  /       10  /   100000
- 7241  Starting thread
 
-*/
 
 
 /** logs a shared memory stream onto disk
