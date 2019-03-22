@@ -30,7 +30,7 @@ Steps to run FPS-enabled processes:
 
 ## 1.1. Main elements
 
-A FPS-enabled function will have the following elements:
+FPS-enabled functions have the following elements:
 - The shared memory FPS: /tmp/<fpsname>.fps.shm
 - A configuration process that manages the FPS entries
 - A run process (the function itself)
@@ -134,7 +134,7 @@ The command code is a string, and will determine the action to be executed:
 Example source code below, assuming one optional long type argument:
 
 ~~~~{.c}
-int_fast8_t MyFunction_cli()
+errno_t MyFunction_cli()
 {
     char fpsname[200];
 
@@ -155,39 +155,39 @@ int_fast8_t MyFunction_cli()
         {
             printf("Function parameters configure\n");
             MyFunction_FPCONF( fpsname, CMDCODE_CONFINIT, OptionalArg00);
-            return EXIT_SUCCESS;
+            return RETURN_SUCCESS;
         }
 
         if( strcmp(data.cmdargtoken[1].val.string,"_CONFSTART_") == 0 )   // Start conf process
         {
             printf("Function parameters configure\n");
             MyFunction_FPCONF( fpsname, CMDCODE_CONFSTART, OptionalArg00);
-            return EXIT_SUCCESS;
+            return RETURN_SUCCESS;
         }
 
         if( strcmp(data.cmdargtoken[1].val.string,"_CONFSTOP_") == 0 )  // Stop conf process
         {
             printf("Function parameters configure\n");
             MyFunction_FPCONF( fpsname, CMDCODE_CONFSTOP, OptionalArg00);
-            return EXIT_SUCCESS;
+            return RETURN_SUCCESS;
         }
 
         if( strcmp(data.cmdargtoken[1].val.string,"_RUNSTART_") == 0 )  // Run process
         {
             printf("Run function\n");
             MyFunction_RUN( fpsname );
-            return EXIT_SUCCESS;
+            return RETURN_SUCCESS;
         }
 
         if( strcmp(data.cmdargtoken[1].val.string,"_RUNSTOP_") == 0 )  // Run process
         {
             printf("Run function\n");
             MyFunction_Stop( OptionalArg00 );
-            return EXIT_SUCCESS;
+            return RETURN_SUCCESS;
         }
 	}
 	else
-		return EXIT_FAILURE;
+		return RETURN_FAILURE;
 	
 }
 ~~~~
@@ -202,8 +202,8 @@ int_fast8_t MyFunction_cli()
 
 
 ~~~~{.c}
-int MyFunction_FPCONF(char *fpsname, uint32_t CMDmode, long optarg00);
-int MyFunction_RUN(char *fpsname);
+errno_t MyFunction_FPCONF(char *fpsname, uint32_t CMDmode, long optarg00);
+errno_t MyFunction_RUN(char *fpsname);
 ~~~~ 
 
 
@@ -219,7 +219,7 @@ int MyFunction_RUN(char *fpsname);
 // manages configuration parameters
 // initializes configuration parameters structure
 //
-int MyFunction_FPCONF(
+errno_t MyFunction_FPCONF(
     char *fpsname,
     uint32_t CMDmode,
     long optarg00
@@ -308,7 +308,7 @@ int MyFunction_FPCONF(
 
 	function_parameter_FPCONFexit( &fps );
 
-    return EXIT_SUCCESS;
+    return RETURN_SUCCESS;
 }
 ~~~~	
 
@@ -332,7 +332,7 @@ The RUN function will connect to the FPS and execute the run loop.
 //
 // run loop process
 //
-int MyFunction_RUN(
+errno_t MyFunction_RUN(
     char *fpsname
 )
 {
@@ -388,7 +388,7 @@ int MyFunction_RUN(
 		// This can use a separate share memory path
 	}
 
-	return EXIT_SUCCESS;
+	return RETURN_SUCCESS;
 }
 ~~~~
 
@@ -408,7 +408,7 @@ The example also shows using FPS to set the process realtime priority.
 //
 // run loop process
 //
-int MyFunction_RUN(
+errno_t MyFunction_RUN(
     char *fpsname
 )
 {
@@ -568,7 +568,7 @@ int MyFunction_RUN(
 
 
 
-	return EXIT_SUCCESS;
+	return RETURN_SUCCESS;
 }
 ~~~~
 
