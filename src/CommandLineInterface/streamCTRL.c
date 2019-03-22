@@ -184,7 +184,7 @@ long image_get_first_ID_available_from_images(IMAGE* images)
       i++;
     } while(i != streamNBID_MAX);
     printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
-    printf("NB_MAX_IMAGE should be increased above current value (%ld)\n", streamNBID_MAX);
+    printf("NB_MAX_IMAGE should be increased above current value (%d)\n", streamNBID_MAX);
     return -1;
 }
 
@@ -373,7 +373,7 @@ void *streamCTRL_scan(void* argptr)
 
 
                     if(streaminfoproc->WriteFlistToFile == 1)
-                        fprintf(fpfscan, "%4d  %20s ", sindex, dir->d_name);
+                        fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
 
                     sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
                     retv = lstat (fullname, &buf);
@@ -547,7 +547,11 @@ void *streamCTRL_scan(void* argptr)
 
                     sprintf(plistfname, "%s/%s.shmplist", data.shmdir, streaminfo[sindexscan1].sname);
                     sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null > %s", data.shmdir, streaminfo[sindexscan1].sname, plistfname);
-                    system(command);
+                    if( system(command) == -1)
+                    {
+						perror("Command system() failed");
+						exit( EXIT_FAILURE );
+					}
 
                     fp = fopen(plistfname, "r");
                     if (fp == NULL) {

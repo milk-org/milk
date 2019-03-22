@@ -1227,7 +1227,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 			shmdirname[stri] = '.';
 	
 	sprintf(data.shmsemdirname, shmdirname);
-	
+	printf("semaphore naming : sname_semXX");
 
 
 

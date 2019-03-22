@@ -1290,12 +1290,24 @@ static int initncurses()
         exit(EXIT_FAILURE);
     }
     getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-    cbreak();
-    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
+
+    cbreak();  
+    // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected), 
+    // making characters typed by the user immediately available to the program
+    
+    keypad(stdscr, TRUE);		
+    // enable F1, F2 etc..	
+        
     nodelay(stdscr, TRUE);
     curs_set(0);
-    noecho();			/* Don't echo() while we do getch */
-	nonl();             // Do not translates newline into return and line-feed on output
+
+    noecho();			
+    // Don't echo() while we do getch
+    
+    
+    
+	//nonl();             
+	// Do not translates newline into return and line-feed on output
 
 
     init_color(COLOR_GREEN, 400, 1000, 400);
@@ -2032,6 +2044,8 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
 
 void functionparameter_CTRLscreen_atexit()
 {
+//	printf("exiting CTRLscreen\n");
+	
 //	endwin();
 }
 
@@ -2091,7 +2105,27 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
     FILE *fpinputcmd;
 
 
+	// catch signals for clean exit
+    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
 
+    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");
+
+    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");
+
+    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+
+    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");
+
+    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");
+
+    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");
 
 
 
@@ -2450,10 +2484,13 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
             printf("\n");
             printf("  Arrow keys     NAVIGATE\n");
             printf("  ENTER          Select parameter to read/set\n");
+            printf("  SPACE          Toggle on/off\n");
             printf("\n");
             printf("  R/r            start/stop run process\n");
             printf("  C/c            start/stop config process\n");
             printf("  l              list all entries\n");
+            printf("  P               (P)rocess input file \"confscript\"\n");
+            printf("                          format: setval <paramfulname> <value>\n");
             printf("\n");
             printf("  (x)            Exit\n");
             printf("\n");
@@ -2506,7 +2543,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
             }
             break;
 
-        case 10 :
+        case 10 : // enter key
             if( keywnode[nodeSelected].leaf == 1 ) // this is a leaf
             {
                 endwin();
@@ -2627,6 +2664,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
         case 'P': // process input command file
             endwin();
             system("clear");
+            printf("Reading file confscript\n");
             fpinputcmd = fopen("confscript", "r");
             if(fpinputcmd != NULL)
             {
@@ -2642,6 +2680,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                     char * pch;
                     int nbword = 0;
 
+					printf("Processing line : %s\n", FPScmdline);
                     pch = strtok (FPScmdline, " \t");
                     
                     sprintf( FPScommand, "%s", pch);
@@ -2669,6 +2708,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                     if( (nbword>2) && (FPScommand[0] != '#') )
                     {
                         // look for entry
+                        printf("Looking for entry for %s\n", FPSentryname);
+                        
+                        
                         int kwnindex = -1;
                         int kwnindexscan = 0;
                         while( (kwnindex==-1) && (kwnindexscan<NBkwn))
@@ -3087,7 +3129,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
                             printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
                             if(paramsync == 0)
-                                attroff(COLOR_PAIR(3));
+								attroff(COLOR_PAIR(3));
                         }
 
 
@@ -3217,7 +3259,10 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
         loopcnt++;
 
         if( (data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1))
+        {
+			printf("Exit condition met\n");
             loopOK = 0;
+		}
     }
     endwin();
 

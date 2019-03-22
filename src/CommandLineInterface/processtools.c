@@ -3211,7 +3211,7 @@ errno_t processinfo_CTRLscreen()
                     {						
 						#ifdef PROCCTRL_LOGDEBUG
 						data.execSRCline = __LINE__;
-						sprintf(data.execSRCmessage, "%d %d   %d %d", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+						sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
 						#endif
 
                         if(pindex == pindexSelected)
@@ -3260,7 +3260,7 @@ errno_t processinfo_CTRLscreen()
                         
 						#ifdef PROCCTRL_LOGDEBUG
 						data.execSRCline = __LINE__;
-						sprintf(data.execSRCmessage, "%d %d   %d %d", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+						sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
 						#endif
                         
 
