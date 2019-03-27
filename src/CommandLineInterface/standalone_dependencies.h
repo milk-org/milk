@@ -26,6 +26,9 @@
 // #include <sys/types.h>
 // #include <unistd.h>
 
+#define SHAREDPROCDIR    "/milk/proc"          /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
+#define CLIPID    0          /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
+
 #include <time.h>
 #include <errno.h>
 #include "ImageStreamIO.h"
