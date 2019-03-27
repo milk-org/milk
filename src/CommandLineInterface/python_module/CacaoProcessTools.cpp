@@ -1,4 +1,7 @@
-#include <wyrm>
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include "standalone_dependencies.h"
 #include "processtools.h"
 #include "streamCTRL.h"

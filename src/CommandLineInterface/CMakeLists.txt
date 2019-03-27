@@ -1,8 +1,17 @@
 cmake_minimum_required (VERSION 3.8)
+
+option(python_build "Compile Python Wrappers" OFF)
+
+if(python_build)
+  include("cmake/HunterGate.cmake")
+  huntergate(URL
+             "https://github.com/ruslo/hunter/archive/v0.23.126.tar.gz"
+             SHA1
+             "ccaf37e820cb54d6a5c02993c7f389b9861fc38e")
+endif()
+
 project (CLIcore C)
  
-option(python_build "PYTHON_STANDALONE mode" OFF)
-
 if(${python_build})
     set(CORE_FILES standalone_dependencies.c)
 else()
@@ -48,9 +57,9 @@ ${CORE_FILES}
 
 if(${python_build})
     set(USE_CUDA ON)
-    add_subdirectory(../ImageStreamIO ImageStreamIO)
+    add_subdirectory($ENV{KRAKEN_ROOT}/tplib/ImageStreamIO ImageStreamIO)
     target_compile_definitions(CLIcore PRIVATE STANDALONE)
-    target_include_directories(CLIcore PUBLIC ${CUDA_INCLUDE_DIRS} ../ImageStreamIO)
+    target_include_directories(CLIcore PUBLIC ${CUDA_INCLUDE_DIRS} $ENV{KRAKEN_ROOT}/tplib/ImageStreamIO)
     target_link_libraries (CLIcore PUBLIC ImageStreamIO)
 else()
     target_include_directories(CLIcore PUBLIC

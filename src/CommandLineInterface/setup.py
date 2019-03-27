@@ -43,7 +43,7 @@ class CMakeBuildExt(build_ext):
                 '-DPYTHON_EXECUTABLE=' + sys.executable
         ]
 
-        cfg = 'Debug' #if self.debug else 'Release'
+        cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
         if platform.system() == "Windows":
@@ -54,8 +54,23 @@ class CMakeBuildExt(build_ext):
                 cmake_args += ['-A', 'x64']
             build_args += ['--', '/m']
         else:
-            cmake_args += ['-DPYTHON_STANDALONE=ON', '-DCMAKE_BUILD_TYPE=' + cfg]
+            cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j4']
+
+        if "CUDA_ROOT" in os.environ:
+            if os.path.isfile('{}/bin/gcc'.format(os.environ["CUDA_ROOT"])):
+                cmake_args += [
+                    '-DCMAKE_C_COMPILER={}/bin/gcc'.format(
+                        os.environ["CUDA_ROOT"])
+                ]
+            if os.path.isfile('{}/bin/g++'.format(os.environ["CUDA_ROOT"])):
+                cmake_args += [
+                    '-DCMAKE_CXX_COMPILER={}/bin/g++'.format(
+                        os.environ["CUDA_ROOT"])
+                ]
+            cmake_args += ['-DUSE_CUDA=ON']
+
+        cmake_args += ['-Dpython_build=ON']
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
