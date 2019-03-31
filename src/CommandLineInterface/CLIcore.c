@@ -1173,11 +1173,16 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
             closedir(tmpdir);
             printf("    Using SHM directory %s\n", shmdirname);
         } else {
-            printf("    Directory %s : %s\n", shmdirname, strerror(errno));
+			printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
+            printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
+			printf("%c[%d;m", (char) 27, 0); // unset color red
+            exit(EXIT_FAILURE);
         }
     } else {
 		printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
-        printf("    WARNING: environment variable MILK_SHM_DIR not specified -> falling back to default %s\n", SHAREDMEMDIR);
+        printf("    WARNING: Environment variable MILK_SHM_DIR not specified -> falling back to default %s\n", SHAREDMEMDIR);
+        printf("    BEWARE : Other milk users may be using the same SHM directory on this machine, and could see your milk session data and temporary files\n");
+        printf("    BEWARE : Some scripts may rely on MILK_SHM_DIR to find/access shared memory and temporary files, and WILL not run.\n");
         printf("             Please set MILK_SHM_DIR and restart CLI to set up user-specific shared memory and temporary files\n");
         printf("             Example: Add \"export MILK_SHM_DIR=/milk/shm\" to .bashrc\n");
         printf("%c[%d;m", (char) 27, 0); // unset color red
@@ -1215,6 +1220,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
     }
 
     sprintf(data.shmdir, shmdirname);
+
 
     // change / to . and write to shmsemdirname
     int stri;
