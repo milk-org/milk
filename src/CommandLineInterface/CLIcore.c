@@ -935,12 +935,11 @@ int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
 
 
 
-uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CLIfptr)(), char *CLIinfo, char *CLIsyntax, char *CLIexample, char *CLICcall)
-{
+uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CLIfptr)(), char *CLIinfo, char *CLIsyntax, char *CLIexample, char *CLICcall) {
 
 //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
 
-	strcpy(data.cmd[data.NBcmd].key, CLIkey);
+    strcpy(data.cmd[data.NBcmd].key, CLIkey);
     strcpy(data.cmd[data.NBcmd].module, CLImodule);
     data.cmd[data.NBcmd].fp = CLIfptr;
     strcpy(data.cmd[data.NBcmd].info, CLIinfo);
@@ -949,7 +948,7 @@ uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CL
     strcpy(data.cmd[data.NBcmd].Ccall, CLICcall);
     data.NBcmd++;
 
-	return(data.NBcmd);
+    return(data.NBcmd);
 }
 
 
@@ -988,12 +987,11 @@ void fnExit_fifoclose()
  */
 
 
-int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
-{
+int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
     long i, j;
-    int quiet=0;
+    int quiet = 0;
     long tmplong;
-    const gsl_rng_type * rndgenType;
+    const gsl_rng_type *rndgenType;
 
     char prompt[200];
     char str[200];
@@ -1010,7 +1008,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     struct stat st;
     FILE *fpclififo;
     char buf[100];
-    int c=0;
+    int c = 0;
     int fdmax;
     int n;
 
@@ -1023,17 +1021,17 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
     int blockCLIinput = 0;
     int CLIinit1 = 0;
-    int cliwaitus=100;
+    int cliwaitus = 100;
     struct timeval tv;   // sleep 100 us after reading FIFO
 
-	int atexitfifoclose = 0;
-	
-	
-		
+    int atexitfifoclose = 0;
+
+
+
     strcpy(data.processname, argv[0]);
 
 
-	// NOTE: change to function call to ImageStreamIO_typename
+    // NOTE: change to function call to ImageStreamIO_typename
     TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
     TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
     TYPESIZE[_DATATYPE_UINT16]                 = SIZEOF_DATATYPE_UINT16;
@@ -1049,17 +1047,18 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 //    TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
     CLIPID = getpid();
-    
+
     printf("    PID = %d\n", (int) CLIPID);
     sprintf(command, "echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
-    if(system(command)!=0)
-		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
 
-	
+
 
     atexit(fnExit1);
 
-	data.progStatus = 0;
+    data.progStatus = 0;
 
     data.Debug = 0;
     data.overwrite = 0;
@@ -1070,9 +1069,9 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
     data.CLIlogON = 0;     // log every command
     data.fifoON = 1;
-	data.processinfo = 1;  // process info for intensive processes
-	data.processinfoActive = 0; // toggles to 1 when process is logged
-    
+    data.processinfo = 1;  // process info for intensive processes
+    data.processinfoActive = 0; // toggles to 1 when process is logged
+
     // signal handling
 
     data.sigact.sa_handler = sig_handler;
@@ -1092,10 +1091,12 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
     // if (signal(SIGINT, sig_handler) == SIG_ERR)
     //   printf("\ncan't catch SIGINT\n");
-    if (sigaction(SIGUSR1, &data.sigact, NULL) == -1)
+    if(sigaction(SIGUSR1, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGUSR1\n");
-    if (sigaction(SIGUSR2, &data.sigact, NULL) == -1)
+    }
+    if(sigaction(SIGUSR2, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGUSR2\n");
+    }
 
 
 
@@ -1104,7 +1105,7 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     // owner=root mode=4755
 
 #ifndef __MACH__
-	getresuid(&data.ruid, &data.euid, &data.suid);
+    getresuid(&data.ruid, &data.euid, &data.suid);
     //This sets it to the privileges of the normal user
     r = seteuid(data.ruid);
 #endif
@@ -1113,11 +1114,11 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     // initialize readline
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
-    rl_initialize ();
+    rl_initialize();
 
-	
+
     // Get command-line options
-    command_line( argc, argv );
+    command_line(argc, argv);
 
     // initialize fifo to process name
     /*if(data.fifoON==1)
@@ -1127,107 +1128,102 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     */
 
     //
-    if( Verbose ) {
-        fprintf(stdout, "%s: compiled %s %s\n",__FILE__,__DATE__,__TIME__);        
+    if(Verbose) {
+        fprintf(stdout, "%s: compiled %s %s\n", __FILE__, __DATE__, __TIME__);
     }
 
 
 
     //    sprintf(promptname, "%s", data.processname);
-    
-    if(strlen(promptstring)>0)
-    {
-		if(data.processnameflag==0)
-			sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, promptstring, 0x1B, 0);
-		else	
-			sprintf(prompt,"%c[%d;%dm%s-%s >%c[%dm ",0x1B, 1, 36, promptstring, data.processname, 0x1B, 0);
-	}
-    else
-		sprintf(prompt,"%c[%d;%dm%s >%c[%dm ",0x1B, 1, 36, data.processname, 0x1B, 0);
+
+    if(strlen(promptstring) > 0) {
+        if(data.processnameflag == 0) {
+            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, promptstring, 0x1B, 0);
+        } else {
+            sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, 36, promptstring, data.processname, 0x1B, 0);
+        }
+    } else {
+        sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, data.processname, 0x1B, 0);
+    }
 
 
 
-	
-	
-	// SHM directory to store shared memory
-	//
-	// If MILK_SHM_DIR environment variable exists, use it
-	// If fails -> use SHAREDMEMDIR defined in ImageStruct.h
-	// If fails -> use /tmp
-	//
-	char shmdirname[200];
-	int shmdirOK = 0; // toggles to 1 when directory is found
-	DIR *tmpdir;
 
-	// first, we try the env variable if it exists
-	char* MILK_SHM_DIR = getenv("MILK_SHM_DIR");
-    if(MILK_SHM_DIR != NULL){
+
+    // SHM directory to store shared memory
+    //
+    // If MILK_SHM_DIR environment variable exists, use it
+    // If fails, print warning, use SHAREDMEMDIR defined in ImageStruct.h
+    // If fails -> use /tmp
+    //
+    char shmdirname[200];
+    int shmdirOK = 0; // toggles to 1 when directory is found
+    DIR *tmpdir;
+
+    // first, we try the env variable if it exists
+    char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");
+    if(MILK_SHM_DIR != NULL) {
         printf(" [ MILK_SHM_DIR ] '%s'\n", MILK_SHM_DIR);
-		sprintf(shmdirname, "%s", MILK_SHM_DIR);
-		
-		// does this direcory exist ?
-		tmpdir = opendir(shmdirname);
-		if(tmpdir) // directory exits
-		{			
-			shmdirOK = 1;
-			closedir(tmpdir);
-			printf("    Using SHM directory %s\n", shmdirname);
-		}
-		else
-			printf("    Directory %s : %s\n", shmdirname, strerror(errno));
-	}
-	else
-	{
-		printf("    Note: User can specify SHM directory with env variable MILK_SHM_DIR\n");
-	}
-	
-	// second, we try SHAREDMEMDIR default
-	if(shmdirOK == 0)
-	{
-		tmpdir = opendir(SHAREDMEMDIR);
-		if(tmpdir) // directory exits
-		{
-			sprintf(shmdirname, "%s", SHAREDMEMDIR);
-			shmdirOK = 1;
-			closedir(tmpdir);
-			printf("    Using SHM directory %s\n", shmdirname);
-		}
-		else
-			printf("    Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
-	}
-	
-	// if all above fails, set to /tmp
-	if(shmdirOK == 0)
-	{
-		tmpdir = opendir("/tmp");
-		if ( !tmpdir )
-		{
-			printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		else
-		{
-			sprintf(shmdirname, "/tmp");
-			shmdirOK = 1;
-			printf("    Using SHM directory %s\n", shmdirname);
-					
-			printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
-			printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n", SHAREDMEMDIR);
-			printf("        $ sudo mkdir %s\n", SHAREDMEMDIR);
-			printf("        $ sudo mount %s\n", SHAREDMEMDIR);
-		}
-	}
-	
-	sprintf(data.shmdir, shmdirname);
-		
-	// change / to . and write to shmsemdirname
-	int stri;	
-	for(stri=0; stri<strlen(shmdirname); stri++)
-		if(shmdirname[stri] == '/') // replace '/' by '.'
-			shmdirname[stri] = '.';
-	
-	sprintf(data.shmsemdirname, shmdirname);
-	printf("semaphore naming : sname_semXX");
+        sprintf(shmdirname, "%s", MILK_SHM_DIR);
+
+        // does this direcory exist ?
+        tmpdir = opendir(shmdirname);
+        if(tmpdir) { // directory exits
+            shmdirOK = 1;
+            closedir(tmpdir);
+            printf("    Using SHM directory %s\n", shmdirname);
+        } else {
+            printf("    Directory %s : %s\n", shmdirname, strerror(errno));
+        }
+    } else {
+		printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
+        printf("    WARNING: environment variable MILK_SHM_DIR not specified -> falling back to default %s\n", SHAREDMEMDIR);
+        printf("             Please set MILK_SHM_DIR and restart CLI to set up user-specific shared memory and temporary files\n");
+        printf("%c[%d;m", (char) 27, 0); // unset color red
+    }
+
+    // second, we try SHAREDMEMDIR default
+    if(shmdirOK == 0) {
+        tmpdir = opendir(SHAREDMEMDIR);
+        if(tmpdir) { // directory exits
+            sprintf(shmdirname, "%s", SHAREDMEMDIR);
+            shmdirOK = 1;
+            closedir(tmpdir);
+            printf("    Using SHM directory %s\n", shmdirname);
+        } else {
+            printf("    Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
+        }
+    }
+
+    // if all above fails, set to /tmp
+    if(shmdirOK == 0) {
+        tmpdir = opendir("/tmp");
+        if(!tmpdir) {
+            printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
+            exit(EXIT_FAILURE);
+        } else {
+            sprintf(shmdirname, "/tmp");
+            shmdirOK = 1;
+            printf("    Using SHM directory %s\n", shmdirname);
+
+            printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
+            printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n", SHAREDMEMDIR);
+            printf("        $ sudo mkdir %s\n", SHAREDMEMDIR);
+            printf("        $ sudo mount %s\n", SHAREDMEMDIR);
+        }
+    }
+
+    sprintf(data.shmdir, shmdirname);
+
+    // change / to . and write to shmsemdirname
+    int stri;
+    for(stri = 0; stri < strlen(shmdirname); stri++)
+        if(shmdirname[stri] == '/') { // replace '/' by '.'
+            shmdirname[stri] = '.';
+        }
+
+    sprintf(data.shmsemdirname, shmdirname);
+    printf("semaphore naming : sname_semXX");
 
 
 
@@ -1239,11 +1235,11 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 # ifdef _OPENMP
     printf("    Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n", omp_get_max_threads());
 # else
-	printf("    Compiled without openMP\n");
+    printf("    Compiled without openMP\n");
 # endif
 
 # ifdef _OPENACC
-	int openACC_devtype = acc_get_device_type();
+    int openACC_devtype = acc_get_device_type();
     printf("    Running with openACC version %d.  %d device(s), type %d\n", _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
 # endif
 
@@ -1259,42 +1255,41 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
     //rndgenType = gsl_rng_ranlxs2; // best algorithm but slow
     //rndgenType = gsl_rng_ranlxs0; // not quite as good, slower
     rndgenType = gsl_rng_rand; // not as good but ~10x faster fast
-    data.rndgen = gsl_rng_alloc (rndgenType);
-    gsl_rng_set (data.rndgen,time(NULL));
+    data.rndgen = gsl_rng_alloc(rndgenType);
+    gsl_rng_set(data.rndgen, time(NULL));
 
     // warm up
     //for(i=0; i<10; i++)
     //    v1 = gsl_rng_uniform (data.rndgen);
 
 
-	data.progStatus = 1;
+    data.progStatus = 1;
 
 
 
-	printf("\n");
+    printf("\n");
 
-	// LOAD MODULES
-	load_module_shared_ALL();
+    // LOAD MODULES
+    load_module_shared_ALL();
 
-	// load other libs specified by environment variable CLI_ADD_LIBS
-    char* CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
-    if(CLI_ADD_LIBS != NULL)
-    {
+    // load other libs specified by environment variable CLI_ADD_LIBS
+    char *CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
+    if(CLI_ADD_LIBS != NULL) {
         printf(" [ CLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
 
-        char * libname;
-        char * fname;
-        libname = strtok (CLI_ADD_LIBS, " ,;");
+        char *libname;
+        char *fname;
+        libname = strtok(CLI_ADD_LIBS, " ,;");
 
-        while (libname != NULL) {
-            printf ("--- CLI Adding library: %s\n", libname);
+        while(libname != NULL) {
+            printf("--- CLI Adding library: %s\n", libname);
             load_sharedobj(libname);
-            libname = strtok (NULL, " ,;");
+            libname = strtok(NULL, " ,;");
         }
         printf("\n");
+    } else {
+        printf(" [ CLI_ADD_LIBS ] not set\n");
     }
-    else
-		printf(" [ CLI_ADD_LIBS ] not set\n");
 
 
 
@@ -1308,28 +1303,28 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-    /* Initialize data control block */  
+    /* Initialize data control block */
     main_init();
 
 //printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
     // initialize readline
-    rl_callback_handler_install(prompt, (rl_vcpfunc_t*) &rl_cb);
+    rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb);
 
     // fifo
     fdmax = fileno(stdin);
     //   printf("FIFO = %d\n", data.fifoON);
-    if(data.fifoON == 1)
-    {
+    if(data.fifoON == 1) {
         printf("Creating fifo %s\n", data.fifoname);
         mkfifo(data.fifoname, 0666);
         fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
-        if (fifofd == -1) {
+        if(fifofd == -1) {
             perror("open");
             return EXIT_FAILURE;
         }
-        if(fifofd>fdmax)
+        if(fifofd > fdmax) {
             fdmax = fifofd;
+        }
     }
 
 
@@ -1338,28 +1333,28 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-/*
-		if( atexitfifoclose == 0)
-			{
-				printf("Registering exit function fnExit_fifoclose\n");
-				atexit( fnExit_fifoclose );
-				atexitfifoclose = 1;
-			}
-  */      
+    /*
+    		if( atexitfifoclose == 0)
+    			{
+    				printf("Registering exit function fnExit_fifoclose\n");
+    				atexit( fnExit_fifoclose );
+    				atexitfifoclose = 1;
+    			}
+      */
 
 
-    for (;;) {
+    for(;;) {
         FILE *fp;
 
         data.CMDexecuted = 0;
 
-        if( (fp=fopen( "STOPCLI", "r" )) != NULL ) {
+        if((fp = fopen("STOPCLI", "r")) != NULL) {
             fprintf(stdout, "STOPCLI FILE FOUND. Exiting...\n");
             fclose(fp);
             exit(3);
         }
 
-        if(Listimfile==1) {
+        if(Listimfile == 1) {
             fp = fopen("imlist.txt", "w");
             list_image_ID_ofp_simple(fp);
             fclose(fp);
@@ -1373,25 +1368,24 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
          *  Keep the number of variables addresses available
          *  NB_VARIABLES_BUFFER above the number of used variables
          */
-       if( memory_re_alloc() != 0 )
-        {
-            fprintf(stderr,"%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
-            fprintf(stderr,"%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+        if(memory_re_alloc() != 0) {
+            fprintf(stderr, "%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n", (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
+            fprintf(stderr, "%c[%d;%dm Memory re-allocation failed  %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
             exit(1);
-		}
+        }
 //printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
         compute_image_memory(data);
-		compute_nb_image(data);
+        compute_nb_image(data);
 
         /** If fifo is on and file CLIstatup.txt exists, load it */
         if(initstartup == 0)
-            if(data.fifoON==1)
-            {
+            if(data.fifoON == 1) {
                 printf("IMPORTING FILE %s\n", CLIstartupfilename);
                 sprintf(command, "cat %s > %s 2> /dev/null", CLIstartupfilename, data.fifoname);
-                if( system(command) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                if(system(command) != 0) {
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             }
         initstartup = 1;
 
@@ -1401,39 +1395,35 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
         // -------------------------------------------------------------
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
-        
-        
+
+
         FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
-        if(data.fifoON==1){
+        if(data.fifoON == 1) {
             FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-		}
+        }
         FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-        
 
 
-        while(CLIexecuteCMDready == 0)
-        {
-            n = select(fdmax+1, &cli_fdin_set, NULL, NULL, &tv);
 
-            if (n==0) // nothing received, need to re-init and go back to select call
-            {
+        while(CLIexecuteCMDready == 0) {
+            n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
+
+            if(n == 0) { // nothing received, need to re-init and go back to select call
                 tv.tv_sec = 0;
                 tv.tv_usec = cliwaitus;
 
 
                 FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
-                if(data.fifoON==1)
-                    FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+                if(data.fifoON == 1) {
+                    FD_SET(fifofd, &cli_fdin_set);    // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+                }
                 FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
                 continue;
             }
-            if (n == -1) {
-                if(errno==EINTR) // no command received
-                {
+            if(n == -1) {
+                if(errno == EINTR) { // no command received
                     continue;
-                }
-                else
-                {
+                } else {
                     perror("select");
                     return EXIT_FAILURE;
                 }
@@ -1441,26 +1431,24 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
             blockCLIinput = 0;
 
-            if(data.fifoON==1)
-            {
-                if (FD_ISSET(fifofd, &cli_fdin_set)) {
+            if(data.fifoON == 1) {
+                if(FD_ISSET(fifofd, &cli_fdin_set)) {
                     total_bytes = 0;
-                    for (;;) {
+                    for(;;) {
                         bytes = read(fifofd, buf0, 1);
-                        if (bytes > 0) {
+                        if(bytes > 0) {
                             buf1[total_bytes] = buf0[0];
                             total_bytes += (size_t)bytes;
                         } else {
-                            if (errno == EWOULDBLOCK) {
+                            if(errno == EWOULDBLOCK) {
                                 break;
                             } else {
                                 perror("read");
                                 return EXIT_FAILURE;
                             }
                         }
-                        if(buf0[0]=='\n')
-                        {
-                            buf1[total_bytes-1] = '\0';
+                        if(buf0[0] == '\n') {
+                            buf1[total_bytes - 1] = '\0';
                             line = buf1;
                             CLI_execute_line();
                             printf("%s", prompt);
@@ -1473,16 +1461,17 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
             }
 
             if(blockCLIinput == 0)  // revert to default mode
-                if (FD_ISSET(fileno(stdin), &cli_fdin_set)) {
+                if(FD_ISSET(fileno(stdin), &cli_fdin_set)) {
                     rl_callback_read_char();
                 }
         }
         CLIexecuteCMDready = 0;
 
-        if(data.CMDexecuted==0)
+        if(data.CMDexecuted == 0) {
             printf("Command not found, or command with no effect\n");
-    
-		//AOloopControl_bogusfunc();
+        }
+
+        //AOloopControl_bogusfunc();
     }
 
 
@@ -1501,18 +1490,18 @@ int_fast8_t runCLI(int argc, char *argv[], char* promptstring)
 
 
 
-static char** CLI_completion( const char * text , int start,  int end)
-{
+static char **CLI_completion(const char *text, int start,  int end) {
     char **matches;
 
     matches = (char **)NULL;
 
-    if (start == 0)
-        CLImatchMode = 0; // try to match with command first
-    else
-        CLImatchMode = 1; // do not try to match with command
+    if(start == 0) {
+        CLImatchMode = 0;    // try to match with command first
+    } else {
+        CLImatchMode = 1;    // do not try to match with command
+    }
 
-    matches = rl_completion_matches ((char*)text, &CLI_generator);
+    matches = rl_completion_matches((char *)text, &CLI_generator);
 
     //    else
     //  rl_bind_key('\t',rl_abort);
@@ -1523,42 +1512,39 @@ static char** CLI_completion( const char * text , int start,  int end)
 
 
 
-char* CLI_generator(const char* text, int state)
-{
+char *CLI_generator(const char *text, int state) {
     static int list_index, list_index1, len;
     char *name;
     char *strtmp;
-    
 
-    if (!state) {
+
+    if(!state) {
         list_index = 0;
         list_index1 = 0;
-        len = strlen (text);
+        len = strlen(text);
     }
 
-    if(CLImatchMode==0)
-        while (list_index<data.NBcmd)
-        {
+    if(CLImatchMode == 0)
+        while(list_index < data.NBcmd) {
             name = data.cmd[list_index].key;
             list_index++;
-            if (strncmp (name, text, len) == 0)
+            if(strncmp(name, text, len) == 0) {
                 return (dupstr(name));
+            }
         }
 
-    while (list_index1<data.NB_MAX_IMAGE)
-    {
-		int iok;
+    while(list_index1 < data.NB_MAX_IMAGE) {
+        int iok;
         iok = data.image[list_index1].used;
-        if(iok == 1)
-        {
+        if(iok == 1) {
             name = data.image[list_index1].name;
             //	  printf("  name %d = %s %s\n", list_index1, data.image[list_index1].name, name);
         }
         list_index1++;
-        if(iok == 1)
-        {
-            if (strncmp (name, text, len) == 0)
+        if(iok == 1) {
+            if(strncmp(name, text, len) == 0) {
                 return (dupstr(name));
+            }
         }
     }
     return ((char *)NULL);
@@ -1567,24 +1553,23 @@ char* CLI_generator(const char* text, int state)
 
 
 
-char * dupstr (char* s) {
+char *dupstr(char *s) {
     char *r;
 
-    r = (char*) xmalloc ((strlen (s) + 1));
-    strcpy (r, s);
+    r = (char *) xmalloc((strlen(s) + 1));
+    strcpy(r, s);
     return (r);
 }
 
 
 
-void * xmalloc (int size)
-{
+void *xmalloc(int size) {
     void *buf;
 
-    buf = malloc (size);
-    if (!buf) {
-        fprintf (stderr, "Error: Out of memory. Exiting.'n");
-        exit (1);
+    buf = malloc(size);
+    if(!buf) {
+        fprintf(stderr, "Error: Out of memory. Exiting.'n");
+        exit(1);
     }
 
     return buf;
