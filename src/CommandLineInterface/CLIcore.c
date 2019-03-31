@@ -1179,6 +1179,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
 		printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
         printf("    WARNING: environment variable MILK_SHM_DIR not specified -> falling back to default %s\n", SHAREDMEMDIR);
         printf("             Please set MILK_SHM_DIR and restart CLI to set up user-specific shared memory and temporary files\n");
+        printf("             Example: Add \"export MILK_SHM_DIR=/milk/shm\" to .bashrc\n");
         printf("%c[%d;m", (char) 27, 0); // unset color red
     }
 
@@ -1223,7 +1224,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
         }
 
     sprintf(data.shmsemdirname, shmdirname);
-    printf("semaphore naming : sname_semXX");
+    printf("    semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n", data.shmsemdirname);
 
 
 
