@@ -102,6 +102,12 @@ cat "$FPSlistfilename" | while read LINE; do
 			redirect="> ./${FPScmdlogdir}/${pname}.runstop.log"
 			fi
 			
+			# create fifo
+			if [ "$CMDCODE" = "CONFSTART" ]; then
+			echo "mkfifo ${MILK_SHM_DIR}/${pname}.fpsconf.fifo" >> $fname
+			ehco "" >> $fname
+			fi
+			
 			echo "cacao -n \${pname} ${redirect} << EOF" >> $fname
 			
 			echo "$CLIcmdstring" >> $fname
@@ -151,7 +157,7 @@ cat "$FPSlistfilename" | while read LINE; do
 			for arg in `seq 1 $nbarg`; do 
 				cmdstring+=" "${OPTARG[$arg]}
 			done
-			echo "${cmdstring}" >> ${FPScmddir}/fpsrunstartscript
+			echo "tmux send-keys -t ${tmuxname} \"${cmdstring}\" C-m" >> ${FPScmddir}/fpsrunstartscript
 		fi
 		
 		if [ "$CMDCODE" = "RUNSTOP" ]; then
