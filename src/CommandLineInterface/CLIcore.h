@@ -516,39 +516,39 @@ typedef struct {
 
 // metadata
 typedef struct {
-	// process name
-	// Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
-	char                name[200];         // example: pname-01-32 
-	char                fpsdirectory[FPS_CWD_MAX]; // where should the parameter values be saved to disk ?
+    // process name
+    // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
+    char                name[200];         // example: pname-01-32
+    char                fpsdirectory[FPS_CWD_MAX]; // where should the parameter values be saved to disk ?
 
-	// the name and indices are automatically parsed in the following format
-	char                pname[100];      // example: pname
-	int                 nameindex[10];   // example: 01 32
-	int                 NBnameindex;     // example: 2
+    // the name and indices are automatically parsed in the following format
+    char                pname[100];      // example: pname
+    int                 nameindex[10];   // example: 01 32
+    int                 NBnameindex;     // example: 2
 
-	// configuration will run in tmux session pname-XX-conf
-	// process       will run in tmux session pname-XX-run
-	// expected commands to start and stop process : 
-	//   ./cmdproc/<pname>-conf-start XX YY (in tmux session)
-	//   ./cmdproc/<pname>-run-start XX YY  (in tmux session)
-	//   ./cmdproc/<pname>-run-stop XX YY
-	//
-	
-	pid_t               confpid;            // PID of process owning parameter structure configuration
-	pid_t               runpid;             // PID of process running on this fps
-	
-	
-	uint64_t            signal;       // Used to send signals to configuration process
-	uint64_t            confwaitus;   // configuration wait timer value [us]	
-	uint32_t            status;       // conf and process status
-	int                 NBparam;      // size of parameter array (= max number of parameter supported)		
+    // configuration will run in tmux session pname-XX-conf
+    // process       will run in tmux session pname-XX-run
+    // expected commands to start and stop process :
+    //   ./cmdproc/<pname>-conf-start XX YY (in tmux session)
+    //   ./cmdproc/<pname>-run-start XX YY  (in tmux session)
+    //   ./cmdproc/<pname>-run-stop XX YY
+    //
 
-	char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];      
-	int                           msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
-	uint32_t                      msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
-	long                          msgcnt;
-	long                          errcnt;
-	
+    pid_t               confpid;            // PID of process owning parameter structure configuration
+    pid_t               runpid;             // PID of process running on this fps
+    int					conf_fifofd;        // File descriptor for configuration fifo
+
+    uint64_t            signal;       // Used to send signals to configuration process
+    uint64_t            confwaitus;   // configuration wait timer value [us]
+    uint32_t            status;       // conf and process status
+    int                 NBparam;      // size of parameter array (= max number of parameter supported)
+
+    char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
+    int                           msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
+    uint32_t                      msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
+    long                          msgcnt;
+    long                          errcnt;
+
 } FUNCTION_PARAMETER_STRUCT_MD;
 
 
@@ -556,9 +556,9 @@ typedef struct {
 
 typedef struct {
 
-	FUNCTION_PARAMETER_STRUCT_MD *md;
+    FUNCTION_PARAMETER_STRUCT_MD *md;
 
-	FUNCTION_PARAMETER           *parray;   // array of function parameters
+    FUNCTION_PARAMETER           *parray;   // array of function parameters
 
 } FUNCTION_PARAMETER_STRUCT;
 
@@ -604,6 +604,6 @@ uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 
-errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname);
+errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
 
 #endif

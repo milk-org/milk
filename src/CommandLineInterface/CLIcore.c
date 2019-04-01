@@ -710,11 +710,9 @@ int_fast8_t cfits_usleep_cli()
 
 int_fast8_t functionparameter_CTRLscreen_cli()
 {
-//    if((data.cmdargtoken[1].type == 2) && ((data.cmdargtoken[2].type == 3) || (data.cmdargtoken[2].type == 4) || (data.cmdargtoken[2].type == 5)))
-    
-    if( (CLI_checkarg(1,2) == 0) && (CLI_checkarg(2,5) == 0))
+    if( (CLI_checkarg(1,2) == 0) && (CLI_checkarg(2,5) == 0) && (CLI_checkarg(3,5) == 0))
     {
-        functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string);
+        functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.string);
         return 0;
     }
     else

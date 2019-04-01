@@ -61,8 +61,10 @@ done
 
 
 MODE="0"
+FIFONAME="$MILK_SHM_DIR/fpsCTRL.cmd.fifo"
 
-while getopts :hlm: FLAG; do
+
+while getopts :hlm:f: FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -77,6 +79,9 @@ while getopts :hlm: FLAG; do
 	  ls -l /tmp/*.fps.shm
 	  echo ""
 	  exit
+    ;;
+    f) # fifo name
+	 FIFONAME=$OPTARG
     ;;
     m)
 		MODE="1"
@@ -112,9 +117,9 @@ printHELP
 fi
 
 
-
+mkfifo $FIFONAME
 
 SF="fpsctrlstartup"
-echo "fparamCTRL ${MODE} \"$arg1\"" > $SF
+echo "fparamCTRL ${MODE} \"$arg1\" \"$FIFONAME\"" > $SF
 echo "exitCLI" >> $SF
 milk -n fpsCTRL -f fpsctrlfifo -s $SF
