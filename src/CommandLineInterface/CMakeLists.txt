@@ -57,7 +57,6 @@ ${CORE_FILES}
 
 if(${python_build})
     set(USE_CUDA ON)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ImageStreamIO ImageStreamIO)
     target_compile_definitions(CLIcore PRIVATE STANDALONE)
     target_include_directories(CLIcore PUBLIC ${CUDA_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ImageStreamIO)
     target_link_libraries (CLIcore PUBLIC ImageStreamIO)
