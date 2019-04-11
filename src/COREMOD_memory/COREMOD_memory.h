@@ -1,12 +1,9 @@
 /**
  * @file    COREMOD_memory.h
- * @brief   Function prototypes for cfitsTK memory functions
+ * @brief   Function prototypes for milk memory functions
  * 
  * Functions to handle images and streams
  *  
- * @author  O. Guyon
- * @date    18 Jun 2017
- *
  * 
  * @bug No known bugs.
  * 
@@ -465,9 +462,11 @@ long COREMOD_MEMORY_image_streamupdateloop(const char *IDinname, const char *IDo
 long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const char *IDoutname, long period, long offsetus, const char *IDsync_name, int semtrig, int timingmode);
 
 
-
-
+errno_t COREMOD_MEMORY_streamDelay_FPCONF(char *fpsname, uint32_t CMDmode, unsigned int pindex);
+errno_t COREMOD_MEMORY_streamDelay_RUN(char *fpsname);
 long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, long delayus, long dtus);
+
+
 
 long COREMOD_MEMORY_SaveAll_snapshot(const char *dirname);
 
