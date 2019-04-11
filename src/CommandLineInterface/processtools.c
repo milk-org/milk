@@ -10,9 +10,15 @@
  * 
  * 
  */
+
+#define PROCESSINFO_ENABLED 1
+
 #ifndef STANDALONE
 #define PROCCTRL_LOGDEBUG 1
 #endif
+
+
+#define PROCCTRL_LOGDEBUG 1
 
 #ifdef PROCCTRL_LOGDEBUG
 #define PROCCTRL_LOGEXEC do {                      \
@@ -154,6 +160,144 @@ static double scantime_CPUpcnt;
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+
+
+
+// High level processinfo function
+
+PROCESSINFO *processinfo_setup(
+    char *pinfoname,	// short name for the processinfo instance, avoid spaces, name should be human-readable
+    char descriptionstring[200],
+    char msgstring[200],
+    const char *functionname,
+    const char *filename,
+    int   linenumber
+) {
+	PROCESSINFO *processinfo;
+#ifdef PROCESSINFO_ENABLED
+    if(data.processinfoActive == 0) {
+//        PROCESSINFO *processinfo;
+
+        char pinfoname0[200];
+        sprintf(pinfoname0, "%s", pinfoname);
+
+        processinfo = processinfo_shm_create(pinfoname0, 0);
+        processinfo->loopstat = 0; // loop initialization
+        strcpy(processinfo->source_FUNCTION, functionname);
+        strcpy(processinfo->source_FILE,     filename);
+        processinfo->source_LINE = linenumber;
+        strcpy(processinfo->description, descriptionstring);
+        processinfo_WriteMessage(processinfo, msgstring);
+        data.processinfoActive = 1;
+
+        processinfo->MeasureTiming =  0;  // default: do not measure timing
+        processinfo->RT_priority   = -1;  // default: do not assign RT priority
+    }
+// Process signals are caught for suitable processing and reporting.
+    processinfo_CatchSignals();
+#endif
+
+    return processinfo;
+}
+
+
+
+// report error
+errno_t processinfo_error(
+    PROCESSINFO *processinfo,
+    char *errmsgstring
+) {
+#ifdef PROCESSINFO_ENABLED
+        processinfo->loopstat = 4; // ERROR
+        processinfo_WriteMessage(processinfo, errmsgstring);
+#endif
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+errno_t processinfo_loopstart(
+    PROCESSINFO *processinfo
+) {
+#ifdef PROCESSINFO_ENABLED
+    processinfo->loopcnt = 0;
+    processinfo->loopstat = 1;
+
+    if(processinfo->RT_priority > -1) {
+        struct sched_param schedpar;
+        // ===========================
+        // Set realtime priority
+        // ===========================
+        schedpar.sched_priority = processinfo->RT_priority;
+#ifndef __MACH__
+        int r;
+        r = seteuid(data.euid); // This goes up to maximum privileges
+        sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
+        r = seteuid(data.ruid); //Go back to normal privileges
+#endif
+    }
+
+
+#endif
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+// returns loop status
+// 0 if loop should exit, 1 otherwise
+
+int processinfo_loopstep(
+    PROCESSINFO *processinfo
+) {
+	int loopstatus = 1;
+	
+#ifdef PROCESSINFO_ENABLED
+        while(processinfo->CTRLval == 1) { // pause
+            usleep(50);
+        }
+        if(processinfo->CTRLval == 2) { // single iteration
+            processinfo->CTRLval = 1;
+        }
+        if(processinfo->CTRLval == 3) { // exit loop
+            loopstatus = 0;
+        }
+#endif
+
+    return loopstatus;
+}
+
+
+
+int processinfo_compute_status(
+    PROCESSINFO *processinfo
+) {
+    int compstatus = 1;
+
+#ifdef PROCESSINFO_ENABLED
+        // CTRLval = 5 will disable computations in loop (usually for testing)
+        if(processinfo->CTRLval == 5) {
+            compstatus = 0;
+        }
+#endif
+
+    return compstatus;
+}
+
+
+
+
+
+
+
+
+
+
 /**
  * ## Purpose
  * 
@@ -267,150 +411,148 @@ long processinfo_shm_list_create()
  * 
 */
 
-PROCESSINFO* processinfo_shm_create(
-	char *pname, 
-	int CTRLval
-	)
-{
+PROCESSINFO *processinfo_shm_create(
+    char *pname,
+    int CTRLval
+) {
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
     PROCESSINFO *pinfo;
-    
-    
+
+
     sharedsize = sizeof(PROCESSINFO);
 
-	char  SM_fname[200];
+    char  SM_fname[200];
     pid_t PID;
 
-    
+
     PID = getpid();
 
-	long pindex;
+    long pindex;
     pindex = processinfo_shm_list_create();
     pinfolist->PIDarray[pindex] = PID;
-    
-    
+	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
+
 #ifdef STANDALONE
-    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDPROCDIR, (int) PID);    
+    sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
 #else
-    sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) PID);    
+    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pname, (int) PID);
 #endif
-   
+
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
-    if (SM_fd == -1) {
+    if(SM_fd == -1) {
         perror("Error opening file for writing");
         exit(0);
     }
 
     int result;
-    result = lseek(SM_fd, sharedsize-1, SEEK_SET);
-    if (result == -1) {
+    result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
+    if(result == -1) {
         close(SM_fd);
         fprintf(stderr, "Error calling lseek() to 'stretch' the file");
         exit(0);
     }
 
     result = write(SM_fd, "", 1);
-    if (result != 1) {
+    if(result != 1) {
         close(SM_fd);
         perror("Error writing last byte of the file");
         exit(0);
     }
 
-    pinfo = (PROCESSINFO*) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if (pinfo == MAP_FAILED) {
+    pinfo = (PROCESSINFO *) mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+    if(pinfo == MAP_FAILED) {
         close(SM_fd);
         perror("Error mmapping the file");
         exit(0);
     }
 
-	printf("created processinfo entry at %s\n", SM_fname);
+    printf("created processinfo entry at %s\n", SM_fname);
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
-	clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
-	strcpy(pinfo->name, pname);
+    clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
+    strcpy(pinfo->name, pname);
 
-	pinfolist->active[pindex] = 1;
+    pinfolist->active[pindex] = 1;
 
-	char tmuxname[100];
-	FILE *fpout;	
-	fpout = popen ("tmuxsessionname", "r");
-	if(fpout==NULL)
-	{
-		printf("WARNING: cannot run command \"tmuxsessionname\"\n");
-	}
-	else
-	{
-		if(fgets(tmuxname, 100, fpout)== NULL)
-			printf("WARNING: fgets error\n");
-		pclose(fpout);
-	}
-	// remove line feed
-	if(strlen(tmuxname)>0)
-	{
-		printf("tmux name : %s\n", tmuxname);
-		printf("len: %d\n", (int) strlen(tmuxname));
-		fflush(stdout);
-		
-		if(tmuxname[strlen(tmuxname)-1] == '\n')
-			tmuxname[strlen(tmuxname)-1] = '\0';
-	}
-	
-	printf("line %d\n", __LINE__);
-	fflush(stdout);
-	// force last char to be term, just in case
-	tmuxname[99] = '\0';
-	printf("line %d\n", __LINE__);
-	fflush(stdout);
-	
-	strncpy(pinfo->tmuxname, tmuxname, 100);
-	
-	printf("line %d\n", __LINE__);
-	fflush(stdout);
-	// set control value (default 0)
-	// 1 : pause
-	// 2 : increment single step (will go back to 1)
-	// 3 : exit loop
-	pinfo->CTRLval = CTRLval;
-	
-	
-	pinfo->MeasureTiming = 1;
-	
-	// initialize timer indexes and counters
-	pinfo->timerindex = 0;
-	pinfo->timingbuffercnt = 0;
-	
-	// disable timer limit feature
-	pinfo->dtiter_limit_enable = 0;
-	pinfo->dtexec_limit_enable = 0;
-	
+    char tmuxname[100];
+    FILE *fpout;
+    fpout = popen("tmuxsessionname", "r");
+    if(fpout == NULL) {
+        printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+    } else {
+        if(fgets(tmuxname, 100, fpout) == NULL) {
+            printf("WARNING: fgets error\n");
+        }
+        pclose(fpout);
+    }
+    // remove line feed
+    if(strlen(tmuxname) > 0) {
+        printf("tmux name : %s\n", tmuxname);
+        printf("len: %d\n", (int) strlen(tmuxname));
+        fflush(stdout);
+
+        if(tmuxname[strlen(tmuxname) - 1] == '\n') {
+            tmuxname[strlen(tmuxname) - 1] = '\0';
+        }
+    }
+
+    printf("line %d\n", __LINE__);
+    fflush(stdout);
+    // force last char to be term, just in case
+    tmuxname[99] = '\0';
+    printf("line %d\n", __LINE__);
+    fflush(stdout);
+
+    strncpy(pinfo->tmuxname, tmuxname, 100);
+
+    printf("line %d\n", __LINE__);
+    fflush(stdout);
+    // set control value (default 0)
+    // 1 : pause
+    // 2 : increment single step (will go back to 1)
+    // 3 : exit loop
+    pinfo->CTRLval = CTRLval;
+
+
+    pinfo->MeasureTiming = 1;
+
+    // initialize timer indexes and counters
+    pinfo->timerindex = 0;
+    pinfo->timingbuffercnt = 0;
+
+    // disable timer limit feature
+    pinfo->dtiter_limit_enable = 0;
+    pinfo->dtexec_limit_enable = 0;
+
 #ifndef STANDALONE
-	data.pinfo = pinfo;  
+    data.pinfo = pinfo;
 #endif
-	pinfo->PID = PID;
-	
-	
-	// create logfile
-	char logfilename[300];
-	struct timespec tnow;
-	
-    clock_gettime(CLOCK_REALTIME, &tnow);
- 
-#ifdef STANDALONE
-	sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", SHAREDPROCDIR, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
-#else
-	sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.shmdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
-#endif
-	pinfo->logFile = fopen(pinfo->logfilename, "w");
-	
+    pinfo->PID = PID;
 
-	
-	char msgstring[300];
-	sprintf(msgstring, "LOG START %s", pinfo->logfilename);
-	processinfo_WriteMessage(pinfo, msgstring);
-	
-	
-	
+
+    // create logfile
+    char logfilename[300];
+    struct timespec tnow;
+
+    clock_gettime(CLOCK_REALTIME, &tnow);
+
+#ifdef STANDALONE
+    sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", SHAREDPROCDIR, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+#else
+    sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.shmdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+#endif
+    pinfo->logFile = fopen(pinfo->logfilename, "w");
+
+
+
+    char msgstring[300];
+    sprintf(msgstring, "LOG START %s", pinfo->logfilename);
+    processinfo_WriteMessage(pinfo, msgstring);
+
+    printf("line %d\n", __LINE__);
+    fflush(stdout);
+
     return pinfo;
 }
 
@@ -420,29 +562,30 @@ PROCESSINFO* processinfo_shm_create(
 
 
 
-int processinfo_cleanExit(PROCESSINFO *processinfo)
-{
-    struct timespec tstop;
-    struct tm *tstoptm;
-    char msgstring[200];
+int processinfo_cleanExit(PROCESSINFO *processinfo) {
+#ifdef PROCESSINFO_ENABLED
+    if(processinfo->loopstat != 4) {
 
-    clock_gettime(CLOCK_REALTIME, &tstop);
-    tstoptm = gmtime(&tstop.tv_sec);
+        struct timespec tstop;
+        struct tm *tstoptm;
+        char msgstring[200];
 
-    if(processinfo->CTRLval == 3) // loop exit from processinfo control
-    {
-        sprintf(msgstring, "CTRLexit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
-		strncpy(processinfo->statusmsg, msgstring, 200);
+        clock_gettime(CLOCK_REALTIME, &tstop);
+        tstoptm = gmtime(&tstop.tv_sec);
+
+        if(processinfo->CTRLval == 3) { // loop exit from processinfo control
+            sprintf(msgstring, "CTRLexit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+            strncpy(processinfo->statusmsg, msgstring, 200);
+        }
+
+        if(processinfo->loopstat == 1) {
+            sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
+            strncpy(processinfo->statusmsg, msgstring, 200);
+        }
+
+        processinfo->loopstat = 3; // clean exit
     }
-    
-    if(processinfo->loopstat == 1)
-   {
-        sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
-		strncpy(processinfo->statusmsg, msgstring, 200);
-	}
-	
-	processinfo->loopstat = 3; // clean exit
-
+#endif
     return 0;
 }
 
@@ -618,26 +761,26 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 
 
-int processinfo_WriteMessage(PROCESSINFO *processinfo, const char* msgstring)
-{
+int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring) {
+#ifdef PROCESSINFO_ENABLED
     struct timespec tnow;
     struct tm *tmnow;
     char msgstringFull[300];
-	FILE *fp;
-	
+    FILE *fp;
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     tmnow = gmtime(&tnow.tv_sec);
 
     strcpy(processinfo->statusmsg, msgstring);
 
-   
+
     fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
-            tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int) (0.001*(tnow.tv_nsec)),
+            tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int)(0.001 * (tnow.tv_nsec)),
             tnow.tv_sec, tnow.tv_nsec,
-            (int) processinfo->PID, 
+            (int) processinfo->PID,
             msgstring);
     fflush(processinfo->logFile);
-
+#endif
     return 0;
 }
 
@@ -674,52 +817,58 @@ int processinfo_CatchSignals()
 
 
 
-int processinfo_ProcessSignals(PROCESSINFO *processinfo)
-{
+int processinfo_ProcessSignals(PROCESSINFO *processinfo) {
     int loopOK = 1;
     // process signals
 
 #ifndef STANDALONE
     if(data.signal_TERM == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGTERM);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGTERM);
+#endif
     }
 
     if(data.signal_INT == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGINT);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGINT);
+#endif
     }
 
     if(data.signal_ABRT == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGABRT);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGABRT);
+#endif
     }
 
     if(data.signal_BUS == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGBUS);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGBUS);
+#endif
     }
 
     if(data.signal_SEGV == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGSEGV);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGSEGV);
+#endif
     }
 
     if(data.signal_HUP == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGHUP);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGHUP);
+#endif
     }
 
     if(data.signal_PIPE == 1) {
         loopOK = 0;
-        if(data.processinfo==1)
-            processinfo_SIGexit(processinfo, SIGPIPE);
+#ifdef PROCESSINFO_ENABLED
+        processinfo_SIGexit(processinfo, SIGPIPE);
+#endif
     }
 #endif
 
@@ -730,82 +879,84 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 
 
 
-int processinfo_exec_start(PROCESSINFO *processinfo)
-{
-	
-	processinfo->timerindex ++;
-	if(processinfo->timerindex==PROCESSINFO_NBtimer)
-	{
-		processinfo->timerindex = 0;
-		processinfo->timingbuffercnt++;
-	}
-	
-	clock_gettime(CLOCK_REALTIME, &processinfo->texecstart[processinfo->timerindex]);
+int processinfo_exec_start(PROCESSINFO *processinfo) {
+#ifdef PROCESSINFO_ENABLED
+    if(processinfo->MeasureTiming == 1) {
 
-    if(processinfo->dtiter_limit_enable != 0)
-    {
-        long dtiter;
-        int timerindexlast;
+        processinfo->timerindex ++;
+        if(processinfo->timerindex == PROCESSINFO_NBtimer) {
+            processinfo->timerindex = 0;
+            processinfo->timingbuffercnt++;
+        }
 
-        if(processinfo->timerindex == 0)
-            timerindexlast = PROCESSINFO_NBtimer-1;
-        else
-            timerindexlast = processinfo->timerindex - 1;
-        
-        dtiter = processinfo->texecstart[processinfo->timerindex].tv_nsec - processinfo->texecstart[timerindexlast].tv_nsec;
-        dtiter += 1000000000*(processinfo->texecstart[processinfo->timerindex].tv_sec - processinfo->texecstart[timerindexlast].tv_sec);
-        
-        
-        
-        if(dtiter > processinfo->dtiter_limit_value)
-        {
-			char msgstring[200];
-						
-			sprintf(msgstring, "dtiter %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtiter_limit_cnt, processinfo->timerindex, 0.001*dtiter, 0.001*processinfo->dtiter_limit_value);			
-			processinfo_WriteMessage(processinfo, msgstring);	
-			
-			if(processinfo->dtiter_limit_enable == 2) // pause process due to timing limit
-			{
-				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtiter lim -> paused");
-				processinfo_WriteMessage(processinfo, msgstring);
-			}
-			processinfo->dtiter_limit_cnt ++;
-		}
+        clock_gettime(CLOCK_REALTIME, &processinfo->texecstart[processinfo->timerindex]);
+
+        if(processinfo->dtiter_limit_enable != 0) {
+            long dtiter;
+            int timerindexlast;
+
+            if(processinfo->timerindex == 0) {
+                timerindexlast = PROCESSINFO_NBtimer - 1;
+            } else {
+                timerindexlast = processinfo->timerindex - 1;
+            }
+
+            dtiter = processinfo->texecstart[processinfo->timerindex].tv_nsec - processinfo->texecstart[timerindexlast].tv_nsec;
+            dtiter += 1000000000 * (processinfo->texecstart[processinfo->timerindex].tv_sec - processinfo->texecstart[timerindexlast].tv_sec);
+
+
+
+            if(dtiter > processinfo->dtiter_limit_value) {
+                char msgstring[200];
+
+                sprintf(msgstring, "dtiter %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtiter_limit_cnt, processinfo->timerindex, 0.001 * dtiter, 0.001 * processinfo->dtiter_limit_value);
+                processinfo_WriteMessage(processinfo, msgstring);
+
+                if(processinfo->dtiter_limit_enable == 2) { // pause process due to timing limit
+                    processinfo->CTRLval = 1;
+                    sprintf(msgstring, "dtiter lim -> paused");
+                    processinfo_WriteMessage(processinfo, msgstring);
+                }
+                processinfo->dtiter_limit_cnt ++;
+            }
+        }
     }
-
-	return 0;
+#endif
+    return 0;
 }
 
 
 
-int processinfo_exec_end(PROCESSINFO *processinfo)
-{
-    clock_gettime(CLOCK_REALTIME, &processinfo->texecend[processinfo->timerindex]);
+int processinfo_exec_end(PROCESSINFO *processinfo) {
+#ifdef PROCESSINFO_ENABLED
+        if(processinfo->MeasureTiming == 1) {
+            clock_gettime(CLOCK_REALTIME, &processinfo->texecend[processinfo->timerindex]);
 
-    if(processinfo->dtexec_limit_enable != 0)
-    {
-        long dtexec;
+            if(processinfo->dtexec_limit_enable != 0) {
+                long dtexec;
 
-        dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecstart[processinfo->timerindex].tv_nsec;
-        dtexec += 1000000000*(processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[processinfo->timerindex].tv_sec);
-        
-        if(dtexec > processinfo->dtexec_limit_value)
-        {
-			char msgstring[200];
-			
-			sprintf(msgstring, "dtexec %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtexec_limit_cnt, processinfo->timerindex, 0.001*dtexec, 0.001*processinfo->dtexec_limit_value);
-			processinfo_WriteMessage(processinfo, msgstring);
-			
-			if(processinfo->dtexec_limit_enable == 2) // pause process due to timing limit
-			{				
-				processinfo->CTRLval = 1;
-				sprintf(msgstring, "dtexec lim -> paused");
-				processinfo_WriteMessage(processinfo, msgstring);
-			}
-			processinfo->dtexec_limit_cnt ++;
-		}
-    }
+                dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecstart[processinfo->timerindex].tv_nsec;
+                dtexec += 1000000000 * (processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[processinfo->timerindex].tv_sec);
+
+                if(dtexec > processinfo->dtexec_limit_value) {
+                    char msgstring[200];
+
+                    sprintf(msgstring, "dtexec %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtexec_limit_cnt, processinfo->timerindex, 0.001 * dtexec, 0.001 * processinfo->dtexec_limit_value);
+                    processinfo_WriteMessage(processinfo, msgstring);
+
+                    if(processinfo->dtexec_limit_enable == 2) { // pause process due to timing limit
+                        processinfo->CTRLval = 1;
+                        sprintf(msgstring, "dtexec lim -> paused");
+                        processinfo_WriteMessage(processinfo, msgstring);
+                    }
+                    processinfo->dtexec_limit_cnt ++;
+                }
+            }
+        }
+
+        processinfo_ProcessSignals(processinfo);
+        processinfo->loopcnt++;
+#endif
 
     return 0;
 }
@@ -1714,9 +1865,9 @@ void *processinfo_scan(void *thptr)
             // check if process info file exists
 
 #ifdef STANDALONE
-            sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDPROCDIR, (int) pinfolist->PIDarray[pindex]);
+            sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #else
-            sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
+            sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #endif
 
             // Does file exist ?
@@ -2323,9 +2474,9 @@ errno_t processinfo_CTRLscreen()
                     {
                         char SM_fname[200];
 #ifdef STANDALONE
-                        sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDPROCDIR, (int) pinfolist->PIDarray[pindex]);
+                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #else
-                        sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
+                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #endif
                         remove(SM_fname);
                     }
@@ -2338,9 +2489,9 @@ errno_t processinfo_CTRLscreen()
                 {
                     char SM_fname[200];
 #ifdef STANDALONE
-                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDPROCDIR, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #else
-                    sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #endif
                     remove(SM_fname);
                 }
@@ -2355,9 +2506,9 @@ errno_t processinfo_CTRLscreen()
                 {
                     char SM_fname[200];
 #ifdef STANDALONE
-                    sprintf(SM_fname, "%s/proc.%06d.shm", SHAREDPROCDIR, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #else
-                    sprintf(SM_fname, "%s/proc.%06d.shm", data.shmdir, (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 #endif
                     remove(SM_fname);
                 }

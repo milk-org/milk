@@ -45,9 +45,9 @@ FPS-enabled functions have the following elements:
 
 Examples:
 
-	myfps            # simple name, no optional integers
-	myfps-00         # optional integer 00
-	myfps-43-20-02   # 3 optional integers
+	myfps                        # simple name, no optional integers
+	myfps-000000                 # optional integer 000000
+	myfps-000043-000020-000002   # 3 optional integers
 	
 @warning The FPS name does not need to match the process or function name. FPS name is specified in the CLI function as described in @ref page_FunctionParameterStructure_WritingCLIfunc.
 
@@ -134,61 +134,61 @@ The command code is a string, and will determine the action to be executed:
 Example source code below, assuming one optional long type argument:
 
 ~~~~{.c}
-errno_t MyFunction_cli()
-{
+
+errno_t MyFunction_cli() {
     char fpsname[200];
 
-    if( CLI_checkarg(1,5) + CLI_checkarg(2,2) == 0 )  // check that first arg is string, second arg is int
-    {
-		int OptionalArg00 = data.cmdargtoken[2].val.numl;
-		
-		// Set FPS interface name
-		// By convention, if there are optional arguments, they should be appended to the fps name
-		//
-		if(data.processnameflag == 0) // name fps to something different than the process name
-			sprintf(fpsname, "DMcomb-%02d", OptionalArg00);  
-		else // Automatically set fps name to be process name up to first instance of character '.'
-			strcpy(fpsname, data.processname0);
-		
+    // First, we try to execute function through FPS interface
+    if(CLI_checkarg(1, 5) + CLI_checkarg(2, 2) == 0) { // check that first arg is string, second arg is int
+        unsigned int OptionalArg00 = data.cmdargtoken[2].val.numl;
 
-        if( strcmp(data.cmdargtoken[1].val.string,"_CONFINIT_") == 0 )   // Initialize FPS and conf process
-        {
+        // Set FPS interface name
+        // By convention, if there are optional arguments, they should be appended to the fps name
+        //
+        if(data.processnameflag == 0) { // name fps to something different than the process name
+            sprintf(fpsname, "myfunc-%06u", OptionalArg00);
+        } else { // Automatically set fps name to be process name up to first instance of character '.'
+            strcpy(fpsname, data.processname0);
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "_CONFINIT_") == 0) {  // Initialize FPS and conf process
             printf("Function parameters configure\n");
-            MyFunction_FPCONF( fpsname, CMDCODE_CONFINIT, OptionalArg00);
+            MyFunction_FPCONF(fpsname, CMDCODE_CONFINIT, OptionalArg00);
             return RETURN_SUCCESS;
         }
 
-        if( strcmp(data.cmdargtoken[1].val.string,"_CONFSTART_") == 0 )   // Start conf process
-        {
+        if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") == 0) {  // Start conf process
             printf("Function parameters configure\n");
-            MyFunction_FPCONF( fpsname, CMDCODE_CONFSTART, OptionalArg00);
+            MyFunction_FPCONF(fpsname, CMDCODE_CONFSTART, OptionalArg00);
             return RETURN_SUCCESS;
         }
 
-        if( strcmp(data.cmdargtoken[1].val.string,"_CONFSTOP_") == 0 )  // Stop conf process
-        {
+        if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") == 0) { // Stop conf process
             printf("Function parameters configure\n");
-            MyFunction_FPCONF( fpsname, CMDCODE_CONFSTOP, OptionalArg00);
+            MyFunction_FPCONF(fpsname, CMDCODE_CONFSTOP, OptionalArg00);
             return RETURN_SUCCESS;
         }
 
-        if( strcmp(data.cmdargtoken[1].val.string,"_RUNSTART_") == 0 )  // Run process
-        {
+        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") == 0) { // Run process
             printf("Run function\n");
-            MyFunction_RUN( fpsname );
+            MyFunction_RUN(fpsname);
             return RETURN_SUCCESS;
         }
 
-        if( strcmp(data.cmdargtoken[1].val.string,"_RUNSTOP_") == 0 )  // Run process
-        {
+        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") == 0) { // Stop process
             printf("Run function\n");
-            MyFunction_Stop( OptionalArg00 );
+            MyFunction_STOP(OptionalArg00);
             return RETURN_SUCCESS;
         }
-	}
-	else
-		return RETURN_FAILURE;
-	
+    }
+
+    // non FPS implementation - all parameters specified at function launch
+    if(if(CLI_checkarg(1, 2) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) + CLI_checkarg(4, 2) == 0) {
+        MyFunction(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.numl, ata.cmdargtoken[4].val.numl);
+            return RETURN_SUCCESS;
+        } else {
+            return RETURN_FAILURE;
+        }
 }
 ~~~~
 
@@ -204,6 +204,7 @@ errno_t MyFunction_cli()
 ~~~~{.c}
 errno_t MyFunction_FPCONF(char *fpsname, uint32_t CMDmode, long optarg00);
 errno_t MyFunction_RUN(char *fpsname);
+errno_t MyFunction(long arg0num, long arg1num, long arg2num, long arg3num);
 ~~~~ 
 
 
@@ -336,7 +337,6 @@ errno_t MyFunction_RUN(
     char *fpsname
 )
 {
-
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
@@ -385,7 +385,7 @@ errno_t MyFunction_RUN(
 		
 		
 		// Note that some mechanism is required to set loopOK to 0 when MyFunction_Stop() is called
-		// This can use a separate share memory path
+		// This can use a separate shared memory path
 	}
 
 	return RETURN_SUCCESS;
@@ -393,9 +393,48 @@ errno_t MyFunction_RUN(
 ~~~~
 
 
+## 6.2. Non-FPS fallback function
+
+~~~{.c}
+long MyFunction(
+    long arg0num, 
+    long arg1num, 
+    long arg2num, 
+    long arg3num
+) {
+    char fpsname[200];
+    
+    long pindex = (long) getpid();  // index used to differentiate multiple calls to function
+    // if we don't have anything more informative, we use PID
+    
+    FUNCTION_PARAMETER_STRUCT fps;
+
+    // create FPS
+    sprintf(fpsname, "myfunc-%06ld", pindex);
+    MyFunction_FPCONF(fpsname, CMDCODE_CONFINIT, DMindex);
+
+    function_parameter_struct_connect(fpsname, &fps);
+
+    functionparameter_SetParamValue_INT64(&fps, ".arg0", arg0);
+    functionparameter_SetParamValue_INT64(&fps, ".arg1", arg1);
+    functionparameter_SetParamValue_INT64(&fps, ".arg2", arg2);
+    functionparameter_SetParamValue_INT64(&fps, ".arg3", arg3);
+
+    function_parameter_struct_disconnect(&fps);
+
+    MyFunction_RUN(fpsname);
+
+    return(IDout);
+}
 
 
-## 6.2. RUN function with FPS and processinfo {#page_FunctionParameterStructure_WritingRUNfunc_processinfo}
+
+~~~
+
+
+
+
+## 6.3. RUN function with FPS and processinfo {#page_FunctionParameterStructure_WritingRUNfunc_processinfo}
 
 
 In this example, the loop process supports both FPS and processinfo.
@@ -412,11 +451,6 @@ errno_t MyFunction_RUN(
     char *fpsname
 )
 {
-	int RT_priority = 95; // Any number from 0-99. Higher number = stronger priority.
-	struct sched_param schedpar;
-
-
-
 	// ===========================
 	// Connect to FPS 
 	// ===========================
@@ -439,6 +473,9 @@ errno_t MyFunction_RUN(
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
 	int param02 = functionparameter_GetParamValue_INT64(&fps, ".param02");
 
+	char nameim[FUNCTION_PARAMETER_STRMAXLEN+1];
+	strncpy(nameim, functionparameter_GetParamPtr_STRING(&fps, ".option.nameim"), FUNCTION_PARAMETER_STRMAXLEN);
+
 
 	// This parameter value will be tracked during loop run, so we create a pointer for it
 	// The corresponding function is functionparameter_GetParamPtr_<TYPE>
@@ -453,108 +490,58 @@ errno_t MyFunction_RUN(
 	// ===========================
 
     PROCESSINFO *processinfo;
-    if(data.processinfo==1)
-    {
-        // CREATE PROCESSINFO ENTRY
-        // see processtools.c in module CommandLineInterface for details
-        //
-        
-        char pinfoname[200];
-        char pinfostring[200];
-        
-        sprintf(pinfoname, "%s", fpsname);  // we re-use fpsname as processinfo name
-        processinfo = processinfo_shm_create(pinfoname, 0);
-        
-        
-        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-        strcpy(processinfo->source_FILE,     __FILE__);
-        processinfo->source_LINE = __LINE__;
-        
-        processinfo->loopstat = 0; // loop initialization
 
-        char msgstring[200];
-        sprintf(msgstring, "loopfunction example");
-		processinfo_WriteMessage(processinfo, msgstring);
-    }
+    processinfo = processinfo_setup(
+        fpsname,	             // re-use fpsname as processinfo name
+        "computes something",    // description
+        "add image1 to image2",  // message on startup
+        __FUNCTION__, __FILE__, __LINE__
+        );
+
+	// OPTIONAL SETTINGS
+    processinfo->MeasureTiming = 1; // Measure timing 
+    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
+ 
 
 
-	// Process signals are caught for suitable processing and reporting.
-	processinfo_CatchSignals();
-
-
-
-	// ===========================
-	// Set realtime priority
-	// ===========================
-
-    schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
-    r = seteuid(data.euid); // This goes up to maximum privileges
-    sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-    r = seteuid(data.ruid); //Go back to normal privileges
-#endif
-
-
-
-
+    int loopOK = 1
 
 	// ===========================
 	// Start loop
 	// ===========================
 
-    int loopCTRLexit = 0; // toggles to 1 when loop is set to exit cleanly
-    if(data.processinfo==1)
-        processinfo->loopstat = 1;
+    
+    processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
-	int loopOK = 1;
-	while( loopOK == 1 )
-	{
-	
-		if(data.processinfo==1)
+    while(loopOK==1)
+    {
+	    loopOK = processinfo_loopstep(processinfo);
+     
+     
+        //
+        // Semaphore wait goes here  
+        // computation starts here
+       
+        
+        
+        processinfo_exec_start(processinfo);    
+        if(processinfo_compute_status(processinfo)==1)
         {
-            while(processinfo->CTRLval == 1)  // pause
-                usleep(50);
-
-            if(processinfo->CTRLval == 2) // single iteration
-                processinfo->CTRLval = 1;
-
-            if(processinfo->CTRLval == 3) // exit loop
-                loopCTRLexit = 1;
+            //
+		    // computation ....
+		    //
         }
-
-	
-	
-		// computation start here
-		if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
-			processinfo_exec_start(processinfo);
-		
-		
-		// CTRLval = 5 will disable computations in loop (usually for testing)
-		int doComputation = 1;
-		if(data.processinfo == 1)
-			if(processinfo->CTRLval == 5)
-				doComputation = 0;
-				
-				
-		if(doComputation==1)
-		{
-		//
-		// Here we compute what we need...
-		//
-		}
-		
-		// Post semaphore(s) and counter(s) 
-		
-		// computation done
-		if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
-			processinfo_exec_end(processinfo);
-		
-		
-		// process signals, end loop
-		processinfo_ProcessSignals(processinfo);
-		loopcnt++;
-		if(data.processinfo==1)
-            processinfo->loopcnt = loopcnt;
+  
+  
+        // Post semaphore(s) and counter(s) 
+        // computation done
+        
+        // process signals, increment loop counter
+        processinfo_exec_end(processinfo);
+    
+    
+        // OPTIONAL: MESSAGE WHILE LOOP RUNNING
+        processinfo_WriteMessage(processinfo, "loop running fine");		
 	}
 
 
@@ -562,8 +549,7 @@ errno_t MyFunction_RUN(
 	// ENDING LOOP
 	// ==================================
 
-	if((data.processinfo==1)&&(processinfo->loopstat != 4))
-		processinfo_cleanExit(processinfo);
+    processinfo_cleanExit(processinfo);
 
 
 

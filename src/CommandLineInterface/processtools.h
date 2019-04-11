@@ -33,6 +33,8 @@
 // timing info for real-time loop processes
 #define PROCESSINFO_NBtimer 100
 
+#define PROCESSINFONAME_MAXCHAR 80
+
 
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
@@ -57,7 +59,7 @@ typedef int errno_t;
  *
  */
 typedef struct {
-    char name[200];             /// process name (human-readable)
+    char name[PROCESSINFONAME_MAXCHAR];             /// process name (human-readable)
 
     char source_FUNCTION[200];  /// source code function
     char source_FILE[200];      /// source code file
@@ -96,6 +98,7 @@ typedef struct {
     //
 
     int MeasureTiming;  // 1 if timing is measured, 0 otherwise
+    int RT_priority;    // -1 if unused. 0-99 for higher priority
 
     // the last PROCESSINFO_NBtimer times are stored in a circular buffer, from
     // which timing stats are derived
@@ -131,7 +134,8 @@ typedef struct {
 //
 typedef struct {
     pid_t PIDarray[PROCESSINFOLISTSIZE];
-    int active[PROCESSINFOLISTSIZE];
+    int   active[PROCESSINFOLISTSIZE];
+    char  pnamearray[PROCESSINFONAME_MAXCHAR][PROCESSINFOLISTSIZE];  // short name
 
 } PROCESSINFOLIST;
 
@@ -216,7 +220,7 @@ typedef struct
     // the index is different from the displayed order
     // new process takes first available free index
     //
-    PROCESSINFO *pinfoarray[PROCESSINFOLISTSIZE];
+    PROCESSINFO  *pinfoarray[PROCESSINFOLISTSIZE];
     int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
     pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
     int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
@@ -267,6 +271,35 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+
+PROCESSINFO * processinfo_setup(
+    char *pinfoname,	
+    char descriptionstring[200],
+    char msgstring[200],
+    const char *functionname,
+    const char *filename,
+    int   linenumber
+);
+
+errno_t processinfo_error(
+    PROCESSINFO *processinfo,
+    char *errmsgstring
+);
+
+errno_t processinfo_loopstart(
+    PROCESSINFO *processinfo
+);
+
+int processinfo_loopstep(
+    PROCESSINFO *processinfo
+);
+
+int processinfo_compute_status(
+    PROCESSINFO *processinfo
+);
+
 
 
 
