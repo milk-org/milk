@@ -1,4 +1,4 @@
-# Process Info Structure (FPS) {#page_ProcessInfoStructure}
+# Process Info Structure (processinfo) {#page_ProcessInfoStructure}
 
 @note This file: ./src/CommandLineInterface/doc/ProcessInfoStructure.md
 
@@ -19,126 +19,101 @@
 
 # 1. Overview {#page_ProcessInfoStructure_Overview}
 
-The PiS is stored in shared memory. 
+The PiS is stored in shared memory as
 
+	proc.<shortname>.<PID>.shm
+	
 
 
 ---
 
-# 2. Sample Code {#page_ProcessInfoStructure_SampleCode}
+# 2. Code Template {#page_ProcessInfoStructure_SampleCode}
 
 
 ~~~~{.c}
 
-// ===========================
-// SETUP PROCESSINFO
-// ===========================
-PROCESSINFO *processinfo;
-if((data.processinfo==1)&&(data.processinfoActive==0))
- {
-     // CREATE PROCESSINFO ENTRY
-     // see processtools.c in module CommandLineInterface for details
-     //
-     char pinfoname[200];  // short name for the processinfo instance
-     // avoid spaces, name should be human-readable
-     sprintf(pinfoname, "process-%s-to-%s", IDinname, IDoutname);
-     processinfo = processinfo_shm_create(pinfoname, 0);
-     processinfo->loopstat = 0; // loop initialization
-     strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-     strcpy(processinfo->source_FILE,     __FILE__);
-     processinfo->source_LINE = __LINE__;
-     sprintf(processinfo->description, "computes something");
-     char msgstring[200];
-     sprintf(msgstring, "%s->%s", IDinname, IDoutname);
-     processinfo_WriteMessage(processinfo, msgstring);
-     data.processinfoActive = 1;
-     processinfo->MeasureTiming = 0; // OPTIONAL: do not measure timing 
- }
+int functiontemplate_usingprocessinfo() {
+
+    PROCESSINFO *processinfo;
+
+    processinfo_setup(
+        processinfo,
+        "addimages",	         // short name for the processinfo instance, no spaces, no dot, name should be human-readable
+        "computes something",    // description
+        "add image1 to image2",  // message on startup
+        __FUNCTION__, __FILE__, __LINE__
+        );
+
+	// OPTIONAL SETTINGS
+    processinfo->MeasureTiming = 1; // Measure timing 
+    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
  
- 
-// Process signals are caught for suitable processing and reporting.
-processinfo_CatchSignals();
-
-
-// ==================================
-// TESTING CONDITION FOR LOOP ENTRY
-// ==================================
-// Pre-loop testing, anything that would prevent loop from starting should issue message
-int loopOK = 1;
-if(.... error condition ....)
-  {
-      sprintf(msgstring, "ERROR: no WFS reference");
-      if(data.processinfo == 1)
-      {
-          processinfo->loopstat = 4; // ERROR
-          processinfo_WriteMessage(processinfo, msgstring);
-      }
-      loopOK = 0;
-  }
 
 
 
-// ==================================
-// STARTING LOOP
-// ==================================
-if(data.processinfo==1)
-    processinfo->loopstat = 1;  // Notify processinfo that we are entering loop
-long loopcnt = 0;
-while(loopOK==1)
+
+    // =============================================
+    // OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
+    // =============================================
+    // Pre-loop testing, anything that would prevent loop from starting should issue message
+
+    int loopOK = 1;
+    if(.... error condition ....)
     {
-      if(data.processinfo==1)
-        {
-            while(processinfo->CTRLval == 1)  // pause
-                usleep(50);
-            if(processinfo->CTRLval == 2) // single iteration
-                processinfo->CTRLval = 1;
-            if(processinfo->CTRLval == 3) // exit loop
-            {
-                loopOK = 0;
-            }
-        }
-    //
-    // Semaphore wait goes here  
-    // computation start here
-    if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
-        processinfo_exec_start(processinfo);
-    // CTRLval = 5 will disable computations in loop (usually for testing)
-    int doComputation = 1;
-    if(data.processinfo == 1)
-        if(processinfo->CTRLval == 5)
-            doComputation = 0;
-    if(doComputation==1)
-    {
-    //
-    // computation ....
-    //
+        processinfo_error(processinfo, "ERROR: no WFS reference");
+        loopOK = 0;
     }
-    // Post semaphore(s) and counter(s) 
-    // computation done
-    if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
-        processinfo_exec_end(processinfo);
-    // OPTIONAL MESSAGE WHILE LOOP RUNNING
-    if(data.processinfo==1)
+
+
+
+
+    // ==================================
+    // STARTING LOOP
+    // ==================================
+    
+    processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
+
+    
+    while(loopOK==1)
+    {
+	    loopOK = processinfo_loopstep(processinfo);
+     
+     
+        //
+        // Semaphore wait goes here  
+        // computation starts here
+       
+        
+        
+        processinfo_exec_start(processinfo);    
+        if(processinfo_compute_status(processinfo)==1)
         {
-            char msgstring[200];
-            sprintf(msgstring, "%d save threads", NBthreads);
-            processinfo_WriteMessage(processinfo, msgstring);
+            //
+		    // computation ....
+		    //
         }
-     // process signals, end loop
-     processinfo_ProcessSignals(processinfo);
-     loopcnt++;
-     if(data.processinfo==1)
-            processinfo->loopcnt = loopcnt;
+  
+  
+        // Post semaphore(s) and counter(s) 
+        // computation done
+        
+        // process signals, increment loop counter
+        processinfo_exec_end(processinfo);
+    
+    
+        // OPTIONAL: MESSAGE WHILE LOOP RUNNING
+        processinfo_WriteMessage(processinfo, "loop running fine");
     }   
 
 
 
-// ==================================
-// ENDING LOOP
-// ==================================
-if((data.processinfo==1)&&(processinfo->loopstat != 4))
-   processinfo_cleanExit(processinfo);
+    // ==================================
+    // ENDING LOOP
+    // ==================================
+    processinfo_cleanExit(processinfo);
 
+    return 0;
+}
 ~~~~
 
 

@@ -385,10 +385,10 @@ errno_t streamCTRL_CTRLscreen();
 #define FPTYPE_FLOAT64       0x0004
 #define FPTYPE_PID           0x0008
 #define FPTYPE_TIMESPEC      0x0010
-#define FPTYPE_FILENAME      0x0020
-#define FPTYPE_DIRNAME       0x0040
-#define FPTYPE_STREAMNAME    0x0080
-#define FPTYPE_STRING        0x0100
+#define FPTYPE_FILENAME      0x0020  // generic filename
+#define FPTYPE_DIRNAME       0x0040  // directory name
+#define FPTYPE_STREAMNAME    0x0080  // stream name -> process may load from shm if required
+#define FPTYPE_STRING        0x0100  // generic string
 #define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
 #define FPTYPE_PROCESS       0x0400
 
@@ -422,17 +422,38 @@ errno_t streamCTRL_CTRLscreen();
 
 // parameter testing
 #define FPFLAG_CHECKINIT     0x00010000    // should parameter be initialized prior to function start ?
-#define FPFLAG_CHECKSTREAM   0x00040000    // check stream, read size and type
-#define FPFLAG_MINLIMIT      0x00080000    // enforce min limit
-#define FPFLAG_MAXLIMIT      0x00100000    // enforce max limit
-#define FPFLAG_ERROR         0x00200000    // is current parameter value OK ?
+#define FPFLAG_MINLIMIT      0x00020000    // enforce min limit
+#define FPFLAG_MAXLIMIT      0x00040000    // enforce max limit
+#define FPFLAG_ERROR         0x00080000    // is current parameter value OK ?
+
+
+// STREAM actions and tests
+
+// A stream may be in :
+// - process memory (MEM)
+// - system shared memory (SHM)
+// - configuration (CONF): a file ./conf/<stream>.fname.conf contains the name of the disk file to be loaded as the stream
+
+#define FPFLAG_STREAM_REQUIRED_PRE_MEM       0x00100000  // stream has to be in MEM (test performed before loading)
+#define FPFLAG_STREAM_REQUIRED_PRE_SHM       0x00200000  // stream has to be in SHM (test performed before loading)
+#define FPFLAG_STREAM_REQUIRED_PRE_CONF      0x00400000  // stream has to be in CONF (test performed before loading)
+#define FPFLAG_STREAM_ACTION_TRY_LOADSHM     0x00800000  // try to load from SHM if not in MEM
+#define FPFLAG_STREAM_ACTION_TRY_LOADCONF    0x01000000  // try to load from CONF if not in MEM or SHM
+#define FPFLAG_STREAM_ACTION_FORCE_LOADSHM   0x02000000  // always load from SHM to MEM
+#define FPFLAG_STREAM_ACTION_FORCE_LOADCONF  0x04000000  // always load from CONF to SHM and MEM
+#define FPFLAG_STREAM_REQUIRED_POST_MEM      0x08000000  // stream has to be in MEM after loading
+
+#define FPFLAG_CHECKSTREAM                   0x10000000  // check and display stream status
 
 
 
 // PRE-ASSEMBLED DEFAULT FLAGS
 
 // input parameter (used as default when adding entry)
-#define FPFLAG_DFT_INPUT      FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
+#define FPFLAG_DFT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
+#define FPFLAG_DFT_INPUT_STREAM     FPFLAG_DFT_INPUT|FPFLAG_STREAM_ACTION_TRY_LOADSHM|FPFLAG_STREAM_TRY_LOADCONF|FPFLAG_STREAM_REQUIRED_POST_MEM
+#define FPFLAG_DFT_OUTPUT_STREAM    FPFLAG_DFT_INPUT
+
 
 // status parameters, no logging, read only
 #define FPFLAG_DFT_STATUS     FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
@@ -443,7 +464,7 @@ errno_t streamCTRL_CTRLscreen();
 
 
 typedef struct {
-	uint64_t status;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
+	uint64_t fpflag;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
 
 	// Parameter name
 	char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
@@ -574,7 +595,7 @@ int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstr
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
-int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t status, void *dataptr);
+int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
 
 int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
