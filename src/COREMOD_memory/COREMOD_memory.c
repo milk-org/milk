@@ -1,6 +1,6 @@
 /**
  * @file    COREMOD_memory.c
- * @brief   cfitsTK memory functions
+ * @brief   milk memory functions
  * 
  * Functions to handle images and streams
  *  
@@ -905,17 +905,82 @@ int_fast8_t COREMOD_MEMORY_image_streamupdateloop_semtrig_cli()
 }
 
 
-
-int_fast8_t COREMOD_MEMORY_streamDelay_cli()
-{
-    if(CLI_checkarg(1,4)+CLI_checkarg(2,5)+CLI_checkarg(3,2)+CLI_checkarg(4,2)==0)
-    {
+/*
+int_fast8_t COREMOD_MEMORY_streamDelay_cli() {
+    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 5) + CLI_checkarg(3, 2) + CLI_checkarg(4, 2) == 0) {
         COREMOD_MEMORY_streamDelay(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.numl);
         return 0;
-    }
-    else
+    } else {
         return 1;
+    }
 }
+*/
+
+int_fast8_t COREMOD_MEMORY_streamDelay_cli() {
+    char fpsname[200];
+
+    // First, we try to execute function through FPS interface
+    if(CLI_checkarg(1, 5) + CLI_checkarg(2, 2) == 0) { // check that first arg is string, second arg is int
+        unsigned int OptionalArg00 = data.cmdargtoken[2].val.numl;
+
+        // Set FPS interface name
+        // By convention, if there are optional arguments, they should be appended to the fps name
+        //
+        if(data.processnameflag == 0) { // name fps to something different than the process name
+            sprintf(fpsname, "streamDelay-%02u", OptionalArg00);
+        } else { // Automatically set fps name to be process name up to first instance of character '.'
+            strcpy(fpsname, data.processname0);
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "_CONFINIT_") == 0) {  // Initialize FPS and conf process
+            printf("Function parameters configure\n");
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT, OptionalArg00);
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") == 0) {  // Start conf process
+            printf("Function parameters configure\n");
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTART, OptionalArg00);
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") == 0) { // Stop conf process
+            printf("Function parameters configure\n");
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTOP, OptionalArg00);
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") == 0) { // Run process
+            printf("Run function\n");
+            COREMOD_MEMORY_streamDelay_RUN(fpsname);
+            return RETURN_SUCCESS;
+        }
+/*
+        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") == 0) { // Stop process
+            printf("Run function\n");
+            COREMOD_MEMORY_streamDelay_STOP(OptionalArg00);
+            return RETURN_SUCCESS;
+        }*/
+    }
+
+    // non FPS implementation - all parameters specified at function launch
+    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 5) + CLI_checkarg(3, 2) + CLI_checkarg(4, 2) == 0) {
+        COREMOD_MEMORY_streamDelay(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.numl);
+        return RETURN_SUCCESS;
+    } else {
+        return RETURN_FAILURE;
+    }
+
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1693,14 +1758,11 @@ int_fast8_t delete_image_ID(const char* imname) /* deletes an ID */
             data.image[ID].shmfd = -1;
             data.image[ID].memsize = 0;
 
-
-            sprintf(command, "rm /dev/shm/sem.%s_sem*", imname);
+            sprintf(command, "rm /dev/shm/sem.%s.%s_sem*", data.shmsemdirname, imname);
             r = system(command);
 
-
-            sprintf(fname, "/dev/shm/sem.%s_semlog", imname);
+            sprintf(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
             remove(fname);
-
 
             sprintf(command, "rm %s/%s.im.shm", data.shmdir, imname);
             r = system(command);
@@ -5926,19 +5988,80 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 
 
 
+
+
+
+
+
+
+//
+// manages configuration parameters
+// initializes configuration parameters structure
+//
+errno_t COREMOD_MEMORY_streamDelay_FPCONF(
+    char *fpsname,
+    uint32_t CMDmode,
+    unsigned int pindex
+) {
+    uint16_t loopstatus;
+
+    // ===========================
+    // SETUP FPS
+    // ===========================
+
+    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
+    if(loopstatus == 0) { // stop fps
+        return 0;
+    }
+
+
+    // ===========================
+    // ALLOCATE FPS ENTRIES
+    // ===========================
+
+    void *pNull = NULL;
+    uint64_t FPFLAG;
+
+	FPFLAG = FPFLAG_DFT_INPUT | FPFLAG_MINLIMIT;
+    FPFLAG &= ~FPFLAG_WRITERUN;
+    long delayus_default[4] = { 1000, 1, 10000, 1000 };
+    long dtus_default[4] = { 50, 1, 200, 50 };
+    long fp_delayus = function_parameter_add_entry(&fps, ".delayus", "Delay [us]",    FPTYPE_INT64, FPFLAG, &delayus_default);
+    long fp_dtus    = function_parameter_add_entry(&fps, ".dtus", "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
+
+	long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DFT_INPUT, pNull);
+	long fp_stream_outname = function_parameter_add_entry(&fps, ".out_name", "output stream", FPTYPE_STREAMNAME, FPFLAG_DFT_INPUT, pNull);
+
+    // RUN UPDATE LOOP
+    while(loopstatus == 1) {
+        if(function_parameter_FPCONFloopstep(&fps, CMDmode, &loopstatus) == 1) { // if update needed
+
+            // here goes the logic
+
+            functionparameter_CheckParametersAll(&fps);  // check all parameter values
+        }
+    }
+    function_parameter_FPCONFexit(&fps);
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
 /**
  *
  * IDout_name is a time-delayed copy of IDin_name
  *
  */
 
-long COREMOD_MEMORY_streamDelay(
-    const char *IDin_name,
-    const char *IDout_name,
-    long delayus,
-    long dtus
-)
-{
+int COREMOD_MEMORY_streamDelay_RUN(
+    char *fpsname
+) {
     long IDimc;
     long IDin, IDout;
     uint32_t xsize, ysize, xysize;
@@ -5956,31 +6079,81 @@ long COREMOD_MEMORY_streamDelay(
     long kk;
 
 
-
-    PROCESSINFO *processinfo;
-    if(data.processinfo==1)
-    {
-        // CREATE PROCESSINFO ENTRY
-        // see processtools.c in module CommandLineInterface for details
-        //
-        char pinfoname[200];
-        sprintf(pinfoname, "%s", __FUNCTION__);
-        processinfo = processinfo_shm_create(pinfoname, 0);
-        processinfo->loopstat = 0; // loop initialization
-
-        char msgstring[200];
-        sprintf(msgstring, "%s->%s + %ldus", IDin_name, IDout_name, delayus);
-        strcpy(processinfo->statusmsg, msgstring);
+    // ===========================
+    // CONNECT TO FPS
+    // ===========================
+    FUNCTION_PARAMETER_STRUCT fps;
+    if(function_parameter_struct_connect(fpsname, &fps) == -1) {
+        printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
+        exit(EXIT_FAILURE);
     }
+    fps.md->runpid = getpid();  // write process PID into FPS
 
 
+
+    // ===============================
+    // GET FUNCTION PARAMETER VALUES
+    // ===============================
+    // parameters are addressed by their tag name
+    // These parameters are read once, before running the loop
+    //
+    char IDin_name[200];
+    strncpy(IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_name"),  FUNCTION_PARAMETER_STRMAXLEN);
+
+    char IDout_name[200];
+    strncpy(IDout_name, functionparameter_GetParamPtr_STRING(&fps, ".out_name"), FUNCTION_PARAMETER_STRMAXLEN);
+
+    long delayus;
+    functionparameter_GetParamValue_INT64(&fps, ".delayus");
+
+    long dtus;
+    functionparameter_GetParamValue_INT64(&fps, ".dtus");
+
+
+
+
+    // ===========================
+    // processinfo support
+    // ===========================
+    PROCESSINFO *processinfo;
+
+    char pinfodescr[200];
+    sprintf(pinfodescr, "steamdelay %s %s", IDin_name, IDout_name);
+    processinfo = processinfo_setup(
+                      fpsname,                 // re-use fpsname as processinfo name
+                      pinfodescr,    // description
+                      "startup",  // message on startup
+                      __FUNCTION__, __FILE__, __LINE__
+                  );
+
+    PROCESSINFO *processinfo_setup(
+        char *pinfoname,
+        char descriptionstring[200],
+        char msgstring[200],
+        const char *functionname,
+        const char *filename,
+        int   linenumber
+    );
+
+
+    // OPTIONAL SETTINGS
+    processinfo->MeasureTiming = 1; // Measure timing
+    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
+
+
+
+
+    // =============================================
+    // OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
+    // =============================================
+    // Pre-loop testing, anything that would prevent loop from starting should issue message
+    int loopOK = 1;
 
 
     IDin = image_ID(IDin_name);
 
     // ERROR HANDLING
-    if(IDin == -1)
-    {
+    if(IDin == -1) {
         struct timespec errtime;
         struct tm *errtm;
 
@@ -5998,35 +6171,29 @@ long COREMOD_MEMORY_streamDelay(
                 __LINE__,
                 IDin_name);
 
-        if(data.processinfo==1)
-        {
-            char msgstring[200];
-            sprintf(msgstring, "Input stream %s does not exist", IDin_name);
-            strcpy(processinfo->statusmsg, msgstring);
-            processinfo->loopstat = 4; // Error
-        }
-
-
-        return 1;
+        char msgstring[200];
+        sprintf(msgstring, "Input stream %s does not exist", IDin_name);
+        processinfo_error(processinfo, msgstring);
+        loopOK = 0;
     }
 
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
-    zsize = (uint32_t) (delayus/dtus);
-    if(zsize<1)
+    zsize = (uint32_t)(delayus / dtus);
+    if(zsize < 1) {
         zsize = 1;
-    xysize = xsize*ysize;
+    }
+    xysize = xsize * ysize;
 
-    t0array = (struct timespec*) malloc(sizeof(struct timespec)*zsize);
+    t0array = (struct timespec *) malloc(sizeof(struct timespec) * zsize);
 
     IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
 
 
 
     IDout = image_ID(IDout_name);
-    if(IDout==-1) // CREATE IT
-    {
-        arraytmp = (uint32_t*) malloc(sizeof(uint32_t)*2);
+    if(IDout == -1) { // CREATE IT
+        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
         IDout = create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
@@ -6040,45 +6207,40 @@ long COREMOD_MEMORY_streamDelay(
     cnt0old = data.image[IDin].md[0].cnt0;
 
     clock_gettime(CLOCK_REALTIME, &tnow);
-    for(kk=0; kk<zsize; kk++)
+    for(kk = 0; kk < zsize; kk++) {
         t0array[kk] = tnow;
+    }
 
 
 
-    if(data.processinfo==1)
-        processinfo->loopstat = 1; // loop running
-    int loopOK = 1;
-    int loopCTRLexit = 0;
-	long loopcnt = 0;
-	
-    while(loopOK == 1)
-    {
-        if(data.processinfo==1)
-        {
-            while(processinfo->CTRLval == 1)  // pause
-                usleep(50);
+    // ==================================
+    // STARTING LOOP
+    // ==================================
+    processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
-            if(processinfo->CTRLval == 2) // single iteration
-                processinfo->CTRLval = 1;
 
-            if(processinfo->CTRLval == 3) // exit loop
-                loopCTRLexit = 1;
-        }
+    while(loopOK == 1) {
+        loopOK = processinfo_loopstep(processinfo);
 
+
+        usleep(dtus);
+
+
+        processinfo_exec_start(processinfo);
 
         // has new frame arrived ?
         cnt0 = data.image[IDin].md[0].cnt0;
-        if(cnt0!=cnt0old)
-        {
+        if(cnt0 != cnt0old) {
             clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
 
-            for(ii=0; ii<xysize; ii++) {
-                data.image[IDimc].array.F[kkin*xysize+ii] = data.image[IDin].array.F[ii];
+            for(ii = 0; ii < xysize; ii++) {
+                data.image[IDimc].array.F[kkin * xysize + ii] = data.image[IDin].array.F[ii];
             }
             kkin++;
 
-            if(kkin==zsize)
+            if(kkin == zsize) {
                 kkin = 0;
+            }
             cnt0old = cnt0;
         }
 
@@ -6087,25 +6249,27 @@ long COREMOD_MEMORY_streamDelay(
 
         cntskip = 0;
         tdiff = info_time_diff(t0array[kkout], tnow);
-        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
         //		printf("tdiff = %f us   ", tdiffv*1e6);
         //		fflush(stdout);
-        while((tdiffv>1.0e-6*delayus)&&(cntskip<zsize))
-        {
+        while((tdiffv > 1.0e-6 * delayus) && (cntskip < zsize)) {
             cntskip++;
             kkout++;
-            if(kkout==zsize)
+            if(kkout == zsize) {
                 kkout = 0;
+            }
             tdiff = info_time_diff(t0array[kkout], tnow);
-            tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+            tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         }
         //		printf("cntskip = %ld\n", cntskip);
         //		fflush(stdout);
 
-        if(cntskip>0)
-        {
-            char* ptr; // pointer address
+
+
+
+        if(cntskip > 0) {
+            char *ptr; // pointer address
 
             //list_image_ID();
             //printf("Updating %s  ID %ld -> %ld   %ld %ld", IDout_name, IDimc, IDout, xysize, kkout);
@@ -6113,9 +6277,9 @@ long COREMOD_MEMORY_streamDelay(
 
             data.image[IDout].md[0].write = 1;
 
-            ptr = (char*) data.image[IDimc].array.F;
-            ptr += SIZEOF_DATATYPE_FLOAT*xysize*kkout;
-            memcpy(data.image[IDout].array.F, ptr, SIZEOF_DATATYPE_FLOAT*xysize);
+            ptr = (char *) data.image[IDimc].array.F;
+            ptr += SIZEOF_DATATYPE_FLOAT * xysize * kkout;
+            memcpy(data.image[IDout].array.F, ptr, SIZEOF_DATATYPE_FLOAT * xysize);
 
             //for(ii=0;ii<xysize;ii++)
             //	data.image[IDout].array.F[ii] = data.image[IDimc].array.F[kkout*xysize+ii];
@@ -6127,42 +6291,65 @@ long COREMOD_MEMORY_streamDelay(
             //fflush(stdout);
         }
 
+        // process signals, increment loop counter
+        processinfo_exec_end(processinfo);
 
 
-        if(loopCTRLexit == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo==1)
-            {
-                struct timespec tstop;
-                struct tm *tstoptm;
-                char msgstring[200];
-
-                clock_gettime(CLOCK_REALTIME, &tstop);
-                tstoptm = gmtime(&tstop.tv_sec);
-
-                sprintf(msgstring, "CTRLexit at %02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
-                strncpy(processinfo->statusmsg, msgstring, 200);
-
-                processinfo->loopstat = 3; // clean exit
-            }
-        }
-
-
-        usleep(dtus);
-        
-        loopcnt++;
-        
-        if(data.processinfo==1)
-			processinfo->loopcnt = loopcnt;
     }
+
+    // ==================================
+    // ENDING LOOP
+    // ==================================
+    processinfo_cleanExit(processinfo);
 
     delete_image_ID("_tmpc");
 
     free(t0array);
 
+    return(IDout);
+}
+
+
+
+
+
+long COREMOD_MEMORY_streamDelay(
+    const char *IDin_name,
+    const char *IDout_name,
+    long delayus,
+    long dtus
+) {
+    char fpsname[200];
+    unsigned int pindex = 0;
+    FUNCTION_PARAMETER_STRUCT fps;
+
+    // create FPS
+    sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
+    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT, pindex);
+
+    function_parameter_struct_connect(fpsname, &fps);
+
+    functionparameter_SetParamValue_STRING(&fps, ".instreamname", IDin_name);
+    functionparameter_SetParamValue_STRING(&fps, ".outstreamname", IDout_name);
+
+    functionparameter_SetParamValue_INT64(&fps, ".delayus", delayus);
+    functionparameter_SetParamValue_INT64(&fps, ".dtus", delayus);
+
+    function_parameter_struct_disconnect(&fps);
+
+    COREMOD_MEMORY_streamDelay_RUN(fpsname);
+
     return(0);
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -7143,7 +7330,6 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)
             
                 data.image[ID].md[0].cnt1 = frame_md[0].cnt1;
                                     
-
            
                 if(NBslices>1)
                     memcpy(ptr0+framesize*frame_md[0].cnt1, buff, framesize);
