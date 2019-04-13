@@ -927,7 +927,7 @@ int_fast8_t COREMOD_MEMORY_streamDelay_cli() {
         // By convention, if there are optional arguments, they should be appended to the fps name
         //
         if(data.processnameflag == 0) { // name fps to something different than the process name
-            sprintf(fpsname, "streamDelay-%02u", OptionalArg00);
+            sprintf(fpsname, "streamDelay-%06u", OptionalArg00);
         } else { // Automatically set fps name to be process name up to first instance of character '.'
             strcpy(fpsname, data.processname0);
         }
@@ -6022,15 +6022,15 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
     void *pNull = NULL;
     uint64_t FPFLAG;
 
-	FPFLAG = FPFLAG_DFT_INPUT | FPFLAG_MINLIMIT;
+	FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
     long delayus_default[4] = { 1000, 1, 10000, 1000 };
     long dtus_default[4] = { 50, 1, 200, 50 };
     long fp_delayus = function_parameter_add_entry(&fps, ".delayus", "Delay [us]",    FPTYPE_INT64, FPFLAG, &delayus_default);
     long fp_dtus    = function_parameter_add_entry(&fps, ".dtus", "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
 
-	long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DFT_INPUT, pNull);
-	long fp_stream_outname = function_parameter_add_entry(&fps, ".out_name", "output stream", FPTYPE_STREAMNAME, FPFLAG_DFT_INPUT, pNull);
+	long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT, pNull);
+	long fp_stream_outname = function_parameter_add_entry(&fps, ".out_name", "output stream", FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT, pNull);
 
     // RUN UPDATE LOOP
     while(loopstatus == 1) {
@@ -6083,11 +6083,10 @@ int COREMOD_MEMORY_streamDelay_RUN(
     // CONNECT TO FPS
     // ===========================
     FUNCTION_PARAMETER_STRUCT fps;
-    if(function_parameter_struct_connect(fpsname, &fps) == -1) {
+    if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1) {
         printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
-        exit(EXIT_FAILURE);
+        return RETURN_FAILURE;
     }
-    fps.md->runpid = getpid();  // write process PID into FPS
 
 
 
@@ -6118,7 +6117,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
     PROCESSINFO *processinfo;
 
     char pinfodescr[200];
-    sprintf(pinfodescr, "steamdelay %s %s", IDin_name, IDout_name);
+    sprintf(pinfodescr, "streamdelay %s %s", IDin_name, IDout_name);
     processinfo = processinfo_setup(
                       fpsname,                 // re-use fpsname as processinfo name
                       pinfodescr,    // description
@@ -6327,7 +6326,7 @@ long COREMOD_MEMORY_streamDelay(
     sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
     COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT, pindex);
 
-    function_parameter_struct_connect(fpsname, &fps);
+    function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN);
 
     functionparameter_SetParamValue_STRING(&fps, ".instreamname", IDin_name);
     functionparameter_SetParamValue_STRING(&fps, ".outstreamname", IDout_name);
