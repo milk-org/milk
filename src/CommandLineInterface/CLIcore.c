@@ -40,6 +40,7 @@
 #include <dirent.h> 
 #include <stddef.h> // offsetof()
 
+
 //#include <pthread_np.h>
 
 #ifdef __MACH__
@@ -143,7 +144,7 @@ int DLib_index;
 void *DLib_handle[1000];
 
 
-extern int yy_scan_string(const char *);
+extern void yy_scan_string(const char *);
 extern int yylex_destroy (void );
 
 
@@ -251,119 +252,116 @@ static int_fast8_t help_command(char *cmdkey);
 /// signal catching
 
 
-void sig_handler(int signo)
-{
-	pid_t thisPID;
-	FILE *fpexit;
-	char fname[200];
-	
-	thisPID = getpid();
-	
-    switch ( signo ) {
-        
+void sig_handler(int signo) {
+    pid_t thisPID;
+    FILE *fpexit;
+    char fname[200];
+
+    thisPID = getpid();
+
+    switch(signo) {
+
         case SIGINT:
-           printf("sig_handler received SIGINT\n");
-           data.signal_INT = 1;
-        break;
-        
+            printf("sig_handler received SIGINT\n");
+            data.signal_INT = 1;
+            break;
+
         case SIGTERM:
-			printf("sig_handler received SIGTERM - see file exit.%d.log\n", thisPID);			
-			sprintf(fname, "exit.%d.log", thisPID);
-			fpexit = fopen( fname, "w");
-			if ( fpexit != NULL )
-			{
-				fprintf(fpexit, "SIGTERM %d\n", thisPID);
-				fprintf(fpexit, "Last exec step:\n");
-				fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
-				fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-				fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-				fclose(fpexit);
-			}
-           data.signal_TERM = 1;
-        break;
-        
+            printf("sig_handler received SIGTERM - see file exit.%d.log\n", thisPID);
+            sprintf(fname, "exit.%d.log", thisPID);
+            fpexit = fopen(fname, "w");
+            if(fpexit != NULL) {
+                fprintf(fpexit, "SIGTERM %d\n", thisPID);
+                fprintf(fpexit, "Last exec step:\n");
+                fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+                fclose(fpexit);
+            }
+            data.signal_TERM = 1;
+            break;
+
         case SIGUSR1:
-             printf("sig_handler received SIGUSR1\n");
-           data.signal_USR1 = 1;
-        break;
-        
+            printf("sig_handler received SIGUSR1\n");
+            data.signal_USR1 = 1;
+            break;
+
         case SIGUSR2:
-             printf("sig_handler received SIGUSR2\n");
-           data.signal_USR2 = 1;
-        break;
-        
-         case SIGBUS: // exit program after SIGSEGV
+            printf("sig_handler received SIGUSR2\n");
+            data.signal_USR2 = 1;
+            break;
+
+        case SIGBUS: // exit program after SIGSEGV
             printf("sig_handler received SIGBUS -> exit - see file exit.%d.log\n", thisPID);
-           	sprintf(fname, "exit.%d.log", thisPID);
-			fpexit = fopen( fname, "w");
-			if ( fpexit != NULL )
-			{
-				fprintf(fpexit, "SIGBUS %d\n", thisPID);
-				fprintf(fpexit, "Last exec step:\n");
-				fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
-				fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-				fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-				fclose(fpexit);
-			}
-           data.signal_BUS = 1;
-           exit( EXIT_FAILURE );
-        break;
-        
+            sprintf(fname, "exit.%d.log", thisPID);
+            fpexit = fopen(fname, "w");
+            if(fpexit != NULL) {
+                fprintf(fpexit, "SIGBUS %d\n", thisPID);
+                fprintf(fpexit, "Last exec step:\n");
+                fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+                fclose(fpexit);
+            }
+            data.signal_BUS = 1;
+            exit(EXIT_FAILURE);
+            break;
+
         case SIGABRT:
-             printf("sig_handler received SIGABRT\n");
-           data.signal_ABRT = 1;
-        break;
-        
+            printf("sig_handler received SIGABRT\n");
+            data.signal_ABRT = 1;
+            break;
+
         case SIGSEGV: // exit program after SIGSEGV
 //             if(data.signal_SEGV == 0)
-			printf("sig_handler received SIGSEGV -> exit - see file exit.%d.log\n", thisPID);
-           	sprintf(fname, "exit.%d.log", thisPID);
-			fpexit = fopen( fname, "w");
-			if ( fpexit != NULL )
-			{
-				fprintf(fpexit, "SIGSEGV %d\n", thisPID);
-				fprintf(fpexit, "Last exec step:\n");
-				fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
-				fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-				fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-				fclose(fpexit);
-			}
-			data.signal_SEGV = 1;
-           exit( EXIT_FAILURE );
-        break;
-        
+            printf("sig_handler received SIGSEGV -> exit - see file exit.%d.log\n", thisPID);
+            sprintf(fname, "exit.%d.log", thisPID);
+            fpexit = fopen(fname, "w");
+            if(fpexit != NULL) {
+                fprintf(fpexit, "SIGSEGV %d\n", thisPID);
+                fprintf(fpexit, "Last exec step:\n");
+                fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+                fclose(fpexit);
+            }
+            data.signal_SEGV = 1;
+            exit(EXIT_FAILURE);
+            break;
+
         case SIGHUP:
-             printf("sig_handler received SIGHUP\n");
-           data.signal_HUP = 1;
-        break;
-        
-         case SIGPIPE:
-             printf("sig_handler received SIGPIPE\n");
-           data.signal_PIPE = 1;
-        break;
-   }
+            printf("sig_handler received SIGHUP\n");
+            data.signal_HUP = 1;
+            break;
+
+        case SIGPIPE:
+            printf("sig_handler received SIGPIPE\n");
+            data.signal_PIPE = 1;
+            break;
+    }
 }
+
+
+
 
 /// CLI functions
 
-int_fast8_t exitCLI()
-{
-    if(data.fifoON == 1)
-    {
-		char command[500];
+int_fast8_t exitCLI() {
+    if(data.fifoON == 1) {
+        char command[500];
         sprintf(command, "rm %s", data.fifoname);
-        
-        if( system(command) != 0)
-            printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+
+        if(system(command) != 0) {
+            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        }
     }
 
     main_free();
 
 
-    if(Listimfile==1) {
-        if(system("rm imlist.txt")==-1)
-        {
-            printERROR(__FILE__,__func__,__LINE__,"system() error");
+    if(Listimfile == 1) {
+        if(system("rm imlist.txt") == -1) {
+            printERROR(__FILE__, __func__, __LINE__, "system() error");
             exit(4);
         }
     }
@@ -373,182 +371,183 @@ int_fast8_t exitCLI()
 
     printf("Closing PID %ld (prompt process)\n", (long) getpid());
     exit(0);
-    
+
     return 0;
 }
 
 
 
-static int_fast8_t printInfo()
-{
+static int_fast8_t printInfo() {
     float f1;
     printf("\n");
     printf("  PID = %d\n", CLIPID);
 
 
     printf("--------------- GENERAL ----------------------\n");
-    printf("%s  %s\n",  data.package_name, data.package_version );
+    printf("%s  %s\n",  data.package_name, data.package_version);
     printf("IMAGESTRUCT_VERSION %s\n", IMAGESTRUCT_VERSION);
     printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
     printf("procinfo status = %d\n", data.processinfo);
-    
-    if(data.precision==0)
+
+    if(data.precision == 0) {
         printf("Default precision upon startup : float\n");
-    if(data.precision==1)
+    }
+    if(data.precision == 1) {
         printf("Default precision upon startup : double\n");
-    printf("sizeof(struct timespec)        = %4ld bit\n", sizeof(struct timespec)*8);
-	printf("sizeof(pid_t)                  = %4ld bit\n", sizeof(pid_t)*8);
-	printf("sizeof(short int)              = %4ld bit\n", sizeof(short int)*8);
-	printf("sizeof(int)                    = %4ld bit\n", sizeof(int)*8);
-	printf("sizeof(long)                   = %4ld bit\n", sizeof(long)*8);
-	printf("sizeof(long long)              = %4ld bit\n", sizeof(long long)*8);
-	printf("sizeof(int_fast8_t)            = %4ld bit\n", sizeof(int_fast8_t)*8);
-	printf("sizeof(int_fast16_t)           = %4ld bit\n", sizeof(int_fast16_t)*8);
-	printf("sizeof(int_fast32_t)           = %4ld bit\n", sizeof(int_fast32_t)*8);
-	printf("sizeof(int_fast64_t)           = %4ld bit\n", sizeof(int_fast64_t)*8);
-	printf("sizeof(uint_fast8_t)           = %4ld bit\n", sizeof(uint_fast8_t)*8);
-	printf("sizeof(uint_fast16_t)          = %4ld bit\n", sizeof(uint_fast16_t)*8);
-	printf("sizeof(uint_fast32_t)          = %4ld bit\n", sizeof(uint_fast32_t)*8);
-	printf("sizeof(uint_fast64_t)          = %4ld bit\n", sizeof(uint_fast64_t)*8);
-	printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD)*8);
-	
-	size_t offsetval = 0;
-	size_t offsetval0 = 0;
-	
-	printf("sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte ------------------\n", sizeof(IMAGE_METADATA)*8, sizeof(IMAGE_METADATA));
+    }
+    printf("sizeof(struct timespec)        = %4ld bit\n", sizeof(struct timespec) * 8);
+    printf("sizeof(pid_t)                  = %4ld bit\n", sizeof(pid_t) * 8);
+    printf("sizeof(short int)              = %4ld bit\n", sizeof(short int) * 8);
+    printf("sizeof(int)                    = %4ld bit\n", sizeof(int) * 8);
+    printf("sizeof(long)                   = %4ld bit\n", sizeof(long) * 8);
+    printf("sizeof(long long)              = %4ld bit\n", sizeof(long long) * 8);
+    printf("sizeof(int_fast8_t)            = %4ld bit\n", sizeof(int_fast8_t) * 8);
+    printf("sizeof(int_fast16_t)           = %4ld bit\n", sizeof(int_fast16_t) * 8);
+    printf("sizeof(int_fast32_t)           = %4ld bit\n", sizeof(int_fast32_t) * 8);
+    printf("sizeof(int_fast64_t)           = %4ld bit\n", sizeof(int_fast64_t) * 8);
+    printf("sizeof(uint_fast8_t)           = %4ld bit\n", sizeof(uint_fast8_t) * 8);
+    printf("sizeof(uint_fast16_t)          = %4ld bit\n", sizeof(uint_fast16_t) * 8);
+    printf("sizeof(uint_fast32_t)          = %4ld bit\n", sizeof(uint_fast32_t) * 8);
+    printf("sizeof(uint_fast64_t)          = %4ld bit\n", sizeof(uint_fast64_t) * 8);
+    printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n", sizeof(IMAGE_KEYWORD) * 8);
 
-	offsetval = offsetof(IMAGE_METADATA, version);
+    size_t offsetval = 0;
+    size_t offsetval0 = 0;
 
+    printf("sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte ------------------\n", sizeof(IMAGE_METADATA) * 8, sizeof(IMAGE_METADATA));
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, name);
-	printf("   version                     offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-	
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, naxis);
-	printf("   name                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, size);
-	printf("   naxis                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, nelement);
-	printf("   size                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, datatype);
-	printf("   nelement                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, imagetype);
-	printf("   datatype                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, creationtime);
-	printf("   imagetype                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+    offsetval = offsetof(IMAGE_METADATA, version);
 
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, lastaccesstime);
-	printf("   creationtime                offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, name);
+    printf("   version                     offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, atime);
-	printf("   lastaccesstime              offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);		
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, naxis);
+    printf("   name                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, atimearray);
-	printf("   atime                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, size);
+    printf("   naxis                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, writetime);
-	printf("   atimearray                  offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, nelement);
+    printf("   size                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, writetimearray);
-	printf("   writetime                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, datatype);
+    printf("   nelement                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, shared);
-	printf("   writetimearray              offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, imagetype);
+    printf("   datatype                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, location);
-	printf("   shared                      offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, status);
-	printf("   location                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, flag);
-	printf("   status                      offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, flagarray);
-	printf("   flag                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, logflag);
-	printf("   flagarray                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, sem);
-	printf("   logflag                     offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, cnt0);
-	printf("   sem                         offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, cnt1);
-	printf("   cnt0                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, cnt2);
-	printf("   cnt1                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, cntarray);
-	printf("   cnt2                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, write);
-	printf("   cntarray                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, NBkw);
-	printf("   write                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	offsetval = offsetof(IMAGE_METADATA, cudaMemHandle);
-	printf("   NBkw                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8*offsetval0, offsetval0, offsetval-offsetval0);
-
-	offsetval0 = offsetval;
-	printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n", 8*offsetval0, offsetval0);
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, creationtime);
+    printf("   imagetype                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
 
 
-	
-	printf("sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte ------------------\n", sizeof(IMAGE)*8, sizeof(IMAGE));
-	printf("   name                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, name),                      offsetof(IMAGE, name));
-	printf("   used                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, used),                      offsetof(IMAGE, used));
-	printf("   shmfd                       offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, shmfd),                     offsetof(IMAGE, shmfd));
-	printf("   memsize                     offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, memsize),                   offsetof(IMAGE, memsize));
-	printf("   semlog                      offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semlog),                    offsetof(IMAGE, semlog));
-	printf("   md                          offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, md),                        offsetof(IMAGE, md));
-	printf("   array                       offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, array),                     offsetof(IMAGE, array));
-	printf("   semptr                      offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, semptr),                    offsetof(IMAGE, semptr));
-	printf("   kw                          offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE, kw),                        offsetof(IMAGE, kw));
-	
-	printf("sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte ------------------\n", sizeof(IMAGE_KEYWORD)*8, sizeof(IMAGE_KEYWORD));
-	printf("   name                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
-	printf("   type                        offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
-	printf("   value                       offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
-	printf("   comment                     offset = %4zu bit  = %4zu byte\n", 8*offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
-	
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, lastaccesstime);
+    printf("   creationtime                offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, atime);
+    printf("   lastaccesstime              offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, atimearray);
+    printf("   atime                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, writetime);
+    printf("   atimearray                  offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, writetimearray);
+    printf("   writetime                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, shared);
+    printf("   writetimearray              offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, location);
+    printf("   shared                      offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, status);
+    printf("   location                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, flag);
+    printf("   status                      offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, flagarray);
+    printf("   flag                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, logflag);
+    printf("   flagarray                   offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, sem);
+    printf("   logflag                     offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, cnt0);
+    printf("   sem                         offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, cnt1);
+    printf("   cnt0                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, cnt2);
+    printf("   cnt1                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, cntarray);
+    printf("   cnt2                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, write);
+    printf("   cntarray                    offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, NBkw);
+    printf("   write                       offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval = offsetof(IMAGE_METADATA, cudaMemHandle);
+    printf("   NBkw                        offset = %4zu bit  = %4zu byte     [%4zu byte]\n", 8 * offsetval0, offsetval0, offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n", 8 * offsetval0, offsetval0);
+
+
+
+    printf("sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte ------------------\n", sizeof(IMAGE) * 8, sizeof(IMAGE));
+    printf("   name                        offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, name),                      offsetof(IMAGE, name));
+    printf("   used                        offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, used),                      offsetof(IMAGE, used));
+    printf("   shmfd                       offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, shmfd),                     offsetof(IMAGE, shmfd));
+    printf("   memsize                     offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, memsize),                   offsetof(IMAGE, memsize));
+    printf("   semlog                      offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, semlog),                    offsetof(IMAGE, semlog));
+    printf("   md                          offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, md),                        offsetof(IMAGE, md));
+    printf("   array                       offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, array),                     offsetof(IMAGE, array));
+    printf("   semptr                      offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, semptr),                    offsetof(IMAGE, semptr));
+    printf("   kw                          offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE, kw),                        offsetof(IMAGE, kw));
+
+    printf("sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte ------------------\n", sizeof(IMAGE_KEYWORD) * 8, sizeof(IMAGE_KEYWORD));
+    printf("   name                        offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
+    printf("   type                        offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
+    printf("   value                       offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
+    printf("   comment                     offset = %4zu bit  = %4zu byte\n", 8 * offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
+
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
     printf("READLINE : version %x\n", RL_READLINE_VERSION);
@@ -557,79 +556,74 @@ static int_fast8_t printInfo()
 # endif
     printf("CFITSIO  : version %f\n", fits_get_version(&f1));
     printf("\n");
-    
+
     printf("--------------- DIRECTORIES ------------------\n");
     printf("CONFIGDIR = %s\n", data.configdir);
     printf("SOURCEDIR = %s\n", data.sourcedir);
     printf("\n");
-    
-	printf("--------------- MALLOC INFO ------------------\n");
-	malloc_stats();
+
+    printf("--------------- MALLOC INFO ------------------\n");
+    malloc_stats();
 
     printf("\n");
-    
+
     return(0);
 }
 
 
 
-static int_fast8_t help()
-{
-  char command[200];
+static int_fast8_t help() {
+    char command[200];
 
-  sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", data.sourcedir);
-  if(system(command) != 0)
-    {
-      printERROR(__FILE__,__func__,__LINE__,"system call error");
-      exit(4);
+    sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", data.sourcedir);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system call error");
+        exit(4);
     }
-  return 0;
+    return 0;
 }
 
 
-static int_fast8_t helpreadline()
-{
-  char command[200];
-  int r;
+static int_fast8_t helpreadline() {
+    char command[200];
+    int r;
 
-  sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", data.sourcedir);
-  if(system(command) != 0)
-    {
-      printERROR(__FILE__, __func__, __LINE__, "system call error");
-      exit(4);
+    sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", data.sourcedir);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system call error");
+        exit(4);
     }
-  
-  return 0;
+
+    return 0;
 }
 
 
-static int_fast8_t help_cmd()
-{
+static int_fast8_t help_cmd() {
 
-  if((data.cmdargtoken[1].type == 3)||(data.cmdargtoken[1].type == 4)||(data.cmdargtoken[1].type == 5))
-    help_command(data.cmdargtoken[1].val.string);
-  else
-    list_commands();
+    if((data.cmdargtoken[1].type == 3) || (data.cmdargtoken[1].type == 4) || (data.cmdargtoken[1].type == 5)) {
+        help_command(data.cmdargtoken[1].val.string);
+    } else {
+        list_commands();
+    }
 
-  return 0;
+    return 0;
 }
 
 
 
-static int_fast8_t help_module()
-{
+static int_fast8_t help_module() {
 
-    if(data.cmdargtoken[1].type == 3)
+    if(data.cmdargtoken[1].type == 3) {
         list_commands_module(data.cmdargtoken[1].val.string);
-    else
-    {
-		long i;
-		printf("\n");
-		printf("%6s  %36s  %10s  %s\n", "Index", "Module name", "Package", "Module description");
-		printf("-------------------------------------------------------------------------------------------------------\n");
-        for(i=0; i<data.NBmodule; i++)
+    } else {
+        long i;
+        printf("\n");
+        printf("%6s  %36s  %10s  %s\n", "Index", "Module name", "Package", "Module description");
+        printf("-------------------------------------------------------------------------------------------------------\n");
+        for(i = 0; i < data.NBmodule; i++) {
             printf("%6ld  %36s  %10s  %s\n", i, data.module[i].name, data.module[i].package, data.module[i].info);
-		printf("-------------------------------------------------------------------------------------------------------\n");
+        }
+        printf("-------------------------------------------------------------------------------------------------------\n");
         printf("\n");
     }
 
@@ -638,95 +632,94 @@ static int_fast8_t help_module()
 
 
 
-static int_fast8_t load_so()
-{
-   load_sharedobj(data.cmdargtoken[1].val.string);
+static int_fast8_t load_so() {
+    load_sharedobj(data.cmdargtoken[1].val.string);
 }
 
 
 
 
-static int_fast8_t load_module()
-{
+static int_fast8_t load_module() {
 
-    if(data.cmdargtoken[1].type == 3)
-    {
+    if(data.cmdargtoken[1].type == 3) {
         load_module_shared(data.cmdargtoken[1].val.string);
         return 0;
-    }
-    else
+    } else {
         return 1;
-}
-
-
-
-
-int_fast8_t set_processinfoON()
-{
-  data.processinfo  = 1;
-  
-  return 0;
-}
-
-int_fast8_t set_processinfoOFF()
-{
-  data.processinfo  = 0;
-  
-  return 0;
-}
-
-
-
-int_fast8_t set_default_precision_single()
-{
-  data.precision  = 0;
-  
-  return 0;
-}
-
-
-
-
-int_fast8_t set_default_precision_double()
-{
-  data.precision  = 1;
-
-  return 0;
-}
-
-
-
-int_fast8_t cfits_usleep_cli()
-{
-  if(data.cmdargtoken[1].type == 2)
-    {
-      usleep(data.cmdargtoken[1].val.numl);
-      return 0;
     }
-  else
+}
+
+
+
+
+int_fast8_t set_processinfoON() {
+    data.processinfo  = 1;
+
+    return 0;
+}
+
+int_fast8_t set_processinfoOFF() {
+    data.processinfo  = 0;
+
+    return 0;
+}
+
+
+
+int_fast8_t set_default_precision_single() {
+    data.precision  = 0;
+
+    return 0;
+}
+
+
+
+
+int_fast8_t set_default_precision_double() {
+    data.precision  = 1;
+
+    return 0;
+}
+
+
+
+int_fast8_t cfits_usleep_cli() {
+    if(data.cmdargtoken[1].type == 2) {
+        usleep(data.cmdargtoken[1].val.numl);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+
+int_fast8_t functionparameter_CTRLscreen_cli() {
+    if((CLI_checkarg(1, 2) == 0) && (CLI_checkarg(2, 5) == 0) && (CLI_checkarg(3, 5) == 0)) {
+        functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.string);
+        return 0;
+    } else {
+        printf("Wrong args (%d)\n", data.cmdargtoken[1].type);
+    }
     return 1;
 }
 
 
-int_fast8_t functionparameter_CTRLscreen_cli()
+
+int_fast8_t processinfo_CTRLscreen_cli()
 {
-    if( (CLI_checkarg(1,2) == 0) && (CLI_checkarg(2,5) == 0) && (CLI_checkarg(3,5) == 0))
-    {
-        functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.string);
-        return 0;
-    }
-    else
-    {
-		printf("Wrong args (%d)\n", data.cmdargtoken[1].type);
-	}
-        return 1;
+	return( (int_fast8_t) processinfo_CTRLscreen());
+}
+
+int_fast8_t streamCTRL_CTRLscreen_cli()
+{
+	return( (int_fast8_t) streamCTRL_CTRLscreen());
 }
 
 
 
 
-static int_fast8_t CLI_execute_line()
-{
+
+static int_fast8_t CLI_execute_line() {
     long i, j;
     char *cmdargstring;
     char str[200];
@@ -735,133 +728,126 @@ static int_fast8_t CLI_execute_line()
     struct tm *uttime;
     struct timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
     char command[200];
-    
 
-    if (line[0]=='!')
-    {
+
+    if(line[0] == '!') {
         line[0] = ' ';
-        if(system(line) != 0)
-        {
-            printERROR(__FILE__,__func__,__LINE__,"system call error");
+        if(system(line) != 0) {
+            printERROR(__FILE__, __func__, __LINE__, "system call error");
             exit(4);
         }
         data.CMDexecuted = 1;
-    }
-    else if (line[0]=='#')
-    {
+    } else if(line[0] == '#') {
         // do nothing... this is a comment
         data.CMDexecuted = 1;
-    }
-    else
-    {
+    } else {
         // some initialization
         data.parseerror = 0;
         data.calctmp_imindex = 0;
-        for(i=0; i<NB_ARG_MAX; i++)
+        for(i = 0; i < NB_ARG_MAX; i++) {
             data.cmdargtoken[0].type = 0;
+        }
 
-        if(data.CLIlogON==1)
-        {
+        if(data.CLIlogON == 1) {
             t = time(NULL);
             uttime = gmtime(&t);
             clock_gettime(CLOCK_REALTIME, thetime);
 
-            sprintf(data.CLIlogname, "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log", getenv("HOME"), 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, data.processname);
+            sprintf(data.CLIlogname, "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log", getenv("HOME"), 1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, 1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, data.processname);
 
             fp = fopen(data.CLIlogname, "a");
-            if(fp==NULL)
-            {
+            if(fp == NULL) {
                 printf("ERROR: cannot log into file %s\n", data.CLIlogname);
-                sprintf(command, "mkdir -p %s/logdir/%04d%02d%02d\n", getenv("HOME"), 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday);
-                
-                if( system(command) != 0)
-					printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
-            }
-            else
-            {
-                fprintf(fp, "%04d/%02d/%02d %02d:%02d:%02d.%09ld %10s %6ld %s\n", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec, thetime->tv_nsec, data.processname, (long) getpid(), line);
+                sprintf(command, "mkdir -p %s/logdir/%04d%02d%02d\n", getenv("HOME"), 1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday);
+
+                if(system(command) != 0) {
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
+            } else {
+                fprintf(fp, "%04d/%02d/%02d %02d:%02d:%02d.%09ld %10s %6ld %s\n", 1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min, uttime->tm_sec, thetime->tv_nsec, data.processname, (long) getpid(), line);
                 fclose(fp);
             }
         }
 
         data.cmdNBarg = 0;
-        cmdargstring = strtok (line," ");
-        while (cmdargstring!= NULL)
-        {
-            if((cmdargstring[0]=='\"')&&(cmdargstring[strlen(cmdargstring)-1]=='\"'))
-            {
+        cmdargstring = strtok(line, " ");
+        while(cmdargstring != NULL) {
+            if((cmdargstring[0] == '\"') && (cmdargstring[strlen(cmdargstring) - 1] == '\"')) {
                 printf("Unprocessed string : ");
-                for(j=0; j<strlen(cmdargstring)-2; j++)
-                    cmdargstring[j] = cmdargstring[j+1];
+                for(j = 0; j < strlen(cmdargstring) - 2; j++) {
+                    cmdargstring[j] = cmdargstring[j + 1];
+                }
                 cmdargstring[j] = '\0';
                 printf("%s\n", cmdargstring);
                 data.cmdargtoken[data.cmdNBarg].type = 6;
                 sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
-            }
-            else
-            {
-                sprintf(str,"%s\n", cmdargstring);
+            } else {
+                sprintf(str, "%s\n", cmdargstring);
                 yy_scan_string(str);
                 data.calctmp_imindex = 0;
-                yyparse ();
+                yyparse();
             }
-            cmdargstring = strtok (NULL, " ");
+            cmdargstring = strtok(NULL, " ");
             data.cmdNBarg++;
         }
         data.cmdargtoken[data.cmdNBarg].type = 0;
         yylex_destroy();
 
-        i=0;
-        if(data.Debug==1)
-            while(data.cmdargtoken[i].type != 0)
-            {
+        i = 0;
+        if(data.Debug == 1)
+            while(data.cmdargtoken[i].type != 0) {
                 printf("TOKEN %ld type : %d\n", i, data.cmdargtoken[i].type);
-                if(data.cmdargtoken[i].type==1) // double
+                if(data.cmdargtoken[i].type == 1) { // double
                     printf("\t double : %g\n", data.cmdargtoken[i].val.numf);
-                if(data.cmdargtoken[i].type==2) // long
+                }
+                if(data.cmdargtoken[i].type == 2) { // long
                     printf("\t long   : %ld\n", data.cmdargtoken[i].val.numl);
-                if(data.cmdargtoken[i].type==3) // new variable/image
+                }
+                if(data.cmdargtoken[i].type == 3) { // new variable/image
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
-                if(data.cmdargtoken[i].type==4) // existing image
+                }
+                if(data.cmdargtoken[i].type == 4) { // existing image
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
-                if(data.cmdargtoken[i].type==5) // command
+                }
+                if(data.cmdargtoken[i].type == 5) { // command
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
-                if(data.cmdargtoken[i].type==6) // unprocessed string
+                }
+                if(data.cmdargtoken[i].type == 6) { // unprocessed string
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                }
                 i++;
             }
-        if(data.parseerror==0)
-        {
-            if(data.cmdargtoken[0].type==5)
-            {
-                if(data.Debug==1)
+        if(data.parseerror == 0) {
+            if(data.cmdargtoken[0].type == 5) {
+                if(data.Debug == 1) {
                     printf("EXECUTING COMMAND %ld (%s)\n", data.cmdindex, data.cmd[data.cmdindex].key);
+                }
                 data.cmd[data.cmdindex].fp();
                 data.CMDexecuted = 1;
             }
         }
-        for(i=0; i<data.calctmp_imindex; i++)
-        {
-            sprintf(calctmpimname,"_tmpcalc%ld",i);
-            if(image_ID(calctmpimname)!=-1)
-            {
-                if(data.Debug==1)
+        for(i = 0; i < data.calctmp_imindex; i++) {
+            sprintf(calctmpimname, "_tmpcalc%ld", i);
+            if(image_ID(calctmpimname) != -1) {
+                if(data.Debug == 1) {
                     printf("Deleting %s\n", calctmpimname);
+                }
                 delete_image_ID(calctmpimname);
             }
         }
 
 
-        if(!((data.cmdargtoken[0].type==3)||(data.cmdargtoken[0].type==6)))
+        if(!((data.cmdargtoken[0].type == 3) || (data.cmdargtoken[0].type == 6))) {
             data.CMDexecuted = 1;
+        }
 
 
         add_history(line);
 
     }
 
-	free(thetime);
-	
+    free(thetime);
+
     return(0);
 }
 
@@ -877,10 +863,9 @@ static int_fast8_t CLI_execute_line()
  * @brief Readline callback
  *
  **/
-void rl_cb(char* linein)
-{
-  
-    if (NULL==linein) {
+void rl_cb(char *linein) {
+
+    if(NULL == linein) {
         rlquit = true;
         return;
     }
@@ -888,52 +873,56 @@ void rl_cb(char* linein)
     CLIexecuteCMDready = 1;
     line = strdup(linein);
     CLI_execute_line();
-        
+
     // free(line);
 }
 
 
 
 
-int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString)
-{
-	int OKmsg = 0;
-	
-	strcpy(data.module[data.NBmodule].name, basename(FileName));
-	strcpy(data.module[data.NBmodule].package, PackageName);
-	strcpy(data.module[data.NBmodule].info, InfoString);
-	
-	if(data.progStatus==0)
-	{
-		OKmsg = 1;
-		printf(".");
-	//	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
-	//	fflush(stdout);
-	}		
-	
-	if(data.progStatus==1)
-	{
-		OKmsg = 1;
-		printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
-		fflush(stdout);
-	}	
-	
-	if ( OKmsg == 0 )
-	{
-		printf("  %02ld  ERROR: module load requested outside of normal step -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
-		fflush(stdout);
-	}
-	
-	data.NBmodule++;
-	
-	
-	return 0;
+int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString) {
+    int OKmsg = 0;
+
+    strcpy(data.module[data.NBmodule].name, basename(FileName));
+    strcpy(data.module[data.NBmodule].package, PackageName);
+    strcpy(data.module[data.NBmodule].info, InfoString);
+
+    if(data.progStatus == 0) {
+        OKmsg = 1;
+        printf(".");
+        //	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+        //	fflush(stdout);
+    }
+
+    if(data.progStatus == 1) {
+        OKmsg = 1;
+        printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+        fflush(stdout);
+    }
+
+    if(OKmsg == 0) {
+        printf("  %02ld  ERROR: module load requested outside of normal step -> LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+        fflush(stdout);
+    }
+
+    data.NBmodule++;
+
+
+    return 0;
 }
 
 
 
 
-uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CLIfptr)(), char *CLIinfo, char *CLIsyntax, char *CLIexample, char *CLICcall) {
+uint_fast16_t RegisterCLIcommand(
+    char *CLIkey,
+    char *CLImodule,
+    int_fast8_t (*CLIfptr)(),
+    char *CLIinfo,
+    char *CLIsyntax,
+    char *CLIexample,
+    char *CLICcall
+) {
 
 //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
 
@@ -985,7 +974,11 @@ void fnExit_fifoclose()
  */
 
 
-int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
+int_fast8_t runCLI(
+    int argc,
+    char *argv[],
+    char *promptstring
+) {
     long i, j;
     int quiet = 0;
     long tmplong;
@@ -1171,13 +1164,13 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
             closedir(tmpdir);
             printf("    Using SHM directory %s\n", shmdirname);
         } else {
-			printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
+            printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
             printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
-			printf("%c[%d;m", (char) 27, 0); // unset color red
+            printf("%c[%d;m", (char) 27, 0); // unset color red
             exit(EXIT_FAILURE);
         }
     } else {
-		printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
+        printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
         printf("    WARNING: Environment variable MILK_SHM_DIR not specified -> falling back to default %s\n", SHAREDMEMDIR);
         printf("    BEWARE : Other milk users may be using the same SHM directory on this machine, and could see your milk session data and temporary files\n");
         printf("    BEWARE : Some scripts may rely on MILK_SHM_DIR to find/access shared memory and temporary files, and WILL not run.\n");
@@ -1217,7 +1210,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
         }
     }
 
-    sprintf(data.shmdir, shmdirname);
+    sprintf(data.shmdir, "%s", shmdirname);
 
 
     // change / to . and write to shmsemdirname
@@ -1227,7 +1220,7 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
             shmdirname[stri] = '.';
         }
 
-    sprintf(data.shmsemdirname, shmdirname);
+    sprintf(data.shmsemdirname, "%s", shmdirname);
     printf("    semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n", data.shmsemdirname);
 
 
@@ -1495,7 +1488,11 @@ int_fast8_t runCLI(int argc, char *argv[], char *promptstring) {
 
 
 
-static char **CLI_completion(const char *text, int start,  int end) {
+static char **CLI_completion(
+    const char *text,
+    int start,
+    int end
+) {
     char **matches;
 
     matches = (char **)NULL;
@@ -1517,7 +1514,10 @@ static char **CLI_completion(const char *text, int start,  int end) {
 
 
 
-char *CLI_generator(const char *text, int state) {
+char *CLI_generator(
+    const char *text,
+    int state
+) {
     static int list_index, list_index1, len;
     char *name;
     char *strtmp;
@@ -1604,69 +1604,67 @@ void *xmalloc(int size) {
 
 
 /*^-----------------------------------------------------------------------------
-| void main_init : Initialization the "data" structure  
-| 
-| 
+| void main_init : Initialization the "data" structure
+|
+|
 |
 |
 +-----------------------------------------------------------------------------*/
-void main_init()
-{
+void main_init() {
 
-  long tmplong;
+    long tmplong;
 //  int i;
-  struct timeval t1;
+    struct timeval t1;
 
-   
-  /* initialization of the data structure 
-   */
-  data.quiet           = 1;
-  data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
-  data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
-  data.INVRANDMAX      = 1.0/RAND_MAX;
-  
 
-  // initialize modules
-  data.NB_MAX_MODULE = DATA_NB_MAX_MODULE;
+    /* initialization of the data structure
+     */
+    data.quiet           = 1;
+    data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
+    data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
+    data.INVRANDMAX      = 1.0 / RAND_MAX;
+
+
+    // initialize modules
+    data.NB_MAX_MODULE = DATA_NB_MAX_MODULE;
 //  data.module = (MODULE*) malloc(sizeof(MODULE)*data.NB_MAX_MODULE);
-  
 
-  // initialize commands
-  data.NB_MAX_COMMAND = 5000;
-  if(data.Debug>0)
-    {
-      printf("Allocating cmd array : %ld\n", sizeof(CMD)*data.NB_MAX_COMMAND);
-      fflush(stdout);
+
+    // initialize commands
+    data.NB_MAX_COMMAND = 5000;
+    if(data.Debug > 0) {
+        printf("Allocating cmd array : %ld\n", sizeof(CMD)*data.NB_MAX_COMMAND);
+        fflush(stdout);
     }
- 
-	data.NB_MAX_COMMAND = DATA_NB_MAX_COMMAND;
- // data.cmd = (CMD*) malloc(sizeof(CMD)*data.NB_MAX_COMMAND);
+
+    data.NB_MAX_COMMAND = DATA_NB_MAX_COMMAND;
+// data.cmd = (CMD*) malloc(sizeof(CMD)*data.NB_MAX_COMMAND);
 //  data.NBcmd = 0;
-  
-  data.cmdNBarg = 0;
 
-  // Allocate data.image
-  
-  #ifdef DATA_STATIC_ALLOC
-  // image static allocation mode
-  data.NB_MAX_IMAGE = STATIC_NB_MAX_IMAGE;
-	printf("STATIC ALLOCATION mode: set data.NB_MAX_IMAGE      = %5ld\n", data.NB_MAX_IMAGE);
-  #else
-  data.image           = (IMAGE*) calloc(data.NB_MAX_IMAGE, sizeof(IMAGE));
-  if(data.image==NULL)  {
-    printERROR(__FILE__,__func__,__LINE__,"Allocation of data.image has failed - exiting program");
-    exit(1);
-  }
-  if(data.Debug>0)
-    {
-      printf("Allocation of data.image completed %p\n", data.image);
-      fflush(stdout);
+    data.cmdNBarg = 0;
+
+    // Allocate data.image
+
+#ifdef DATA_STATIC_ALLOC
+    // image static allocation mode
+    data.NB_MAX_IMAGE = STATIC_NB_MAX_IMAGE;
+    printf("STATIC ALLOCATION mode: set data.NB_MAX_IMAGE      = %5ld\n", data.NB_MAX_IMAGE);
+#else
+    data.image           = (IMAGE *) calloc(data.NB_MAX_IMAGE, sizeof(IMAGE));
+    if(data.image == NULL)  {
+        printERROR(__FILE__, __func__, __LINE__, "Allocation of data.image has failed - exiting program");
+        exit(1);
     }
-  #endif
+    if(data.Debug > 0) {
+        printf("Allocation of data.image completed %p\n", data.image);
+        fflush(stdout);
+    }
+#endif
 
-	for(long i=0; i<data.NB_MAX_IMAGE; i++)
-		data.image[i].used = 0;
-	
+    for(long i = 0; i < data.NB_MAX_IMAGE; i++) {
+        data.image[i].used = 0;
+    }
+
 //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
 
 
@@ -1676,250 +1674,249 @@ void main_init()
 
 
 
-  // Allocate data.variable
-  
-  #ifdef DATA_STATIC_ALLOC
-  // variable static allocation mode 
-  data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
-	printf("STATIC ALLOCATION mode: set data.NB_MAX_VARIABLE   = %5ld\n", data.NB_MAX_VARIABLE);
-  #else
-  data.variable = (VARIABLE*) calloc(data.NB_MAX_VARIABLE, sizeof(VARIABLE));
-  if(data.variable==NULL)  {
-    printERROR(__FILE__,__func__,__LINE__,"Allocation of data.variable has failed - exiting program");       
-    exit(1);
-  }
-  
-  data.image[0].used   = 0;
-  data.image[0].shmfd  = -1;
-  tmplong              = data.NB_MAX_VARIABLE;
-  data.NB_MAX_VARIABLE = data.NB_MAX_VARIABLE + NB_VARIABLES_BUFFER_REALLOC ;
-  
-  
-  data.variable = (VARIABLE *) realloc(data.variable, data.NB_MAX_VARIABLE*sizeof(VARIABLE));
-  for(long i = tmplong; i < data.NB_MAX_VARIABLE; i++)
-	{
-		data.variable[i].used = 0;
-		data.variable[i].type = 0; /** defaults to floating point type */
-	}
-  
-	if (data.variable == NULL)   {
-    printERROR(__FILE__,__func__,__LINE__, "Reallocation of data.variable has failed - exiting program");
-    exit(1);
-  }
-  #endif  
-  
-  
+    // Allocate data.variable
 
-  create_variable_ID("_PI",3.14159265358979323846264338328);
-  create_variable_ID("_e",exp(1));
-  create_variable_ID("_gamma",0.5772156649);
-  create_variable_ID("_c",299792458.0);
-  create_variable_ID("_h",6.626075540e-34);
-  create_variable_ID("_k",1.38065812e-23);
-  create_variable_ID("_pc",3.0856776e16);
-  create_variable_ID("_ly",9.460730472e15);
-  create_variable_ID("_AU",1.4959787066e11);
+#ifdef DATA_STATIC_ALLOC
+    // variable static allocation mode
+    data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
+    printf("STATIC ALLOCATION mode: set data.NB_MAX_VARIABLE   = %5ld\n", data.NB_MAX_VARIABLE);
+#else
+    data.variable = (VARIABLE *) calloc(data.NB_MAX_VARIABLE, sizeof(VARIABLE));
+    if(data.variable == NULL)  {
+        printERROR(__FILE__, __func__, __LINE__, "Allocation of data.variable has failed - exiting program");
+        exit(1);
+    }
+
+    data.image[0].used   = 0;
+    data.image[0].shmfd  = -1;
+    tmplong              = data.NB_MAX_VARIABLE;
+    data.NB_MAX_VARIABLE = data.NB_MAX_VARIABLE + NB_VARIABLES_BUFFER_REALLOC ;
 
 
-	gettimeofday(&t1, NULL);
-	srand(t1.tv_usec * t1.tv_sec);
+    data.variable = (VARIABLE *) realloc(data.variable, data.NB_MAX_VARIABLE * sizeof(VARIABLE));
+    for(long i = tmplong; i < data.NB_MAX_VARIABLE; i++) {
+        data.variable[i].used = 0;
+        data.variable[i].type = 0; /** defaults to floating point type */
+    }
+
+    if(data.variable == NULL)   {
+        printERROR(__FILE__, __func__, __LINE__, "Reallocation of data.variable has failed - exiting program");
+        exit(1);
+    }
+#endif
+
+
+
+    create_variable_ID("_PI", 3.14159265358979323846264338328);
+    create_variable_ID("_e", exp(1));
+    create_variable_ID("_gamma", 0.5772156649);
+    create_variable_ID("_c", 299792458.0);
+    create_variable_ID("_h", 6.626075540e-34);
+    create_variable_ID("_k", 1.38065812e-23);
+    create_variable_ID("_pc", 3.0856776e16);
+    create_variable_ID("_ly", 9.460730472e15);
+    create_variable_ID("_AU", 1.4959787066e11);
+
+
+    gettimeofday(&t1, NULL);
+    srand(t1.tv_usec * t1.tv_sec);
 //	printf("RAND: %ld\n", t1.tv_usec * t1.tv_sec);
 //  srand(time(NULL));
 
 
 
-  strcpy(data.cmd[data.NBcmd].key,"exit");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = exitCLI;
-  strcpy(data.cmd[data.NBcmd].info,"exit program (same as quit command)");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"exit");
-  strcpy(data.cmd[data.NBcmd].Ccall,"exitCLT");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "exit");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = exitCLI;
+    strcpy(data.cmd[data.NBcmd].info, "exit program (same as quit command)");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "exit");
+    strcpy(data.cmd[data.NBcmd].Ccall, "exitCLT");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"quit");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = exitCLI;
-  strcpy(data.cmd[data.NBcmd].info,"quit program (same as exit command)");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"quit");
-  strcpy(data.cmd[data.NBcmd].Ccall,"exitCLI");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "quit");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = exitCLI;
+    strcpy(data.cmd[data.NBcmd].info, "quit program (same as exit command)");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "quit");
+    strcpy(data.cmd[data.NBcmd].Ccall, "exitCLI");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"exitCLI");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = exitCLI;
-  strcpy(data.cmd[data.NBcmd].info,"quit program (same as exit command)");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"quit");
-  strcpy(data.cmd[data.NBcmd].Ccall,"exitCLI");
-  data.NBcmd++;
-
-
+    strcpy(data.cmd[data.NBcmd].key, "exitCLI");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = exitCLI;
+    strcpy(data.cmd[data.NBcmd].info, "quit program (same as exit command)");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "quit");
+    strcpy(data.cmd[data.NBcmd].Ccall, "exitCLI");
+    data.NBcmd++;
 
 
 
-  strcpy(data.cmd[data.NBcmd].key,"help");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = help;
-  strcpy(data.cmd[data.NBcmd].info,"print help");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"help");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int help()");
-  data.NBcmd++;
-
-  strcpy(data.cmd[data.NBcmd].key,"?");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = help;
-  strcpy(data.cmd[data.NBcmd].info,"print help");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"help");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int help()");
-  data.NBcmd++;
 
 
-  strcpy(data.cmd[data.NBcmd].key,"helprl");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = helpreadline;
-  strcpy(data.cmd[data.NBcmd].info,"print readline help");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"helprl");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int helpreadline()");
-  data.NBcmd++;
-  
-  strcpy(data.cmd[data.NBcmd].key,"cmd?");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = help_cmd;
-  strcpy(data.cmd[data.NBcmd].info,"list commands");
-  strcpy(data.cmd[data.NBcmd].syntax,"command name (optional)");
-  strcpy(data.cmd[data.NBcmd].example,"cmd?");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int help_cmd()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "help");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = help;
+    strcpy(data.cmd[data.NBcmd].info, "print help");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "help");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int help()");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"m?");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = help_module;
-  strcpy(data.cmd[data.NBcmd].info,"list commands in a module");
-  strcpy(data.cmd[data.NBcmd].syntax,"module name");
-  strcpy(data.cmd[data.NBcmd].example,"m? COREMOD_memory.c");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int list_commands_module()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "?");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = help;
+    strcpy(data.cmd[data.NBcmd].info, "print help");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "help");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int help()");
+    data.NBcmd++;
 
 
-  strcpy(data.cmd[data.NBcmd].key,"soload");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = load_so;
-  strcpy(data.cmd[data.NBcmd].info,"load shared object");
-  strcpy(data.cmd[data.NBcmd].syntax,"shared object name");
-  strcpy(data.cmd[data.NBcmd].example,"soload mysharedobj.so");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int load_sharedobj(char *libname)");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "helprl");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = helpreadline;
+    strcpy(data.cmd[data.NBcmd].info, "print readline help");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "helprl");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int helpreadline()");
+    data.NBcmd++;
+
+    strcpy(data.cmd[data.NBcmd].key, "cmd?");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = help_cmd;
+    strcpy(data.cmd[data.NBcmd].info, "list commands");
+    strcpy(data.cmd[data.NBcmd].syntax, "command name (optional)");
+    strcpy(data.cmd[data.NBcmd].example, "cmd?");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int help_cmd()");
+    data.NBcmd++;
+
+    strcpy(data.cmd[data.NBcmd].key, "m?");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = help_module;
+    strcpy(data.cmd[data.NBcmd].info, "list commands in a module");
+    strcpy(data.cmd[data.NBcmd].syntax, "module name");
+    strcpy(data.cmd[data.NBcmd].example, "m? COREMOD_memory.c");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int list_commands_module()");
+    data.NBcmd++;
 
 
-  strcpy(data.cmd[data.NBcmd].key,"mload");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = load_module;
-  strcpy(data.cmd[data.NBcmd].info,"load module from shared object");
-  strcpy(data.cmd[data.NBcmd].syntax,"module name");
-  strcpy(data.cmd[data.NBcmd].example,"mload mymodule");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int load_module_shared(char *modulename)");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "soload");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = load_so;
+    strcpy(data.cmd[data.NBcmd].info, "load shared object");
+    strcpy(data.cmd[data.NBcmd].syntax, "shared object name");
+    strcpy(data.cmd[data.NBcmd].example, "soload mysharedobj.so");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int load_sharedobj(char *libname)");
+    data.NBcmd++;
 
 
-  strcpy(data.cmd[data.NBcmd].key,"ci");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = printInfo;
-  strcpy(data.cmd[data.NBcmd].info,"Print version, settings, info and exit");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"ci");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int printInfo()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "mload");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = load_module;
+    strcpy(data.cmd[data.NBcmd].info, "load module from shared object");
+    strcpy(data.cmd[data.NBcmd].syntax, "module name");
+    strcpy(data.cmd[data.NBcmd].example, "mload mymodule");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int load_module_shared(char *modulename)");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"dpsingle");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = set_default_precision_single;
-  strcpy(data.cmd[data.NBcmd].info,"Set default precision to single");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"dpsingle");
-  strcpy(data.cmd[data.NBcmd].Ccall,"data.precision = 0");
-  data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"dpdouble");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = set_default_precision_double;
-  strcpy(data.cmd[data.NBcmd].info,"Set default precision to doube");
-  strcpy(data.cmd[data.NBcmd].syntax,"no argument");
-  strcpy(data.cmd[data.NBcmd].example,"dpdouble");
-  strcpy(data.cmd[data.NBcmd].Ccall,"data.precision = 1");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "ci");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = printInfo;
+    strcpy(data.cmd[data.NBcmd].info, "Print version, settings, info and exit");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "ci");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int printInfo()");
+    data.NBcmd++;
+
+    strcpy(data.cmd[data.NBcmd].key, "dpsingle");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = set_default_precision_single;
+    strcpy(data.cmd[data.NBcmd].info, "Set default precision to single");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "dpsingle");
+    strcpy(data.cmd[data.NBcmd].Ccall, "data.precision = 0");
+    data.NBcmd++;
+
+    strcpy(data.cmd[data.NBcmd].key, "dpdouble");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = set_default_precision_double;
+    strcpy(data.cmd[data.NBcmd].info, "Set default precision to doube");
+    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
+    strcpy(data.cmd[data.NBcmd].example, "dpdouble");
+    strcpy(data.cmd[data.NBcmd].Ccall, "data.precision = 1");
+    data.NBcmd++;
 
 
 
 // process info
 
-  strcpy(data.cmd[data.NBcmd].key,"setprocinfoON");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = set_processinfoON;
-  strcpy(data.cmd[data.NBcmd].info,"set processes info ON");
-  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
-  strcpy(data.cmd[data.NBcmd].example,"setprocinfoON");
-  strcpy(data.cmd[data.NBcmd].Ccall,"set_processinfoON()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "setprocinfoON");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = set_processinfoON;
+    strcpy(data.cmd[data.NBcmd].info, "set processes info ON");
+    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
+    strcpy(data.cmd[data.NBcmd].example, "setprocinfoON");
+    strcpy(data.cmd[data.NBcmd].Ccall, "set_processinfoON()");
+    data.NBcmd++;
 
 
-  strcpy(data.cmd[data.NBcmd].key,"setprocinfoOFF");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = set_processinfoOFF;
-  strcpy(data.cmd[data.NBcmd].info,"set processes info OFF");
-  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
-  strcpy(data.cmd[data.NBcmd].example,"setprocinfoOFF");
-  strcpy(data.cmd[data.NBcmd].Ccall,"set_processinfoOFF()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "setprocinfoOFF");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = set_processinfoOFF;
+    strcpy(data.cmd[data.NBcmd].info, "set processes info OFF");
+    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
+    strcpy(data.cmd[data.NBcmd].example, "setprocinfoOFF");
+    strcpy(data.cmd[data.NBcmd].Ccall, "set_processinfoOFF()");
+    data.NBcmd++;
 
 
 
-  strcpy(data.cmd[data.NBcmd].key,"procCTRL");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = processinfo_CTRLscreen;
-  strcpy(data.cmd[data.NBcmd].info,"processes control screen");
-  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
-  strcpy(data.cmd[data.NBcmd].example,"procCTRL");
-  strcpy(data.cmd[data.NBcmd].Ccall,"processinfo_CTRLscreen()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "procCTRL");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = processinfo_CTRLscreen_cli;
+    strcpy(data.cmd[data.NBcmd].info, "processes control screen");
+    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
+    strcpy(data.cmd[data.NBcmd].example, "procCTRL");
+    strcpy(data.cmd[data.NBcmd].Ccall, "processinfo_CTRLscreen()");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"streamCTRL");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen;
-  strcpy(data.cmd[data.NBcmd].info,"stream control screen");
-  strcpy(data.cmd[data.NBcmd].syntax,"no arg");
-  strcpy(data.cmd[data.NBcmd].example,"streamCTRL");
-  strcpy(data.cmd[data.NBcmd].Ccall,"streamCTRL_CTRLscreen()");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "streamCTRL");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen_cli;
+    strcpy(data.cmd[data.NBcmd].info, "stream control screen");
+    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
+    strcpy(data.cmd[data.NBcmd].example, "streamCTRL");
+    strcpy(data.cmd[data.NBcmd].Ccall, "streamCTRL_CTRLscreen()");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"fparamCTRL");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen_cli;
-  strcpy(data.cmd[data.NBcmd].info,"function parameters control screen");
-  strcpy(data.cmd[data.NBcmd].syntax,"function parameter structure name");
-  strcpy(data.cmd[data.NBcmd].example,"fparamCTRL fpsname");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "fparamCTRL");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen_cli;
+    strcpy(data.cmd[data.NBcmd].info, "function parameters control screen");
+    strcpy(data.cmd[data.NBcmd].syntax, "function parameter structure name");
+    strcpy(data.cmd[data.NBcmd].example, "fparamCTRL fpsname");
+    strcpy(data.cmd[data.NBcmd].Ccall, "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
+    data.NBcmd++;
 
-  strcpy(data.cmd[data.NBcmd].key,"usleep");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = cfits_usleep_cli;
-  strcpy(data.cmd[data.NBcmd].info,"usleep");
-  strcpy(data.cmd[data.NBcmd].syntax,"<us>");
-  strcpy(data.cmd[data.NBcmd].example,"usleep 1000");
-  strcpy(data.cmd[data.NBcmd].Ccall,"usleep(long tus)");
-  data.NBcmd++;
+    strcpy(data.cmd[data.NBcmd].key, "usleep");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    data.cmd[data.NBcmd].fp = cfits_usleep_cli;
+    strcpy(data.cmd[data.NBcmd].info, "usleep");
+    strcpy(data.cmd[data.NBcmd].syntax, "<us>");
+    strcpy(data.cmd[data.NBcmd].example, "usleep 1000");
+    strcpy(data.cmd[data.NBcmd].Ccall, "usleep(long tus)");
+    data.NBcmd++;
 
 
 //  init_modules();
- // printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
-  
-	printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
-	printf("        \n");
+// printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
+
+    printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
+    printf("        \n");
 }
 
 

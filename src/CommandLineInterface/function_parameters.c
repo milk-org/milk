@@ -319,11 +319,28 @@ errno_t function_parameter_struct_create(
 
 
 
-
+/**
+ * 
+ * ## Purpose 
+ * 
+ * Connect to function parameter structure
+ * 
+ * 
+ * ## Arguments
+ * 
+ * fpsconnectmode can take following value
+ * 
+ * FPSCONNECT_SIMPLE : simple connect, don't try load streams
+ * FPSCONNECT_CONF   : connect as CONF process
+ * FPSCONNECT_RUN    : connect as RUN process
+ * 
+ */
+ 
 
 long function_parameter_struct_connect(
     const char *name,
-    FUNCTION_PARAMETER_STRUCT *fps
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int fpsconnectmode
 ) {
     char SM_fname[200];
     int SM_fd; // shared memory file descriptor
@@ -350,6 +367,14 @@ long function_parameter_struct_connect(
         printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
+    }
+
+    if(fpsconnectmode == FPSCONNECT_CONF) {
+        fps->md->confpid = getpid();    // write process PID into FPS
+    }
+
+    if(fpsconnectmode == FPSCONNECT_RUN) {
+        fps->md->runpid = getpid();    // write process PID into FPS
     }
 
     mapv = (char *) fps->md;
@@ -389,7 +414,17 @@ long function_parameter_struct_connect(
 
     function_parameter_printlist(fps->parray, NBparam);
 
-    
+
+    if((fpsconnectmode == FPSCONNECT_CONF) || (fpsconnectmode == FPSCONNECT_RUN)) {
+        // load streams
+        int pindex;
+        for(pindex = 0; pindex < NBparam; pindex++) {
+            if(fps->parray[pindex].type & FPTYPE_STREAMNAME) {
+                functionparameter_LoadStream(fps, fps->parray[pindex].keywordfull);
+            }
+        }
+    }
+
     return(NBparam);
 }
 
@@ -435,7 +470,7 @@ int function_parameter_SetValue_int64(char *keywordfull, long val)
         pch = strtok (NULL, ".");
     }
 
-    function_parameter_struct_connect(keyword[9], &fps);
+    function_parameter_struct_connect(keyword[9], &fps, FPSCONNECT_SIMPLE);
 
     int pindex = functionparameter_GetParamIndex(&fps, keywordfull);
 
@@ -553,25 +588,30 @@ int function_parameter_printlist(
 
 
 
-int functionparameter_GetFileName(FUNCTION_PARAMETER *fparam, char *outfname, char *tagname)
-{
+int functionparameter_GetFileName(
+    FUNCTION_PARAMETER *fparam,
+    char *outfname,
+    char *tagname
+) {
     char fname[500];
     char fname1[500];
     char command[1000];
-    int ret;
     int l;
-
 
     sprintf(fname, "./fpsconf");
     sprintf(command, "mkdir -p %s", fname);
-    ret = system(command);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
 
-    for(l=0; l<fparam->keywordlevel-1; l++)
-    {
+    for(l = 0; l < fparam->keywordlevel - 1; l++) {
         sprintf(fname1, "/%s", fparam->keyword[l]);
         strcat(fname, fname1);
         sprintf(command, "mkdir -p %s", fname);
-        ret = system(command);
+
+        if(system(command) != 0) {
+            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        }
     }
 
     sprintf(fname1, "/%s.%s.txt", fparam->keyword[l], tagname);
@@ -771,7 +811,16 @@ int functionparameter_SetParamValue_ONOFF(
 
 
 
-
+uint32_t functionparameter_LoadStream(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *streamname
+) {
+	uint32_t ID;
+	
+	printf("====================== Loading stream \"%s\"\n", streamname);
+	
+	return ID;
+}
 
 
 
@@ -1037,7 +1086,9 @@ int function_parameter_add_entry(
         {
 			
 			sprintf(systemcmd, "echo  \"-------- FILE FOUND: %s \" >> tmplog.txt", fname);
-			system(systemcmd);
+			if ( system(systemcmd) == -1) {
+				printERROR(__FILE__,__func__,__LINE__, "system() error");
+			}
 			
             switch (funcparamarray[pindex].type) {
 
@@ -1140,7 +1191,10 @@ int function_parameter_add_entry(
 		else
 		{
 			sprintf(systemcmd, "echo  \"-------- FILE NOT FOUND: %s \" >> tmplog.txt", fname);
-			system(systemcmd);		
+			if ( system(systemcmd) == -1) {
+				printERROR(__FILE__,__func__,__LINE__, "system() error");
+			}
+
 		}
     }
 
@@ -1191,11 +1245,11 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, ui
 
     if(CMDmode & CMDCODE_CONFINIT) { // (re-)create fps even if it exists
         function_parameter_struct_create(NBparam, fpsname);
-        function_parameter_struct_connect(fpsname, &fps);
+        function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_CONF);
     } else { // load existing fps if exists
-        if(function_parameter_struct_connect(fpsname, &fps) == -1) {
+        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_CONF) == -1) {
             function_parameter_struct_create(NBparam, fpsname);
-            function_parameter_struct_connect(fpsname, &fps);
+            function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_CONF);
         }
     }
 
@@ -1537,27 +1591,26 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
 
 
 
-int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex)
-{
+int functionparameter_CheckParameter(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int pindex
+) {
     int err = 0;
     int msglen;
     char msgadd[200];
 
     // if entry is not active, no error reported
-    if( !(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE ) )
-    {
+    if(!(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE)) {
         return 0;
     }
 
     // if entry is not used, no error reported
-    if( !(fpsentry->parray[pindex].fpflag & FPFLAG_USED ) )
-    {
+    if(!(fpsentry->parray[pindex].fpflag & FPFLAG_USED)) {
         return 0;
     }
 
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT )
-        if(fpsentry->parray[pindex].cnt0 == 0)
-        {
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT)
+        if(fpsentry->parray[pindex].cnt0 == 0) {
             fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
             fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_NOTINITIALIZED | FPS_MSG_FLAG_ERROR;
             snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "Not initialized");
@@ -1566,13 +1619,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
             err = 1;
         }
 
-    if(err == 0)
-    {
+    if(err == 0) {
         // Check min value
-        if( fpsentry->parray[pindex].type & FPTYPE_INT64 )
-            if( fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT )
-                if ( fpsentry->parray[pindex].val.l[0] < fpsentry->parray[pindex].val.l[1] )
-                {
+        if(fpsentry->parray[pindex].type & FPTYPE_INT64)
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
+                if(fpsentry->parray[pindex].val.l[0] < fpsentry->parray[pindex].val.l[1]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN | FPS_MSG_FLAG_ERROR;
                     snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "int64 value below min");
@@ -1585,16 +1636,15 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
                     err = 1;
                 }
 
-        if( fpsentry->parray[pindex].type & FPTYPE_FLOAT64 )
-            if( fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT )
-                if ( fpsentry->parray[pindex].val.f[0] < fpsentry->parray[pindex].val.f[1] )
-                {
+        if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64)
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
+                if(fpsentry->parray[pindex].val.f[0] < fpsentry->parray[pindex].val.f[1]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN | FPS_MSG_FLAG_ERROR;
                     snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float value below min");
                     fpsentry->md->msgcnt++;
                     fpsentry->md->errcnt++;
-                    
+
                     //msglen = strlen(fpsentry->md->message);
                     //sprintf(msgadd, "%s value below min limit\n", fpsentry->parray[pindex].keywordfull);
                     //strncat(fpsentry->md->message, msgadd, FUNCTION_PARAMETER_STRUCT_MSG_SIZE-msglen-1);
@@ -1602,35 +1652,32 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
                 }
     }
 
-    if(err == 0)
-    {
+    if(err == 0) {
         // Check max value
-        if( fpsentry->parray[pindex].type & FPTYPE_INT64 )
-            if( fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT )
-                if ( fpsentry->parray[pindex].val.l[0] > fpsentry->parray[pindex].val.l[2] )
-                {
+        if(fpsentry->parray[pindex].type & FPTYPE_INT64)
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
+                if(fpsentry->parray[pindex].val.l[0] > fpsentry->parray[pindex].val.l[2]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
                     snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "int64 value above max");
                     fpsentry->md->msgcnt++;
-                    fpsentry->md->errcnt++;					
-					
+                    fpsentry->md->errcnt++;
+
 //                    msglen = strlen(fpsentry->md->message);
 //                    sprintf(msgadd, "%s value above max limit\n", fpsentry->parray[pindex].keywordfull);
 //                    strncat(fpsentry->md->message, msgadd, FUNCTION_PARAMETER_STRUCT_MSG_SIZE-msglen-1);
                     err = 1;
                 }
 
-        if( fpsentry->parray[pindex].type & FPTYPE_FLOAT64 )
-            if( fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT )
-                if ( fpsentry->parray[pindex].val.f[0] > fpsentry->parray[pindex].val.f[2] )
-                {
+        if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64)
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
+                if(fpsentry->parray[pindex].val.f[0] > fpsentry->parray[pindex].val.f[2]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
                     snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float value above max");
                     fpsentry->md->msgcnt++;
-                    fpsentry->md->errcnt++;		
-					
+                    fpsentry->md->errcnt++;
+
 //                    msglen = strlen(fpsentry->md->message);
 //                    sprintf(msgadd, "%s value above max limit\n", fpsentry->parray[pindex].keywordfull);
 //                    strncat(fpsentry->md->message, msgadd, FUNCTION_PARAMETER_STRUCT_MSG_SIZE-msglen-1);
@@ -1638,10 +1685,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
                 }
     }
 
-    if (err == 1)
+    if(err == 1) {
         fpsentry->parray[pindex].fpflag |= FPFLAG_ERROR;
-    else
+    } else {
         fpsentry->parray[pindex].fpflag &= ~FPFLAG_ERROR;
+    }
 
     return err;
 }
@@ -1652,8 +1700,9 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
 
 
 
-int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
-{
+int functionparameter_CheckParametersAll(
+    FUNCTION_PARAMETER_STRUCT *fpsentry
+) {
     int NBparam;
     int pindex;
     int errcnt = 0;
@@ -1663,53 +1712,56 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
     NBparam = fpsentry->md->NBparam;
 
     // Check if Value is OK
-	fpsentry->md->msgcnt = 0;
+    fpsentry->md->msgcnt = 0;
     fpsentry->md->errcnt = 0;
     //    printf("Checking %d parameter entries\n", NBparam);
-    for(pindex=0; pindex<NBparam; pindex++)
+    for(pindex = 0; pindex < NBparam; pindex++) {
         errcnt += functionparameter_CheckParameter(fpsentry, pindex);
+    }
 
-    if(errcnt==0)
+    if(errcnt == 0) {
         fpsentry->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK;
-    else
+    } else {
         fpsentry->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK;
+    }
 
 
 
     // compute write status
 
-    for(pindex=0; pindex<NBparam; pindex++)
-    {
+    for(pindex = 0; pindex < NBparam; pindex++) {
         int writeOK; // do we have write permission ?
 
         // by default, adopt FPFLAG_WRITE flag
-        if ( fpsentry->parray[pindex].fpflag & FPFLAG_WRITE )
+        if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITE) {
             writeOK = 1;
-        else
+        } else {
             writeOK = 0;
+        }
 
         // if CONF running
-        if( fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF )
-        {
-            if ( fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF )
+        if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF) {
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF) {
                 writeOK = 1;
-            else
+            } else {
                 writeOK = 0;
+            }
         }
 
         // if RUN running
-        if( fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN )
-        {
-            if ( fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN )
+        if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) {
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN) {
                 writeOK = 1;
-            else
+            } else {
                 writeOK = 0;
+            }
         }
-        
-        if( writeOK == 0)
-			fpsentry->parray[pindex].fpflag &= ~FPFLAG_WRITESTATUS;
-		else
-			fpsentry->parray[pindex].fpflag |= FPFLAG_WRITESTATUS;
+
+        if(writeOK == 0) {
+            fpsentry->parray[pindex].fpflag &= ~FPFLAG_WRITESTATUS;
+        } else {
+            fpsentry->parray[pindex].fpflag |= FPFLAG_WRITESTATUS;
+        }
     }
 
 
@@ -1728,8 +1780,10 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
 
 
 
-int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex)
-{
+int functionparameter_PrintParameterInfo(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int pindex
+) {
     printf("%s\n", fpsentry->parray[pindex].description);
     printf("\n");
 
@@ -1738,23 +1792,20 @@ int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, in
     printf("FPS name       : %s\n", fpsentry->md->name);
     printf("   %s ", fpsentry->md->pname);
     int i;
-    for(i=0; i< fpsentry->md->NBnameindex; i++)
+    for(i = 0; i < fpsentry->md->NBnameindex; i++) {
         printf(" [%06d]", fpsentry->md->nameindex[i]);
+    }
     printf("\n\n");
 
-    if( fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK )
-    {
+    if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
         printf("[%ld] %sScan OK%s\n", fpsentry->md->msgcnt, BLINKHIGREEN, RESET);
-    }
-    else
-    {
-		int msgi;
-		
+    } else {
+        int msgi;
+
         printf("[%ld] %s%ld ERROR(s)%s\n", fpsentry->md->msgcnt, BLINKHIRED, fpsentry->md->errcnt, RESET);
-        for(msgi=0; msgi<fpsentry->md->msgcnt; msgi++)
-        {
-			printf("[%3d] %s%s%s\n", fpsentry->md->msgpindex[msgi], BOLDHIRED, fpsentry->md->message[msgi], RESET);
-		}
+        for(msgi = 0; msgi < fpsentry->md->msgcnt; msgi++) {
+            printf("[%3d] %s%s%s\n", fpsentry->md->msgpindex[msgi], BOLDHIRED, fpsentry->md->message[msgi], RESET);
+        }
     }
 
     printf("\n");
@@ -1764,55 +1815,77 @@ int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, in
     printf("------------- FUNCTION PARAMETER \n");
     printf("[%d] Parameter name : %s\n", pindex, fpsentry->parray[pindex].keywordfull);
 
-    if( fpsentry->parray[pindex].type & FPTYPE_UNDEF )
+    if(fpsentry->parray[pindex].type & FPTYPE_UNDEF) {
         printf("  TYPE UNDEF\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_INT64 )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_INT64) {
         printf("  TYPE INT64\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_FLOAT64 )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64) {
         printf("  TYPE FLOAT64\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_PID )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_PID) {
         printf("  TYPE PID\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_TIMESPEC )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_TIMESPEC) {
         printf("  TYPE TIMESPEC\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_FILENAME )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_FILENAME) {
         printf("  TYPE FILENAME\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_DIRNAME )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_DIRNAME) {
         printf("  TYPE DIRNAME\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_STREAMNAME )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
         printf("  TYPE STREAMNAME\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_STRING )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_STRING) {
         printf("  TYPE STRING\n");
-    if( fpsentry->parray[pindex].type & FPTYPE_ONOFF )
+    }
+    if(fpsentry->parray[pindex].type & FPTYPE_ONOFF) {
         printf("  TYPE ONOFF\n");
+    }
 
 
     printf("\n");
     printf("------------- FLAGS \n");
 
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE )
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE) {
         printf("   FPFLAG_ACTIVE\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE) {
         printf("   FPFLAG_VISIBLE\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF) {
         printf("   FPFLAG_WRITECONF\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN) {
         printf("   FPFLAG_WRITERUN\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_LOG )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_LOG) {
         printf("   FPFLAG_LOG\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE) {
         printf("   FPFLAG_SAVEONCHANGE\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCLOSE )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCLOSE) {
         printf("   FPFLAG_SAVEONCLOSE\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT) {
         printf("   FPFLAG_MINLIMIT\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT) {
         printf("   FPFLAG_MAXLIMIT\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_CHECKSTREAM )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKSTREAM) {
         printf("   FPFLAG_CHECKSTREAM\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED) {
         printf("   FPFLAG_IMPORTED\n");
-    if( fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK )
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK) {
         printf("   FPFLAG_FEEDBACK\n");
+    }
 
     printf("\n");
     printf("\n");
@@ -1822,40 +1895,48 @@ int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, in
 
     printf("Current value : ");
 
-    if(fpsentry->parray[pindex].type & FPTYPE_UNDEF)
+    if(fpsentry->parray[pindex].type & FPTYPE_UNDEF) {
         printf("  %s", "-undef-");
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_INT64)
+    if(fpsentry->parray[pindex].type & FPTYPE_INT64) {
         printf("  %10d", (int) fpsentry->parray[pindex].val.l[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64)
+    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64) {
         printf("  %10f", (float) fpsentry->parray[pindex].val.f[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_PID)
+    if(fpsentry->parray[pindex].type & FPTYPE_PID) {
         printf("  %10d", (int) fpsentry->parray[pindex].val.pid[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_TIMESPEC)
+    if(fpsentry->parray[pindex].type & FPTYPE_TIMESPEC) {
         printf("  %10s", "-timespec-");
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_FILENAME)
+    if(fpsentry->parray[pindex].type & FPTYPE_FILENAME) {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_DIRNAME)
+    if(fpsentry->parray[pindex].type & FPTYPE_DIRNAME) {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME)
+    if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_STRING)
+    if(fpsentry->parray[pindex].type & FPTYPE_STRING) {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
 
-    if(fpsentry->parray[pindex].type & FPTYPE_ONOFF)
-    {
-		/*if ( fpsentry->parray[pindex].status & FPFLAG_ONOFF )
-			printf("    ON  %s\n", fpsentry->parray[pindex].val.string[1]);
-		else
-			printf("   OFF  %s\n", fpsentry->parray[pindex].val.string[0]);*/
-	}
+    if(fpsentry->parray[pindex].type & FPTYPE_ONOFF) {
+        /*if ( fpsentry->parray[pindex].status & FPFLAG_ONOFF )
+        	printf("    ON  %s\n", fpsentry->parray[pindex].val.string[1]);
+        else
+        	printf("   OFF  %s\n", fpsentry->parray[pindex].val.string[0]);*/
+    }
 
     printf("\n");
     printf("\n");
@@ -1878,8 +1959,10 @@ int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, in
  */
 
 
-int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex)
-{
+int functionparameter_UserInputSetParamValue(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int pindex
+) {
     int inputOK;
     int strlenmax = 20;
     char buff[100];
@@ -1888,44 +1971,38 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
     functionparameter_PrintParameterInfo(fpsentry, pindex);
 
 
-    if ( fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS )
-    {
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
         inputOK = 0;
         fflush(stdout);
 
-        while(inputOK == 0)
-        {
-            printf ("\nESC or update value : ");
+        while(inputOK == 0) {
+            printf("\nESC or update value : ");
             fflush(stdout);
 
             int stringindex = 0;
             c = getchar();
-            while( (c != 27) && (c != 10) && (c != 13) && (stringindex<strlenmax-1) )
-            {
+            while((c != 27) && (c != 10) && (c != 13) && (stringindex < strlenmax - 1)) {
                 buff[stringindex] = c;
-                if(c == 127) // delete key
-                {
-                    putchar (0x8);
-                    putchar (' ');
-                    putchar (0x8);
+                if(c == 127) { // delete key
+                    putchar(0x8);
+                    putchar(' ');
+                    putchar(0x8);
                     stringindex --;
-                }
-                else
-                {
+                } else {
                     putchar(c);  // echo on screen
                     // printf("[%d]", (int) c);
                     stringindex++;
                 }
-                if(stringindex<0)
+                if(stringindex < 0) {
                     stringindex = 0;
+                }
                 c = getchar();
             }
             buff[stringindex] = '\0';
             inputOK = 1;
         }
 
-        if(c != 27) // do not update value if escape key
-        {
+        if(c != 27) { // do not update value if escape key
 
             long lval;
             double fval;
@@ -1933,91 +2010,94 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
             char c;
             int vOK = 1;
 
-            switch (fpsentry->parray[pindex].type) {
+            switch(fpsentry->parray[pindex].type) {
 
-            case FPTYPE_INT64:
-                errno = 0;    /* To distinguish success/failure after call */
-                lval = strtol(buff, &endptr, 10);
+                case FPTYPE_INT64:
+                    errno = 0;    /* To distinguish success/failure after call */
+                    lval = strtol(buff, &endptr, 10);
 
-                /* Check for various possible errors */
-                if ((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
-                        || (errno != 0 && lval == 0)) {
-                    perror("strtol");
-                    vOK = 0;
-                    sleep(1);
-                }
+                    /* Check for various possible errors */
+                    if((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
+                            || (errno != 0 && lval == 0)) {
+                        perror("strtol");
+                        vOK = 0;
+                        sleep(1);
+                    }
 
-                if (endptr == buff) {
-                    fprintf(stderr, "\nERROR: No digits were found\n");
-                    vOK = 0;
-                    sleep(1);
-                }
+                    if(endptr == buff) {
+                        fprintf(stderr, "\nERROR: No digits were found\n");
+                        vOK = 0;
+                        sleep(1);
+                    }
 
-                if(vOK == 1)
-                    fpsentry->parray[pindex].val.l[0] = lval;
-                break;
+                    if(vOK == 1) {
+                        fpsentry->parray[pindex].val.l[0] = lval;
+                    }
+                    break;
 
-            case FPTYPE_FLOAT64:
-                errno = 0;    /* To distinguish success/failure after call */
-                fval = strtod(buff, &endptr);
+                case FPTYPE_FLOAT64:
+                    errno = 0;    /* To distinguish success/failure after call */
+                    fval = strtod(buff, &endptr);
 
-                /* Check for various possible errors */
-                if ( (errno == ERANGE)
-                        || (errno != 0 && lval == 0)) {
-                    perror("strtod");
-                    vOK = 0;
-                    sleep(1);
-                }
+                    /* Check for various possible errors */
+                    if((errno == ERANGE)
+                            || (errno != 0 && lval == 0)) {
+                        perror("strtod");
+                        vOK = 0;
+                        sleep(1);
+                    }
 
-                if (endptr == buff) {
-                    fprintf(stderr, "\nERROR: No digits were found\n");
-                    vOK = 0;
-                    sleep(1);
-                }
+                    if(endptr == buff) {
+                        fprintf(stderr, "\nERROR: No digits were found\n");
+                        vOK = 0;
+                        sleep(1);
+                    }
 
-                if(vOK == 1)
-                    fpsentry->parray[pindex].val.f[0] = fval;
-                break;
-
-
-            case FPTYPE_PID :
-                errno = 0;    /* To distinguish success/failure after call */
-                lval = strtol(buff, &endptr, 10);
-
-                /* Check for various possible errors */
-                if ((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
-                        || (errno != 0 && lval == 0)) {
-                    perror("strtol");
-                    vOK = 0;
-                    sleep(1);
-                }
-
-                if (endptr == buff) {
-                    fprintf(stderr, "\nERROR: No digits were found\n");
-                    vOK = 0;
-                    sleep(1);
-                }
-
-                if(vOK == 1)
-                    fpsentry->parray[pindex].val.pid[0] = (pid_t) lval;
-                break;
+                    if(vOK == 1) {
+                        fpsentry->parray[pindex].val.f[0] = fval;
+                    }
+                    break;
 
 
-            case FPTYPE_FILENAME :
-                snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
-                break;
+                case FPTYPE_PID :
+                    errno = 0;    /* To distinguish success/failure after call */
+                    lval = strtol(buff, &endptr, 10);
 
-            case FPTYPE_DIRNAME :
-                snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
-                break;
+                    /* Check for various possible errors */
+                    if((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
+                            || (errno != 0 && lval == 0)) {
+                        perror("strtol");
+                        vOK = 0;
+                        sleep(1);
+                    }
 
-            case FPTYPE_STREAMNAME :
-                snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
-                break;
+                    if(endptr == buff) {
+                        fprintf(stderr, "\nERROR: No digits were found\n");
+                        vOK = 0;
+                        sleep(1);
+                    }
 
-            case FPTYPE_STRING :
-                snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
-                break;
+                    if(vOK == 1) {
+                        fpsentry->parray[pindex].val.pid[0] = (pid_t) lval;
+                    }
+                    break;
+
+
+                case FPTYPE_FILENAME :
+                    snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
+                    break;
+
+                case FPTYPE_DIRNAME :
+                    snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
+                    break;
+
+                case FPTYPE_STREAMNAME :
+                    snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
+                    break;
+
+                case FPTYPE_STRING :
+                    snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
+                    break;
 
 
             }
@@ -2029,14 +2109,11 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
 
 
             // Save to disk
-            if( fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
-            {
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE) {
                 functionparameter_WriteParameterToDisk(fpsentry, pindex, "setval", "UserInputSetParamValue");
             }
         }
-    }
-    else
-    {
+    } else {
         printf("%s Value cannot be modified %s\n", BOLDHIRED, RESET);
         c = getchar();
     }
@@ -2053,7 +2130,13 @@ int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry
 
 
 
-int functionparameter_FPSprocess_cmdline(char *FPScmdline, KEYWORD_TREE_NODE *keywnode, int NBkwn, FUNCTION_PARAMETER_STRUCT *fps, int verbose) {
+int functionparameter_FPSprocess_cmdline(
+    char *FPScmdline,
+    KEYWORD_TREE_NODE *keywnode,
+    int NBkwn,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int verbose
+) {
 
     int fpsindex;
     long pindex;
@@ -2225,7 +2308,13 @@ int functionparameter_FPSprocess_cmdline(char *FPScmdline, KEYWORD_TREE_NODE *ke
 
 
 
-int functionparameter_read_fpsCMD_fifo(int fpsCTRLfifofd, KEYWORD_TREE_NODE *keywnode, int NBkwn, FUNCTION_PARAMETER_STRUCT *fps, int verbose) {
+int functionparameter_read_fpsCMD_fifo(
+    int fpsCTRLfifofd,
+    KEYWORD_TREE_NODE *keywnode,
+    int NBkwn,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int verbose
+) {
     int cmdcnt = 0;
     char *FPScmdline = NULL;
     char buff[200];
@@ -2260,8 +2349,9 @@ int functionparameter_read_fpsCMD_fifo(int fpsCTRLfifofd, KEYWORD_TREE_NODE *key
                 buff[total_bytes - 1] = '\0';
                 FPScmdline = buff;
 
-                if(verbose==1)
+                if(verbose == 1) {
                     printf("Processing line : %s\n", FPScmdline);
+                }
 
                 functionparameter_FPSprocess_cmdline(FPScmdline, keywnode, NBkwn, fps, verbose);
                 cmdcnt ++;
@@ -2536,7 +2626,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 				printf("FOUND FPS %s - CONNECTING]\n", fpsname);
 				fflush(stdout);
 
-                int NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex]);
+                int NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
                 int i;
                 for(i = 0; i < NBparamMAX; i++) {
                     if(fps[fpsindex].parray[i].fpflag & FPFLAG_ACTIVE) { // if entry is active
@@ -2717,7 +2807,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
         case 'h':     // help
             endwin();
-            system("clear");
+			if ( system("clear") == -1) {
+				printERROR(__FILE__,__func__,__LINE__, "system() error");
+			}         
 
             printf("Function Parameter Structure (FPS) Control \n");
             printf("\n");
@@ -2819,7 +2911,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         
             if(fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
                 sprintf(command, "tmux new-session -d -s %s-run &> /dev/null", fps[keywnode[nodeSelected].fpsindex].md->name);
-                system(command);
+                if(system(command) != 0) { 
+					// this is probably OK - duplicate session
+                    // printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
+
 
                 sprintf(command, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->pname);
                 for(nameindex = 0; nameindex < fps[keywnode[nodeSelected].fpsindex].md->NBnameindex; nameindex++) {
@@ -2829,7 +2925,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                     strcat(command, tmpstring);
                 }
                 strcat(command, "\" C-m");
-                system(command);
+                if(system(command) != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
                 fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
                 fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             }
@@ -2843,7 +2941,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                 sprintf(tmpstring, " %06d", fps[keywnode[nodeSelected].fpsindex].md->nameindex[nameindex]);
                 strcat(command, tmpstring);
             }
-            system(command);
+            if(system(command) != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             break;
@@ -2851,7 +2951,10 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
         case 'C' : // start conf process
             sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[keywnode[nodeSelected].fpsindex].md->name);
-            system(command);
+            if(system(command) != 0) { 
+                    // this is probably OK - duplicate session warning
+                    //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
 
             //printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
 
@@ -2866,7 +2969,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
             }
             strcat(command, "\" C-m");
             //printf("STEP %s %d\n", __FILE__, __LINE__); fflush(stdout);
-            system(command);
+            if(system(command) != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
 
@@ -2875,14 +2980,18 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         case 'c': // kill conf process
             fps[keywnode[iSelected[currentlevel]].fpsindex].md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
             sprintf(command, "tmux send-keys -t %s-conf C-c &> /dev/null", fps[keywnode[nodeSelected].fpsindex].md->name);
-            system(command);
+            if(system(command) != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             break;
 
         case 'l': // list all parameters
             endwin();
-            system("clear");
+            if(system("clear") != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             printf("FPS entries - Full list \n");
             printf("\n");
             for(kwnindex = 0; kwnindex < NBkwn; kwnindex++) {
@@ -2899,7 +3008,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
         case 'F': // process FIFO 
             endwin();
-            system("clear");
+            if(system("clear") != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             printf("Reading FIFO file \"%s\"  fd=%d\n", fpsCTRLfifoname, fpsCTRLfifofd);
             
             if(fpsCTRLfifofd > 0) {
@@ -2916,7 +3027,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
         case 'P': // process input command file
             endwin();
-            system("clear");
+            if(system("clear") != 0) { 
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
             printf("Reading file confscript\n");
             fpinputcmd = fopen("confscript", "r");
             if(fpinputcmd != NULL) {
@@ -2987,6 +3100,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
 
         int i1 = 0;
+        
         for(i = 0; i < imax; i++) { // i is the line number on GUI display
 
             for(l = 0; l < currentlevel; l++) {
@@ -3018,9 +3132,10 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                     }
                     
                     
-//TODO: adjust len to string
-char pword[10];
-snprintf(pword, 10, keywnode[keywnode[nodechain[l]].child[i]].keyword[l]);
+					//TODO: adjust len to string
+					char pword[100];
+					
+					snprintf(pword, 10, "%s", keywnode[keywnode[nodechain[l]].child[i]].keyword[l]);
                     printw("%-10s ", pword);
 
                     if(keywnode[ii].leaf == 0) { // directory

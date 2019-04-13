@@ -3920,5 +3920,5 @@ errno_t processinfo_CTRLscreen()
     close(backstderr);
 
 
-    return EXIT_SUCCESS;
+    return RETURN_SUCCESS;
 }

@@ -367,6 +367,12 @@ errno_t streamCTRL_CTRLscreen();
 // *************************** FUNCTION PARAMETERS *********************************************
 
 
+#define FPSCONNECT_SIMPLE 0
+#define FPSCONNECT_CONF   1
+#define FPSCONNECT_RUN    2
+
+
+
 #define CMDCODE_CONFSTART          0x0001  // run configuration loop
 #define CMDCODE_CONFSTOP           0x0002  // stop configuration process
 #define CMDCODE_CONFINIT           0x0004  // (re-)create FPS even if it exists
@@ -375,11 +381,12 @@ errno_t streamCTRL_CTRLscreen();
 // function can use this structure to expose parameters for external control or monitoring
 // the structure describes how user can interact with parameter, so it allows for control GUIs to connect to parameters
 
-#define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN   32
+#define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN   64
 #define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL    20
 
 // Note that notation allows parameter to have more than one type
 // ... to be used with caution: most of the time, use type exclusively
+
 #define FPTYPE_UNDEF         0x0001
 #define FPTYPE_INT64         0x0002
 #define FPTYPE_FLOAT64       0x0004
@@ -392,6 +399,10 @@ errno_t streamCTRL_CTRLscreen();
 #define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
 #define FPTYPE_PROCESS       0x0400
 
+
+
+
+
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN   64
 #define FUNCTION_PARAMETER_STRMAXLEN         64
 
@@ -400,63 +411,123 @@ errno_t streamCTRL_CTRLscreen();
 // STATUS FLAGS
 
 // parameter use and visibility
-#define FPFLAG_ACTIVE        0x00000001    // is this entry registered ?
-#define FPFLAG_USED          0x00000002    // is this entry used ?
-#define FPFLAG_VISIBLE       0x00000004    // is this entry visible (=displayed) ?
+#define FPFLAG_ACTIVE        0x0000000000000001    // is this entry registered ?
+#define FPFLAG_USED          0x0000000000000002    // is this entry used ?
+#define FPFLAG_VISIBLE       0x0000000000000004    // is this entry visible (=displayed) ?
 
 // write permission
-#define FPFLAG_WRITE         0x00000010    // is value writable when neither CONF and RUN are active
-#define FPFLAG_WRITECONF     0x00000020    // can user change value at configuration time ?
-#define FPFLAG_WRITERUN      0x00000040    // can user change value at run time ?
-#define FPFLAG_WRITESTATUS   0x00000080    // current write status (computed from above flags)
+#define FPFLAG_WRITE         0x0000000000000010    // is value writable when neither CONF and RUN are active
+#define FPFLAG_WRITECONF     0x0000000000000020    // can user change value at configuration time ?
+#define FPFLAG_WRITERUN      0x0000000000000040    // can user change value at run time ?
+#define FPFLAG_WRITESTATUS   0x0000000000000080    // current write status (computed from above flags)
 
 // logging and saving
-#define FPFLAG_LOG           0x00000100    // log on change
-#define FPFLAG_SAVEONCHANGE  0x00000200    // save to disk on change
-#define FPFLAG_SAVEONCLOSE   0x00000400    // save to disk on close
+#define FPFLAG_LOG           0x0000000000000100    // log on change
+#define FPFLAG_SAVEONCHANGE  0x0000000000000200    // save to disk on change
+#define FPFLAG_SAVEONCLOSE   0x0000000000000400    // save to disk on close
 
 // special types
-#define FPFLAG_IMPORTED      0x00001000    // is this entry imported from another parameter ?
-#define FPFLAG_FEEDBACK      0x00002000    // is there a separate current value feedback ?
-#define FPFLAG_ONOFF         0x00004000    // bit controlled under TYPE_ONOFF
+#define FPFLAG_IMPORTED      0x0000000000001000    // is this entry imported from another parameter ?
+#define FPFLAG_FEEDBACK      0x0000000000002000    // is there a separate current value feedback ?
+#define FPFLAG_ONOFF         0x0000000000004000    // bit controlled under TYPE_ONOFF
 
 // parameter testing
-#define FPFLAG_CHECKINIT     0x00010000    // should parameter be initialized prior to function start ?
-#define FPFLAG_MINLIMIT      0x00020000    // enforce min limit
-#define FPFLAG_MAXLIMIT      0x00040000    // enforce max limit
-#define FPFLAG_ERROR         0x00080000    // is current parameter value OK ?
+#define FPFLAG_CHECKINIT     0x0000000000010000    // should parameter be initialized prior to function start ?
+#define FPFLAG_MINLIMIT      0x0000000000020000    // enforce min limit
+#define FPFLAG_MAXLIMIT      0x0000000000040000    // enforce max limit
+#define FPFLAG_ERROR         0x0000000000080000    // is current parameter value OK ?
 
 
-// STREAM actions and tests
+
+
+// STREAM FLAGS: actions and tests related to streams
 
 // A stream may be in :
 // - process memory (MEM)
 // - system shared memory (SHM)
 // - configuration (CONF): a file ./conf/<stream>.fname.conf contains the name of the disk file to be loaded as the stream
 
-#define FPFLAG_STREAM_REQUIRED_PRE_MEM       0x00100000  // stream has to be in MEM (test performed before loading)
-#define FPFLAG_STREAM_REQUIRED_PRE_SHM       0x00200000  // stream has to be in SHM (test performed before loading)
-#define FPFLAG_STREAM_REQUIRED_PRE_CONF      0x00400000  // stream has to be in CONF (test performed before loading)
-#define FPFLAG_STREAM_ACTION_TRY_LOADSHM     0x00800000  // try to load from SHM if not in MEM
-#define FPFLAG_STREAM_ACTION_TRY_LOADCONF    0x01000000  // try to load from CONF if not in MEM or SHM
-#define FPFLAG_STREAM_ACTION_FORCE_LOADSHM   0x02000000  // always load from SHM to MEM
-#define FPFLAG_STREAM_ACTION_FORCE_LOADCONF  0x04000000  // always load from CONF to SHM and MEM
-#define FPFLAG_STREAM_REQUIRED_POST_MEM      0x08000000  // stream has to be in MEM after loading
 
-#define FPFLAG_CHECKSTREAM                   0x10000000  // check and display stream status
+// Stream loading policy
+// If no policy is specified, the stream is expected to be in local memory
+// loading follows these steps:
+
+#define FPFLAG_STREAM_LOAD_FORCE_CONF  0x0000000000100000  // always load from CONF to SHM and MEM
+// (#1) if(fpflag & FPFLAG_STREAM_LOAD_FORCE_CONF)
+//       load from CONF and go to (END)
+//       if fails, return error
+//     else
+//        go to (#2)
+
+#define FPFLAG_STREAM_LOAD_FORCE_SHM   0x0000000000200000  // always load from SHM to MEM
+// (#2) if(fpflag & FPFLAG_STREAM_LOAD_FORCE_SHM)
+//       load from SHM and go to (END)
+//       if fails, return error
+//     else
+//        go to (#3)
+
+// (#3) if stream is in MEM, go to (END), else go to (#4)
+
+#define FPFLAG_STREAM_LOAD_TRY_CONF    0x0000000000400000  // try to load from CONF if not in MEM or SHM
+// (#4) if(fpflag & FPFLAG_STREAM_LOAD_TRY_CONF)
+//       load from CONF and go to (END)
+//       if fails, go to (#5)
+//     else
+//        go to (#5)
+
+#define FPFLAG_STREAM_LOAD_TRY_SHM     0x0000000000800000  // try to load from SHM if not in MEM
+// (#5) if(fpflag & FPFLAG_STREAM_LOAD_TRY_SHM)
+//       load from SHM and go to (END)
+//       if fails, go to (#6)
+//     else
+//        go to (#6)
+
+#define FPFLAG_STREAM_REQUIRED         0x0000000001000000  // stream has to be in MEM  
+// (#6) all above fails
+// if(fpflag & FPFLAG_STREAM_REQUIRED)
+//    return error
+// else
+//    go to (END)
+//
+// (END) proceed and execute function code
+
+
+#define FPFLAG_STREAM_ENFORCE_DATATYPE         0x0000000002000000  // enforce stream datatype
+// stream type requirement: one of the following tests must succeed (OR) if FPFLAG_STREAM_ENFORCE_DATATYPE
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT8   0x0000000004000000  // test if stream of type UINT8   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT8    0x0000000008000000  // test if stream of type INT8    (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT16  0x0000000010000000  // test if stream of type UINT16  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT16   0x0000000020000000  // test if stream of type INT16   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT32  0x0000000040000000  // test if stream of type UINT32  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT32   0x0000000080000000  // test if stream of type INT32   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT64  0x0000000100000000  // test if stream of type UINT64  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT64   0x0000000200000000  // test if stream of type INT64   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_HALF    0x0000000400000000  // test if stream of type HALF    (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_FLOAT   0x0000000800000000  // test if stream of type FLOAT   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_DOUBLE  0x0000001000000000  // test if stream of type DOUBLE  (OR test)
+
+#define FPFLAG_CHECKSTREAM                     0x0000002000000000  // check and display stream status in GUI
+
+
+
+
+
+
+
+
 
 
 
 // PRE-ASSEMBLED DEFAULT FLAGS
 
 // input parameter (used as default when adding entry)
-#define FPFLAG_DFT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
-#define FPFLAG_DFT_INPUT_STREAM     FPFLAG_DFT_INPUT|FPFLAG_STREAM_ACTION_TRY_LOADSHM|FPFLAG_STREAM_TRY_LOADCONF|FPFLAG_STREAM_REQUIRED_POST_MEM
-#define FPFLAG_DFT_OUTPUT_STREAM    FPFLAG_DFT_INPUT
+#define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
+#define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DFT_INPUT|FPFLAG_STREAM_REQUIRED|FPFLAG_CHECKSTREAM
+#define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DFT_INPUT|FPFLAG_CHECKSTREAM
 
 
 // status parameters, no logging, read only
-#define FPFLAG_DFT_STATUS     FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
+#define FPFLAG_DEFAULT_STATUS     FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
 
 
 
@@ -590,12 +661,11 @@ typedef struct {
 
 
 errno_t function_parameter_struct_create(int NBparam, const char *name);
-long function_parameter_struct_connect(const char *name, FUNCTION_PARAMETER_STRUCT *fps);
+long function_parameter_struct_connect(const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
 int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
-int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
 
 int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
@@ -613,6 +683,9 @@ char *functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps, con
 int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, int ONOFFvalue);
 
+uint32_t functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps, const char *streamname);
+
+int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
 
 int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
