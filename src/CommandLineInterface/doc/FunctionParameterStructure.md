@@ -87,6 +87,9 @@ The user-provided `fpslist.txt` file lists the functions and corresponding FPS n
 
 ~~~
 # List of FPS-enabled function
+# Column 1: root name used to name FPS
+# Column 2: CLI command
+# Column(s) 3+: optional arguments, integers, 6 digits
 
 fpsrootname0	CLIcommand0
 fpsrootname1	CLIcommand1		optarg00	optarg01
@@ -343,13 +346,11 @@ errno_t MyFunction_RUN(
 	
 	FUNCTION_PARAMETER_STRUCT fps;
 	
-	if(function_parameter_struct_connect(fpsname, &fps) == -1)
+	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1)
 	{
 		printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
-		return EXIT_FAILURE;
+		return RETURN_FAILURE;
 	}
-
-	fps.md->runpid = getpid();  // write process PID into FPS
 
 	
 	
@@ -413,7 +414,7 @@ long MyFunction(
     sprintf(fpsname, "myfunc-%06ld", pindex);
     MyFunction_FPCONF(fpsname, CMDCODE_CONFINIT, DMindex);
 
-    function_parameter_struct_connect(fpsname, &fps);
+    function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
 
     functionparameter_SetParamValue_INT64(&fps, ".arg0", arg0);
     functionparameter_SetParamValue_INT64(&fps, ".arg1", arg1);
@@ -456,16 +457,15 @@ errno_t MyFunction_RUN(
 	// ===========================
 
 	FUNCTION_PARAMETER_STRUCT fps;
-	if(function_parameter_struct_connect(fpsname, &fps) == -1)
+	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1)
 	{
 		printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
-		return EXIT_FAILURE;
+		return RETURN_FAILURE;
 	}
 	
-	fps.md->runpid = getpid();  // write process PID into FPS
-
-	
+	// ===========================	
 	// GET FUNCTION PARAMETER VALUES
+	// ===========================
 	// parameters are addressed by their tag name
 	
 	// These parameters are read once, before running the loop
@@ -480,7 +480,7 @@ errno_t MyFunction_RUN(
 	// This parameter value will be tracked during loop run, so we create a pointer for it
 	// The corresponding function is functionparameter_GetParamPtr_<TYPE>
 	//
-	float *gain = functionparameter_GetParamPtr_FLOAT32(&fps, ".status.loopcnt");
+	float *gain = functionparameter_GetParamPtr_FLOAT32(&fps, ".ctrl.gain");
 
 
 
