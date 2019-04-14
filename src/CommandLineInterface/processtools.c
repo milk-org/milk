@@ -11,14 +11,13 @@
  * 
  */
 
-#define PROCESSINFO_ENABLED 1
 
 #ifndef STANDALONE
+#define PROCESSINFO_ENABLED 1
 #define PROCCTRL_LOGDEBUG 1
+#else
+#define  RETURN_SUCCESS 0
 #endif
-
-
-#define PROCCTRL_LOGDEBUG 1
 
 #ifdef PROCCTRL_LOGDEBUG
 #define PROCCTRL_LOGEXEC do {                      \
