@@ -255,18 +255,27 @@ errno_t processinfo_loopstart(
 int processinfo_loopstep(
     PROCESSINFO *processinfo
 ) {
-	int loopstatus = 1;
-	
+    int loopstatus = 1;
+
 #ifdef PROCESSINFO_ENABLED
-        while(processinfo->CTRLval == 1) { // pause
-            usleep(50);
-        }
-        if(processinfo->CTRLval == 2) { // single iteration
-            processinfo->CTRLval = 1;
-        }
-        if(processinfo->CTRLval == 3) { // exit loop
-            loopstatus = 0;
-        }
+    while(processinfo->CTRLval == 1) { // pause
+        usleep(50);
+    }
+    if(processinfo->CTRLval == 2) { // single iteration
+        processinfo->CTRLval = 1;
+    }
+    if(processinfo->CTRLval == 3) { // exit loop
+        loopstatus = 0;
+    }
+    
+    if(data.signal_INT == 1) {  // CTRL-C
+		loopstatus = 0;
+	}
+
+    if(data.signal_HUP == 1) {  // terminal has disappeared
+		loopstatus = 0;
+	}	
+	
 #endif
 
     return loopstatus;

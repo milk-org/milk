@@ -251,13 +251,29 @@ int streamCTRL_CatchSignals()
 
 
 
-static int get_PIDmax()
-{
+static int get_PIDmax() {
     FILE *fp;
     int PIDmax;
+    int fscanfcnt;
 
     fp = fopen("/proc/sys/kernel/pid_max", "r");
-    fscanf(fp, "%d", &PIDmax);
+
+
+
+    fscanfcnt = fscanf(fp, "%d", &PIDmax);
+    if(fscanfcnt == EOF) {
+        if(ferror(fp)) {
+            perror("fscanf");
+        } else {
+            fprintf(stderr, "Error: fscanf reached end of file, no matching characters, no matching failure\n");
+        }
+        exit(EXIT_FAILURE);
+    } else if(fscanfcnt != 1) {
+        fprintf(stderr, "Error: fscanf successfully matched and assigned %i input items, 1 expected\n", fscanfcnt);
+        exit(EXIT_FAILURE);
+    }
+
+
     fclose(fp);
 
     return PIDmax;

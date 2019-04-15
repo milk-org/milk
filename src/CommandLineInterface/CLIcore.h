@@ -445,7 +445,7 @@ errno_t streamCTRL_CTRLscreen();
 // A stream may be in :
 // - process memory (MEM)
 // - system shared memory (SHM)
-// - configuration (CONF): a file ./conf/<stream>.fname.conf contains the name of the disk file to be loaded as the stream
+// - configuration (CONF): a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream
 
 
 // Stream loading policy
@@ -468,21 +468,22 @@ errno_t streamCTRL_CTRLscreen();
 
 // (#3) if stream is in MEM, go to (END), else go to (#4)
 
-#define FPFLAG_STREAM_LOAD_TRY_CONF    0x0000000000400000  // try to load from CONF if not in MEM or SHM
-// (#4) if(fpflag & FPFLAG_STREAM_LOAD_TRY_CONF)
-//       load from CONF and go to (END)
+#define FPFLAG_STREAM_LOAD_TRY_SHM     0x0000000000400000  // try to load from SHM if not in MEM
+// (#4) if(fpflag & FPFLAG_STREAM_LOAD_TRY_SHM)
+//       load from SHM and go to (END)
 //       if fails, go to (#5)
 //     else
 //        go to (#5)
 
-#define FPFLAG_STREAM_LOAD_TRY_SHM     0x0000000000800000  // try to load from SHM if not in MEM
-// (#5) if(fpflag & FPFLAG_STREAM_LOAD_TRY_SHM)
-//       load from SHM and go to (END)
+#define FPFLAG_STREAM_LOAD_TRY_CONF    0x0000000000800000  // try to load from CONF if not in MEM or SHM
+// (#5) if(fpflag & FPFLAG_STREAM_LOAD_TRY_CONF)
+//       load from CONF and go to (END)
 //       if fails, go to (#6)
 //     else
 //        go to (#6)
 
-#define FPFLAG_STREAM_REQUIRED         0x0000000001000000  // stream has to be in MEM  
+#define FPFLAG_STREAM_CONF_REQUIRED    0x0000000001000000  // stream has to be in MEM for CONF process to proceed
+#define FPFLAG_STREAM_RUN_REQUIRED     0x0000000002000000  // stream has to be in MEM for RUN process to proceed
 // (#6) all above fails
 // if(fpflag & FPFLAG_STREAM_REQUIRED)
 //    return error
@@ -492,21 +493,21 @@ errno_t streamCTRL_CTRLscreen();
 // (END) proceed and execute function code
 
 
-#define FPFLAG_STREAM_ENFORCE_DATATYPE         0x0000000002000000  // enforce stream datatype
+#define FPFLAG_STREAM_ENFORCE_DATATYPE         0x0000000004000000  // enforce stream datatype
 // stream type requirement: one of the following tests must succeed (OR) if FPFLAG_STREAM_ENFORCE_DATATYPE
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT8   0x0000000004000000  // test if stream of type UINT8   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT8    0x0000000008000000  // test if stream of type INT8    (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT16  0x0000000010000000  // test if stream of type UINT16  (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT16   0x0000000020000000  // test if stream of type INT16   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT32  0x0000000040000000  // test if stream of type UINT32  (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT32   0x0000000080000000  // test if stream of type INT32   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT64  0x0000000100000000  // test if stream of type UINT64  (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT64   0x0000000200000000  // test if stream of type INT64   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_HALF    0x0000000400000000  // test if stream of type HALF    (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_FLOAT   0x0000000800000000  // test if stream of type FLOAT   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_DOUBLE  0x0000001000000000  // test if stream of type DOUBLE  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT8   0x0000000008000000  // test if stream of type UINT8   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT8    0x0000000010000000  // test if stream of type INT8    (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT16  0x0000000020000000  // test if stream of type UINT16  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT16   0x0000000040000000  // test if stream of type INT16   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT32  0x0000000080000000  // test if stream of type UINT32  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT32   0x0000000100000000  // test if stream of type INT32   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT64  0x0000000200000000  // test if stream of type UINT64  (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT64   0x0000000400000000  // test if stream of type INT64   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_HALF    0x0000000800000000  // test if stream of type HALF    (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_FLOAT   0x0000001000000000  // test if stream of type FLOAT   (OR test)
+#define FPFLAG_STREAM_ENFORCE_DATATYPE_DOUBLE  0x0000002000000000  // test if stream of type DOUBLE  (OR test)
 
-#define FPFLAG_CHECKSTREAM                     0x0000002000000000  // check and display stream status in GUI
+#define FPFLAG_CHECKSTREAM                     0x0000004000000000  // check and display stream status in GUI
 
 
 
@@ -522,8 +523,8 @@ errno_t streamCTRL_CTRLscreen();
 
 // input parameter (used as default when adding entry)
 #define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
-#define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DFT_INPUT|FPFLAG_STREAM_REQUIRED|FPFLAG_CHECKSTREAM
-#define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DFT_INPUT|FPFLAG_CHECKSTREAM
+#define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DEFAULT_INPUT|FPFLAG_STREAM_LOAD_TRY_SHM|FPFLAG_STREAM_LOAD_TRY_CONF|FPFLAG_STREAM_RUN_REQUIRED|FPFLAG_CHECKSTREAM
+#define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DEFAULT_INPUT|FPFLAG_CHECKSTREAM
 
 
 // status parameters, no logging, read only
@@ -590,6 +591,9 @@ typedef struct {
 
 
 
+
+
+
 // ERROR AND WARNING MESSAGES
 
 #define FPS_NB_MSG                          100 // max number of messages
@@ -603,6 +607,9 @@ typedef struct {
 // by default, a message is a warning
 #define FPS_MSG_FLAG_ERROR                  0x0008  // if ERROR, then cannot start function
 #define FPS_MSG_FLAG_INFO                   0x0010
+
+
+
 
 
 
@@ -683,7 +690,7 @@ char *functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps, con
 int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, int ONOFFvalue);
 
-uint32_t functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps, const char *streamname);
+long functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps, int pindex, int fpsconnectmode);
 
 int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
 
@@ -698,6 +705,9 @@ uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 
+errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+errno_t functionparameter_outlog(char *msgstring);
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
 
 #endif

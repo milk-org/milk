@@ -103,10 +103,10 @@ cat "$FPSlistfilename" | while read LINE; do
 			fi
 			
 			# create fifo
-			if [ "$CMDCODE" = "CONFSTART" ]; then
-			echo "mkfifo ${MILK_SHM_DIR}/${pname}.fpsconf.fifo" >> $fname
-			ehco "" >> $fname
-			fi
+			#if [ "$CMDCODE" = "CONFSTART" ]; then
+			#echo "mkfifo ${MILK_SHM_DIR}/${pname}.fpsconf.fifo" >> $fname
+			#echo "" >> $fname
+			#fi
 			
 			echo "cacao -n \${pname} ${redirect} << EOF" >> $fname
 			
