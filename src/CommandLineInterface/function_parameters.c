@@ -2561,9 +2561,9 @@ int functionparameter_read_fpsCMD_fifo(
             } else {
                 if(errno == EWOULDBLOCK) {
                     break;
-                } else {
-                    perror("read");
-                    return RETURN_FAILURE;
+                } else { // read 0 byte
+                    //perror("read 0 byte");
+                    return cmdcnt;
                 }
             }
 
@@ -2607,7 +2607,7 @@ errno_t functionparameter_RUNstart(
     int nameindex;
 
     if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
-        sprintf(command, "tmux new-session -d -s %s-run &> /dev/null", fps[fpsindex].md->name);
+        sprintf(command, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
         if(system(command) != 0) {
             // this is probably OK - duplicate session
             // printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
@@ -2639,7 +2639,10 @@ errno_t functionparameter_RUNstop(
 ) {
     char command[500];
     int nameindex;
-    
+
+
+
+    // First, run the runstop command
     sprintf(command, "./fpscmd/%s-runstop", fps[fpsindex].md->pname);
     for(nameindex = 0; nameindex < fps[fpsindex].md->NBnameindex; nameindex++) {
         char tmpstring[20];
@@ -2652,6 +2655,14 @@ errno_t functionparameter_RUNstop(
     }
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+
+
+
+    // Send C-c in case runstop command is not implemented
+    sprintf(command, "tmux send-keys -t %s-run C-c &> /dev/null", fps[fpsindex].md->name);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
 
     return RETURN_SUCCESS;
 }
@@ -3153,6 +3164,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
     atexit(functionparameter_CTRLscreen_atexit);
     clear();
 
+
     int currentnode = 0;
     int currentlevel = 0;
     NBindex = 0;
@@ -3373,7 +3385,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         print_header(monstring, '-');
         attroff(A_BOLD);
         printw("\n");
-        
+
+
         FUNCTIONPARAMETER_LOGDEBUG;
         
         printw("Reading commands from fifo %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
@@ -3414,6 +3427,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
 
         int i1 = 0;
+        
+        
         
         for(i = 0; i < imax; i++) { // i is the line number on GUI display
 
@@ -3779,6 +3794,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
             printw("\n");
         }
+
+
 
         NBindex = icnt;
 
