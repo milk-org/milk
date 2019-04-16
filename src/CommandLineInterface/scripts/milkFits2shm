@@ -266,7 +266,7 @@ rm ./loadedSM/${STREAMname0}.SMloaded.old &> /dev/null
 # has shared memory changed since last request ?
 
 cp ./loadedSM/${STREAMname0}.SMinfo ./loadedSM/${STREAMname0}.SMinfo.old
-stat -L --format "%n %s %y" /tmp/${STREAMname}.im.shm > ./loadedSM/${STREAMname0}.SMinfo
+stat -L --format "%n %s %y" $MILK_SHM_DIR/${STREAMname}.im.shm > ./loadedSM/${STREAMname0}.SMinfo
 str1=$(cat ./loadedSM/${STREAMname0}.SMinfo.old)
 str2=$(cat ./loadedSM/${STREAMname0}.SMinfo)
 
@@ -294,7 +294,7 @@ rm ./loadedSM/${STREAMname0}.SMinfo.old &> /dev/null
 
 
 
-if [ ! -f "/tmp/${STREAMname}.im.shm" ]; then
+if [ ! -f "$MILK_SHM_DIR/${STREAMname}.im.shm" ]; then
 if [ "$VERBOSE" = "1" ]; then
 echo "======= SM file missing =========="
 echo "======= LOADfile = $LOADfile ========"
@@ -341,7 +341,7 @@ ln -s ${PWD}/${FITSfname} ./conf/shmim.${STREAMname0}.fits
 
 
 # write SM stat AFTER it has been updated
-stat -L --format "%n %s %y" /tmp/${STREAMname}.im.shm > ./loadedSM/${STREAMname0}.SMinfo
+stat -L --format "%n %s %y" $MILK_SHM_DIR/${STREAMname}.im.shm > ./loadedSM/${STREAMname0}.SMinfo
 rm ./loadedSM/${STREAMname0}.kept &> /dev/null
 touch ./loadedSM/${STREAMname0}.changed
 
