@@ -4869,7 +4869,7 @@ int arith_image_function_2_1_inplace_byID(long ID1, long ID2, double (*pt2functi
     nelement = nelement1;
     if(nelement1!=nelement2)
     {
-        n = snprintf(errmsg_arith,SBUFFERSIZE,"images %ld and %ld have different number of elements\n", ID1 ,ID2);
+        n = snprintf(errmsg_arith,SBUFFERSIZE,"images %ld and %ld have different number of elements\n", ID1,ID2);
         if(n >= SBUFFERSIZE)
             printERROR(__FILE__,__func__,__LINE__,"Attempted to write string buffer with too many characters");
         printERROR(__FILE__,__func__,__LINE__,errmsg_arith);
@@ -4883,199 +4883,199 @@ int arith_image_function_2_1_inplace_byID(long ID1, long ID2, double (*pt2functi
     {
 # endif
 
-// FLOAT
-	if(datatype1==_DATATYPE_FLOAT)
-	{
-        if(datatype2==_DATATYPE_UINT8)  // FLOAT <- UINT8
+        // FLOAT
+        if(datatype1==_DATATYPE_FLOAT)
         {
+            if(datatype2==_DATATYPE_UINT8)  // FLOAT <- UINT8
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI8[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI8[ii]));
+            }
 
-        if(datatype2==_DATATYPE_UINT16)  // FLOAT <- UINT16
-        {
+            if(datatype2==_DATATYPE_UINT16)  // FLOAT <- UINT16
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI16[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI16[ii]));
+            }
 
-        if(datatype2==_DATATYPE_UINT32)  // FLOAT <- UINT32
-        {
+            if(datatype2==_DATATYPE_UINT32)  // FLOAT <- UINT32
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI32[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI32[ii]));
+            }
 
-        if(datatype2==_DATATYPE_UINT64)  // FLOAT <- UINT64
-        {
+            if(datatype2==_DATATYPE_UINT64)  // FLOAT <- UINT64
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI64[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.UI64[ii]));
+            }
 
-        if(datatype2==_DATATYPE_INT8)  // FLOAT <- INT8
-        {
+            if(datatype2==_DATATYPE_INT8)  // FLOAT <- INT8
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI8[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI8[ii]));
+            }
 
-        if(datatype2==_DATATYPE_INT16)  // FLOAT <- INT16
-        {
+            if(datatype2==_DATATYPE_INT16)  // FLOAT <- INT16
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI16[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI16[ii]));
+            }
 
-        if(datatype2==_DATATYPE_INT32)  // FLOAT <- INT32
-        {
+            if(datatype2==_DATATYPE_INT32)  // FLOAT <- INT32
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI32[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI32[ii]));
+            }
 
-        if(datatype2==_DATATYPE_INT64)  // FLOAT <- INT64
-        {
+            if(datatype2==_DATATYPE_INT64)  // FLOAT <- INT64
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI64[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.SI64[ii]));
+            }
 
 
-        if(datatype2==_DATATYPE_FLOAT)  // FLOAT <- FLOAT
-        {
+            if(datatype2==_DATATYPE_FLOAT)  // FLOAT <- FLOAT
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]),(double) (data.image[ID2].array.F[ii]));
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]),(double) (data.image[ID2].array.F[ii]));
+            }
 
-        if(datatype2==_DATATYPE_DOUBLE)  // FLOAT <- DOUBLE
-        {
+            if(datatype2==_DATATYPE_DOUBLE)  // FLOAT <- DOUBLE
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), data.image[ID2].array.D[ii]);
-        }
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), data.image[ID2].array.D[ii]);
+            }
 
-	}
-
-
-
-// DOUBLE
-	if(datatype1==_DATATYPE_DOUBLE)
-	{
-        if(datatype2==_DATATYPE_UINT8)  // DOUBLE <- UINT8
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI8[ii]));
-        }
-
-        if(datatype2==_DATATYPE_UINT16)  // DOUBLE <- UINT16
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI16[ii]));
-        }
-
-        if(datatype2==_DATATYPE_UINT32)  // DOUBLE <- UINT32
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI32[ii]));
-        }
-
-        if(datatype2==_DATATYPE_UINT64)  // DOUBLE <- UINT64
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI64[ii]));
-        }
-
-        if(datatype2==_DATATYPE_INT8)  // DOUBLE <- INT8
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI8[ii]));
-        }
-
-        if(datatype2==_DATATYPE_INT16)  // DOUBLE <- INT16
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI16[ii]));
-        }
-
-        if(datatype2==_DATATYPE_INT32)  // DOUBLE <- INT32
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI32[ii]));
-        }
-
-        if(datatype2==_DATATYPE_INT64)  // DOUBLE <- INT64
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI64[ii]));
         }
 
 
-        if(datatype2==_DATATYPE_FLOAT)  // DOUBLE <- FLOAT
-        {
-# ifdef _OPENMP
-            #pragma omp for
-# endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii],(double) (data.image[ID2].array.F[ii]));
-		}
-        
 
-        if(datatype2==_DATATYPE_DOUBLE)  // DOUBLE <- DOUBLE
+        // DOUBLE
+        if(datatype1==_DATATYPE_DOUBLE)
         {
+            if(datatype2==_DATATYPE_UINT8)  // DOUBLE <- UINT8
+            {
 # ifdef _OPENMP
-            #pragma omp for
+                #pragma omp for
 # endif
-            for (ii = 0; ii < nelement; ii++)
-                data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], data.image[ID2].array.D[ii]);
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI8[ii]));
+            }
+
+            if(datatype2==_DATATYPE_UINT16)  // DOUBLE <- UINT16
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI16[ii]));
+            }
+
+            if(datatype2==_DATATYPE_UINT32)  // DOUBLE <- UINT32
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI32[ii]));
+            }
+
+            if(datatype2==_DATATYPE_UINT64)  // DOUBLE <- UINT64
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.UI64[ii]));
+            }
+
+            if(datatype2==_DATATYPE_INT8)  // DOUBLE <- INT8
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI8[ii]));
+            }
+
+            if(datatype2==_DATATYPE_INT16)  // DOUBLE <- INT16
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI16[ii]));
+            }
+
+            if(datatype2==_DATATYPE_INT32)  // DOUBLE <- INT32
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI32[ii]));
+            }
+
+            if(datatype2==_DATATYPE_INT64)  // DOUBLE <- INT64
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], (double) (data.image[ID2].array.SI64[ii]));
+            }
+
+
+            if(datatype2==_DATATYPE_FLOAT)  // DOUBLE <- FLOAT
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii],(double) (data.image[ID2].array.F[ii]));
+            }
+
+
+            if(datatype2==_DATATYPE_DOUBLE)  // DOUBLE <- DOUBLE
+            {
+# ifdef _OPENMP
+                #pragma omp for
+# endif
+                for (ii = 0; ii < nelement; ii++)
+                    data.image[ID1].array.D[ii] = pt2function(data.image[ID1].array.D[ii], data.image[ID2].array.D[ii]);
+            }
         }
-	}
 
 
 
