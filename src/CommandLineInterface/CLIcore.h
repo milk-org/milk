@@ -444,8 +444,16 @@ errno_t streamCTRL_CTRLscreen();
 
 // A stream may be in :
 // - process memory (MEM)
-// - system shared memory (SHM)
+// - system shared memory (SHM) .. which may itself be a link to another SHM
 // - configuration (CONF): a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream
+
+
+// Important scripts (should be in PATH):
+// - milkstreamlink  : build sym link between streams
+// - milkFits2shm    : smart loading/updating of FITS to SHM
+// 
+// loading CONF to SHM must use script milkFits2shm
+
 
 
 // Stream loading policy
