@@ -445,8 +445,10 @@ errno_t streamCTRL_CTRLscreen();
 // A stream may be in :
 // - process memory (MEM)
 // - system shared memory (SHM) .. which may itself be a link to another SHM
+// - fits file in conf: a file ./conf/shmim.<stream>.fits
 // - configuration (CONF): a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream
 
+// 
 
 // Important scripts (should be in PATH):
 // - milkstreamlink  : build sym link between streams
@@ -456,7 +458,8 @@ errno_t streamCTRL_CTRLscreen();
 
 
 
-// Stream loading policy
+// STREAM LOADING POLICY
+
 // If no policy is specified, the stream is expected to be in local memory
 // loading follows these steps:
 
