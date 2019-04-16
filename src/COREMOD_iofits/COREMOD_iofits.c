@@ -421,8 +421,11 @@ int data_type_code(int bitpix)
 /// errcode = 1: print error, continue
 /// errcode = 2: exit program at error
 /// errcode = 3: do not show error message, try = 1, no wait
-long load_fits(const char * restrict file_name, const char * restrict ID_name, int errcode)
-{
+long load_fits(
+    const char *restrict file_name,
+    const char *restrict ID_name,
+    int errcode
+) {
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
     int nulval, anynul;
     long bitpixl = 0;
@@ -435,7 +438,7 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
     unsigned char *barray = NULL;
     long *larray = NULL;
     unsigned short *sarray = NULL;
-    long NDR=1; /* non-destructive reads */
+    long NDR = 1; /* non-destructive reads */
 
 
     int fileOK;
@@ -458,23 +461,22 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
 
     fileOK = 0;
 
-    if(errcode==0) {
+    if(errcode == 0) {
         PrintErrorMsg = 0;
         ExitOnErr = 0;
     }
 
-    if(errcode==1) {
+    if(errcode == 1) {
         PrintErrorMsg = 1;
         ExitOnErr = 0;
     }
 
-    if(errcode==2) {
+    if(errcode == 2) {
         PrintErrorMsg = 1;
         ExitOnErr = 1;
     }
 
-    if(errcode==3)
-    {
+    if(errcode == 3) {
         NBtry = 1;
         PrintErrorMsg = 0;
         ExitOnErr = 0;
@@ -482,40 +484,35 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
 
 
 
-    for(try=0; try<NBtry; try++)
-        {
-            if(fileOK==0)
-                {
-                    if (fits_open_file(&fptr, file_name, READONLY, &FITSIO_status))
-                        {
-                            if(check_FITSIO_status(__FILE__, __func__, __LINE__, PrintErrorMsg) != 0)
-                            {
-                                if(PrintErrorMsg==1)
-                                {
+    for(try = 0; try < NBtry; try++) {
+                    if(fileOK == 0) {
+                        if(fits_open_file(&fptr, file_name, READONLY, &FITSIO_status)) {
+                            if(check_FITSIO_status(__FILE__, __func__, __LINE__, PrintErrorMsg) != 0) {
+                                if(PrintErrorMsg == 1) {
                                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_open_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                                     list_image_ID();
                                 }
 
-                                if(ExitOnErr==1)
+                                if(ExitOnErr == 1) {
                                     exit(0);
+                                }
 
-                                if(try!=NBtry-1) // don't wait on last try
+                                if(try != NBtry - 1) // don't wait on last try
                                         usleep(10000);
                             }
-                        
-                      ID = -1;
+
+                            ID = -1;
+                        } else {
+                            fileOK = 1;
+                        }
                     }
-                    else
-                        fileOK = 1;
-					}
-        }
+                }
 
 
 
-    if(fileOK==1)
-    {
+    if(fileOK == 1) {
         char keyword[SBUFFERSIZE];
         long  fpixel = 1;
         long i;
@@ -524,53 +521,50 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
         long  nelements;
 
         fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment, &FITSIO_status);
-        if(errcode!=0)
-        {
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
+        if(errcode != 0) {
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
                 fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_key\" NAXIS %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                 fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                 fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                 list_image_ID();
-                if(errcode>1)
+                if(errcode > 1) {
                     exit(0);
+                }
             }
         }
 
 
-        for(i=0; i<naxis; i++)
-        {
+        for(i = 0; i < naxis; i++) {
             int n;
 
-            n = snprintf(keyword,SBUFFERSIZE,"NAXIS%ld",i+1);
-            if(n >= SBUFFERSIZE)
-                printERROR(__FILE__,__func__,__LINE__,"Attempted to write string buffer with too many characters");
+            n = snprintf(keyword, SBUFFERSIZE, "NAXIS%ld", i + 1);
+            if(n >= SBUFFERSIZE) {
+                printERROR(__FILE__, __func__, __LINE__, "Attempted to write string buffer with too many characters");
+            }
             fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_key\" NAXIS%ld %c[%d;m\n", (char) 27, 1, 31, i, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
         }
 
         fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, comment, &FITSIO_status);
-        if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-        {
-            if(errcode!=0)
-            {
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            if(errcode != 0) {
                 fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_key\" BITPIX %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                 fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                 fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                 list_image_ID();
-                if(errcode>1)
+                if(errcode > 1) {
                     exit(0);
+                }
             }
         }
 
@@ -578,65 +572,62 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
 
         int bitpix = (int) bitpixl;
         fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, comment, &FITSIO_status);
-        if(check_FITSIO_status(__FILE__,__func__,__LINE__,0)==1)
-        {
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1) {
             //fprintf(stderr,"Error reading keyword \"BSCALE\" in file \"%s\"\n",file_name);
             bscale = 1.0;
         }
         fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, comment, &FITSIO_status);
-        if(check_FITSIO_status(__FILE__,__func__,__LINE__,0)==1)
-        {
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1) {
             //fprintf(stderr,"Error reading keyword \"BZERO\" in file \"%s\"\n",file_name);
             bzero = 0.0;
         }
 
         fits_set_bscale(fptr, bscale, bzero, &FITSIO_status);
-        check_FITSIO_status(__FILE__,__func__,__LINE__,1);
+        check_FITSIO_status(__FILE__, __func__, __LINE__, 1);
 
-        if(1)
-        {
+        if(1) {
             printf("[%ld", (long) naxes[0]);
-            for(i=1; i<naxis; i++)
+            for(i = 1; i < naxis; i++) {
                 printf(",%ld", (long) naxes[i]);
+            }
             printf("] %d %f %f\n", bitpix, bscale, bzero);
             fflush(stdout);
         }
 
         nelements = 1;
-        for(i=0; i<naxis; i++)
+        for(i = 0; i < naxis; i++) {
             nelements *= naxes[i];
+        }
 
         /* bitpix = -32  TFLOAT */
         if(bitpix == -32) {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT, data.NBKEWORD_DFT);
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, data.image[ID].array.F, &anynul, &FITSIO_status);
 
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
 
 
-            fits_close_file (fptr, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            fits_close_file(fptr, &FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
@@ -647,31 +638,29 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
         if(bitpix == -64) {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT, data.NBKEWORD_DFT);
 
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, data.image[ID].array.D , &anynul, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, data.image[ID].array.D, &anynul, &FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
-            fits_close_file (fptr, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            fits_close_file(fptr, &FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
@@ -685,30 +674,28 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
 
             //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
             fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[ID].array.UI16, &anynul, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
-            fits_close_file (fptr, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            fits_close_file(fptr, &FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
@@ -723,47 +710,46 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
         /* bitpix = 32   TLONG */
         if(bitpix == 32) {
             fits_read_key(fptr, TLONG, "NDR", &NDR, comment, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0)==1)
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1) {
                 NDR = 1;
+            }
             ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
-            larray = (long*) malloc(sizeof(long)*nelements);
-            if(larray==NULL)
-            {
-                printERROR(__FILE__,__func__,__LINE__,"malloc error");
+            larray = (long *) malloc(sizeof(long) * nelements);
+            if(larray == NULL) {
+                printERROR(__FILE__, __func__, __LINE__, "malloc error");
                 exit(0);
             }
 
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray, &anynul, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
-            fits_close_file (fptr, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            fits_close_file(fptr, &FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
             bzero = 0.0;
-            for (ii = 0; ii < nelements; ii++)
-                data.image[ID].array.F[ii] = ((1.0*larray[ii]*bscale + bzero)/NDR);
+            for(ii = 0; ii < nelements; ii++) {
+                data.image[ID].array.F[ii] = ((1.0 * larray[ii] * bscale + bzero) / NDR);
+            }
             free(larray);
             larray = NULL;
         }
@@ -771,44 +757,42 @@ long load_fits(const char * restrict file_name, const char * restrict ID_name, i
         /* bitpix = 8   TBYTE */
         if(bitpix == 8) {
             ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
-            barray = (unsigned char*) malloc(sizeof(unsigned char)*naxes[1]*naxes[0]);
-            if(barray==NULL)
-            {
+            barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] * naxes[0]);
+            if(barray == NULL) {
                 printERROR(__FILE__, __func__, __LINE__, "malloc error");
                 exit(0);
             }
 
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, barray, &anynul, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
-            fits_close_file (fptr, &FITSIO_status);
-            if(check_FITSIO_status(__FILE__,__func__,__LINE__,1) != 0)
-            {
-                if(errcode!=0)
-                {
+            fits_close_file(fptr, &FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+                if(errcode != 0) {
                     fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1, 31, ID_name, file_name, (char) 27, 0);
                     fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                     list_image_ID();
-                    if(errcode>1)
+                    if(errcode > 1) {
                         exit(0);
+                    }
                 }
             }
 
 
-            for (ii = 0; ii < nelements; ii++)
-                data.image[ID].array.F[ii] = (1.0*barray[ii]*bscale+bzero);
+            for(ii = 0; ii < nelements; ii++) {
+                data.image[ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
+            }
             free(barray);
             barray = NULL;
         }
