@@ -23,7 +23,7 @@ echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-h$(tput sgr0)           help"
 echo "     $(tput bold)-f$(tput sgr0)           force load (even if unchanged file)"
-echo "     $(tput bold)-c$(tput sgr0)           read FITS file name from ./conf/shmim_<streamname>.name.txt directory"
+echo "     $(tput bold)-c$(tput sgr0)           read FITS file name from ./conf/shmim.<streamname>.name.txt directory"
 echo "     $(tput bold)-p$(tput sgr0) <pref>    stream prefix"
 echo "     $(tput bold)-r$(tput sgr0)           remove / clear previous stream and associated files"
 echo ""
@@ -35,8 +35,8 @@ echo " $(tput bold)EXAMPLES:$(tput sgr0)"
 echo "   $0 -f image32.fits ims10"
 echo "        Load image32.fits to stream ims10"
 echo "        -f option : force load even if image and stream have not changed"
-echo "        write \"image32.fits\" into file \"conf/shmim_ims10.name.txt"
-echo "   echo \"image102.fits\" > conf/shmim_ims10.name.txt"
+echo "        write \"image32.fits\" into file \"conf/shmim.ims10.name.txt"
+echo "   echo \"image102.fits\" > conf/shmim.ims10.name.txt"
 echo "   $0 -c ims10"
 echo "        Load image102.fits to stream ims10"
 echo "   $0 -c -p aol3_ ims10"
@@ -155,7 +155,7 @@ fi
 if [ "$READFROMCONF" = "0" ]; then
 checkFile $1
 else
-checkFile conf/shmim_$1.name.txt
+checkFile conf/shmim.$1.name.txt
 fi
 
 
@@ -173,6 +173,16 @@ fi
 
 
 
+if [[ -z "${MILK_SHM_DIR}" ]]; then
+  echo "ERROR: MILK_SHM_DIR environment variable does not exist: cannot find/access shared memory"
+  exit
+else
+  SHMDIR="${MILK_SHM_DIR}"
+fi
+echo "SHMDIR = $SHMDIR"
+
+
+
 
 
 
@@ -185,7 +195,7 @@ STREAMname0="$2"
 else
 STREAMname0="$1"
 STREAMname="${SMPREFIX}$1"
-FITSfname=$( cat ./conf/shmim_$1.name.txt )
+FITSfname=$( cat ./conf/shmim.$1.name.txt )
 fi
 
 
@@ -213,10 +223,10 @@ mkdir -p loadedSM
 
 if [ "$CLEARSTREAM" = "1" ]; then # clear stream and associated files
 rm ./loadedSM/${STREAMname0}.*
-rm /tmp/${STREAMname}.im.shm
+rm $MILK_SHM_DIR/${STREAMname}.im.shm
 rm /dev/shm/sem.${STREAMname}.*
-rm ./conf/shmim_${STREAMname0}.imsize.txt
-rm ./conf/shmim_${STREAMname0}.fits
+rm ./conf/shmim.${STREAMname0}.imsize.txt
+rm ./conf/shmim.${STREAMname0}.fits
 fi
 
 
@@ -324,10 +334,10 @@ exitCLI
 EOF
 
 # copy imsize to conf
-cp ./loadedSM/${STREAMname0}.imsize ./conf/shmim_${STREAMname0}.imsize.txt
+cp ./loadedSM/${STREAMname0}.imsize ./conf/shmim.${STREAMname0}.imsize.txt
 # add link to conf
-rm ./conf/shmim_${STREAMname0}.fits
-ln -s ${PWD}/${FITSfname} ./conf/shmim_${STREAMname0}.fits
+rm ./conf/shmim.${STREAMname0}.fits
+ln -s ${PWD}/${FITSfname} ./conf/shmim.${STREAMname0}.fits
 
 
 # write SM stat AFTER it has been updated
