@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.6)
 
 # Global option #
-#################
+#
 
-set (CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
 
 project(CacaoProcessTools LANGUAGES CXX)
 
@@ -25,9 +25,7 @@ else()
   endif()
 endif()
 
-add_library(CacaoProcessTools MODULE
-CacaoProcessTools.cpp
-)
+add_library(CacaoProcessTools MODULE CacaoProcessTools.cpp)
 
 # add_definitions(${CLIcore_DEFINITIONS})
 
@@ -35,5 +33,12 @@ CacaoProcessTools.cpp
 
 target_link_libraries(CacaoProcessTools PRIVATE pybind11::module CLIcore)
 
-set_target_properties(CacaoProcessTools PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
-                                            SUFFIX "${PYTHON_MODULE_EXTENSION}")
+set_target_properties(CacaoProcessTools
+                      PROPERTIES PREFIX
+                                 "${PYTHON_MODULE_PREFIX}"
+                                 SUFFIX
+                                 "${PYTHON_MODULE_EXTENSION}")
+install(TARGETS CacaoProcessTools
+        EXPORT CacaoProcessToolsConfig
+        ARCHIVE DESTINATION python
+        LIBRARY DESTINATION python)
