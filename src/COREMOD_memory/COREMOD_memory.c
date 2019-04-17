@@ -6588,12 +6588,12 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char *buff; // transmit buffer
 
 
-    int semtrig = 5; // TODO - scan for available sem
+    int semtrig = 1; // TODO - scan for available sem
     int UseSem = 1;
 
     char errmsg[200];
 
-    int TMPDEBUG = 1; // set to 1 for debugging this function
+    int TMPDEBUG = 0; // set to 1 for debugging this function
 
 
 
@@ -6843,8 +6843,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 //sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
                 //processinfo_WriteMessage(processinfo, pinfomsg);
                 semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
-                sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
-                processinfo_WriteMessage(processinfo, pinfomsg);
+                //sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
+                //processinfo_WriteMessage(processinfo, pinfomsg);
 #else
                 //sem_getvalue(data.image[ID].semptr[semtrig], &semval);
                 //sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
