@@ -6827,7 +6827,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
-            if(iter == 0) {
+         //   if(iter == 0) {
 				processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
@@ -6847,7 +6847,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 				fflush(stdout);
                 
                 iter++;
-            }
+           // }
         }
 
 
