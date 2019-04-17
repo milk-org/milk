@@ -6801,6 +6801,11 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     while(loopOK == 1) {
         loopOK = processinfo_loopstep(processinfo);
 
+
+
+
+/*
+
         if(UseSem == 0) { // use counter
             while(data.image[ID].md[0].cnt0 == cnt) { // test if new frame exists
                 usleep(5);
@@ -6852,6 +6857,15 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             }
         }
 
+*/
+		
+		usleep(1000);
+		
+		sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+		sprintf(pinfomsg, "%ld TEST  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+		processinfo_WriteMessage(processinfo, pinfomsg);
+			
+		
 
         processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo) == 1) {
@@ -6892,7 +6906,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                     sprintf(errmsg, "ERROR: send() sent a different number of bytes (%d) than expected %ld  %ld  %ld", rs, (long) framesize, (long) framesize1, (long) sizeof(TCP_BUFFER_METADATA));
                     printf("%s\n", errmsg);
                     fflush(stdout);
-                    processinfo_WriteMessage(processinfo, "errmsg");
+                    processinfo_WriteMessage(processinfo, errmsg);
                     loopOK = 0;
                 }
                 oldslice = slice;
