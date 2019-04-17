@@ -6816,18 +6816,19 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 #ifndef __MACH__
 			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "semtrig %d  ID %ld = %d", semtrig, ID, semval);
+			sprintf(pinfomsg, "semtrig %d  ID %ld  %d", semtrig, ID, semval);
 			processinfo_WriteMessage(processinfo, pinfomsg);
             semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
 #else
 			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "MACH semtrig %d  ID %ld = %d", semtrig, ID, semval);
+			sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
 			processinfo_WriteMessage(processinfo, pinfomsg);
             alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
             semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
             if(iter == 0) {
+				processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
                 sem_getvalue(data.image[ID].semptr[semtrig], &semval);
