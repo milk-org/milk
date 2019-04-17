@@ -7474,8 +7474,15 @@ long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority) {
 // sem1 gets updated for each slice
 // cnt1 contains the slice index that was just written
 //
-long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizeim, uint32_t ysizeim, const char* NBpix_fname, const char* IDmap_name, const char *IDout_name, const char *IDout_pixslice_fname)
-{
+long COREMOD_MEMORY_PixMapDecode_U(
+    const char *inputstream_name,
+    uint32_t xsizeim,
+    uint32_t ysizeim,
+    const char *NBpix_fname,
+    const char *IDmap_name,
+    const char *IDout_name,
+    const char *IDout_pixslice_fname
+) {
     long IDout = -1;
     long IDin;
     long IDmap;
@@ -7487,7 +7494,6 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     FILE *fp;
     uint32_t *sizearray;
     long IDout_pixslice;
-    int loopOK;
     long ii;
     long cnt = 0;
     //    int RT_priority = 80; //any number from 0-99
@@ -7513,43 +7519,38 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
 
     xsizein = data.image[IDin].md[0].size[0];
     ysizein = data.image[IDin].md[0].size[1];
-	NBslice = data.image[IDin].md[0].size[2];
- 
-    if((data.processinfo==1)&&(data.processinfoActive==0))
-    {
-        // CREATE PROCESSINFO ENTRY
-        // see processtools.c in module CommandLineInterface for details
-        //
+    NBslice = data.image[IDin].md[0].size[2];
 
-        char pinfoname[200];  // short name for the processinfo instance
-        sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
-        processinfo = processinfo_shm_create(pinfoname, 0);
-        processinfo->loopstat = 0; // loop initialization
-        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-        strcpy(processinfo->source_FILE,     __FILE__);
-        processinfo->source_LINE = __LINE__;
-        sprintf(processinfo->description, "%ldx%ldx%ld->%ldx%ld", (long) xsizein, (long) ysizein, NBslice, (long) xsizeim, (long) ysizeim);
+    char pinfoname[200];  // short name for the processinfo instance
+    sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
+    char pinfodescr[200];
+    sprintf(pinfodescr, "%ldx%ldx%ld->%ldx%ld", (long) xsizein, (long) ysizein, NBslice, (long) xsizeim, (long) ysizeim);
+    char msgstring[200];
+    sprintf(msgstring, "%s->%s", inputstream_name, IDout_name);
 
-        char msgstring[200];
-        sprintf(msgstring, "%s->%s", inputstream_name, IDout_name);
-        processinfo_WriteMessage(processinfo, msgstring);
-        data.processinfoActive = 1;
-
-        processinfo->MeasureTiming = 0; // OPTIONAL: do not measure timing
-    }
+    processinfo_setup(
+        pinfoname,             // short name for the processinfo instance, no spaces, no dot, name should be human-readable
+        pinfodescr,    // description
+        msgstring,  // message on startup
+        __FUNCTION__, __FILE__, __LINE__
+    );
+    // OPTIONAL SETTINGS
+    processinfo->MeasureTiming = 1; // Measure timing
+    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
 
 
-    sizearray = (uint32_t*) malloc(sizeof(uint32_t)*3);
+    int loopOK = 1;
+
+
+    sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
     int in_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], 0);
 
-    if(xsizein != data.image[IDmap].md[0].size[0])
-    {
+    if(xsizein != data.image[IDmap].md[0].size[0]) {
         printf("ERROR: xsize for %s (%d) does not match xsize for %s (%d)\n", inputstream_name, xsizein, IDmap_name, data.image[IDmap].md[0].size[0]);
         exit(0);
     }
-    if(ysizein != data.image[IDmap].md[0].size[1])
-    {
+    if(ysizein != data.image[IDmap].md[0].size[1]) {
         printf("ERROR: xsize for %s (%d) does not match xsize for %s (%d)\n", inputstream_name, ysizein, IDmap_name, data.image[IDmap].md[0].size[1]);
         exit(0);
     }
@@ -7559,93 +7560,103 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
     COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
     IDout_pixslice = create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0, 0);
 
-    
-
-    dtarray = (double*) malloc(sizeof(double)*NBslice);
-    tarray = (struct timespec *) malloc(sizeof(struct timespec)*NBslice);
 
 
-    nbpixslice = (long*) malloc(sizeof(long)*NBslice);
-    if((fp=fopen(NBpix_fname,"r"))==NULL)
-    {
+    dtarray = (double *) malloc(sizeof(double) * NBslice);
+    tarray = (struct timespec *) malloc(sizeof(struct timespec) * NBslice);
+
+
+    nbpixslice = (long *) malloc(sizeof(long) * NBslice);
+    if((fp = fopen(NBpix_fname, "r")) == NULL) {
         printf("ERROR : cannot open file \"%s\"\n", NBpix_fname);
         exit(0);
     }
 
-    for(slice=0; slice<NBslice; slice++)
+    for(slice = 0; slice < NBslice; slice++) {
         r = fscanf(fp, "%ld %ld %ld\n", &tmpl0, &nbpixslice[slice], &tmpl1);
+    }
     fclose(fp);
 
-    for(slice=0; slice<NBslice; slice++)
+    for(slice = 0; slice < NBslice; slice++) {
         printf("Slice %5ld   : %5ld pix\n", slice, nbpixslice[slice]);
+    }
 
 
 
 
-    for(slice=0; slice<NBslice; slice++)
-    {
-        sliceii = slice*data.image[IDmap].md[0].size[0]*data.image[IDmap].md[0].size[1];
-        for(ii=0; ii<nbpixslice[slice]; ii++)
+    for(slice = 0; slice < NBslice; slice++) {
+        sliceii = slice * data.image[IDmap].md[0].size[0] * data.image[IDmap].md[0].size[1];
+        for(ii = 0; ii < nbpixslice[slice]; ii++) {
             data.image[IDout_pixslice].array.UI16[ data.image[IDmap].array.UI16[sliceii + ii] ] = (unsigned short) slice;
+        }
     }
 
     save_fits("outpixsl", IDout_pixslice_fname);
     delete_image_ID("outpixsl");
 
-
-    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGTERM\n");
-
-    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGINT\n");
-
-    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGABRT\n");
-
-    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGBUS\n");
-
-    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGSEGV\n");
-
-    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGHUP\n");
-
-    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGPIPE\n");
-
-    //  iter = 0;
-    loopOK = 1;
-    if(data.processinfo==1)
-        processinfo->loopstat = 1;  // Notify processinfo that we are entering loop
-
-    long loopcnt = 0;
-    while(loopOK == 1)
-    {
-        if(data.processinfo==1)
-        {
-            while(processinfo->CTRLval == 1)  // pause
-                usleep(50);
-
-            if(processinfo->CTRLval == 2) // single iteration
-                processinfo->CTRLval = 1;
-
-            if(processinfo->CTRLval == 3) // exit loop
-            {
-                loopOK = 0;
-            }
+    /*
+        if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGTERM\n");
         }
 
+        if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGINT\n");
+        }
 
-        if(data.image[IDin].md[0].sem==0)
-        {
-            while(data.image[IDin].md[0].cnt0==cnt) // test if new frame exists
+        if(sigaction(SIGABRT, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGABRT\n");
+        }
+
+        if(sigaction(SIGBUS, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGBUS\n");
+        }
+
+        if(sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGSEGV\n");
+        }
+
+        if(sigaction(SIGHUP, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGHUP\n");
+        }
+
+        if(sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
+            printf("\ncan't catch SIGPIPE\n");
+        }
+    */
+
+    // ==================================
+    // STARTING LOOP
+    // ==================================
+    processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
+
+
+    // long loopcnt = 0;
+    while(loopOK == 1) {
+        loopOK = processinfo_loopstep(processinfo);
+
+        /*
+                if(data.processinfo == 1) {
+                    while(processinfo->CTRLval == 1) { // pause
+                        usleep(50);
+                    }
+
+                    if(processinfo->CTRLval == 2) { // single iteration
+                        processinfo->CTRLval = 1;
+                    }
+
+                    if(processinfo->CTRLval == 3) { // exit loop
+                        loopOK = 0;
+                    }
+                }
+        */
+
+        if(data.image[IDin].md[0].sem == 0) {
+            while(data.image[IDin].md[0].cnt0 == cnt) { // test if new frame exists
                 usleep(5);
+            }
             cnt = data.image[IDin].md[0].cnt0;
-        }
-        else
-        {
-            if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+        } else {
+            if(clock_gettime(CLOCK_REALTIME, &ts) == -1) {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }
@@ -7659,130 +7670,153 @@ long COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizei
             //semr = sem_wait(data.image[IDin].semptr[0]);
 #endif
 
-            if(loopcnt == 0)
-            {
+            if(processinfo->loopcnt == 0) {
                 sem_getvalue(data.image[IDin].semptr[in_semwaitindex], &semval);
-                for(scnt=0; scnt<semval; scnt++)
+                for(scnt = 0; scnt < semval; scnt++) {
                     sem_trywait(data.image[IDin].semptr[in_semwaitindex]);
+                }
             }
         }
 
-        if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
-            processinfo_exec_start(processinfo);
 
-        if(semr==0)
-        {
-            slice = data.image[IDin].md[0].cnt1;
-            if(slice>oldslice+1)
-                slice = oldslice+1;
 
-            if(oldslice==NBslice-1)
-                slice = 0;
 
-            //   clock_gettime(CLOCK_REALTIME, &tarray[slice]);
-            //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
-            data.image[IDout].md[0].write = 1;
 
-            if(slice<NBslice)
-            {
-                sliceii = slice*data.image[IDmap].md[0].size[0]*data.image[IDmap].md[0].size[1];
-                for(ii=0; ii<nbpixslice[slice]; ii++)
-                    data.image[IDout].array.UI16[data.image[IDmap].array.UI16[sliceii + ii] ] = data.image[IDin].array.UI16[sliceii + ii];
+        processinfo_exec_start(processinfo);
+
+        if(processinfo_compute_status(processinfo) == 1) {
+            if(semr == 0) {
+                slice = data.image[IDin].md[0].cnt1;
+                if(slice > oldslice + 1) {
+                    slice = oldslice + 1;
+                }
+
+                if(oldslice == NBslice - 1) {
+                    slice = 0;
+                }
+
+                //   clock_gettime(CLOCK_REALTIME, &tarray[slice]);
+                //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
+                data.image[IDout].md[0].write = 1;
+
+                if(slice < NBslice) {
+                    sliceii = slice * data.image[IDmap].md[0].size[0] * data.image[IDmap].md[0].size[1];
+                    for(ii = 0; ii < nbpixslice[slice]; ii++) {
+                        data.image[IDout].array.UI16[data.image[IDmap].array.UI16[sliceii + ii] ] = data.image[IDin].array.UI16[sliceii + ii];
+                    }
+                }
+                //     printf("[%ld] ", slice); //TEST
+
+                if(slice == NBslice - 1) { //if(slice<oldslice)
+                    COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+
+
+                    data.image[IDout].md[0].cnt0 ++;
+
+                    //     printf("[[ Timimg [us] :   ");
+                    //  for(slice1=1;slice1<NBslice;slice1++)
+                    //      {
+                    //              dtarray[slice1] -= dtarray[0];
+                    //           printf("%6ld ", (long) (1.0e6*dtarray[slice1]));
+                    //      }
+                    // printf("]]");
+                    //  printf("\n");//TEST
+                    // fflush(stdout);
+                }
+
+                data.image[IDout].md[0].cnt1 = slice;
+
+                sem_getvalue(data.image[IDout].semptr[2], &semval);
+                if(semval < SEMAPHORE_MAXVAL) {
+                    sem_post(data.image[IDout].semptr[2]);
+                }
+
+                sem_getvalue(data.image[IDout].semptr[3], &semval);
+                if(semval < SEMAPHORE_MAXVAL) {
+                    sem_post(data.image[IDout].semptr[3]);
+                }
+
+                data.image[IDout].md[0].write = 0;
+
+                oldslice = slice;
             }
-            //     printf("[%ld] ", slice); //TEST
-
-            if(slice==NBslice-1)   //if(slice<oldslice)
-            {
-                COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-
-
-                data.image[IDout].md[0].cnt0 ++;
-
-                //     printf("[[ Timimg [us] :   ");
-                //  for(slice1=1;slice1<NBslice;slice1++)
-                //      {
-                //              dtarray[slice1] -= dtarray[0];
-                //           printf("%6ld ", (long) (1.0e6*dtarray[slice1]));
-                //      }
-                // printf("]]");
-                //  printf("\n");//TEST
-                // fflush(stdout);
-            }
-
-            data.image[IDout].md[0].cnt1 = slice;
-
-            sem_getvalue(data.image[IDout].semptr[2], &semval);
-            if(semval<SEMAPHORE_MAXVAL)
-                sem_post(data.image[IDout].semptr[2]);
-
-            sem_getvalue(data.image[IDout].semptr[3], &semval);
-            if(semval<SEMAPHORE_MAXVAL)
-                sem_post(data.image[IDout].semptr[3]);
-
-            data.image[IDout].md[0].write = 0;
-
-            oldslice = slice;
         }
 
-        if((data.processinfo==1)&&(processinfo->MeasureTiming==1))
-            processinfo_exec_end(processinfo);
+
+        processinfo_exec_end(processinfo);
+
 
         // process signals
+        /*
+                if(data.signal_TERM == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGTERM);
+                    }
+                }
 
-        if(data.signal_TERM == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGTERM);
-        }
+                if(data.signal_INT == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGINT);
+                    }
+                }
 
-        if(data.signal_INT == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGINT);
-        }
+                if(data.signal_ABRT == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGABRT);
+                    }
+                }
 
-        if(data.signal_ABRT == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGABRT);
-        }
+                if(data.signal_BUS == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGBUS);
+                    }
+                }
 
-        if(data.signal_BUS == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGBUS);
-        }
+                if(data.signal_SEGV == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGSEGV);
+                    }
+                }
 
-        if(data.signal_SEGV == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGSEGV);
-        }
+                if(data.signal_HUP == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGHUP);
+                    }
+                }
 
-        if(data.signal_HUP == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGHUP);
-        }
+                if(data.signal_PIPE == 1) {
+                    loopOK = 0;
+                    if(data.processinfo == 1) {
+                        processinfo_SIGexit(processinfo, SIGPIPE);
+                    }
+                }
 
-        if(data.signal_PIPE == 1) {
-            loopOK = 0;
-            if(data.processinfo==1)
-                processinfo_SIGexit(processinfo, SIGPIPE);
-        }
+                loopcnt++;
+                if(data.processinfo == 1) {
+                    processinfo->loopcnt = loopcnt;
+                }
 
-        loopcnt++;
-        if(data.processinfo==1)
-            processinfo->loopcnt = loopcnt;
+                //    if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
+                //        loopOK = 0;
 
-        //    if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
-        //        loopOK = 0;
-
-        //iter++;
+                //iter++;
+                */
     }
 
-    if((data.processinfo==1)&&(processinfo->loopstat != 4))
-        processinfo_cleanExit(processinfo);
+    // ==================================
+    // ENDING LOOP
+    // ==================================
+    processinfo_cleanExit(processinfo);
+
+    /*    if((data.processinfo == 1) && (processinfo->loopstat != 4)) {
+            processinfo_cleanExit(processinfo);
+        }*/
 
     free(nbpixslice);
     free(sizearray);
