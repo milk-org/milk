@@ -6812,13 +6812,15 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }
-            ts.tv_sec += 1;
+            ts.tv_sec += 5;
 
 #ifndef __MACH__
 			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "semtrig %d  ID %ld  %d", semtrig, ID, semval);
+			sprintf(pinfomsg, "calling timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
 			processinfo_WriteMessage(processinfo, pinfomsg);
             semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
+			sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
+			processinfo_WriteMessage(processinfo, pinfomsg);            
 #else
 			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
 			sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
@@ -6827,7 +6829,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
-         //   if(iter == 0) {
+            if(iter == 0) {
 				processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
@@ -6847,7 +6849,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 				fflush(stdout);
                 
                 iter++;
-           // }
+            }
         }
 
 
