@@ -6597,14 +6597,20 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     // processinfo support
     // ===========================
     PROCESSINFO *processinfo;
+
     char pinfoname[200];
     sprintf(pinfoname, "ntw-tx-%s", IDname);
+
     char descr[200];
     sprintf(descr, "%s->%s/%d", IDname, IPaddr, port);
+
+	char pinfomsg[200];
+	sprintf(pinfomsg, "setup");
+
     processinfo = processinfo_setup(
                       pinfoname,                 // re-use fpsname as processinfo name
                       descr,    // description
-                      "setup",  // message on startup
+                      pinfomsg,  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
                   );
     // OPTIONAL SETTINGS
@@ -6809,18 +6815,20 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
             ts.tv_sec += 1;
 
 #ifndef __MACH__
+			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+			sprintf(pinfomsg, "semtrig %d  ID %ld = %d", semtrig, ID, semval);
             semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
 #else
-            alarm(1);  // send SIGALRM to process in 1 sec
+            alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
             semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
             if(iter == 0) {
                 printf("driving semaphore to zero ... ");
                 fflush(stdout);
-                sem_getvalue(data.image[ID].semptr[0], &semval);
+                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
                 for(scnt = 0; scnt < semval; scnt++) {
-                    sem_trywait(data.image[ID].semptr[0]);
+                    sem_trywait(data.image[ID].semptr[semtrig]);
                 }
                 printf("done\n");
                 fflush(stdout);
