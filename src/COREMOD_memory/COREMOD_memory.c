@@ -6816,7 +6816,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 #ifndef __MACH__
 			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "calling timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
+			sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
 			processinfo_WriteMessage(processinfo, pinfomsg);
             semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
 			sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
