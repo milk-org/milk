@@ -7540,7 +7540,8 @@ long COREMOD_MEMORY_PixMapDecode_U(
 
 
     int loopOK = 1;
-
+	
+	processinfo_WriteMessage(processinfo, "Allocating memory");
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
@@ -7623,6 +7624,10 @@ long COREMOD_MEMORY_PixMapDecode_U(
             printf("\ncan't catch SIGPIPE\n");
         }
     */
+
+
+
+	processinfo_WriteMessage(processinfo, "Starting loop");
 
     // ==================================
     // STARTING LOOP
