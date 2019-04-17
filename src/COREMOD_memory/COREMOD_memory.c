@@ -6885,7 +6885,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
         processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo) == 1) {
-            if(semr == 0) {
+            /*if(semr == 0) {
                 frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
                 frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
 
@@ -6901,19 +6901,12 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                     slice = 0;
                 }
 
-                //     printf("[%ld -> %ld] ", oldslice, slice); // TEST
                 frame_md[0].cnt1 = slice;
-                /*   if(slice == 0)
-                   {
-                       printf("\n");
-                       fflush(stdout);
-                   }*/
-
 
                 ptr1 = ptr0 + framesize * slice; //data.image[ID].md[0].cnt1; // frame that was just written
-                //memcpy(buff, ptr1, framesize);
+                memcpy(buff, ptr1, framesize);
 
-                //memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
+                memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
                 rs = send(fds_client, buff, framesize1, 0);
 
@@ -6926,7 +6919,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                     loopOK = 0;
                 }
                 oldslice = slice;
-            }
+            }*/
         }
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
