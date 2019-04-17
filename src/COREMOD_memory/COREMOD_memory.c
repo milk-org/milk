@@ -6639,7 +6639,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char *buff; // transmit buffer
 
 
-    int semtrig = 1; // TODO - scan for available sem
+    int semtrig = 0; // TODO - scan for available sem
     int UseSem = 1;
 
     char errmsg[200];
@@ -6648,8 +6648,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 	
 
-	if(TMPDEBUG==1)
-		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
+//	if(TMPDEBUG==1)
+//		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
 
     // ===========================
     // processinfo support
@@ -6666,7 +6666,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     sprintf(pinfomsg, "setup");
 
     processinfo = processinfo_setup(
-                      pinfoname,                 // re-use fpsname as processinfo name
+                      pinfoname,                 
                       descr,    // description
                       pinfomsg,  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
