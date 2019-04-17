@@ -6648,8 +6648,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 	
 
-
-
+	if(TMPDEBUG==1)
+		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
 
     // ===========================
     // processinfo support
