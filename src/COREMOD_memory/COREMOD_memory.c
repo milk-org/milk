@@ -6597,14 +6597,20 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     // processinfo support
     // ===========================
     PROCESSINFO *processinfo;
+
     char pinfoname[200];
     sprintf(pinfoname, "ntw-tx-%s", IDname);
+
     char descr[200];
     sprintf(descr, "%s->%s/%d", IDname, IPaddr, port);
+
+	char pinfomsg[200];
+	sprintf(pinfomsg, "setup");
+
     processinfo = processinfo_setup(
                       pinfoname,                 // re-use fpsname as processinfo name
                       descr,    // description
-                      "setup",  // message on startup
+                      pinfomsg,  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
                   );
     // OPTIONAL SETTINGS
@@ -6806,24 +6812,42 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }
-            ts.tv_sec += 1;
+            ts.tv_sec += 5;
 
 #ifndef __MACH__
+			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+			sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+			processinfo_WriteMessage(processinfo, pinfomsg);
             semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
+			sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
+			processinfo_WriteMessage(processinfo, pinfomsg);            
 #else
-            alarm(1);  // send SIGALRM to process in 1 sec
+			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+			sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
+			processinfo_WriteMessage(processinfo, pinfomsg);
+            alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
             semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
             if(iter == 0) {
-                printf("driving semaphore to zero ... ");
+				processinfo_WriteMessage(processinfo, "Driving sem to 0");
+                printf("Driving semaphore to zero ... ");
                 fflush(stdout);
-                sem_getvalue(data.image[ID].semptr[0], &semval);
-                for(scnt = 0; scnt < semval; scnt++) {
-                    sem_trywait(data.image[ID].semptr[0]);
+                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                int semvalcnt = semval;
+                for(scnt = 0; scnt < semvalcnt; scnt++) {
+					sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+					printf("sem = %d\n", semval);
+					fflush(stdout);
+                    sem_trywait(data.image[ID].semptr[semtrig]);
                 }
                 printf("done\n");
                 fflush(stdout);
+                
+                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                printf("-> sem = %d\n", semval);
+				fflush(stdout);
+                
                 iter++;
             }
         }
