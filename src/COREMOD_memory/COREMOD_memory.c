@@ -6858,7 +6858,6 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
         }
 
 */
-		usleep(500000);
 
 		sem_getvalue(data.image[ID].semptr[semtrig], &semval);
 		sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
@@ -6866,6 +6865,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 		fflush(stdout);
 		processinfo_WriteMessage(processinfo, pinfomsg);
 		
+		if(semval<3)
+			usleep(500000);
+			
 		sem_wait(data.image[ID].semptr[semtrig]);
 		
 		sem_getvalue(data.image[ID].semptr[semtrig], &semval);
