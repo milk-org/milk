@@ -6593,7 +6593,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     char errmsg[200];
 
-    int TMPDEBUG = 0; // set to 1 for debugging this function
+    int TMPDEBUG = 1; // set to 1 for debugging this function
 
 
 
@@ -6624,6 +6624,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     int loopOK = 1;
 
     ID = image_ID(IDname);
+
+if(TMPDEBUG == 0)
+{
 
     if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         printf("ERROR creating socket\n");
@@ -6783,7 +6786,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
         sockOK = 1;
         printf("sem = %d\n", data.image[ID].md[0].sem);
         fflush(stdout);
-
+}
 
         if((data.image[ID].md[0].sem == 0) || (mode == 1)) {
             processinfo_WriteMessage(processinfo, "sync using counter");
@@ -6839,16 +6842,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 ts.tv_sec += 2;
 
 #ifndef __MACH__
-                //sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                //sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
-                //processinfo_WriteMessage(processinfo, pinfomsg);
                 semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
-                //sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
-                //processinfo_WriteMessage(processinfo, pinfomsg);
 #else
-                //sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                //sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
-                //processinfo_WriteMessage(processinfo, pinfomsg);
                 alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
                 semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
@@ -6885,7 +6880,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
         processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo) == 1) {
-            /*if(semr == 0) {
+            if(TMPDEBUG==0)
+            {
+            if(semr == 0) {
                 frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
                 frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
 
@@ -6919,7 +6916,9 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                     loopOK = 0;
                 }
                 oldslice = slice;
-            }*/
+            }
+		}
+            
         }
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
