@@ -1011,6 +1011,18 @@ int_fast8_t COREMOD_MEMORY_SaveAll_sequ_cli()
 }
 
 
+int_fast8_t COREMOD_MEMORY_testfunction_semaphore_cli()
+{
+    if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
+    {
+        COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+        return 0;
+    }
+    else
+        return 1;
+}
+
+
 
 int_fast8_t COREMOD_MEMORY_image_NETWORKtransmit_cli()
 {
@@ -1335,6 +1347,8 @@ int_fast8_t init_COREMOD_memory()
     RegisterCLIcommand("imsaveallsnap", __FILE__, COREMOD_MEMORY_SaveAll_snapshot_cli, "save all images in directory", "<directory>", "imsaveallsnap dir1", "long COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)");
     
     RegisterCLIcommand("imsaveallseq", __FILE__, COREMOD_MEMORY_SaveAll_sequ_cli, "save all images in directory - sequence", "<directory> <trigger image name> <trigger semaphore> <NB frames>", "imsaveallsequ dir1 im1 3 20", "long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, long semtrig, long NBframes)");
+    
+    RegisterCLIcommand("testfuncsem", __FILE__, COREMOD_MEMORY_testfunction_semaphore_cli, "test semaphore loop", "<image> <semindex>", "testfuncsem im1 1", "int COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig)");
     
     RegisterCLIcommand("imnetwtransmit", __FILE__, COREMOD_MEMORY_image_NETWORKtransmit_cli, "transmit image over network", "<image> <IP addr> <port [long]> <sync mode [int]>", "imnetwtransmit im1 127.0.0.1 0 8888 0", "long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode)");
     
@@ -6539,7 +6553,44 @@ long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, l
 
 
 
+int COREMOD_MEMORY_testfunction_semaphore(
+    const char *IDname,
+    int semtrig
+) {
+    long ID;
+    int semval;
 
+    long loopcnt = 0;
+
+    ID = image_ID(IDname);
+
+    char pinfomsg[200];
+
+
+    // ===========================
+    // Start loop
+    // ===========================
+    int loopOK = 1;
+    while(loopOK == 1) {
+
+        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+        sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
+        printf("MSG: %s\n", pinfomsg);
+        fflush(stdout);
+
+        sem_wait(data.image[ID].semptr[semtrig]);
+
+        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+        sprintf(pinfomsg, "%ld TEST 1 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
+        printf("MSG: %s\n", pinfomsg);
+        fflush(stdout);
+
+        loopcnt ++;
+    }
+
+
+    return 0;
+}
 
 
 
@@ -6593,6 +6644,13 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     char errmsg[200];
 
+    int TMPDEBUG = 0; // set to 1 for debugging this function
+
+	
+
+	if(TMPDEBUG==1)
+		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
+
     // ===========================
     // processinfo support
     // ===========================
@@ -6604,11 +6662,11 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char descr[200];
     sprintf(descr, "%s->%s/%d", IDname, IPaddr, port);
 
-	char pinfomsg[200];
-	sprintf(pinfomsg, "setup");
+    char pinfomsg[200];
+    sprintf(pinfomsg, "setup");
 
     processinfo = processinfo_setup(
-                      pinfoname,                 // re-use fpsname as processinfo name
+                      pinfoname,                 
                       descr,    // description
                       pinfomsg,  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
@@ -6621,165 +6679,167 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     ID = image_ID(IDname);
 
-    if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-        printf("ERROR creating socket\n");
-        exit(0);
-    }
+    if(TMPDEBUG == 0) {
 
-    result = setsockopt(fds_client,            /* socket affected */
-                        IPPROTO_TCP,     /* set option at TCP level */
-                        TCP_NODELAY,     /* name of option */
-                        (char *) &flag,  /* the cast is historical cruft */
-                        sizeof(int));    /* length of option value */
+        if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+            printf("ERROR creating socket\n");
+            exit(0);
+        }
+
+        result = setsockopt(fds_client,            /* socket affected */
+                            IPPROTO_TCP,     /* set option at TCP level */
+                            TCP_NODELAY,     /* name of option */
+                            (char *) &flag,  /* the cast is historical cruft */
+                            sizeof(int));    /* length of option value */
 
 
-    if(result < 0) {
-        processinfo_error(processinfo, "ERROR: setsockopt() failed\n");
-        loopOK = 0;
-    }
-
-    if(loopOK == 1) {
-        memset((char *) &sock_server, 0, sizeof(sock_server));
-        sock_server.sin_family = AF_INET;
-        sock_server.sin_port = htons(port);
-        sock_server.sin_addr.s_addr = inet_addr(IPaddr);
-
-        if(connect(fds_client, (struct sockaddr *) &sock_server, sizeof(sock_server)) < 0) {
-            perror("Error  connect() failed ");
-            printf("port = %d\n", port);
-            processinfo_error(processinfo, "ERROR: connect() failed\n");
+        if(result < 0) {
+            processinfo_error(processinfo, "ERROR: setsockopt() failed\n");
             loopOK = 0;
         }
-    }
 
-    if(loopOK == 1) {
-        if(send(fds_client, (void *) data.image[ID].md, sizeof(IMAGE_METADATA), 0) != sizeof(IMAGE_METADATA)) {
-            printf("send() sent a different number of bytes than expected %ld\n", sizeof(IMAGE_METADATA));
-            fflush(stdout);
-            processinfo_error(processinfo, "send() sent a different number of bytes than expected");
-            loopOK = 0;
-        }
-    }
+        if(loopOK == 1) {
+            memset((char *) &sock_server, 0, sizeof(sock_server));
+            sock_server.sin_family = AF_INET;
+            sock_server.sin_port = htons(port);
+            sock_server.sin_addr.s_addr = inet_addr(IPaddr);
 
-
-    if(loopOK == 1) {
-        xsize = data.image[ID].md[0].size[0];
-        ysize = data.image[ID].md[0].size[1];
-        NBslices = 1;
-        if(data.image[ID].md[0].naxis > 2)
-            if(data.image[ID].md[0].size[2] > 1) {
-                NBslices = data.image[ID].md[0].size[2];
-            }
-    }
-
-    if(loopOK == 1) {
-        switch(data.image[ID].md[0].datatype) {
-
-            case _DATATYPE_INT8:
-                framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT8:
-                framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-                break;
-
-            case _DATATYPE_INT16:
-                framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT16:
-                framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-                break;
-
-            case _DATATYPE_INT32:
-                framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT32:
-                framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-                break;
-
-            case _DATATYPE_INT64:
-                framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT64:
-                framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-                break;
-
-            case _DATATYPE_FLOAT:
-                framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-                break;
-            case _DATATYPE_DOUBLE:
-                framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-                break;
-
-
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                sprintf(errmsg, "WRONG DATA TYPE data type = %d\n", data.image[ID].md[0].datatype);
-                printf("data type = %d\n", data.image[ID].md[0].datatype);
-                processinfo_error(processinfo, errmsg);
+            if(connect(fds_client, (struct sockaddr *) &sock_server, sizeof(sock_server)) < 0) {
+                perror("Error  connect() failed ");
+                printf("port = %d\n", port);
+                processinfo_error(processinfo, "ERROR: connect() failed\n");
                 loopOK = 0;
-                break;
+            }
+        }
+
+        if(loopOK == 1) {
+            if(send(fds_client, (void *) data.image[ID].md, sizeof(IMAGE_METADATA), 0) != sizeof(IMAGE_METADATA)) {
+                printf("send() sent a different number of bytes than expected %ld\n", sizeof(IMAGE_METADATA));
+                fflush(stdout);
+                processinfo_error(processinfo, "send() sent a different number of bytes than expected");
+                loopOK = 0;
+            }
         }
 
 
-        printf("IMAGE FRAME SIZE = %ld\n", framesize);
-    }
-
-    if(loopOK == 1) {
-        switch(data.image[ID].md[0].datatype) {
-
-            case _DATATYPE_INT8:
-                ptr0 = (char *) data.image[ID].array.SI8;
-                break;
-            case _DATATYPE_UINT8:
-                ptr0 = (char *) data.image[ID].array.UI8;
-                break;
-
-            case _DATATYPE_INT16:
-                ptr0 = (char *) data.image[ID].array.SI16;
-                break;
-            case _DATATYPE_UINT16:
-                ptr0 = (char *) data.image[ID].array.UI16;
-                break;
-
-            case _DATATYPE_INT32:
-                ptr0 = (char *) data.image[ID].array.SI32;
-                break;
-            case _DATATYPE_UINT32:
-                ptr0 = (char *) data.image[ID].array.UI32;
-                break;
-
-            case _DATATYPE_INT64:
-                ptr0 = (char *) data.image[ID].array.SI64;
-                break;
-            case _DATATYPE_UINT64:
-                ptr0 = (char *) data.image[ID].array.UI64;
-                break;
-
-            case _DATATYPE_FLOAT:
-                ptr0 = (char *) data.image[ID].array.F;
-                break;
-            case _DATATYPE_DOUBLE:
-                ptr0 = (char *) data.image[ID].array.D;
-                break;
-
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                exit(0);
-                break;
+        if(loopOK == 1) {
+            xsize = data.image[ID].md[0].size[0];
+            ysize = data.image[ID].md[0].size[1];
+            NBslices = 1;
+            if(data.image[ID].md[0].naxis > 2)
+                if(data.image[ID].md[0].size[2] > 1) {
+                    NBslices = data.image[ID].md[0].size[2];
+                }
         }
 
+        if(loopOK == 1) {
+            switch(data.image[ID].md[0].datatype) {
+
+                case _DATATYPE_INT8:
+                    framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+                    break;
+                case _DATATYPE_UINT8:
+                    framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+                    break;
+
+                case _DATATYPE_INT16:
+                    framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+                    break;
+                case _DATATYPE_UINT16:
+                    framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+                    break;
+
+                case _DATATYPE_INT32:
+                    framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+                    break;
+                case _DATATYPE_UINT32:
+                    framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+                    break;
+
+                case _DATATYPE_INT64:
+                    framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+                    break;
+                case _DATATYPE_UINT64:
+                    framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+                    break;
+
+                case _DATATYPE_FLOAT:
+                    framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+                    break;
+                case _DATATYPE_DOUBLE:
+                    framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+                    break;
+
+
+                default:
+                    printf("ERROR: WRONG DATA TYPE\n");
+                    sprintf(errmsg, "WRONG DATA TYPE data type = %d\n", data.image[ID].md[0].datatype);
+                    printf("data type = %d\n", data.image[ID].md[0].datatype);
+                    processinfo_error(processinfo, errmsg);
+                    loopOK = 0;
+                    break;
+            }
+
+
+            printf("IMAGE FRAME SIZE = %ld\n", framesize);
+        }
+
+        if(loopOK == 1) {
+            switch(data.image[ID].md[0].datatype) {
+
+                case _DATATYPE_INT8:
+                    ptr0 = (char *) data.image[ID].array.SI8;
+                    break;
+                case _DATATYPE_UINT8:
+                    ptr0 = (char *) data.image[ID].array.UI8;
+                    break;
+
+                case _DATATYPE_INT16:
+                    ptr0 = (char *) data.image[ID].array.SI16;
+                    break;
+                case _DATATYPE_UINT16:
+                    ptr0 = (char *) data.image[ID].array.UI16;
+                    break;
+
+                case _DATATYPE_INT32:
+                    ptr0 = (char *) data.image[ID].array.SI32;
+                    break;
+                case _DATATYPE_UINT32:
+                    ptr0 = (char *) data.image[ID].array.UI32;
+                    break;
+
+                case _DATATYPE_INT64:
+                    ptr0 = (char *) data.image[ID].array.SI64;
+                    break;
+                case _DATATYPE_UINT64:
+                    ptr0 = (char *) data.image[ID].array.UI64;
+                    break;
+
+                case _DATATYPE_FLOAT:
+                    ptr0 = (char *) data.image[ID].array.F;
+                    break;
+                case _DATATYPE_DOUBLE:
+                    ptr0 = (char *) data.image[ID].array.D;
+                    break;
+
+                default:
+                    printf("ERROR: WRONG DATA TYPE\n");
+                    exit(0);
+                    break;
+            }
 
 
 
-        frame_md = (TCP_BUFFER_METADATA *) malloc(sizeof(TCP_BUFFER_METADATA));
-        framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
-        buff = (char *) malloc(sizeof(char) * framesize1);
 
-        oldslice = 0;
-        sockOK = 1;
-        printf("sem = %d\n", data.image[ID].md[0].sem);
-        fflush(stdout);
+            frame_md = (TCP_BUFFER_METADATA *) malloc(sizeof(TCP_BUFFER_METADATA));
+            framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
+            buff = (char *) malloc(sizeof(char) * framesize1);
 
+            oldslice = 0;
+            sockOK = 1;
+            printf("sem = %d\n", data.image[ID].md[0].sem);
+            fflush(stdout);
+        }
 
         if((data.image[ID].md[0].sem == 0) || (mode == 1)) {
             processinfo_WriteMessage(processinfo, "sync using counter");
@@ -6801,102 +6861,116 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     while(loopOK == 1) {
         loopOK = processinfo_loopstep(processinfo);
 
-        if(UseSem == 0) { // use counter
-            while(data.image[ID].md[0].cnt0 == cnt) { // test if new frame exists
-                usleep(5);
-            }
-            cnt = data.image[ID].md[0].cnt0;
-            semr = 0;
+
+        if(TMPDEBUG == 1) {
+            sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+            sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+            printf("MSG: %s\n", pinfomsg);
+            fflush(stdout);
+            processinfo_WriteMessage(processinfo, pinfomsg);
+
+            //     if(semval < 3) {
+            //        usleep(2000000);
+            //     }
+
+            sem_wait(data.image[ID].semptr[semtrig]);
+
+            sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+            sprintf(pinfomsg, "%ld TEST 1 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+            printf("MSG: %s\n", pinfomsg);
+            fflush(stdout);
+            processinfo_WriteMessage(processinfo, pinfomsg);
         } else {
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
-            }
-            ts.tv_sec += 5;
+            if(UseSem == 0) { // use counter
+                while(data.image[ID].md[0].cnt0 == cnt) { // test if new frame exists
+                    usleep(5);
+                }
+                cnt = data.image[ID].md[0].cnt0;
+                semr = 0;
+            } else {
+                if(clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+                    perror("clock_gettime");
+                    exit(EXIT_FAILURE);
+                }
+                ts.tv_sec += 2;
 
 #ifndef __MACH__
-			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
-			processinfo_WriteMessage(processinfo, pinfomsg);
-            semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
-			sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
-			processinfo_WriteMessage(processinfo, pinfomsg);            
+                semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
 #else
-			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
-			processinfo_WriteMessage(processinfo, pinfomsg);
-            alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
-            semr = sem_wait(data.image[ID].semptr[semtrig]);
+                alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
+                semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
-            if(iter == 0) {
-				processinfo_WriteMessage(processinfo, "Driving sem to 0");
-                printf("Driving semaphore to zero ... ");
-                fflush(stdout);
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                int semvalcnt = semval;
-                for(scnt = 0; scnt < semvalcnt; scnt++) {
-					sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-					printf("sem = %d\n", semval);
-					fflush(stdout);
-                    sem_trywait(data.image[ID].semptr[semtrig]);
+                if(iter == 0) {
+                    processinfo_WriteMessage(processinfo, "Driving sem to 0");
+                    printf("Driving semaphore to zero ... ");
+                    fflush(stdout);
+                    sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                    int semvalcnt = semval;
+                    for(scnt = 0; scnt < semvalcnt; scnt++) {
+                        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                        printf("sem = %d\n", semval);
+                        fflush(stdout);
+                        sem_trywait(data.image[ID].semptr[semtrig]);
+                    }
+                    printf("done\n");
+                    fflush(stdout);
+
+                    sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                    printf("-> sem = %d\n", semval);
+                    fflush(stdout);
+
+                    iter++;
                 }
-                printf("done\n");
-                fflush(stdout);
-                
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                printf("-> sem = %d\n", semval);
-				fflush(stdout);
-                
-                iter++;
             }
+
+
         }
+
+
+
 
 
         processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo) == 1) {
-            if(semr == 0) {
-                frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
-                frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
+            if(TMPDEBUG == 0) {
+                if(semr == 0) {
+                    frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
+                    frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
 
-                slice = data.image[ID].md[0].cnt1;
-                if(slice > oldslice + 1) {
-                    slice = oldslice + 1;
-                }
-                if(NBslices > 1)
-                    if(oldslice == NBslices - 1) {
+                    slice = data.image[ID].md[0].cnt1;
+                    if(slice > oldslice + 1) {
+                        slice = oldslice + 1;
+                    }
+                    if(NBslices > 1)
+                        if(oldslice == NBslices - 1) {
+                            slice = 0;
+                        }
+                    if(slice > NBslices - 1) {
                         slice = 0;
                     }
-                if(slice > NBslices - 1) {
-                    slice = 0;
+
+                    frame_md[0].cnt1 = slice;
+
+                    ptr1 = ptr0 + framesize * slice; //data.image[ID].md[0].cnt1; // frame that was just written
+                    memcpy(buff, ptr1, framesize);
+
+                    memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
+
+                    rs = send(fds_client, buff, framesize1, 0);
+
+                    if(rs != framesize1) {
+                        perror("socket send error ");
+                        sprintf(errmsg, "ERROR: send() sent a different number of bytes (%d) than expected %ld  %ld  %ld", rs, (long) framesize, (long) framesize1, (long) sizeof(TCP_BUFFER_METADATA));
+                        printf("%s\n", errmsg);
+                        fflush(stdout);
+                        processinfo_WriteMessage(processinfo, errmsg);
+                        loopOK = 0;
+                    }
+                    oldslice = slice;
                 }
-
-                //     printf("[%ld -> %ld] ", oldslice, slice); // TEST
-                frame_md[0].cnt1 = slice;
-                /*   if(slice == 0)
-                   {
-                       printf("\n");
-                       fflush(stdout);
-                   }*/
-
-
-                ptr1 = ptr0 + framesize * slice; //data.image[ID].md[0].cnt1; // frame that was just written
-                memcpy(buff, ptr1, framesize);
-
-                memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
-
-                rs = send(fds_client, buff, framesize1, 0);
-
-                if(rs != framesize1) {
-                    perror("socket send error ");
-                    sprintf(errmsg, "ERROR: send() sent a different number of bytes (%d) than expected %ld  %ld  %ld", rs, (long) framesize, (long) framesize1, (long) sizeof(TCP_BUFFER_METADATA));
-                    printf("%s\n", errmsg);
-                    fflush(stdout);
-                    processinfo_WriteMessage(processinfo, "errmsg");
-                    loopOK = 0;
-                }
-                oldslice = slice;
             }
+
         }
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
@@ -6916,14 +6990,15 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     // ==================================
     processinfo_cleanExit(processinfo);
 
+    if(TMPDEBUG == 0) {
+        free(buff);
 
-    free(buff);
+        close(fds_client);
+        printf("port %d closed\n", port);
+        fflush(stdout);
 
-    close(fds_client);
-    printf("port %d closed\n", port);
-    fflush(stdout);
-
-    free(frame_md);
+        free(frame_md);
+    }
 
     return(ID);
 }
