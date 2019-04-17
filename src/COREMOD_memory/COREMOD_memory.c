@@ -6539,7 +6539,45 @@ long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, l
 
 
 
+int COREMOD_MEMORY_testfunction_semaphore(
+    const char *IDname
+) {
+    long ID;
+    int semval;
 
+    int semtrig = 0;
+    long loopcnt = 0;
+
+    ID = image_ID(IDname);
+
+    char pinfomsg[200];
+
+
+    // ===========================
+    // Start loop
+    // ===========================
+    int loopOK = 1;
+    while(loopOK == 1) {
+
+        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+        sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
+        printf("MSG: %s\n", pinfomsg);
+        fflush(stdout);
+
+        sem_wait(data.image[ID].semptr[semtrig]);
+
+        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+        sprintf(pinfomsg, "%ld TEST 1 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
+        printf("MSG: %s\n", pinfomsg);
+        fflush(stdout);
+
+        loopcnt ++;
+    }
+
+
+
+    return 0;
+}
 
 
 
@@ -6594,6 +6632,10 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char errmsg[200];
 
     int TMPDEBUG = 1; // set to 1 for debugging this function
+
+	
+	if(TMPDEBUG == 1)
+		COREMOD_MEMORY_testfunction_semaphore(IDname);
 
 
 
