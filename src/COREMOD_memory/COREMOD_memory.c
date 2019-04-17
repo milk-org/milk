@@ -6858,6 +6858,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
         }
 
 */
+		usleep(500000);
+
 		sem_getvalue(data.image[ID].semptr[semtrig], &semval);
 		sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
 		printf("MSG: %s\n", pinfomsg);
