@@ -6866,7 +6866,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 		processinfo_WriteMessage(processinfo, pinfomsg);
 		
 		if(semval<3)
-			usleep(500000);
+			usleep(2000000);
 			
 		sem_wait(data.image[ID].semptr[semtrig]);
 		
