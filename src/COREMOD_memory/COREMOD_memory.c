@@ -1011,6 +1011,18 @@ int_fast8_t COREMOD_MEMORY_SaveAll_sequ_cli()
 }
 
 
+int_fast8_t COREMOD_MEMORY_testfunction_semaphore_cli()
+{
+    if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
+    {
+        COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+        return 0;
+    }
+    else
+        return 1;
+}
+
+
 
 int_fast8_t COREMOD_MEMORY_image_NETWORKtransmit_cli()
 {
@@ -1335,6 +1347,8 @@ int_fast8_t init_COREMOD_memory()
     RegisterCLIcommand("imsaveallsnap", __FILE__, COREMOD_MEMORY_SaveAll_snapshot_cli, "save all images in directory", "<directory>", "imsaveallsnap dir1", "long COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)");
     
     RegisterCLIcommand("imsaveallseq", __FILE__, COREMOD_MEMORY_SaveAll_sequ_cli, "save all images in directory - sequence", "<directory> <trigger image name> <trigger semaphore> <NB frames>", "imsaveallsequ dir1 im1 3 20", "long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, long semtrig, long NBframes)");
+    
+    RegisterCLIcommand("testfuncsem", __FILE__, COREMOD_MEMORY_testfunction_semaphore_cli, "test semaphore loop", "<image> <semindex>", "testfuncsem im1 1", "int COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig)");
     
     RegisterCLIcommand("imnetwtransmit", __FILE__, COREMOD_MEMORY_image_NETWORKtransmit_cli, "transmit image over network", "<image> <IP addr> <port [long]> <sync mode [int]>", "imnetwtransmit im1 127.0.0.1 0 8888 0", "long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode)");
     
@@ -6540,12 +6554,12 @@ long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, l
 
 
 int COREMOD_MEMORY_testfunction_semaphore(
-    const char *IDname
+    const char *IDname,
+    int semtrig
 ) {
     long ID;
     int semval;
 
-    int semtrig = 0;
     long loopcnt = 0;
 
     ID = image_ID(IDname);
@@ -6573,7 +6587,6 @@ int COREMOD_MEMORY_testfunction_semaphore(
 
         loopcnt ++;
     }
-
 
 
     return 0;
@@ -6634,8 +6647,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     int TMPDEBUG = 1; // set to 1 for debugging this function
 
 	
-	if(TMPDEBUG == 1)
-		COREMOD_MEMORY_testfunction_semaphore(IDname);
+
 
 
 

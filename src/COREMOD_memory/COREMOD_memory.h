@@ -473,7 +473,7 @@ long COREMOD_MEMORY_SaveAll_snapshot(const char *dirname);
 long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, long semtrig, long NBframes);
 
 
-
+int COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig);
 long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode, int RT_priority);
 
 long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority);
