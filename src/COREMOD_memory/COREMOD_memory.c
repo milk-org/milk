@@ -6588,7 +6588,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char *buff; // transmit buffer
 
 
-    int semtrig = 0; // TODO - scan for available sem
+    int semtrig = 5; // TODO - scan for available sem
     int UseSem = 1;
 
     char errmsg[200];
@@ -6836,19 +6836,19 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                     perror("clock_gettime");
                     exit(EXIT_FAILURE);
                 }
-                ts.tv_sec += 5;
+                ts.tv_sec += 1;
 
 #ifndef __MACH__
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
-                processinfo_WriteMessage(processinfo, pinfomsg);
+                //sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                //sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+                //processinfo_WriteMessage(processinfo, pinfomsg);
                 semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
                 sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
                 processinfo_WriteMessage(processinfo, pinfomsg);
 #else
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
-                processinfo_WriteMessage(processinfo, pinfomsg);
+                //sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                //sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
+                //processinfo_WriteMessage(processinfo, pinfomsg);
                 alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
                 semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
