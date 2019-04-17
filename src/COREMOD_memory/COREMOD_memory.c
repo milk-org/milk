@@ -6593,6 +6593,10 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     char errmsg[200];
 
+    int TMPDEBUG = 1; // set to 1 for debugging this function
+
+
+
     // ===========================
     // processinfo support
     // ===========================
@@ -6604,8 +6608,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char descr[200];
     sprintf(descr, "%s->%s/%d", IDname, IPaddr, port);
 
-	char pinfomsg[200];
-	sprintf(pinfomsg, "setup");
+    char pinfomsg[200];
+    sprintf(pinfomsg, "setup");
 
     processinfo = processinfo_setup(
                       pinfoname,                 // re-use fpsname as processinfo name
@@ -6802,81 +6806,82 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
         loopOK = processinfo_loopstep(processinfo);
 
 
+        if(TMPDEBUG == 1) {
+            sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+            sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+            printf("MSG: %s\n", pinfomsg);
+            fflush(stdout);
+            processinfo_WriteMessage(processinfo, pinfomsg);
 
+       //     if(semval < 3) {
+       //        usleep(2000000);
+       //     }
 
-/*
+            sem_wait(data.image[ID].semptr[semtrig]);
 
-        if(UseSem == 0) { // use counter
-            while(data.image[ID].md[0].cnt0 == cnt) { // test if new frame exists
-                usleep(5);
-            }
-            cnt = data.image[ID].md[0].cnt0;
-            semr = 0;
+            sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+            sprintf(pinfomsg, "%ld TEST 1 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+            printf("MSG: %s\n", pinfomsg);
+            fflush(stdout);
+            processinfo_WriteMessage(processinfo, pinfomsg);
         } else {
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
-            }
-            ts.tv_sec += 5;
+            if(UseSem == 0) { // use counter
+                while(data.image[ID].md[0].cnt0 == cnt) { // test if new frame exists
+                    usleep(5);
+                }
+                cnt = data.image[ID].md[0].cnt0;
+                semr = 0;
+            } else {
+                if(clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+                    perror("clock_gettime");
+                    exit(EXIT_FAILURE);
+                }
+                ts.tv_sec += 5;
 
 #ifndef __MACH__
-			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
-			processinfo_WriteMessage(processinfo, pinfomsg);
-            semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
-			sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
-			processinfo_WriteMessage(processinfo, pinfomsg);            
+                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                sprintf(pinfomsg, "%ld calling timedwait  semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
+                processinfo_WriteMessage(processinfo, pinfomsg);
+                semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
+                sprintf(pinfomsg, "called timedwait  semtrig %d  ID %ld  %d", semtrig, ID, semval);
+                processinfo_WriteMessage(processinfo, pinfomsg);
 #else
-			sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-			sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
-			processinfo_WriteMessage(processinfo, pinfomsg);
-            alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
-            semr = sem_wait(data.image[ID].semptr[semtrig]);
+                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                sprintf(pinfomsg, "MACH semtrig %d  ID %ld  %d", semtrig, ID, semval);
+                processinfo_WriteMessage(processinfo, pinfomsg);
+                alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
+                semr = sem_wait(data.image[ID].semptr[semtrig]);
 #endif
 
-            if(iter == 0) {
-				processinfo_WriteMessage(processinfo, "Driving sem to 0");
-                printf("Driving semaphore to zero ... ");
-                fflush(stdout);
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                int semvalcnt = semval;
-                for(scnt = 0; scnt < semvalcnt; scnt++) {
-					sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-					printf("sem = %d\n", semval);
-					fflush(stdout);
-                    sem_trywait(data.image[ID].semptr[semtrig]);
+                if(iter == 0) {
+                    processinfo_WriteMessage(processinfo, "Driving sem to 0");
+                    printf("Driving semaphore to zero ... ");
+                    fflush(stdout);
+                    sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                    int semvalcnt = semval;
+                    for(scnt = 0; scnt < semvalcnt; scnt++) {
+                        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                        printf("sem = %d\n", semval);
+                        fflush(stdout);
+                        sem_trywait(data.image[ID].semptr[semtrig]);
+                    }
+                    printf("done\n");
+                    fflush(stdout);
+
+                    sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                    printf("-> sem = %d\n", semval);
+                    fflush(stdout);
+
+                    iter++;
                 }
-                printf("done\n");
-                fflush(stdout);
-                
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                printf("-> sem = %d\n", semval);
-				fflush(stdout);
-                
-                iter++;
             }
+
+
         }
 
-*/
 
-		sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-		sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
-		printf("MSG: %s\n", pinfomsg);
-		fflush(stdout);
-		processinfo_WriteMessage(processinfo, pinfomsg);
-		
-		if(semval<3)
-			usleep(2000000);
-			
-		sem_wait(data.image[ID].semptr[semtrig]);
-		
-		sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-		sprintf(pinfomsg, "%ld TEST 1 semtrig %d  ID %ld  %d", processinfo->loopcnt, semtrig, ID, semval);
-		printf("MSG: %s\n", pinfomsg);
-		fflush(stdout);
-		processinfo_WriteMessage(processinfo, pinfomsg);
-			
-		
+
+
 
         processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo) == 1) {
