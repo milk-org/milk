@@ -6644,12 +6644,12 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     char errmsg[200];
 
-    int TMPDEBUG = 1; // set to 1 for debugging this function
+    int TMPDEBUG = 0; // set to 1 for debugging this function
 
 	
 
-//	if(TMPDEBUG==1)
-//		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
+	if(TMPDEBUG==1)
+		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
 
     // ===========================
     // processinfo support
