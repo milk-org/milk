@@ -6833,6 +6833,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 fflush(stdout);
                 sem_getvalue(data.image[ID].semptr[semtrig], &semval);
                 for(scnt = 0; scnt < semval; scnt++) {
+					sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+					printf("sem = %d\n", semval);
                     sem_trywait(data.image[ID].semptr[semtrig]);
                 }
                 printf("done\n");
