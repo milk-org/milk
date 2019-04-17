@@ -6832,7 +6832,8 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
                 sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-                for(scnt = 0; scnt < semval; scnt++) {
+                int semvalcnt = semval;
+                for(scnt = 0; scnt < semvalcnt; scnt++) {
 					sem_getvalue(data.image[ID].semptr[semtrig], &semval);
 					printf("sem = %d\n", semval);
 					fflush(stdout);
