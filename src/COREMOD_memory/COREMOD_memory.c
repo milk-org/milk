@@ -6836,7 +6836,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
                     perror("clock_gettime");
                     exit(EXIT_FAILURE);
                 }
-                ts.tv_sec += 1;
+                ts.tv_sec += 2;
 
 #ifndef __MACH__
                 //sem_getvalue(data.image[ID].semptr[semtrig], &semval);
