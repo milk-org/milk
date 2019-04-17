@@ -7528,7 +7528,7 @@ long COREMOD_MEMORY_PixMapDecode_U(
     char msgstring[200];
     sprintf(msgstring, "%s->%s", inputstream_name, IDout_name);
 
-    processinfo_setup(
+    processinfo = processinfo_setup(
         pinfoname,             // short name for the processinfo instance, no spaces, no dot, name should be human-readable
         pinfodescr,    // description
         msgstring,  // message on startup
