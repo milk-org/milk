@@ -36,8 +36,7 @@ int functiontemplate_usingprocessinfo() {
 
     PROCESSINFO *processinfo;
 
-    processinfo_setup(
-        processinfo,
+    processinfo = processinfo_setup(
         "addimages",	         // short name for the processinfo instance, no spaces, no dot, name should be human-readable
         "computes something",    // description
         "add image1 to image2",  // message on startup
