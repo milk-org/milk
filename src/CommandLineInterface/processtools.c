@@ -936,6 +936,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo) {
 
 
 int processinfo_exec_end(PROCESSINFO *processinfo) {
+	int loopOK = 1;
 #ifdef PROCESSINFO_ENABLED
         if(processinfo->MeasureTiming == 1) {
             clock_gettime(CLOCK_REALTIME, &processinfo->texecend[processinfo->timerindex]);
@@ -962,11 +963,11 @@ int processinfo_exec_end(PROCESSINFO *processinfo) {
             }
         }
 
-        processinfo_ProcessSignals(processinfo);
+        loopOK = processinfo_ProcessSignals(processinfo);
         processinfo->loopcnt++;
 #endif
 
-    return 0;
+    return loopOK;  // returns 0 if signal stops loop
 }
 
 
@@ -1196,9 +1197,8 @@ static long getTopOutput()
 
 
 
-static int GetCPUloads(PROCINFOPROC *pinfop)
-{
-    char * line = NULL;
+static int GetCPUloads(PROCINFOPROC *pinfop) {
+    char *line = NULL;
     FILE *fp;
     ssize_t read;
     size_t len = 0;
@@ -1207,21 +1207,28 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
     long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
 
+  /*  static int milktmpdircreated = 0;
+
+
+    if(milktmpdircreated == 0) {
+        system("mkdir -p ./milktmp");
+        milktmpdircreated  = 1;
+    }*/
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
     fp = fopen("/proc/stat", "r");
-    if (fp == NULL)
+    if(fp == NULL) {
         exit(EXIT_FAILURE);
+    }
 
     cpu = 0;
-    if(getline(&line, &len, fp) == -1)
-    {
+    if(getline(&line, &len, fp) == -1) {
         printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
         exit(0);
     }
 
-    while (((read = getline(&line, &len, fp)) != -1)&&(cpu<pinfop->NBcpus)) {
+    while(((read = getline(&line, &len, fp)) != -1) && (cpu < pinfop->NBcpus)) {
 
         sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 
@@ -1245,14 +1252,14 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
         pinfop->CPUcnt7[cpu] = vall7;
         pinfop->CPUcnt8[cpu] = vall8;
 
-        pinfop->CPUload[cpu] = (1.0*v0+v1+v2+v4+v5+v6)/(v0+v1+v2+v3+v4+v5+v6+v7+v8);
+        pinfop->CPUload[cpu] = (1.0 * v0 + v1 + v2 + v4 + v5 + v6) / (v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8);
         cpu++;
     }
 
     fclose(fp);
     clock_gettime(CLOCK_REALTIME, &t2);
     tdiff = info_time_diff(t1, t2);
-    scantime_CPUload += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+    scantime_CPUload += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
 
     clock_gettime(CLOCK_REALTIME, &t1);
@@ -1261,22 +1268,19 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
     char command[200];
 
 
-    for(cpu=0; cpu<pinfop->NBcpus; cpu++)
-    {
+    for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
         char outstring[200];
-        FILE * fpout;
+        FILE *fpout;
 
 
         sprintf(command, "CORENUM=%d; cat /milktmp/_psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
-        fpout = popen (command, "r");
-        if(fpout==NULL)
-        {
+        fpout = popen(command, "r");
+        if(fpout == NULL) {
             printf("WARNING: cannot run command \"%s\"\n", command);
-        }
-        else
-        {
-            if(fgets(outstring, 100, fpout)== NULL)
+        } else {
+            if(fgets(outstring, 100, fpout) == NULL) {
                 printf("WARNING: fgets error\n");
+            }
             pclose(fpout);
             pinfop->CPUpcnt[cpu] = atoi(outstring);
         }
@@ -1285,12 +1289,13 @@ static int GetCPUloads(PROCINFOPROC *pinfop)
     //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
 
     sprintf(command, "{ if [ ! -f /milktmp/_psOKlock ]; then touch /milktmp/_psOKlock; ps -e -o /milktmp/pid,psr,cpu,cmd > /milktmp/_psoutput.txt; fi; rm /milktmp/_psOKlock &> /dev/null; } &");
-    if(system(command) != 0)
-		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
 
     clock_gettime(CLOCK_REALTIME, &t2);
     tdiff = info_time_diff(t1, t2);
-    scantime_CPUpcnt += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+    scantime_CPUpcnt += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
     return(cpu);
 }
