@@ -2290,9 +2290,13 @@ int functionparameter_FPSprocess_cmdline(
     sprintf(msgstring, "INPUT CMD: %s\n", FPScmdline);
     functionparameter_outlog(msgstring);
 
+FUNCTIONPARAMETER_LOGEXEC;
+
     pch = strtok(FPScmdline, " \t");
 
     sprintf(FPScommand, "%s", pch);
+
+FUNCTIONPARAMETER_LOGEXEC;
 
     while(pch != NULL) {
         nbword++;
@@ -2313,6 +2317,7 @@ int functionparameter_FPSprocess_cmdline(
         }
     }
 
+FUNCTIONPARAMETER_LOGEXEC;
 
     // look for entry, if found, kwnindex points to it
     int kwnindex = -1;
@@ -2347,14 +2352,19 @@ int functionparameter_FPSprocess_cmdline(
 
     // Single argument command
 
+FUNCTIONPARAMETER_LOGEXEC;
+
     if((nbword > 1) && (FPScommand[0] != '#')) {
+FUNCTIONPARAMETER_LOGEXEC;
         if(kwnindex != -1) {
+FUNCTIONPARAMETER_LOGEXEC;			
             fpsindex = keywnode[kwnindex].fpsindex;
             pindex = keywnode[kwnindex].pindex;
 
 
             // Start RUN process
             if(strcmp(FPScommand, "runstart") == 0) {
+FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstart(fps, fpsindex);
                 sprintf(msgstring, "start RUN process %d %s\n", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog(msgstring);
@@ -2364,6 +2374,7 @@ int functionparameter_FPSprocess_cmdline(
 
             // Stop RUN process
             if(strcmp(FPScommand, "runstop") == 0) {
+FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstop(fps, fpsindex);
                 sprintf(msgstring, "stop RUN process %d %s\n", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog(msgstring);
@@ -2372,12 +2383,12 @@ int functionparameter_FPSprocess_cmdline(
         }
     }
 
-
+FUNCTIONPARAMETER_LOGEXEC;
 
     // 2 arguments command
 
     if((nbword > 2) && (FPScommand[0] != '#') && (cmdOK == 0)) {
-
+FUNCTIONPARAMETER_LOGEXEC;
 
         if(verbose == 1) {
             sprintf(msgstring, "2+ args   kwnindex = %d\n", kwnindex);
@@ -2386,12 +2397,14 @@ int functionparameter_FPSprocess_cmdline(
 
 
         if(kwnindex != -1) {
+FUNCTIONPARAMETER_LOGEXEC;
             fpsindex = keywnode[kwnindex].fpsindex;
             pindex = keywnode[kwnindex].pindex;
 
 
             // Set Value
             if(strcmp(FPScommand, "setval") == 0) {
+FUNCTIONPARAMETER_LOGEXEC;
                 int updated = 0;
 
                 if(verbose == 1) {
@@ -2516,13 +2529,13 @@ int functionparameter_FPSprocess_cmdline(
             printf("\n");
         }
     }
-
+FUNCTIONPARAMETER_LOGEXEC;
 
     if(cmdOK == 0) {
         sprintf(msgstring, "FAILED TO EXECUTE CMD: %s\n", FPScmdline);
         functionparameter_outlog(msgstring);
     }
-
+FUNCTIONPARAMETER_LOGEXEC;
     return 0;
 }
 
@@ -2610,7 +2623,7 @@ errno_t functionparameter_RUNstart(
         sprintf(command, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
         if(system(command) != 0) {
             // this is probably OK - duplicate session
-            printf("command: \"%s\"", command);
+            printf("command: \"%s\"\n", command);
             printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
             printf("This error message may be due to pre-existing session\n");           
         }
