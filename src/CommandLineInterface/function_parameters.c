@@ -2317,9 +2317,12 @@ int functionparameter_FPSprocess_cmdline(
         if(nbword == 2) {
             FUNCTIONPARAMETER_LOGEXEC;
             char *pos;
-            if(snprintf(FPSvaluestring, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >= FUNCTION_PARAMETER_STRMAXLEN) {
+            if(snprintf(FPSvaluestring, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >= FUNCTION_PARAMETER_STRMAXLEN) 
+            sprintf(FPSvaluestring,  "%s", pch);
+            //{
                 printf("ERROR: string truncated\n");
-            }
+                printf("STRING: %s\n", pch);
+            //}
             FUNCTIONPARAMETER_LOGEXEC;
             if((pos = strchr(FPSvaluestring, '\n')) != NULL) {
                 FUNCTIONPARAMETER_LOGEXEC;
