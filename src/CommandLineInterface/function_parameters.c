@@ -2610,7 +2610,9 @@ errno_t functionparameter_RUNstart(
         sprintf(command, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
         if(system(command) != 0) {
             // this is probably OK - duplicate session
-            // printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            printf("command: \"%s\"", command);
+            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            printf("This error message may be due to pre-existing session\n");           
         }
 
 
