@@ -2299,19 +2299,28 @@ FUNCTIONPARAMETER_LOGEXEC;
 FUNCTIONPARAMETER_LOGEXEC;
 
     while(pch != NULL) {
+FUNCTIONPARAMETER_LOGEXEC;
         nbword++;
         pch = strtok(NULL, " \t");
+FUNCTIONPARAMETER_LOGEXEC;
         if(nbword == 1) {
+FUNCTIONPARAMETER_LOGEXEC;			
             char *pos;
             sprintf(FPSentryname, "%s", pch);
+FUNCTIONPARAMETER_LOGEXEC;
             if((pos = strchr(FPSvaluestring, '\n')) != NULL) {
+FUNCTIONPARAMETER_LOGEXEC;
                 *pos = '\0';
+FUNCTIONPARAMETER_LOGEXEC;                
             }
         }
         if(nbword == 2) {
+FUNCTIONPARAMETER_LOGEXEC;
             char *pos;
             sprintf(FPSvaluestring, "%s", pch);
+FUNCTIONPARAMETER_LOGEXEC;
             if((pos = strchr(FPSvaluestring, '\n')) != NULL) {
+FUNCTIONPARAMETER_LOGEXEC;
                 *pos = '\0';
             }
         }
