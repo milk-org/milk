@@ -2283,50 +2283,52 @@ int functionparameter_FPSprocess_cmdline(
 
     int cmdOK = 0;
 
-    char FPSentryname[500];
-    char FPSvaluestring[200];
+    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char FPSvaluestring[FUNCTION_PARAMETER_STRMAXLEN];
 
     char msgstring[500];
     sprintf(msgstring, "INPUT CMD: %s\n", FPScmdline);
     functionparameter_outlog(msgstring);
 
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
 
     pch = strtok(FPScmdline, " \t");
 
     sprintf(FPScommand, "%s", pch);
 
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
 
     while(pch != NULL) {
-FUNCTIONPARAMETER_LOGEXEC;
+        FUNCTIONPARAMETER_LOGEXEC;
         nbword++;
         pch = strtok(NULL, " \t");
-FUNCTIONPARAMETER_LOGEXEC;
+        FUNCTIONPARAMETER_LOGEXEC;
         if(nbword == 1) {
-FUNCTIONPARAMETER_LOGEXEC;			
+            FUNCTIONPARAMETER_LOGEXEC;
             char *pos;
             sprintf(FPSentryname, "%s", pch);
-FUNCTIONPARAMETER_LOGEXEC;
+            FUNCTIONPARAMETER_LOGEXEC;
             if((pos = strchr(FPSvaluestring, '\n')) != NULL) {
-FUNCTIONPARAMETER_LOGEXEC;
+                FUNCTIONPARAMETER_LOGEXEC;
                 *pos = '\0';
-FUNCTIONPARAMETER_LOGEXEC;                
+                FUNCTIONPARAMETER_LOGEXEC;
             }
         }
         if(nbword == 2) {
-FUNCTIONPARAMETER_LOGEXEC;
+            FUNCTIONPARAMETER_LOGEXEC;
             char *pos;
-            snprintf(FPSvaluestring, 200, "%s", pch);
-FUNCTIONPARAMETER_LOGEXEC;
+            if(snprintf(FPSvaluestring, FUNCTION_PARAMETER_STRMAXLEN, "%s", pch) >= FUNCTION_PARAMETER_STRMAXLEN) {
+                printf("ERROR: string truncated\n");
+            }
+            FUNCTIONPARAMETER_LOGEXEC;
             if((pos = strchr(FPSvaluestring, '\n')) != NULL) {
-FUNCTIONPARAMETER_LOGEXEC;
+                FUNCTIONPARAMETER_LOGEXEC;
                 *pos = '\0';
             }
         }
     }
 
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
 
     // look for entry, if found, kwnindex points to it
     int kwnindex = -1;
@@ -2343,14 +2345,14 @@ FUNCTIONPARAMETER_LOGEXEC;
             kwnindexscan ++;
         }
 
-       // if(verbose == 1) {
-            if(kwnindex != -1) {
-                sprintf(msgstring, "Resolved arg1 as keyword node index %d\n",  kwnindex);
-                functionparameter_outlog(msgstring);
-            } else {
-                sprintf(msgstring, "Could not resolve arg1 as keyword index\n");
-                functionparameter_outlog(msgstring);
-            }
+        // if(verbose == 1) {
+        if(kwnindex != -1) {
+            sprintf(msgstring, "Resolved arg1 as keyword node index %d\n",  kwnindex);
+            functionparameter_outlog(msgstring);
+        } else {
+            sprintf(msgstring, "Could not resolve arg1 as keyword index\n");
+            functionparameter_outlog(msgstring);
+        }
         //}
     }
 
@@ -2361,19 +2363,19 @@ FUNCTIONPARAMETER_LOGEXEC;
 
     // Single argument command
 
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
 
     if((nbword > 1) && (FPScommand[0] != '#')) {
-FUNCTIONPARAMETER_LOGEXEC;
+        FUNCTIONPARAMETER_LOGEXEC;
         if(kwnindex != -1) {
-FUNCTIONPARAMETER_LOGEXEC;			
+            FUNCTIONPARAMETER_LOGEXEC;
             fpsindex = keywnode[kwnindex].fpsindex;
             pindex = keywnode[kwnindex].pindex;
 
 
             // Start RUN process
             if(strcmp(FPScommand, "runstart") == 0) {
-FUNCTIONPARAMETER_LOGEXEC;
+                FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstart(fps, fpsindex);
                 sprintf(msgstring, "start RUN process %d %s\n", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog(msgstring);
@@ -2383,7 +2385,7 @@ FUNCTIONPARAMETER_LOGEXEC;
 
             // Stop RUN process
             if(strcmp(FPScommand, "runstop") == 0) {
-FUNCTIONPARAMETER_LOGEXEC;
+                FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstop(fps, fpsindex);
                 sprintf(msgstring, "stop RUN process %d %s\n", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog(msgstring);
@@ -2392,12 +2394,12 @@ FUNCTIONPARAMETER_LOGEXEC;
         }
     }
 
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
 
     // 2 arguments command
 
     if((nbword > 2) && (FPScommand[0] != '#') && (cmdOK == 0)) {
-FUNCTIONPARAMETER_LOGEXEC;
+        FUNCTIONPARAMETER_LOGEXEC;
 
         if(verbose == 1) {
             sprintf(msgstring, "2+ args   kwnindex = %d\n", kwnindex);
@@ -2406,14 +2408,14 @@ FUNCTIONPARAMETER_LOGEXEC;
 
 
         if(kwnindex != -1) {
-FUNCTIONPARAMETER_LOGEXEC;
+            FUNCTIONPARAMETER_LOGEXEC;
             fpsindex = keywnode[kwnindex].fpsindex;
             pindex = keywnode[kwnindex].pindex;
 
 
             // Set Value
             if(strcmp(FPScommand, "setval") == 0) {
-FUNCTIONPARAMETER_LOGEXEC;
+                FUNCTIONPARAMETER_LOGEXEC;
                 int updated = 0;
 
                 if(verbose == 1) {
@@ -2538,13 +2540,13 @@ FUNCTIONPARAMETER_LOGEXEC;
             printf("\n");
         }
     }
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
 
     if(cmdOK == 0) {
         sprintf(msgstring, "FAILED TO EXECUTE CMD: %s\n", FPScmdline);
         functionparameter_outlog(msgstring);
     }
-FUNCTIONPARAMETER_LOGEXEC;
+    FUNCTIONPARAMETER_LOGEXEC;
     return 0;
 }
 
