@@ -783,31 +783,37 @@ char *functionparameter_SetParamValue_STRING(
 int functionparameter_GetParamValue_ONOFF(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
-)
-{	
-	int fpsi = functionparameter_GetParamIndex(fps, paramname);
+) {
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
 
-	if( fps->parray[fpsi].fpflag & FPFLAG_ONOFF )
-		return 1;
-	else
-		return 0;
+    if(fps->parray[fpsi].fpflag & FPFLAG_ONOFF) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 int functionparameter_SetParamValue_ONOFF(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
     int ONOFFvalue
-)
-{	
-	int fpsi = functionparameter_GetParamIndex(fps, paramname);
+) {
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
 
-	if( ONOFFvalue == 1)
-		fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
-	else
-		fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
-	
-	return EXIT_SUCCESS;
+    if(ONOFFvalue == 1) {
+        fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
+    } else {
+        fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
+    }
+
+    return EXIT_SUCCESS;
 }
+
+
+
+
+
+
 
 
 
@@ -820,102 +826,11 @@ long functionparameter_LoadStream(
     int fpsconnectmode
 ) {
     long ID = -1;
+    int imLOC;
 
 
     printf("====================== Loading stream \"%s\" = %s\n", fps->parray[pindex].keywordfull, fps->parray[pindex].val.string[0]);
-
-
-    if(fps->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONF) {
-        printf("    FPFLAG_STREAM_LOAD_FORCE_CONF\n");
-
-        FILE *fp;
-        char fname[200];
-
-        sprintf(fname, "./conf/shmim.%s.fname.conf", fps->parray[pindex].val.string[0]);
-
-        fp = fopen(fname, "r");
-        if(fp == NULL) {
-            printf("ERROR: stream %s could not be loaded from CONF\n", fps->parray[pindex].val.string[0]);
-        } else {
-            char streamfname[200];
-            int fscanfcnt;
-
-            fscanfcnt = fscanf(fp, "%s", streamfname);
-            if(fscanfcnt == EOF) {
-                if(ferror(fp)) {
-                    perror("fscanf");
-                } else {
-                    fprintf(stderr, "Error: fscanf reached end of file, no matching characters, no matching failure\n");
-                }
-                return RETURN_FAILURE;
-            } else if(fscanfcnt != 2) {
-                fprintf(stderr, "Error: fscanf successfully matched and assigned %i input items, 2 expected\n", fscanfcnt);
-                return RETURN_FAILURE;
-            }
-
-            ID = load_fits(streamfname, fps->parray[pindex].val.string[0], 1);
-            fclose(fp);
-        }
-
-        if(ID != -1) {
-            // copy to shared memory
-            copy_image_ID(fps->parray[pindex].val.string[0], fps->parray[pindex].val.string[0], 1);
-        }
-
-    } else if(fps->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_SHM) {
-        printf("    FPFLAG_STREAM_LOAD_FORCE_SHM\n");
-
-        ID = read_sharedmem_image(fps->parray[pindex].val.string[0]);
-    } else {
-
-        if(fps->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_TRY_CONF) {
-            printf("    FPFLAG_STREAM_LOAD_TRY_CONF\n");
-
-            FILE *fp;
-            char fname[200];
-
-            sprintf(fname, "./conf/shmim.%s.fname.conf", fps->parray[pindex].val.string[0]);
-
-            fp = fopen(fname, "r");
-            if(fp == NULL) {
-                printf("ERROR: stream %s could not be loaded from CONF\n", fps->parray[pindex].val.string[0]);
-            } else {
-                char streamfname[200];
-                int fscanfcnt;
-
-                fscanfcnt = fscanf(fp, "%s", streamfname);
-                if(fscanfcnt == EOF) {
-                    if(ferror(fp)) {
-                        perror("fscanf");
-                    } else {
-                        fprintf(stderr, "Error: fscanf reached end of file, no matching characters, no matching failure\n");
-                    }
-                    return RETURN_FAILURE;
-                } else if(fscanfcnt != 2) {
-                    fprintf(stderr, "Error: fscanf successfully matched and assigned %i input items, 2 expected\n", fscanfcnt);
-                    return RETURN_FAILURE;
-                }
-
-
-                ID = load_fits(streamfname, fps->parray[pindex].val.string[0], 1);
-                fclose(fp);
-            }
-
-            if(ID != -1) {
-                // copy to shared memory
-                copy_image_ID(fps->parray[pindex].val.string[0], fps->parray[pindex].val.string[0], 1);
-            }
-        }
-
-
-
-        if(fps->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_TRY_SHM) {
-            printf("    FPFLAG_STREAM_LOAD_TRY_SHM\n");
-
-            ID = read_sharedmem_image(fps->parray[pindex].val.string[0]);
-        }
-    }
-
+    ID = COREMOD_IOFITS_LoadMemStream(fps->parray[pindex].val.string[0], fps->parray[pindex].fpflag, &imLOC);
 
 
     if(fpsconnectmode == FPSCONNECT_CONF) {
@@ -937,8 +852,11 @@ long functionparameter_LoadStream(
             }
         }
     }
-
-
+    
+    
+    // TODO: Add testing for fps
+    
+    
 
     return ID;
 }

@@ -98,7 +98,7 @@ fi
 
 # ======================= CHECK REQUIRED FILES =================================
 echo ""
-checkFile /tmp/$1.im.shm
+checkFile ${MILK_SHM_DIR}/$1.im.shm
 
 
 

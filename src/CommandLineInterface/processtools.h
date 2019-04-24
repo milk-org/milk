@@ -69,8 +69,9 @@ typedef struct {
 
     struct timespec createtime;  // time at which pinfo was created
 
-    long loopcnt;  // counter, useful for loop processes to monitor activity
-    int CTRLval;   // control value to be externally written.
+    long loopcnt;    // counter, useful for loop processes to monitor activity
+    long loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
+    int CTRLval;     // control value to be externally written.
     // 0: run                     (default)
     // 1: pause
     // 2: increment single step (will go back to 1)

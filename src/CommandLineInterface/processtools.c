@@ -188,6 +188,8 @@ PROCESSINFO *processinfo_setup(
         strcpy(processinfo->description, descriptionstring);
         processinfo_WriteMessage(processinfo, msgstring);
         data.processinfoActive = 1;
+        
+        processinfo->loopcntMax = -1;     // infinite loop
 
         processinfo->MeasureTiming =  0;  // default: do not measure timing
         processinfo->RT_priority   = -1;  // default: do not assign RT priority
@@ -266,19 +268,26 @@ int processinfo_loopstep(
     if(processinfo->CTRLval == 3) { // exit loop
         loopstatus = 0;
     }
-    
+
     if(data.signal_INT == 1) {  // CTRL-C
-		loopstatus = 0;
-	}
+        loopstatus = 0;
+    }
 
     if(data.signal_HUP == 1) {  // terminal has disappeared
-		loopstatus = 0;
-	}	
-	
+        loopstatus = 0;
+    }
+
+    if(processinfo->loopcntMax != -1)
+        if(processinfo->loopcnt >= processinfo->loopcntMax) {
+            loopstatus = 0;
+        }
+
 #endif
 
     return loopstatus;
 }
+
+
 
 
 
@@ -485,37 +494,45 @@ PROCESSINFO *processinfo_shm_create(
 
     char tmuxname[100];
     FILE *fpout;
+    int notmux = 0;
+    
     fpout = popen("tmuxsessionname", "r");
     if(fpout == NULL) {
         printf("WARNING: cannot run command \"tmuxsessionname\"\n");
     } else {
         if(fgets(tmuxname, 100, fpout) == NULL) {
-            printf("WARNING: fgets error\n");
+            //printf("WARNING: fgets error\n");
+            notmux = 1;
         }
         pclose(fpout);
     }
     // remove line feed
     if(strlen(tmuxname) > 0) {
-        printf("tmux name : %s\n", tmuxname);
-        printf("len: %d\n", (int) strlen(tmuxname));
+      //  printf("tmux name : %s\n", tmuxname);
+      //  printf("len: %d\n", (int) strlen(tmuxname));
         fflush(stdout);
 
         if(tmuxname[strlen(tmuxname) - 1] == '\n') {
             tmuxname[strlen(tmuxname) - 1] = '\0';
         }
+        else
+        {
+			printf("tmux name empty\n");
+		}
     }
+    else 
+		notmux = 1;
+		
+    if(notmux==1)
+		sprintf(tmuxname, " ");	
 
-    printf("line %d\n", __LINE__);
-    fflush(stdout);
     // force last char to be term, just in case
     tmuxname[99] = '\0';
-    printf("line %d\n", __LINE__);
-    fflush(stdout);
+
+	printf("tmux name : %s\n", tmuxname);
 
     strncpy(pinfo->tmuxname, tmuxname, 100);
 
-    printf("line %d\n", __LINE__);
-    fflush(stdout);
     // set control value (default 0)
     // 1 : pause
     // 2 : increment single step (will go back to 1)
@@ -557,9 +574,6 @@ PROCESSINFO *processinfo_shm_create(
     char msgstring[300];
     sprintf(msgstring, "LOG START %s", pinfo->logfilename);
     processinfo_WriteMessage(pinfo, msgstring);
-
-    printf("line %d\n", __LINE__);
-    fflush(stdout);
 
     return pinfo;
 }
