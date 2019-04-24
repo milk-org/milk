@@ -35,4 +35,9 @@ int break_cube(const char * restrict ID_name);
 
 int images_to_cube(const char * restrict img_name, long nbframes, const char * restrict cube_name);
 
+
+
+long COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t streamflag, int *imLOC);
+
+
 #endif
