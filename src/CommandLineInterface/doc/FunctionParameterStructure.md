@@ -501,10 +501,10 @@ errno_t MyFunction_RUN(
 	// OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing 
     processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
- 
+    processinfo->loopcntMax = 1000; // max number of iterations. -1 if infinite
 
 
-    int loopOK = 1
+    int loopOK = 1;
 
 	// ===========================
 	// Start loop

@@ -442,83 +442,110 @@ errno_t streamCTRL_CTRLscreen();
 
 // STREAM FLAGS: actions and tests related to streams
 
-// A stream may be in :
-// - process memory (MEM)
-// - system shared memory (SHM) .. which may itself be a link to another SHM
-// - fits file in conf: a file ./conf/shmim.<stream>.fits
-// - configuration (CONF): a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream
+// The stream location may be in :
+// --- convention : this is downstream ---
+// [a]-LOCALMEM local process memory 
+// [b]-SHAREMEM system shared memory .. which may itself be a link to another shared memory
+// [c]-CONFFITS fits file in conf: a file ./conf/shmim.<stream>.fits, which may itself be a link to another FITS file 
+// [d]-CONFNAME name of fits file configuration: a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream, relative to current running directory
+// --- convention : this is upstream ---
 
+
+// what is the source from which a stream was successfully loaded
+#define STREAM_LOAD_SOURCE_LOCALMEM  1
+#define STREAM_LOAD_SOURCE_SHAREMEM  2
+#define STREAM_LOAD_SOURCE_CONFFITS  3
+#define STREAM_LOAD_SOURCE_CONFNAME  4
+
+//
+// The default policy is to look for the source location first in [a], then [b], etc..., until [d]
+// Once source location is found, the downstream locations are updated. For example: search[a]; search[b], find[c]->update[b]->update[a]
+//
 // 
-
+//
 // Important scripts (should be in PATH):
 // - milkstreamlink  : build sym link between streams
 // - milkFits2shm    : smart loading/updating of FITS to SHM
 // 
 // loading CONF to SHM must use script milkFits2shm
-
-
-
-// STREAM LOADING POLICY
-
-// If no policy is specified, the stream is expected to be in local memory
-// loading follows these steps:
-
-#define FPFLAG_STREAM_LOAD_FORCE_CONF  0x0000000000100000  // always load from CONF to SHM and MEM
-// (#1) if(fpflag & FPFLAG_STREAM_LOAD_FORCE_CONF)
-//       load from CONF and go to (END)
-//       if fails, return error
-//     else
-//        go to (#2)
-
-#define FPFLAG_STREAM_LOAD_FORCE_SHM   0x0000000000200000  // always load from SHM to MEM
-// (#2) if(fpflag & FPFLAG_STREAM_LOAD_FORCE_SHM)
-//       load from SHM and go to (END)
-//       if fails, return error
-//     else
-//        go to (#3)
-
-// (#3) if stream is in MEM, go to (END), else go to (#4)
-
-#define FPFLAG_STREAM_LOAD_TRY_SHM     0x0000000000400000  // try to load from SHM if not in MEM
-// (#4) if(fpflag & FPFLAG_STREAM_LOAD_TRY_SHM)
-//       load from SHM and go to (END)
-//       if fails, go to (#5)
-//     else
-//        go to (#5)
-
-#define FPFLAG_STREAM_LOAD_TRY_CONF    0x0000000000800000  // try to load from CONF if not in MEM or SHM
-// (#5) if(fpflag & FPFLAG_STREAM_LOAD_TRY_CONF)
-//       load from CONF and go to (END)
-//       if fails, go to (#6)
-//     else
-//        go to (#6)
-
-#define FPFLAG_STREAM_CONF_REQUIRED    0x0000000001000000  // stream has to be in MEM for CONF process to proceed
-#define FPFLAG_STREAM_RUN_REQUIRED     0x0000000002000000  // stream has to be in MEM for RUN process to proceed
-// (#6) all above fails
-// if(fpflag & FPFLAG_STREAM_REQUIRED)
-//    return error
-// else
-//    go to (END)
 //
-// (END) proceed and execute function code
+//
 
 
-#define FPFLAG_STREAM_ENFORCE_DATATYPE         0x0000000004000000  // enforce stream datatype
+// STREAM LOADING POLICY FLAGS
+// These flags modify the default stream load policy
+
+// FORCE flags will force a location to be used and all downstream locations to be updated
+// if the FORCE location does not exist, it will fail
+// only one such flag should be specified. If several force flags are specified, the first one ((a) over (b)) will be considered
+#define FPFLAG_STREAM_LOAD_FORCE_LOCALMEM        0x0000000000100000
+#define FPFLAG_STREAM_LOAD_FORCE_SHAREMEM        0x0000000000200000
+#define FPFLAG_STREAM_LOAD_FORCE_CONFFITS        0x0000000000400000
+#define FPFLAG_STREAM_LOAD_FORCE_CONFNAME        0x0000000000800000
+
+// SKIPSEARCH flags will skip search location
+// multiple such flags can be specified
+//
+// Note that the FORCE flags have priority over the SKIPSEARCH flags
+// If a FORCE flag is active, the SKIPSEARCH flags will be ignored
+//
+#define FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM   0x0000000001000000
+#define FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM   0x0000000002000000
+#define FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS   0x0000000004000000
+#define FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME   0x0000000008000000
+
+// UPDATE flags will update upstream locations
+#define FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM       0x0000000010000000
+#define FPFLAG_STREAM_LOAD_UPDATE_CONFFITS       0x0000000020000000
+
+
+
+
+
+// note there is no FPFLAG_STREAM_LOAD_LASTSEARCH_CONFNAME, as this is the last possible location
+
+
+// Additionally, the following flags specify what to do if stream properties do not match the required properties
+//
+
+
+
+
+
+
+#define FPFLAG_STREAM_CONF_REQUIRED              0x0000000040000000  // stream has to be in MEM for CONF process to proceed
+#define FPFLAG_STREAM_RUN_REQUIRED               0x0000000080000000  // stream has to be in MEM for RUN process to proceed
+
+
+
+// Additional notes on load functions in AOloopControl_IOtools
+//
+/* AOloopControl_IOtools_2Dloadcreate_shmim( const char *name,
+    const char *fname,
+    long xsize,
+    long ysize,
+    float DefaultValue)
+*/
+// 
+
+
+
+
+#define FPFLAG_STREAM_ENFORCE_DATATYPE           0x0000000100000000  // enforce stream datatype
 // stream type requirement: one of the following tests must succeed (OR) if FPFLAG_STREAM_ENFORCE_DATATYPE
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT8   0x0000000008000000  // test if stream of type UINT8   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT8    0x0000000010000000  // test if stream of type INT8    (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT16  0x0000000020000000  // test if stream of type UINT16  (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT16   0x0000000040000000  // test if stream of type INT16   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT32  0x0000000080000000  // test if stream of type UINT32  (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT32   0x0000000100000000  // test if stream of type INT32   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_UINT64  0x0000000200000000  // test if stream of type UINT64  (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_INT64   0x0000000400000000  // test if stream of type INT64   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_HALF    0x0000000800000000  // test if stream of type HALF    (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_FLOAT   0x0000001000000000  // test if stream of type FLOAT   (OR test)
-#define FPFLAG_STREAM_ENFORCE_DATATYPE_DOUBLE  0x0000002000000000  // test if stream of type DOUBLE  (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_UINT8        0x0000000200000000  // test if stream of type UINT8   (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_INT8         0x0000000400000000  // test if stream of type INT8    (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_UINT16       0x0000000800000000  // test if stream of type UINT16  (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_INT16        0x0000001000000000  // test if stream of type INT16   (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_UINT32       0x0000002000000000  // test if stream of type UINT32  (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_INT32        0x0000004000000000  // test if stream of type INT32   (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_UINT64       0x0000008000000000  // test if stream of type UINT64  (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_INT64        0x0000010000000000  // test if stream of type INT64   (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_HALF         0x0000020000000000  // test if stream of type HALF    (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_FLOAT        0x0000040000000000  // test if stream of type FLOAT   (OR test)
+#define FPFLAG_STREAM_TEST_DATATYPE_DOUBLE       0x0000080000000000  // test if stream of type DOUBLE  (OR test)
 
-#define FPFLAG_CHECKSTREAM                     0x0000004000000000  // check and display stream status in GUI
+#define FPFLAG_CHECKSTREAM                       0x0000100000000000  // check and display stream status in GUI
 
 
 
@@ -534,7 +561,7 @@ errno_t streamCTRL_CTRLscreen();
 
 // input parameter (used as default when adding entry)
 #define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
-#define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DEFAULT_INPUT|FPFLAG_STREAM_LOAD_TRY_SHM|FPFLAG_STREAM_LOAD_TRY_CONF|FPFLAG_STREAM_RUN_REQUIRED|FPFLAG_CHECKSTREAM
+#define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DEFAULT_INPUT|FPFLAG_STREAM_RUN_REQUIRED|FPFLAG_CHECKSTREAM
 #define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DEFAULT_INPUT|FPFLAG_CHECKSTREAM
 
 
@@ -572,7 +599,14 @@ typedef struct {
 		// if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
 	} val;
 	
+	// These only apply if type stream
 	uint32_t  streamID; // if type is stream and MASK_CHECKSTREAM
+	uint8_t   stream_atype;
+	// these have two entries. First is actual/measured, second is required (-1 if don't care, 0 if dimension not active)
+	uint32_t  stream_xsize[2];        // xsize
+	uint32_t  stream_ysize[2];        // ysize
+	uint32_t  stream_zsize[2];        // zsize
+	uint8_t   stream_sourceLocation;  // where has the stream been loaded from ?
 	
 	long cnt0; // increments when changed
 
