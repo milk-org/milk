@@ -35,18 +35,29 @@ The PiS is stored in shared memory as
 int functiontemplate_usingprocessinfo() {
 
     PROCESSINFO *processinfo;
+    char pinfoname[200];   // short name for the processinfo instance, no spaces, no dot, name should be human-readable
+    sprintf(pinfoname, "aol%ld-acqRM", loop);
+
+    char pinfodescr[200];
+    sprintf(pinfodescr, "NBcycle=%ld", NBcycle);
+
+    char pinfomsg[200];
+    sprintf(pinfomsg, "starting setup");
+
+
+
 
     processinfo = processinfo_setup(
-        "addimages",	         // short name for the processinfo instance, no spaces, no dot, name should be human-readable
-        "computes something",    // description
-        "add image1 to image2",  // message on startup
+        pinfoname,	         // short name for the processinfo instance, no spaces, no dot, name should be human-readable
+        pinfodescr,    // description
+        pinfomsg,  // message on startup
         __FUNCTION__, __FILE__, __LINE__
         );
 
 	// OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing 
     processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
- 
+    processinfo->loopcntMax = 100;  // -1 if infinite loop
 
 
 
@@ -61,6 +72,7 @@ int functiontemplate_usingprocessinfo() {
     {
         processinfo_error(processinfo, "ERROR: no WFS reference");
         loopOK = 0;
+        return RETURN_FAILURE;
     }
 
 
@@ -111,7 +123,7 @@ int functiontemplate_usingprocessinfo() {
     // ==================================
     processinfo_cleanExit(processinfo);
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 ~~~~
 
