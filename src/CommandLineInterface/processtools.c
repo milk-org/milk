@@ -13,15 +13,7 @@
 
 
 #ifndef STANDALONE
-#define PROCESSINFO_ENABLED 1
-#define PROCESSTOOLS_LOGDEBUG 1
-#else
-#define  RETURN_SUCCESS 0
-#endif
-
-
-
-
+#define PROCESSINFO_ENABLED
 // OPTIONAL LINE TRACKING FOR DEBUGGING
 //
 // Warning: enabling this feature will slow down execution
@@ -34,6 +26,7 @@
 //
 // Uncomment this line to turn on line tracking for debug purposes
 #define PROCESSTOOLS_LOGDEBUG
+#endif
 
 #ifdef PROCESSTOOLS_LOGDEBUG
 #define PROCESSTOOLS_LOGEXEC do {                      \

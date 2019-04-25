@@ -9,8 +9,9 @@
  */
 
 
-
+#ifndef STANDALONE
 #define FUNCTIONPARAMETER_LOGDEBUG 1
+#endif
 
 #ifdef FUNCTIONPARAMETER_LOGDEBUG
 #define FUNCTIONPARAMETER_LOGEXEC do {                      \
@@ -55,12 +56,18 @@
 #include <unistd.h> // for close
 #include <sys/mman.h> // mmap
 #include <sys/stat.h> // fstat
+#include <signal.h>
 
+#ifndef STANDALONE
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "info/info.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#else
+#include "standalone_dependencies.h"
+#endif
+#include "function_parameters.h"
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -232,7 +239,11 @@ errno_t function_parameter_struct_create(
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
 
+#ifdef STANDALONE
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDPROCDIR, name);
+#else
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.shmdir, name);
+#endif
     remove(SM_fname);
 
     printf("Creating file %s\n", SM_fname);
@@ -349,7 +360,11 @@ long function_parameter_struct_connect(
     int NBparam;
     char *mapv;
 
+#ifdef STANDALONE
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDPROCDIR, name);
+#else
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.shmdir, name);
+#endif
     printf("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1) {
@@ -829,6 +844,9 @@ long functionparameter_LoadStream(
     int imLOC;
 
 
+#ifdef STANDALONE
+    printf("====================== Not working in standalone mode \n");
+#else
     printf("====================== Loading stream \"%s\" = %s\n", fps->parray[pindex].keywordfull, fps->parray[pindex].val.string[0]);
     ID = COREMOD_IOFITS_LoadMemStream(fps->parray[pindex].val.string[0], fps->parray[pindex].fpflag, &imLOC);
 
@@ -852,6 +870,7 @@ long functionparameter_LoadStream(
             }
         }
     }
+#endif
     
     
     // TODO: Add testing for fps
@@ -2764,7 +2783,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
     FILE *fpinputcmd;
 
 
-	FUNCTIONPARAMETER_LOGDEBUG;
+	FUNCTIONPARAMETER_LOGEXEC;
 
 	// allocate memory 
 	fps = (FUNCTION_PARAMETER_STRUCT*) malloc(sizeof(FUNCTION_PARAMETER_STRUCT)*NB_FPS_MAX);
@@ -2772,6 +2791,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
 
 
+#ifndef STANDALONE
     // catch signals for clean exit
     if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGTERM\n");
@@ -2800,6 +2820,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
     if(sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGPIPE\n");
     }
+#endif
 
 
 
@@ -2866,7 +2887,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
 
 
+#ifdef STANDALONE
+    d = opendir(SHAREDPROCDIR);
+#else
     d = opendir(data.shmdir);
+#endif
     if(d) {
         fpsindex = 0;
         pindex = 0;
@@ -2905,7 +2930,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                 int retv;
                 char fullname[200];
 
+#ifdef STANDALONE
+                sprintf(fullname, "%s/%s", SHAREDPROCDIR, dir->d_name);
+#else
                 sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
+#endif
                 
                 
                 retv = lstat(fullname, &buf);
@@ -2926,7 +2955,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                     int ret;
 
                     fps_symlink[fpsindex] = 1;
+#ifdef STANDALONE
+                    sprintf(fullname, "%s/%s", SHAREDPROCDIR, dir->d_name);
+#else
                     sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
+#endif
                     ret = readlink(fullname, linknamefull, 200 - 1); // todo: replace with realpath()
 
                     strcpy(linkname, basename(linknamefull));
@@ -3063,7 +3096,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
             }
         }
     } else {
+#ifdef STANDALONE
+        printf("ERROR: missing %s directory\n", SHAREDPROCDIR);
+#else
         printf("ERROR: missing %s directory\n", data.shmdir);
+#endif
         printf("File %s line %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
@@ -3332,7 +3369,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         printw("\n");
 
 
-        FUNCTIONPARAMETER_LOGDEBUG;
+        FUNCTIONPARAMETER_LOGEXEC;
         
         printw("Reading commands from fifo %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
         fifocmdcnt += functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
@@ -3784,10 +3821,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
         loopcnt++;
 
+#ifndef STANDALONE
         if((data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1)) {
             printf("Exit condition met\n");
             loopOK = 0;
         }
+#endif
     }
     endwin();
 
