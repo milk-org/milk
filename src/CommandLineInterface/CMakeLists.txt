@@ -35,8 +35,6 @@ else()
   add_flex_bison_dependency(MilkFlex MilkBison)
   set(CORE_FILES
       CLIcore.c
-      CLIcore.h
-      calc.h
       ${BISON_MilkBison_OUTPUTS}
       ${FLEX_MilkFlex_OUTPUTS})
 endif()
