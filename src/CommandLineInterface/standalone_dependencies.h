@@ -11,8 +11,6 @@
  *
  */
 
-#define _GNU_SOURCE
-
 #ifndef _CACAO_DEPENDENCY_H
 #define _CACAO_DEPENDENCY_H
 

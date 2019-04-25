@@ -364,7 +364,9 @@ typedef struct {
 
 } FUNCTION_PARAMETER_STRUCT;
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 errno_t function_parameter_struct_create(int NBparam, const char *name);
 long function_parameter_struct_connect(const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
@@ -408,5 +410,9 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex)
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_outlog(char *msgstring);
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // FUNCTION_PARAMETERS_H
