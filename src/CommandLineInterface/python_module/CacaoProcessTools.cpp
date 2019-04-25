@@ -5,6 +5,7 @@
 #include "standalone_dependencies.h"
 #include "processtools.h"
 #include "streamCTRL.h"
+#include "function_parameters.h"
 
 class pyPROCESSINFO {
   PROCESSINFO *m_pinfo;
@@ -76,6 +77,7 @@ PYBIND11_MODULE(CacaoProcessTools, m) {
 
   m.def("processCTRL", &processinfo_CTRLscreen);
   m.def("streamCTRL", &streamCTRL_CTRLscreen);
+  m.def("fparamCTRL", &functionparameter_CTRLscreen);
 
   py::class_<timespec>(m, "timespec")
       .def(py::init<time_t, long>())

@@ -11,8 +11,6 @@
  *
  */
 
-#define _GNU_SOURCE
-
 #ifndef _CACAO_DEPENDENCY_H
 #define _CACAO_DEPENDENCY_H
 
@@ -29,6 +27,13 @@
 #define SHAREDSHMDIR    "/milk/shm"  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 #define SHAREDPROCDIR    "/milk/proc"
 #define CLIPID    0
+
+// *************************** FUNCTION RETURN VALUE *********************************************
+// For function returning type errno_t (= int) 
+//
+#define RETURN_SUCCESS        0 
+#define RETURN_FAILURE       1   // generic error code
+#define RETURN_MISSINGFILE   2  
 
 #include <time.h>
 #include <errno.h>
