@@ -30,6 +30,13 @@
 #define SHAREDPROCDIR    "/milk/proc"
 #define CLIPID    0
 
+// *************************** FUNCTION RETURN VALUE *********************************************
+// For function returning type errno_t (= int) 
+//
+#define RETURN_SUCCESS        0 
+#define RETURN_FAILURE       1   // generic error code
+#define RETURN_MISSINGFILE   2  
+
 #include <time.h>
 #include <errno.h>
 #include "ImageStreamIO.h"
