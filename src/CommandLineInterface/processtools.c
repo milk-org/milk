@@ -188,7 +188,8 @@ PROCESSINFO *processinfo_setup(
     const char *filename,
     int   linenumber
 ) {
-    PROCESSINFO *processinfo;
+    static PROCESSINFO *processinfo; // Only one instance of processinfo created by process
+    // subsequent calls to this function will re-use the same processinfo structure
 
     PROCESSTOOLS_LOGEXEC;
 
