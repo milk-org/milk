@@ -46,6 +46,11 @@ typedef int errno_t;
 #define SZ_CLICOREVARRAY 1000
 
 
+
+#define STRINGMAXLEN_FUNCTIONNAME 200
+#define STRINGMAXLEN_FUNCTIONARGS 1000
+
+
 /// important directories and info
 extern pid_t CLIPID;            // command line interface PID
 extern char DocDir[200];		// location of documentation
@@ -220,8 +225,8 @@ typedef struct
     // can be used to trace program execution for runtime profiling and debugging
     // todo: move to shared mem
     int  execSRCline;
-    char execSRCfunc[200];
-    char execSRCmessage[500];
+    char execSRCfunc[STRINGMAXLEN_FUNCTIONNAME];
+    char execSRCmessage[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
     
     
     int progStatus;  // main program status

@@ -14,18 +14,34 @@
 
 #ifndef STANDALONE
 #define PROCESSINFO_ENABLED 1
-#define PROCCTRL_LOGDEBUG 1
+#define PROCESSTOOLS_LOGDEBUG 1
 #else
 #define  RETURN_SUCCESS 0
 #endif
 
-#ifdef PROCCTRL_LOGDEBUG
-#define PROCCTRL_LOGEXEC do {                      \
+
+
+
+// OPTIONAL LINE TRACKING FOR DEBUGGING
+//
+// Warning: enabling this feature will slow down execution
+// Use it for debugging only
+//
+//  Calling the LOGEXEC function will update :
+//  data.execSRCline      : current line of code
+//  data.execSRCfunc      : current function
+//  data.execSRCmessage   : User message
+//
+// Uncomment this line to turn on line tracking for debug purposes
+#define PROCESSTOOLS_LOGDEBUG
+
+#ifdef PROCESSTOOLS_LOGDEBUG
+#define PROCESSTOOLS_LOGEXEC do {                      \
     sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
     data.execSRCline = __LINE__;                   \
     } while(0)
 #else
-#define PROCCTRL_LOGEXEC 
+#define PROCESSTOOLS_LOGEXEC 
 #endif
 
 static int CTRLscreenExitLine = 0; // for debugging
@@ -172,32 +188,49 @@ PROCESSINFO *processinfo_setup(
     const char *filename,
     int   linenumber
 ) {
-	PROCESSINFO *processinfo;
+    PROCESSINFO *processinfo;
+
+    PROCESSTOOLS_LOGEXEC;
+
 #ifdef PROCESSINFO_ENABLED
+
+    PROCESSTOOLS_LOGEXEC;
     if(data.processinfoActive == 0) {
 //        PROCESSINFO *processinfo;
+        PROCESSTOOLS_LOGEXEC;
+
 
         char pinfoname0[200];
         sprintf(pinfoname0, "%s", pinfoname);
 
+        PROCESSTOOLS_LOGEXEC;
+
         processinfo = processinfo_shm_create(pinfoname0, 0);
-        processinfo->loopstat = 0; // loop initialization
-        strcpy(processinfo->source_FUNCTION, functionname);
-        strcpy(processinfo->source_FILE,     filename);
-        processinfo->source_LINE = linenumber;
-        strcpy(processinfo->description, descriptionstring);
-        processinfo_WriteMessage(processinfo, msgstring);
-        data.processinfoActive = 1;
-        
-        processinfo->loopcntMax = -1;     // infinite loop
 
-        processinfo->MeasureTiming =  0;  // default: do not measure timing
-        processinfo->RT_priority   = -1;  // default: do not assign RT priority
+		processinfo_CatchSignals();
     }
-// Process signals are caught for suitable processing and reporting.
-    processinfo_CatchSignals();
-#endif
 
+    PROCESSTOOLS_LOGEXEC;
+
+    processinfo->loopstat = 0; // loop initialization
+    strcpy(processinfo->source_FUNCTION, functionname);
+    strcpy(processinfo->source_FILE,     filename);
+    processinfo->source_LINE = linenumber;
+    strcpy(processinfo->description, descriptionstring);
+    processinfo_WriteMessage(processinfo, msgstring);
+    data.processinfoActive = 1;
+
+    processinfo->loopcntMax = -1;     // infinite loop
+
+    processinfo->MeasureTiming =  0;  // default: do not measure timing
+    processinfo->RT_priority   = -1;  // default: do not assign RT priority
+
+    PROCESSTOOLS_LOGEXEC;
+
+// Process signals are caught for suitable processing and reporting.
+    PROCESSTOOLS_LOGEXEC;
+#endif
+    PROCESSTOOLS_LOGEXEC;
     return processinfo;
 }
 
@@ -436,7 +469,8 @@ PROCESSINFO *processinfo_shm_create(
     int SM_fd; // shared memory file descriptor
     PROCESSINFO *pinfo;
 
-
+	static int LogFileCreated = 0; // toggles to 1 when created. To avoid re-creating file on same process
+	
     sharedsize = sizeof(PROCESSINFO);
 
     char  SM_fname[200];
@@ -567,8 +601,12 @@ PROCESSINFO *processinfo_shm_create(
 #else
     sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.shmdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 #endif
-    pinfo->logFile = fopen(pinfo->logfilename, "w");
 
+	if(LogFileCreated == 0)
+	{
+		pinfo->logFile = fopen(pinfo->logfilename, "w");
+		LogFileCreated = 1;
+	}
 
 
     char msgstring[300];
@@ -607,6 +645,8 @@ int processinfo_cleanExit(PROCESSINFO *processinfo) {
 
         processinfo->loopstat = 3; // clean exit
     }
+
+   // fclose(processinfo->logFile);
 #endif
     return 0;
 }
@@ -790,17 +830,23 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring) {
     char msgstringFull[300];
     FILE *fp;
 
+
+    PROCESSTOOLS_LOGEXEC;
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     tmnow = gmtime(&tnow.tv_sec);
 
     strcpy(processinfo->statusmsg, msgstring);
 
+    PROCESSTOOLS_LOGEXEC;
 
     fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
             tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int)(0.001 * (tnow.tv_nsec)),
             tnow.tv_sec, tnow.tv_nsec,
             (int) processinfo->PID,
             msgstring);
+
+    PROCESSTOOLS_LOGEXEC;
     fflush(processinfo->logFile);
 #endif
     return 0;
@@ -1340,13 +1386,13 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     char fname[200];
 
 
-    PROCCTRL_LOGEXEC;
+    PROCESSTOOLS_LOGEXEC;
 
     // cpuset
     
     int PID = pinfodisp->PID;
     
-    PROCCTRL_LOGEXEC;
+    PROCESSTOOLS_LOGEXEC;
     
     clock_gettime(CLOCK_REALTIME, &t1);
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
@@ -1368,7 +1414,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     char string1[300];
 
 
-    PROCCTRL_LOGEXEC;	
+    PROCESSTOOLS_LOGEXEC;	
 
 	clock_gettime(CLOCK_REALTIME, &t1);
     if(level == 0)
@@ -1647,7 +1693,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     #endif
     
     
-    PROCCTRL_LOGEXEC;
+    PROCESSTOOLS_LOGEXEC;
 
     return 0;
 
@@ -1822,7 +1868,7 @@ void *processinfo_scan(void *thptr)
 
     while(pinfop->loop == 1)
     {
-        PROCCTRL_LOGEXEC;
+        PROCESSTOOLS_LOGEXEC;
 	
 		
 		
@@ -2038,7 +2084,7 @@ void *processinfo_scan(void *thptr)
             // collect required info for display
             for(pindexdisp=0; pindexdisp < pinfop->NBpinfodisp ; pindexdisp++) 
             {
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 				
                 if(pinfolist->active[pindexdisp] != 0)
                 {
@@ -2118,7 +2164,7 @@ void *processinfo_scan(void *thptr)
         } // end of DisplayMode 3
 
 
-        PROCCTRL_LOGEXEC;
+        PROCESSTOOLS_LOGEXEC;
 		
 
         pinfop->loopcnt++;
@@ -2200,7 +2246,7 @@ errno_t processinfo_CTRLscreen()
 
     int ToggleValue;
 
-    PROCCTRL_LOGEXEC;
+    PROCESSTOOLS_LOGEXEC;
 
     processinfo_CatchSignals();
 
@@ -2240,6 +2286,10 @@ errno_t processinfo_CTRLscreen()
     initncurses();
 	//atexit( processinfo_CTRLscreen_atexit );
 
+	// set print string lengths
+	int pstrlen_pname = 25;
+	int pstrlen_descr = 25;
+	int pstrlen_msg   = 35;
 
     clear();
     
@@ -2312,7 +2362,7 @@ errno_t processinfo_CTRLscreen()
         int pid;
         char command[200];
 
-        PROCCTRL_LOGEXEC;
+        PROCESSTOOLS_LOGEXEC;
 
 		if(procinfoproc.SCANBLOCK_requested == 1)
 		{
@@ -2346,7 +2396,7 @@ errno_t processinfo_CTRLscreen()
         scantime_CPUload = 0.0;
         scantime_CPUpcnt = 0.0;
 
-        PROCCTRL_LOGEXEC;
+        PROCESSTOOLS_LOGEXEC;
 		
 
         if(freeze==0)
@@ -2785,7 +2835,7 @@ errno_t processinfo_CTRLscreen()
             break;
 
 
-        PROCCTRL_LOGEXEC;
+        PROCESSTOOLS_LOGEXEC;
 
 
         // ============ SCREENS
@@ -2870,7 +2920,7 @@ errno_t processinfo_CTRLscreen()
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
-        PROCCTRL_LOGEXEC;
+        PROCESSTOOLS_LOGEXEC;
         
         if(freeze==0)
         {
@@ -3093,7 +3143,7 @@ errno_t processinfo_CTRLscreen()
             }
             else
             {
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 
                 printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
@@ -3170,12 +3220,12 @@ errno_t processinfo_CTRLscreen()
 
                 printw("\n");
 
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 
                 printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", (int) (frequ+0.5), procinfoproc.loopcnt, 1.0/procinfoproc.dtscan, 1000000.0/procinfoproc.twaitus, 100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 
 
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 
                 if(procinfoproc.pinfommapped[pindexSelected] == 1)
                 {
@@ -3198,7 +3248,7 @@ errno_t processinfo_CTRLscreen()
 
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
@@ -3221,7 +3271,7 @@ errno_t processinfo_CTRLscreen()
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 
                 if(procinfoproc.DisplayMode == 3)
                 {
@@ -3244,7 +3294,7 @@ errno_t processinfo_CTRLscreen()
                     int CPUpcntLim2 = 4;
                     int CPUpcntLim3 = 8;
 
-                    PROCCTRL_LOGEXEC;
+                    PROCESSTOOLS_LOGEXEC;
 		
 
                     // List CPUs
@@ -3303,7 +3353,7 @@ errno_t processinfo_CTRLscreen()
                     printw("\n");
 
 
-                    PROCCTRL_LOGEXEC;
+                    PROCESSTOOLS_LOGEXEC;
 
 
                     // Print CPU LOAD
@@ -3348,7 +3398,7 @@ errno_t processinfo_CTRLscreen()
                 {
 					printw("\n");
 					printw("\n");					
-					printw("   STATUS    PID   process name                    run status                        tmuxSession     loopcnt        Description                                  Message                                               \n");
+					printw("   STATUS    PID   %-*.*s run status                        tmuxSession     loopcnt       %-*.*s  %-*.*s\n", pstrlen_pname, pstrlen_pname, "name", pstrlen_descr, pstrlen_descr, "Description", pstrlen_msg, pstrlen_msg, "Message");
 					printw("\n");
 				}
              
@@ -3362,7 +3412,7 @@ errno_t processinfo_CTRLscreen()
 					printw("\n");
 				}
 
-                PROCCTRL_LOGEXEC;
+                PROCESSTOOLS_LOGEXEC;
 
                 clock_gettime(CLOCK_REALTIME, &t05loop);
 
@@ -3380,7 +3430,7 @@ errno_t processinfo_CTRLscreen()
 
                     if(pindex<procinfoproc.NBpinfodisp)
                     {						
-						#ifdef PROCCTRL_LOGDEBUG
+						#ifdef PROCESSTOOLS_LOGDEBUG
 						data.execSRCline = __LINE__;
 						sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
 						#endif
@@ -3394,7 +3444,7 @@ errno_t processinfo_CTRLscreen()
                             printw(" ");
 
 
-						#ifdef PROCCTRL_LOGDEBUG
+						#ifdef PROCESSTOOLS_LOGDEBUG
 						data.execSRCline = __LINE__;
 						sprintf(data.execSRCmessage, "procinfoproc.selectedarray[pindex] = %d", procinfoproc.selectedarray[pindex]);
 						#endif
@@ -3407,7 +3457,7 @@ errno_t processinfo_CTRLscreen()
                             attroff(COLOR_PAIR(2));
                         }
 
-						#ifdef PROCCTRL_LOGDEBUG
+						#ifdef PROCESSTOOLS_LOGDEBUG
 						data.execSRCline = __LINE__;
 						sprintf(data.execSRCmessage, "pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
 						#endif
@@ -3429,7 +3479,7 @@ errno_t processinfo_CTRLscreen()
                         }
                         
                         
-						#ifdef PROCCTRL_LOGDEBUG
+						#ifdef PROCESSTOOLS_LOGDEBUG
 						data.execSRCline = __LINE__;
 						sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
 						#endif
@@ -3444,7 +3494,7 @@ errno_t processinfo_CTRLscreen()
                             printw("  %6d", pinfolist->PIDarray[pindex]);
 
                             attron(A_BOLD);
-                            printw("  %-30s", procinfoproc.pinfodisp[pindex].name);
+                            printw("  %-*.*s", pstrlen_pname, pstrlen_pname, procinfoproc.pinfodisp[pindex].name);
                             attroff(A_BOLD);
 
 
@@ -3511,11 +3561,12 @@ errno_t processinfo_CTRLscreen()
                                 procinfoproc.loopcntarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
 
 
-                                printw("  %25s", procinfoproc.pinfoarray[pindex]->description);
+
+                                printw("  %-*.*s", pstrlen_descr, pstrlen_descr, procinfoproc.pinfoarray[pindex]->description);
 
                                 if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attron(COLOR_PAIR(4));
-                                printw("  %78s", procinfoproc.pinfoarray[pindex]->statusmsg);
+                                printw("  %-*.*s", pstrlen_msg, pstrlen_msg, procinfoproc.pinfoarray[pindex]->statusmsg);
                                 if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
@@ -3526,9 +3577,6 @@ errno_t processinfo_CTRLscreen()
                             if( procinfoproc.DisplayMode == 3)
                             {
                                 int cpu;
-
-
-
 
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
@@ -3865,7 +3913,7 @@ errno_t processinfo_CTRLscreen()
             clock_gettime(CLOCK_REALTIME, &t06loop);
 
 
-            PROCCTRL_LOGEXEC;
+            PROCESSTOOLS_LOGEXEC;
 
             clock_gettime(CLOCK_REALTIME, &t07loop);
 
