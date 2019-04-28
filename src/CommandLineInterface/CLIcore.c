@@ -1037,9 +1037,14 @@ int_fast8_t runCLI(
     TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;
 //    TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
+	// get PID and write it to shell env variable MILK_CLI_PID
     CLIPID = getpid();
 
-    printf("    PID = %d\n", (int) CLIPID);
+//    sprintf(command, "MILK_CLI_PID=%d", CLIPID);
+//	putenv(command);
+	
+
+    printf("    CLI PID = %d\n", (int) CLIPID);
     sprintf(command, "echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
@@ -1378,12 +1383,17 @@ int_fast8_t runCLI(
 
         /** If fifo is on and file CLIstatup.txt exists, load it */
         if(initstartup == 0)
-            if(data.fifoON == 1) {
-                printf("IMPORTING FILE %s\n", CLIstartupfilename);
+            if(data.fifoON == 1) {				
+                printf("IMPORTING FILE %s ... ", CLIstartupfilename);
                 sprintf(command, "cat %s > %s 2> /dev/null", CLIstartupfilename, data.fifoname);
-                if(system(command) != 0) {
-                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                if(system(command) != 0) { // no startup file - this is OK
+					printf("File does not exist\n");
+                    //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
                 }
+                else
+                {
+					printf("Done\n");
+				}
             }
         initstartup = 1;
 
@@ -2240,7 +2250,8 @@ int command_line( int argc, char **argv)
         case 'f':
             printf("using input fifo '%s'\n", optarg);
             data.fifoON = 1;
-            strcpy(data.fifoname, optarg);
+            sprintf(data.fifoname, "%s.%05d", optarg, CLIPID);
+//            strcpy(data.fifoname, optarg);
             printf("FIFO NAME = %s\n", data.fifoname);
             break;
 

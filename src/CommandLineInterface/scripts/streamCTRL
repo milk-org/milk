@@ -85,9 +85,12 @@ printHELP
 fi
 
 
+ttystring=$( tty | tr -d \/ )
+pname="streamCTRL"
+fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
+SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
 
-
-SF="shmimmonstartup"
-echo "streamCTRL" >$SF
+echo "streamCTRL" > $SF
 echo "exitCLI" >> $SF
-milk -n streamCTRL -f procctrlfifo -s $SF
+milk -n ${pname} -f ${fifoname} -s $SF
+rm $SF
