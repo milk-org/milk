@@ -119,7 +119,13 @@ fi
 
 mkfifo $FIFONAME
 
-SF="fpsctrlstartup"
+ttystring=$( tty | tr -d \/ )
+pname="fpsCTRL"
+fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
+SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
+
 echo "fparamCTRL ${MODE} \"$arg1\" \"$FIFONAME\"" > $SF
 echo "exitCLI" >> $SF
-milk -n fpsCTRL -f fpsctrlfifo -s $SF
+milk -n ${pname} -f ${fifoname} -s ${SF}
+rm ${SF}
+

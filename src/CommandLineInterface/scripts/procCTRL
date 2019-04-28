@@ -85,9 +85,13 @@ printHELP
 fi
 
 
+ttystring=$( tty | tr -d \/ )
+pname="procCTRL"
+fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
+SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
 
-
-SF="procctrlstartup"
 echo "procCTRL" > $SF
 echo "exitCLI" >> $SF
-milk -n procCTRL -f procctrlfifo -s $SF
+milk -n ${pname} -f ${fifoname} -s ${SF}
+rm ${SF}
+
