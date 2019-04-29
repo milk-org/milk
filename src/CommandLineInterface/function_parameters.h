@@ -57,6 +57,7 @@
 #define FPTYPE_STRING        0x0100  // generic string
 #define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
 #define FPTYPE_PROCESS       0x0400
+#define FPTYPE_FLOAT32       0x0800
 
 
 
@@ -250,6 +251,7 @@ typedef struct {
 	{
 		int64_t         l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
 		double          f[4];  // value, min, max, current state (if different from request)
+        float           s[4];
 		pid_t           pid[2]; // first value is set point, second is current state
 		struct timespec ts[2]; // first value is set point, second is current state
 		
@@ -385,8 +387,12 @@ double functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, c
 int functionparameter_SetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, double value);
 double * functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
+float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, float value);
+float * functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+
 char * functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-char *functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, const char *stringvalue);
+int functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, const char *stringvalue);
 
 int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, int ONOFFvalue);

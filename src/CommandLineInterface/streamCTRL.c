@@ -28,11 +28,13 @@
 #define STREAMCTRL_LOGDEBUG
 
 #ifdef STREAMCTRL_LOGDEBUG
+#ifndef STANDALONE
 #define STREAMCTRL_LOGEXEC do {                      \
     sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
     data.execSRCline = __LINE__;                   \
     } while(0)
 #else
+#endif
 #define STREAMCTRL_LOGEXEC 
 #endif
 
