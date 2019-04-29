@@ -767,6 +767,45 @@ double *functionparameter_GetParamPtr_FLOAT64(
 }
 
 
+float functionparameter_GetParamValue_FLOAT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+)
+{
+	float value;
+	
+	int fpsi = functionparameter_GetParamIndex(fps, paramname);
+	value = fps->parray[fpsi].val.s[0];
+	fps->parray[fpsi].val.s[3] = value;
+
+    return value;
+}
+
+int functionparameter_SetParamValue_FLOAT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    float value
+)
+{
+	int fpsi = functionparameter_GetParamIndex(fps, paramname);
+	fps->parray[fpsi].val.s[0] = value;
+
+    return EXIT_SUCCESS;
+}
+
+float *functionparameter_GetParamPtr_FLOAT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+)
+{
+	float *ptr;
+	
+	int fpsi = functionparameter_GetParamIndex(fps, paramname);
+	ptr = &fps->parray[fpsi].val.s[0];
+
+    return ptr;
+}
+
 
 
 char *functionparameter_GetParamPtr_STRING(
@@ -775,11 +814,10 @@ char *functionparameter_GetParamPtr_STRING(
 )
 {	
 	int fpsi = functionparameter_GetParamIndex(fps, paramname);
-
     return fps->parray[fpsi].val.string[0];
 }
 
-char *functionparameter_SetParamValue_STRING(
+int functionparameter_SetParamValue_STRING(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
     const char *stringvalue
@@ -1005,6 +1043,12 @@ int function_parameter_add_entry(
         funcparamarray[pindex].val.f[2] = 0.0;
         funcparamarray[pindex].val.f[3] = 0.0;
         break;
+    case FPTYPE_FLOAT32 :
+        funcparamarray[pindex].val.s[0] = 0.0;
+        funcparamarray[pindex].val.s[1] = 0.0;
+        funcparamarray[pindex].val.s[2] = 0.0;
+        funcparamarray[pindex].val.s[3] = 0.0;
+        break;
     case FPTYPE_PID :
         funcparamarray[pindex].val.pid[0] = 0;
         funcparamarray[pindex].val.pid[1] = 0;
@@ -1044,6 +1088,7 @@ int function_parameter_add_entry(
     {
         int64_t *valueptr_INT64;
         double *valueptr_FLOAT64;
+        float *valueptr_FLOAT32;
         struct timespec *valueptr_ts;
 
         switch (funcparamarray[pindex].type) {
@@ -1063,6 +1108,15 @@ int function_parameter_add_entry(
             funcparamarray[pindex].val.f[1] = valueptr_FLOAT64[1];
             funcparamarray[pindex].val.f[2] = valueptr_FLOAT64[2];
             funcparamarray[pindex].val.f[3] = valueptr_FLOAT64[3];
+            funcparamarray[pindex].cnt0++;
+            break;
+
+        case FPTYPE_FLOAT32 :
+            valueptr_FLOAT32 = (float *) valueptr;
+            funcparamarray[pindex].val.s[0] = valueptr_FLOAT32[0];
+            funcparamarray[pindex].val.s[1] = valueptr_FLOAT32[1];
+            funcparamarray[pindex].val.s[2] = valueptr_FLOAT32[2];
+            funcparamarray[pindex].val.s[3] = valueptr_FLOAT32[3];
             funcparamarray[pindex].cnt0++;
             break;
 
@@ -1163,6 +1217,15 @@ int function_parameter_add_entry(
 
             case FPTYPE_FLOAT64 :
                 if ( fscanf(fp, "%lf", &funcparamarray[pindex].val.f[index]) == 1)
+                    if ( index == 0 )
+					{	
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+                break;
+
+            case FPTYPE_FLOAT32 :
+                if ( fscanf(fp, "%lf", &funcparamarray[pindex].val.s[index]) == 1)
                     if ( index == 0 )
 					{	
 						RVAL = 1;
@@ -1508,6 +1571,10 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[0], timestring);
             break;
 
+        case FPTYPE_FLOAT32:
+            fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[0], timestring);
+            break;
+
         case FPTYPE_PID:
             fprintf(fp, "%18ld  # %s\n", (long) fpsentry->parray[pindex].val.pid[0], timestring);
             break;
@@ -1562,6 +1629,12 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[1], timestring);
             fclose(fp);
             break;
+
+        case FPTYPE_FLOAT32:
+			fp = fopen(fname, "w");
+            fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[1], timestring);
+            fclose(fp);
+            break;
         }       
     }
 
@@ -1583,6 +1656,12 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[2], timestring);
             fclose(fp);
             break;
+
+        case FPTYPE_FLOAT32:
+			fp = fopen(fname, "w");
+            fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[2], timestring);
+            fclose(fp);
+            break;
         }       
     }
 	
@@ -1602,6 +1681,12 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
         case FPTYPE_FLOAT64:
 			fp = fopen(fname, "w");
             fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[3], timestring);
+            fclose(fp);
+            break;
+
+        case FPTYPE_FLOAT32:
+			fp = fopen(fname, "w");
+            fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[3], timestring);
             fclose(fp);
             break;
         }       
@@ -1710,6 +1795,21 @@ int functionparameter_CheckParameter(
                     //strncat(fpsentry->md->message, msgadd, FUNCTION_PARAMETER_STRUCT_MSG_SIZE-msglen-1);
                     err = 1;
                 }
+
+        if(fpsentry->parray[pindex].type & FPTYPE_FLOAT32)
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
+                if(fpsentry->parray[pindex].val.s[0] < fpsentry->parray[pindex].val.s[1]) {
+                    fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
+                    fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN | FPS_MSG_FLAG_ERROR;
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float value below min");
+                    fpsentry->md->msgcnt++;
+                    fpsentry->md->errcnt++;
+
+                    //msglen = strlen(fpsentry->md->message);
+                    //sprintf(msgadd, "%s value below min limit\n", fpsentry->parray[pindex].keywordfull);
+                    //strncat(fpsentry->md->message, msgadd, FUNCTION_PARAMETER_STRUCT_MSG_SIZE-msglen-1);
+                    err = 1;
+                }
     }
 
     if(err == 0) {
@@ -1732,6 +1832,21 @@ int functionparameter_CheckParameter(
         if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
                 if(fpsentry->parray[pindex].val.f[0] > fpsentry->parray[pindex].val.f[2]) {
+                    fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
+                    fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float value above max");
+                    fpsentry->md->msgcnt++;
+                    fpsentry->md->errcnt++;
+
+//                    msglen = strlen(fpsentry->md->message);
+//                    sprintf(msgadd, "%s value above max limit\n", fpsentry->parray[pindex].keywordfull);
+//                    strncat(fpsentry->md->message, msgadd, FUNCTION_PARAMETER_STRUCT_MSG_SIZE-msglen-1);
+                    err = 1;
+                }
+
+        if(fpsentry->parray[pindex].type & FPTYPE_FLOAT32)
+            if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
+                if(fpsentry->parray[pindex].val.s[0] > fpsentry->parray[pindex].val.s[2]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
                     snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float value above max");
@@ -1884,6 +1999,9 @@ int functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64) {
         printf("  TYPE FLOAT64\n");
     }
+    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT32) {
+        printf("  TYPE FLOAT32\n");
+    }
     if(fpsentry->parray[pindex].type & FPTYPE_PID) {
         printf("  TYPE PID\n");
     }
@@ -1965,6 +2083,10 @@ int functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64) {
         printf("  %10f", (float) fpsentry->parray[pindex].val.f[0]);
+    }
+
+    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT32) {
+        printf("  %10f", (float) fpsentry->parray[pindex].val.s[0]);
     }
 
     if(fpsentry->parray[pindex].type & FPTYPE_PID) {
@@ -2115,6 +2237,30 @@ int functionparameter_UserInputSetParamValue(
 
                     if(vOK == 1) {
                         fpsentry->parray[pindex].val.f[0] = fval;
+                    }
+                    break;
+
+
+                case FPTYPE_FLOAT32:
+                    errno = 0;    /* To distinguish success/failure after call */
+                    fval = strtod(buff, &endptr);
+
+                    /* Check for various possible errors */
+                    if((errno == ERANGE)
+                            || (errno != 0 && lval == 0)) {
+                        perror("strtod");
+                        vOK = 0;
+                        sleep(1);
+                    }
+
+                    if(endptr == buff) {
+                        fprintf(stderr, "\nERROR: No digits were found\n");
+                        vOK = 0;
+                        sleep(1);
+                    }
+
+                    if(vOK == 1) {
+                        fpsentry->parray[pindex].val.s[0] = fval;
                     }
                     break;
 
@@ -2381,6 +2527,17 @@ int functionparameter_FPSprocess_cmdline(
                         functionparameter_outlog(msgstring);
                         if(verbose == 1) {
                             printf("setval  FLOAT64     %40s  = %f", FPSentryname, atof(FPSvaluestring));
+                        }
+                        break;
+
+                    case FPTYPE_FLOAT32:
+                        if(functionparameter_SetParamValue_FLOAT32(&fps[fpsindex], FPSentryname, atof(FPSvaluestring)) == EXIT_SUCCESS) {
+                            updated = 1;
+                        }
+                        sprintf(msgstring, "setval  FLOAT32     %40s  = %f\n", FPSentryname, atof(FPSvaluestring));
+                        functionparameter_outlog(msgstring);
+                        if(verbose == 1) {
+                            printf("setval  FLOAT32     %40s  = %f", FPSentryname, atof(FPSvaluestring));
                         }
                         break;
 
@@ -3619,6 +3776,38 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                             }
 
                             printw("  %10f", (float) fps[fpsindex].parray[pindex].val.f[0]);
+
+                            if(paramsync == 0) {
+                                attroff(COLOR_PAIR(3));
+                            }
+                        }
+
+
+
+                        if(fps[fpsindex].parray[pindex].type & FPTYPE_FLOAT32) {
+                            if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR)) {
+                                    double absdiff;
+                                    double abssum;
+                                    double epsrel = 1.0e-6;
+                                    double epsabs = 1.0e-10;
+
+                                    absdiff = fabs(fps[fpsindex].parray[pindex].val.s[0] - fps[fpsindex].parray[pindex].val.s[3]);
+                                    abssum = fabs(fps[fpsindex].parray[pindex].val.s[0]) + fabs(fps[fpsindex].parray[pindex].val.s[3]);
+
+
+                                    if((absdiff < epsrel * abssum) || (absdiff < epsabs)) {
+                                        paramsync = 1;
+                                    } else {
+                                        paramsync = 0;
+                                    }
+                                }
+
+                            if(paramsync == 0) {
+                                attron(COLOR_PAIR(3));
+                            }
+
+                            printw("  %10f", (float) fps[fpsindex].parray[pindex].val.s[0]);
 
                             if(paramsync == 0) {
                                 attroff(COLOR_PAIR(3));
