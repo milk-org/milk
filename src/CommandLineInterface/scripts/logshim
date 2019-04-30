@@ -25,7 +25,7 @@ echo "     $(tput bold)-h$(tput sgr0)              help"
 echo "     $(tput bold)-c$(tput sgr0) <CPUset>     move process to CPUset"
 echo ""
 echo " $(tput bold)INPUT:$(tput sgr0)"
-echo "     <stream>            Shared memory stream name. Actual file is /tmp/<stream name>.im.shm"
+echo "     <stream>            Shared memory stream name. Actual file is $MILK_SHM_DIR/<stream name>.im.shm"
 echo "     <blocksize>         Number of slices in each data cube saved"
 echo "     <directory>         Destination directory"
 echo ""
@@ -153,7 +153,7 @@ fi
 
 # ======================= CHECK REQUIRED FILES =================================
 echo ""
-checkFile /tmp/$1.im.shm
+checkFile $MILK_SHM_DIR/$1.im.shm
 
 
 # ============================= CHECK IF COMMAND EXISTS ==========================

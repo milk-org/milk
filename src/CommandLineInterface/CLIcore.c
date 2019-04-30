@@ -1210,7 +1210,7 @@ int_fast8_t runCLI(
 
             printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
             printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n", SHAREDMEMDIR);
-            printf("        $ sudo mkdir %s\n", SHAREDMEMDIR);
+            printf("        $ sudo mkdir -p %s\n", SHAREDMEMDIR);
             printf("        $ sudo mount %s\n", SHAREDMEMDIR);
         }
     }

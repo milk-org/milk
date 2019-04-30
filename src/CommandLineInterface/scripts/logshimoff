@@ -9,7 +9,7 @@ then
  echo " "
  echo "Usage: $0 <data stream name>"
  echo " "
- echo "  INPUT <data stream name>   : shared memory stream name. Actual file is /tmp/<stream name>.im.shm"
+ echo "  INPUT <data stream name>   : shared memory stream name. Actual file is $MILK_SHM_DIR/<stream name>.im.shm"
  echo " "
  echo "EXAMPLE :  $0 ircam2"
  echo " "

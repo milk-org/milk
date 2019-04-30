@@ -26,15 +26,15 @@ Shared memory structure live viewer
 command:
 -------
 
->> shmview /tmp/xxx.shm [zoom_factor]
+>> shmview $MILK_SHM_DIR/xxx.shm [zoom_factor]
 
 note: default zoom factor is 2
 
 ex:
 --
 
->> shmview /tmp/ircam2.im.shm 3
->> shmview /tmp/dmdispcombconf.conf.shm 5
+>> shmview $MILK_SHM_DIR/ircam2.im.shm 3
+>> shmview $MILK_SHM_DIR/dmdispcombconf.conf.shm 5
 
 ########################################
 
@@ -50,7 +50,7 @@ ESC   : quit shmview
 args = sys.argv[1:]
 if args == []: 
     print(hmsg)
-    cam = shm("/tmp/ircam%d.im.shm" % (2,))
+    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2,))
 else:
     cam = shm(args[0])
 

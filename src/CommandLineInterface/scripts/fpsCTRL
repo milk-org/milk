@@ -76,7 +76,7 @@ while getopts :hlm:f: FLAG; do
       ;;
     l) # list fps structures
 	  echo ""
-	  ls -l /tmp/*.fps.shm
+	  ls -l $MILK_SHM_DIR/*.fps.shm
 	  echo ""
 	  exit
     ;;
