@@ -421,7 +421,7 @@ long function_parameter_struct_connect(
         }
 
         if((NBi >= 0) && (NBi < 10)) {
-            fps->md->nameindex[NBi] = atoi(tmpstring1);
+            strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);
         }
 
         NBi++;
@@ -1968,7 +1968,7 @@ int functionparameter_PrintParameterInfo(
     printf("   %s ", fpsentry->md->pname);
     int i;
     for(i = 0; i < fpsentry->md->NBnameindex; i++) {
-        printf(" [%06d]", fpsentry->md->nameindex[i]);
+        printf(" [%s]", fpsentry->md->nameindexW[i]);
     }
     printf("\n\n");
 
@@ -2723,23 +2723,23 @@ errno_t functionparameter_RUNstart(
 ) {
     char command[500];
     char tmuxname[500];
-    int nameindex;
+    int nameindexlevel;
 
     if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
         sprintf(command, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
         if(system(command) != 0) {
             // this is probably OK - duplicate session
-            printf("command: \"%s\"\n", command);
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-            printf("This error message may be due to pre-existing session\n");           
+            //printf("command: \"%s\"\n", command);
+            //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            //printf("This error message may be due to pre-existing session\n");           
         }
 
 
         sprintf(command, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
-        for(nameindex = 0; nameindex < fps[fpsindex].md->NBnameindex; nameindex++) {
+        for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
             char tmpstring[20];
 
-            sprintf(tmpstring, " %06d", fps[fpsindex].md->nameindex[nameindex]);
+            sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
             strcat(command, tmpstring);
         }
         strcat(command, "\" C-m");
@@ -2754,21 +2754,24 @@ errno_t functionparameter_RUNstart(
 
 
 
+
+
+
 errno_t functionparameter_RUNstop(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
     char command[500];
-    int nameindex;
+    int nameindexlevel;
 
 
 
     // First, run the runstop command
     sprintf(command, "./fpscmd/%s-runstop", fps[fpsindex].md->pname);
-    for(nameindex = 0; nameindex < fps[fpsindex].md->NBnameindex; nameindex++) {
+    for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
-        sprintf(tmpstring, " %06d", fps[fpsindex].md->nameindex[nameindex]);
+        sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
         strcat(command, tmpstring);
     }
     if(system(command) != 0) {
@@ -2797,7 +2800,7 @@ errno_t functionparameter_CONFstart(
     int fpsindex
 ) {
     char command[500];
-    int nameindex;
+    int nameindexlevel;
 
     sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name);
     if(system(command) != 0) {
@@ -2806,10 +2809,10 @@ errno_t functionparameter_CONFstart(
     }
 
     sprintf(command, "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
-    for(nameindex = 0; nameindex < fps[fpsindex].md->NBnameindex; nameindex++) {
+    for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
-        sprintf(tmpstring, " %06d", fps[fpsindex].md->nameindex[nameindex]);
+        sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
         strcat(command, tmpstring);
     }
     strcat(command, "\" C-m");
@@ -3315,7 +3318,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         long pcnt;
         char command[500];
         char tmuxname[500];
-        int nameindex;
         long icnt = 0;
 
 

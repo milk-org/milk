@@ -327,7 +327,7 @@ typedef struct {
 
     // the name and indices are automatically parsed in the following format
     char                pname[100];      // example: pname
-    int                 nameindex[10];   // example: 01 32
+    char                nameindexW[16][10];   // subnames
     int                 NBnameindex;     // example: 2
 
     // configuration will run in tmux session pname-XX-conf
