@@ -186,7 +186,7 @@ errno_t MyFunction_cli() {
     }
 
     // non FPS implementation - all parameters specified at function launch
-    if(if(CLI_checkarg(1, 2) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) + CLI_checkarg(4, 2) == 0) {
+    if(CLI_checkarg(1, 2) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) + CLI_checkarg(4, 2) == 0) {
         MyFunction(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.numl, ata.cmdargtoken[4].val.numl);
             return RETURN_SUCCESS;
         } else {
