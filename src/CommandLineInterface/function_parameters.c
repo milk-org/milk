@@ -3615,6 +3615,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                     if(snode == 1) {
                         attroff(A_REVERSE);
                     }
+                    
+                    
+
 
 
 
@@ -3622,7 +3625,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                     printw("            ");
                 }
             }
-
 
 
 
@@ -3656,12 +3658,38 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                     }
                     attron(COLOR_PAIR(5));
                     l = keywnode[ii].keywordlevel;
-                    printw("%s", keywnode[ii].keyword[l - 1]);
+                    printw("%-16s", keywnode[ii].keyword[l - 1]);
                     attroff(COLOR_PAIR(5));
 
                     if(i == iSelected[currentlevel]) {
                         attroff(A_REVERSE);
                     }
+                    
+                    
+                    if(currentlevel==0) { // provide a status summary if at root
+						fpsindex = keywnode[ii].fpsindex;
+						pid_t pid;
+                        pid = fps[fpsindex].md->confpid;
+                        if((getpgid(pid) >= 0) && (pid > 0)) {
+                            attron(COLOR_PAIR(2));
+                            printw("%5d ", (int) pid);
+                            attroff(COLOR_PAIR(2));
+                        } else {
+                            printw("----- ");
+                        }
+
+
+                        pid = fps[fpsindex].md->runpid;
+                        if((getpgid(pid) >= 0) && (pid > 0)) {
+                            attron(COLOR_PAIR(2));
+                            printw("%5d ", (int) pid);
+                            attroff(COLOR_PAIR(2));
+                        } else {
+                            printw("----- ");
+                        }
+					}
+                    
+                    
 
                 } else { // If this is a parameter
                     fpsindex = keywnode[ii].fpsindex;
@@ -3691,7 +3719,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
 
                         l = keywnode[ii].keywordlevel;
-                        printw(" %-16s", fps[fpsindex].parray[pindex].keyword[l - 1]);
+                        printw(" %-20s", fps[fpsindex].parray[pindex].keyword[l - 1]);
 
                         if(i == iSelected[currentlevel]) {
                             attroff(COLOR_PAIR(10));
@@ -3962,7 +3990,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
                 i1++;
 
             }
-
 
 
             printw("\n");
