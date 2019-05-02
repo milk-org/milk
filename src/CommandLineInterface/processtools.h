@@ -305,6 +305,8 @@ int processinfo_compute_status(
 
 
 PROCESSINFO *processinfo_shm_create(char *pname, int CTRLval);
+PROCESSINFO *processinfo_shm_link(char *pname, int *fd);
+int processinfo_shm_close(PROCESSINFO *pinfo, int fd);
 int processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
 int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring);

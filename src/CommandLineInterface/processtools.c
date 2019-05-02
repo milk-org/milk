@@ -422,17 +422,7 @@ long processinfo_shm_list_create()
 		int SM_fd;
 		struct stat file_stat;
 		
-		SM_fd = open(SM_fname, O_RDWR);
-		fstat(SM_fd, &file_stat);
-        printf("[%d] File %s size: %zd\n", __LINE__, SM_fname, file_stat.st_size);
-
-        pinfolist = (PROCESSINFOLIST*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-        if (pinfolist == MAP_FAILED) {
-            close(SM_fd);
-            fprintf(stderr, "Error mmapping the file");
-            exit(0);
-        }
-        
+        pinfolist = (PROCESSINFOLIST *)processinfo_shm_link(SM_fname, &SM_fd);
         while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
 	}
@@ -613,8 +603,34 @@ PROCESSINFO *processinfo_shm_create(
 
 
 
+PROCESSINFO *processinfo_shm_link(char *pname, int *fd){
+    struct stat file_stat;
+		
+    *fd = open(pname, O_RDWR);
+    if (*fd == -1) {
+        perror("Error opening file");
+        exit(0);
+    }
+    fstat(*fd, &file_stat);
+    printf("[%d] File %s size: %zd\n", __LINE__, pname, file_stat.st_size);
 
+    PROCESSINFO* pinfolist = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
+    if (pinfolist == MAP_FAILED) {
+        close(*fd);
+        fprintf(stderr, "Error mmapping the file");
+        exit(0);
+    }
 
+    return pinfolist;
+}
+
+int processinfo_shm_close(PROCESSINFO *pinfo, int fd){
+    struct stat file_stat;
+    fstat(fd, &file_stat);
+    munmap(pinfo, file_stat.st_size);
+    close(fd);
+    return EXIT_SUCCESS;
+}
 
 
 int processinfo_cleanExit(PROCESSINFO *processinfo) {
@@ -1961,20 +1977,13 @@ void *processinfo_scan(void *thptr) {
 
                     // if already mmapped, first unmap
                     if(pinfop->pinfommapped[pindex] == 1) {
-                        fstat(pinfop->fdarray[pindex], &file_stat);
-                        munmap(pinfop->pinfoarray[pindex], file_stat.st_size);
-                        close(pinfop->fdarray[pindex]);
+                        processinfo_shm_close(pinfop->pinfoarray[pindex], pinfop->fdarray[pindex]);
                         pinfop->pinfommapped[pindex] == 0;
                     }
 
 
                     // COLLECT INFORMATION FROM PROCESSINFO FILE
-
-                    pinfop->fdarray[pindex] = open(SM_fname, O_RDWR);
-                    fstat(pinfop->fdarray[pindex], &file_stat);
-                    pinfop->pinfoarray[pindex] = (PROCESSINFO *) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, pinfop->fdarray[pindex], 0);
-
-
+                    pinfop->pinfoarray[pindex] = processinfo_shm_link(SM_fname, &pinfop->fdarray[pindex]);
 
                     if(pinfop->pinfoarray[pindex] == MAP_FAILED) {
                         close(pinfop->fdarray[pindex]);
@@ -4016,12 +4025,8 @@ printw(" | ");
     {
         if(procinfoproc.pinfommapped[pindex] == 1)
         {
-            struct stat file_stat;
-
-            fstat(procinfoproc.fdarray[pindex], &file_stat);
-            munmap(procinfoproc.pinfoarray[pindex], file_stat.st_size);
+            processinfo_shm_close(procinfoproc.pinfoarray[pindex], procinfoproc.fdarray[pindex]);
             procinfoproc.pinfommapped[pindex] == 0;
-            close(procinfoproc.fdarray[pindex]);
         }
 
     }
