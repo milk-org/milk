@@ -27,17 +27,14 @@
 // Uncomment this line to turn on line tracking for debug purposes
 #define STREAMCTRL_LOGDEBUG
 
-#ifdef STREAMCTRL_LOGDEBUG
-#ifndef STANDALONE
+#if defined(STREAMCTRL_LOGDEBUG) && !defined(STANDALONE)
 #define STREAMCTRL_LOGEXEC do {                      \
     sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
     data.execSRCline = __LINE__;                   \
     } while(0)
 #else
-#endif
 #define STREAMCTRL_LOGEXEC 
 #endif
-
 
 
 

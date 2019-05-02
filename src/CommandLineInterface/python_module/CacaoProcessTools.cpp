@@ -9,6 +9,7 @@
 
 class pyPROCESSINFO {
   PROCESSINFO *m_pinfo;
+  int m_fd;
 
  public:
   pyPROCESSINFO() : m_pinfo(nullptr) {}
@@ -38,6 +39,16 @@ class pyPROCESSINFO {
     return EXIT_SUCCESS;
   }
 
+  int link(char *pname){
+    m_pinfo = processinfo_shm_link(pname, &m_fd);
+    return EXIT_SUCCESS;
+  }
+
+  int close(char *pname){
+    processinfo_shm_close(m_pinfo, m_fd);
+    return EXIT_SUCCESS;
+  }
+  
   int sigexit(int sig) {
     if (m_pinfo != nullptr) {
       int ret = processinfo_SIGexit(m_pinfo, sig);
@@ -88,6 +99,8 @@ PYBIND11_MODULE(CacaoProcessTools, m) {
       .def(py::init<>())
       .def(py::init<char *, int>())
       .def("create", &pyPROCESSINFO::create)
+      .def("link", &pyPROCESSINFO::link)
+      .def("close", &pyPROCESSINFO::close)
       .def("sigexit", &pyPROCESSINFO::sigexit)
       .def("writeMessage", &pyPROCESSINFO::writeMessage)
       .def("exec_start", &pyPROCESSINFO::exec_start)
