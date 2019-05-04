@@ -2735,6 +2735,12 @@ errno_t functionparameter_RUNstart(
         }
 
 
+		// Move to correct launch directory
+		sprintf(command, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+	    if(system(command) != 0) {
+            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        }	
+
         sprintf(command, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
         for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
             char tmpstring[20];
@@ -2767,7 +2773,7 @@ errno_t functionparameter_RUNstop(
 
 
     // First, run the runstop command
-    sprintf(command, "./fpscmd/%s-runstop", fps[fpsindex].md->pname);
+    sprintf(command, "%s/fpscmd/%s-runstop", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname);
     for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
@@ -2775,7 +2781,7 @@ errno_t functionparameter_RUNstop(
         strcat(command, tmpstring);
     }
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -2785,7 +2791,7 @@ errno_t functionparameter_RUNstop(
     // Send C-c in case runstop command is not implemented
     sprintf(command, "tmux send-keys -t %s-run C-c &> /dev/null", fps[fpsindex].md->name);
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
 
     return RETURN_SUCCESS;
@@ -2807,6 +2813,13 @@ errno_t functionparameter_CONFstart(
         // this is probably OK - duplicate session warning
         //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
+
+    // Move to correct launch directory
+    sprintf(command, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
+
 
     sprintf(command, "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
     for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
@@ -3533,18 +3546,21 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         printw("Reading commands from fifo %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
         fifocmdcnt += functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
 
-        printw("currentlevel = %d   Selected = %d/%d   Current node [%3d]: ", currentlevel, iSelected[currentlevel], NBindex, currentnode);
+        //printw("currentlevel = %d   Selected = %d/%d   Current node [%3d]: ", currentlevel, iSelected[currentlevel], NBindex, currentnode);
 
-        if(currentnode == 0) {
+       /* if(currentnode == 0) {
             printw("ROOT");
         } else {
             for(l = 0; l < keywnode[currentnode].keywordlevel; l++) {
                 printw("%s.", keywnode[currentnode].keyword[l]);
             }
-        }
-        printw("  NBchild = %d\n", keywnode[currentnode].NBchild);
+        }*/
+        //printw("  NBchild = %d\n", keywnode[currentnode].NBchild);
 
-        printw("tmux sessions :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
+
+		
+		printw("Root directory : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
+        printw("tmux sessions  :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
         printw("Selected Node %ld : %s\n", nodeSelected, keywnode[nodeSelected].keywordfull);
 
         printw("\n");
