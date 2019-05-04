@@ -2775,7 +2775,7 @@ errno_t functionparameter_RUNstop(
         strcat(command, tmpstring);
     }
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -2785,7 +2785,7 @@ errno_t functionparameter_RUNstop(
     // Send C-c in case runstop command is not implemented
     sprintf(command, "tmux send-keys -t %s-run C-c &> /dev/null", fps[fpsindex].md->name);
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
 
     return RETURN_SUCCESS;
