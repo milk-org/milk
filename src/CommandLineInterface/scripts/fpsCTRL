@@ -61,8 +61,12 @@ done
 
 
 MODE="0"
-FIFONAME="$MILK_SHM_DIR/fpsCTRL.cmd.fifo"
 
+#FIFONAME="$MILK_SHM_DIR/fpsCTRL.cmd.fifo"
+
+ttystring=$( tty | tr -d \/ )
+pname="fpsCTRL"
+fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
 
 while getopts :hlm:f: FLAG; do
   case $FLAG in
@@ -81,7 +85,7 @@ while getopts :hlm:f: FLAG; do
 	  exit
     ;;
     f) # fifo name
-	 FIFONAME=$OPTARG
+	 fifoname=$OPTARG
     ;;
     m)
 		MODE="1"
@@ -117,15 +121,19 @@ printHELP
 fi
 
 
-mkfifo $FIFONAME
+mkfifo $fifoname
 
-ttystring=$( tty | tr -d \/ )
-pname="fpsCTRL"
-fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
+CLIfifoname="$MILK_SHM_DIR/fpsCLIfifo"
+
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
 
-echo "fparamCTRL ${MODE} \"$arg1\" \"$FIFONAME\"" > $SF
+echo "fparamCTRL ${MODE} \"$arg1\" \"$fifoname\"" > $SF
 echo "exitCLI" >> $SF
-milk -n ${pname} -f ${fifoname} -s ${SF}
+
+echo "fifoname = ${fifoname}"
+echo "SF       = ${SF}"
+
+milk -n ${pname} -f ${CLIfifoname} -s ${SF}
 rm ${SF}
 
+rm $fifoname

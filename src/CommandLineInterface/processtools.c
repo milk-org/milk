@@ -1880,9 +1880,12 @@ void *processinfo_scan(void *thptr) {
 
     pinfop->scanPID = getpid();
 
+    pinfop->scandebugline = __LINE__;
+
     while(pinfop->loop == 1) {
         PROCESSTOOLS_LOGEXEC;
 
+        pinfop->scandebugline = __LINE__;
 
         // timing measurement
         clock_gettime(CLOCK_REALTIME, &t1);
@@ -1898,7 +1901,7 @@ void *processinfo_scan(void *thptr) {
 
 
 
-
+        pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_requested = 1;  // request scan
         //system("echo \"scanblock request write 1\" > steplog.sRQw1.txt");//TEST
@@ -1906,6 +1909,11 @@ void *processinfo_scan(void *thptr) {
         while(pinfop->SCANBLOCK_OK == 0) {  // wait for display to OK scan
             //system("echo \"scanblock OK read 0\" > steplog.sOKr0.txt");//TEST
             usleep(100);
+            pinfop->scandebugline = __LINE__;
+            if(pinfop->loop == 0) {
+                int line = __LINE__;
+                pthread_exit(&line);
+            }
         }
         pinfop->SCANBLOCK_requested = 0; // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
@@ -1914,7 +1922,7 @@ void *processinfo_scan(void *thptr) {
         // LOAD / UPDATE process information
         // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
         //
-
+        pinfop->scandebugline = __LINE__;
 
         for(pindex = 0; pindex < pinfop->NBpinfodisp; pindex++) {
             if(pinfop->loop == 1) {
@@ -1922,7 +1930,7 @@ void *processinfo_scan(void *thptr) {
                 char SM_fname[200];    // shared memory file name
                 struct stat file_stat;
 
-
+                pinfop->scandebugline = __LINE__;
                 pinfop->PIDarray[pindex] = pinfolist->PIDarray[pindex];
 
                 // SHOULD WE (RE)LOAD ?
@@ -1942,7 +1950,7 @@ void *processinfo_scan(void *thptr) {
                 }
 
 
-
+                pinfop->scandebugline = __LINE__;
 
 
                 // check if process info file exists
@@ -1973,7 +1981,7 @@ void *processinfo_scan(void *thptr) {
                     }
                 }
 
-
+                pinfop->scandebugline = __LINE__;
 
                 if((pindex < pinfop->NBpinfodisp) && (pinfop->updatearray[pindex] == 1)) {
                     // (RE)LOAD
@@ -2017,6 +2025,13 @@ void *processinfo_scan(void *thptr) {
                     // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
 
                 }
+
+                pinfop->scandebugline = __LINE__;
+            }
+            else
+            {
+                int line = __LINE__;
+                pthread_exit(&line);
             }
         }
 
@@ -2059,6 +2074,7 @@ void *processinfo_scan(void *thptr) {
         free(timearray);
         free(indexarray);
 
+        pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_OK = 0; // let display thread we're done
         //system("echo \"scanblock OK write 0\" > steplog.sOKw0.txt");//TEST
@@ -2068,19 +2084,21 @@ void *processinfo_scan(void *thptr) {
 
 
 
-
+        pinfop->scandebugline = __LINE__;
 
 
 
         if(pinfop->DisplayMode == 3) { // only compute of displayed processes
+            pinfop->scandebugline = __LINE__;
             GetCPUloads(pinfop);
-
+            pinfop->scandebugline = __LINE__;
             // collect required info for display
             for(pindexdisp = 0; pindexdisp < pinfop->NBpinfodisp ; pindexdisp++) {
                 if(pinfop->loop == 1) {
                     PROCESSTOOLS_LOGEXEC;
 
                     if(pinfolist->active[pindexdisp] != 0) {
+                        pinfop->scandebugline = __LINE__;
 
                         if(pinfop->pinfodisp[pindexdisp].NBsubprocesses != 0) { // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
 
@@ -2103,6 +2121,8 @@ void *processinfo_scan(void *thptr) {
                             }
 
 
+                            pinfop->scandebugline = __LINE__;
+
                             pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindexdisp]), 0);
 
                             if(pinfop->psysinfostatus[pindexdisp] != -1) {
@@ -2121,6 +2141,8 @@ void *processinfo_scan(void *thptr) {
                                 }
 
                                 sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindexdisp].cpusallowed);
+
+                                pinfop->scandebugline = __LINE__;
 
                                 int cpu;
                                 for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
@@ -2148,7 +2170,14 @@ void *processinfo_scan(void *thptr) {
 
                     }
                 }
-            }
+                else
+                {
+                    int line = __LINE__;
+                    pthread_exit(&line);
+                }
+            } // end of if(pinfop->DisplayMode == 3)
+
+            pinfop->scandebugline = __LINE__;
 
         } // end of DisplayMode 3
 
@@ -2157,12 +2186,27 @@ void *processinfo_scan(void *thptr) {
 
 
         pinfop->loopcnt++;
-        
-        if(pinfop->loop == 1)
-			usleep(pinfop->twaitus);
+
+
+        int loopcntiter = 0;
+        int NBloopcntiter = 10;
+        while((pinfop->loop == 1)&&(loopcntiter<NBloopcntiter))
+        {
+            usleep(pinfop->twaitus/NBloopcntiter);
+            loopcntiter++;
+        }
+
+        if(pinfop->loop == 0) {
+            int line = __LINE__;
+            pthread_exit(&line);
+        }
     }
 
-    printf("Process info scan ended cleanly: %ld scans completed\n", pinfop->loopcnt);
+
+    if(pinfop->loop == 0) {
+        int line = __LINE__;
+        pthread_exit(&line);
+    }
 
     return NULL;
 }
@@ -2325,10 +2369,10 @@ errno_t processinfo_CTRLscreen()
     int pstrlen_tmux    = 16;
     int pstrlen_loopcnt = 10;
     int pstrlen_descr   = 25;
-    
+
     int pstrlen_msg     = 35;
-	int pstrlen_msg_min = 10;
-	int pstrlen_msg_max = 50;
+    int pstrlen_msg_min = 10;
+    int pstrlen_msg_max = 50;
 
     int pstrlen_cset    = 10;
 
@@ -2610,6 +2654,8 @@ errno_t processinfo_CTRLscreen()
                 pindex = pindexSelected;
                 if(pinfolist->active[pindex]!=1)
                 {
+					remove(procinfoproc.pinfoarray[pindex]->logfilename);
+					
                     char SM_fname[200];
 #ifdef STANDALONE
                     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
@@ -2627,6 +2673,8 @@ errno_t processinfo_CTRLscreen()
                 pindex = procinfoproc.pindexActive[index];
                 if(pinfolist->active[pindex]!=1)
                 {
+					remove(procinfoproc.pinfoarray[pindex]->logfilename);
+					
                     char SM_fname[200];
 #ifdef STANDALONE
                     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
@@ -3501,8 +3549,8 @@ errno_t processinfo_CTRLscreen()
                 // ===========================================================================
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
                 // ===========================================================================
-				pstrlen_total_max = 0;
-                
+                pstrlen_total_max = 0;
+
                 for(dispindex=0; dispindex < dispindexMax; dispindex++)
                 {
                     if(TimeSorted == 0)
@@ -4088,7 +4136,7 @@ errno_t processinfo_CTRLscreen()
                         // end of line
                         if(pstrlen_total > pstrlen_total_max)
                             pstrlen_total_max = pstrlen_total;
-                       // printw("len = %d %d / %d / %d\n", pstrlen_total, pstrlen_total_max, wcol, pstrlen_msg);
+                        // printw("len = %d %d / %d / %d\n", pstrlen_total, pstrlen_total_max, wcol, pstrlen_msg);
                         pstrlen_total = 0;
                     }
 
@@ -4121,29 +4169,29 @@ errno_t processinfo_CTRLscreen()
 
 
 
-		
-	if(pstrlen_total_max > wcol-1)
-	{
-		int testval;
-		
-		testval = pstrlen_msg - (pstrlen_total_max - (wcol-1));
-		if(testval < pstrlen_msg_min)
-			testval = pstrlen_msg_min;
-			
-		if(pstrlen_msg != testval)
-		{
-			pstrlen_msg = testval;
-		    refresh();
-			clear();
-		}
-	}
-	
-	if(pstrlen_total_max < wcol-2)
-	{
-		pstrlen_msg += (wcol-2 - pstrlen_total_max);
-		if(pstrlen_msg > pstrlen_msg_max)
-			pstrlen_msg = pstrlen_msg_max;
-	}
+
+            if(pstrlen_total_max > wcol-1)
+            {
+                int testval;
+
+                testval = pstrlen_msg - (pstrlen_total_max - (wcol-1));
+                if(testval < pstrlen_msg_min)
+                    testval = pstrlen_msg_min;
+
+                if(pstrlen_msg != testval)
+                {
+                    pstrlen_msg = testval;
+                    refresh();
+                    clear();
+                }
+            }
+
+            if(pstrlen_total_max < wcol-2)
+            {
+                pstrlen_msg += (wcol-2 - pstrlen_total_max);
+                if(pstrlen_msg > pstrlen_msg_max)
+                    pstrlen_msg = pstrlen_msg_max;
+            }
 
 
 
@@ -4188,11 +4236,22 @@ errno_t processinfo_CTRLscreen()
 
     procinfoproc.loop = 0;
 
-    printf("pthread_join ... ");
-    fflush(stdout);
-    pthread_join(threadscan, NULL);
-    printf("DONE\n");
-    fflush(stdout);
+
+
+    int *line;
+    int ret = -1;
+
+    while(ret != 0)
+    {
+        ret = pthread_tryjoin_np(threadscan, (void**)&line);
+
+        if(ret==EBUSY)
+        {
+            printf("Waiting for thread to complete - currently at line %d\n", procinfoproc.scandebugline);
+        }
+        usleep(10000);
+    }
+
 
 
 
@@ -4206,10 +4265,6 @@ errno_t processinfo_CTRLscreen()
         }
 
     }
-
-
-
-
 
 
     free(procinfoproc.pinfodisp);
