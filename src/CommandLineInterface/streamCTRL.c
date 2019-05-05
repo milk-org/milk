@@ -793,10 +793,11 @@ errno_t streamCTRL_CTRLscreen() {
     backstderr = dup(STDERR_FILENO);
     sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
 
+#ifndef STANDALONE  // TODO(sevin): why it fails in STANDALONE mode?
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, 0644);
     dup2(newstderr, STDERR_FILENO);
     close(newstderr);
-
+#endif
 
 
     STREAMCTRL_LOGEXEC;
