@@ -83,6 +83,7 @@
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "info/info.h"
+#define SHAREDSHMDIR    data.shmdir  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 #endif
 
 #include "streamCTRL.h"
@@ -337,7 +338,7 @@ void *streamCTRL_scan(void* argptr)
     double tdiffv;
     struct timespec tdiff;
 
-    struct arg_struct *args = argptr;
+    struct arg_struct *args = (struct arg_struct *)argptr;
     STREAMINFOPROC* streaminfoproc = args->streaminfoproc;
     IMAGE *images = args->images;
 
@@ -380,11 +381,7 @@ void *streamCTRL_scan(void* argptr)
         }
 
 
-#ifdef STANDALONE
         d = opendir(SHAREDSHMDIR);
-#else
-        d = opendir(data.shmdir);
-#endif
         if(d)
         {
             sindex = 0;
@@ -420,11 +417,7 @@ void *streamCTRL_scan(void* argptr)
                     if(streaminfoproc->WriteFlistToFile == 1)
                         fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
 
-#ifdef STANDALONE
                     sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
-#else
-                    sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
-#endif
                     retv = lstat (fullname, &buf);
                     if (retv == -1 ) {
                         endwin();
@@ -444,11 +437,7 @@ void *streamCTRL_scan(void* argptr)
 
 
                         streaminfo[sindex].SymLink = 1;
-#ifdef STANDALONE
                         sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
-#else
-                        sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
-#endif
 //                        readlink (fullname, linknamefull, 200-1);
                         linknamefull = realpath( fullname, NULL);
 
@@ -578,11 +567,7 @@ void *streamCTRL_scan(void* argptr)
                 if(PReadMode == 0)
                 {
                     // popen option
-#ifdef STANDALONE
                     sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null", SHAREDSHMDIR, streaminfo[sindexscan1].sname);
-#else
-                    sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null", data.shmdir, streaminfo[sindexscan1].sname);
-#endif
                     fp = popen(command, "r");
                     if (fp == NULL) {
                         streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
@@ -601,13 +586,8 @@ void *streamCTRL_scan(void* argptr)
                     // filesystem option
                     char plistfname[2000];
 
-#ifdef STANDALONE
                     sprintf(plistfname, "%s/%s.shmplist", SHAREDSHMDIR, streaminfo[sindexscan1].sname);
                     sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null > %s", SHAREDSHMDIR, streaminfo[sindexscan1].sname, plistfname);
-#else
-                    sprintf(plistfname, "%s/%s.shmplist", data.shmdir, streaminfo[sindexscan1].sname);
-                    sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null > %s", data.shmdir, streaminfo[sindexscan1].sname, plistfname);
-#endif
                     if( system(command) == -1)
                     {
 						perror("Command system() failed");
@@ -753,7 +733,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
     PIDmax = get_PIDmax();
-    PIDname_array = malloc(sizeof(char *)*PIDmax);
+    PIDname_array = (char**)malloc(sizeof(char *)*PIDmax);
 
     streaminfoproc.WriteFlistToFile = 0;
 
@@ -811,11 +791,7 @@ errno_t streamCTRL_CTRLscreen() {
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
-#ifdef STANDALONE
     sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
-#else
-    sprintf(newstderrfname, "%s/stderr.cli.%d.txt", data.shmdir, CLIPID);
-#endif
 
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, 0644);
     dup2(newstderr, STDERR_FILENO);
@@ -934,8 +910,10 @@ errno_t streamCTRL_CTRLscreen() {
         case 'R': // remove stream
             STREAMCTRL_LOGEXEC;
             sindex = ssindex[dindexSelected];
+#if !defined(STANDALONE)
             ImageStreamIO_filename(fname, sizeof(fname),images[streaminfo[sindex].ID].name);
             sprintf(data.execSRCmessage, "%d  %s", dindexSelected, fname);
+#endif
             ImageStreamIO_destroyIm(&images[streaminfo[sindex].ID]);
             STREAMCTRL_LOGEXEC;
             break;
