@@ -12,6 +12,7 @@
 
 
 #ifndef STANDALONE
+
 #define PROCESSINFO_ENABLED
 // OPTIONAL LINE TRACKING FOR DEBUGGING
 //
@@ -25,16 +26,20 @@
 //
 // Uncomment this line to turn on line tracking for debug purposes
 #define PROCESSTOOLS_LOGDEBUG
-#endif
 
 #ifdef PROCESSTOOLS_LOGDEBUG
 #define PROCESSTOOLS_LOGEXEC do { \
     sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
     data.execSRCline = __LINE__;                   \
     } while(0)
-#else
+#else // ifndef PROCESSTOOLS_LOGDEBUG
 #define PROCESSTOOLS_LOGEXEC 
 #endif
+
+#else //  ifdef STANDALONE
+
+#define PROCESSTOOLS_LOGEXEC 
+#endif //  endif STANDALONE
 
 static int CTRLscreenExitLine = 0; // for debugging
 
@@ -88,6 +93,7 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "info/info.h"
+#define SHAREDPROCDIR data.shmdir
 #endif
 
 #include <processtools.h>
@@ -365,11 +371,7 @@ long processinfo_shm_list_create()
     char  SM_fname[200];
 	long pindex = 0;
 
-#ifdef STANDALONE
     sprintf(SM_fname, "%s/processinfo.list.shm", SHAREDPROCDIR);
-#else
-    sprintf(SM_fname, "%s/processinfo.list.shm", data.shmdir);
-#endif
 
     /*
     * Check if a file exist using stat() function.
@@ -472,11 +474,7 @@ PROCESSINFO *processinfo_shm_create(
     pinfolist->PIDarray[pindex] = PID;
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
 
-#ifdef STANDALONE
     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
-#else
-    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pname, (int) PID);
-#endif
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1) {
@@ -584,11 +582,7 @@ PROCESSINFO *processinfo_shm_create(
 
     clock_gettime(CLOCK_REALTIME, &tnow);
 
-#ifdef STANDALONE
     sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", SHAREDPROCDIR, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
-#else
-    sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.shmdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
-#endif
 
 	if(LogFileCreated == 0)
 	{
@@ -1955,11 +1949,7 @@ void *processinfo_scan(void *thptr) {
 
                 // check if process info file exists
 
-#ifdef STANDALONE
                 sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
 
                 // Does file exist ?
                 if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT) {
@@ -2333,7 +2323,7 @@ errno_t processinfo_CTRLscreen()
 
     STRINGLISTENTRY *CPUsetList;
     int NBCPUset;
-    CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
+    CPUsetList = (STRINGLISTENTRY *)malloc(1000 * sizeof(STRINGLISTENTRY));
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
 
@@ -2640,11 +2630,7 @@ errno_t processinfo_CTRLscreen()
                     if(pinfolist->active[pindex]!=1)
                     {
                         char SM_fname[200];
-#ifdef STANDALONE
                         sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
                         remove(SM_fname);
                     }
                 }
@@ -2657,11 +2643,7 @@ errno_t processinfo_CTRLscreen()
 					remove(procinfoproc.pinfoarray[pindex]->logfilename);
 					
                     char SM_fname[200];
-#ifdef STANDALONE
                     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
                     remove(SM_fname);
                 }
             }
@@ -2676,11 +2658,7 @@ errno_t processinfo_CTRLscreen()
 					remove(procinfoproc.pinfoarray[pindex]->logfilename);
 					
                     char SM_fname[200];
-#ifdef STANDALONE
                     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
                     remove(SM_fname);
                 }
             }

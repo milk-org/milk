@@ -9,11 +9,9 @@
  */
 
 
-#ifndef STANDALONE
 #define FUNCTIONPARAMETER_LOGDEBUG 1
-#endif
 
-#ifdef FUNCTIONPARAMETER_LOGDEBUG
+#if defined(FUNCTIONPARAMETER_LOGDEBUG) && !defined(STANDALONE)
 #define FUNCTIONPARAMETER_LOGEXEC do {                      \
     sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
     data.execSRCline = __LINE__;                   \
@@ -64,9 +62,11 @@
 #include "info/info.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#define SHAREDSHMDIR data.shmdir
 #else
 #include "standalone_dependencies.h"
 #endif
+
 #include "function_parameters.h"
 
 /* =============================================================================================== */
@@ -239,11 +239,7 @@ errno_t function_parameter_struct_create(
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
 
-#ifdef STANDALONE
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDPROCDIR, name);
-#else
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.shmdir, name);
-#endif
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDSHMDIR, name);
     remove(SM_fname);
 
     printf("Creating file %s\n", SM_fname);
@@ -360,11 +356,7 @@ long function_parameter_struct_connect(
     int NBparam;
     char *mapv;
 
-#ifdef STANDALONE
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDPROCDIR, name);
-#else
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", data.shmdir, name);
-#endif
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDSHMDIR, name);
     printf("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1) {
@@ -2874,7 +2866,7 @@ errno_t functionparameter_outlog(
 
     if(LogOutOpen == 0) {
 		char logfname[200];
-		sprintf(logfname, "%s/fpslog.%06d", data.shmdir, getpid());
+		sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
         fpout = fopen(logfname, "a");
         if(fpout == NULL) {
             printf("ERROR: cannot open file\n");
@@ -2997,11 +2989,7 @@ errno_t functionparameter_scan_fps(
     struct dirent *dir;
 
 
-#ifdef STANDALONE
-    d = opendir(SHAREDPROCDIR);
-#else
-    d = opendir(data.shmdir);
-#endif
+    d = opendir(SHAREDSHMDIR);
     if(d) {
         fpsindex = 0;
         pindex = 0;
@@ -3040,12 +3028,7 @@ errno_t functionparameter_scan_fps(
                 int retv;
                 char fullname[200];
 
-#ifdef STANDALONE
-                sprintf(fullname, "%s/%s", SHAREDPROCDIR, dir->d_name);
-#else
-                sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
-#endif
-
+                sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
 
                 retv = lstat(fullname, &buf);
                 if(retv == -1) {
@@ -3065,11 +3048,7 @@ errno_t functionparameter_scan_fps(
                     int ret;
 
                     fps_symlink[fpsindex] = 1;
-#ifdef STANDALONE
-                    sprintf(fullname, "%s/%s", SHAREDPROCDIR, dir->d_name);
-#else
-                    sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
-#endif
+                    sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
                     ret = readlink(fullname, linknamefull, 200 - 1); // todo: replace with realpath()
 
                     strcpy(linkname, basename(linknamefull));
@@ -3206,11 +3185,7 @@ errno_t functionparameter_scan_fps(
             }
         }
     } else {
-#ifdef STANDALONE
-        printf("ERROR: missing %s directory\n", SHAREDPROCDIR);
-#else
-        printf("ERROR: missing %s directory\n", data.shmdir);
-#endif
+        printf("ERROR: missing %s directory\n", SHAREDSHMDIR);
         printf("File %s line %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
@@ -3455,7 +3430,7 @@ errno_t functionparameter_CTRLscreen(
 			break;
 
 		case 'e' : // erase FPS
-			sprintf(fname, "%s/%s.fps.shm", data.shmdir, fps[keywnode[nodeSelected].fpsindex].md->name);
+			sprintf(fname, "%s/%s.fps.shm", SHAREDSHMDIR, fps[keywnode[nodeSelected].fpsindex].md->name);
 			remove(fname);
 			functionparameter_scan_fps(mode, fpsnamemask, fps, keywnode, &NBkwn, &fpsindex, &pindex);
 			NBfps = fpsindex;
@@ -3636,7 +3611,7 @@ errno_t functionparameter_CTRLscreen(
         
         printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
         fifocmdcnt += functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
-        printw("OUTPUT LOG:  %s/fpslog.%06d\n", data.shmdir, getpid());
+        printw("OUTPUT LOG:  %s/fpslog.%06d\n", SHAREDSHMDIR, getpid());
 
         //printw("currentlevel = %d   Selected = %d/%d   Current node [%3d]: ", currentlevel, iSelected[currentlevel], NBindex, currentnode);
 
