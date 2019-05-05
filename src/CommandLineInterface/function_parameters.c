@@ -2369,9 +2369,10 @@ int functionparameter_FPSprocess_cmdline(
     char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char FPSvaluestring[FUNCTION_PARAMETER_STRMAXLEN];
 
-    char msgstring[500];
-    sprintf(msgstring, "INPUT CMD: %s\n", FPScmdline);
-    functionparameter_outlog(msgstring);
+	char msgstring[500];
+    char inputcmd[500];
+    sprintf(inputcmd, "%s", FPScmdline);
+    //functionparameter_outlog(msgstring);
 
     FUNCTIONPARAMETER_LOGEXEC;
 
@@ -2428,8 +2429,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             kwnindexscan ++;
         }
-
-        // if(verbose == 1) {
+/*
         if(kwnindex != -1) {
             sprintf(msgstring, "Resolved arg1 as keyword node index %d\n",  kwnindex);
             functionparameter_outlog(msgstring);
@@ -2437,7 +2437,7 @@ int functionparameter_FPSprocess_cmdline(
             sprintf(msgstring, "Could not resolve arg1 as keyword index\n");
             functionparameter_outlog(msgstring);
         }
-        //}
+*/
     }
 
     if(verbose == 1) {
@@ -2461,6 +2461,7 @@ int functionparameter_FPSprocess_cmdline(
             if(strcmp(FPScommand, "runstart") == 0) {
                 FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstart(fps, fpsindex);
+  
                 sprintf(msgstring, "start RUN process %d %s\n", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog(msgstring);
                 cmdOK = 1;
@@ -2485,11 +2486,11 @@ int functionparameter_FPSprocess_cmdline(
     if((nbword > 2) && (FPScommand[0] != '#') && (cmdOK == 0)) {
         FUNCTIONPARAMETER_LOGEXEC;
 
-        if(verbose == 1) {
+/*        if(verbose == 1) {
             sprintf(msgstring, "2+ args   kwnindex = %d\n", kwnindex);
             functionparameter_outlog(msgstring);
         }
-
+*/
 
         if(kwnindex != -1) {
             FUNCTIONPARAMETER_LOGEXEC;
@@ -2502,10 +2503,11 @@ int functionparameter_FPSprocess_cmdline(
                 FUNCTIONPARAMETER_LOGEXEC;
                 int updated = 0;
 
-                if(verbose == 1) {
+     /*           if(verbose == 1) {
                     sprintf(msgstring, "cmd = setval\n");
                     functionparameter_outlog(msgstring);
                 }
+*/
 
                 switch(fps[fpsindex].parray[pindex].type) {
                     case FPTYPE_INT64:
@@ -2638,7 +2640,7 @@ int functionparameter_FPSprocess_cmdline(
     FUNCTIONPARAMETER_LOGEXEC;
 
     if(cmdOK == 0) {
-        sprintf(msgstring, "FAILED TO EXECUTE CMD: %s\n", FPScmdline);
+        sprintf(msgstring, "FAILED TO EXECUTE CMD: %s\n", inputcmd);
         functionparameter_outlog(msgstring);
     }
     FUNCTIONPARAMETER_LOGEXEC;
@@ -2872,7 +2874,7 @@ errno_t functionparameter_outlog(
 
     if(LogOutOpen == 0) {
 		char logfname[200];
-		sprintf(logfname, "fpslog.%06d", getpid());
+		sprintf(logfname, "%s/fpslog.%06d", data.shmdir, getpid());
         fpout = fopen(logfname, "a");
         if(fpout == NULL) {
             printf("ERROR: cannot open file\n");
@@ -2883,9 +2885,6 @@ errno_t functionparameter_outlog(
 
     fprintf(fpout, "%s", msgstring);
     fflush(fpout);
-//    sprintf(outbuff, "%s", msgstring);
-
-	//fclose(fpout);
 	
     return RETURN_SUCCESS;
 }
@@ -2909,12 +2908,16 @@ void functionparameter_CTRLscreen_atexit()
  *
  *
  */
-errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname) {
+errno_t functionparameter_CTRLscreen(
+    uint32_t mode,
+    char *fpsnamemask,
+    char *fpsCTRLfifoname
+) {
     // function parameter structure(s)
     int NBfps;
     int fpsindex;
 
-    FUNCTION_PARAMETER_STRUCT *fps;  
+    FUNCTION_PARAMETER_STRUCT *fps;
     int fps_symlink[NB_FPS_MAX];
 
     // display index
@@ -2956,11 +2959,13 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
     FILE *fpinputcmd;
 
 
-	FUNCTIONPARAMETER_LOGEXEC;
+	functionparameter_outlog("=========== START ==============\n");
 
-	// allocate memory 
-	fps = (FUNCTION_PARAMETER_STRUCT*) malloc(sizeof(FUNCTION_PARAMETER_STRUCT)*NB_FPS_MAX);
-	keywnode = (KEYWORD_TREE_NODE*) malloc(sizeof(KEYWORD_TREE_NODE)*1000);
+    FUNCTIONPARAMETER_LOGEXEC;
+
+    // allocate memory
+    fps = (FUNCTION_PARAMETER_STRUCT*) malloc(sizeof(FUNCTION_PARAMETER_STRUCT)*NB_FPS_MAX);
+    keywnode = (KEYWORD_TREE_NODE*) malloc(sizeof(KEYWORD_TREE_NODE)*1000);
 
 
 
@@ -3543,8 +3548,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 
         FUNCTIONPARAMETER_LOGEXEC;
         
-        printw("Reading commands from fifo %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
+        printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
         fifocmdcnt += functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
+        printw("OUTPUT LOG:  %s/fpslog.%06d\n", data.shmdir, getpid());
 
         //printw("currentlevel = %d   Selected = %d/%d   Current node [%3d]: ", currentlevel, iSelected[currentlevel], NBindex, currentnode);
 
@@ -3558,10 +3564,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
         //printw("  NBchild = %d\n", keywnode[currentnode].NBchild);
 
 
-		
-		printw("Root directory : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
-        printw("tmux sessions  :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
-        printw("Selected Node %ld : %s\n", nodeSelected, keywnode[nodeSelected].keywordfull);
+		printw("========= FPS info ============\n");
+		printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
+        printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
+        printw("========= NODE info ============\n");
+        printw("Selected %ld : %s\n", nodeSelected, keywnode[nodeSelected].keywordfull);
 
         printw("\n");
 
@@ -4063,6 +4070,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fps
 #endif
     }
     endwin();
+
+
+	functionparameter_outlog("=========== STOP ===============\n");
 
     for(fpsindex = 0; fpsindex < NBfps; fpsindex++) {
         function_parameter_struct_disconnect(&fps[fpsindex]);

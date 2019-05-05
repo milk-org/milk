@@ -203,6 +203,8 @@ typedef struct
 	int twaitus; // sleep time between scans
 	double dtscan; // measured time interval between scans [s]
 	pid_t scanPID;
+	int scandebugline; // for debugging	
+	
 	
 	// ensure list of process and mmap operation blocks display
 	int SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
