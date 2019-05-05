@@ -676,6 +676,8 @@ void *streamCTRL_scan(void* argptr)
 
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
+        
+        
         usleep(streaminfoproc->twaitus);
 
         scancnt ++;
@@ -784,7 +786,7 @@ errno_t streamCTRL_CTRLscreen() {
 
     int DisplayMode = 2;
 
-
+	char fname[200];
 
     struct tm *uttime_lastScan;
     time_t rawtime;
@@ -930,7 +932,12 @@ errno_t streamCTRL_CTRLscreen() {
             // ============ ACTIONS
 
             case 'R': // remove stream
-                ImageStreamIO_destroyIm(&images[streaminfo[dindexSelected].ID]);
+				STREAMCTRL_LOGEXEC;
+				sindex = ssindex[dindexSelected];
+				ImageStreamIO_filename(fname, sizeof(fname),images[streaminfo[sindex].ID].name);
+				sprintf(data.execSRCmessage, "%d  %s", dindexSelected, fname);
+                ImageStreamIO_destroyIm(&images[streaminfo[sindex].ID]);
+                STREAMCTRL_LOGEXEC;                          
                 break;
 
 
