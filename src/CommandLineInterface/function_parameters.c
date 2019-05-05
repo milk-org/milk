@@ -2892,121 +2892,48 @@ errno_t functionparameter_outlog(
 
 
 
-void functionparameter_CTRLscreen_atexit()
-{
-//	printf("exiting CTRLscreen\n");
-	
-//	endwin();
-}
 
 
-/**
- * ## Purpose
- *
- * Automatically build simple ASCII GUI from function parameter structure (fps) name mask
- *
- *
- *
- */
-errno_t functionparameter_CTRLscreen(
+
+
+
+
+
+
+
+
+
+errno_t functionparameter_scan_fps(
     uint32_t mode,
     char *fpsnamemask,
-    char *fpsCTRLfifoname
-) {
-    // function parameter structure(s)
-    int NBfps;
+    FUNCTION_PARAMETER_STRUCT *fps,
+    KEYWORD_TREE_NODE *keywnode,
+    int *ptr_NBkwn,
+    int *ptr_fpsindex, 
+    long *ptr_pindex
+)
+{
     int fpsindex;
-
-    FUNCTION_PARAMETER_STRUCT *fps;
-    int fps_symlink[NB_FPS_MAX];
-
-    // display index
-    long NBindex;
-
-    // function parameters
-    long NBpindex = 0;
-    long pindex;
-    int *p_fpsindex; // fps index for parameter
-    int *p_pindex;   // index within fps
-
-    // keyword tree
-    int kwnindex;
-    int NBkwn = 0;
-    KEYWORD_TREE_NODE *keywnode;
-
-    int l;
-
-    char  monstring[200];
-    int loopOK = 1;
-    long long loopcnt = 0;
+    int pindex;
+	int fps_symlink[NB_FPS_MAX];
+	int kwnindex;
+	int NBkwn;
+	int l;
 
 
     int nodechain[MAXNBLEVELS];
     int iSelected[MAXNBLEVELS];
-
-    // current selection
-    int fpsindexSelected = 0;
-    int pindexSelected = 0;
-    int nodeSelected = 0;
-
 
     // FPS list file
     FILE *fpfpslist;
     int fpslistcnt = 0;
     char FPSlist[200][100];
 
-    // input command
-    FILE *fpinputcmd;
-
-
-	functionparameter_outlog("=========== START ==============\n");
-
-    FUNCTIONPARAMETER_LOGEXEC;
-
-    // allocate memory
-    fps = (FUNCTION_PARAMETER_STRUCT*) malloc(sizeof(FUNCTION_PARAMETER_STRUCT)*NB_FPS_MAX);
-    keywnode = (KEYWORD_TREE_NODE*) malloc(sizeof(KEYWORD_TREE_NODE)*1000);
-
-
-
-#ifndef STANDALONE
-    // catch signals for clean exit
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGTERM\n");
-    }
-
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGINT\n");
-    }
-
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGABRT\n");
-    }
-
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGBUS\n");
-    }
-
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGSEGV\n");
-    }
-
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGHUP\n");
-    }
-
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
-        printf("\ncan't catch SIGPIPE\n");
-    }
-#endif
+    // scan filesystem for fps entries
 
 
 
 
-	// fifo
-    int fpsCTRLfifofd = open(fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
-	long fifocmdcnt = 0;
-	
 
     // request match to file ./fpscomd/fpslist.txt
     if(mode & 0x0001) {
@@ -3059,10 +2986,15 @@ errno_t functionparameter_CTRLscreen(
     NBkwn = 1;
 
 
-    // scan filesystem for fps entries
+
+	
+
+
+
+
+
     DIR *d;
     struct dirent *dir;
-
 
 
 #ifdef STANDALONE
@@ -3113,8 +3045,8 @@ errno_t functionparameter_CTRLscreen(
 #else
                 sprintf(fullname, "%s/%s", data.shmdir, dir->d_name);
 #endif
-                
-                
+
+
                 retv = lstat(fullname, &buf);
                 if(retv == -1) {
                     endwin();
@@ -3163,8 +3095,8 @@ errno_t functionparameter_CTRLscreen(
                 strncpy(fpsname, dir->d_name, strcplen);
                 fpsname[strcplen] = '\0';
 
-				printf("FOUND FPS %s - CONNECTING]\n", fpsname);
-				fflush(stdout);
+                printf("FOUND FPS %s - CONNECTING]\n", fpsname);
+                fflush(stdout);
 
                 int NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
                 int i;
@@ -3284,6 +3216,138 @@ errno_t functionparameter_CTRLscreen(
         exit(0);
     }
 
+    *ptr_NBkwn = NBkwn;
+    *ptr_fpsindex = fpsindex; 
+    *ptr_pindex = pindex;
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+void functionparameter_CTRLscreen_atexit()
+{
+//	printf("exiting CTRLscreen\n");
+	
+//	endwin();
+}
+
+
+/**
+ * ## Purpose
+ *
+ * Automatically build simple ASCII GUI from function parameter structure (fps) name mask
+ *
+ *
+ *
+ */
+errno_t functionparameter_CTRLscreen(
+    uint32_t mode,
+    char *fpsnamemask,
+    char *fpsCTRLfifoname
+) {
+    // function parameter structure(s)
+    int NBfps;
+    int fpsindex;
+
+    FUNCTION_PARAMETER_STRUCT *fps;
+
+    // display index
+    long NBindex;
+
+    // function parameters
+    long NBpindex = 0;
+    long pindex;
+    int *p_fpsindex; // fps index for parameter
+    int *p_pindex;   // index within fps
+
+    // keyword tree
+    int kwnindex;
+    int NBkwn = 0;
+    KEYWORD_TREE_NODE *keywnode;
+
+    int l;
+
+    char  monstring[200];
+    int loopOK = 1;
+    long long loopcnt = 0;
+
+
+    int nodechain[MAXNBLEVELS];
+    int iSelected[MAXNBLEVELS];
+
+    // current selection
+    int fpsindexSelected = 0;
+    int pindexSelected = 0;
+    int nodeSelected = 0;
+
+
+
+
+    // input command
+    FILE *fpinputcmd;
+
+
+	functionparameter_outlog("=========== START ==============\n");
+
+    FUNCTIONPARAMETER_LOGEXEC;
+
+    // allocate memory
+    fps = (FUNCTION_PARAMETER_STRUCT*) malloc(sizeof(FUNCTION_PARAMETER_STRUCT)*NB_FPS_MAX);
+    keywnode = (KEYWORD_TREE_NODE*) malloc(sizeof(KEYWORD_TREE_NODE)*1000);
+
+
+
+#ifndef STANDALONE
+    // catch signals for clean exit
+    if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGTERM\n");
+    }
+
+    if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGINT\n");
+    }
+
+    if(sigaction(SIGABRT, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGABRT\n");
+    }
+
+    if(sigaction(SIGBUS, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGBUS\n");
+    }
+
+    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGSEGV\n");
+    }
+
+    if(sigaction(SIGHUP, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGHUP\n");
+    }
+
+    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGPIPE\n");
+    }
+#endif
+
+
+
+
+	// fifo
+    int fpsCTRLfifofd = open(fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
+	long fifocmdcnt = 0;
+	
+
+
+
+	
+	functionparameter_scan_fps(mode, fpsnamemask, fps, keywnode, &NBkwn, &fpsindex, &pindex);
     NBfps = fpsindex;
     NBpindex = pindex;
 
@@ -3308,6 +3372,11 @@ errno_t functionparameter_CTRLscreen(
     }
 
     printf("%d function parameter structure(s) imported, %ld parameters\n", NBfps, NBpindex);
+    fflush(stdout);
+
+
+
+
 
 
     if(NBfps == 0) {
@@ -3331,13 +3400,12 @@ errno_t functionparameter_CTRLscreen(
 
     while(loopOK == 1) {
         int i;
-        int fpsindex;
-        int pindex;
+        //int fpsindex;
+        //long pindex;
         long pcnt;
         char command[500];
-        char tmuxname[500];
         long icnt = 0;
-
+		char fname[500];
 
         usleep(10000); // 100 Hz display
 
@@ -3364,6 +3432,8 @@ errno_t functionparameter_CTRLscreen(
             printf("  ENTER          Select parameter to read/set\n");
             printf("  SPACE          Toggle on/off\n");
             printf("\n");
+            printf("  s              rescan\n");
+            printf("  e              erase FPS\n");
             printf("  R/r            start/stop run process\n");
             printf("  C/c            start/stop config process\n");
             printf("  l              list all entries\n");
@@ -3376,6 +3446,22 @@ errno_t functionparameter_CTRLscreen(
             getchar();
             initncurses();
             break;
+
+		case 's' : // (re)scan
+			functionparameter_scan_fps(mode, fpsnamemask, fps, keywnode, &NBkwn, &fpsindex, &pindex);
+			NBfps = fpsindex;
+			NBpindex = pindex;
+			clear();
+			break;
+
+		case 'e' : // erase FPS
+			sprintf(fname, "%s/%s.fps.shm", data.shmdir, fps[keywnode[nodeSelected].fpsindex].md->name);
+			remove(fname);
+			functionparameter_scan_fps(mode, fpsnamemask, fps, keywnode, &NBkwn, &fpsindex, &pindex);
+			NBfps = fpsindex;
+			NBpindex = pindex;
+			clear();
+			break;
 
         case KEY_UP:
             iSelected[currentlevel] --;
