@@ -4214,11 +4214,11 @@ errno_t processinfo_CTRLscreen()
     while(ret != 0)
     {
         ret = pthread_tryjoin_np(threadscan, (void**)&line);
-
-        if(ret==EBUSY)
-        {
+/*
+        if(ret==EBUSY){
             printf("Waiting for thread to complete - currently at line %d\n", procinfoproc.scandebugline);
         }
+        */
         usleep(10000);
     }
 
