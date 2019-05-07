@@ -1276,13 +1276,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
 
-  /*  static int milktmpdircreated = 0;
 
-
-    if(milktmpdircreated == 0) {
-        system("mkdir -p ./milktmp");
-        milktmpdircreated  = 1;
-    }*/
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
@@ -1336,13 +1330,11 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     // number of process per CPU -> we can get that from top?
     char command[200];
 
-
     for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
         char outstring[200];
         FILE *fpout;
 
-
-        sprintf(command, "CORENUM=%d; cat /milktmp/_psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
+        sprintf(command, "CORENUM=%d; cat %s/_psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu, SHAREDPROCDIR);
         fpout = popen(command, "r");
         if(fpout == NULL) {
             printf("WARNING: cannot run command \"%s\"\n", command);
@@ -1357,7 +1349,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 
     //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
 
-    sprintf(command, "{ if [ ! -f /milktmp/_psOKlock ]; then touch /milktmp/_psOKlock; ps -e -o /milktmp/pid,psr,cpu,cmd > /milktmp/_psoutput.txt; fi; rm /milktmp/_psOKlock &> /dev/null; } &");
+    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o %s/pid,psr,cpu,cmd > %s/_psoutput.txt; fi; rm %s/_psOKlock &> /dev/null; } &", SHAREDPROCDIR, SHAREDPROCDIR, SHAREDPROCDIR, SHAREDPROCDIR, SHAREDPROCDIR);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
@@ -3776,7 +3768,7 @@ errno_t processinfo_CTRLscreen()
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex])
                                             attron(COLOR_PAIR(3));
 
-                                        sprintf(string, " +%02ld +%02ld",
+                                        sprintf(string, " +%02d +%02d",
                                                 abs(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex]    - procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
                                                 abs(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex] - procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
                                                );
