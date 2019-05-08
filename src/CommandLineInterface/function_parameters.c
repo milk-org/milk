@@ -3329,6 +3329,7 @@ errno_t functionparameter_CTRLscreen(
 
 
     // print keywords
+   /*
     printf("Found %d keyword node(s)\n", NBkwn);
     int level;
     for(level = 0; level < FUNCTION_PARAMETER_KEYWORD_MAXLEVEL; level++) {
@@ -3344,7 +3345,7 @@ errno_t functionparameter_CTRLscreen(
                 printf("\n");
             }
         }
-    }
+    }*/
 
     printf("%d function parameter structure(s) imported, %ld parameters\n", NBfps, NBpindex);
     fflush(stdout);
@@ -3358,6 +3359,11 @@ errno_t functionparameter_CTRLscreen(
         printf("No function parameter structure found\n");
         printf("File %s line %d\n", __FILE__, __LINE__);
         fflush(stdout);
+        
+        char logfname[500];
+		sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
+		remove(logfname);
+           
         return 0;
     }
 
@@ -4141,8 +4147,11 @@ errno_t functionparameter_CTRLscreen(
 
 	free(fps);
 	free(keywnode);
-
-
+	
+	
+	char logfname[500];
+	sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
+	remove(logfname);
 
 
     return RETURN_SUCCESS;
