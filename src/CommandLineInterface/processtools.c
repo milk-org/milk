@@ -1276,7 +1276,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
 
-
+    static int cnt = 0;
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
@@ -1327,32 +1327,55 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
-    // number of process per CPU -> we can get that from top?
+    // number of process per CPU -> we can get that from ps
     char command[200];
+    char psoutfname[200];
+    sprintf(psoutfname, "%s/_psoutput.txt", SHAREDPROCDIR);
 
-    for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
-        char outstring[200];
-        FILE *fpout;
 
-        sprintf(command, "CORENUM=%d; cat %s/_psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu, SHAREDPROCDIR);
-        fpout = popen(command, "r");
-        if(fpout == NULL) {
-            printf("WARNING: cannot run command \"%s\"\n", command);
-        } else {
-            if(fgets(outstring, 100, fpout) == NULL) {
-                printf("WARNING: fgets error\n");
-            }
-            pclose(fpout);
-            pinfop->CPUpcnt[cpu] = atoi(outstring);
-        }
-    }
+    // use ps command to scan processes, store result in file psoutfname
 
-    //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
+//    sprintf(command, "echo \"%5d CREATE\" >> cmdlog.txt\n", cnt);
+//    system(command);
 
-    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o %s/pid,psr,cpu,cmd > %s/_psoutput.txt; fi; rm %s/_psOKlock &> /dev/null; } &", SHAREDPROCDIR, SHAREDPROCDIR, SHAREDPROCDIR, SHAREDPROCDIR, SHAREDPROCDIR);
+
+    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", SHAREDPROCDIR, SHAREDPROCDIR, psoutfname, SHAREDPROCDIR);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
+
+//    sprintf(command, "echo \"%5d CREATED\" >> cmdlog.txt\n", cnt);
+//    system(command);
+
+
+    // read and process psoutfname file
+
+    if( access( psoutfname, F_OK ) != -1 ) {
+
+//        sprintf(command, "echo \"%5d READ\" >> cmdlog.txt\n", cnt);
+//        system(command);
+
+        for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
+            char outstring[200];
+            FILE *fpout;
+            sprintf(command, "CORENUM=%d; cat %s | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu, psoutfname);
+            fpout = popen(command, "r");
+            if(fpout == NULL) {
+                printf("WARNING: cannot run command \"%s\"\n", command);
+            } else {
+                if(fgets(outstring, 100, fpout) == NULL) {
+                    printf("WARNING: fgets error\n");
+                }
+                pclose(fpout);
+                pinfop->CPUpcnt[cpu] = atoi(outstring);
+            }
+        }
+//        sprintf(command, "echo \"%5d REMOVE\" >> cmdlog.txt\n", cnt);
+//        system(command);
+        remove(psoutfname);
+    }
+    cnt++;
+
 
     clock_gettime(CLOCK_REALTIME, &t2);
     tdiff = info_time_diff(t1, t2);

@@ -260,11 +260,11 @@ errno_t MyFunction_FPCONF(
     //   - flags
     //   - initialization pointer. If pNull, then the variable is not initialized
      
-    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", FPTYPE_INT64, FPFLAG_DFT_INPUT, pNull);
+    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
     
     // This parameter will be intitialized to a value of 5, min-max range from 0 to 10, and current value 5
     long param02default[4] = { 5, 0, 10, 5 };
-    FPFLAG = FPFLAG_DFT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
+    FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     FPFLAG &= ~FPFLAG_WRITECONF;  // Don't allow parameter to be written during configuration
     FPFLAG &= ~FPFLAG_WRITERUN;   // Don't allow parameter to be written during run
     long fpi_param02 = function_parameter_add_entry(&fps, ".param02", "Second parameter", FPTYPE_INT64, FPFLAG, &param02default);
@@ -272,14 +272,18 @@ errno_t MyFunction_FPCONF(
     // if parameter type = FPTYPE_FLOAT32, make sure default is declared as float[4]
     // if parameter type = FPTYPE_FLOAT64, make sure default is declared as double[4]
     float gaindefault[4] = { 0.01, 0.0, 1.0, 0.01 };
-    FPFLAG = FPFLAG_DFT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
+    FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     long fpi_gain = function_parameter_add_entry(&fps, ".gain", "gain value", FPTYPE_FLOAT32, FPFLAG, &gaindefault);
 
 
 	// This parameter is a ON / OFF toggle
-	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", FPTYPE_ONOFF, FPFLAG_DFT_INPUT, pNull);
+	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
 
 	
+	// stream that needs to be loaded on startup
+	FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
+	long fp_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
+                                     FPTYPE_STREAMNAME, FPFLAG, pNull);
 
 
 

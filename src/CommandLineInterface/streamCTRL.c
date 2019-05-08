@@ -1014,13 +1014,20 @@ errno_t streamCTRL_CTRLscreen() {
 
 
         }
+        
+        if(dindexSelected < 0) {
+                dindexSelected = 0;
+            }
+            if(dindexSelected > NBsindex - 1) {
+                dindexSelected = NBsindex - 1;
+            }
 
         STREAMCTRL_LOGEXEC;
 
         erase();
 
         attron(A_BOLD);
-        sprintf(monstring, "STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP");
+        sprintf(monstring, "[PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP", getpid());
         print_header(monstring, '-');
         attroff(A_BOLD);
 
@@ -1697,6 +1704,8 @@ errno_t streamCTRL_CTRLscreen() {
     fflush(stderr);
     dup2(backstderr, STDERR_FILENO);
     close(backstderr);
+
+	remove(newstderrfname);
 
     STREAMCTRL_LOGEXEC;
 

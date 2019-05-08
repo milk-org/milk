@@ -53,7 +53,7 @@
 #define FPTYPE_TIMESPEC      0x0010
 #define FPTYPE_FILENAME      0x0020  // generic filename
 #define FPTYPE_DIRNAME       0x0040  // directory name
-#define FPTYPE_STREAMNAME    0x0080  // stream name -> process may load from shm if required
+#define FPTYPE_STREAMNAME    0x0080  // stream name -> process may load from shm if required. See loading stream section below and associated flags
 #define FPTYPE_STRING        0x0100  // generic string
 #define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
 #define FPTYPE_PROCESS       0x0400
@@ -99,7 +99,7 @@
 
 
 
-
+// if FPTYPE_STREAMNAME
 // STREAM FLAGS: actions and tests related to streams
 
 // The stream location may be in :
