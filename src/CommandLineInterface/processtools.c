@@ -630,10 +630,14 @@ int processinfo_shm_close(PROCESSINFO *pinfo, int fd){
 }
 
 
+
+
+
+
 int processinfo_cleanExit(PROCESSINFO *processinfo) {
 #ifdef PROCESSINFO_ENABLED
-    if(processinfo->loopstat != 4) {
 
+    if(processinfo->loopstat != 4) {
         struct timespec tstop;
         struct tm *tstoptm;
         char msgstring[200];
@@ -654,7 +658,6 @@ int processinfo_cleanExit(PROCESSINFO *processinfo) {
         processinfo->loopstat = 3; // clean exit
     }
 
-   // fclose(processinfo->logFile);
 #endif
     return 0;
 }
@@ -3598,6 +3601,14 @@ errno_t processinfo_CTRLscreen()
                                 printw("%s", string);
                                 attroff(COLOR_PAIR(3));
                             }
+                            if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // error
+                            {
+                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ERROR");
+                                pstrlen_total += strlen(string);
+                                attron(COLOR_PAIR(3));
+                                printw("%s", string);
+                                attroff(COLOR_PAIR(3));
+                            }                            
                             else
                             {
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
@@ -3659,6 +3670,14 @@ errno_t processinfo_CTRLscreen()
                                     sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "ERR");
                                     break;
 
+                                case 5:
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "OFF");
+                                    break;
+                                    
+                                case 6:
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "CRASH");
+                                    break;
+
                                 default:
                                     sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "??");
                                 }
@@ -3718,14 +3737,14 @@ errno_t processinfo_CTRLscreen()
                                 printw(" | ");
                                 pstrlen_total += 3;
 
-                                if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
+                                if((procinfoproc.pinfoarray[pindex]->loopstat == 4)||(procinfoproc.pinfoarray[pindex]->loopstat == 6)) // ERROR or CRASH
                                     attron(COLOR_PAIR(4));
 
                                 sprintf(string, "%-*.*s", pstrlen_msg, pstrlen_msg, procinfoproc.pinfoarray[pindex]->statusmsg);
                                 pstrlen_total += strlen(string);
                                 printw("%s", string);
 
-                                if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
+                                if((procinfoproc.pinfoarray[pindex]->loopstat == 4)||(procinfoproc.pinfoarray[pindex]->loopstat == 6)) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
 

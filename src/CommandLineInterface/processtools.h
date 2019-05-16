@@ -85,7 +85,7 @@ typedef struct {
     // 3: terminated (clean exit)
     // 4: ERROR (typically used when loop can't start, e.g. missing input)
     // 5: do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
-
+	// 6: CRASHED (pid has gone away without proper exit sequence)
 
     char statusmsg[200];  // status message
     int statuscode;       // status code

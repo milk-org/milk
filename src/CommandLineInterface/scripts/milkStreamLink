@@ -5,14 +5,17 @@
 # number of arguments to script
 NBARGS=1
 
-pname=`echo "$0" | sed "s/\.\///g"`
-
+pname=`basename "$0"`
 
 function printHELP {
 echo "------------------------------------------------------------------------"
 echo "$(tput bold) $pname : CONNECT TO STREAM $(tput sgr0)"
+echo " Full path name : $0"
 echo "------------------------------------------------------------------------"
-echo "  Connect to stream by sym link. Reads conf/streamlink.<streamname>.name.txt to identify source."
+echo "  Establishes a stream sym link from TARGET=<sourcestrem> to LINKNAME=<streamname>."
+echo "  Reads conf/streamlink.<streamname>.name.txt to identify source stream."
+echo "  - Create $MILK_SHM_DIR/<streamname>.im.shm that points to $MI_SHM_DIR/<sourcestream>.im.shm"
+echo "  - Runs milk, connects to <streamname> and writes its size to ./conf/streamlink.<streamname>.imsize.txt"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
 echo "     $0 [-h] <streamname>"

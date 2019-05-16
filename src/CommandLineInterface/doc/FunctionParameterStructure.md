@@ -39,7 +39,7 @@ FPS-enabled functions have the following elements:
 
 ## 1.2. FPS name
 
-<fpsname> consists of a root name (string), and a series of optional integers, each printed on two digits:
+<fpsname> consists of a root name (string), and a series of optional integers. Note that the number of digits matters and is part of the name:
 
 	<fpsname> = <fpsnameroot>.<opt0>.<opt1>...
 

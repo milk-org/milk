@@ -1,7 +1,8 @@
 #! /bin/bash
 
 NBARGS=2
-pname=`echo "$0" | sed "s/\.\///g"`
+
+pname=`basename "$0"`
 
 VERBOSE="0"
 
@@ -9,16 +10,17 @@ VERBOSE="0"
 
 function printHELP {
 echo "------------------------------------------------------------------------"
-echo "$(tput bold) $pname : Copy FITS files to shared memory $(tput sgr0)"
+echo "$(tput bold) $pname : Load FITS files to shared memory $(tput sgr0)"
+echo " Full path name : $0"
 echo "------------------------------------------------------------------------"
-echo "  Copy FITS file to shared memory"
+echo "  Load FITS file to shared memory"
 echo "  Writes into ./loadedSM/ what has been loaded"
 echo "  unless -f option, will not re-load unchanged files"
 echo "   "
 echo " $(tput bold)USAGE (conf name output):$(tput sgr0)"
-echo "     $0 [-hfpr] <FITS file> <shared memory stream name>"
+echo "     $pname [-hfpr] <FITS file> <streamname>"
 echo " $(tput bold)USAGE (conf name input):$(tput sgr0)"
-echo "     $0 -c [-hfpr] <shared memory stream name>"
+echo "     $pname -c [-hfpr] <streamname>"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-h$(tput sgr0)           help"
@@ -32,14 +34,14 @@ echo "   <FITS file>    filesystem FITS file"
 echo "   <stream>       shared memory stream name"
 echo ""
 echo " $(tput bold)EXAMPLES:$(tput sgr0)"
-echo "   $0 -f image32.fits ims10"
+echo "   $pname -f image32.fits ims10"
 echo "        Load image32.fits to stream ims10"
 echo "        -f option : force load even if image and stream have not changed"
 echo "        write \"image32.fits\" into file \"conf/shmim.ims10.name.txt"
 echo "   echo \"image102.fits\" > conf/shmim.ims10.name.txt"
-echo "   $0 -c ims10"
+echo "   $pname -c ims10"
 echo "        Load image102.fits to stream ims10"
-echo "   $0 -c -p aol3_ ims10"
+echo "   $pname -c -p aol3_ ims10"
 echo "        Load image102.fits to stream aol3_ims10"
 echo ""
 echo "------------------------------------------------------------------------"
