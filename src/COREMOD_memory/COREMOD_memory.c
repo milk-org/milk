@@ -1013,9 +1013,9 @@ int_fast8_t COREMOD_MEMORY_SaveAll_sequ_cli()
 
 int_fast8_t COREMOD_MEMORY_testfunction_semaphore_cli()
 {
-    if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
+    if(CLI_checkarg(1,4)+CLI_checkarg(2,2)+CLI_checkarg(3,2)==0)
     {
-        COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+        COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.numl);
         return 0;
     }
     else
@@ -1323,7 +1323,7 @@ int_fast8_t init_COREMOD_memory()
 
     RegisterCLIcommand("imsetsempost", __FILE__, COREMOD_MEMORY_image_set_sempost_cli, "post image semaphore. If sem index = -1, post all semaphores", "<image> <sem index>", "imsetsempost im1 2", "long COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)");  
 
-    RegisterCLIcommand("imsetsempostl", __FILE__, COREMOD_MEMORY_image_set_sempost_loop_cli, "post image semaphore loop. If sem index = -1, post all semaphores", "<image> <sem index> <time interval [us]>", "imsetsempost im1 2", "long COREMOD_MEMORY_image_set_sempost(const char *IDname, long index, long dtus)");
+    RegisterCLIcommand("imsetsempostl", __FILE__, COREMOD_MEMORY_image_set_sempost_loop_cli, "post image semaphore loop. If sem index = -1, post all semaphores", "<image> <sem index> <time interval [us]>", "imsetsempostl im1 -1 1000", "long COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus)");
     
     RegisterCLIcommand("imsetsemwait", __FILE__, COREMOD_MEMORY_image_set_semwait_cli, "wait image semaphore", "<image>", "imsetsemwait im1", "long COREMOD_MEMORY_image_set_semwait(const char *IDname)");   
 
@@ -1348,7 +1348,7 @@ int_fast8_t init_COREMOD_memory()
     
     RegisterCLIcommand("imsaveallseq", __FILE__, COREMOD_MEMORY_SaveAll_sequ_cli, "save all images in directory - sequence", "<directory> <trigger image name> <trigger semaphore> <NB frames>", "imsaveallsequ dir1 im1 3 20", "long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, long semtrig, long NBframes)");
     
-    RegisterCLIcommand("testfuncsem", __FILE__, COREMOD_MEMORY_testfunction_semaphore_cli, "test semaphore loop", "<image> <semindex>", "testfuncsem im1 1", "int COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig)");
+    RegisterCLIcommand("testfuncsem", __FILE__, COREMOD_MEMORY_testfunction_semaphore_cli, "test semaphore loop", "<image> <semindex> <testmode>", "testfuncsem im1 1 0", "int COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig, int testmode)");
     
     RegisterCLIcommand("imnetwtransmit", __FILE__, COREMOD_MEMORY_image_NETWORKtransmit_cli, "transmit image over network", "<image> <IP addr> <port [long]> <sync mode [int]>", "imnetwtransmit im1 127.0.0.1 0 8888 0", "long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode)");
     
@@ -6555,11 +6555,12 @@ long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, l
 
 int COREMOD_MEMORY_testfunction_semaphore(
     const char *IDname,
-    int semtrig
+    int semtrig,
+    int testmode
 ) {
     long ID;
     int semval;
-
+    int rv;
     long loopcnt = 0;
 
     ID = image_ID(IDname);
@@ -6572,18 +6573,53 @@ int COREMOD_MEMORY_testfunction_semaphore(
     // ===========================
     int loopOK = 1;
     while(loopOK == 1) {
-
+		printf("\n");
+		usleep(500);
+		
         sem_getvalue(data.image[ID].semptr[semtrig], &semval);
         sprintf(pinfomsg, "%ld TEST 0 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
         printf("MSG: %s\n", pinfomsg);
         fflush(stdout);
 
-        sem_wait(data.image[ID].semptr[semtrig]);
+		if(testmode == 0)
+			rv = sem_wait(data.image[ID].semptr[semtrig]);
+
+		if(testmode == 1)
+			rv = sem_trywait(data.image[ID].semptr[semtrig]);
+
+		if(testmode == 2){
+			sem_post(data.image[ID].semptr[semtrig]);
+			rv = sem_wait(data.image[ID].semptr[semtrig]);
+		}
+
+        if(rv == -1) {
+            switch(errno) {
+
+                case EINTR:
+                    printf("    sem_wait call was interrupted by a signal handler\n");
+                    break;
+
+                case EINVAL:
+                    printf("    not a valid semaphore\n");
+                    break;
+
+                case EAGAIN:
+                    printf("    The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n");
+                    break;
+
+                default:
+                    printf("    ERROR: unknown code %d\n", rv);
+                    break;
+            }
+        }
+        else
+        printf("    OK\n");
 
         sem_getvalue(data.image[ID].semptr[semtrig], &semval);
         sprintf(pinfomsg, "%ld TEST 1 semtrig %d  ID %ld  %d", loopcnt, semtrig, ID, semval);
         printf("MSG: %s\n", pinfomsg);
         fflush(stdout);
+
 
         loopcnt ++;
     }
@@ -6650,7 +6686,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 	
 
 	if(TMPDEBUG==1)
-		COREMOD_MEMORY_testfunction_semaphore(IDname, 0);
+		COREMOD_MEMORY_testfunction_semaphore(IDname, 0, 0);
 
     // ===========================
     // processinfo support
