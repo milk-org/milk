@@ -240,14 +240,18 @@ PROCESSINFO *processinfo_setup(
 
 
 
+
 // report error
+// should be followed by return(EXIT_FAILURE) call
+//
 errno_t processinfo_error(
     PROCESSINFO *processinfo,
     char *errmsgstring
 ) {
 #ifdef PROCESSINFO_ENABLED
-        processinfo->loopstat = 4; // ERROR
-        processinfo_WriteMessage(processinfo, errmsgstring);
+    processinfo->loopstat = 4; // ERROR
+    processinfo_WriteMessage(processinfo, errmsgstring);
+	processinfo_cleanExit(processinfo);
 #endif
     return RETURN_SUCCESS;
 }
@@ -3591,32 +3595,34 @@ errno_t processinfo_CTRLscreen()
                         sprintf(data.execSRCmessage, "pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
 #endif
 
-                        if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
+                        if(pinfolist->active[pindex] == 2)  // not active: error, crashed or terminated
                         {
-                            if(procinfoproc.pinfoarray[pindex]->loopstat == 3) // clean exit
-                            {
+							switch ( procinfoproc.pinfoarray[pindex]->loopstat ) 
+							{					
+								case 3: // clean exit
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "STOPPED");
                                 pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(3));
                                 printw("%s", string);
                                 attroff(COLOR_PAIR(3));
-                            }
-                            if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // error
-                            {
+                                break;
+                                
+                                case 4: // error
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ERROR");
                                 pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(3));
                                 printw("%s", string);
                                 attroff(COLOR_PAIR(3));
-                            }                            
-                            else
-                            {
+                                break;
+                                
+                                default: // crashed
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
                                 pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(4));
                                 printw("%s", string);
                                 attroff(COLOR_PAIR(4));
-                            }
+								break;
+							}
                         }
 
 

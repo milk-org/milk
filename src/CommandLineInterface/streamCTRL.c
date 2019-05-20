@@ -819,6 +819,8 @@ errno_t streamCTRL_CTRLscreen() {
         int pid;
         char command[200];
 
+		STREAMCTRL_LOGEXEC;
+
         if(streaminfoproc.loopcnt == 1) {
             SORTING = 2;
             SORT_TOGGLE = 1;
@@ -831,7 +833,9 @@ errno_t streamCTRL_CTRLscreen() {
 
 
         NBsindex = streaminfoproc.NBstream;
-
+        
+        
+        STREAMCTRL_LOGEXEC;
 
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -1014,6 +1018,8 @@ errno_t streamCTRL_CTRLscreen() {
 
 
         }
+        
+        STREAMCTRL_LOGEXEC;
         
         if(dindexSelected < 0) {
                 dindexSelected = 0;
@@ -1683,6 +1689,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         refresh();
 
+		STREAMCTRL_LOGEXEC;
 
         loopcnt++;
 #ifndef STANDALONE
@@ -1690,6 +1697,8 @@ errno_t streamCTRL_CTRLscreen() {
             loopOK = 0;
         }
 #endif
+
+		STREAMCTRL_LOGEXEC;
     }
 
 
