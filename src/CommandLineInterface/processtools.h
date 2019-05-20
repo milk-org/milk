@@ -79,13 +79,14 @@ typedef struct {
 
     char tmuxname[100];  // name of tmux session in which process is running, or
     // "NULL"
-    int loopstat;        // 0: initialization (before loop)
-    // 1: in loop
-    // 2: loop paused (do not iterate)
-    // 3: terminated (clean exit)
-    // 4: ERROR (typically used when loop can't start, e.g. missing input)
-    // 5: do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
-	// 6: CRASHED (pid has gone away without proper exit sequence)
+    int loopstat;        
+    // 0: INIT       Initialization before loop
+    // 1: ACTIVE     in loop
+    // 2: PAUSED     loop paused (do not iterate)
+    // 3: STOPPED    terminated (clean exit following user request to stop process)
+    // 4: ERROR      process could not run, typically used when loop can't start, e.g. missing input
+    // 5: SPINNING   do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
+	// 6: CRASHED    pid has gone away without proper exit sequence. Will attempt to generate exit log file (using atexit) to identify crash location
 
     char statusmsg[200];  // status message
     int statuscode;       // status code

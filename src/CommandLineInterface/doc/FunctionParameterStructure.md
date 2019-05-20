@@ -296,17 +296,17 @@ errno_t MyFunction_FPCONF(
 		if( function_parameter_FPCONFloopstep(&fps, CMDmode, &loopstatus) == 1) // Apply logic if update is needed
 		{
 			// here goes the logic
-			if ( fps.parray[fpi_gainset].status & FPFLAG_ONOFF )  // ON state
+			if ( fps.parray[fpi_gainset].fpflag & FPFLAG_ONOFF )  // ON state
                 {
-                    fps.parray[fpi_gain].status |= FPFLAG_WRITERUN;
-                    fps.parray[fpi_gain].status |= FPFLAG_USED;
-                    fps.parray[fpi_gain].status |= FPFLAG_VISIBLE;
+                    fps.parray[fpi_gain].fpflag |= FPFLAG_WRITERUN;
+                    fps.parray[fpi_gain].fpflag |= FPFLAG_USED;
+                    fps.parray[fpi_gain].fpflag |= FPFLAG_VISIBLE;
                 }
                 else // OFF state
                 {
-                    fps.parray[fpi_gain].status &= ~FPFLAG_WRITERUN;
-                    fps.parray[fpi_gain].status &= ~FPFLAG_USED;
-                    fps.parray[fpi_gain].status &= ~FPFLAG_VISIBLE;
+                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_WRITERUN;
+                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_USED;
+                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_VISIBLE;
                 }
                 
             functionparameter_CheckParametersAll(&fps);  // check all parameter values
@@ -369,6 +369,9 @@ errno_t MyFunction_RUN(
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
 	int param02 = functionparameter_GetParamValue_INT64(&fps, ".param02");
 
+
+    // This parameter is a ON / OFF toggle
+	int gainwrite = functionparameter_GetParamValue_INT64(&fps, ".option.gainwrite");
 
 	// This parameter value will be tracked during loop run, so we create a pointer for it
 	// The corresponding function is functionparameter_GetParamPtr_<TYPE>
@@ -448,16 +451,34 @@ This is the preferred way to code a loop process.
 The example also shows using FPS to set the process realtime priority.
 
 
+
 ~~~~{.c}
-//
-// run loop process
-//
+
+/* \@brief Loop process code example
+ *
+ * ## Purpose
+ *
+ * This example demonstrates use of processinfo and fps structures.\n
+ *
+ * ## Arguments
+ *
+ * @param[in]
+ * char		fpsname*
+ * 			name of function parameter structure
+ *
+ * All function parameters are held inside the function parameter structure (FPS).\n
+ * 
+ *
+ * ## Details
+ *
+ */
+
 errno_t MyFunction_RUN(
     char *fpsname
 )
 {
 	// ===========================
-	// Connect to FPS 
+	// ### Connect to FPS 
 	// ===========================
 
 	FUNCTION_PARAMETER_STRUCT fps;
@@ -468,7 +489,7 @@ errno_t MyFunction_RUN(
 	}
 	
 	// ===========================	
-	// GET FUNCTION PARAMETER VALUES
+	// ### GET FUNCTION PARAMETER VALUES
 	// ===========================
 	// parameters are addressed by their tag name
 	
@@ -490,7 +511,7 @@ errno_t MyFunction_RUN(
 
 
 	// ===========================
-	// processinfo support 
+	// ### processinfo support 
 	// ===========================
 
     PROCESSINFO *processinfo;
@@ -511,7 +532,7 @@ errno_t MyFunction_RUN(
     int loopOK = 1;
 
 	// ===========================
-	// Start loop
+	// ### Start loop
 	// ===========================
 
     
@@ -550,7 +571,7 @@ errno_t MyFunction_RUN(
 
 
 	// ==================================
-	// ENDING LOOP
+	// ### ENDING LOOP
 	// ==================================
 
     processinfo_cleanExit(processinfo);
