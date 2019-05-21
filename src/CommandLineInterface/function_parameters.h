@@ -221,6 +221,7 @@
 
 // input parameter (used as default when adding entry)
 #define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
+#define FPFLAG_DEFAULT_OUTPUT           FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
 #define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DEFAULT_INPUT|FPFLAG_STREAM_RUN_REQUIRED|FPFLAG_CHECKSTREAM
 #define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DEFAULT_INPUT|FPFLAG_CHECKSTREAM
 
@@ -370,29 +371,29 @@ typedef struct {
 extern "C" {
 #endif
 
-errno_t function_parameter_struct_create(int NBparam, const char *name);
-long function_parameter_struct_connect(const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
-int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
+errno_t function_parameter_struct_create    (int NBparam, const char *name);
+long    function_parameter_struct_connect   (const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
+int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
 
 int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
-long functionparameter_GetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int functionparameter_SetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, long value);
-long * functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+long   functionparameter_GetParamValue_INT64   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int    functionparameter_SetParamValue_INT64   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, long value);
+long * functionparameter_GetParamPtr_INT64     (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
-double functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int functionparameter_SetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, double value);
-double * functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+double   functionparameter_GetParamValue_FLOAT64 (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int      functionparameter_SetParamValue_FLOAT64 (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, double value);
+double * functionparameter_GetParamPtr_FLOAT64   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
 float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, float value);
+int   functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, float value);
 float * functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
-char * functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, const char *stringvalue);
+char * functionparameter_GetParamPtr_STRING   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int    functionparameter_SetParamValue_STRING (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, const char *stringvalue);
 
 int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, int ONOFFvalue);
@@ -409,6 +410,9 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode, uint16_t *loopstatus);
 uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus );
 uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
+
+
+int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry, const char *paramname);
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 

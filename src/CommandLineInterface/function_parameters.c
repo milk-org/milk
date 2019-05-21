@@ -1384,54 +1384,62 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, ui
 
 
 
-uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus )
-{
+uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus) {
     static int loopINIT = 0;
     uint16_t updateFLAG = 0;
 
+    static uint32_t prev_status;
+    //static uint32_t statuschanged = 0;
 
-    if(loopINIT == 0)
-    {
+
+    if(loopINIT == 0) {
         loopINIT = 1; // update on first loop iteration
         fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
-        if( CMDmode & CMDCODE_CONFSTART )  // parameter configuration loop
-        {
+        if(CMDmode & CMDCODE_CONFSTART) {  // parameter configuration loop
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
             fps->md->confpid = getpid();
             *loopstatus = 1;
-        }
-        else
+        } else {
             *loopstatus = 0;
+        }
     }
 
 
-    if(fps->md->signal & FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN)
-    {
+    if(fps->md->signal & FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN) {
         // Test if CONF process is running
-        if((getpgid(fps->md->confpid) >= 0)&&(fps->md->confpid>0))
-            fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CONF;
-        else
-            fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CONF;
+        if((getpgid(fps->md->confpid) >= 0) && (fps->md->confpid > 0)) {
+            fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CONF;    // running
+        } else {
+            fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CONF;    // not running
+        }
 
         // Test if RUN process is running
-        if((getpgid(fps->md->runpid) >= 0)&&(fps->md->runpid>0))
-            fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_RUN;
-        else
-            fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_RUN;
+        if((getpgid(fps->md->runpid) >= 0) && (fps->md->runpid > 0)) {
+            fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_RUN;    // running
+        } else {
+            fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_RUN;    // not running
+        }
+
+
+        if(prev_status != fps->md->status) {
+            fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
+        }
 
 
 
-        if( fps->md->signal & FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE ) // update is required
-        {            
+        if(fps->md->signal & FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE) { // update is required
             updateFLAG = 1;
-            
-            fps->md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+            fps->md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // disable update
         }
         usleep(fps->md->confwaitus);
-    }
-    else
+    } else {
         *loopstatus = 0;
+    }
+
+
+
+    prev_status = fps->md->status;
 
 
     return updateFLAG;
@@ -1907,7 +1915,7 @@ int functionparameter_CheckParametersAll(
         }
 
         // if CONF running
-        if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF) {
+        if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) {
             if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF) {
                 writeOK = 1;
             } else {
@@ -1916,7 +1924,7 @@ int functionparameter_CheckParametersAll(
         }
 
         // if RUN running
-        if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) {
+        if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) {
             if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN) {
                 writeOK = 1;
             } else {
@@ -2118,6 +2126,29 @@ int functionparameter_PrintParameterInfo(
     return 0;
 
 }
+
+
+
+
+
+
+
+
+
+int functionparameter_SaveParam2disk(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    const char *paramname
+) {
+	int pindex;
+	
+	pindex = functionparameter_GetParamIndex(fpsentry, paramname);
+	functionparameter_WriteParameterToDisk(fpsentry, pindex, "setval", "SaveParam2disk");
+	
+    return RETURN_SUCCESS;
+}
+
+
+
 
 
 
