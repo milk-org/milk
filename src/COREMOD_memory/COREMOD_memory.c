@@ -86,6 +86,31 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 
 
+// OPTIONAL LINE TRACKING FOR DEBUGGING
+//
+// Warning: enabling this feature will slow down execution
+// Use it for debugging only
+//
+//  Calling the LOGEXEC function will update :
+//  data.execSRCline      : current line of code
+//  data.execSRCfunc      : current function
+//  data.execSRCmessage   : User message
+//
+// Uncomment this line to turn on line tracking for debug purposes
+#define COREMODMEMORY_LOGDEBUG 1
+
+#ifdef COREMODMEMORY_LOGDEBUG
+#define COREMODMEMORY_LOGEXEC do { \
+    sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
+    data.execSRCline = __LINE__;                   \
+    } while(0)
+#else 
+#define COREMODMEMORY_LOGEXEC
+#endif
+
+
+
+
 
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
@@ -934,19 +959,19 @@ int_fast8_t COREMOD_MEMORY_streamDelay_cli() {
 
         if(strcmp(data.cmdargtoken[1].val.string, "_CONFINIT_") == 0) {  // Initialize FPS and conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT, OptionalArg00);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT);
             return RETURN_SUCCESS;
         }
 
         if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") == 0) {  // Start conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTART, OptionalArg00);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTART);
             return RETURN_SUCCESS;
         }
 
         if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") == 0) { // Stop conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTOP, OptionalArg00);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTOP);
             return RETURN_SUCCESS;
         }
 
@@ -6008,19 +6033,33 @@ long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const c
 
 
 
-//
-// manages configuration parameters
-// initializes configuration parameters structure
-//
+/**
+ * @brief Manages configuration parameters for streamDelay
+ * 
+ * ## Purpose
+ * 
+ * Initializes configuration parameters structure\n
+ * 
+ * ## Arguments
+ * 
+ * @param[in]
+ * char*		fpsname
+ * 				name of function parameter structure
+ * 
+ * @param[in]
+ * uint32_t		CMDmode
+ * 				Command mode
+ * 				
+ * 
+ */ 
 errno_t COREMOD_MEMORY_streamDelay_FPCONF(
     char *fpsname,
-    uint32_t CMDmode,
-    unsigned int pindex
+    uint32_t CMDmode
 ) {
     uint16_t loopstatus;
 
     // ===========================
-    // SETUP FPS
+    /// ### SETUP FPS
     // ===========================
 
     FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
@@ -6030,27 +6069,51 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 
 
     // ===========================
-    // ALLOCATE FPS ENTRIES
+    /// ### ALLOCATE FPS ENTRIES
     // ===========================
 
     void *pNull = NULL;
     uint64_t FPFLAG;
 
-	FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
+    FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
     long delayus_default[4] = { 1000, 1, 10000, 1000 };
     long dtus_default[4] = { 50, 1, 200, 50 };
     long fp_delayus = function_parameter_add_entry(&fps, ".delayus", "Delay [us]",    FPTYPE_INT64, FPFLAG, &delayus_default);
     long fp_dtus    = function_parameter_add_entry(&fps, ".dtus", "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
 
-	long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);
-	long fp_stream_outname = function_parameter_add_entry(&fps, ".out_name", "output stream", FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, pNull);
+    long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);
+    long fp_stream_outname = function_parameter_add_entry(&fps, ".out_name", "output stream", FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, pNull);
 
-    // RUN UPDATE LOOP
+	long timeavemode_default[4] = { 0, 0, 3, 0 };
+    long fp_option_timeavemode = function_parameter_add_entry(&fps, ".option.timeavemode", "Enable time window averaging (>0)", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &timeavemode_default);
+	double avedt_default[4] = { 0.001, 0.0001, 1.0, 0.001};
+    long fp_option_avedt   = function_parameter_add_entry(&fps, ".option.avedt", "Averaging time window width", FPTYPE_FLOAT64, FPFLAG_DEFAULT_INPUT, &avedt_default);
+
+	// status
+	long fp_zsize      = function_parameter_add_entry(&fps, ".status.zsize", "cube size", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
+	long fp_framelag   = function_parameter_add_entry(&fps, ".status.framelag", "lag in frame unit", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
+	long fp_kkin      = function_parameter_add_entry(&fps, ".status.kkin", "input cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
+	long fp_kkout      = function_parameter_add_entry(&fps, ".status.kkout", "output cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
+
+    // ===========================
+    /// ### RUN UPDATE LOOP
+    // ===========================
+
     while(loopstatus == 1) {
         if(function_parameter_FPCONFloopstep(&fps, CMDmode, &loopstatus) == 1) { // if update needed
-
+			
             // here goes the logic
+            if(fps.parray[fp_option_timeavemode].val.l[0] != 0) {   // time averaging enabled
+                fps.parray[fp_option_avedt].fpflag |= FPFLAG_WRITERUN;
+                fps.parray[fp_option_avedt].fpflag |= FPFLAG_USED;
+                fps.parray[fp_option_avedt].fpflag |= FPFLAG_VISIBLE;
+            } else {
+                fps.parray[fp_option_avedt].fpflag &= ~FPFLAG_WRITERUN;
+                fps.parray[fp_option_avedt].fpflag &= ~FPFLAG_USED;
+                fps.parray[fp_option_avedt].fpflag &= ~FPFLAG_VISIBLE;
+            }
+
 
             functionparameter_CheckParametersAll(&fps);  // check all parameter values
         }
@@ -6068,6 +6131,7 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 
 
 /**
+ * @brief Delay image stream by time offset
  *
  * IDout_name is a time-delayed copy of IDin_name
  *
@@ -6076,25 +6140,22 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 int COREMOD_MEMORY_streamDelay_RUN(
     char *fpsname
 ) {
-    long IDimc;
-    long IDin, IDout;
-    uint32_t xsize, ysize, xysize;
-    uint32_t zsize;
-    long kkin;
-    long cnt0, cnt0old;
-    long ii;
+    long             IDimc;
+    long             IDin, IDout;
+    uint32_t         xsize, ysize, xysize;
+    long             cnt0, cnt0old;
+    long             ii;
     struct timespec *t0array;
-    struct timespec tnow;
-    double tdiffv;
-    struct timespec tdiff;
-    uint32_t *arraytmp;
-    long cntskip = 0;
-    long kkout;
-    long kk;
+    struct timespec  tnow;
+    double           tdiffv;
+    struct timespec  tdiff;
+    uint32_t        *arraytmp;
+    long             cntskip = 0;
+    long             kk;
 
 
     // ===========================
-    // CONNECT TO FPS
+    /// ### CONNECT TO FPS
     // ===========================
     FUNCTION_PARAMETER_STRUCT fps;
     if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1) {
@@ -6105,7 +6166,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
 
     // ===============================
-    // GET FUNCTION PARAMETER VALUES
+    /// ### GET FUNCTION PARAMETER VALUES
     // ===============================
     // parameters are addressed by their tag name
     // These parameters are read once, before running the loop
@@ -6118,13 +6179,20 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
     long delayus = functionparameter_GetParamValue_INT64(&fps, ".delayus");
 
-    long dtus = functionparameter_GetParamValue_INT64(&fps, ".dtus");
+    long dtus    = functionparameter_GetParamValue_INT64(&fps, ".dtus");
 
+    int timeavemode = functionparameter_GetParamValue_INT64(&fps, ".option.timeavemode");
+    double *avedt   = functionparameter_GetParamPtr_FLOAT64(&fps, ".option.avedt");
 
+	long *zsize    = functionparameter_GetParamPtr_INT64(&fps, ".status.zsize");
+	long *framelag = functionparameter_GetParamPtr_INT64(&fps, ".status.framelag");
+	long *kkin     = functionparameter_GetParamPtr_INT64(&fps, ".status.kkin");
+	long *kkout    = functionparameter_GetParamPtr_INT64(&fps, ".status.kkout");
 
+	COREMODMEMORY_LOGEXEC;
 
     // ===========================
-    // processinfo support
+    /// ### processinfo support
     // ===========================
     PROCESSINFO *processinfo;
 
@@ -6137,6 +6205,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
                       __FUNCTION__, __FILE__, __LINE__
                   );
 
+	COREMODMEMORY_LOGEXEC;
     PROCESSINFO *processinfo_setup(
         char *pinfoname,
         char descriptionstring[200],
@@ -6145,7 +6214,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
         const char *filename,
         int   linenumber
     );
-
+	COREMODMEMORY_LOGEXEC;
 
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
@@ -6155,13 +6224,15 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
 
     // =============================================
-    // OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
+    /// ### OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
     // =============================================
     // Pre-loop testing, anything that would prevent loop from starting should issue message
     int loopOK = 1;
 
 
     IDin = image_ID(IDin_name);
+
+
 
     // ERROR HANDLING
     if(IDin == -1) {
@@ -6188,17 +6259,18 @@ int COREMOD_MEMORY_streamDelay_RUN(
         loopOK = 0;
     }
 
+
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
-    zsize = (uint32_t)(delayus / dtus);
-    if(zsize < 1) {
-        zsize = 1;
+    *zsize = (long) (2*delayus / dtus);
+    if(*zsize < 1) {
+        *zsize = 1;
     }
     xysize = xsize * ysize;
 
-    t0array = (struct timespec *) malloc(sizeof(struct timespec) * zsize);
+    t0array = (struct timespec *) malloc(sizeof(struct timespec) * *zsize);
 
-    IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, zsize);
+    IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, *zsize);
 
 
 
@@ -6213,99 +6285,170 @@ int COREMOD_MEMORY_streamDelay_RUN(
     }
 
 
-    kkin = 0;
-    kkout = 0;
+    *kkin = 0;
+    *kkout = 0;
     cnt0old = data.image[IDin].md[0].cnt0;
 
+    float *arraytmpf;
+    arraytmpf = (float *) malloc(sizeof(float) * xsize * ysize);
+
     clock_gettime(CLOCK_REALTIME, &tnow);
-    for(kk = 0; kk < zsize; kk++) {
+    for(kk = 0; kk < *zsize; kk++) {
         t0array[kk] = tnow;
     }
 
 
+	COREMODMEMORY_LOGEXEC;
+
     // ===========================
-    // START LOOP
+    /// ### START LOOP
     // ===========================
 
     processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
+	COREMODMEMORY_LOGEXEC;
 
     while(loopOK == 1) {
+        int kkinscan;
+        float normframes = 0.0;
+
+		COREMODMEMORY_LOGEXEC;
         loopOK = processinfo_loopstep(processinfo);
 
-        usleep(dtus);
+        usleep(dtus); // main loop wait
 
         processinfo_exec_start(processinfo);
 
         if(processinfo_compute_status(processinfo) == 1) {
+			COREMODMEMORY_LOGEXEC;
+
             // has new frame arrived ?
-            cnt0 = data.image[IDin].md[0].cnt0;
-            if(cnt0 != cnt0old) {
-                clock_gettime(CLOCK_REALTIME, &t0array[kkin]);
+//            cnt0 = data.image[IDin].md[0].cnt0;
+
+//            if(cnt0 != cnt0old) { // new frame
+                clock_gettime(CLOCK_REALTIME, &t0array[*kkin]);  // record time of input frame
 
                 for(ii = 0; ii < xysize; ii++) {
-                    data.image[IDimc].array.F[kkin * xysize + ii] = data.image[IDin].array.F[ii];
+                    data.image[IDimc].array.F[(*kkin) * xysize + ii] = data.image[IDin].array.F[ii];
                 }
-                kkin++;
+                (*kkin) ++;
 
-                if(kkin == zsize) {
-                    kkin = 0;
+                if((*kkin) == (*zsize)) {
+                    (*kkin) = 0;
                 }
                 cnt0old = cnt0;
-            }
+  //          }
+
+
 
             clock_gettime(CLOCK_REALTIME, &tnow);
+            COREMODMEMORY_LOGEXEC;
 
 
             cntskip = 0;
-            tdiff = info_time_diff(t0array[kkout], tnow);
+            tdiff = info_time_diff(t0array[*kkout], tnow);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+            
+            COREMODMEMORY_LOGEXEC;
 
 
-            while((tdiffv > 1.0e-6 * delayus) && (cntskip < zsize)) {
-                cntskip++;
-                kkout++;
-                if(kkout == zsize) {
-                    kkout = 0;
+            while((tdiffv > 1.0e-6 * delayus) && (cntskip < *zsize)) {
+                cntskip++;  // advance index until time condition is satisfied
+                (*kkout) ++;
+                if(*kkout == *zsize) {
+                    *kkout = 0;
                 }
-                tdiff = info_time_diff(t0array[kkout], tnow);
+                tdiff = info_time_diff(t0array[*kkout], tnow);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             }
+            
+            COREMODMEMORY_LOGEXEC;
+            
+            *framelag = *kkin - *kkout;
+            if(*framelag < 0)
+				*framelag += *zsize;
+				
+				
+			COREMODMEMORY_LOGEXEC;
 
 
+            switch(timeavemode) {
+				
 
+                case 0: // no time averaging - pick more recent frame that matches requirement
+                    COREMODMEMORY_LOGEXEC;
+                    if(cntskip > 0) {
+                        char *ptr; // pointer address
 
+                        data.image[IDout].md[0].write = 1;
 
-            if(cntskip > 0) {
-                char *ptr; // pointer address
+                        ptr = (char *) data.image[IDimc].array.F;
+                        ptr += SIZEOF_DATATYPE_FLOAT * xysize * *kkout;
 
-                data.image[IDout].md[0].write = 1;
+                        memcpy(data.image[IDout].array.F, ptr, SIZEOF_DATATYPE_FLOAT * xysize);  // copy time-delayed input to output
 
-                ptr = (char *) data.image[IDimc].array.F;
-                ptr += SIZEOF_DATATYPE_FLOAT * xysize * kkout;
-                memcpy(data.image[IDout].array.F, ptr, SIZEOF_DATATYPE_FLOAT * xysize);
+                        COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+                        data.image[IDout].md[0].cnt0++;
+                        data.image[IDout].md[0].write = 0;
+                    }
+                    break;
 
+                default : // strict time window (note: other modes will be coded in the future)
+                    normframes = 0.0;
+                    COREMODMEMORY_LOGEXEC;
 
+                    for(ii = 0; ii < xysize; ii++) {
+                        arraytmpf[ii] = 0.0;
+                    }
 
-                COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-                data.image[IDout].md[0].cnt0++;
-                data.image[IDout].md[0].write = 0;
+                    for(kkinscan = 0; kkinscan < *zsize; kkinscan++) {
+                        tdiff = info_time_diff(t0array[kkinscan], tnow);
+                        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
+                        if((tdiffv>0) && (fabs(tdiffv-1.0e-6*delayus) < *avedt)) {
+                            float coeff = 1.0;
+                            for(ii = 0; ii < xysize; ii++) {
+                                arraytmpf[ii] += coeff * data.image[IDimc].array.F[kkinscan * xysize + ii];
+                            }
+                            normframes += coeff;
+                        }
+                    }
+                    if(normframes < 0.0001) {
+                        normframes = 0.0001;    // avoid division by zero
+                    }
+
+                    data.image[IDout].md[0].write = 1;
+                    for(ii = 0; ii < xysize; ii++) {
+                        data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
+                    }
+                    COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+                    data.image[IDout].md[0].cnt0++;
+                    data.image[IDout].md[0].write = 0;
+
+                    break;
             }
+            COREMODMEMORY_LOGEXEC;
+
+
+
         }
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
+        COREMODMEMORY_LOGEXEC;
 
 
     }
 
     // ==================================
-    // ENDING LOOP
+    /// ### ENDING LOOP
     // ==================================
     processinfo_cleanExit(processinfo);
+    COREMODMEMORY_LOGEXEC;
 
     delete_image_ID("_tmpc");
 
     free(t0array);
+    free(arraytmpf);
 
     return(IDout);
 }
@@ -6350,7 +6493,7 @@ long COREMOD_MEMORY_streamDelay(
 
     // create FPS
     sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
-    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT, pindex);
+    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT);
 
     function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN);
 
