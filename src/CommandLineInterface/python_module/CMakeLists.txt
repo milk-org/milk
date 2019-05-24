@@ -33,6 +33,8 @@ add_library(CacaoProcessTools MODULE CacaoProcessTools.cpp)
 
 target_link_libraries(CacaoProcessTools PRIVATE pybind11::module CLIcore)
 
+target_compile_features(CacaoProcessTools PRIVATE cxx_std_14)
+
 set_target_properties(CacaoProcessTools
                       PROPERTIES PREFIX
                                  "${PYTHON_MODULE_PREFIX}"
