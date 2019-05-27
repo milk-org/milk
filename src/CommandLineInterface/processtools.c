@@ -12,6 +12,7 @@
 
 
 #ifndef STANDALONE
+
 #define PROCESSINFO_ENABLED
 // OPTIONAL LINE TRACKING FOR DEBUGGING
 //
@@ -25,16 +26,20 @@
 //
 // Uncomment this line to turn on line tracking for debug purposes
 #define PROCESSTOOLS_LOGDEBUG
-#endif
 
 #ifdef PROCESSTOOLS_LOGDEBUG
-#define PROCESSTOOLS_LOGEXEC do {                      \
+#define PROCESSTOOLS_LOGEXEC do { \
     sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
     data.execSRCline = __LINE__;                   \
     } while(0)
-#else
+#else // ifndef PROCESSTOOLS_LOGDEBUG
 #define PROCESSTOOLS_LOGEXEC 
 #endif
+
+#else //  ifdef STANDALONE
+
+#define PROCESSTOOLS_LOGEXEC 
+#endif //  endif STANDALONE
 
 static int CTRLscreenExitLine = 0; // for debugging
 
@@ -60,6 +65,8 @@ static int CTRLscreenExitLine = 0; // for debugging
 
 #include <time.h>
 #include <signal.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 
 #include <unistd.h>    // getpid()
 #include <sys/types.h>
@@ -86,6 +93,7 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "info/info.h"
+#define SHAREDPROCDIR data.shmdir
 #endif
 
 #include <processtools.h>
@@ -118,6 +126,7 @@ static int CTRLscreenExitLine = 0; // for debugging
 static PROCESSINFOLIST *pinfolist;
 
 static int wrow, wcol;
+static int wcolmax; // max number of cols
 
 
 
@@ -231,14 +240,18 @@ PROCESSINFO *processinfo_setup(
 
 
 
+
 // report error
+// should be followed by return(EXIT_FAILURE) call
+//
 errno_t processinfo_error(
     PROCESSINFO *processinfo,
     char *errmsgstring
 ) {
 #ifdef PROCESSINFO_ENABLED
-        processinfo->loopstat = 4; // ERROR
-        processinfo_WriteMessage(processinfo, errmsgstring);
+    processinfo->loopstat = 4; // ERROR
+    processinfo_WriteMessage(processinfo, errmsgstring);
+	processinfo_cleanExit(processinfo);
 #endif
     return RETURN_SUCCESS;
 }
@@ -362,11 +375,7 @@ long processinfo_shm_list_create()
     char  SM_fname[200];
 	long pindex = 0;
 
-#ifdef STANDALONE
     sprintf(SM_fname, "%s/processinfo.list.shm", SHAREDPROCDIR);
-#else
-    sprintf(SM_fname, "%s/processinfo.list.shm", data.shmdir);
-#endif
 
     /*
     * Check if a file exist using stat() function.
@@ -422,17 +431,7 @@ long processinfo_shm_list_create()
 		int SM_fd;
 		struct stat file_stat;
 		
-		SM_fd = open(SM_fname, O_RDWR);
-		fstat(SM_fd, &file_stat);
-        printf("[%d] File %s size: %zd\n", __LINE__, SM_fname, file_stat.st_size);
-
-        pinfolist = (PROCESSINFOLIST*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-        if (pinfolist == MAP_FAILED) {
-            close(SM_fd);
-            fprintf(stderr, "Error mmapping the file");
-            exit(0);
-        }
-        
+        pinfolist = (PROCESSINFOLIST *)processinfo_shm_link(SM_fname, &SM_fd);
         while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
 	}
@@ -479,11 +478,7 @@ PROCESSINFO *processinfo_shm_create(
     pinfolist->PIDarray[pindex] = PID;
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
 
-#ifdef STANDALONE
     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
-#else
-    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pname, (int) PID);
-#endif
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1) {
@@ -591,11 +586,7 @@ PROCESSINFO *processinfo_shm_create(
 
     clock_gettime(CLOCK_REALTIME, &tnow);
 
-#ifdef STANDALONE
     sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", SHAREDPROCDIR, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
-#else
-    sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", data.shmdir, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
-#endif
 
 	if(LogFileCreated == 0)
 	{
@@ -613,14 +604,44 @@ PROCESSINFO *processinfo_shm_create(
 
 
 
+PROCESSINFO *processinfo_shm_link(char *pname, int *fd){
+    struct stat file_stat;
+		
+    *fd = open(pname, O_RDWR);
+    if (*fd == -1) {
+        perror("Error opening file");
+        exit(0);
+    }
+    fstat(*fd, &file_stat);
+    //printf("[%d] File %s size: %zd\n", __LINE__, pname, file_stat.st_size);
+
+    PROCESSINFO* pinfolist = (PROCESSINFO*) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
+    if (pinfolist == MAP_FAILED) {
+        close(*fd);
+        fprintf(stderr, "Error mmapping the file");
+        exit(0);
+    }
+
+    return pinfolist;
+}
+
+int processinfo_shm_close(PROCESSINFO *pinfo, int fd){
+    struct stat file_stat;
+    fstat(fd, &file_stat);
+    munmap(pinfo, file_stat.st_size);
+    close(fd);
+    return EXIT_SUCCESS;
+}
+
+
 
 
 
 
 int processinfo_cleanExit(PROCESSINFO *processinfo) {
 #ifdef PROCESSINFO_ENABLED
-    if(processinfo->loopstat != 4) {
 
+    if(processinfo->loopstat != 4) {
         struct timespec tstop;
         struct tm *tstoptm;
         char msgstring[200];
@@ -641,7 +662,6 @@ int processinfo_cleanExit(PROCESSINFO *processinfo) {
         processinfo->loopstat = 3; // clean exit
     }
 
-   // fclose(processinfo->logFile);
 #endif
     return 0;
 }
@@ -1062,6 +1082,7 @@ static int initncurses()
         exit(EXIT_FAILURE);
     }
     getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
+    wcolmax = wcol;
     cbreak();
     keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
     nodelay(stdscr, TRUE);
@@ -1262,13 +1283,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
     char string0[80];
 
-  /*  static int milktmpdircreated = 0;
-
-
-    if(milktmpdircreated == 0) {
-        system("mkdir -p ./milktmp");
-        milktmpdircreated  = 1;
-    }*/
+    static int cnt = 0;
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
@@ -1319,34 +1334,55 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
-    // number of process per CPU -> we can get that from top?
+    // number of process per CPU -> we can get that from ps
     char command[200];
+    char psoutfname[200];
+    sprintf(psoutfname, "%s/_psoutput.txt", SHAREDPROCDIR);
 
 
-    for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
-        char outstring[200];
-        FILE *fpout;
+    // use ps command to scan processes, store result in file psoutfname
+
+//    sprintf(command, "echo \"%5d CREATE\" >> cmdlog.txt\n", cnt);
+//    system(command);
 
 
-        sprintf(command, "CORENUM=%d; cat /milktmp/_psoutput.txt | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu);
-        fpout = popen(command, "r");
-        if(fpout == NULL) {
-            printf("WARNING: cannot run command \"%s\"\n", command);
-        } else {
-            if(fgets(outstring, 100, fpout) == NULL) {
-                printf("WARNING: fgets error\n");
-            }
-            pclose(fpout);
-            pinfop->CPUpcnt[cpu] = atoi(outstring);
-        }
-    }
-
-    //	psOK=0; if [ $psOK = "1" ]; then ls; fi; psOK=1
-
-    sprintf(command, "{ if [ ! -f /milktmp/_psOKlock ]; then touch /milktmp/_psOKlock; ps -e -o /milktmp/pid,psr,cpu,cmd > /milktmp/_psoutput.txt; fi; rm /milktmp/_psOKlock &> /dev/null; } &");
+    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", SHAREDPROCDIR, SHAREDPROCDIR, psoutfname, SHAREDPROCDIR);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
+
+//    sprintf(command, "echo \"%5d CREATED\" >> cmdlog.txt\n", cnt);
+//    system(command);
+
+
+    // read and process psoutfname file
+
+    if( access( psoutfname, F_OK ) != -1 ) {
+
+//        sprintf(command, "echo \"%5d READ\" >> cmdlog.txt\n", cnt);
+//        system(command);
+
+        for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
+            char outstring[200];
+            FILE *fpout;
+            sprintf(command, "CORENUM=%d; cat %s | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu, psoutfname);
+            fpout = popen(command, "r");
+            if(fpout == NULL) {
+                printf("WARNING: cannot run command \"%s\"\n", command);
+            } else {
+                if(fgets(outstring, 100, fpout) == NULL) {
+                    printf("WARNING: fgets error\n");
+                }
+                pclose(fpout);
+                pinfop->CPUpcnt[cpu] = atoi(outstring);
+            }
+        }
+//        sprintf(command, "echo \"%5d REMOVE\" >> cmdlog.txt\n", cnt);
+//        system(command);
+        remove(psoutfname);
+    }
+    cnt++;
+
 
     clock_gettime(CLOCK_REALTIME, &t2);
     tdiff = info_time_diff(t1, t2);
@@ -1860,9 +1896,12 @@ void *processinfo_scan(void *thptr) {
 
     pinfop->scanPID = getpid();
 
+    pinfop->scandebugline = __LINE__;
+
     while(pinfop->loop == 1) {
         PROCESSTOOLS_LOGEXEC;
 
+        pinfop->scandebugline = __LINE__;
 
         // timing measurement
         clock_gettime(CLOCK_REALTIME, &t1);
@@ -1878,7 +1917,7 @@ void *processinfo_scan(void *thptr) {
 
 
 
-
+        pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_requested = 1;  // request scan
         //system("echo \"scanblock request write 1\" > steplog.sRQw1.txt");//TEST
@@ -1886,6 +1925,11 @@ void *processinfo_scan(void *thptr) {
         while(pinfop->SCANBLOCK_OK == 0) {  // wait for display to OK scan
             //system("echo \"scanblock OK read 0\" > steplog.sOKr0.txt");//TEST
             usleep(100);
+            pinfop->scandebugline = __LINE__;
+            if(pinfop->loop == 0) {
+                int line = __LINE__;
+                pthread_exit(&line);
+            }
         }
         pinfop->SCANBLOCK_requested = 0; // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
@@ -1894,7 +1938,7 @@ void *processinfo_scan(void *thptr) {
         // LOAD / UPDATE process information
         // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
         //
-
+        pinfop->scandebugline = __LINE__;
 
         for(pindex = 0; pindex < pinfop->NBpinfodisp; pindex++) {
             if(pinfop->loop == 1) {
@@ -1902,7 +1946,7 @@ void *processinfo_scan(void *thptr) {
                 char SM_fname[200];    // shared memory file name
                 struct stat file_stat;
 
-
+                pinfop->scandebugline = __LINE__;
                 pinfop->PIDarray[pindex] = pinfolist->PIDarray[pindex];
 
                 // SHOULD WE (RE)LOAD ?
@@ -1922,16 +1966,12 @@ void *processinfo_scan(void *thptr) {
                 }
 
 
-
+                pinfop->scandebugline = __LINE__;
 
 
                 // check if process info file exists
 
-#ifdef STANDALONE
                 sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
 
                 // Does file exist ?
                 if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT) {
@@ -1953,7 +1993,7 @@ void *processinfo_scan(void *thptr) {
                     }
                 }
 
-
+                pinfop->scandebugline = __LINE__;
 
                 if((pindex < pinfop->NBpinfodisp) && (pinfop->updatearray[pindex] == 1)) {
                     // (RE)LOAD
@@ -1961,20 +2001,13 @@ void *processinfo_scan(void *thptr) {
 
                     // if already mmapped, first unmap
                     if(pinfop->pinfommapped[pindex] == 1) {
-                        fstat(pinfop->fdarray[pindex], &file_stat);
-                        munmap(pinfop->pinfoarray[pindex], file_stat.st_size);
-                        close(pinfop->fdarray[pindex]);
+                        processinfo_shm_close(pinfop->pinfoarray[pindex], pinfop->fdarray[pindex]);
                         pinfop->pinfommapped[pindex] == 0;
                     }
 
 
                     // COLLECT INFORMATION FROM PROCESSINFO FILE
-
-                    pinfop->fdarray[pindex] = open(SM_fname, O_RDWR);
-                    fstat(pinfop->fdarray[pindex], &file_stat);
-                    pinfop->pinfoarray[pindex] = (PROCESSINFO *) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, pinfop->fdarray[pindex], 0);
-
-
+                    pinfop->pinfoarray[pindex] = processinfo_shm_link(SM_fname, &pinfop->fdarray[pindex]);
 
                     if(pinfop->pinfoarray[pindex] == MAP_FAILED) {
                         close(pinfop->fdarray[pindex]);
@@ -2004,6 +2037,13 @@ void *processinfo_scan(void *thptr) {
                     // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
 
                 }
+
+                pinfop->scandebugline = __LINE__;
+            }
+            else
+            {
+                int line = __LINE__;
+                pthread_exit(&line);
             }
         }
 
@@ -2046,6 +2086,7 @@ void *processinfo_scan(void *thptr) {
         free(timearray);
         free(indexarray);
 
+        pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_OK = 0; // let display thread we're done
         //system("echo \"scanblock OK write 0\" > steplog.sOKw0.txt");//TEST
@@ -2055,19 +2096,21 @@ void *processinfo_scan(void *thptr) {
 
 
 
-
+        pinfop->scandebugline = __LINE__;
 
 
 
         if(pinfop->DisplayMode == 3) { // only compute of displayed processes
+            pinfop->scandebugline = __LINE__;
             GetCPUloads(pinfop);
-
+            pinfop->scandebugline = __LINE__;
             // collect required info for display
             for(pindexdisp = 0; pindexdisp < pinfop->NBpinfodisp ; pindexdisp++) {
                 if(pinfop->loop == 1) {
                     PROCESSTOOLS_LOGEXEC;
 
                     if(pinfolist->active[pindexdisp] != 0) {
+                        pinfop->scandebugline = __LINE__;
 
                         if(pinfop->pinfodisp[pindexdisp].NBsubprocesses != 0) { // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
 
@@ -2090,6 +2133,8 @@ void *processinfo_scan(void *thptr) {
                             }
 
 
+                            pinfop->scandebugline = __LINE__;
+
                             pinfop->psysinfostatus[pindex] = PIDcollectSystemInfo(&(pinfop->pinfodisp[pindexdisp]), 0);
 
                             if(pinfop->psysinfostatus[pindexdisp] != -1) {
@@ -2108,6 +2153,8 @@ void *processinfo_scan(void *thptr) {
                                 }
 
                                 sprintf(cpuliststring, ",%s,", pinfop->pinfodisp[pindexdisp].cpusallowed);
+
+                                pinfop->scandebugline = __LINE__;
 
                                 int cpu;
                                 for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
@@ -2135,7 +2182,14 @@ void *processinfo_scan(void *thptr) {
 
                     }
                 }
-            }
+                else
+                {
+                    int line = __LINE__;
+                    pthread_exit(&line);
+                }
+            } // end of if(pinfop->DisplayMode == 3)
+
+            pinfop->scandebugline = __LINE__;
 
         } // end of DisplayMode 3
 
@@ -2144,12 +2198,27 @@ void *processinfo_scan(void *thptr) {
 
 
         pinfop->loopcnt++;
-        
-        if(pinfop->loop == 1)
-			usleep(pinfop->twaitus);
+
+
+        int loopcntiter = 0;
+        int NBloopcntiter = 10;
+        while((pinfop->loop == 1)&&(loopcntiter<NBloopcntiter))
+        {
+            usleep(pinfop->twaitus/NBloopcntiter);
+            loopcntiter++;
+        }
+
+        if(pinfop->loop == 0) {
+            int line = __LINE__;
+            pthread_exit(&line);
+        }
     }
 
-    printf("Process info scan ended cleanly: %ld scans completed\n", pinfop->loopcnt);
+
+    if(pinfop->loop == 0) {
+        int line = __LINE__;
+        pthread_exit(&line);
+    }
 
     return NULL;
 }
@@ -2170,6 +2239,25 @@ void processinfo_CTRLscreen_atexit()
 
 
 
+
+
+
+void processinfo_CTRLscreen_handle_winch(int sig)
+{
+    endwin();
+    refresh();
+    clear();
+
+
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+    wrow = w.ws_row;
+    wcol = w.ws_col;
+
+    if(wcol>wcolmax)
+        wcol = wcolmax;
+}
 
 
 
@@ -2229,23 +2317,35 @@ errno_t processinfo_CTRLscreen()
 
     processinfo_CatchSignals();
 
+
+    struct sigaction sa;
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = processinfo_CTRLscreen_handle_winch;
+    if (sigaction(SIGWINCH, &sa, NULL) == -1) {
+        printf("can't handle SIGWINCH");
+        exit(EXIT_FAILURE);
+    }
+
+
     setlocale(LC_ALL, "");
 
 
-	// initialize ALL entries
+    // initialize ALL entries
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
         procinfoproc.updatearray[pindex]   = 1; // initialize: load all
         procinfoproc.pinfommapped[pindex]  = 0;
         procinfoproc.selectedarray[pindex] = 0; // initially not selected
         procinfoproc.loopcntoffsetarray[pindex] = 0;
-    
-		
+
+
     }
 
     STRINGLISTENTRY *CPUsetList;
     int NBCPUset;
-    CPUsetList = malloc(1000 * sizeof(STRINGLISTENTRY));
+    CPUsetList = (STRINGLISTENTRY *)malloc(1000 * sizeof(STRINGLISTENTRY));
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
 
@@ -2263,24 +2363,38 @@ errno_t processinfo_CTRLscreen()
 
     // INITIALIZE ncurses
     initncurses();
-	//atexit( processinfo_CTRLscreen_atexit );
 
-	// set print string lengths
-	int pstrlen_status  = 10;
-	int pstrlen_pid     =  5;
-	int pstrlen_pname   = 25;	
-	int pstrlen_state   =  5;
-	// Clevel :  2
-	// tstart : 12
-	int pstrlen_tmux    = 16;
-	int pstrlen_loopcnt = 10;
-	int pstrlen_descr   = 25;
-	int pstrlen_msg     = 35;
-	
-	int pstrlen_cset    = 10;
+
+    //atexit( processinfo_CTRLscreen_atexit );
+
+    // set print string lengths
+    char string[200]; // string to be printed. Used to keep track of total length
+    int pstrlen_total; // Used to keep track of total length
+    int pstrlen_total_max;
+
+    int pstrlen_status  = 10;
+    int pstrlen_pid     =  5;
+    int pstrlen_pname   = 25;
+    int pstrlen_state   =  5;
+    // Clevel :  2
+    // tstart : 12
+    int pstrlen_tmux    = 16;
+    int pstrlen_loopcnt = 10;
+    int pstrlen_descr   = 25;
+
+    int pstrlen_msg     = 35;
+    int pstrlen_msg_min = 10;
+    int pstrlen_msg_max = 50;
+
+    int pstrlen_cset    = 10;
+
+
+    //	int pstrlen_total = 28 + pstrlen_status + pstrlen_pid + pstrlen_pname + pstrlen_state + pstrlen_tmux + pstrlen_loopcnt + pstrlen_descr + pstrlen_msg;
+
+
 
     clear();
-    
+
     // redirect stderr to /dev/null
 
     int backstderr, newstderr;
@@ -2290,10 +2404,10 @@ errno_t processinfo_CTRLscreen()
     newstderr = open("/dev/null", O_WRONLY);
     dup2(newstderr, STDERR_FILENO);
     close(newstderr);
-	
 
-	
-	
+
+
+
     procinfoproc.NBpinfodisp = wrow-5;
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
@@ -2301,12 +2415,12 @@ errno_t processinfo_CTRLscreen()
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;  // by default, each process is assumed to be single-threaded
     }
-    
-    
-    
+
+
+
 
     pindexActiveSelected = 0;
-    procinfoproc.DisplayMode = 3; // default
+    procinfoproc.DisplayMode = 2; // default upon startup
     // display modes:
     // 2: overview
     // 3: CPU affinity
@@ -2314,11 +2428,11 @@ errno_t processinfo_CTRLscreen()
     // Start scan thread
     procinfoproc.loop = 1;
     procinfoproc.twaitus = 1000000; // 1 sec
-	
-	procinfoproc.SCANBLOCK_requested = 0;
-	procinfoproc.SCANBLOCK_OK = 0;
-	
-	pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
+
+    procinfoproc.SCANBLOCK_requested = 0;
+    procinfoproc.SCANBLOCK_OK = 0;
+
+    pthread_create( &threadscan, NULL, processinfo_scan, (void*) &procinfoproc);
 
 
 
@@ -2327,9 +2441,9 @@ errno_t processinfo_CTRLscreen()
     procinfoproc.SCANBLOCK_OK = 1;
     while( procinfoproc.loopcnt < 1 )
     {
-		//printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
+        //printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
         usleep(10000);
-	}
+    }
 
 
 
@@ -2344,7 +2458,7 @@ errno_t processinfo_CTRLscreen()
 
     clear();
     int Xexit = 0; // toggles to 1 when users types x
-	
+
     while( loopOK == 1 )
     {
         int pid;
@@ -2352,23 +2466,23 @@ errno_t processinfo_CTRLscreen()
 
         PROCESSTOOLS_LOGEXEC;
 
-		if(procinfoproc.SCANBLOCK_requested == 1)
-		{
-			//system("echo \"scanblock request read 1\" > steplog.dQRr1.txt");//TEST
-			
-			procinfoproc.SCANBLOCK_OK = 1;  // issue OK to scan thread
-			//system("echo \"scanblock OK write 1\" > steplog.dOKw1.txt");//TEST
-			
-			// wait for scan thread to have completed scan
-			while ( procinfoproc.SCANBLOCK_OK == 1 )
-			{
-				//system("echo \"scanblock OK read 1\" > steplog.dOKr1.txt");//TEST
-				usleep(100);
-			}
-			//system("echo \"scanblock OK read 0\" > steplog.dOKr0.txt");//TEST
-		}
-//		else
-//			system("echo \"scanblock request read 0\" > steplog.dQRr0.txt");//TEST
+        if(procinfoproc.SCANBLOCK_requested == 1)
+        {
+            //system("echo \"scanblock request read 1\" > steplog.dQRr1.txt");//TEST
+
+            procinfoproc.SCANBLOCK_OK = 1;  // issue OK to scan thread
+            //system("echo \"scanblock OK write 1\" > steplog.dOKw1.txt");//TEST
+
+            // wait for scan thread to have completed scan
+            while ( procinfoproc.SCANBLOCK_OK == 1 )
+            {
+                //system("echo \"scanblock OK read 1\" > steplog.dOKr1.txt");//TEST
+                usleep(100);
+            }
+            //system("echo \"scanblock OK read 0\" > steplog.dOKr0.txt");//TEST
+        }
+        //		else
+        //			system("echo \"scanblock request read 0\" > steplog.dQRr0.txt");//TEST
 
 
         usleep((long) (1000000.0/frequ));
@@ -2385,7 +2499,7 @@ errno_t processinfo_CTRLscreen()
         scantime_CPUpcnt = 0.0;
 
         PROCESSTOOLS_LOGEXEC;
-		
+
 
         if(freeze==0)
         {
@@ -2538,11 +2652,7 @@ errno_t processinfo_CTRLscreen()
                     if(pinfolist->active[pindex]!=1)
                     {
                         char SM_fname[200];
-#ifdef STANDALONE
                         sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
                         remove(SM_fname);
                     }
                 }
@@ -2552,12 +2662,10 @@ errno_t processinfo_CTRLscreen()
                 pindex = pindexSelected;
                 if(pinfolist->active[pindex]!=1)
                 {
+					remove(procinfoproc.pinfoarray[pindex]->logfilename);
+					
                     char SM_fname[200];
-#ifdef STANDALONE
                     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
                     remove(SM_fname);
                 }
             }
@@ -2569,12 +2677,10 @@ errno_t processinfo_CTRLscreen()
                 pindex = procinfoproc.pindexActive[index];
                 if(pinfolist->active[pindex]!=1)
                 {
+					remove(procinfoproc.pinfoarray[pindex]->logfilename);
+					
                     char SM_fname[200];
-#ifdef STANDALONE
                     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#else
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", data.shmdir, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-#endif
                     remove(SM_fname);
                 }
             }
@@ -2604,7 +2710,7 @@ errno_t processinfo_CTRLscreen()
             }
             break;
 
-        case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute) 
+        case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
             for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
                 pindex = procinfoproc.pindexActive[index];
@@ -2614,7 +2720,7 @@ errno_t processinfo_CTRLscreen()
                     if(procinfoproc.pinfoarray[pindex]->CTRLval == 0) // if running, turn compute to off
                         procinfoproc.pinfoarray[pindex]->CTRLval = 5;
                     else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
-                        procinfoproc.pinfoarray[pindex]->CTRLval = 0; 
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                 }
             }
             if(selectedOK == 0)
@@ -2623,7 +2729,7 @@ errno_t processinfo_CTRLscreen()
                 if(procinfoproc.pinfoarray[pindex]->CTRLval == 0) // if running, turn compute to off
                     procinfoproc.pinfoarray[pindex]->CTRLval = 5;
                 else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 0; 
+                    procinfoproc.pinfoarray[pindex]->CTRLval = 0;
             }
             break;
 
@@ -2644,7 +2750,7 @@ errno_t processinfo_CTRLscreen()
             }
             break;
 
-		
+
 
 
         case '>': // move to other cpuset
@@ -2823,7 +2929,7 @@ errno_t processinfo_CTRLscreen()
             break;
 
 
-        PROCESSTOOLS_LOGEXEC;
+            PROCESSTOOLS_LOGEXEC;
 
 
         // ============ SCREENS
@@ -2909,11 +3015,11 @@ errno_t processinfo_CTRLscreen()
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
         PROCESSTOOLS_LOGEXEC;
-        
+
         if(freeze==0)
         {
             erase();
-			
+
             if(procinfoproc.DisplayMode == 1)
             {
                 int attrval = A_BOLD;
@@ -3210,12 +3316,12 @@ errno_t processinfo_CTRLscreen()
 
                 PROCESSTOOLS_LOGEXEC;
 
-                printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n", 
-                (int) (frequ+0.5), 
-                procinfoproc.loopcnt, 
-                1.0/procinfoproc.dtscan, 
-                1000000.0/procinfoproc.twaitus, 
-                100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
+                printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n",
+                       (int) (frequ+0.5),
+                       procinfoproc.loopcnt,
+                       1.0/procinfoproc.dtscan,
+                       1000000.0/procinfoproc.twaitus,
+                       100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 
 
                 PROCESSTOOLS_LOGEXEC;
@@ -3289,21 +3395,16 @@ errno_t processinfo_CTRLscreen()
                     int CPUpcntLim3 = 8;
 
                     PROCESSTOOLS_LOGEXEC;
-	
+
 
                     // List CPUs
-                    printw(" %*.*s %*.*s %-*.*s    %-*.*s              ", 
-					    pstrlen_status,  pstrlen_status,  " ",
-					    pstrlen_pid,     pstrlen_pid,     " ",					    
-					    pstrlen_pname,   pstrlen_pname,   " ",
-					    pstrlen_cset,    pstrlen_cset,    " "                    
-                    );
-                  /*  printw(
-                    " %*.*s %*.*s %-*.*s | %2d sockets %2d CPUs",
-					    pstrlen_status,  pstrlen_status,  " ",
-					    pstrlen_pid,     pstrlen_pid,     " ",					    
-					    pstrlen_pname,   pstrlen_pname,   " ",                    
-                        procinfoproc.NBcpusocket, procinfoproc.NBcpus);*/
+                    printw(" %*.*s %*.*s %-*.*s    %-*.*s              ",
+                           pstrlen_status,  pstrlen_status,  " ",
+                           pstrlen_pid,     pstrlen_pid,     " ",
+                           pstrlen_pname,   pstrlen_pname,   " ",
+                           pstrlen_cset,    pstrlen_cset,    " "
+                          );
+
 
                     for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
@@ -3317,12 +3418,12 @@ errno_t processinfo_CTRLscreen()
                     printw(" <- %2d sockets %2d CPUs\n", procinfoproc.NBcpusocket, procinfoproc.NBcpus);
 
                     // List CPU # processes
-                    printw(" %*.*s %*.*s %-*.*s    %-*.*s              ", 
-					    pstrlen_status,  pstrlen_status,  " ",
-					    pstrlen_pid,     pstrlen_pid,     " ",					    
-					    pstrlen_pname,   pstrlen_pname,   " ",
-					    pstrlen_cset,    pstrlen_cset,    " "                    
-                    );
+                    printw(" %*.*s %*.*s %-*.*s    %-*.*s              ",
+                           pstrlen_status,  pstrlen_status,  " ",
+                           pstrlen_pid,     pstrlen_pid,     " ",
+                           pstrlen_pname,   pstrlen_pname,   " ",
+                           pstrlen_cset,    pstrlen_cset,    " "
+                          );
 
 
 
@@ -3365,13 +3466,13 @@ errno_t processinfo_CTRLscreen()
 
 
                     // Print CPU LOAD
-                    printw(" %*.*s %*.*s %-*.*s PR %-*.*s  #T  ctxsw   ", 
-					    pstrlen_status,  pstrlen_status,  "STATUS",
-					    pstrlen_pid,     pstrlen_pid,     "PID",					    
-					    pstrlen_pname,   pstrlen_pname,   "pname",
-					    pstrlen_cset,    pstrlen_cset,    "cset",                    
-                    procinfoproc.NBcpus);
-                    
+                    printw(" %*.*s %*.*s %-*.*s PR %-*.*s  #T  ctxsw   ",
+                           pstrlen_status,  pstrlen_status,  "STATUS",
+                           pstrlen_pid,     pstrlen_pid,     "PID",
+                           pstrlen_pname,   pstrlen_pname,   "pname",
+                           pstrlen_cset,    pstrlen_cset,    "cset",
+                           procinfoproc.NBcpus);
+
                     for(cpusocket=0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
                         if(cpusocket>0)
@@ -3407,38 +3508,38 @@ errno_t processinfo_CTRLscreen()
                     printw("\n");
                 }
 
-                
-                
+
+
                 // print header for display mode 2
                 if(procinfoproc.DisplayMode == 2)
                 {
-					PROCESSTOOLS_LOGEXEC;
-					printw("\n");
-					printw("\n");					
-					printw(" %*.*s %*.*s %-*.*s %-*.*s C# tstart       %-*.*s %-*.*s   %-*.*s   %-*.*s\n", 
-					    pstrlen_status,  pstrlen_status,  "STATUS",
-					    pstrlen_pid,     pstrlen_pid,     "PID",					    
-					    pstrlen_pname,   pstrlen_pname,   "pname",
-					    pstrlen_state,   pstrlen_state,   "state",
-					    pstrlen_tmux,    pstrlen_tmux,    "tmux sess",
-					    pstrlen_loopcnt, pstrlen_loopcnt, "loopcnt",
-					    pstrlen_descr,   pstrlen_descr,   "Description", 
-					    pstrlen_msg,     pstrlen_msg,     "Message"
-					);
-					printw("\n");
-					PROCESSTOOLS_LOGEXEC;
-				}
-             
+                    PROCESSTOOLS_LOGEXEC;
+                    printw("\n");
+                    printw("\n");
+                    printw(" %*.*s %*.*s %-*.*s %-*.*s C# tstart       %-*.*s %-*.*s   %-*.*s   %-*.*s\n",
+                           pstrlen_status,  pstrlen_status,  "STATUS",
+                           pstrlen_pid,     pstrlen_pid,     "PID",
+                           pstrlen_pname,   pstrlen_pname,   "pname",
+                           pstrlen_state,   pstrlen_state,   "state",
+                           pstrlen_tmux,    pstrlen_tmux,    "tmux sess",
+                           pstrlen_loopcnt, pstrlen_loopcnt, "loopcnt",
+                           pstrlen_descr,   pstrlen_descr,   "Description",
+                           pstrlen_msg,     pstrlen_msg,     "Message"
+                          );
+                    printw("\n");
+                    PROCESSTOOLS_LOGEXEC;
+                }
+
                 // print header for display mode 4
                 if(procinfoproc.DisplayMode == 4)
                 {
-					PROCESSTOOLS_LOGEXEC;
-					printw("\n");
-					printw("\n");					
-					printw("   STATUS    PID   process name                    \n");
-					printw("\n");
-					PROCESSTOOLS_LOGEXEC;
-				}
+                    PROCESSTOOLS_LOGEXEC;
+                    printw("\n");
+                    printw("\n");
+                    printw("   STATUS    PID   process name                    \n");
+                    printw("\n");
+                    PROCESSTOOLS_LOGEXEC;
+                }
 
                 PROCESSTOOLS_LOGEXEC;
 
@@ -3448,6 +3549,7 @@ errno_t processinfo_CTRLscreen()
                 // ===========================================================================
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
                 // ===========================================================================
+                pstrlen_total_max = 0;
 
                 for(dispindex=0; dispindex < dispindexMax; dispindex++)
                 {
@@ -3457,11 +3559,11 @@ errno_t processinfo_CTRLscreen()
                         pindex = procinfoproc.sorted_pindex_time[dispindex];
 
                     if(pindex<procinfoproc.NBpinfodisp)
-                    {						
-						#ifdef PROCESSTOOLS_LOGDEBUG
-						data.execSRCline = __LINE__;
-						sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
-						#endif
+                    {
+#ifdef PROCESSTOOLS_LOGDEBUG
+                        data.execSRCline = __LINE__;
+                        sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+#endif
 
                         if(pindex == pindexSelected)
                             attron(A_REVERSE);
@@ -3470,48 +3572,65 @@ errno_t processinfo_CTRLscreen()
                             printw("*");
                         else
                             printw(" ");
+                        pstrlen_total = 1;
 
 
-						#ifdef PROCESSTOOLS_LOGDEBUG
-						data.execSRCline = __LINE__;
-						sprintf(data.execSRCmessage, "procinfoproc.selectedarray[pindex] = %d", procinfoproc.selectedarray[pindex]);
-						#endif
+#ifdef PROCESSTOOLS_LOGDEBUG
+                        data.execSRCline = __LINE__;
+                        sprintf(data.execSRCmessage, "procinfoproc.selectedarray[pindex] = %d", procinfoproc.selectedarray[pindex]);
+#endif
 
 
                         if(pinfolist->active[pindex] == 1)
                         {
+                            sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ACTIVE");
+                            pstrlen_total += strlen(string);
                             attron(COLOR_PAIR(2));
-                            printw("%-*.*s", pstrlen_status, pstrlen_status, "ACTIVE");
+                            printw("%s", string);
                             attroff(COLOR_PAIR(2));
                         }
 
-						#ifdef PROCESSTOOLS_LOGDEBUG
-						data.execSRCline = __LINE__;
-						sprintf(data.execSRCmessage, "pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
-						#endif
+#ifdef PROCESSTOOLS_LOGDEBUG
+                        data.execSRCline = __LINE__;
+                        sprintf(data.execSRCmessage, "pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
+#endif
 
-                        if(pinfolist->active[pindex] == 2)  // not active: crashed or terminated
+                        if(pinfolist->active[pindex] == 2)  // not active: error, crashed or terminated
                         {
-                            if(procinfoproc.pinfoarray[pindex]->loopstat == 3) // clean exit
-                            {
+							switch ( procinfoproc.pinfoarray[pindex]->loopstat ) 
+							{					
+								case 3: // clean exit
+                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "STOPPED");
+                                pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(3));
-                                printw("%-*.*s", pstrlen_status, pstrlen_status, "STOPPED");
+                                printw("%s", string);
                                 attroff(COLOR_PAIR(3));
-                            }
-                            else
-                            {
+                                break;
+                                
+                                case 4: // error
+                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ERROR");
+                                pstrlen_total += strlen(string);
+                                attron(COLOR_PAIR(3));
+                                printw("%s", string);
+                                attroff(COLOR_PAIR(3));
+                                break;
+                                
+                                default: // crashed
+                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
+                                pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(4));
-                                printw("%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
+                                printw("%s", string);
                                 attroff(COLOR_PAIR(4));
-                            }
+								break;
+							}
                         }
-                        
-                        
-						#ifdef PROCESSTOOLS_LOGDEBUG
-						data.execSRCline = __LINE__;
-						sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
-						#endif
-                        
+
+
+#ifdef PROCESSTOOLS_LOGDEBUG
+                        data.execSRCline = __LINE__;
+                        sprintf(data.execSRCmessage, "%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+#endif
+
 
 
                         if(pinfolist->active[pindex] != 0)
@@ -3519,10 +3638,16 @@ errno_t processinfo_CTRLscreen()
                             if(pindex == pindexSelected)
                                 attron(A_REVERSE);
 
-                            printw(" %-*.*d", pstrlen_pid, pstrlen_pid, pinfolist->PIDarray[pindex]);
+                            sprintf(string, " %-*.*d", pstrlen_pid, pstrlen_pid, pinfolist->PIDarray[pindex]);
+                            pstrlen_total += strlen(string);
+                            printw("%s", string);
+
 
                             attron(A_BOLD);
-                            printw(" %-*.*s", pstrlen_pname, pstrlen_pname, procinfoproc.pinfodisp[pindex].name);
+
+                            sprintf(string, " %-*.*s", pstrlen_pname, pstrlen_pname, procinfoproc.pinfodisp[pindex].name);
+                            pstrlen_total += strlen(string);
+                            printw("%s", string);
                             attroff(A_BOLD);
 
 
@@ -3532,75 +3657,103 @@ errno_t processinfo_CTRLscreen()
                                 switch (procinfoproc.pinfoarray[pindex]->loopstat)
                                 {
                                 case 0:
-                                    printw(" %-*.*s", pstrlen_state, pstrlen_state, "INIT");
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "INIT");
                                     break;
 
                                 case 1:
-                                    printw(" %-*.*s", pstrlen_state, pstrlen_state, "RUN");
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "RUN");
                                     break;
 
                                 case 2:
-                                    printw(" %-*.*s", pstrlen_state, pstrlen_state, "PAUS");
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "PAUS");
                                     break;
 
                                 case 3:
-                                    printw(" %-*.*s", pstrlen_state, pstrlen_state, "TERM");
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "TERM");
                                     break;
 
                                 case 4:
-                                    printw(" %-*.*s", pstrlen_state, pstrlen_state, "ERR");
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "ERR");
+                                    break;
+
+                                case 5:
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "OFF");
+                                    break;
+                                    
+                                case 6:
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "CRASH");
                                     break;
 
                                 default:
-                                    printw(" %-*.*s", pstrlen_state, pstrlen_state, "??");
+                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "??");
                                 }
-                                
-                                
+                                pstrlen_total += strlen(string);
+                                printw("%s", string);
+
+
+
                                 if(procinfoproc.pinfoarray[pindex]->CTRLval==0)
                                 {
-									attron(COLOR_PAIR(2));
-									printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
-									attroff(COLOR_PAIR(2));
-								}
-								else
-									printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
+                                    attron(COLOR_PAIR(2));
+                                    printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
+                                    attroff(COLOR_PAIR(2));
+                                }
+                                else
+                                    printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval );
+                                pstrlen_total += 3;
 
 
-                                printw(" %02d:%02d:%02d.%03d",
-                                       procinfoproc.pinfodisp[pindex].createtime_hr,
-                                       procinfoproc.pinfodisp[pindex].createtime_min,
-                                       procinfoproc.pinfodisp[pindex].createtime_sec,
-                                       (int) (0.000001*(procinfoproc.pinfodisp[pindex].createtime_ns)));
+                                sprintf(string, " %02d:%02d:%02d.%03d",
+                                        procinfoproc.pinfodisp[pindex].createtime_hr,
+                                        procinfoproc.pinfodisp[pindex].createtime_min,
+                                        procinfoproc.pinfodisp[pindex].createtime_sec,
+                                        (int) (0.000001*(procinfoproc.pinfodisp[pindex].createtime_ns)));
+                                pstrlen_total += strlen(string);
+                                printw("%s", string);
 
-                                printw(" %-*.*s", pstrlen_tmux, pstrlen_tmux, procinfoproc.pinfoarray[pindex]->tmuxname);
 
 
+                                sprintf(string, " %-*.*s", pstrlen_tmux, pstrlen_tmux, procinfoproc.pinfoarray[pindex]->tmuxname);
+                                pstrlen_total += strlen(string);
+                                printw("%s", string);
+
+
+                                sprintf(string, " %- *.*ld", pstrlen_loopcnt, pstrlen_loopcnt, procinfoproc.pinfoarray[pindex]->loopcnt-procinfoproc.loopcntoffsetarray[pindex]);
+                                pstrlen_total += strlen(string);
                                 if(procinfoproc.pinfoarray[pindex]->loopcnt==procinfoproc.loopcntarray[pindex])
                                 {   // loopcnt has not changed
-                                    printw(" %- *.*ld", pstrlen_loopcnt, pstrlen_loopcnt, procinfoproc.pinfoarray[pindex]->loopcnt-procinfoproc.loopcntoffsetarray[pindex]);
+                                    printw("%s", string);
                                 }
                                 else
                                 {   // loopcnt has changed
                                     attron(COLOR_PAIR(2));
-                                    printw(" %- *.*ld", pstrlen_loopcnt, pstrlen_loopcnt, procinfoproc.pinfoarray[pindex]->loopcnt-procinfoproc.loopcntoffsetarray[pindex]);
+                                    printw("%s", string);
                                     attroff(COLOR_PAIR(2));
                                 }
 
                                 procinfoproc.loopcntarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
 
-printw(" | ");
+                                printw(" | ");
+                                pstrlen_total += 3;
 
-                                printw("%-*.*s", pstrlen_descr, pstrlen_descr, procinfoproc.pinfoarray[pindex]->description);
+                                sprintf(string,"%-*.*s", pstrlen_descr, pstrlen_descr, procinfoproc.pinfoarray[pindex]->description);
+                                pstrlen_total += strlen(string);
+                                printw("%s", string);
 
-printw(" | ");
+                                printw(" | ");
+                                pstrlen_total += 3;
 
-                                if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
+                                if((procinfoproc.pinfoarray[pindex]->loopstat == 4)||(procinfoproc.pinfoarray[pindex]->loopstat == 6)) // ERROR or CRASH
                                     attron(COLOR_PAIR(4));
-                                printw("%-*.*s", pstrlen_msg, pstrlen_msg, procinfoproc.pinfoarray[pindex]->statusmsg);
-                                if(procinfoproc.pinfoarray[pindex]->loopstat == 4) // ERROR
+
+                                sprintf(string, "%-*.*s", pstrlen_msg, pstrlen_msg, procinfoproc.pinfoarray[pindex]->statusmsg);
+                                pstrlen_total += strlen(string);
+                                printw("%s", string);
+
+                                if((procinfoproc.pinfoarray[pindex]->loopstat == 4)||(procinfoproc.pinfoarray[pindex]->loopstat == 6)) // ERROR
                                     attroff(COLOR_PAIR(4));
                             }
-                            
+
 
 
                             // ================ DISPLAY MODE 3 ==================
@@ -3611,7 +3764,9 @@ printw(" | ");
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
                                 {
-                                    printw(" no process info available\n");
+                                    sprintf(string, " no process info available\n");
+                                    pstrlen_total += strlen(string);
+                                    printw("%s", string);
                                 }
                                 else
                                 {
@@ -3627,11 +3782,13 @@ printw(" | ");
                                         if(spindex>0)
                                         {
                                             TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
-                                            printw(" %*.*s %-*.*d %-*.*s", 
-												pstrlen_status, pstrlen_status, "|---", 
-												pstrlen_pid, pstrlen_pid, procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex],
-												pstrlen_pname, pstrlen_pname, procinfoproc.pinfodisp[pindex].name
-												);
+                                            sprintf(string, " %*.*s %-*.*d %-*.*s",
+                                                    pstrlen_status, pstrlen_status, "|---",
+                                                    pstrlen_pid, pstrlen_pid, procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex],
+                                                    pstrlen_pname, pstrlen_pname, procinfoproc.pinfodisp[pindex].name
+                                                   );
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
                                         }
                                         else
                                         {
@@ -3639,36 +3796,44 @@ printw(" | ");
                                             procinfoproc.pinfodisp[pindex].subprocPIDarray[0] = procinfoproc.pinfodisp[pindex].PID;
                                         }
 
-                                        printw(" %2d", procinfoproc.pinfodisp[pindex].rt_priority);
-                                        printw(" %-*.*s", pstrlen_cset, pstrlen_cset, procinfoproc.pinfodisp[pindex].cpuset);
-                                        printw(" %2dx ", procinfoproc.pinfodisp[pindex].threads);
+                                        sprintf(string, " %2d", procinfoproc.pinfodisp[pindex].rt_priority);
+                                        pstrlen_total += strlen(string);
+                                        printw("%s", string);
 
+                                        sprintf(string, " %-*.*s", pstrlen_cset, pstrlen_cset, procinfoproc.pinfodisp[pindex].cpuset);
+                                        pstrlen_total += strlen(string);
+                                        printw("%s", string);
 
+                                        sprintf(string, " %2dx ", procinfoproc.pinfodisp[pindex].threads);
+                                        pstrlen_total += strlen(string);
+                                        printw("%s", string);
 
 
                                         // Context Switches
-										#ifdef CMDPROC_CONTEXTSWITCH
+#ifdef CMDPROC_CONTEXTSWITCH
                                         if(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex])
                                             attron(COLOR_PAIR(4));
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex])
                                             attron(COLOR_PAIR(3));
 
-                                        printw(" +%02ld +%02ld",
-                                               abs(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex]    - procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
-                                               abs(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex] - procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
-                                              );
+                                        sprintf(string, " +%02d +%02d",
+                                                abs(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex]    - procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
+                                                abs(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex] - procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
+                                               );
+                                        pstrlen_total += strlen(string);
+                                        printw("%s", string);
 
                                         if(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex])
                                             attroff(COLOR_PAIR(4));
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex])
                                             attroff(COLOR_PAIR(3));
                                         printw(" ");
-                                        #endif
+#endif
 
 
-                                        
+
                                         // CPU use
-                                        #ifdef CMDPROC_CPUUSE
+#ifdef CMDPROC_CPUUSE
                                         int cpuColor = 0;
 
                                         //					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
@@ -3681,12 +3846,14 @@ printw(" | ");
                                             cpuColor = 4;
                                         if(procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]<1.0)
                                             cpuColor = 5;
-                                       
+
 
                                         // First group of cores (physical CPU 0)
                                         for (cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu++)
                                         {
                                             printw("|");
+                                            pstrlen_total += 1;
+
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attron(COLOR_PAIR(cpuColor));
 
@@ -3694,18 +3861,24 @@ printw(" | ");
                                                 printw("%2d", procinfoproc.CPUids[cpu]);
                                             else
                                                 printw("  ");
+                                            pstrlen_total += 2;
+
 
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attroff(COLOR_PAIR(cpuColor));
                                         }
-                                        printw("|    ");
 
+                                        sprintf(string, "|    ");
+                                        pstrlen_total += strlen(string);
+                                        printw("%s", string);
 
 
                                         // Second group of cores (physical CPU 0)
                                         for (cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu < procinfoproc.NBcpus; cpu++)
                                         {
                                             printw("|");
+                                            pstrlen_total += 1;
+
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attron(COLOR_PAIR(cpuColor));
 
@@ -3713,22 +3886,27 @@ printw(" | ");
                                                 printw("%2d", procinfoproc.CPUids[cpu]);
                                             else
                                                 printw("  ");
+                                            pstrlen_total += 2;
 
                                             if(procinfoproc.CPUids[cpu] == procinfoproc.pinfodisp[pindex].processorarray[spindex])
                                                 attroff(COLOR_PAIR(cpuColor));
                                         }
                                         printw("| ");
+                                        pstrlen_total += 2;
+
 
                                         attron(COLOR_PAIR(cpuColor));
-                                        printw("%5.1f %6.2f",
-                                               procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spindex],
-                                               procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
+                                        sprintf(string, "%5.1f %6.2f",
+                                                procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spindex],
+                                                procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
+                                        pstrlen_total += strlen(string);
+                                        printw("%s", string);
                                         attroff(COLOR_PAIR(cpuColor));
-                                        #endif
+#endif
 
 
-										// Memory use
-										#ifdef CMDPROC_MEMUSE
+                                        // Memory use
+#ifdef CMDPROC_MEMUSE
                                         int memColor = 0;
 
                                         int kBcnt, MBcnt, GBcnt;
@@ -3752,48 +3930,72 @@ printw(" | ");
                                             memColor = 5;
 
                                         printw(" ");
+                                        pstrlen_total += 1;
+
                                         attron(COLOR_PAIR(memColor));
-                                        if(GBcnt>0)
-                                            printw("%3d GB ", GBcnt);
-                                        else
-                                            printw("       ");
+                                        if(GBcnt>0) {
+                                            sprintf(string, "%3d GB ", GBcnt);
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
+                                        }
+                                        else {
+                                            sprintf(string, "       ");
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
+                                        }
 
-                                        if(MBcnt>0)
-                                            printw("%4d MB ", MBcnt);
-                                        else
-                                            printw("       ");
+                                        if(MBcnt>0) {
+                                            sprintf(string, "%4d MB ", MBcnt);
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
+                                        }
+                                        else {
+                                            sprintf(string, "       ");
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
+                                        }
 
-                                        if(kBcnt>0)
-                                            printw("%4d kB ", kBcnt);
+                                        if(kBcnt>0) {
+                                            sprintf(string, "%4d kB ", kBcnt);
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
+                                        }
                                         else
-                                            printw("       ");
+                                        {
+                                            sprintf(string, "       ");
+                                            pstrlen_total += strlen(string);
+                                            printw("%s", string);
+                                        }
                                         attroff(COLOR_PAIR(memColor));
-                                        #endif
+#endif
 
                                         if(pindex == pindexSelected)
                                             attroff(A_REVERSE);
 
                                         printw("\n");
-
-
+                                        // end of line
+                                        if(pstrlen_total > pstrlen_total_max)
+                                            pstrlen_total_max = pstrlen_total;
+                                        //printw("len = %d %d / %d\n", pstrlen_total, pstrlen_total_max, wcol);
+                                        pstrlen_total = 0;
 
 
 
                                     }
                                     if(procinfoproc.pinfodisp[pindex].NBsubprocesses == 0)
                                     {
-										printw("  ERROR: procinfoproc.pinfodisp[pindex].NBsubprocesses = %d\n", (int) procinfoproc.pinfodisp[pindex].NBsubprocesses);
+                                        printw("  ERROR: procinfoproc.pinfodisp[pindex].NBsubprocesses = %d\n", (int) procinfoproc.pinfodisp[pindex].NBsubprocesses);
 
                                         if(pindex == pindexSelected)
                                             attroff(A_REVERSE);
-										}
-                                    
+                                    }
+
                                 }
 
 
                             }
-                            
-                           
+
+
 
 
                             // ================ DISPLAY MODE 4 ==================
@@ -3938,12 +4140,33 @@ printw(" | ");
                     }
 
                     if(procinfoproc.DisplayMode == 2)
+                    {
                         printw("\n");
-                    if(procinfoproc.DisplayMode == 4)
+                        // end of line
+                        if(pstrlen_total > pstrlen_total_max)
+                            pstrlen_total_max = pstrlen_total;
+                        //printw("len = %d %d / %d / %d\n", pstrlen_total, pstrlen_total_max, wcol, pstrlen_msg);
+                        pstrlen_total = 0;
+                    }
+
+                    if(procinfoproc.DisplayMode == 4) {
                         printw("\n");
+                        // end of line
+                        if(pstrlen_total > pstrlen_total_max)
+                            pstrlen_total_max = pstrlen_total;
+                        // printw("len = %d %d / %d / %d\n", pstrlen_total, pstrlen_total_max, wcol, pstrlen_msg);
+                        pstrlen_total = 0;
+                    }
+
+
+
+
 
                 }
             }
+
+
+
             clock_gettime(CLOCK_REALTIME, &t06loop);
 
 
@@ -3962,6 +4185,34 @@ printw(" | ");
 
             printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop, 1.0/tdiffvloop);
 
+
+
+
+            if(pstrlen_total_max > wcol-1)
+            {
+                int testval;
+
+                testval = pstrlen_msg - (pstrlen_total_max - (wcol-1));
+                if(testval < pstrlen_msg_min)
+                    testval = pstrlen_msg_min;
+
+                if(pstrlen_msg != testval)
+                {
+                    pstrlen_msg = testval;
+                    refresh();
+                    clear();
+                }
+            }
+
+            if(pstrlen_total_max < wcol-2)
+            {
+                pstrlen_msg += (wcol-2 - pstrlen_total_max);
+                if(pstrlen_msg > pstrlen_msg_max)
+                    pstrlen_msg = pstrlen_msg_max;
+            }
+
+
+
             refresh();
         }
 
@@ -3976,59 +4227,62 @@ printw(" | ");
     endwin();
 
 
-	// Why did we exit ?
-	
-	printf("loopOK = 0 -> exit\n");
-	
-	
+    // Why did we exit ?
+
+    printf("loopOK = 0 -> exit\n");
+
+
 #ifndef STANDALONE
     if ( Xexit == 1 ) // normal exit
         printf("[%4d] User typed x -> exiting\n", __LINE__);
     else if (data.signal_TERM == 1 )
-		printf("[%4d] Received signal TERM\n", __LINE__);
+        printf("[%4d] Received signal TERM\n", __LINE__);
     else if (data.signal_INT == 1 )
-		printf("[%4d] Received signal INT\n", __LINE__);
+        printf("[%4d] Received signal INT\n", __LINE__);
     else if (data.signal_ABRT == 1 )
-		printf("[%4d] Received signal ABRT\n", __LINE__);
+        printf("[%4d] Received signal ABRT\n", __LINE__);
     else if (data.signal_BUS == 1 )
-		printf("[%4d] Received signal BUS\n", __LINE__);
+        printf("[%4d] Received signal BUS\n", __LINE__);
     else if (data.signal_SEGV == 1 )
-		printf("[%4d] Received signal SEGV\n", __LINE__);
+        printf("[%4d] Received signal SEGV\n", __LINE__);
     else if (data.signal_HUP == 1 )
-		printf("[%4d] Received signal HUP\n", __LINE__);
+        printf("[%4d] Received signal HUP\n", __LINE__);
     else if (data.signal_PIPE == 1 )
-		printf("[%4d] Received signal PIPE\n", __LINE__);
+        printf("[%4d] Received signal PIPE\n", __LINE__);
 #endif
 
 
-	procinfoproc.loop = 0;
+    procinfoproc.loop = 0;
 
-	printf("pthread_join ... ");
-    fflush(stdout);    
-    pthread_join(threadscan, NULL);
-	printf("DONE\n");
-	fflush(stdout);
-	
-	
-		
-    // cleanup
-    for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
+
+
+    int *line;
+    int ret = -1;
+
+    while(ret != 0)
     {
-        if(procinfoproc.pinfommapped[pindex] == 1)
-        {
-            struct stat file_stat;
-
-            fstat(procinfoproc.fdarray[pindex], &file_stat);
-            munmap(procinfoproc.pinfoarray[pindex], file_stat.st_size);
-            procinfoproc.pinfommapped[pindex] == 0;
-            close(procinfoproc.fdarray[pindex]);
+        ret = pthread_tryjoin_np(threadscan, (void**)&line);
+/*
+        if(ret==EBUSY){
+            printf("Waiting for thread to complete - currently at line %d\n", procinfoproc.scandebugline);
         }
-
+        */
+        usleep(10000);
     }
 
 
 
 
+    // cleanup
+    for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
+    {
+        if(procinfoproc.pinfommapped[pindex] == 1)
+        {
+            processinfo_shm_close(procinfoproc.pinfoarray[pindex], procinfoproc.fdarray[pindex]);
+            procinfoproc.pinfommapped[pindex] == 0;
+        }
+
+    }
 
 
     free(procinfoproc.pinfodisp);

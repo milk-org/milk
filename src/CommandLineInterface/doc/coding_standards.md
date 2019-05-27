@@ -11,4 +11,5 @@
 
 - @subpage page_ProcessInfoStructure
 - @subpage page_FunctionParameterStructure
+- @subpage page_exampleBASHscript
 

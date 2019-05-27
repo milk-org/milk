@@ -39,7 +39,7 @@ FPS-enabled functions have the following elements:
 
 ## 1.2. FPS name
 
-<fpsname> consists of a root name (string), and a series of optional integers, each printed on two digits:
+<fpsname> consists of a root name (string), and a series of optional integers. Note that the number of digits matters and is part of the name:
 
 	<fpsname> = <fpsnameroot>.<opt0>.<opt1>...
 
@@ -260,11 +260,11 @@ errno_t MyFunction_FPCONF(
     //   - flags
     //   - initialization pointer. If pNull, then the variable is not initialized
      
-    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", FPTYPE_INT64, FPFLAG_DFT_INPUT, pNull);
+    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
     
     // This parameter will be intitialized to a value of 5, min-max range from 0 to 10, and current value 5
     long param02default[4] = { 5, 0, 10, 5 };
-    FPFLAG = FPFLAG_DFT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
+    FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     FPFLAG &= ~FPFLAG_WRITECONF;  // Don't allow parameter to be written during configuration
     FPFLAG &= ~FPFLAG_WRITERUN;   // Don't allow parameter to be written during run
     long fpi_param02 = function_parameter_add_entry(&fps, ".param02", "Second parameter", FPTYPE_INT64, FPFLAG, &param02default);
@@ -272,14 +272,18 @@ errno_t MyFunction_FPCONF(
     // if parameter type = FPTYPE_FLOAT32, make sure default is declared as float[4]
     // if parameter type = FPTYPE_FLOAT64, make sure default is declared as double[4]
     float gaindefault[4] = { 0.01, 0.0, 1.0, 0.01 };
-    FPFLAG = FPFLAG_DFT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
+    FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     long fpi_gain = function_parameter_add_entry(&fps, ".gain", "gain value", FPTYPE_FLOAT32, FPFLAG, &gaindefault);
 
 
 	// This parameter is a ON / OFF toggle
-	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", FPTYPE_ONOFF, FPFLAG_DFT_INPUT, pNull);
+	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
 
 	
+	// stream that needs to be loaded on startup
+	FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
+	long fp_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
+                                     FPTYPE_STREAMNAME, FPFLAG, pNull);
 
 
 
@@ -292,17 +296,17 @@ errno_t MyFunction_FPCONF(
 		if( function_parameter_FPCONFloopstep(&fps, CMDmode, &loopstatus) == 1) // Apply logic if update is needed
 		{
 			// here goes the logic
-			if ( fps.parray[fpi_gainset].status & FPFLAG_ONOFF )  // ON state
+			if ( fps.parray[fpi_gainset].fpflag & FPFLAG_ONOFF )  // ON state
                 {
-                    fps.parray[fpi_gain].status |= FPFLAG_WRITERUN;
-                    fps.parray[fpi_gain].status |= FPFLAG_USED;
-                    fps.parray[fpi_gain].status |= FPFLAG_VISIBLE;
+                    fps.parray[fpi_gain].fpflag |= FPFLAG_WRITERUN;
+                    fps.parray[fpi_gain].fpflag |= FPFLAG_USED;
+                    fps.parray[fpi_gain].fpflag |= FPFLAG_VISIBLE;
                 }
                 else // OFF state
                 {
-                    fps.parray[fpi_gain].status &= ~FPFLAG_WRITERUN;
-                    fps.parray[fpi_gain].status &= ~FPFLAG_USED;
-                    fps.parray[fpi_gain].status &= ~FPFLAG_VISIBLE;
+                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_WRITERUN;
+                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_USED;
+                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_VISIBLE;
                 }
                 
             functionparameter_CheckParametersAll(&fps);  // check all parameter values
@@ -365,6 +369,9 @@ errno_t MyFunction_RUN(
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
 	int param02 = functionparameter_GetParamValue_INT64(&fps, ".param02");
 
+
+    // This parameter is a ON / OFF toggle
+	int gainwrite = functionparameter_GetParamValue_INT64(&fps, ".option.gainwrite");
 
 	// This parameter value will be tracked during loop run, so we create a pointer for it
 	// The corresponding function is functionparameter_GetParamPtr_<TYPE>
@@ -444,16 +451,34 @@ This is the preferred way to code a loop process.
 The example also shows using FPS to set the process realtime priority.
 
 
+
 ~~~~{.c}
-//
-// run loop process
-//
+
+/* \@brief Loop process code example
+ *
+ * ## Purpose
+ *
+ * This example demonstrates use of processinfo and fps structures.\n
+ *
+ * ## Arguments
+ *
+ * @param[in]
+ * char		fpsname*
+ * 			name of function parameter structure
+ *
+ * All function parameters are held inside the function parameter structure (FPS).\n
+ * 
+ *
+ * ## Details
+ *
+ */
+
 errno_t MyFunction_RUN(
     char *fpsname
 )
 {
 	// ===========================
-	// Connect to FPS 
+	// ### Connect to FPS 
 	// ===========================
 
 	FUNCTION_PARAMETER_STRUCT fps;
@@ -464,7 +489,7 @@ errno_t MyFunction_RUN(
 	}
 	
 	// ===========================	
-	// GET FUNCTION PARAMETER VALUES
+	// ### GET FUNCTION PARAMETER VALUES
 	// ===========================
 	// parameters are addressed by their tag name
 	
@@ -486,7 +511,7 @@ errno_t MyFunction_RUN(
 
 
 	// ===========================
-	// processinfo support 
+	// ### processinfo support 
 	// ===========================
 
     PROCESSINFO *processinfo;
@@ -507,7 +532,7 @@ errno_t MyFunction_RUN(
     int loopOK = 1;
 
 	// ===========================
-	// Start loop
+	// ### Start loop
 	// ===========================
 
     
@@ -546,7 +571,7 @@ errno_t MyFunction_RUN(
 
 
 	// ==================================
-	// ENDING LOOP
+	// ### ENDING LOOP
 	// ==================================
 
     processinfo_cleanExit(processinfo);

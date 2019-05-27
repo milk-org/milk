@@ -70,8 +70,8 @@ int functiontemplate_usingprocessinfo() {
     int loopOK = 1;
     if(.... error condition ....)
     {
+		// exit function with ERROR status
         processinfo_error(processinfo, "ERROR: no WFS reference");
-        loopOK = 0;
         return RETURN_FAILURE;
     }
 

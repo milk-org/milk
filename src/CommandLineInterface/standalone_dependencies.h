@@ -26,7 +26,7 @@
 
 #define SHAREDSHMDIR    "/milk/shm"  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 #define SHAREDPROCDIR    "/milk/proc"
-#define CLIPID    0
+#define CLIPID    getpid()
 
 // *************************** FUNCTION RETURN VALUE *********************************************
 // For function returning type errno_t (= int) 

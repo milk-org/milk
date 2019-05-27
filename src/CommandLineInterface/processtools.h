@@ -79,13 +79,14 @@ typedef struct {
 
     char tmuxname[100];  // name of tmux session in which process is running, or
     // "NULL"
-    int loopstat;        // 0: initialization (before loop)
-    // 1: in loop
-    // 2: loop paused (do not iterate)
-    // 3: terminated (clean exit)
-    // 4: ERROR (typically used when loop can't start, e.g. missing input)
-    // 5: do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
-
+    int loopstat;        
+    // 0: INIT       Initialization before loop
+    // 1: ACTIVE     in loop
+    // 2: PAUSED     loop paused (do not iterate)
+    // 3: STOPPED    terminated (clean exit following user request to stop process)
+    // 4: ERROR      process could not run, typically used when loop can't start, e.g. missing input
+    // 5: SPINNING   do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
+	// 6: CRASHED    pid has gone away without proper exit sequence. Will attempt to generate exit log file (using atexit) to identify crash location
 
     char statusmsg[200];  // status message
     int statuscode;       // status code
@@ -203,6 +204,8 @@ typedef struct
 	int twaitus; // sleep time between scans
 	double dtscan; // measured time interval between scans [s]
 	pid_t scanPID;
+	int scandebugline; // for debugging	
+	
 	
 	// ensure list of process and mmap operation blocks display
 	int SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
@@ -305,6 +308,8 @@ int processinfo_compute_status(
 
 
 PROCESSINFO *processinfo_shm_create(char *pname, int CTRLval);
+PROCESSINFO *processinfo_shm_link(char *pname, int *fd);
+int processinfo_shm_close(PROCESSINFO *pinfo, int fd);
 int processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
 int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring);
