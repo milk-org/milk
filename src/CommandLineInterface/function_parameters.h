@@ -400,7 +400,7 @@ int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const 
 
 long functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps, int pindex, int fpsconnectmode);
 
-int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, char *keywordstring, char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
+int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, const char *keywordstring, const char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
 
 int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);

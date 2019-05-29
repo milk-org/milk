@@ -456,7 +456,7 @@ long processinfo_shm_list_create()
 */
 
 PROCESSINFO *processinfo_shm_create(
-    char *pname,
+    const char *pname,
     int CTRLval
 ) {
     size_t sharedsize = 0; // shared memory size in bytes
@@ -604,7 +604,7 @@ PROCESSINFO *processinfo_shm_create(
 
 
 
-PROCESSINFO *processinfo_shm_link(char *pname, int *fd){
+PROCESSINFO *processinfo_shm_link(const char *pname, int *fd){
     struct stat file_stat;
 		
     *fd = open(pname, O_RDWR);
