@@ -107,4 +107,4 @@ endif()
 
 install(TARGETS CLIcore DESTINATION bin)
 install(TARGETS CLIcore DESTINATION lib)
-install(FILES CLIcore.h processtools.h  streamCTRL.h  function_parameters.h DESTINATION include)
+install(FILES CLIcore.h processtools.h  streamCTRL.h  function_parameters.h standalone_dependencies.h DESTINATION include)
