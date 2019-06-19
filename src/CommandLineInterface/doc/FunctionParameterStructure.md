@@ -148,9 +148,13 @@ errno_t MyFunction_cli() {
         // Set FPS interface name
         // By convention, if there are optional arguments, they should be appended to the fps name
         //
-        if(data.processnameflag == 0) { // name fps to something different than the process name
+        if(data.processnameflag == 0) {
+            // the process has not been named with -n CLI option
+            // name fps to something different than the process name
             sprintf(fpsname, "myfunc-%06u", OptionalArg00);
-        } else { // Automatically set fps name to be process name up to first instance of character '.'
+        } else { 
+            // Automatically set fps name to be process name up to first instance of character '.'
+            // This is the preferred option
             strcpy(fpsname, data.processname0);
         }
 

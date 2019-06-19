@@ -1,5 +1,5 @@
 #!/bin/bash
-# Write SPF command scripts
+# Write FPS command scripts
 
 
 FPSlistfilename="fpslist.txt"
@@ -11,6 +11,7 @@ mkdir -p ${FPScmdlogdir}
 
 
 rm ${FPScmddir}/fpslist.txt &> /dev/null
+rm ${FPScmddir}/* &> /dev/null
 touch ${FPScmddir}/fpslist.txt
 
 
