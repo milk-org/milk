@@ -6093,7 +6093,7 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 	// status
 	long fp_zsize      = function_parameter_add_entry(&fps, ".status.zsize", "cube size", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
 	long fp_framelag   = function_parameter_add_entry(&fps, ".status.framelag", "lag in frame unit", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
-	long fp_kkin      = function_parameter_add_entry(&fps, ".status.kkin", "input cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
+	long fp_kkin       = function_parameter_add_entry(&fps, ".status.kkin", "input cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
 	long fp_kkout      = function_parameter_add_entry(&fps, ".status.kkout", "output cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
 
     // ===========================
@@ -6818,7 +6818,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char *buff; // transmit buffer
 
 
-    int semtrig = 1; // TODO - scan for available sem
+    int semtrig = 5; // TODO - scan for available sem
     // IMPORTANT: do not use semtrig 0 
     int UseSem = 1;
 
