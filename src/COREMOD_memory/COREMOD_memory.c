@@ -6818,7 +6818,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char *buff; // transmit buffer
 
 
-    int semtrig = 7; // TODO - scan for available sem
+    int semtrig = 8; // TODO - scan for available sem
     // IMPORTANT: do not use semtrig 0 
     int UseSem = 1;
 
