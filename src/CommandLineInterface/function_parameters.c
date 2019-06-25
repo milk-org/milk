@@ -842,6 +842,8 @@ int functionparameter_GetParamValue_ONOFF(
     }
 }
 
+
+
 int functionparameter_SetParamValue_ONOFF(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
@@ -2660,6 +2662,7 @@ int functionparameter_FPSprocess_cmdline(
                 if(updated == 1) {
                     cmdOK = 1;
                     functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval", "input command file");
+                    fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
                 }
             }
 
@@ -2849,7 +2852,7 @@ errno_t functionparameter_CONFstart(
     }
 
     // Move to correct launch directory
-    sprintf(command, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+    sprintf(command, "tmux send-keys -t %s-conf \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
@@ -3596,7 +3599,7 @@ errno_t functionparameter_CTRLscreen(
                 }
                 break;
 
-            case ' ' : // toggles ON / OFF
+            case ' ' : // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
                 fpsindex = keywnode[nodeSelected].fpsindex;
                 pindex = keywnode[nodeSelected].pindex;
                 if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
@@ -3606,9 +3609,12 @@ errno_t functionparameter_CTRLscreen(
                         } else { // OFF -> ON
                             fps[fpsindex].parray[pindex].fpflag |= FPFLAG_ONOFF;
                         }
-
+                        
+						// Save to disk
+						if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_SAVEONCHANGE) {
+							functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval", "UserInputSetParamValue");
+						}
                         fps[fpsindex].parray[pindex].cnt0 ++;
-
                         fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
                     }
                 }
@@ -3727,7 +3733,9 @@ errno_t functionparameter_CTRLscreen(
         FUNCTIONPARAMETER_LOGEXEC;
 
         printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
-        fifocmdcnt += functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
+        int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
+        fifocmdcnt += fcnt;
+        
         printw("OUTPUT LOG:  %s/fpslog.%06d\n", SHAREDSHMDIR, getpid());
 
 		FUNCTIONPARAMETER_LOGEXEC;
