@@ -1788,18 +1788,18 @@ int images_to_cube(const char *restrict img_name, long nbframes, const char *res
 
 long COREMOD_IOFITS_LoadMemStream(
     const char *sname,
-    uint64_t streamflag,
-    int *imLOC
+    uint64_t *streamflag,
+    uint32_t *imLOC
 ) {
     long ID = -1;
     int updateSHAREMEM = 0; // toggles to 1 if updating shared mem
     int updateCONFFITS = 0; // toggles to 1 if updating CONF FITS
 
 
-	*imLOC = 0;
-	printf("imLOC = %d\n", *imLOC);
-	
-	COREMOD_IOFITS_PRINTDEBUG;
+    *imLOC = 0;
+    printf("imLOC = %d\n", *imLOC);
+
+    COREMOD_IOFITS_PRINTDEBUG;
 
     // Does image exist in memory ?
     int imLOCALMEM;
@@ -1812,15 +1812,16 @@ long COREMOD_IOFITS_LoadMemStream(
         COREMOD_IOFITS_PRINTDEBUG;
     }
 
-COREMOD_IOFITS_PRINTDEBUG;
+    COREMOD_IOFITS_PRINTDEBUG;
 
-	printf("imLOC = %d\n", *imLOC);
+    printf("imLOC = %d\n", *imLOC);
+
 
     // FORCE_LOCALMEM
-    if(FPFLAG_STREAM_LOAD_FORCE_LOCALMEM & streamflag) {
+    if(FPFLAG_STREAM_LOAD_FORCE_LOCALMEM & *streamflag) {
         COREMOD_IOFITS_PRINTDEBUG;
         if(imLOCALMEM == 0) {
-            *imLOC = -1; // fail
+            *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
             COREMOD_IOFITS_PRINTDEBUG;
         } else {
             *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
@@ -1831,12 +1832,12 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // FORCE_SHAREMEM
     if(*imLOC == 0) { // still searching
-        if(FPFLAG_STREAM_LOAD_FORCE_SHAREMEM & streamflag) {
+        if(FPFLAG_STREAM_LOAD_FORCE_SHAREMEM & *streamflag) {
             COREMOD_IOFITS_PRINTDEBUG;
             // search SHAREMEM
             ID = read_sharedmem_image(sname);
             if(ID == -1) {
-                *imLOC = -1; // fail
+                *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
             } else {
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
             }
@@ -1846,14 +1847,14 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // FORCE_CONFFITS
     if(*imLOC == 0) { // still searching
-        if(FPFLAG_STREAM_LOAD_FORCE_CONFFITS & streamflag) {
+        if(FPFLAG_STREAM_LOAD_FORCE_CONFFITS & *streamflag) {
             COREMOD_IOFITS_PRINTDEBUG;
             // search CONFFITS
             char fname[200];
             sprintf(fname, "./conf/shmim.%s.fits", sname);
             ID = load_fits(fname, sname, 1);
             if(ID == -1) {
-                *imLOC = -1; // fail
+                *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
             } else {
                 *imLOC = STREAM_LOAD_SOURCE_CONFFITS;
             }
@@ -1863,7 +1864,7 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // FORCE_CONFNAME
     if(*imLOC == 0) { // still searching
-        if(FPFLAG_STREAM_LOAD_FORCE_CONFNAME & streamflag) {
+        if(FPFLAG_STREAM_LOAD_FORCE_CONFNAME & *streamflag) {
             COREMOD_IOFITS_PRINTDEBUG;
             // search CONFNAME
             FILE *fp;
@@ -1876,7 +1877,7 @@ COREMOD_IOFITS_PRINTDEBUG;
             fp = fopen(fname, "r");
             if(fp == NULL) {
                 printf("ERROR: stream %s could not be loaded from CONF\n", sname);
-                *imLOC = -1; // fail
+                *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
             } else {
                 fscanfcnt = fscanf(fp, "%s", streamfname);
                 if(fscanfcnt == EOF) {
@@ -1897,7 +1898,7 @@ COREMOD_IOFITS_PRINTDEBUG;
                     {
                         ID = load_fits(streamfname, sname, 1);
                         if(ID == -1) {
-                            *imLOC = -1; // fail
+                            *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
                         } else {
                             *imLOC = STREAM_LOAD_SOURCE_CONFNAME;
                         }
@@ -1911,9 +1912,9 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // SEARCH LOCALMEM
     if(*imLOC == 0) { // still searching
-		COREMOD_IOFITS_PRINTDEBUG;
-		//printf("imLOC = %d\n", *imLOC);
-        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM & streamflag)) {
+        COREMOD_IOFITS_PRINTDEBUG;
+        //printf("imLOC = %d\n", *imLOC);
+        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             if(imLOCALMEM == 1) {
                 *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
@@ -1925,9 +1926,9 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // SEARCH SHAREMEM
     if(*imLOC == 0) { // still searching
-		COREMOD_IOFITS_PRINTDEBUG;
-		//printf("imLOC = %d\n", *imLOC);
-        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM & streamflag)) {
+        COREMOD_IOFITS_PRINTDEBUG;
+        //printf("imLOC = %d\n", *imLOC);
+        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             ID = read_sharedmem_image(sname);
             if(ID != -1) {
@@ -1940,7 +1941,7 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // SEARCH CONFFITS
     if(*imLOC == 0) { // still searching
-        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS & streamflag)) {
+        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             //printf("imLOC = %d\n", *imLOC);
             char fname[200];
@@ -1949,14 +1950,14 @@ COREMOD_IOFITS_PRINTDEBUG;
             if(ID != -1) {
                 *imLOC = STREAM_LOAD_SOURCE_CONFFITS;
             }
-           // printf("imLOC = %d\n", *imLOC);
+            // printf("imLOC = %d\n", *imLOC);
         }
     }
 
 
     // SEARCH CONFNAME
     if(*imLOC == 0) { // still searching
-        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME & streamflag)) {
+        if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             //printf("imLOC = %d\n", *imLOC);
             FILE *fp;
@@ -1969,7 +1970,7 @@ COREMOD_IOFITS_PRINTDEBUG;
             fp = fopen(fname, "r");
             if(fp == NULL) {
                 printf("ERROR: stream %s could not be loaded from CONF\n", sname);
-                *imLOC = -1; // fail
+                *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
             } else {
                 fscanfcnt = fscanf(fp, "%s", streamfname);
                 if(fscanfcnt == EOF) {
@@ -1978,7 +1979,7 @@ COREMOD_IOFITS_PRINTDEBUG;
                         *imLOC = -1; // fail
                     } else {
                         fprintf(stderr, "Error: fscanf reached end of file, no matching characters, no matching failure\n");
-                        *imLOC = -1; // fail
+                        *imLOC = STREAM_LOAD_SOURCE_FAILURE; // fail
                     }
                 }
                 fclose(fp);
@@ -2002,7 +2003,7 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // copy to shared memory
     if(*imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
-        if(FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM & streamflag) {
+        if(FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM & *streamflag) {
             COREMOD_IOFITS_PRINTDEBUG;
             copy_image_ID(sname, sname, 1);
         }
@@ -2011,7 +2012,7 @@ COREMOD_IOFITS_PRINTDEBUG;
 
     // copy to conf FITS
     if((*imLOC != 0) && (*imLOC != STREAM_LOAD_SOURCE_CONFFITS))
-        if(FPFLAG_STREAM_LOAD_UPDATE_CONFFITS & streamflag) {
+        if(FPFLAG_STREAM_LOAD_UPDATE_CONFFITS & *streamflag) {
             updateCONFFITS = 1;
         }
     if(updateCONFFITS == 1) {
@@ -2021,8 +2022,8 @@ COREMOD_IOFITS_PRINTDEBUG;
         save_fits(sname, fname);
     }
 
-COREMOD_IOFITS_PRINTDEBUG;
-printf("imLOC = %d\n", *imLOC);
+    COREMOD_IOFITS_PRINTDEBUG;
+    printf("imLOC = %d\n", *imLOC);
 
     return ID;
 }

@@ -37,7 +37,7 @@ int images_to_cube(const char * restrict img_name, long nbframes, const char * r
 
 
 
-long COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t streamflag, int *imLOC);
+long COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC);
 
 
 #endif
