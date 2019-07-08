@@ -25,9 +25,9 @@ echo "     <stringfilter>                      string filter (optional)"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-h$(tput sgr0)          help"
+echo "     $(tput bold)-f$(tput sgr0) <fname>  input (f)ifo name"
 echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
 echo "     $(tput bold)-m$(tput sgr0)          must (m)atch fpscmd/fpslist.txt"
-#echo "     $(tput bold)-a$(tput sgr0)          (a)utostart config process(es)"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -67,8 +67,9 @@ MODE="0"
 ttystring=$( tty | tr -d \/ )
 pname="fpsCTRL"
 fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
+outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
 
-while getopts :hlm:f: FLAG; do
+while getopts :hlm:f:o: FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -134,6 +135,8 @@ echo "fifoname = ${fifoname}"
 echo "SF       = ${SF}"
 
 milk -n ${pname} -f ${CLIfifoname} -s ${SF}
+
 rm ${SF}
 
-rm $fifoname
+rm ${fifoname}
+
