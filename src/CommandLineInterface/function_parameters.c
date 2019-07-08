@@ -1853,6 +1853,8 @@ int functionparameter_CheckParameter(
     
     // STREAM CHECK
     if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
+		
+		if(fpsentry->parray[pindex].type & FPFLAG_STREAM_CONF_REQUIRED) {
 		uint32_t imLOC;
 		COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
 		if ( imLOC == 0 ){
@@ -1862,6 +1864,7 @@ int functionparameter_CheckParameter(
 			fpsentry->md->msgcnt++;
 			fpsentry->md->conferrcnt++;
 			err = 1;
+		}
 		}
 	}
 
@@ -3760,6 +3763,8 @@ errno_t functionparameter_CTRLscreen(
                 
                 clear();
                 FUNCTIONPARAMETER_LOGEXEC;
+                
+                fpsindexSelected = 0; // safeguard in case current selection disappears
                 break;
 
             case KEY_UP:
@@ -4009,12 +4014,12 @@ errno_t functionparameter_CTRLscreen(
 
 			
             for(l = 0; l < currentlevel; l++) {
-				
+				FUNCTIONPARAMETER_LOGEXEC;
 				// update imax, the maximum number of lines
                 if(keywnode[nodechain[l]].NBchild > imax) {
                     imax = keywnode[nodechain[l]].NBchild;
                 }
-
+				FUNCTIONPARAMETER_LOGEXEC;
                 if(i < keywnode[nodechain[l]].NBchild) {
                     int snode = 0; // selected node
                     int ii;
@@ -4123,7 +4128,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-
+			FUNCTIONPARAMETER_LOGEXEC;
 
 
             int ii;
@@ -4137,6 +4142,8 @@ errno_t functionparameter_CTRLscreen(
                 fpsindex = keywnode[ii].fpsindex;
                 pindex = keywnode[ii].pindex;
             }
+            
+            FUNCTIONPARAMETER_LOGEXEC;
 
             if(i1 < keywnode[currentnode].NBchild) {
                 
@@ -4492,7 +4499,7 @@ errno_t functionparameter_CTRLscreen(
             printw("\n");
         }
 
-
+		FUNCTIONPARAMETER_LOGEXEC;
 
         NBindex = icnt;
 
@@ -4500,11 +4507,15 @@ errno_t functionparameter_CTRLscreen(
             iSelected[currentlevel] = NBindex - 1;
         }
 
+		FUNCTIONPARAMETER_LOGEXEC;
+		
         printw("\n");
         printw("%d parameters\n", pcnt);
         printw("\n");
 
-
+		FUNCTIONPARAMETER_LOGEXEC;
+		
+		
         printw("------------- FUNCTION PARAMETER STRUCTURE   %s\n", fps[fpsindexSelected].md->name);
         if(fps[fpsindexSelected].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
             attron(COLOR_PAIR(2));
@@ -4517,7 +4528,6 @@ errno_t functionparameter_CTRLscreen(
             printw("[%ld] %d PARAMETER SETTINGS ERROR(s) :\n", fps[fpsindexSelected].md->msgcnt, fps[fpsindexSelected].md->conferrcnt);
             attroff(COLOR_PAIR(4));
 
-
             attron(A_BOLD);
 
             for(msgi = 0; msgi < fps[fpsindexSelected].md->msgcnt; msgi++) {
@@ -4527,6 +4537,9 @@ errno_t functionparameter_CTRLscreen(
 
             attroff(A_BOLD);
         }
+        
+        
+        FUNCTIONPARAMETER_LOGEXEC;
 
 
 
