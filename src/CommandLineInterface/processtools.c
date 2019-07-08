@@ -2459,6 +2459,8 @@ errno_t processinfo_CTRLscreen()
     clear();
     int Xexit = 0; // toggles to 1 when users types x
 
+	int pindexSelectedOK = 0; // no process selected by cursor
+
     while( loopOK == 1 )
     {
         int pid;
@@ -2596,7 +2598,7 @@ errno_t processinfo_CTRLscreen()
                     kill(pid, SIGTERM);
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 pid = pinfolist->PIDarray[pindex];
@@ -2615,7 +2617,7 @@ errno_t processinfo_CTRLscreen()
                     kill(pid, SIGKILL);
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 pid = pinfolist->PIDarray[pindex];
@@ -2634,7 +2636,7 @@ errno_t processinfo_CTRLscreen()
                     kill(pid, SIGINT);
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 pid = pinfolist->PIDarray[pindex];
@@ -2657,7 +2659,7 @@ errno_t processinfo_CTRLscreen()
                     }
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 if(pinfolist->active[pindex]!=1)
@@ -2700,7 +2702,7 @@ errno_t processinfo_CTRLscreen()
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
@@ -2711,6 +2713,7 @@ errno_t processinfo_CTRLscreen()
             break;
 
         case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
+        PROCESSTOOLS_LOGEXEC;
             for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
                 pindex = procinfoproc.pindexActive[index];
@@ -2723,7 +2726,8 @@ errno_t processinfo_CTRLscreen()
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                 }
             }
-            if(selectedOK == 0)
+            PROCESSTOOLS_LOGEXEC;
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 if(procinfoproc.pinfoarray[pindex]->CTRLval == 0) // if running, turn compute to off
@@ -2731,6 +2735,7 @@ errno_t processinfo_CTRLscreen()
                 else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
                     procinfoproc.pinfoarray[pindex]->CTRLval = 0;
             }
+            PROCESSTOOLS_LOGEXEC;
             break;
 
         case 's': // step
@@ -2743,7 +2748,7 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc.pinfoarray[pindex]->CTRLval = 2;
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 procinfoproc.pinfoarray[pindex]->CTRLval = 2;
@@ -2795,7 +2800,7 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc.pinfoarray[pindex]->CTRLval = 3;
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 procinfoproc.pinfoarray[pindex]->CTRLval = 3;
@@ -2813,7 +2818,7 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc.loopcntoffsetarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 procinfoproc.loopcntoffsetarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
@@ -2830,7 +2835,7 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc.loopcntoffsetarray[pindex] = 0;
                 }
             }
-            if(selectedOK == 0)
+            if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
                 procinfoproc.loopcntoffsetarray[pindex] = 0;
@@ -3238,6 +3243,8 @@ errno_t processinfo_CTRLscreen()
             else
             {
                 PROCESSTOOLS_LOGEXEC;
+                
+                printw("pindexSelected = %d    %d\n", pindexSelected, pindexSelectedOK);
 
                 printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
@@ -3550,7 +3557,7 @@ errno_t processinfo_CTRLscreen()
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
                 // ===========================================================================
                 pstrlen_total_max = 0;
-
+				pindexSelectedOK = 0;
                 for(dispindex=0; dispindex < dispindexMax; dispindex++)
                 {
                     if(TimeSorted == 0)
@@ -3566,7 +3573,10 @@ errno_t processinfo_CTRLscreen()
 #endif
 
                         if(pindex == pindexSelected)
+                        {
                             attron(A_REVERSE);
+                            pindexSelectedOK = 1;
+						}
 
                         if(procinfoproc.selectedarray[pindex]==1)
                             printw("*");

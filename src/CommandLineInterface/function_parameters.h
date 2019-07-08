@@ -167,7 +167,6 @@
 //
 
 
-
 #define FPFLAG_STREAM_CONF_REQUIRED              0x0000000040000000  // stream has to be in MEM for CONF process to proceed
 #define FPFLAG_STREAM_RUN_REQUIRED               0x0000000080000000  // stream has to be in MEM for RUN process to proceed
 
