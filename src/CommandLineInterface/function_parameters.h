@@ -112,6 +112,7 @@
 
 
 // what is the source from which a stream was successfully loaded
+#define STREAM_LOAD_SOURCE_FAILURE   0
 #define STREAM_LOAD_SOURCE_LOCALMEM  1
 #define STREAM_LOAD_SOURCE_SHAREMEM  2
 #define STREAM_LOAD_SOURCE_CONFFITS  3
@@ -134,7 +135,8 @@
 
 // STREAM LOADING POLICY FLAGS
 // These flags modify the default stream load policy
-
+// Default load policy: FORCE flags = 0, SKIPSEARCH flags = 0, UPDATE flags = 0
+//
 // FORCE flags will force a location to be used and all downstream locations to be updated
 // if the FORCE location does not exist, it will fail
 // only one such flag should be specified. If several force flags are specified, the first one ((a) over (b)) will be considered
@@ -161,15 +163,8 @@
 
 
 
-
-// note there is no FPFLAG_STREAM_LOAD_LASTSEARCH_CONFNAME, as this is the last possible location
-
-
 // Additionally, the following flags specify what to do if stream properties do not match the required properties
 //
-
-
-
 
 
 
@@ -193,6 +188,7 @@
 
 #define FPFLAG_STREAM_ENFORCE_DATATYPE           0x0000000100000000  // enforce stream datatype
 // stream type requirement: one of the following tests must succeed (OR) if FPFLAG_STREAM_ENFORCE_DATATYPE
+// If creating image, the first active entry is used
 #define FPFLAG_STREAM_TEST_DATATYPE_UINT8        0x0000000200000000  // test if stream of type UINT8   (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_INT8         0x0000000400000000  // test if stream of type INT8    (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_UINT16       0x0000000800000000  // test if stream of type UINT16  (OR test)
@@ -205,7 +201,14 @@
 #define FPFLAG_STREAM_TEST_DATATYPE_FLOAT        0x0000040000000000  // test if stream of type FLOAT   (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_DOUBLE       0x0000080000000000  // test if stream of type DOUBLE  (OR test)
 
-#define FPFLAG_CHECKSTREAM                       0x0000100000000000  // check and display stream status in GUI
+#define FPFLAG_STREAM_ENFORCE_1D                 0x0000100000000000  // enforce 1D image
+#define FPFLAG_STREAM_ENFORCE_2D                 0x0000200000000000  // enforce 2D image
+#define FPFLAG_STREAM_ENFORCE_3D                 0x0000400000000000  // enforce 3D image
+#define FPFLAG_STREAM_ENFORCE_XSIZE              0x0008000000000000  // enforce X size
+#define FPFLAG_STREAM_ENFORCE_YSIZE              0x0010000000000000  // enforce Y size
+#define FPFLAG_STREAM_ENFORCE_ZSIZE              0x0020000000000000  // enforce Z size
+
+#define FPFLAG_CHECKSTREAM                       0x0040000000000000  // check and display stream status in GUI
 
 
 
@@ -263,7 +266,9 @@ typedef struct {
 	// These only apply if type stream
 	uint32_t  streamID; // if type is stream and MASK_CHECKSTREAM
 	uint8_t   stream_atype;
-	// these have two entries. First is actual/measured, second is required (-1 if don't care, 0 if dimension not active)
+	
+	// these have two entries. First is actual/measured, second is required (0 if dimension not active)
+	// tests are specified by flags FPFLAG_STREAM_ENFORCE_1D/2D/3D/XSIZE/YSIZE/ZSIZE 
 	uint32_t  stream_xsize[2];        // xsize
 	uint32_t  stream_ysize[2];        // ysize
 	uint32_t  stream_zsize[2];        // zsize
@@ -345,14 +350,16 @@ typedef struct {
 
     uint64_t            signal;       // Used to send signals to configuration process
     uint64_t            confwaitus;   // configuration wait timer value [us]
-    uint32_t            status;       // conf and process status
+
+    uint32_t            status;          // conf and process status
+   
     int                 NBparam;      // size of parameter array (= max number of parameter supported)
 
     char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
     int                           msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
     uint32_t                      msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
     long                          msgcnt;
-    long                          errcnt;
+    uint32_t                      conferrcnt;
 
 } FUNCTION_PARAMETER_STRUCT_MD;
 
@@ -418,7 +425,7 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
 
 errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
-errno_t functionparameter_outlog(char *msgstring);
+errno_t functionparameter_outlog(char* keyw, char *msgstring);
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
 
 #ifdef __cplusplus

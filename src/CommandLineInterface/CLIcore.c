@@ -1030,9 +1030,9 @@ int_fast8_t runCLI(
 
 //    sprintf(command, "MILK_CLI_PID=%d", CLIPID);
 //	putenv(command);
-	
 
     printf("    CLI PID = %d\n", (int) CLIPID);
+
     sprintf(command, "echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
