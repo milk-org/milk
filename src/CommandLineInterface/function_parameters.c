@@ -1854,7 +1854,7 @@ int functionparameter_CheckParameter(
     // STREAM CHECK
     if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
 		
-		if(fpsentry->parray[pindex].type & FPFLAG_STREAM_CONF_REQUIRED) {
+		if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED) {
 		uint32_t imLOC;
 		COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
 		if ( imLOC == 0 ){
@@ -2047,8 +2047,14 @@ int functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE) {
         printf("   FPFLAG_ACTIVE\n");
     }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_USED) {
+        printf("   FPFLAG_USED\n");
+    }
     if(fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE) {
         printf("   FPFLAG_VISIBLE\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITE) {
+        printf("   FPFLAG_WRITE\n");
     }
     if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF) {
         printf("   FPFLAG_WRITECONF\n");
@@ -2056,6 +2062,10 @@ int functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN) {
         printf("   FPFLAG_WRITERUN\n");
     }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
+        printf("   FPFLAG_WRITESTATUS\n");
+    }    
+    
     if(fpsentry->parray[pindex].fpflag & FPFLAG_LOG) {
         printf("   FPFLAG_LOG\n");
     }
@@ -2065,21 +2075,83 @@ int functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCLOSE) {
         printf("   FPFLAG_SAVEONCLOSE\n");
     }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED) {
+        printf("   FPFLAG_IMPORTED\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK) {
+        printf("   FPFLAG_FEEDBACK\n");
+    }    
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF) {
+        printf("   FPFLAG_ONOFF\n");
+    } 
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT) {
+        printf("   FPFLAG_CHECKINIT\n");
+    }    
     if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT) {
         printf("   FPFLAG_MINLIMIT\n");
     }
     if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT) {
         printf("   FPFLAG_MAXLIMIT\n");
     }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKSTREAM) {
-        printf("   FPFLAG_CHECKSTREAM\n");
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_ERROR) {
+        printf("   FPFLAG_ERROR\n");
+    }    
+    
+    
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_LOCALMEM) {
+        printf("   FPFLAG_STREAM_LOAD_FORCE_LOCALMEM\n");
     }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED) {
-        printf("   FPFLAG_IMPORTED\n");
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_SHAREMEM) {
+        printf("   FPFLAG_STREAM_LOAD_FORCE_SHAREMEM\n");
     }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK) {
-        printf("   FPFLAG_FEEDBACK\n");
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFFITS) {
+        printf("   FPFLAG_STREAM_LOAD_FORCE_CONFFITS\n");
     }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFNAME) {
+        printf("   FPFLAG_STREAM_LOAD_FORCE_CONFNAME\n");
+    }
+    
+    
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM) {
+        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM) {
+        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS) {
+        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME) {
+        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME\n");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM) {
+        printf("   FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_CONFFITS) {
+        printf("   FPFLAG_STREAM_LOAD_UPDATE_CONFFITS\n");
+    }
+    
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED) {
+        printf("   FPFLAG_STREAM_CONF_REQUIRED\n");
+    }
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED) {
+        printf("   FPFLAG_STREAM_RUN_REQUIRED\n");
+    }
+    
+    
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_DATATYPE) {
+        printf("   FPFLAG_STREAM_ENFORCE_DATATYPE\n");
+    }
+
+
+
+
+
+
+
 
     printf("\n");
     printf("\n");
