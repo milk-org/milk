@@ -1851,6 +1851,9 @@ int functionparameter_CheckParameter(
     }
     
     
+#ifdef STANDALONE
+    printf("====================== Not working in standalone mode \n");
+#else
     // STREAM CHECK
     if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
 		
@@ -1867,6 +1870,7 @@ int functionparameter_CheckParameter(
 		}
 		}
 	}
+#endif
 
     if(err == 1) {
         fpsentry->parray[pindex].fpflag |= FPFLAG_ERROR;
