@@ -5404,14 +5404,17 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 	{
 		// has new frame arrived ?	
 		cnt0 = data.image[IDin].md[0].cnt0;
-		if(cnt0!=cnt0old)
+		if(cnt0 != cnt0old)
 		{
 			switch ( datatype )
 			{
+				printf(".");
+				fflush(stdout);
 				case _DATATYPE_UINT8 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.UI8[ii];
 				break;
+
 				case _DATATYPE_INT8 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.SI8[ii];
@@ -5421,6 +5424,7 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.UI16[ii];
 				break;
+
 				case _DATATYPE_INT16 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.SI16[ii];
@@ -5430,6 +5434,7 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.UI32[ii];
 				break;
+
 				case _DATATYPE_INT32 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.SI32[ii];
@@ -5439,12 +5444,11 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.UI64[ii];
 				break;
+				
 				case _DATATYPE_INT64 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.SI64[ii];
 				break;
-
-				
 				
 				case _DATATYPE_FLOAT :
 				for(ii=0;ii<xysize;ii++)
@@ -5455,8 +5459,6 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.D[ii];
 				break;
-
-
 			}
 
 			cntin++;
@@ -5486,10 +5488,11 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 	delete_image_ID("_streamAve_tmp");
 	
 
-	
-	
+
 	return(IDout);
 }
+
+
 
 
 
