@@ -2871,8 +2871,8 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
     ID1 = image_ID(ID_name1);
     ID2 = image_ID(ID_name2);
 
-	list_image_ID(); //TEST
-	printf("IDs : %ld %ld\n", ID1, ID2);
+	//list_image_ID(); //TEST
+	printf("%s  IDs : %ld %ld\n", __FUNCTION__, ID1, ID2);
 
     if(ID1==-1)
     {
@@ -2927,7 +2927,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
     nelement1 = data.image[ID1].md[0].nelement;
     nelement2 = data.image[ID2].md[0].nelement;
 
-	list_image_ID();
+	//list_image_ID();
 
     // test if 3D 2D -> 3D operation
     //printf("naxis   %ld (%d)   %ld (%d)\n", naxis, atype1, naxis2, atype2);
@@ -2945,7 +2945,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
             xysize = naxes[0]*naxes[1];
             printf("input : 3D im, 2D im -> output : 3D im\n");
             fflush(stdout);
-            list_image_ID();
+            //list_image_ID();
         }
     }
 
@@ -2965,10 +2965,10 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
 
 
 
-# ifdef _OPENMP
-    #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
-    {
-# endif
+//# ifdef _OPENMP
+//    #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
+//    {
+//# endif
 
 
 // ID1 datatype  UINT8
@@ -4619,14 +4619,15 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
                 for (ii = 0; ii < nelement; ii++)
                     data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID1].array.F[ii]), (double) (data.image[ID2].array.F[ii]));
 
-            if(op3D2Dto3D == 1)
-# ifdef _OPENMP
-                #pragma omp for
-# endif
+            if(op3D2Dto3D == 1){
+//# ifdef _OPENMP
+//                #pragma omp for
+//# endif
                 for (kk = 0; kk < naxes[2]; kk++)
                     for (ii = 0; ii < xysize; ii++)
                         data.image[IDout].array.F[kk*xysize+ii] = pt2function((double) (data.image[ID1].array.F[kk*xysize+ii]), (double) (data.image[ID2].array.F[ii]));
-        }
+			}
+		}
 
         if(datatype2==_DATATYPE_DOUBLE)  // FLOAT DOUBLE -> DOUBLE
         {
@@ -4839,9 +4840,9 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
 
 
 
-# ifdef _OPENMP
-    }
-# endif
+//# ifdef _OPENMP
+//    }
+//# endif
 
     free(naxes);
     free(naxes2);
