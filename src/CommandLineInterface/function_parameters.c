@@ -1849,23 +1849,29 @@ int functionparameter_CheckParameter(
                 }
     }
 
-
+    
+    
+#ifdef STANDALONE
+    printf("====================== Not working in standalone mode \n");
+#else
     // STREAM CHECK
     if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
+		
+		if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED) {
+		uint32_t imLOC;
+		COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
+		if ( imLOC == 0 ){
+			fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
+			fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
+			snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream %s", fpsentry->parray[pindex].val.string[0]);
+			fpsentry->md->msgcnt++;
+			fpsentry->md->conferrcnt++;
+			err = 1;
+		}
+		}
+	}
+#endif
 
-        if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED) {
-            uint32_t imLOC;
-            COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
-            if ( imLOC == 0 ) {
-                fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
-                fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
-                snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream %s", fpsentry->parray[pindex].val.string[0]);
-                fpsentry->md->msgcnt++;
-                fpsentry->md->conferrcnt++;
-                err = 1;
-            }
-        }
-    }
 
     if(err == 1) {
         fpsentry->parray[pindex].fpflag |= FPFLAG_ERROR;

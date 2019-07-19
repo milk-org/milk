@@ -106,5 +106,35 @@ if(${python_build})
 endif()
 
 install(TARGETS CLIcore DESTINATION bin)
+install(PROGRAMS scripts/cr2tofits
+              scripts/Fits2shm
+              scripts/fpsCTRL
+              scripts/fpsmkcmd
+              scripts/logshim
+              scripts/logshimkill
+              scripts/logshimoff
+              scripts/logshimon
+              scripts/logshimstat
+              scripts/merge3DfitsTelemetry
+              scripts/milkFits2shm
+              scripts/milkStreamLink
+              scripts/procCTRL
+              scripts/runidle
+              scripts/shmim2fits
+              scripts/shmimmon
+              scripts/shmimview
+              scripts/shmimview2
+              scripts/streamCTRL
+              scripts/tmuxkillall
+              scripts/tmuxsessionname
+              scripts/waitforfile
+        DESTINATION bin)
+
 install(TARGETS CLIcore DESTINATION lib)
-install(FILES CLIcore.h processtools.h  streamCTRL.h  function_parameters.h standalone_dependencies.h DESTINATION include)
+
+install(FILES CLIcore.h 
+              processtools.h  
+              streamCTRL.h  
+              function_parameters.h 
+              standalone_dependencies.h 
+        DESTINATION include)
