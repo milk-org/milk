@@ -8,37 +8,39 @@ int init_COREMOD_tools();
 
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
 
-int create_counter_file(const char *fname, long NBpts);
+int create_counter_file(const char *fname, unsigned long NBpts);
 
-int bubble_sort(double *array, long count);
+int bubble_sort(double *array, unsigned long count);
 
-void qs_float(float *array, long left, long right);
-void qs_long(long *array, long left, long right);
-void qs_double(double *array, long left, long right);
-void qs_ushort(unsigned short *array, long left, long right);
+void qs_float(float *array, unsigned long left, unsigned long right);
+void qs_long(long *array, unsigned long left, unsigned long right);
+void qs_double(double *array, unsigned long left, unsigned long right);
+void qs_ushort(unsigned short *array, unsigned long left, unsigned long right);
 
-void quick_sort_float(float *array, long count);
-void quick_sort_long(long *array, long count);
-void quick_sort_double(double *array, long count);
-void quick_sort_ushort(unsigned short *array, long count);
+void quick_sort_float(float *array, unsigned long count);
+void quick_sort_long(long *array, unsigned long count);
+void quick_sort_double(double *array, unsigned long count);
+void quick_sort_ushort(unsigned short *array, unsigned long count);
 
-void qs3(double *array, double *array1, double *array2, long left, long right);
+void qs3(double *array, double *array1, double *array2, unsigned long left, unsigned long right);
 
-void qs3_double(double *array, double *array1, double *array2, long left, long right);
+void qs3_double(double *array, double *array1, double *array2, unsigned long left, unsigned long right);
 
-void quick_sort3(double *array, double *array1, double *array2, long count);
-void quick_sort3_float(float *array, float *array1, float *array2, long count);
-void quick_sort3_double(double *array, double *array1, double *array2, long count);
+void quick_sort3(double *array, double *array1, double *array2, unsigned long count);
+void quick_sort3_float(float *array, float *array1, float *array2, unsigned long count);
+void quick_sort3_double(double *array, double *array1, double *array2, unsigned long count);
 
-void qs2l(double *array, long *array1, long left, long right);
+void qs2l(double *array, long *array1, unsigned long left, unsigned long right);
 
-void quick_sort2l(double *array, long *array1, long count);
+void quick_sort2l(double *array, long *array1, unsigned long count);
 
-void quick_sort2l_double(double *array, long *array1, long count);
+void quick_sort2l_double(double *array, long *array1, unsigned long count);
+void quick_sort2ul_double(double *array, unsigned long *array1, unsigned long count);
 
-void quick_sort3ll_double(double *array, long *array1, long *array2, long count);
+void quick_sort3ll_double(double *array, long *array1, long *array2, unsigned long count);
+void quick_sort3ulul_double(double *array, unsigned long *array1, unsigned long *array2, unsigned long count);
 
-int lin_regress(double *a, double *b, double *Xi2, double *x, double *y, double *sig, int nb_points);
+int lin_regress(double *a, double *b, double *Xi2, double *x, double *y, double *sig, unsigned int nb_points);
 
 int replace_char(char *content, char cin, char cout);
 
