@@ -803,7 +803,7 @@ void qs3ulul_double(
         }
     } while(i<=j);
 
-	printf("-");
+	printf("\n");
 	fflush(stdout);
 
     if(left<j){
