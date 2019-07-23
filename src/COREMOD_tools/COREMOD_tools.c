@@ -769,15 +769,32 @@ void qs3ulul_double(
 {
     register unsigned long i,j;
     double x,y;
-    unsigned long l1,l2;
+    long l1,l2;
+
+	long left0;
+	long right0;
+	
+	int stoploop = 0;
+	
+	left0 = (long) left;
+	right0 = (long) right;
+
+	printf("[%lu %lu]", left, right);
+	fflush(stdout);
 
     i = left;
     j = right;
     x = array[(left+right)/2];
 
+	printf("[%lu %lf]", (left+right)/2, x);
+	fflush(stdout);
+
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
+
+		printf(" (( %lu/%lu %lu/%lu )) ", i, right, j, left);
+		fflush(stdout);
 
         if(i<=j) {
             y = array[i];
@@ -793,12 +810,25 @@ void qs3ulul_double(
             array2[j] = l2;
 
             i++;
-            j--;
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
-    if(left<j) qs3ulul_double(array,array1,array2,left,j);
-    if(i<right) qs3ulul_double(array,array1,array2,i,right);
+	printf("\n");
+	fflush(stdout);
+
+    if(left<j){
+		 printf("<");
+		 fflush(stdout);
+		 qs3ulul_double(array, array1, array2, left, j);
+	 }
+	 
+    if(i<right){
+		printf(">");
+		fflush(stdout);
+		qs3ulul_double(array, array1, array2, i, right);
+	}
 }
 
 
