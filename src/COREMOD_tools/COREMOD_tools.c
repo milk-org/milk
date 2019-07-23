@@ -771,6 +771,9 @@ void qs3ulul_double(
     double x,y;
     unsigned long l1,l2;
 
+	printf(".");
+	fflush(stdout);
+
     i = left;
     j = right;
     x = array[(left+right)/2];
@@ -797,8 +800,17 @@ void qs3ulul_double(
         }
     } while(i<=j);
 
-    if(left<j) qs3ulul_double(array,array1,array2,left,j);
-    if(i<right) qs3ulul_double(array,array1,array2,i,right);
+    if(left<j){
+		 printf("<");
+		 fflush(stdout);
+		 qs3ulul_double(array, array1, array2, left, j);
+	 }
+	 
+    if(i<right){
+		printf(">");
+		fflush(stdout);
+		qs3ulul_double(array, array1, array2, i, right);
+	}
 }
 
 
