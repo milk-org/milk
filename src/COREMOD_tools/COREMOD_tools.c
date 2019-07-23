@@ -800,6 +800,9 @@ void qs3ulul_double(
         }
     } while(i<=j);
 
+	printf("-");
+	fflush(stdout);
+
     if(left<j){
 		 printf("<");
 		 fflush(stdout);
