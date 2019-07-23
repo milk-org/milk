@@ -771,7 +771,7 @@ void qs3ulul_double(
     double x,y;
     unsigned long l1,l2;
 
-	printf(".");
+	printf("[%lu %lu]", left, right);
 	fflush(stdout);
 
     i = left;
