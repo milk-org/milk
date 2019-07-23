@@ -316,14 +316,15 @@ void qs_float(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            j--;
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -349,14 +350,15 @@ void qs_long(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            j--;
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -371,7 +373,7 @@ void qs_double(
     unsigned long right
 )
 {
-    register long i,j;
+    register unsigned long i,j;
     double x,y;
 
     i = left;
@@ -380,19 +382,21 @@ void qs_double(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            j--;
+            
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
-    if(left<j) qs_double(array,left,j);
-    if(i<right) qs_double(array,i,right);
+    if(left<j) qs_double(array, left, j);
+    if(i<right) qs_double(array, i, right);
 }
 
 
@@ -412,14 +416,16 @@ void qs_ushort(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            j--;
+
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -447,7 +453,7 @@ void qs3(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -463,7 +469,9 @@ void qs3(
             array2[j] = y2;
 
             i++;
-            j--;
+
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -491,7 +499,7 @@ void qs3_float(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -507,7 +515,9 @@ void qs3_float(
             array2[j] = y2;
 
             i++;
-            j--;
+            
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -535,7 +545,7 @@ void qs3_double(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -551,7 +561,9 @@ void qs3_double(
             array2[j] = y2;
 
             i++;
-            j--;
+            
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -578,7 +590,7 @@ void qs2l(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -590,7 +602,9 @@ void qs2l(
             array1[j] = l1;
 
             i++;
-            j--;
+            
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -617,7 +631,7 @@ void qs2ul(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -629,7 +643,8 @@ void qs2ul(
             array1[j] = l1;
 
             i++;
-            j--;
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -655,7 +670,7 @@ void qs2l_double(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -667,7 +682,9 @@ void qs2l_double(
             array1[j] = l1;
 
             i++;
-            j--;
+            
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
@@ -693,7 +710,7 @@ void qs2ul_double(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
         if(i<=j) {
             y = array[i];
@@ -705,7 +722,9 @@ void qs2ul_double(
             array1[j] = l1;
 
             i++;
-            j--;
+            
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
