@@ -774,6 +774,8 @@ void qs3ulul_double(
 	long left0;
 	long right0;
 	
+	int stoploop = 0;
+	
 	left0 = (long) left;
 	right0 = (long) right;
 
@@ -789,7 +791,7 @@ void qs3ulul_double(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
+        while(x<array[j] && j>left && j>0) j--;
 
 		printf(" (( %lu/%lu %lu/%lu )) ", i, right, j, left);
 		fflush(stdout);
@@ -808,7 +810,8 @@ void qs3ulul_double(
             array2[j] = l2;
 
             i++;
-            j--;
+            if(j>0)
+				j--;
         }
     } while(i<=j);
 
