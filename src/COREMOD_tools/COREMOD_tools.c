@@ -767,7 +767,7 @@ void qs3ulul_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
+    register long i,j;
     double x,y;
     unsigned long l1,l2;
 
@@ -785,7 +785,7 @@ void qs3ulul_double(
         while(array[i]<x && i<right) i++;
         while(x<array[j] && j>left) j--;
 
-		printf(" (( %lu/%lu %lu/%lu )) ", i, right, j, left);
+		printf(" (( %ld/%lu %ld/%lu )) ", i, right, j, left);
 		fflush(stdout);
 
         if(i<=j) {
