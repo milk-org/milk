@@ -815,13 +815,13 @@ void qs3ulul_double(
 	printf("\n");
 	fflush(stdout);
 
-    if(left0<j){
+    if(left<j){
 		 printf("<");
 		 fflush(stdout);
 		 qs3ulul_double(array, array1, array2, left, j);
 	 }
 	 
-    if(i<right0){
+    if(i<right){
 		printf(">");
 		fflush(stdout);
 		qs3ulul_double(array, array1, array2, i, right);
