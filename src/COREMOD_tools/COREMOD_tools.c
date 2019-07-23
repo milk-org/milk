@@ -733,60 +733,7 @@ void qs3ll_double(
 
     do {
         while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left) j--;
-
-        if(i<=j) {
-            y = array[i];
-            array[i] = array[j];
-            array[j] = y;
-
-            l1 = array1[i];
-            array1[i] = array1[j];
-            array1[j] = l1;
-
-            l2 = array2[i];
-            array2[i] = array2[j];
-            array2[j] = l2;
-
-            i++;
-            j--;
-        }
-    } while(i<=j);
-
-    if(left<j) qs3ll_double(array,array1,array2,left,j);
-    if(i<right) qs3ll_double(array,array1,array2,i,right);
-}
-
-
-
-void qs3ulul_double(
-    double *array,
-    unsigned long *array1,
-    unsigned long *array2,
-    unsigned long left,
-    unsigned long right
-)
-{
-    register unsigned long i,j;
-    double x,y;
-    unsigned long l1,l2;
-
-//	printf("[%lu %lu]", left, right);
-//	fflush(stdout);
-
-    i = left;
-    j = right;
-    x = array[(left+right)/2];
-
-//	printf("[%lu %lf]", (left+right)/2, x);
-//	fflush(stdout);
-
-    do {
-        while(array[i]<x && i<right) i++;
         while(x<array[j] && j>left && j>0) j--;
-
-//		printf(" (( %lu/%lu %lu/%lu )) ", i, right, j, left);
-//		fflush(stdout);
 
         if(i<=j) {
             y = array[i];
@@ -807,18 +754,60 @@ void qs3ulul_double(
         }
     } while(i<=j);
 
-//	printf("\n");
-//	fflush(stdout);
+    if(left<j){ 
+		qs3ll_double(array, array1, array2, left, j);
+	}
+    if(i<right){ 
+		qs3ll_double(array, array1, array2, i, right);
+	}
+}
+
+
+
+void qs3ulul_double(
+    double *array,
+    unsigned long *array1,
+    unsigned long *array2,
+    unsigned long left,
+    unsigned long right
+)
+{
+    register unsigned long i,j;
+    double x,y;
+    unsigned long l1,l2;
+
+    i = left;
+    j = right;
+    x = array[(left+right)/2];
+
+    do {
+        while(array[i]<x && i<right) i++;
+        while(x<array[j] && j>left && j>0) j--;
+
+        if(i<=j) {
+            y = array[i];
+            array[i] = array[j];
+            array[j] = y;
+
+            l1 = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
+
+            l2 = array2[i];
+            array2[i] = array2[j];
+            array2[j] = l2;
+
+            i++;
+            if(j>0)
+				j--;
+        }
+    } while(i<=j);
 
     if(left<j){
-		 //printf("<");
-		 //fflush(stdout);
 		 qs3ulul_double(array, array1, array2, left, j);
 	 }
 	 
     if(i<right){
-		//printf(">");
-		//fflush(stdout);
 		qs3ulul_double(array, array1, array2, i, right);
 	}
 }
