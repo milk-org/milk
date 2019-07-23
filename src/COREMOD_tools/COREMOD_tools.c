@@ -778,6 +778,9 @@ void qs3ulul_double(
     j = right;
     x = array[(left+right)/2];
 
+	printf("[%lu %lf]", (left+right)/2, x);
+	fflush(stdout);
+
     do {
         while(array[i]<x && i<right) i++;
         while(x<array[j] && j>left) j--;
