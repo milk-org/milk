@@ -496,7 +496,7 @@ PROCESSINFO *processinfo_shm_create(
 
     long pindex;
     pindex = processinfo_shm_list_create();
-    printf("%d - created entry %d\n", __LINE__, pindex);
+    printf("%d - created entry %ld\n", __LINE__, pindex);
     
     pinfolist->PIDarray[pindex] = PID;
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
