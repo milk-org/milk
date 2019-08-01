@@ -198,10 +198,12 @@ PROCESSINFO *processinfo_setup(
 
     PROCESSTOOLS_LOGEXEC;
 
-    printf("starting processinfo_setup\n");
-    fflush(stdout);
+
 
 #ifdef PROCESSINFO_ENABLED
+
+    printf(".... starting processinfo_setup\n");
+    fflush(stdout);
 
     PROCESSTOOLS_LOGEXEC;
     if(data.processinfoActive == 0) {
