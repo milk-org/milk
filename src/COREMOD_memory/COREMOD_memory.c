@@ -5408,8 +5408,6 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 		{
 			switch ( datatype )
 			{
-				printf(".");
-				fflush(stdout);
 				case _DATATYPE_UINT8 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.UI8[ii];
@@ -6829,15 +6827,19 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     int TMPDEBUG = 0; // set to 1 for debugging this function
 
-	
+
+	printf("Transmit stream %s over IP %s port %d\n", IDname, IPaddr, port);
+	fflush(stdout);
+
+	COREMODMEMORY_LOGEXEC;
 
 	if(TMPDEBUG==1)
 		COREMOD_MEMORY_testfunction_semaphore(IDname, 0, 0);
 
     // ===========================
     // processinfo support
-    // ===========================
-    PROCESSINFO *processinfo;
+    // ===========================	
+	PROCESSINFO *processinfo;
 
     char pinfoname[200];
     sprintf(pinfoname, "ntw-tx-%s", IDname);
@@ -6848,12 +6850,20 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char pinfomsg[200];
     sprintf(pinfomsg, "setup");
 
+
+	printf("Setup processinfo ...");
+	fflush(stdout);
     processinfo = processinfo_setup(
                       pinfoname,                 
                       descr,    // description
                       pinfomsg,  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
                   );
+    printf(" done\n");
+	fflush(stdout);
+                  
+                  
+                  
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
     processinfo->RT_priority = RT_priority;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
@@ -6861,6 +6871,11 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     int loopOK = 1;
 
     ID = image_ID(IDname);
+
+
+	printf("TMPDEBUG = %d\n", TMPDEBUG);
+	fflush(stdout);
+	
 
     if(TMPDEBUG == 0) {
 
@@ -6965,6 +6980,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 
             printf("IMAGE FRAME SIZE = %ld\n", framesize);
+            fflush(stdout);
         }
 
         if(loopOK == 1) {
