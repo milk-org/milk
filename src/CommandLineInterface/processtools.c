@@ -214,14 +214,14 @@ PROCESSINFO *processinfo_setup(
         char pinfoname0[200];
         sprintf(pinfoname0, "%s", pinfoname);
         
-        printf("pinfoname = %s\n", pinfoname);
+        printf("%d pinfoname = %s\n", __LINE__, pinfoname);
         fflush(stdout);
 
         PROCESSTOOLS_LOGEXEC;
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
-        printf("- created\n");
+        printf("%d - created\n", __LINE__);
         fflush(stdout);
 
 		processinfo_CatchSignals();
@@ -450,6 +450,11 @@ long processinfo_shm_list_create()
         pinfolist = (PROCESSINFOLIST *)processinfo_shm_link(SM_fname, &SM_fd);
         while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
 			pindex ++;
+		
+		if(pindex==PROCESSINFOLISTSIZE){
+			printf("ERROR: pindex reaches max value\n");
+			exit(0);
+		}
 	}
 	
 
@@ -491,11 +496,13 @@ PROCESSINFO *processinfo_shm_create(
 
     long pindex;
     pindex = processinfo_shm_list_create();
+    
+    
     pinfolist->PIDarray[pindex] = PID;
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
 
     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
-    printf("SM_fname = %s\n", SM_fname);
+    printf("%d - SM_fname = %s\n", __LINE__, SM_fname);
     fflush(stdout);
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
