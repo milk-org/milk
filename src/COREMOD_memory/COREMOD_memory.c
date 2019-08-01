@@ -6829,7 +6829,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     int TMPDEBUG = 0; // set to 1 for debugging this function
 
-	
+	COREMODMEMORY_LOGEXEC;
 
 	if(TMPDEBUG==1)
 		COREMOD_MEMORY_testfunction_semaphore(IDname, 0, 0);
