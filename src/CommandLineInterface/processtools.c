@@ -497,9 +497,17 @@ PROCESSINFO *processinfo_shm_create(
     long pindex;
     pindex = processinfo_shm_list_create();
     printf("%d - created entry %ld\n", __LINE__, pindex);
+    fflush(stdout);
+    
     
     pinfolist->PIDarray[pindex] = PID;
+    printf("%d - PID = %d\n", __LINE__, PID);
+    fflush(stdout);
+    
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
+	printf("%d - pname = %s\n", pinfolist->pnamearray[pindex]);
+	fflush(stdout);
+
 
     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
     printf("%d - SM_fname = %s\n", __LINE__, SM_fname);
