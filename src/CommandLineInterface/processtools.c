@@ -202,8 +202,6 @@ PROCESSINFO *processinfo_setup(
 
 #ifdef PROCESSINFO_ENABLED
 
-    printf(".... starting processinfo_setup ....\n");
-    fflush(stdout);
 
     PROCESSTOOLS_LOGEXEC;
     if(data.processinfoActive == 0) {
@@ -213,22 +211,16 @@ PROCESSINFO *processinfo_setup(
 
         char pinfoname0[200];
         sprintf(pinfoname0, "%s", pinfoname);
-        
-        printf("%d pinfoname = %s\n", __LINE__, pinfoname);
-        fflush(stdout);
+       
 
         PROCESSTOOLS_LOGEXEC;
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
-        printf("%d - created\n", __LINE__);
-        fflush(stdout);
 
 		processinfo_CatchSignals();
     }
-    
-    printf("processinfo created\n");
-    fflush(stdout);
+
 
     PROCESSTOOLS_LOGEXEC;
 
@@ -496,27 +488,13 @@ PROCESSINFO *processinfo_shm_create(
 
     long pindex;
     pindex = processinfo_shm_list_create();
-    printf("%d - created entry %ld\n", __LINE__, pindex);
-    fflush(stdout);
-    
-    
+  
     pinfolist->PIDarray[pindex] = PID;
-    printf("%d - PID = %d\n", __LINE__, PID);
-    fflush(stdout);
-
-	printf("%d - pname = %s  %d\n", __LINE__, pname, PROCESSINFONAME_MAXCHAR);
-	fflush(stdout);    
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
-	printf("%d - pname = %s  %d\n", __LINE__, pname, PROCESSINFONAME_MAXCHAR);
-	fflush(stdout);    
-	printf("%d - pname = %s\n", __LINE__, pinfolist->pnamearray[pindex]);
-	fflush(stdout);
+  
 
 
     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
-    printf("%d - SM_fname = %s\n", __LINE__, SM_fname);
-    fflush(stdout);
-
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1) {
         perror("Error opening file for writing");
