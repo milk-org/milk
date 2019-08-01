@@ -221,6 +221,9 @@ PROCESSINFO *processinfo_setup(
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
+        printf("- created\n");
+        fflush(stdout);
+
 		processinfo_CatchSignals();
     }
     
