@@ -503,8 +503,12 @@ PROCESSINFO *processinfo_shm_create(
     pinfolist->PIDarray[pindex] = PID;
     printf("%d - PID = %d\n", __LINE__, PID);
     fflush(stdout);
-    
+
+	printf("%d - pname = %s  %d\n", __LINE__, pname, PROCESSINFONAME_MAXCHAR);
+	fflush(stdout);    
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
+	printf("%d - pname = %s  %d\n", __LINE__, pname, PROCESSINFONAME_MAXCHAR);
+	fflush(stdout);    
 	printf("%d - pname = %s\n", __LINE__, pinfolist->pnamearray[pindex]);
 	fflush(stdout);
 
