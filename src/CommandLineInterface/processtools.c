@@ -14,6 +14,8 @@
 #ifndef STANDALONE
 
 #define PROCESSINFO_ENABLED
+
+
 // OPTIONAL LINE TRACKING FOR DEBUGGING
 //
 // Warning: enabling this feature will slow down execution
@@ -213,6 +215,9 @@ PROCESSINFO *processinfo_setup(
 
 		processinfo_CatchSignals();
     }
+    
+    printf("processinfo created\n");
+    fflush(stdout);
 
     PROCESSTOOLS_LOGEXEC;
 
