@@ -6841,7 +6841,11 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     // ===========================
     // processinfo support
     // ===========================
-    PROCESSINFO *processinfo;
+
+	printf("Setup processinfo\n");
+	fflush(stdout);
+	
+	PROCESSINFO *processinfo;
 
     char pinfoname[200];
     sprintf(pinfoname, "ntw-tx-%s", IDname);
@@ -6865,6 +6869,11 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     int loopOK = 1;
 
     ID = image_ID(IDname);
+
+
+	printf("TMPDEBUG = %d\n", TMPDEBUG);
+	fflush(stdout);
+	
 
     if(TMPDEBUG == 0) {
 
@@ -6969,6 +6978,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
 
             printf("IMAGE FRAME SIZE = %ld\n", framesize);
+            fflush(stdout);
         }
 
         if(loopOK == 1) {
