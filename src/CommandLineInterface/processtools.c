@@ -505,7 +505,7 @@ PROCESSINFO *processinfo_shm_create(
     fflush(stdout);
     
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
-	printf("%d - pname = %s\n", pinfolist->pnamearray[pindex]);
+	printf("%d - pname = %s\n", __LINE__, pinfolist->pnamearray[pindex]);
 	fflush(stdout);
 
 
