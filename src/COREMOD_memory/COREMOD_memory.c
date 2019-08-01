@@ -5408,8 +5408,6 @@ long COREMOD_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, co
 		{
 			switch ( datatype )
 			{
-				printf(".");
-				fflush(stdout);
 				case _DATATYPE_UINT8 :
 				for(ii=0;ii<xysize;ii++)
 					data.image[IDout0].array.F[ii] += data.image[IDin].array.UI8[ii];
@@ -6840,11 +6838,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     // ===========================
     // processinfo support
-    // ===========================
-
-	printf("Setup processinfo\n");
-	fflush(stdout);
-	
+    // ===========================	
 	PROCESSINFO *processinfo;
 
     char pinfoname[200];
@@ -6856,12 +6850,20 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
     char pinfomsg[200];
     sprintf(pinfomsg, "setup");
 
+
+	printf("Setup processinfo ...");
+	fflush(stdout);
     processinfo = processinfo_setup(
                       pinfoname,                 
                       descr,    // description
                       pinfomsg,  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
                   );
+    printf(" done\n");
+	fflush(stdout);
+                  
+                  
+                  
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
     processinfo->RT_priority = RT_priority;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
