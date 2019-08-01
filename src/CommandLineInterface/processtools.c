@@ -202,7 +202,7 @@ PROCESSINFO *processinfo_setup(
 
 #ifdef PROCESSINFO_ENABLED
 
-    printf(".... starting processinfo_setup\n");
+    printf(".... starting processinfo_setup ....\n");
     fflush(stdout);
 
     PROCESSTOOLS_LOGEXEC;
@@ -213,6 +213,9 @@ PROCESSINFO *processinfo_setup(
 
         char pinfoname0[200];
         sprintf(pinfoname0, "%s", pinfoname);
+        
+        printf("pinfoname = %s\n");
+        fflush(stdout);
 
         PROCESSTOOLS_LOGEXEC;
 
