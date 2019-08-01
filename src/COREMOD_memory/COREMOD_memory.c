@@ -6829,6 +6829,10 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 
     int TMPDEBUG = 0; // set to 1 for debugging this function
 
+
+	printf("Transmit stream %s over IP %s port %d\n", IDname, IPaddr, port);
+	fflush(stdout);
+
 	COREMODMEMORY_LOGEXEC;
 
 	if(TMPDEBUG==1)
