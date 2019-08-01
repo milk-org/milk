@@ -137,7 +137,7 @@ typedef struct {
 typedef struct {
     pid_t PIDarray[PROCESSINFOLISTSIZE];
     int   active[PROCESSINFOLISTSIZE];
-    char  pnamearray[PROCESSINFONAME_MAXCHAR][PROCESSINFOLISTSIZE];  // short name
+    char  pnamearray[PROCESSINFOLISTSIZE][PROCESSINFONAME_MAXCHAR];  // short name
 
 } PROCESSINFOLIST;
 
