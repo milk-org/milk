@@ -14,6 +14,8 @@
 #ifndef STANDALONE
 
 #define PROCESSINFO_ENABLED
+
+
 // OPTIONAL LINE TRACKING FOR DEBUGGING
 //
 // Warning: enabling this feature will slow down execution
@@ -196,7 +198,12 @@ PROCESSINFO *processinfo_setup(
 
     PROCESSTOOLS_LOGEXEC;
 
+
+
 #ifdef PROCESSINFO_ENABLED
+
+    printf(".... starting processinfo_setup ....\n");
+    fflush(stdout);
 
     PROCESSTOOLS_LOGEXEC;
     if(data.processinfoActive == 0) {
@@ -206,13 +213,22 @@ PROCESSINFO *processinfo_setup(
 
         char pinfoname0[200];
         sprintf(pinfoname0, "%s", pinfoname);
+        
+        printf("pinfoname = %s\n", pinfoname);
+        fflush(stdout);
 
         PROCESSTOOLS_LOGEXEC;
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
+        printf("- created\n");
+        fflush(stdout);
+
 		processinfo_CatchSignals();
     }
+    
+    printf("processinfo created\n");
+    fflush(stdout);
 
     PROCESSTOOLS_LOGEXEC;
 
@@ -479,6 +495,8 @@ PROCESSINFO *processinfo_shm_create(
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
 
     sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
+    printf("SM_fname = %s\n", SM_fname);
+    fflush(stdout);
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1) {
