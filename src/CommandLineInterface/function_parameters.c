@@ -428,7 +428,7 @@ long function_parameter_struct_connect(
         // load streams
         int pindex;
         for(pindex = 0; pindex < NBparam; pindex++) {
-            if(fps->parray[pindex].type & FPTYPE_STREAMNAME) {
+			if( (fps->parray[pindex].fpflag & FPFLAG_ACTIVE) && (fps->parray[pindex].fpflag & FPFLAG_USED) && (fps->parray[pindex].type & FPTYPE_STREAMNAME)) {
                 functionparameter_LoadStream(fps, pindex, fpsconnectmode);
             }
         }
@@ -1389,7 +1389,11 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, ui
 
 
 
-uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus) {
+uint16_t function_parameter_FPCONFloopstep(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    uint32_t CMDmode,
+    uint16_t *loopstatus)
+{
     static int loopINIT = 0;
     uint16_t updateFLAG = 0;
 
@@ -2458,9 +2462,12 @@ int functionparameter_UserInputSetParamValue(
  * 
  * ## Commands
  * 
- * - setval   : set parameter value
- * - runstart : start RUN process associated with parameter
- * - runstop  : stop RUN process associated with parameter
+ * - logsymlink  : create log sym link
+ * - setval      : set parameter value
+ * - getval      : get value
+ * - confupdate  : update configuration 
+ * - runstart    : start RUN process associated with parameter
+ * - runstop     : stop RUN process associated with parameter
  * 
  * 
  */ 
@@ -2645,9 +2652,42 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    // runstart
+    // confupdate
 
     FUNCTIONPARAMETER_LOGEXEC;
+    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confupdate") == 0))
+    {
+        cmdFOUND = 1;
+        if(nbword != 2) {
+            sprintf(msgstring, "COMMAND confupdate NBARGS = 1");
+            functionparameter_outlog("ERROR", msgstring);
+            cmdOK = 0;
+        }
+        else
+        {
+            if(kwnindex != -1) {
+                fpsindex = keywnode[kwnindex].fpsindex;
+                pindex = keywnode[kwnindex].pindex;
+
+                FUNCTIONPARAMETER_LOGEXEC;
+                fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
+
+                sprintf(msgstring, "update CONF process %d %s", fpsindex, fps[fpsindex].md->name);
+                functionparameter_outlog("CONFUPDATE", msgstring);
+                cmdOK = 1;
+            }
+            else
+            {
+                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+                functionparameter_outlog("ERROR", msgstring);
+                cmdOK = 0;
+            }
+        }
+    }
+    
+    
+
+	// runstart
 
     if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runstart") == 0))
     {
