@@ -2364,6 +2364,8 @@ errno_t processinfo_CTRLscreen()
 
     PROCESSTOOLS_LOGEXEC;
 
+
+
     processinfo_CatchSignals();
 
 
@@ -2400,7 +2402,10 @@ errno_t processinfo_CTRLscreen()
 
     // Create / read process list
     //
-    processinfo_shm_list_create();
+    if ( processinfo_shm_list_create() == 0) {
+		printf("==== NO PROCESS TO DISPLAY -> EXITING ====\n");
+		return(0);
+	}
 
 
     // copy pointer
@@ -2409,6 +2414,8 @@ errno_t processinfo_CTRLscreen()
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
+
+	
 
     // INITIALIZE ncurses
     initncurses();
