@@ -1917,6 +1917,8 @@ void *processinfo_scan(void *thptr) {
         PROCESSTOOLS_LOGEXEC;
 
         pinfop->scandebugline = __LINE__;
+        
+        PROCESSTOOLS_LOGEXEC;
 
         // timing measurement
         clock_gettime(CLOCK_REALTIME, &t1);
@@ -1929,6 +1931,8 @@ void *processinfo_scan(void *thptr) {
         }
         clock_gettime(CLOCK_REALTIME, &t0);
         pinfop->dtscan = tdiffv;
+        
+        PROCESSTOOLS_LOGEXEC;
 
 
 
@@ -1949,14 +1953,19 @@ void *processinfo_scan(void *thptr) {
         pinfop->SCANBLOCK_requested = 0; // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
 
+		PROCESSTOOLS_LOGEXEC;
 
         // LOAD / UPDATE process information
         // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
         //
         pinfop->scandebugline = __LINE__;
 
+		PROCESSTOOLS_LOGEXEC;
+
         for(pindex = 0; pindex < pinfop->NBpinfodisp; pindex++) {
             if(pinfop->loop == 1) {
+				
+				PROCESSTOOLS_LOGEXEC;
 
                 char SM_fname[200];    // shared memory file name
                 struct stat file_stat;
@@ -1979,6 +1988,8 @@ void *processinfo_scan(void *thptr) {
                 if(pinfolist->active[pindex] == 3) { // file has gone away
                     pinfop->updatearray[pindex] = 0;
                 }
+                
+                PROCESSTOOLS_LOGEXEC;
 
 
                 pinfop->scandebugline = __LINE__;
@@ -1994,6 +2005,8 @@ void *processinfo_scan(void *thptr) {
                     pinfolist->active[pindex] = 0;
                     pinfop->updatearray[pindex] = 0;
                 }
+                
+                PROCESSTOOLS_LOGEXEC;
 
 
                 if(pinfolist->active[pindex] == 1) {
@@ -2007,18 +2020,25 @@ void *processinfo_scan(void *thptr) {
                         pinfolist->active[pindex] = 2;
                     }
                 }
+                
+                PROCESSTOOLS_LOGEXEC;
 
                 pinfop->scandebugline = __LINE__;
 
                 if((pindex < pinfop->NBpinfodisp) && (pinfop->updatearray[pindex] == 1)) {
                     // (RE)LOAD
                     struct stat file_stat;
+                    
+                    PROCESSTOOLS_LOGEXEC;
 
                     // if already mmapped, first unmap
                     if(pinfop->pinfommapped[pindex] == 1) {
                         processinfo_shm_close(pinfop->pinfoarray[pindex], pinfop->fdarray[pindex]);
                         pinfop->pinfommapped[pindex] == 0;
                     }
+                    
+                    
+                    PROCESSTOOLS_LOGEXEC;
 
 
                     // COLLECT INFORMATION FROM PROCESSINFO FILE
@@ -2043,6 +2063,8 @@ void *processinfo_scan(void *thptr) {
 
                         pinfop->pinfodisp[pindex].loopcnt = pinfop->pinfoarray[pindex]->loopcnt;
                     }
+                    
+                    PROCESSTOOLS_LOGEXEC;
 
                     pinfop->pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfop->pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
@@ -2050,6 +2072,8 @@ void *processinfo_scan(void *thptr) {
                     pinfop->pinfodisp[pindex].updatecnt ++;
 
                     // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
+                    
+                    PROCESSTOOLS_LOGEXEC;
 
                 }
 
@@ -2069,6 +2093,8 @@ void *processinfo_scan(void *thptr) {
           *
           */
         int index;
+        
+        PROCESSTOOLS_LOGEXEC;
 
         pinfop->NBpindexActive = 0;
         for(pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
@@ -2091,12 +2117,16 @@ void *processinfo_scan(void *thptr) {
                 listcnt++;
             }
         }
+        PROCESSTOOLS_LOGEXEC;
+        
         pinfop->NBpindexActive = listcnt;
         quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
 
         for(index = 0; index < pinfop->NBpindexActive; index++) {
             pinfop->sorted_pindex_time[index] = indexarray[index];
         }
+        
+        PROCESSTOOLS_LOGEXEC;
 
         free(timearray);
         free(indexarray);
@@ -2112,10 +2142,13 @@ void *processinfo_scan(void *thptr) {
 
 
         pinfop->scandebugline = __LINE__;
+        
+        PROCESSTOOLS_LOGEXEC;
 
 
 
         if(pinfop->DisplayMode == 3) { // only compute of displayed processes
+			PROCESSTOOLS_LOGEXEC;
             pinfop->scandebugline = __LINE__;
             GetCPUloads(pinfop);
             pinfop->scandebugline = __LINE__;
@@ -2199,6 +2232,7 @@ void *processinfo_scan(void *thptr) {
                 }
                 else
                 {
+					PROCESSTOOLS_LOGEXEC;
                     int line = __LINE__;
                     pthread_exit(&line);
                 }
