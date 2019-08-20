@@ -2515,6 +2515,8 @@ int functionparameter_FPSprocess_cmdline(
     FUNCTIONPARAMETER_LOGEXEC;
 
     pch = strtok(FPScmdline, " \t");
+    
+    FUNCTIONPARAMETER_LOGEXEC;
 
     sprintf(FPScommand, "%s", pch);
 
