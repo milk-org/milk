@@ -815,6 +815,7 @@ errno_t streamCTRL_CTRLscreen() {
     int stringindex;
 
     loopcnt = 0;
+    int NOSTREAM = 0;
     while(loopOK == 1) {
         int pid;
         char command[200];
@@ -833,7 +834,10 @@ errno_t streamCTRL_CTRLscreen() {
 
 
         NBsindex = streaminfoproc.NBstream;
-        
+        if(NBsindex < 1){
+			NOSTREAM = 1;
+			loopOK = 0;
+        }
         
         STREAMCTRL_LOGEXEC;
 
@@ -1717,6 +1721,9 @@ errno_t streamCTRL_CTRLscreen() {
 	remove(newstderrfname);
 
     STREAMCTRL_LOGEXEC;
+    
+    if(NOSTREAM == 1)
+		printf("======= NO STREAM FOUND -> EXITING ======\n");
 
     return EXIT_SUCCESS;
 }
