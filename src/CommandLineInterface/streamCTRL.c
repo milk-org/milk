@@ -815,7 +815,7 @@ errno_t streamCTRL_CTRLscreen() {
     int stringindex;
 
     loopcnt = 0;
-    int NOSTREAM = 0;
+
     while(loopOK == 1) {
         int pid;
         char command[200];
@@ -834,10 +834,6 @@ errno_t streamCTRL_CTRLscreen() {
 
 
         NBsindex = streaminfoproc.NBstream;
-        if(NBsindex < 1){
-			NOSTREAM = 1;
-			loopOK = 0;
-        }
         
         STREAMCTRL_LOGEXEC;
 
@@ -1220,6 +1216,10 @@ errno_t streamCTRL_CTRLscreen() {
             if(lastindex > NBsindex - 1) {
                 lastindex = NBsindex - 1;
             }
+            
+            if(lastindex<0)
+				lastindex = 0;
+            
             printw("%4d streams    Currently displaying %4d-%4d   Selected %d ", NBsindex, doffsetindex, lastindex, dindexSelected);
 
             if(streaminfoproc.filter == 1) {
@@ -1244,6 +1244,7 @@ errno_t streamCTRL_CTRLscreen() {
             for(dindex = 0; dindex < NBsindex; dindex++) {
                 ssindex[dindex] = dindex;
             }
+
 
             STREAMCTRL_LOGEXEC;
 
@@ -1273,6 +1274,7 @@ errno_t streamCTRL_CTRLscreen() {
 
             STREAMCTRL_LOGEXEC;
 
+
             if((SORTING == 2) || (SORTING == 3)) { // recent update and process access
                 long *larray;
                 double *varray;
@@ -1298,7 +1300,8 @@ errno_t streamCTRL_CTRLscreen() {
                     varray[sindex] = streaminfo[sindex].updatevalue_frozen;
                 }
 
-                quick_sort2l(varray, larray, NBsindex);
+				if(NBsindex>1)
+					quick_sort2l(varray, larray, NBsindex);
 
                 for(dindex = 0; dindex < NBsindex; dindex++) {
                     ssindex[NBsindex - dindex - 1] = larray[dindex];
@@ -1309,9 +1312,11 @@ errno_t streamCTRL_CTRLscreen() {
             }
 
 
+
             STREAMCTRL_LOGEXEC;
 
             // compute doffsetindex
+            
             while(dindexSelected - doffsetindex > NBsinfodisp - 5) { // scroll down
                 doffsetindex ++;
             }
@@ -1328,6 +1333,8 @@ errno_t streamCTRL_CTRLscreen() {
             // DISPLAY
 
             int DisplayFlag = 0;
+            
+         
             for(dindex = 0; dindex < NBsindex; dindex++) {
                 long ID;
                 sindex = ssindex[dindex];
@@ -1353,6 +1360,7 @@ errno_t streamCTRL_CTRLscreen() {
                 if(dindex == dindexSelected) {
                     attron(A_REVERSE);
                 }
+
 
 
                 if(DisplayFlag == 1) {
@@ -1683,7 +1691,7 @@ errno_t streamCTRL_CTRLscreen() {
                 }
 #endif
             }
-
+ 
 
 
         }
@@ -1722,8 +1730,7 @@ errno_t streamCTRL_CTRLscreen() {
 
     STREAMCTRL_LOGEXEC;
     
-    if(NOSTREAM == 1)
-		printf("======= NO STREAM FOUND -> EXITING ======\n");
+
 
     return EXIT_SUCCESS;
 }
