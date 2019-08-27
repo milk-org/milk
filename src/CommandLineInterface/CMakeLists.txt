@@ -109,7 +109,7 @@ install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS scripts/cr2tofits
               scripts/Fits2shm
               scripts/fpsCTRL
-              scripts/fpsmkcmd
+              scripts/milk-fpsmkcmd
               scripts/logshim
               scripts/logshimkill
               scripts/logshimoff
