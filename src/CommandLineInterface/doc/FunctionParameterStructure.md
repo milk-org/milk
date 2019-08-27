@@ -78,7 +78,13 @@ name                                  | Type           | Description        | Or
 # 2. FPS user interface {#page_FunctionParameterStructure_UserInterface}
 
 
+Main steps to enable FPS-enabled function for fpsCTRL:
 
+- Add entry in ./fpslist.txt
+- Run milk-fpsmkcmd 
+- Run ./fpscmd/<fpsname>-confinit
+
+These steps should ideally performed by a setup script.
 
 ## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
 
@@ -122,7 +128,7 @@ A single CLI function, named <functionname>_cli, will take the following argumen
 - arg2: Optional argument 
 
 The command code is a string, and will determine the action to be executed:
-- `_CONFINIT_`  : Initialize FPS for the function
+- `_FPSINIT_`  : Initialize FPS for the function
 - `_CONFSTART_` : Start the FPS configuration process
 - `_CONFSTOP_`  : Stop the FPS configuration process
 - `_RUNSTART_`  : Start the run process
@@ -134,7 +140,7 @@ The command code is a string, and will determine the action to be executed:
 @note Multiple instances of a C function may need to be running, each with its own FPS. An optional argument provides a mechanism to differentiate the FPSs. It is appended to the FPS name following a dash. The optional argument can be a number (usually integer) or a string.
  
 
-Example source code below, assuming one optional long type argument:
+Example source code below, assuming one optional long type argument. 
 
 ~~~~{.c}
 
@@ -158,9 +164,9 @@ errno_t MyFunction_cli() {
             strcpy(fpsname, data.processname0);
         }
 
-        if(strcmp(data.cmdargtoken[1].val.string, "_CONFINIT_") == 0) {  // Initialize FPS and conf process
+        if(strcmp(data.cmdargtoken[1].val.string, "_FPSFINIT_") == 0) {  // Initialize FPS and conf process
             printf("Function parameters configure\n");
-            MyFunction_FPCONF(fpsname, CMDCODE_CONFINIT, OptionalArg00);
+            MyFunction_FPCONF(fpsname, CMDCODE_FPSINIT, OptionalArg00);
             return RETURN_SUCCESS;
         }
 
@@ -220,7 +226,7 @@ errno_t MyFunction(long arg0num, long arg1num, long arg2num, long arg3num);
 
 # 5. Writing CONF function (in source .c file) {#page_FunctionParameterStructure_WritingCONFfunc}
 
-
+Check function_parameters.h for full list of flags.
 
 ~~~~{.c} 
 //
@@ -241,9 +247,6 @@ errno_t MyFunction_FPCONF(
 	// ===========================
 	
     FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
-    if( loopstatus == 0 ) // stop fps
-        return 0;
-
 
 
 
@@ -263,34 +266,48 @@ errno_t MyFunction_FPCONF(
     //   - type
     //   - flags
     //   - initialization pointer. If pNull, then the variable is not initialized
+    //
+    // Check CommandLineInterface/function_parameters.h for full list of flags.
      
-    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
+    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", 
+                                     FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
     
     // This parameter will be intitialized to a value of 5, min-max range from 0 to 10, and current value 5
     long param02default[4] = { 5, 0, 10, 5 };
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     FPFLAG &= ~FPFLAG_WRITECONF;  // Don't allow parameter to be written during configuration
     FPFLAG &= ~FPFLAG_WRITERUN;   // Don't allow parameter to be written during run
-    long fpi_param02 = function_parameter_add_entry(&fps, ".param02", "Second parameter", FPTYPE_INT64, FPFLAG, &param02default);
+    long fpi_param02 = function_parameter_add_entry(&fps, ".param02", "Second parameter", 
+                                     FPTYPE_INT64, FPFLAG, &param02default);
     
     // if parameter type = FPTYPE_FLOAT32, make sure default is declared as float[4]
     // if parameter type = FPTYPE_FLOAT64, make sure default is declared as double[4]
     float gaindefault[4] = { 0.01, 0.0, 1.0, 0.01 };
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
-    long fpi_gain = function_parameter_add_entry(&fps, ".gain", "gain value", FPTYPE_FLOAT32, FPFLAG, &gaindefault);
+    long fpi_gain = function_parameter_add_entry(&fps, ".gain", "gain value", 
+                                     FPTYPE_FLOAT32, FPFLAG, &gaindefault);
 
 
 	// This parameter is a ON / OFF toggle
-	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
+	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", 
+                                     FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
 
 	
 	// stream that needs to be loaded on startup
 	FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
-	long fp_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
+	long fpi_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
                                      FPTYPE_STREAMNAME, FPFLAG, pNull);
 
 
+	// Output file name
+	long fpi_filename_out1          = function_parameter_add_entry(&fps, ".out.fname_out1", "output file 1",
+                                     FPTYPE_FILENAME, FPFLAG_DEFAULT_OUTPUT, pNull);
+	
 
+    if( loopstatus == 0 ) // stop fps
+        return RETURN_SUCCESS;
+	
+	
 	// =====================================
 	// PARAMETER LOGIC AND UPDATE LOOP
 	// =====================================
@@ -337,7 +354,7 @@ errno_t MyFunction_FPCONF(
 
 The RUN function will connect to the FPS and execute the run loop. 
 
-## 6.1. A simple example {#page_FunctionParameterStructure_WritingRUNfunc_simple}
+## 6.1. A simple _RUN example {#page_FunctionParameterStructure_WritingRUNfunc_simple}
 
 
 ~~~~{.c}
@@ -375,7 +392,7 @@ errno_t MyFunction_RUN(
 
 
     // This parameter is a ON / OFF toggle
-	int gainwrite = functionparameter_GetParamValue_INT64(&fps, ".option.gainwrite");
+	int gainwrite = functionparameter_GetParamValue_ONOFF(&fps, ".option.gainwrite");
 
 	// This parameter value will be tracked during loop run, so we create a pointer for it
 	// The corresponding function is functionparameter_GetParamPtr_<TYPE>
@@ -423,7 +440,7 @@ long MyFunction(
 
     // create FPS
     sprintf(fpsname, "myfunc-%06ld", pindex);
-    MyFunction_FPCONF(fpsname, CMDCODE_CONFINIT, DMindex);
+    MyFunction_FPCONF(fpsname, CMDCODE_FPSINIT, DMindex);
 
     function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
 

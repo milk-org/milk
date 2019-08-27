@@ -34,7 +34,8 @@
 
 #define CMDCODE_CONFSTART          0x0001  // run configuration loop
 #define CMDCODE_CONFSTOP           0x0002  // stop configuration process
-#define CMDCODE_CONFINIT           0x0004  // (re-)create FPS even if it exists
+#define CMDCODE_FPSINIT            0x0004  // initialize FPS if does not exist
+#define CMDCODE_FPSINITCREATE      0x0008  // (re-)create FPS even if it exists
 
 
 // function can use this structure to expose parameters for external control or monitoring

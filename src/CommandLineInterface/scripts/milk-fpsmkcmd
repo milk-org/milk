@@ -66,7 +66,7 @@ cat "$FPSlistfilename" | while read LINE; do
 	echo "${FPSname}" >> ./${FPScmddir}/fpslist.txt
 
 	# write scripts
-	for CMDCODE in "CONFINIT" "CONFSTART" "CONFSTOP" "RUNSTART" "RUNSTOP"; do
+	for CMDCODE in "FPSINIT" "CONFSTART" "CONFSTOP" "RUNSTART" "RUNSTOP"; do
 		
 		pnamestr="$(echo "$CMDCODE" | awk '{print tolower($0)}')"
 		
@@ -123,7 +123,7 @@ cat "$FPSlistfilename" | while read LINE; do
 
 
 
-		if [ "$CMDCODE" = "CONFINIT" ]; then
+		if [ "$CMDCODE" = "FPSINIT" ]; then
 			echo ""  >> ${FPScmddir}/fpsinitscript
 			cmdstring="$fname"
 			for arg in `seq 1 $nbarg`; do 
