@@ -314,6 +314,7 @@ errno_t MyFunction_FPCONF(
 
 	while ( loopstatus == 1 )
 	{
+	        usleep(50);
 		if( function_parameter_FPCONFloopstep(&fps, CMDmode, &loopstatus) == 1) // Apply logic if update is needed
 		{
 			// here goes the logic

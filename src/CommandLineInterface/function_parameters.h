@@ -52,7 +52,10 @@
 #define FPTYPE_FLOAT64       0x0004
 #define FPTYPE_PID           0x0008
 #define FPTYPE_TIMESPEC      0x0010
+
 #define FPTYPE_FILENAME      0x0020  // generic filename
+#define FPTYPE_FITSFILENAME  0x0021  // FITS file
+
 #define FPTYPE_DIRNAME       0x0040  // directory name
 #define FPTYPE_STREAMNAME    0x0080  // stream name -> process may load from shm if required. See loading stream section below and associated flags
 #define FPTYPE_STRING        0x0100  // generic string
@@ -60,7 +63,7 @@
 #define FPTYPE_PROCESS       0x0400
 #define FPTYPE_FLOAT32       0x0800
 
-
+#define FPTYPE_FPSNAME       0x1000 // connection to another FPS
 
 
 
@@ -168,8 +171,16 @@
 //
 
 
+#define FPFLAG_FILE_CONF_REQUIRED                0x0000000040000000  // file must exist for CONF process to proceed
+#define FPFLAG_FILE_RUN_REQUIRED                 0x0000000080000000  // file must exist for RUN process to proceed
+// note: we can reuse same codes 
+
+#define FPFLAG_FPS_CONF_REQUIRED                 0x0000000040000000  // file must exist for CONF process to proceed
+#define FPFLAG_FPS_RUN_REQUIRED                  0x0000000080000000  // file must exist for RUN process to proceed
+
 #define FPFLAG_STREAM_CONF_REQUIRED              0x0000000040000000  // stream has to be in MEM for CONF process to proceed
 #define FPFLAG_STREAM_RUN_REQUIRED               0x0000000080000000  // stream has to be in MEM for RUN process to proceed
+
 
 
 
@@ -209,8 +220,6 @@
 #define FPFLAG_STREAM_ENFORCE_ZSIZE              0x0020000000000000  // enforce Z size
 
 #define FPFLAG_CHECKSTREAM                       0x0040000000000000  // check and display stream status in GUI
-
-
 
 
 
@@ -373,6 +382,9 @@ typedef struct {
     FUNCTION_PARAMETER           *parray;   // array of function parameters
 
 } FUNCTION_PARAMETER_STRUCT;
+
+
+
 
 #ifdef __cplusplus
 extern "C" {
