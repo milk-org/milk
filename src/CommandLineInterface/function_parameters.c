@@ -2675,18 +2675,15 @@ int functionparameter_FPSprocess_cmdline(
 
     FUNCTIONPARAMETER_LOGEXEC;
 
-	if(strlen(FPScmdline)>1)
-	{
-    pch = strtok(FPScmdline, " \t");
-}
-else {
-	pch = NULL;
-}
+    if(strlen(FPScmdline)>1)
+    {
+        pch = strtok(FPScmdline, " \t");
+        sprintf(FPScommand, "%s", pch);
+    }
+    else {
+        pch = NULL;
+    }
 
-
-    FUNCTIONPARAMETER_LOGEXEC;
-
-    sprintf(FPScommand, "%s", pch);
 
     FUNCTIONPARAMETER_LOGEXEC;
 
