@@ -957,9 +957,9 @@ int_fast8_t COREMOD_MEMORY_streamDelay_cli() {
             strcpy(fpsname, data.processname0);
         }
 
-        if(strcmp(data.cmdargtoken[1].val.string, "_CONFINIT_") == 0) {  // Initialize FPS and conf process
+        if(strcmp(data.cmdargtoken[1].val.string, "_FPSINIT_") == 0) {  // Initialize FPS and conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_FPSINIT);
             return RETURN_SUCCESS;
         }
 
@@ -6064,9 +6064,6 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
     // ===========================
 
     FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
-    if(loopstatus == 0) { // stop fps
-        return 0;
-    }
 
 
     // ===========================
@@ -6096,6 +6093,12 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 	long fp_framelag   = function_parameter_add_entry(&fps, ".status.framelag", "lag in frame unit", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
 	long fp_kkin       = function_parameter_add_entry(&fps, ".status.kkin", "input cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
 	long fp_kkout      = function_parameter_add_entry(&fps, ".status.kkout", "output cube slice index", FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);
+
+
+
+    if(loopstatus == 0) { // stop fps
+        return RETURN_SUCCESS;
+    }
 
     // ===========================
     /// ### RUN UPDATE LOOP
@@ -6494,7 +6497,7 @@ long COREMOD_MEMORY_streamDelay(
 
     // create FPS
     sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
-    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFINIT);
+    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_FPSINIT);
 
     function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN);
 
