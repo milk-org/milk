@@ -869,7 +869,18 @@ int functionparameter_SetParamValue_ONOFF(
 
 
 
+uint64_t *functionparameter_GetParamPtr_fpflag(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+)
+{	
+	uint64_t *ptr;
+	
+	int fpsi = functionparameter_GetParamIndex(fps, paramname);
+    ptr = &fps->parray[fpsi].fpflag;
 
+	return ptr;
+}
 
 
 
