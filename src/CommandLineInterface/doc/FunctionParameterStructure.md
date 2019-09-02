@@ -553,6 +553,22 @@ errno_t MyFunction_RUN(
 
     int loopOK = 1;
 
+
+    // =============================================
+    // OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
+    // =============================================
+    // Pre-loop testing, anything that would prevent loop from starting should issue message
+    int loopOK = 1;
+    if(.... error condition ....)
+    {
+        // exit function with ERROR status
+        processinfo_error(processinfo, "ERROR: no WFS reference");
+        return RETURN_FAILURE;
+    }
+
+
+
+
 	// ===========================
 	// ### Start loop
 	// ===========================
@@ -596,9 +612,9 @@ errno_t MyFunction_RUN(
 	// ### ENDING LOOP
 	// ==================================
 
-    processinfo_cleanExit(processinfo);
+     processinfo_cleanExit(processinfo);
 
-
+     function_parameter_struct_disconnect( &fps );
 
 
 	return RETURN_SUCCESS;
