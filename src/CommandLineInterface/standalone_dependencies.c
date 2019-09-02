@@ -197,6 +197,34 @@ int printERROR(const char *file, const char *func, int line, char *errmessage)
     return(0);
 }
 
+int file_exists(const char *restrict file_name) {
+    FILE *fp;
+    int exists = 1;
+
+    if((fp = fopen(file_name, "r")) == NULL) {
+        exists = 0;
+        /*      printf("file %s does not exist\n",file_name);*/
+    } else {
+        fclose(fp);
+    }
+
+    return(exists);
+}
+
+int is_fits_file(const char *restrict file_name) {
+    FILE *fp;
+    int exists = 1;
+
+    if((fp = fopen(file_name, "r")) == NULL) {
+        exists = 0;
+        /*      printf("file %s does not exist\n",file_name);*/
+    } else {
+        fclose(fp);
+    }
+
+    return(exists);
+}
+
 /* ===============================================================================================
  */
 /*                                 END OF DUPLICATED CODE */
