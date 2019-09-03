@@ -1083,6 +1083,10 @@ int function_parameter_add_entry(
         sprintf(funcparamarray[pindex].val.string[0], "NULL");
         sprintf(funcparamarray[pindex].val.string[1], "NULL");
         break;
+    case FPTYPE_EXECFILENAME :
+        sprintf(funcparamarray[pindex].val.string[0], "NULL");
+        sprintf(funcparamarray[pindex].val.string[1], "NULL");
+        break;
     case FPTYPE_DIRNAME :
         sprintf(funcparamarray[pindex].val.string[0], "NULL");
         sprintf(funcparamarray[pindex].val.string[1], "NULL");
@@ -1162,6 +1166,11 @@ int function_parameter_add_entry(
             break;
 
         case FPTYPE_FITSFILENAME :
+            strncpy(funcparamarray[pindex].val.string[0], (char*) valueptr,  FUNCTION_PARAMETER_STRMAXLEN);
+            funcparamarray[pindex].cnt0++;
+            break;
+
+        case FPTYPE_EXECFILENAME :
             strncpy(funcparamarray[pindex].val.string[0], (char*) valueptr,  FUNCTION_PARAMETER_STRMAXLEN);
             funcparamarray[pindex].cnt0++;
             break;
@@ -1297,7 +1306,7 @@ int function_parameter_add_entry(
                 break;
 
             case FPTYPE_FITSFILENAME :
-				if ( index == 0 ) // FILENAME does not have min / max
+				if ( index == 0 ) // FITSFILENAME does not have min / max
 				{
 					if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
 					{
@@ -1306,6 +1315,18 @@ int function_parameter_add_entry(
 					}
 				}
                 break;
+
+            case FPTYPE_EXECFILENAME :
+				if ( index == 0 ) // EXECFILENAME does not have min / max
+				{
+					if ( fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+					{
+						RVAL = 1;
+						funcparamarray[pindex].cnt0++;
+					}
+				}
+                break;
+                
                 
             case FPTYPE_DIRNAME :
                 if ( index == 0 ) // DIRNAME does not have min / max
@@ -1701,6 +1722,10 @@ int functionparameter_WriteParameterToDisk(
             fprintf(fp, "%s  # %s\n", fpsentry->parray[pindex].val.string[0], timestring);
             break;
 
+        case FPTYPE_EXECFILENAME:
+            fprintf(fp, "%s  # %s\n", fpsentry->parray[pindex].val.string[0], timestring);
+            break;
+
         case FPTYPE_DIRNAME:
             fprintf(fp, "%s  # %s\n", fpsentry->parray[pindex].val.string[0], timestring);
             break;
@@ -1983,6 +2008,21 @@ int functionparameter_CheckParameter(
             }
         }
     }
+
+    if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME) {
+		if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
+		struct stat sb;
+		if (!(stat(fpsentry->parray[pindex].val.string[0], &sb) == 0 && sb.st_mode & S_IXUSR)) {
+                fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
+                fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
+                snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "File %s cannot be executed", fpsentry->parray[pindex].val.string[0]);
+                fpsentry->md->msgcnt++;
+                fpsentry->md->conferrcnt++;
+                err = 1;
+            }
+        }
+    }
+    
     
 	FUNCTION_PARAMETER_STRUCT fpstest;
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME) {
@@ -2191,6 +2231,9 @@ int functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].type & FPTYPE_FITSFILENAME) {
         printf("  TYPE FITSFILENAME\n");
     }
+    if(fpsentry->parray[pindex].type & FPTYPE_EXECFILENAME) {
+        printf("  TYPE EXECFILENAME\n");
+    }
     if(fpsentry->parray[pindex].type & FPTYPE_DIRNAME) {
         printf("  TYPE DIRNAME\n");
     }
@@ -2356,6 +2399,10 @@ int functionparameter_PrintParameterInfo(
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FITSFILENAME) {
+        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
+
+    if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME) {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }
 
@@ -2579,6 +2626,10 @@ int functionparameter_UserInputSetParamValue(
                     break;
 
                 case FPTYPE_FITSFILENAME :
+                    snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
+                    break;
+
+                case FPTYPE_EXECFILENAME :
                     snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff);
                     break;
 
@@ -3009,6 +3060,14 @@ int functionparameter_FPSprocess_cmdline(
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
+                case FPTYPE_EXECFILENAME:
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                        updated = 1;
+                    }
+                    sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, FPSvaluestring);
+                    functionparameter_outlog("SETVAL", msgstring);
+                    break;
+
                 case FPTYPE_DIRNAME:
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
                         updated = 1;
@@ -3135,6 +3194,12 @@ int functionparameter_FPSprocess_cmdline(
 
                 case FPTYPE_FITSFILENAME:
                     sprintf(msgstring, "%-40s FITSFILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    functionparameter_outlog("GETVAL", msgstring);
+                    cmdOK = 1;
+                    break;
+
+                case FPTYPE_EXECFILENAME:
+                    sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
                     functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
@@ -4195,9 +4260,11 @@ errno_t functionparameter_CTRLscreen(
             }
             break;
 
-        case ' ' : // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
+        case ' ' :
             fpsindex = keywnode[nodeSelected].fpsindex;
             pindex = keywnode[nodeSelected].pindex;
+
+            // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
             if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
                 if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF) {
                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {  // ON -> OFF
@@ -4214,6 +4281,18 @@ errno_t functionparameter_CTRLscreen(
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
                 }
             }
+
+            if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
+                sprintf(command, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+                if(system(command) != 0) {
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
+                sprintf(command, "tmux send-keys -t %s-run \"%s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0]);
+                if(system(command) != 0) {
+                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                }
+            }
+
             break;
 
 
@@ -4794,6 +4873,23 @@ errno_t functionparameter_CTRLscreen(
                             }
                         }
 
+                        if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
+                            if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                    if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                        paramsync = 0;
+                                    }
+
+                            if(paramsync == 0) {
+                                attron(COLOR_PAIR(3));
+                            }
+
+                            printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+
+                            if(paramsync == 0) {
+                                attroff(COLOR_PAIR(3));
+                            }
+                        }
 
                         if(fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME) {
                             if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
@@ -4878,8 +4974,8 @@ errno_t functionparameter_CTRLscreen(
                                 attron(COLOR_PAIR(2));
                             }
                             else {
-								attron(COLOR_PAIR(4));
-							}
+                                attron(COLOR_PAIR(4));
+                            }
 
                             printw(" %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
@@ -4887,9 +4983,9 @@ errno_t functionparameter_CTRLscreen(
                                 attroff(COLOR_PAIR(2));
                             }
                             else {
-								attroff(COLOR_PAIR(4));
-							}
-                            
+                                attroff(COLOR_PAIR(4));
+                            }
+
                         }
 
 
