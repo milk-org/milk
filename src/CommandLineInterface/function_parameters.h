@@ -55,6 +55,7 @@
 
 #define FPTYPE_FILENAME      0x0020  // generic filename
 #define FPTYPE_FITSFILENAME  0x0021  // FITS file
+#define FPTYPE_EXECFILENAME  0x0022  // executable file
 
 #define FPTYPE_DIRNAME       0x0040  // directory name
 #define FPTYPE_STREAMNAME    0x0080  // stream name -> process may load from shm if required. See loading stream section below and associated flags
