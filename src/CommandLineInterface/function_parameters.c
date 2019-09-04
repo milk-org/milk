@@ -4287,7 +4287,7 @@ errno_t functionparameter_CTRLscreen(
                 if(system(command) != 0) {
                     printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
                 }
-                sprintf(command, "tmux send-keys -t %s-run \"%s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0]);
+                sprintf(command, "tmux send-keys -t %s-run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
                 if(system(command) != 0) {
                     printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
                 }
