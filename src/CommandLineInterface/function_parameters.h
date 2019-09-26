@@ -77,7 +77,7 @@
 
 // parameter use and visibility
 #define FPFLAG_ACTIVE        0x0000000000000001    // is this entry registered ?
-#define FPFLAG_USED          0x0000000000000002    // is this entry used ?
+#define FPFLAG_USED          0x0000000000000002    // is this entry used ? if not, skip all checks
 #define FPFLAG_VISIBLE       0x0000000000000004    // is this entry visible (=displayed) ?
 
 // write permission
@@ -117,11 +117,12 @@
 
 
 // what is the source from which a stream was successfully loaded
-#define STREAM_LOAD_SOURCE_FAILURE   0
+#define STREAM_LOAD_SOURCE_NOTFOUND   0
 #define STREAM_LOAD_SOURCE_LOCALMEM  1
 #define STREAM_LOAD_SOURCE_SHAREMEM  2
 #define STREAM_LOAD_SOURCE_CONFFITS  3
 #define STREAM_LOAD_SOURCE_CONFNAME  4
+#define STREAM_LOAD_SOURCE_EXITFAILURE   -1
 
 //
 // The default policy is to look for the source location first in [a], then [b], etc..., until [d]
@@ -221,7 +222,7 @@
 #define FPFLAG_STREAM_ENFORCE_ZSIZE              0x0020000000000000  // enforce Z size
 
 #define FPFLAG_CHECKSTREAM                       0x0040000000000000  // check and display stream status in GUI
-
+#define FPFLAG_STREAM_MEMLOADREPORT              0x0080000000000000  // Write stream load report (for debugging)
 
 
 
@@ -244,7 +245,34 @@
 
 
 
+
+
 #define FUNCTION_PARAMETER_NBPARAM_DEFAULT    100       // size of dynamically allocated array of parameters
+
+
+
+typedef struct {
+    long      streamID; // if type is stream and MASK_CHECKSTREAM. For CONF only
+    uint8_t   stream_atype;
+
+    // these have two entries. First is actual/measured, second is required (0 if dimension not active)
+    // tests are specified by flags FPFLAG_STREAM_ENFORCE_1D/2D/3D/XSIZE/YSIZE/ZSIZE
+    uint32_t  stream_naxis[2];
+    uint32_t  stream_xsize[2];        // xsize
+    uint32_t  stream_ysize[2];        // ysize
+    uint32_t  stream_zsize[2];        // zsize
+    uint8_t   stream_sourceLocation;  // where has the stream been loaded from ?
+} FUNCTION_PARAMETER_SUBINFO_STREAM;
+
+
+
+typedef struct {
+    long FPSNBparam; // to be written by connect function
+    long FPSNBparamActive;
+    long FPSNBparamUsed;
+} FUNCTION_PARAMETER_SUBINFO_FPS;
+
+
 
 typedef struct {
 	uint64_t fpflag;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
@@ -273,16 +301,13 @@ typedef struct {
 		// if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
 	} val;
 	
-	// These only apply if type stream
-	uint32_t  streamID; // if type is stream and MASK_CHECKSTREAM
-	uint8_t   stream_atype;
 	
-	// these have two entries. First is actual/measured, second is required (0 if dimension not active)
-	// tests are specified by flags FPFLAG_STREAM_ENFORCE_1D/2D/3D/XSIZE/YSIZE/ZSIZE 
-	uint32_t  stream_xsize[2];        // xsize
-	uint32_t  stream_ysize[2];        // ysize
-	uint32_t  stream_zsize[2];        // zsize
-	uint8_t   stream_sourceLocation;  // where has the stream been loaded from ?
+	union
+	{
+		FUNCTION_PARAMETER_SUBINFO_STREAM stream;   // if type stream
+		FUNCTION_PARAMETER_SUBINFO_FPS    fps;      // if FPTYPE_FPSNAME
+	} info;
+	
 	
 	long cnt0; // increments when changed
 
@@ -430,6 +455,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 
 
+int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS, int pindex, FUNCTION_PARAMETER_STRUCT *FPSext);
+
+
+
+
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode, uint16_t *loopstatus);
 uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus );
@@ -442,7 +472,10 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, 
 
 errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+
+errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
 errno_t functionparameter_outlog(char* keyw, char *msgstring);
+
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
 
 #ifdef __cplusplus

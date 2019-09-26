@@ -353,7 +353,8 @@ long function_parameter_struct_connect(
 ) {
     char SM_fname[200];
     int SM_fd; // shared memory file descriptor
-    int NBparam;
+    long NBparam;
+    long NBparamActive;
     char *mapv;
 
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDSHMDIR, name);
@@ -392,7 +393,7 @@ long function_parameter_struct_connect(
 
     //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
     NBparam = fps->md->NBparam;
-    printf("Connected to %s, %d entries\n", SM_fname, NBparam);
+    printf("Connected to %s, %ld entries\n", SM_fname, NBparam);
     fflush(stdout);
 
 
@@ -427,7 +428,7 @@ long function_parameter_struct_connect(
     if((fpsconnectmode == FPSCONNECT_CONF) || (fpsconnectmode == FPSCONNECT_RUN)) {
         // load streams
         int pindex;
-        for(pindex = 0; pindex < NBparam; pindex++) {
+        for(pindex = 0; pindex < NBparam; pindex++) {			
 			if( (fps->parray[pindex].fpflag & FPFLAG_ACTIVE) && (fps->parray[pindex].fpflag & FPFLAG_USED) && (fps->parray[pindex].type & FPTYPE_STREAMNAME)) {
                 functionparameter_LoadStream(fps, pindex, fpsconnectmode);
             }
@@ -1887,17 +1888,26 @@ int functionparameter_CheckParameter(
     int msglen;
     char msgadd[200];
 
+
+
 		
-	
-    // if entry is not active, no error reported
-    if(!(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE)) {
+            
+    // if entry is not active or not used, no error reported
+    if(  (!(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE))  ) {
         return 0;
     }
+    else
+    {				
+		char msg[200];
+		sprintf(msg, "%s", fpsentry->parray[pindex].keywordfull);
+		functionparameter_outlog("CHECKPARAM", msg);
+	}
 
     // if entry is not used, no error reported
     if(!(fpsentry->parray[pindex].fpflag & FPFLAG_USED)) {
         return 0;
     }
+
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT)
         if(fpsentry->parray[pindex].cnt0 == 0) {
@@ -1957,7 +1967,8 @@ int functionparameter_CheckParameter(
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
-
+			
+                
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
                 if(fpsentry->parray[pindex].val.f[0] > fpsentry->parray[pindex].val.f[2]) {
@@ -1968,7 +1979,9 @@ int functionparameter_CheckParameter(
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
-
+			
+                
+                
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
                 if(fpsentry->parray[pindex].val.s[0] > fpsentry->parray[pindex].val.s[2]) {
@@ -1980,6 +1993,7 @@ int functionparameter_CheckParameter(
                     err = 1;
                 }
     }
+
 
 
     if(fpsentry->parray[pindex].type == FPTYPE_FILENAME) {
@@ -1996,6 +2010,7 @@ int functionparameter_CheckParameter(
     }
 
 
+
     if(fpsentry->parray[pindex].type == FPTYPE_FITSFILENAME) {
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
             if(is_fits_file(fpsentry->parray[pindex].val.string[0])==0) {
@@ -2008,6 +2023,7 @@ int functionparameter_CheckParameter(
             }
         }
     }
+
 
     if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME) {
 		if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
@@ -2022,6 +2038,7 @@ int functionparameter_CheckParameter(
             }
         }
     }
+
     
     
 	FUNCTION_PARAMETER_STRUCT fpstest;
@@ -2041,6 +2058,7 @@ int functionparameter_CheckParameter(
 			}
         }
     }
+
     
 
 
@@ -2049,12 +2067,40 @@ int functionparameter_CheckParameter(
     printf("====================== Not working in standalone mode \n");
 #else
     // STREAM CHECK
-    if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
+    
+    if( (fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) ) {
+
+            int imLOC;
+            long ID = COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
+			fpsentry->parray[pindex].info.stream.streamID = ID;
+			
+			if(ID>-1)
+			{
+				fpsentry->parray[pindex].info.stream.stream_sourceLocation = imLOC;
+				fpsentry->parray[pindex].info.stream.stream_atype = data.image[ID].md[0].datatype;
+				
+				fpsentry->parray[pindex].info.stream.stream_naxis[0] = data.image[ID].md[0].naxis;
+				fpsentry->parray[pindex].info.stream.stream_xsize[0] = data.image[ID].md[0].size[0];
+				
+				if(fpsentry->parray[pindex].info.stream.stream_naxis[0]>1)
+					fpsentry->parray[pindex].info.stream.stream_ysize[0] = data.image[ID].md[0].size[1];
+				else
+					fpsentry->parray[pindex].info.stream.stream_ysize[0] = 1;
+					
+				if(fpsentry->parray[pindex].info.stream.stream_naxis[0]>2)
+					fpsentry->parray[pindex].info.stream.stream_zsize[0] = data.image[ID].md[0].size[2];
+				else
+					fpsentry->parray[pindex].info.stream.stream_zsize[0] = 1;
+			}
+
+
 
         if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED) {
-            uint32_t imLOC;
-            COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
-            if ( imLOC == 0 ) {
+			char msg[200];
+			sprintf(msg, "Loading stream %s", fpsentry->parray[pindex].val.string[0]);
+            functionparameter_outlog("LOADMEMSTREAM", msg);
+
+            if ( imLOC == STREAM_LOAD_SOURCE_NOTFOUND ) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
                 snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream %s", fpsentry->parray[pindex].val.string[0]);
@@ -2163,6 +2209,30 @@ int functionparameter_CheckParametersAll(
 
 
 
+int functionparameter_ConnectExternalFPS(
+    FUNCTION_PARAMETER_STRUCT *FPS,
+    int pindex,
+    FUNCTION_PARAMETER_STRUCT *FPSext
+)
+{
+    FPS->parray[pindex].info.fps.FPSNBparam = function_parameter_struct_connect(FPS->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
+
+    FPS->parray[pindex].info.fps.FPSNBparamActive = 0;
+    FPS->parray[pindex].info.fps.FPSNBparamUsed = 0;
+    int pindexext;
+    for(pindexext=0; pindexext<FPS->parray[pindex].info.fps.FPSNBparam; pindexext++) {
+        if(FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE) {
+            FPS->parray[pindex].info.fps.FPSNBparamActive++;
+        }
+        if(FPSext->parray[pindexext].fpflag & FPFLAG_USED) {
+            FPS->parray[pindex].info.fps.FPSNBparamUsed++;
+        }
+    }
+
+    return 0;
+}
+
+
 
 
 
@@ -2251,7 +2321,7 @@ int functionparameter_PrintParameterInfo(
     }
 
     printf("\n");
-    printf("------------- FLAGS \n");
+    printf("------------- FLAGS  [ %ld ]\n", fpsentry->parray[pindex].fpflag);
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE) {
         printf("   FPFLAG_ACTIVE\n");
@@ -2687,7 +2757,8 @@ int functionparameter_UserInputSetParamValue(
  *
  * - logsymlink  : create log sym link
  * - setval      : set parameter value
- * - getval      : get value
+ * - getval      : get value, write to output log
+ * - fwrval      : get value, write to file or fifo
  * - confupdate  : update configuration
  * - runstart    : start RUN process associated with parameter
  * - runstop     : stop RUN process associated with parameter
@@ -2716,8 +2787,8 @@ int functionparameter_FPSprocess_cmdline(
     int cmdOK = 2;    // 0 : failed, 1: OK
     int cmdFOUND = 0; // toggles to 1 when command has been found
 
-    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char FPSvaluestring[FUNCTION_PARAMETER_STRMAXLEN];
+    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];  // first arg is always an FPS entry name
+    char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
 
     char FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
@@ -2853,7 +2924,7 @@ int functionparameter_FPSprocess_cmdline(
     if(cmdFOUND == 0)
     {
         strcpy(FPSentryname, FPSarg0);
-        strcpy(FPSvaluestring, FPSarg1);
+        strcpy(FPScmdarg1, FPSarg1);
 
 
         // look for entry, if found, kwnindex points to it
@@ -3010,33 +3081,33 @@ int functionparameter_FPSprocess_cmdline(
                 switch(fps[fpsindex].parray[pindex].type) {
 
                 case FPTYPE_INT64:
-                    if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring)) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s INT64      %ld", FPSentryname, atol(FPSvaluestring));
+                    sprintf(msgstring, "%-40s INT64      %ld", FPSentryname, atol(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_FLOAT64:
-                    if(functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPSvaluestring)) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FLOAT64    %f", FPSentryname, atof(FPSvaluestring));
+                    sprintf(msgstring, "%-40s FLOAT64    %f", FPSentryname, atof(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_FLOAT32:
-                    if(functionparameter_SetParamValue_FLOAT32(&fps[fpsindex], FPSentryname, atof(FPSvaluestring)) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_FLOAT32(&fps[fpsindex], FPSentryname, atof(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FLOAT32    %f", FPSentryname, atof(FPSvaluestring));
+                    sprintf(msgstring, "%-40s FLOAT32    %f", FPSentryname, atof(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
 
                 case FPTYPE_PID:
-                    if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPSvaluestring)) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s PID        %ld", FPSentryname, atol(FPSvaluestring));
+                    sprintf(msgstring, "%-40s PID        %ld", FPSentryname, atol(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -3045,62 +3116,62 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_FILENAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FILENAME   %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s FILENAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_FITSFILENAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FITSFILENAME   %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s FITSFILENAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_EXECFILENAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_DIRNAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s DIRNAME    %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s DIRNAME    %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_STREAMNAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s STREAMNAME %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s STREAMNAME %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_STRING:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s STRING     %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s STRING     %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
                 case FPTYPE_ONOFF:
-                    if(strncmp(FPSvaluestring, "ON", 2) == 0) {
+                    if(strncmp(FPScmdarg1, "ON", 2) == 0) {
                         if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 1) == EXIT_SUCCESS) {
                             updated = 1;
                         }
                         sprintf(msgstring, "%-40s ONOFF      ON", FPSentryname);
                         functionparameter_outlog("SETVAL", msgstring);
                     }
-                    if(strncmp(FPSvaluestring, "OFF", 3) == 0) {
+                    if(strncmp(FPScmdarg1, "OFF", 3) == 0) {
                         if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 0) == EXIT_SUCCESS) {
                             updated = 1;
                         }
@@ -3111,10 +3182,10 @@ int functionparameter_FPSprocess_cmdline(
 
 
                 case FPTYPE_FPSNAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPSvaluestring) == EXIT_SUCCESS) {
+                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, FPSvaluestring);
+                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -3139,18 +3210,26 @@ int functionparameter_FPSprocess_cmdline(
     }
 
 
-    // getval
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "getval") == 0))
+
+
+
+    // getval or fwrval
+    if((FPScommand[0] != '#') && (cmdFOUND == 0) && ((strcmp(FPScommand, "getval")==0) || (strcmp(FPScommand, "fwrval")== 0)) )
     {
         cmdFOUND = 1;
         cmdOK = 0;
 
-        if(nbword != 2) {
+        if((strcmp(FPScommand, "getval")==0)&&(nbword != 2)) {
             sprintf(msgstring, "COMMAND getval NBARGS = 1");
             functionparameter_outlog("ERROR", msgstring);
         }
-        else
+        else if ((strcmp(FPScommand, "fwrval")==0)&&(nbword != 3))
         {
+			sprintf(msgstring, "COMMAND fwrval NBARGS = 2");
+            functionparameter_outlog("ERROR", msgstring);
+		}
+        else
+        {			
             if(kwnindex != -1) {
                 fpsindex = keywnode[kwnindex].fpsindex;
                 pindex = keywnode[kwnindex].pindex;
@@ -3159,26 +3238,21 @@ int functionparameter_FPSprocess_cmdline(
 
                 case FPTYPE_INT64:
                     sprintf(msgstring, "%-40s INT64      %ld %ld %ld %ld", FPSentryname, fps[fpsindex].parray[pindex].val.l[0], fps[fpsindex].parray[pindex].val.l[1], fps[fpsindex].parray[pindex].val.l[2], fps[fpsindex].parray[pindex].val.l[3]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
-
                 case FPTYPE_FLOAT64:
                     sprintf(msgstring, "%-40s FLOAT64    %f %f %f %f", FPSentryname, fps[fpsindex].parray[pindex].val.f[0], fps[fpsindex].parray[pindex].val.f[1], fps[fpsindex].parray[pindex].val.f[2], fps[fpsindex].parray[pindex].val.f[3]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_FLOAT32:
                     sprintf(msgstring, "%-40s FLOAT32    %f %f %f %f", FPSentryname, fps[fpsindex].parray[pindex].val.s[0], fps[fpsindex].parray[pindex].val.s[1], fps[fpsindex].parray[pindex].val.s[2], fps[fpsindex].parray[pindex].val.s[3]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_PID:
                     sprintf(msgstring, "%-40s PID        %ld", FPSentryname, fps[fpsindex].parray[pindex].val.l[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
@@ -3188,59 +3262,69 @@ int functionparameter_FPSprocess_cmdline(
 
                 case FPTYPE_FILENAME:
                     sprintf(msgstring, "%-40s FILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_FITSFILENAME:
                     sprintf(msgstring, "%-40s FITSFILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_EXECFILENAME:
                     sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_DIRNAME:
                     sprintf(msgstring, "%-40s DIRNAME    %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_STREAMNAME:
                     sprintf(msgstring, "%-40s STREAMNAME %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_STRING:
                     sprintf(msgstring, "%-40s STRING     %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_ONOFF:
                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {
                         sprintf(msgstring, "%-40s ONOFF      ON", FPSentryname);
-                        functionparameter_outlog("GETVAL", msgstring);
                     }
                     else {
                         sprintf(msgstring, "%-40s ONOFF      OFF", FPSentryname);
-                        functionparameter_outlog("GETVAL", msgstring);
                     }
+                    cmdOK = 1;
                     break;
 
 
                 case FPTYPE_FPSNAME:
-                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
-                    functionparameter_outlog("GETVAL", msgstring);
+                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);                    
                     cmdOK = 1;
                     break;
 
                 }
+                
+                if(cmdOK==1) {
+					if(strcmp(FPScommand, "getval")==0) {
+						functionparameter_outlog("GETVAL", msgstring);
+					}
+					if(strcmp(FPScommand, "fwrval")==0) {
+
+						FILE *fpouttmp = fopen(FPScmdarg1, "a");
+						functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
+						fclose(fpouttmp);
+						
+						functionparameter_outlog("FWRVAL", msgstring);
+						char msgstring1[200];
+						sprintf(msgstring1, "WROTE to file %s", FPScmdarg1);
+						functionparameter_outlog("FWRVAL", msgstring1);
+					}
+				}
+                
             }
             else
             {
@@ -3443,6 +3527,7 @@ errno_t functionparameter_CONFstart(
     char command[500];
     int nameindexlevel;
 
+
     sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name);
     if(system(command) != 0) {
         // this is probably OK - duplicate session warning
@@ -3499,6 +3584,34 @@ errno_t functionparameter_CONFstop(
 
 
 
+errno_t functionparameter_outlog_file(
+	char *keyw,
+    char *msgstring,
+    FILE *fpout
+) {
+    // Get GMT time
+    struct timespec tnow;
+    time_t now;
+    
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    now = tnow.tv_sec;
+    struct tm *uttime;
+    uttime = gmtime(&now);
+
+    char timestring[200];
+    sprintf(timestring, "%04d%02d%02d%02d%02d%02d.%09ld", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+
+    fprintf(fpout, "%s %-12s %s\n", timestring, keyw, msgstring);
+    fflush(fpout);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
 errno_t functionparameter_outlog(
 	char *keyw,
     char *msgstring
@@ -3518,21 +3631,7 @@ errno_t functionparameter_outlog(
         LogOutOpen = 1;
     }
 
-    // Get GMT time
-    struct timespec tnow;
-    time_t now;
-    
-    clock_gettime(CLOCK_REALTIME, &tnow);
-    now = tnow.tv_sec;
-    struct tm *uttime;
-    uttime = gmtime(&now);
-
-    char timestring[200];
-    sprintf(timestring, "%04d%02d%02d%02d%02d%02d.%09ld", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
-
-
-    fprintf(fpout, "%s %-12s %s\n", timestring, keyw, msgstring);
-    fflush(fpout);
+   functionparameter_outlog_file(keyw, msgstring, fpout);
 
     return RETURN_SUCCESS;
 }
@@ -3944,7 +4043,7 @@ errno_t functionparameter_CTRLscreen(
     int nodeSelected = 1;
 
 
-
+	char msg[200];
 
     // input command
     FILE *fpinputcmd;
@@ -4304,23 +4403,31 @@ errno_t functionparameter_CTRLscreen(
 
         case 'R' : // start run process if possible
             fpsindex = keywnode[nodeSelected].fpsindex;
+            sprintf(msg, "RUNSTART %s", fps[fpsindex].md->name);
+			functionparameter_outlog("FPSCTRL", msg);
             functionparameter_RUNstart(fps, fpsindex);
             break;
 
         case 'r' : // stop run process
             fpsindex = keywnode[nodeSelected].fpsindex;
+            sprintf(msg, "RUNSTOP %s", fps[fpsindex].md->name);
+			functionparameter_outlog("FPSCTRL", msg);
             functionparameter_RUNstop(fps, fpsindex);
             break;
 
 
         case 'C' : // start conf process
             fpsindex = keywnode[nodeSelected].fpsindex;
+            sprintf(msg, "CONFSTART %s", fps[fpsindex].md->name);
+			functionparameter_outlog("FPSCTRL", msg);
             functionparameter_CONFstart(fps, fpsindex);
             break;
 
         case 'c': // kill conf process
-            fpsindex = keywnode[nodeSelected].fpsindex;
-            functionparameter_CONFstop(fps, fpsindex);
+            fpsindex = keywnode[nodeSelected].fpsindex;            
+            sprintf(msg, "CONFSTOP %s", fps[fpsindex].md->name);
+			functionparameter_outlog("FPSCTRL", msg);
+			functionparameter_CONFstop(fps, fpsindex);
             break;
 
         case 'l': // list all parameters
@@ -4431,15 +4538,17 @@ errno_t functionparameter_CTRLscreen(
                  printw("%s.", keywnode[currentnode].keyword[l]);
              }
          }*/
-        printw("  NBchild = %d\n", keywnode[currentnode].NBchild);
+        //printw("  NBchild = %d\n", keywnode[currentnode].NBchild);
 
         FUNCTIONPARAMETER_LOGEXEC;
 
         printw("========= FPS info ============\n");
         printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
         printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
+        
         printw("========= NODE info ============\n");
-        printw("Selected %ld : %s\n", nodeSelected, keywnode[nodeSelected].keywordfull);
+        printw("%s\n", keywnode[nodeSelected].keywordfull);
+        
 
         printw("\n");
 
@@ -4913,19 +5022,28 @@ errno_t functionparameter_CTRLscreen(
                         if(fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
                             if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                 if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                    if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                  /*  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
                                         paramsync = 0;
-                                    }
+                                    }*/
 
-                            if(paramsync == 0) {
-                                attron(COLOR_PAIR(3));
+                            if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
+                                attron(COLOR_PAIR(2));
                             }
 
-                            printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
-
-                            if(paramsync == 0) {
-                                attroff(COLOR_PAIR(3));
+                            printw("[%d]  %10s", fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation, fps[fpsindex].parray[pindex].val.string[0]);
+                            
+                            if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
+							
+								printw(" [ %d", fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+								if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>1)
+									printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+								if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>2)
+									printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
+								
+								printw(" ]");
+                                attroff(COLOR_PAIR(2));                                
                             }
+
                         }
 
 
@@ -4977,7 +5095,7 @@ errno_t functionparameter_CTRLscreen(
                                 attron(COLOR_PAIR(4));
                             }
 
-                            printw(" %10s", fps[fpsindex].parray[pindex].val.string[0]);
+                            printw(" %10s [%ld %ld %ld]", fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].info.fps.FPSNBparam, fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive, fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
                             if(paramsync == 0) {
                                 attroff(COLOR_PAIR(2));
