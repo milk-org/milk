@@ -6332,10 +6332,12 @@ int COREMOD_MEMORY_streamDelay_RUN(
 //            if(cnt0 != cnt0old) { // new frame
                 clock_gettime(CLOCK_REALTIME, &t0array[*kkin]);  // record time of input frame
 
+				COREMODMEMORY_LOGEXEC;
                 for(ii = 0; ii < xysize; ii++) {
                     data.image[IDimc].array.F[(*kkin) * xysize + ii] = data.image[IDin].array.F[ii];
                 }
                 (*kkin) ++;
+                COREMODMEMORY_LOGEXEC;
 
                 if((*kkin) == (*zsize)) {
                     (*kkin) = 0;
