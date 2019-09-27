@@ -2952,6 +2952,85 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
+
+
+
+
+
+
+    // confstart
+
+    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confstart") == 0))
+    {
+        cmdFOUND = 1;
+        if(nbword != 2) {
+            sprintf(msgstring, "COMMAND confstart NBARGS = 1");
+            functionparameter_outlog("ERROR", msgstring);
+            cmdOK = 0;
+        }
+        else
+        {
+            if(kwnindex != -1) {
+                fpsindex = keywnode[kwnindex].fpsindex;
+                pindex = keywnode[kwnindex].pindex;
+
+                FUNCTIONPARAMETER_LOGEXEC;
+                functionparameter_CONFstart(fps, fpsindex);
+
+                sprintf(msgstring, "start CONF process %d %s", fpsindex, fps[fpsindex].md->name);
+                functionparameter_outlog("CONFSTART", msgstring);
+                cmdOK = 1;
+            }
+            else
+            {
+                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+                functionparameter_outlog("ERROR", msgstring);
+                cmdOK = 0;
+            }
+        }
+    }
+
+    // confstop
+
+    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confstop") == 0))
+    {
+        cmdFOUND = 1;
+        if(nbword != 2) {
+            sprintf(msgstring, "COMMAND confstop NBARGS = 1");
+            functionparameter_outlog("ERROR", msgstring);
+            cmdOK = 0;
+        }
+        else
+        {
+            if(kwnindex != -1) {
+                fpsindex = keywnode[kwnindex].fpsindex;
+                pindex = keywnode[kwnindex].pindex;
+
+                FUNCTIONPARAMETER_LOGEXEC;
+                functionparameter_CONFstop(fps, fpsindex);
+
+                sprintf(msgstring, "stop CONF process %d %s", fpsindex, fps[fpsindex].md->name);
+                functionparameter_outlog("CONFSTOP", msgstring);
+                cmdOK = 1;
+            }
+            else
+            {
+                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+                functionparameter_outlog("ERROR", msgstring);
+                cmdOK = 0;
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
     // confupdate
 
     FUNCTIONPARAMETER_LOGEXEC;
