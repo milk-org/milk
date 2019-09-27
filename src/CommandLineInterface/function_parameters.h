@@ -470,8 +470,11 @@ int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry, const 
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
 
+errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+
 
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
 errno_t functionparameter_outlog(char* keyw, char *msgstring);
