@@ -2235,10 +2235,63 @@ int functionparameter_ConnectExternalFPS(
 
 
 
+errno_t functionparameter_GetTypeString(
+    uint32_t type,
+    char *typestring
+) {
+
+    sprintf(typestring, " ");
+
+    // using if statements (not switch) to allow for multiple types
+    if(type & FPTYPE_UNDEF) {
+        strcat(typestring, "UNDEF ");
+    }
+    if(type & FPTYPE_INT64) {
+        strcat(typestring, "INT64 ");
+    }
+    if(type & FPTYPE_FLOAT64) {
+        strcat(typestring, "FLOAT64 ");
+    }
+    if(type & FPTYPE_FLOAT32) {
+        strcat(typestring, "FLOAT32 ");
+    }
+    if(type & FPTYPE_PID) {
+        strcat(typestring, "PID ");
+    }
+    if(type & FPTYPE_TIMESPEC) {
+        strcat(typestring, "TIMESPEC ");
+    }
+    if(type & FPTYPE_FILENAME) {
+        strcat(typestring, "FILENAME ");
+    }
+    if(type & FPTYPE_FITSFILENAME) {
+        strcat(typestring, "FITSFILENAME ");
+    }
+    if(type & FPTYPE_EXECFILENAME) {
+        strcat(typestring, "EXECFILENAME");
+    }
+    if(type & FPTYPE_DIRNAME) {
+        strcat(typestring, "DIRNAME");
+    }
+    if(type & FPTYPE_STREAMNAME) {
+        strcat(typestring, "STREAMNAME");
+    }
+    if(type & FPTYPE_STRING) {
+        strcat(typestring, "STRING ");
+    }
+    if(type & FPTYPE_ONOFF) {
+        strcat(typestring, "ONOFF ");
+    }
+    if(type & FPTYPE_FPSNAME) {
+        strcat(typestring, "FPSNAME ");
+    }
+
+    return RETURN_SUCCESS;
+}
 
 
 
-int functionparameter_PrintParameterInfo(
+errno_t functionparameter_PrintParameterInfo(
     FUNCTION_PARAMETER_STRUCT *fpsentry,
     int pindex
 ) {
@@ -2267,8 +2320,8 @@ int functionparameter_PrintParameterInfo(
     }
 
 
-//snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream");
-//			fpsentry->md->msgcnt++;
+    //snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream");
+    //			fpsentry->md->msgcnt++;
 
     printf("\n");
 
@@ -2277,153 +2330,467 @@ int functionparameter_PrintParameterInfo(
     printf("------------- FUNCTION PARAMETER \n");
     printf("[%d] Parameter name : %s\n", pindex, fpsentry->parray[pindex].keywordfull);
 
-    if(fpsentry->parray[pindex].type & FPTYPE_UNDEF) {
-        printf("  TYPE UNDEF\n");
+    char typestring[100];
+    functionparameter_GetTypeString(fpsentry->parray[pindex].type, typestring);
+    printf("type: %s\n", typestring);
+
+
+    printf("\n");
+    printf("-- FLAG: ");
+
+
+
+    // print binary flag
+    printw("FLAG : ");
+    uint64_t mask = (uint64_t) 1 << (sizeof (uint64_t) * CHAR_BIT - 1);
+    while(mask) {
+        int digit = fpsentry->parray[pindex].fpflag&mask ? 1 : 0;
+        if(digit==1) {
+            attron(COLOR_PAIR(2));
+            printf("%s%d%s", BOLDHIGREEN, digit, RESET);
+            attroff(COLOR_PAIR(2));
+        } else {
+            printf("%d", digit);
+        }
+        mask >>= 1;
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_INT64) {
-        printf("  TYPE INT64\n");
+    printf("\n");
+
+
+    int flagstringlen = 32;
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "ACTIVE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "ACTIVE");
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT64) {
-        printf("  TYPE FLOAT64\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_USED) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "USED");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "USED");
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_FLOAT32) {
-        printf("  TYPE FLOAT32\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "VISIBLE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "VISIBLE");
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_PID) {
-        printf("  TYPE PID\n");
+
+    printf("%*s", flagstringlen, "---");
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "WRITE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "WRITE");
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_TIMESPEC) {
-        printf("  TYPE TIMESPEC\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "WRITECONF");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "WRITECONF");
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_FILENAME) {
-        printf("  TYPE FILENAME\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "WRITERUN");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "WRITERUN");
     }
-    if(fpsentry->parray[pindex].type & FPTYPE_FITSFILENAME) {
-        printf("  TYPE FITSFILENAME\n");
-    }
-    if(fpsentry->parray[pindex].type & FPTYPE_EXECFILENAME) {
-        printf("  TYPE EXECFILENAME\n");
-    }
-    if(fpsentry->parray[pindex].type & FPTYPE_DIRNAME) {
-        printf("  TYPE DIRNAME\n");
-    }
-    if(fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) {
-        printf("  TYPE STREAMNAME\n");
-    }
-    if(fpsentry->parray[pindex].type & FPTYPE_STRING) {
-        printf("  TYPE STRING\n");
-    }
-    if(fpsentry->parray[pindex].type & FPTYPE_ONOFF) {
-        printf("  TYPE ONOFF\n");
-    }
-    if(fpsentry->parray[pindex].type & FPTYPE_FPSNAME) {
-        printf("  TYPE FPSNAME\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "WRITESTATUS");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "WRITESTATUS");
     }
 
     printf("\n");
-    printf("------------- FLAGS  [ %ld ]\n", fpsentry->parray[pindex].fpflag);
 
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE) {
-        printf("   FPFLAG_ACTIVE\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_USED) {
-        printf("   FPFLAG_USED\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE) {
-        printf("   FPFLAG_VISIBLE\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITE) {
-        printf("   FPFLAG_WRITE\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF) {
-        printf("   FPFLAG_WRITECONF\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN) {
-        printf("   FPFLAG_WRITERUN\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
-        printf("   FPFLAG_WRITESTATUS\n");
-    }    
-    
     if(fpsentry->parray[pindex].fpflag & FPFLAG_LOG) {
-        printf("   FPFLAG_LOG\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "LOG");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "LOG");
     }
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE) {
-        printf("   FPFLAG_SAVEONCHANGE\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "SAVEONCHANGE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "SAVEONCHANGE");
     }
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCLOSE) {
-        printf("   FPFLAG_SAVEONCLOSE\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "SAVEONCLOSE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "SAVEONCLOSE");
     }
+
+
+    printf("%*s", flagstringlen, "---");
+
+
+    printf("\n");
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED) {
-        printf("   FPFLAG_IMPORTED\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "IMPORTED");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "IMPORTED");
     }
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK) {
-        printf("   FPFLAG_FEEDBACK\n");
-    }    
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "FEEDBACK");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "FEEDBACK");
+    }
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF) {
-        printf("   FPFLAG_ONOFF\n");
-    } 
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "ONOFF");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "ONOFF");
+    }
+
+
+    printf("%*s", flagstringlen, "---");
+
+
+    printf("\n");
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT) {
-        printf("   FPFLAG_CHECKINIT\n");
-    }    
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT) {
-        printf("   FPFLAG_MINLIMIT\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT) {
-        printf("   FPFLAG_MAXLIMIT\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_ERROR) {
-        printf("   FPFLAG_ERROR\n");
-    }    
-    
-    
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_LOCALMEM) {
-        printf("   FPFLAG_STREAM_LOAD_FORCE_LOCALMEM\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_SHAREMEM) {
-        printf("   FPFLAG_STREAM_LOAD_FORCE_SHAREMEM\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFFITS) {
-        printf("   FPFLAG_STREAM_LOAD_FORCE_CONFFITS\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFNAME) {
-        printf("   FPFLAG_STREAM_LOAD_FORCE_CONFNAME\n");
-    }
-    
-    
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM) {
-        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM) {
-        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS) {
-        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS\n");
-    }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME) {
-        printf("   FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "CHECKINIT");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "CHECKINIT");
     }
 
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "MINLIMIT");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "MINLIMIT");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "MAXLIMIT");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "MAXLIMIT");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_ERROR) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "ERROR");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "ERROR");
+    }
+
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_LOCALMEM) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_LOCALMEM");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_LOCALMEM");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_SHAREMEM) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_SHAREMEM");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_SHAREMEM");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFFITS) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFFITS");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFFITS");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFNAME) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFNAME");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFNAME");
+    }
+
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_LOCALMEM");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_LOCALMEM");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_SHAREMEM");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_SHAREMEM");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFFITS");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFFITS");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFNAME");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFNAME");
+    }
+
+
+    printf("\n");
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM) {
-        printf("   FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_SHAREMEM");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_SHAREMEM");
     }
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_CONFFITS) {
-        printf("   FPFLAG_STREAM_LOAD_UPDATE_CONFFITS\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_CONFFITS");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_CONFFITS");
     }
-    
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED) {
-        printf("   FPFLAG_STREAM_CONF_REQUIRED\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_CONF_REQUIRED) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "FILE/FPS/STREAM_CONF_REQUIRED");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "FILE/FPS/STREAM_CONF_REQUIRED");
     }
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED) {
-        printf("   FPFLAG_STREAM_RUN_REQUIRED\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "FILE/FPS/STREAM_RUN_REQUIRED");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "FILE/FPS/STREAM_RUN_REQUIRED");
     }
-    
-    
+
+
+    printf("\n");
+
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_DATATYPE) {
-        printf("   FPFLAG_STREAM_ENFORCE_DATATYPE\n");
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_DATATYPE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_DATATYPE");
     }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT8) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT8");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT8");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT8) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT8");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT8");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT16) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT16");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT16");
+    }
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT16) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT16");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT16");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT32) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT32");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT32");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT32) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT32");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT32");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT64) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT64");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT64");
+    }
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT64) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT64");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT64");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_HALF) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_HALF");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_HALF");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_FLOAT) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_FLOAT");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_FLOAT");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_DOUBLE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_DOUBLE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_DOUBLE");
+    }
+
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_1D) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_1D");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_1D");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_2D) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_2D");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_2D");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_3D) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_3D");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_3D");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_XSIZE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_XSIZE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_XSIZE");
+    }
+
+
+    printf("\n");
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_YSIZE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_YSIZE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_YSIZE");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_ZSIZE) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_ZSIZE");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_ENFORCE_ZSIZE");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKSTREAM) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "CHECKSTREAM");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "CHECKSTREAM");
+    }
+
+    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_MEMLOADREPORT) {
+        printf("%s", BOLDHIGREEN);
+        printf("%*s", flagstringlen, "STREAM_MEMLOADREPORT");
+        printf("%s", RESET);
+    } else {
+        printf("%*s", flagstringlen, "STREAM_MEMLOADREPORT");
+    }
+
 
 
 
@@ -2502,7 +2869,7 @@ int functionparameter_PrintParameterInfo(
     printf("\n");
     printf("\n");
 
-    return 0;
+    return RETURN_SUCCESS;
 
 }
 
@@ -4625,11 +4992,36 @@ errno_t functionparameter_CTRLscreen(
         printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
         printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
         
-        printw("========= NODE info ============\n");
-        printw("%s\n", keywnode[nodeSelected].keywordfull);
-        
 
-        printw("\n");
+
+        printw("========= NODE info ============\n");
+        printw("%-30s ", keywnode[nodeSelected].keywordfull);
+
+		if(keywnode[nodeSelected].leaf > 0) { // If this is not a directory
+			char typestring[100];
+			functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type, typestring);
+			printw("type %s\n", typestring);
+		
+			// print binary flag
+			printw("FLAG : ");
+			uint64_t mask = (uint64_t) 1 << (sizeof (uint64_t) * CHAR_BIT - 1);			
+			while(mask) {
+				int digit = fps[fpsindexSelected].parray[pindexSelected].fpflag&mask ? 1 : 0;
+				if(digit==1){
+					attron(COLOR_PAIR(2));
+					printw("%d", digit);
+					attroff(COLOR_PAIR(2));
+				} else {
+					printw("%d", digit);
+				}
+				mask >>= 1;
+			}					
+		}
+		else
+		{
+			printw("-DIRECTORY-\n");
+		}
+        printw("\n\n");
 
         FUNCTIONPARAMETER_LOGEXEC;
 

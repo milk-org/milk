@@ -46,25 +46,31 @@
 
 // Note that notation allows parameter to have more than one type
 // ... to be used with caution: most of the time, use type exclusively
+// type is uint32_t
 
-#define FPTYPE_UNDEF         0x0001
-#define FPTYPE_INT64         0x0002
-#define FPTYPE_FLOAT64       0x0004
-#define FPTYPE_PID           0x0008
-#define FPTYPE_TIMESPEC      0x0010
+#define FPTYPE_UNDEF         0x00000001
+#define FPTYPE_INT32         0x00000002
+#define FPTYPE_UINT32        0x00000004
+#define FPTYPE_INT64         0x00000008
+#define FPTYPE_UINT64        0x00000010
+#define FPTYPE_FLOAT32       0x00000020
+#define FPTYPE_FLOAT64       0x00000040
 
-#define FPTYPE_FILENAME      0x0020  // generic filename
-#define FPTYPE_FITSFILENAME  0x0021  // FITS file
-#define FPTYPE_EXECFILENAME  0x0022  // executable file
+#define FPTYPE_PID           0x00000080
+#define FPTYPE_TIMESPEC      0x00000100
 
-#define FPTYPE_DIRNAME       0x0040  // directory name
-#define FPTYPE_STREAMNAME    0x0080  // stream name -> process may load from shm if required. See loading stream section below and associated flags
-#define FPTYPE_STRING        0x0100  // generic string
-#define FPTYPE_ONOFF         0x0200  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
-#define FPTYPE_PROCESS       0x0400
-#define FPTYPE_FLOAT32       0x0800
+#define FPTYPE_FILENAME      0x00000200  // generic filename
+#define FPTYPE_FITSFILENAME  0x00000400  // FITS file
+#define FPTYPE_EXECFILENAME  0x00000800  // executable file
 
-#define FPTYPE_FPSNAME       0x1000 // connection to another FPS
+#define FPTYPE_DIRNAME       0x00001000  // directory name
+#define FPTYPE_STREAMNAME    0x00002000  // stream name -> process may load from shm if required. See loading stream section below and associated flags
+#define FPTYPE_STRING        0x00004000  // generic string
+#define FPTYPE_ONOFF         0x00008000  // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
+#define FPTYPE_PROCESS       0x00010000
+
+
+#define FPTYPE_FPSNAME       0x00020000 // connection to another FPS
 
 
 
@@ -287,7 +293,7 @@ typedef struct {
 	
 	char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 	
-	int type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
+	uint32_t type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
 	
 	union
 	{
@@ -456,8 +462,8 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 
 
 int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS, int pindex, FUNCTION_PARAMETER_STRUCT *FPSext);
-
-
+errno_t functionparameter_GetTypeString(uint32_t type, char *typestring);
+int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 
 
 
