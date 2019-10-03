@@ -859,8 +859,10 @@ int functionparameter_SetParamValue_ONOFF(
 
     if(ONOFFvalue == 1) {
         fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
+        fps->parray[fpsi].val.l[0] = 1;
     } else {
         fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
+        fps->parray[fpsi].val.l[0] = 0;
     }
     
     fps->parray[fpsi].cnt0++;
