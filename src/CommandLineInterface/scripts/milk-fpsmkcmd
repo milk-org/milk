@@ -47,10 +47,10 @@ cat "$FPSlistfilename" | while read LINE; do
 		CLIname=${stringarr[1]}
 		#$( echo "$LINE" | awk '{print $2}' )
 		
+		FPSname="${FPSrootname}"
 		echo "    FPS root name = ${FPSname}"
 		echo "    CLI cmd       = ${CLIname}"
 		
-		FPSname="${FPSrootname}"
 		for arg in `seq 1 $nbarg`;
         do
 				i=$(( $arg + 1 ))				

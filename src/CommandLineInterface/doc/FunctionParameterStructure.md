@@ -277,7 +277,7 @@ errno_t MyFunction_FPCONF(
                                      FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
     
     // This parameter will be intitialized to a value of 5, min-max range from 0 to 10, and current value 5
-    long param02default[4] = { 5, 0, 10, 5 };
+    int64_t param02default[4] = { 5, 0, 10, 5 };
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     FPFLAG &= ~FPFLAG_WRITECONF;  // Don't allow parameter to be written during configuration
     FPFLAG &= ~FPFLAG_WRITERUN;   // Don't allow parameter to be written during run
@@ -404,9 +404,14 @@ errno_t MyFunction_RUN(
 	//
 	float *gain = functionparameter_GetParamPtr_FLOAT32(&fps, ".status.loopcnt");
 
+	char imsname[FUNCTION_PARAMETER_STRMAXLEN];
+	strncpy(imsname, functionparameter_GetParamPtr_STRING(&fps, ".option.imname"), FUNCTION_PARAMETER_STRMAXLEN);
+	
 
-
-
+	// connect to WFS image
+    	long IDim = read_sharedmem_image(imsname);
+	
+	
 	// ===============================
 	// RUN LOOP
 	// ===============================
