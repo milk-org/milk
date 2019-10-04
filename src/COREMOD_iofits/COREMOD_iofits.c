@@ -2017,6 +2017,12 @@ long COREMOD_IOFITS_LoadMemStream(
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
+            else
+            {
+				char msg[200];
+                sprintf(msg, "%s localmem stream not found", sname);
+                functionparameter_outlog("LOADMEMSTREAM", msg);				
+			}            
         }
         //printf("imLOC = %d\n", *imLOC);
     }
@@ -2044,6 +2050,12 @@ long COREMOD_IOFITS_LoadMemStream(
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
+            else
+            {
+				char msg[200];
+                sprintf(msg, "%s sharedmem stream not found", sname);
+                functionparameter_outlog("LOADMEMSTREAM", msg);				
+			}            
         }
         //printf("imLOC = %d\n", *imLOC);
     }
@@ -2072,6 +2084,12 @@ long COREMOD_IOFITS_LoadMemStream(
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
+            else
+            {
+				char msg[200];
+                sprintf(msg, "%s File %s not found", sname, fname);
+                functionparameter_outlog("LOADMEMSTREAM", msg);				
+			}
             // printf("imLOC = %d\n", *imLOC);
         }
     }
