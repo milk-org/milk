@@ -4086,6 +4086,7 @@ errno_t functionparameter_outlog(
 ) {
     static int LogOutOpen = 0;
     static FILE *fpout;
+	
 
     if(LogOutOpen == 0) {
         char logfname[200];
