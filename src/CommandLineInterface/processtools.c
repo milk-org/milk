@@ -181,6 +181,57 @@ static double scantime_CPUpcnt;
 
 
 
+errno_t processinfo_procdirname(char *procdname)
+{
+    int procdirOK = 0;
+    DIR *tmpdir;
+
+    // first, we try the env variable if it exists
+    char* MILK_PROC_DIR = getenv("MILK_PROC_DIR");
+    if(MILK_PROC_DIR != NULL) {
+        printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
+        sprintf(procdname, "%s", MILK_PROC_DIR);
+
+        // does this direcory exist ?
+        tmpdir = opendir(procdname);
+        if(tmpdir) // directory exits
+        {
+            procdirOK = 1;
+            closedir(tmpdir);
+        }
+        else
+        {
+          printf(" [ WARNING ] '%s' does not exist\n", MILK_PROC_DIR);
+        }
+    }
+
+    // second, we try SHAREDPROCDIR default
+    if(procdirOK == 0)
+    {
+        tmpdir = opendir(SHAREDPROCDIR);
+        if(tmpdir) // directory exits
+        {
+            sprintf(procdname, "%s", SHAREDPROCDIR);
+            procdirOK = 1;
+            closedir(tmpdir);
+        }
+    }
+
+    // if all above fails, set to /tmp
+    if(procdirOK == 0)
+    {
+        tmpdir = opendir("/tmp");
+        if ( !tmpdir )
+            exit(EXIT_FAILURE);
+        else
+        {
+            sprintf(procdname, "/tmp");
+            procdirOK = 1;
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
 
 
 // High level processinfo function
@@ -383,7 +434,10 @@ long processinfo_shm_list_create()
     char  SM_fname[200];
 	long pindex = 0;
 
-    sprintf(SM_fname, "%s/processinfo.list.shm", SHAREDPROCDIR);
+    char  procdname[200];
+    processinfo_procdirname(procdname);
+
+    sprintf(SM_fname, "%s/processinfo.list.shm", procdname);
 
     /*
     * Check if a file exist using stat() function.
@@ -491,10 +545,11 @@ PROCESSINFO *processinfo_shm_create(
   
     pinfolist->PIDarray[pindex] = PID;
 	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
-  
 
+    char  procdname[200];
+    processinfo_procdirname(procdname);
 
-    sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pname, (int) PID);
+    sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1) {
         perror("Error opening file for writing");
@@ -601,7 +656,7 @@ PROCESSINFO *processinfo_shm_create(
 
     clock_gettime(CLOCK_REALTIME, &tnow);
 
-    sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", SHAREDPROCDIR, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
+    sprintf(pinfo->logfilename, "%s/proc.%s.%06d.%09ld.logfile", procdname, pinfo->name, (int) pinfo->PID, tnow.tv_sec);
 
 	if(LogFileCreated == 0)
 	{
@@ -1352,7 +1407,10 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     // number of process per CPU -> we can get that from ps
     char command[200];
     char psoutfname[200];
-    sprintf(psoutfname, "%s/_psoutput.txt", SHAREDPROCDIR);
+    char  procdname[200];
+    processinfo_procdirname(procdname);
+
+    sprintf(psoutfname, "%s/_psoutput.txt", procdname);
 
 
     // use ps command to scan processes, store result in file psoutfname
@@ -1361,7 +1419,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 //    system(command);
 
 
-    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", SHAREDPROCDIR, SHAREDPROCDIR, psoutfname, SHAREDPROCDIR);
+    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", procdname, procdname, psoutfname, procdname);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
@@ -1908,6 +1966,8 @@ void *processinfo_scan(void *thptr) {
     double tdiffv;
     struct timespec tdiff;
 
+    char  procdname[200];
+    processinfo_procdirname(procdname);
 
     pinfop->scanPID = getpid();
 
@@ -1996,8 +2056,7 @@ void *processinfo_scan(void *thptr) {
 
 
                 // check if process info file exists
-
-                sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 
                 // Does file exist ?
                 if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT) {
@@ -2364,7 +2423,8 @@ errno_t processinfo_CTRLscreen()
 
     PROCESSTOOLS_LOGEXEC;
 
-
+    char  procdname[200];
+    processinfo_procdirname(procdname);
 
     processinfo_CatchSignals();
 
@@ -2710,7 +2770,7 @@ errno_t processinfo_CTRLscreen()
                     if(pinfolist->active[pindex]!=1)
                     {
                         char SM_fname[200];
-                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                         remove(SM_fname);
                     }
                 }
@@ -2723,7 +2783,7 @@ errno_t processinfo_CTRLscreen()
 					remove(procinfoproc.pinfoarray[pindex]->logfilename);
 					
                     char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
@@ -2738,7 +2798,7 @@ errno_t processinfo_CTRLscreen()
 					remove(procinfoproc.pinfoarray[pindex]->logfilename);
 					
                     char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", SHAREDPROCDIR, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
