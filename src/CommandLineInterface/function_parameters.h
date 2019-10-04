@@ -470,7 +470,7 @@ int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, in
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode, uint16_t *loopstatus);
 uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus );
 uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps );
-
+uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps );
 
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry, const char *paramname);
 

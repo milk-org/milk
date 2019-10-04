@@ -1577,12 +1577,29 @@ uint16_t function_parameter_FPCONFloopstep(
 
 uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps )
 {
-	fps->md->confpid = 0;
-	fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CONF;
+	//fps->md->confpid = 0;
+	
+	
+	fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
     function_parameter_struct_disconnect(fps);
     
     return 0;	
 }
+
+
+
+uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps )
+{
+	//fps->md->confpid = 0;
+	
+	
+	fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+    function_parameter_struct_disconnect(fps);
+    
+    return 0;	
+}
+
+
 
 
 
@@ -2139,6 +2156,9 @@ int functionparameter_CheckParametersAll(
     int pindex;
     int errcnt = 0;
 
+	char msg[200];
+	sprintf(msg, "%s", fpsentry->md->name);
+	functionparameter_outlog("CHECKPARAMALL", msg);
 
     strcpy(fpsentry->md->message[0], "\0");
     NBparam = fpsentry->md->NBparam;
@@ -4442,6 +4462,10 @@ void functionparameter_CTRLscreen_atexit()
 
 
 
+
+
+
+
 /**
  * ## Purpose
  *
@@ -4491,7 +4515,7 @@ errno_t functionparameter_CTRLscreen(
     int nodeSelected = 1;
 
 
-	char msg[200];
+    char msg[200];
 
     // input command
     FILE *fpinputcmd;
@@ -4647,7 +4671,7 @@ errno_t functionparameter_CTRLscreen(
             printf("  s              rescan\n");
             printf("  e              erase FPS\n");
             printf("  E              erase FPS and tmux sessions\n");
-            printf("  u              update CONF process");
+            printf("  u              update CONF process\n");
             printf("  R/r            start/stop RUN process\n");
             printf("  C/c            start/stop CONF process\n");
             printf("  l              list all entries\n");
@@ -4846,20 +4870,22 @@ errno_t functionparameter_CTRLscreen(
         case 'u' : // update conf process
             fpsindex = keywnode[nodeSelected].fpsindex;
             fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+            sprintf(msg, "UPDATE %s", fps[fpsindex].md->name);
+            functionparameter_outlog("FPSCTRL", msg);
             //functionparameter_CONFupdate(fps, fpsindex);
             break;
 
         case 'R' : // start run process if possible
             fpsindex = keywnode[nodeSelected].fpsindex;
             sprintf(msg, "RUNSTART %s", fps[fpsindex].md->name);
-			functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", msg);
             functionparameter_RUNstart(fps, fpsindex);
             break;
 
         case 'r' : // stop run process
             fpsindex = keywnode[nodeSelected].fpsindex;
             sprintf(msg, "RUNSTOP %s", fps[fpsindex].md->name);
-			functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", msg);
             functionparameter_RUNstop(fps, fpsindex);
             break;
 
@@ -4867,15 +4893,15 @@ errno_t functionparameter_CTRLscreen(
         case 'C' : // start conf process
             fpsindex = keywnode[nodeSelected].fpsindex;
             sprintf(msg, "CONFSTART %s", fps[fpsindex].md->name);
-			functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", msg);
             functionparameter_CONFstart(fps, fpsindex);
             break;
 
         case 'c': // kill conf process
-            fpsindex = keywnode[nodeSelected].fpsindex;            
+            fpsindex = keywnode[nodeSelected].fpsindex;
             sprintf(msg, "CONFSTOP %s", fps[fpsindex].md->name);
-			functionparameter_outlog("FPSCTRL", msg);
-			functionparameter_CONFstop(fps, fpsindex);
+            functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_CONFstop(fps, fpsindex);
             break;
 
         case 'l': // list all parameters
@@ -4993,36 +5019,36 @@ errno_t functionparameter_CTRLscreen(
         printw("========= FPS info ============\n");
         printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
         printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
-        
+
 
 
         printw("========= NODE info ============\n");
         printw("%-30s ", keywnode[nodeSelected].keywordfull);
 
-		if(keywnode[nodeSelected].leaf > 0) { // If this is not a directory
-			char typestring[100];
-			functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type, typestring);
-			printw("type %s\n", typestring);
-		
-			// print binary flag
-			printw("FLAG : ");
-			uint64_t mask = (uint64_t) 1 << (sizeof (uint64_t) * CHAR_BIT - 1);			
-			while(mask) {
-				int digit = fps[fpsindexSelected].parray[pindexSelected].fpflag&mask ? 1 : 0;
-				if(digit==1){
-					attron(COLOR_PAIR(2));
-					printw("%d", digit);
-					attroff(COLOR_PAIR(2));
-				} else {
-					printw("%d", digit);
-				}
-				mask >>= 1;
-			}					
-		}
-		else
-		{
-			printw("-DIRECTORY-\n");
-		}
+        if(keywnode[nodeSelected].leaf > 0) { // If this is not a directory
+            char typestring[100];
+            functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type, typestring);
+            printw("type %s\n", typestring);
+
+            // print binary flag
+            printw("FLAG : ");
+            uint64_t mask = (uint64_t) 1 << (sizeof (uint64_t) * CHAR_BIT - 1);
+            while(mask) {
+                int digit = fps[fpsindexSelected].parray[pindexSelected].fpflag&mask ? 1 : 0;
+                if(digit==1) {
+                    attron(COLOR_PAIR(2));
+                    printw("%d", digit);
+                    attroff(COLOR_PAIR(2));
+                } else {
+                    printw("%d", digit);
+                }
+                mask >>= 1;
+            }
+        }
+        else
+        {
+            printw("-DIRECTORY-\n");
+        }
         printw("\n\n");
 
         FUNCTIONPARAMETER_LOGEXEC;
@@ -5083,11 +5109,23 @@ errno_t functionparameter_CTRLscreen(
                         pid = fps[fpsindex].md->confpid;
                         if((getpgid(pid) >= 0) && (pid > 0)) {
                             attron(COLOR_PAIR(2));
-                            printw("%5d ", (int) pid);
+                            printw("%06d ", (int) pid);
                             attroff(COLOR_PAIR(2));
-                        } else {
-                            printw("----- ");
+                        } else { // PID not active
+                            if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+                            {   // not clean exit
+                                attron(COLOR_PAIR(4));
+                                printw("%06d ", (int) pid);
+                                attroff(COLOR_PAIR(4));
+                            }
+                            else
+                            {   // All OK
+                                printw("%06d ", (int) pid);
+                            }
                         }
+
+
+
 
                         if(fps[fpsindex].md->conferrcnt>99)
                         {
@@ -5111,11 +5149,25 @@ errno_t functionparameter_CTRLscreen(
                         pid = fps[fpsindex].md->runpid;
                         if((getpgid(pid) >= 0) && (pid > 0)) {
                             attron(COLOR_PAIR(2));
-                            printw("%5d ", (int) pid);
+                            printw("%06d ", (int) pid);
                             attroff(COLOR_PAIR(2));
                         } else {
-                            printw("----- ");
+                            if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+                            {   // not clean exit
+                                attron(COLOR_PAIR(4));
+                                printw("%06d ", (int) pid);
+                                attroff(COLOR_PAIR(4));
+                            }
+                            else
+                            {   // All OK
+                                printw("%06d ", (int) pid);
+                            }
                         }
+
+
+
+
+
                     }
 
 
@@ -5205,10 +5257,19 @@ errno_t functionparameter_CTRLscreen(
                         pid = fps[fpsindex].md->confpid;
                         if((getpgid(pid) >= 0) && (pid > 0)) {
                             attron(COLOR_PAIR(2));
-                            printw("%5d ", (int) pid);
+                            printw("%06d ", (int) pid);
                             attroff(COLOR_PAIR(2));
-                        } else {
-                            printw("----- ");
+                        } else { // PID not active
+                            if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+                            {   // not clean exit
+                                attron(COLOR_PAIR(4));
+                                printw("%06d ", (int) pid);
+                                attroff(COLOR_PAIR(4));
+                            }
+                            else
+                            {   // All OK
+                                printw("%06d ", (int) pid);
+                            }
                         }
 
                         if(fps[fpsindex].md->conferrcnt>99)
@@ -5233,10 +5294,19 @@ errno_t functionparameter_CTRLscreen(
                         pid = fps[fpsindex].md->runpid;
                         if((getpgid(pid) >= 0) && (pid > 0)) {
                             attron(COLOR_PAIR(2));
-                            printw("%5d ", (int) pid);
+                            printw("%06d ", (int) pid);
                             attroff(COLOR_PAIR(2));
                         } else {
-                            printw("----- ");
+                            if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+                            {   // not clean exit
+                                attron(COLOR_PAIR(4));
+                                printw("%06d ", (int) pid);
+                                attroff(COLOR_PAIR(4));
+                            }
+                            else
+                            {   // All OK
+                                printw("%06d ", (int) pid);
+                            }
                         }
                     }
 
@@ -5495,26 +5565,26 @@ errno_t functionparameter_CTRLscreen(
                         if(fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
                             if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                 if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                  /*  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
-                                        paramsync = 0;
-                                    }*/
+                                    /*  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                          paramsync = 0;
+                                      }*/
 
-                            if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
-                                attron(COLOR_PAIR(2));
-                            }
+                                    if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
+                                        attron(COLOR_PAIR(2));
+                                    }
 
                             printw("[%d]  %10s", fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation, fps[fpsindex].parray[pindex].val.string[0]);
-                            
+
                             if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
-							
-								printw(" [ %d", fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
-								if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>1)
-									printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
-								if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>2)
-									printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
-								
-								printw(" ]");
-                                attroff(COLOR_PAIR(2));                                
+
+                                printw(" [ %d", fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+                                if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>1)
+                                    printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+                                if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>2)
+                                    printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
+
+                                printw(" ]");
+                                attroff(COLOR_PAIR(2));
                             }
 
                         }

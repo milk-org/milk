@@ -426,7 +426,8 @@ errno_t MyFunction_RUN(
 		// Note that some mechanism is required to set loopOK to 0 when MyFunction_Stop() is called
 		// This can use a separate shared memory path
 	}
-
+	
+	function_parameter_RUNexit( &fps );
 	return RETURN_SUCCESS;
 }
 ~~~~
@@ -622,10 +623,8 @@ errno_t MyFunction_RUN(
 	// ==================================
 
      processinfo_cleanExit(processinfo);
-
-     function_parameter_struct_disconnect( &fps );
-
-
+	function_parameter_RUNexit( &fps );
+    
 	return RETURN_SUCCESS;
 }
 ~~~~
