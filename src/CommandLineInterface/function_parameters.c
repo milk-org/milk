@@ -220,6 +220,58 @@ typedef struct
 /* =============================================================================================== */
 
 
+errno_t function_parameter_struct_shmdirname(char *shmdname)
+{
+    int shmdirOK = 0;
+    DIR *tmpdir;
+
+    // first, we try the env variable if it exists
+    char* MILK_SHM_DIR = getenv("MILK_SHM_DIR");
+    if(MILK_SHM_DIR != NULL) {
+        printf(" [ MILK_SHM_DIR ] '%s'\n", MILK_SHM_DIR);
+        sprintf(shmdname, "%s", MILK_SHM_DIR);
+
+        // does this direcory exist ?
+        tmpdir = opendir(shmdname);
+        if(tmpdir) // directory exits
+        {
+            shmdirOK = 1;
+            closedir(tmpdir);
+        }
+        else
+        {
+          printf(" [ WARNING ] '%s' does not exist\n", MILK_SHM_DIR);
+        }
+    }
+
+    // second, we try SHAREDSHMDIR default
+    if(shmdirOK == 0)
+    {
+        tmpdir = opendir(SHAREDSHMDIR);
+        if(tmpdir) // directory exits
+        {
+            sprintf(shmdname, "%s", SHAREDSHMDIR);
+            shmdirOK = 1;
+            closedir(tmpdir);
+        }
+    }
+
+    // if all above fails, set to /tmp
+    if(shmdirOK == 0)
+    {
+        tmpdir = opendir("/tmp");
+        if ( !tmpdir )
+            exit(EXIT_FAILURE);
+        else
+        {
+            sprintf(shmdname, "/tmp");
+            shmdirOK = 1;
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
 
 
 
@@ -239,7 +291,10 @@ errno_t function_parameter_struct_create(
     size_t sharedsize = 0; // shared memory size in bytes
     int SM_fd; // shared memory file descriptor
 
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDSHMDIR, name);
+    char shmdname[200];
+    function_parameter_struct_shmdirname(shmdname);
+
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name);
     remove(SM_fname);
 
     printf("Creating file %s\n", SM_fname);
@@ -357,7 +412,10 @@ long function_parameter_struct_connect(
     long NBparamActive;
     char *mapv;
 
-    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", SHAREDSHMDIR, name);
+    char shmdname[200];
+    function_parameter_struct_shmdirname(shmdname);
+
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name);
     printf("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1) {
@@ -2014,7 +2072,7 @@ int functionparameter_CheckParameter(
     }
 
 
-
+#ifndef STANDALONE
     if(fpsentry->parray[pindex].type == FPTYPE_FILENAME) {
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
             if(file_exists(fpsentry->parray[pindex].val.string[0])==0) {
@@ -2042,6 +2100,7 @@ int functionparameter_CheckParameter(
             }
         }
     }
+#endif
 
 
     if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME) {
@@ -3288,8 +3347,11 @@ int functionparameter_FPSprocess_cmdline(
         {
             char logfname[200];
             char linkname[500];
+            char shmdname[200];
+            function_parameter_struct_shmdirname(shmdname);
 
-            sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
+
+            sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
 
             sprintf(msgstring, "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
             functionparameter_outlog("INFO", msgstring);
@@ -4090,8 +4152,10 @@ errno_t functionparameter_outlog(
 
     if(LogOutOpen == 0) {
         char logfname[200];
+        char shmdname[200];
+        function_parameter_struct_shmdirname(shmdname);
 
-        sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
+        sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
         fpout = fopen(logfname, "a");
         if(fpout == NULL) {
             printf("ERROR: cannot open file\n");
@@ -4217,9 +4281,10 @@ errno_t functionparameter_scan_fps(
 
     DIR *d;
     struct dirent *dir;
+    char shmdname[200];
+    function_parameter_struct_shmdirname(shmdname);
 
-
-    d = opendir(SHAREDSHMDIR);
+    d = opendir(shmdname);
     if(d) {
         fpsindex = 0;
         pindex = 0;
@@ -4257,8 +4322,10 @@ errno_t functionparameter_scan_fps(
                 struct stat buf;
                 int retv;
                 char fullname[200];
+                char shmdname[200];
+                function_parameter_struct_shmdirname(shmdname);
 
-                sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
+                sprintf(fullname, "%s/%s", shmdname, dir->d_name);
 
                 retv = lstat(fullname, &buf);
                 if(retv == -1) {
@@ -4276,9 +4343,11 @@ errno_t functionparameter_scan_fps(
                     char linkname[200];
                     int nchar;
                     int ret;
+                    char shmdname[200];
+                    function_parameter_struct_shmdirname(shmdname);
 
                     fps_symlink[fpsindex] = 1;
-                    sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
+                    sprintf(fullname, "%s/%s", shmdname, dir->d_name);
                     ret = readlink(fullname, linknamefull, 200 - 1); // todo: replace with realpath()
 
                     strcpy(linkname, basename(linknamefull));
@@ -4426,7 +4495,9 @@ errno_t functionparameter_scan_fps(
             }
         }
     } else {
-        printf("ERROR: missing %s directory\n", SHAREDSHMDIR);
+        char shmdname[200];
+        function_parameter_struct_shmdirname(shmdname);
+        printf("ERROR: missing %s directory\n", shmdname);
         printf("File %s line %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(EXIT_FAILURE);
@@ -4616,7 +4687,9 @@ errno_t functionparameter_CTRLscreen(
         fflush(stdout);
 
         char logfname[500];
-        sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
+        char shmdname[200];
+        function_parameter_struct_shmdirname(shmdname);
+        sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
         remove(logfname);
 
         return 0;
@@ -4634,6 +4707,8 @@ errno_t functionparameter_CTRLscreen(
     int currentnode = 0;
     int currentlevel = 0;
     NBindex = 0;
+    char shmdname[200];
+    function_parameter_struct_shmdirname(shmdname);
 
     while(loopOK == 1) {
         int i;
@@ -4704,7 +4779,7 @@ errno_t functionparameter_CTRLscreen(
             break;
 
         case 'e' : // erase FPS
-            sprintf(fname, "%s/%s.fps.shm", SHAREDSHMDIR, fps[keywnode[nodeSelected].fpsindex].md->name);
+            sprintf(fname, "%s/%s.fps.shm", shmdname, fps[keywnode[nodeSelected].fpsindex].md->name);
             FUNCTIONPARAMETER_LOGEXEC;
             for(fpsindex = 0; fpsindex < NBfps; fpsindex++) {
                 function_parameter_struct_disconnect(&fps[fpsindex]);
@@ -4735,7 +4810,7 @@ errno_t functionparameter_CTRLscreen(
             break;
 
         case 'E' : // Erase FPS and close tmux sessions
-            sprintf(fname, "%s/%s.fps.shm", SHAREDSHMDIR, fps[keywnode[nodeSelected].fpsindex].md->name);
+            sprintf(fname, "%s/%s.fps.shm", shmdname, fps[keywnode[nodeSelected].fpsindex].md->name);
             FUNCTIONPARAMETER_LOGEXEC;
             remove(fname);
             FUNCTIONPARAMETER_LOGEXEC;
@@ -5000,7 +5075,7 @@ errno_t functionparameter_CTRLscreen(
         int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, keywnode, NBkwn, fps, 0);
         fifocmdcnt += fcnt;
 
-        printw("OUTPUT LOG:  %s/fpslog.%06d\n", SHAREDSHMDIR, getpid());
+        printw("OUTPUT LOG:  %s/fpslog.%06d\n", shmdname, getpid());
 
         FUNCTIONPARAMETER_LOGEXEC;
 
@@ -5754,7 +5829,7 @@ errno_t functionparameter_CTRLscreen(
 
 
     char logfname[500];
-    sprintf(logfname, "%s/fpslog.%06d", SHAREDSHMDIR, getpid());
+    sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
     remove(logfname);
 
 
