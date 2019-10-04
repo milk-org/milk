@@ -5210,9 +5210,9 @@ errno_t functionparameter_CTRLscreen(
 
                 } else {
                     if(l==0) {
-                        printw("                ");
+                        printw("                 ");
                     }
-                    printw("            ");
+                    printw("             ");
                 }
             }
 
