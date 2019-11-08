@@ -2161,6 +2161,10 @@ void *processinfo_scan(void *thptr) {
                 pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
                 pinfop->NBpindexActive++;
             }
+            
+        if(pinfop->NBpindexActive>0)
+        {    
+            
         double *timearray;
         long *indexarray;
         timearray  = (double *) malloc(sizeof(double) * pinfop->NBpindexActive);
@@ -2189,6 +2193,8 @@ void *processinfo_scan(void *thptr) {
 
         free(timearray);
         free(indexarray);
+        
+		}
 
         pinfop->scandebugline = __LINE__;
 

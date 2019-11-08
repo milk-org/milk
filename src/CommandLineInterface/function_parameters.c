@@ -3210,6 +3210,7 @@ int functionparameter_UserInputSetParamValue(
  * - confupdate  : update configuration
  * - runstart    : start RUN process associated with parameter
  * - runstop     : stop RUN process associated with parameter
+ * - fpsrm       : remove fps
  *
  *
  */
@@ -3580,6 +3581,43 @@ int functionparameter_FPSprocess_cmdline(
             }
         }
     }
+
+
+
+
+    // fpsrm
+
+    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
+    {
+        cmdFOUND = 1;
+        if(nbword != 2) {
+            sprintf(msgstring, "COMMAND fpsrm NBARGS = 1");
+            functionparameter_outlog("ERROR", msgstring);
+            cmdOK = 0;
+        }
+        else
+        {
+            if(kwnindex != -1) {
+                fpsindex = keywnode[kwnindex].fpsindex;
+                pindex = keywnode[kwnindex].pindex;
+
+                FUNCTIONPARAMETER_LOGEXEC;
+                functionparameter_FPSremove(fps, fpsindex);
+
+                sprintf(msgstring, "FPS remove %d %s", fpsindex, fps[fpsindex].md->name);
+                functionparameter_outlog("FPSRM", msgstring);
+                cmdOK = 1;
+            }
+            else
+            {
+                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+                functionparameter_outlog("ERROR", msgstring);
+                cmdOK = 0;
+            }
+        }
+    }
+
+
 
 
 
@@ -4108,6 +4146,60 @@ errno_t functionparameter_CONFstop(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+
+errno_t functionparameter_FPSremove(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int fpsindex
+) {
+    char command[500];
+    int nameindexlevel;
+
+
+    functionparameter_RUNstop(fps, fpsindex);
+    functionparameter_CONFstop(fps, fpsindex);
+
+
+    char shmdname[200];
+    function_parameter_struct_shmdirname(shmdname);
+
+    // conf log
+    char conflogfname[500];
+    sprintf(conflogfname, "%s/fpslog.%06d", shmdname, fps[fpsindex].md->confpid);
+
+    // FPS shm
+    char fpsfname[500];
+    sprintf(fpsfname, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
+
+    remove(conflogfname);
+    remove(fpsfname);
+
+
+	
+    sprintf(command, "tmux send-keys -t %s-run \"exit\" C-m", fps[fpsindex].md->name);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
+    sprintf(command, "tmux send-keys -t %s-conf \"exit\" C-m", fps[fpsindex].md->name);
+    if(system(command) != 0) {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
+
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -4791,6 +4883,7 @@ errno_t functionparameter_CTRLscreen(
 
             free(fps);
             free(keywnode);
+                                   
             fps = (FUNCTION_PARAMETER_STRUCT *) malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * NB_FPS_MAX);
             keywnode = (KEYWORD_TREE_NODE *) malloc(sizeof(KEYWORD_TREE_NODE) * NB_KEYWNODE_MAX);
             functionparameter_scan_fps(mode, fpsnamemask, fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
@@ -4810,19 +4903,11 @@ errno_t functionparameter_CTRLscreen(
             break;
 
         case 'E' : // Erase FPS and close tmux sessions
-            sprintf(fname, "%s/%s.fps.shm", shmdname, fps[keywnode[nodeSelected].fpsindex].md->name);
-            FUNCTIONPARAMETER_LOGEXEC;
-            remove(fname);
+			fpsindex = keywnode[nodeSelected].fpsindex;
+			functionparameter_FPSremove(fps, fpsindex);
+        
             FUNCTIONPARAMETER_LOGEXEC;
 
-            sprintf(command, "tmux send-keys -t %s-run \"exit\" C-m", fps[keywnode[nodeSelected].fpsindex].md->name);
-            if(system(command) != 0) {
-                printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-            }
-            sprintf(command, "tmux send-keys -t %s-conf \"exit\" C-m", fps[keywnode[nodeSelected].fpsindex].md->name);
-            if(system(command) != 0) {
-                printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-            }
 
             for(fpsindex = 0; fpsindex < NBfps; fpsindex++) {
                 function_parameter_struct_disconnect(&fps[fpsindex]);
