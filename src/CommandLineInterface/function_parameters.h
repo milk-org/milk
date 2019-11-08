@@ -480,6 +480,7 @@ errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex
 errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 
 
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
