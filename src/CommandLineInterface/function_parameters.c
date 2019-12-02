@@ -358,14 +358,16 @@ errno_t function_parameter_struct_create(
     
     
     
-    char cwd[FPS_CWD_MAX];
+    char cwd[FPS_CWD_STRLENMAX];
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-       strcpy(fps.md->fpsdirectory, cwd);
+       strncpy(fps.md->fpsdirectory, cwd, FPS_CWD_STRLENMAX);
 	} else {
 		perror("getcwd() error");
 		return 1;
 	}
     
+    strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX);
+    fps.md->sourceline = 0;
  
 	
 
@@ -1509,33 +1511,33 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     uint16_t *loopstatus
 ) {
     int NBparam = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
-	uint32_t FPSCONNECTFLAG;
+    uint32_t FPSCONNECTFLAG;
 
     FUNCTION_PARAMETER_STRUCT fps;
 
-	
+
     if(CMDmode & CMDCODE_FPSINITCREATE) { // (re-)create fps even if it exists
-		printf("=== FPSINITCREATE\n"); 
+        printf("=== FPSINITCREATE\n");
         function_parameter_struct_create(NBparam, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     } else { // load existing fps if exists
-		printf("=== CHECK IF FPS EXISTS\n");
-		
-		
-		FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
-		if(CMDmode & CMDCODE_CONFSTART){
-			FPSCONNECTFLAG = FPSCONNECT_CONF;
-		}
-		
+        printf("=== CHECK IF FPS EXISTS\n");
+
+
+        FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
+        if(CMDmode & CMDCODE_CONFSTART) {
+            FPSCONNECTFLAG = FPSCONNECT_CONF;
+        }
+
         if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1) {
-			printf("=== FPS DOES NOT EXISTS\n");
-            function_parameter_struct_create(NBparam, fpsname);
+            printf("=== FPS DOES NOT EXISTS\n");
+            function_parameter_struct_create(NBparam, fpsname);            
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         else
         {
-			printf("=== FPS EXISTS\n");
-		}
+            printf("=== FPS EXISTS\n");
+        }
     }
 
     if(CMDmode & CMDCODE_CONFSTOP) { // stop fps
@@ -1545,17 +1547,17 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     } else {
         *loopstatus = 1;
     }
- 
-        
-    
-    if( (CMDmode & CMDCODE_FPSINITCREATE) || (CMDmode & CMDCODE_FPSINIT) || (CMDmode & CMDCODE_CONFSTOP) ){
-		*loopstatus = 0; // do not start conf
-	}
-	
-	if ( CMDmode & CMDCODE_CONFSTART ){
-		*loopstatus = 1; 
-	}
-	
+
+
+
+    if( (CMDmode & CMDCODE_FPSINITCREATE) || (CMDmode & CMDCODE_FPSINIT) || (CMDmode & CMDCODE_CONFSTOP) ) {
+        *loopstatus = 0; // do not start conf
+    }
+
+    if ( CMDmode & CMDCODE_CONFSTART ) {
+        *loopstatus = 1;
+    }
+
 
     return fps;
 }
@@ -4147,6 +4149,7 @@ int functionparameter_read_fpsCMD_fifo(
                     fpsctrltasklist[cmdindex].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
                     fpsctrltasklist[cmdindex].queue = queue;
+                    clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindex].creationtime);
 
                     if(waitonrun==1) {
                         fpsctrltasklist[cmdindex].flag |= FPSTASK_FLAG_WAITONRUN;
@@ -5545,6 +5548,7 @@ errno_t functionparameter_CTRLscreen(
             FUNCTIONPARAMETER_LOGEXEC;
 
             printw("========= FPS info ============\n");
+            printw("Source  : %s %d\n", fps[keywnode[nodeSelected].fpsindex].md->sourcefname, fps[keywnode[nodeSelected].fpsindex].md->sourceline);
             printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
             printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
 

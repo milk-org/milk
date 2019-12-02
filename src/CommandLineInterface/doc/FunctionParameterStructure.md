@@ -145,7 +145,8 @@ Example source code below, assuming one optional long type argument.
 ~~~~{.c}
 
 errno_t MyFunction_cli() {
-    char fpsname[200];
+    int stringmaxlen = 200;
+    char fpsname[stringmaxlen];
 
     // First, we try to execute function through FPS interface
     if(CLI_checkarg(1, 5) == 0) { // check that first arg is string
@@ -159,7 +160,7 @@ errno_t MyFunction_cli() {
             // name fps to something different than the process name
             // by appending user-provided string if available
              if(strlen(data.cmdargtoken[2].val.string)>0)
-                sprintf(fpsname, "myfunc-%s", data.cmdargtoken[2].val.string);
+                snprintf(fpsname, stringmaxlen, "myfunc-%s", data.cmdargtoken[2].val.string);
             else
                 sprintf(fpsname, "myfunc");
         } else { 
@@ -251,7 +252,8 @@ errno_t MyFunction_FPCONF(
 	// ===========================
 	
     FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
-
+	strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);
+	fps.md->sourceline = __LINE__;
 
 
 	// ===========================
@@ -632,6 +634,7 @@ errno_t MyFunction_RUN(
 
 
 ----
+
 
 
 
