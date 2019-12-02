@@ -322,7 +322,8 @@ typedef struct {
 
 
 
-#define FPS_CWD_MAX 500
+#define FPS_CWD_STRLENMAX 500
+#define FPS_SRCDIR_STRLENMAX 500
 
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  500
 
@@ -374,7 +375,10 @@ typedef struct {
     // process name
     // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
     char                name[200];         // example: pname-01-32
-    char                fpsdirectory[FPS_CWD_MAX]; // where should the parameter values be saved to disk ?
+    char                fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
+
+	char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
+	int					sourceline;
 
     // the name and indices are automatically parsed in the following format
     char                pname[100];      // example: pname
@@ -397,7 +401,7 @@ typedef struct {
     uint64_t            confwaitus;   // configuration wait timer value [us]
 
     uint32_t            status;          // conf and process status
-   
+
     int                 NBparam;      // size of parameter array (= max number of parameter supported)
 
     char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
@@ -459,6 +463,8 @@ typedef struct {
 	uint64_t flag;
 
 	int fpsindex;  // used to track status
+
+	struct timespec creationtime;
 
 } FPSCTRL_TASK_ENTRY;
 
