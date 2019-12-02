@@ -273,7 +273,7 @@ typedef struct {
 
 
 typedef struct {
-    long FPSNBparam; // to be written by connect function
+    long FPSNBparamMAX; // to be written by connect function
     long FPSNBparamActive;
     long FPSNBparamUsed;
 } FUNCTION_PARAMETER_SUBINFO_FPS;
@@ -322,8 +322,7 @@ typedef struct {
 
 
 
-#define FPS_CWD_STRLENMAX 500
-#define FPS_SRCDIR_STRLENMAX 500
+
 
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  500
 
@@ -367,23 +366,24 @@ typedef struct {
 
 
 
-
-
+#define FPS_CWD_STRLENMAX 200
+#define FPS_SRCDIR_STRLENMAX 200
+#define FPS_PNAME_STRMAXLEN 100
 
 // metadata
 typedef struct {
     // process name
     // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
     char                name[200];         // example: pname-01-32
-    char                fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
 
+    char                fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
 	char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
 	int					sourceline;
 
     // the name and indices are automatically parsed in the following format
-    char                pname[100];      // example: pname
-    char                nameindexW[16][10];   // subnames
-    int                 NBnameindex;     // example: 2
+    char                pname[FPS_PNAME_STRMAXLEN];          // example: pname
+    char                nameindexW[16][10];  // subnames
+    int                 NBnameindex;         // example: 2
 
     // configuration will run in tmux session pname-XX-conf
     // process       will run in tmux session pname-XX-run
@@ -402,7 +402,8 @@ typedef struct {
 
     uint32_t            status;          // conf and process status
 
-    int                 NBparam;      // size of parameter array (= max number of parameter supported)
+	long                 NBparamMAX;      // size of parameter array (= max number of parameter supported)
+
 
     char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
     int                           msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
@@ -443,9 +444,14 @@ typedef struct {
 #define FPSTASK_STATUS_WAITING 0x0000000000000004
 #define FPSTASK_STATUS_SHOW 0x0000000000000008 
 
-
+// use WAITONRUN to ensure the queue is blocked until the current run process is done
 #define FPSTASK_FLAG_WAITONRUN 0x0000000000000001
 #define FPSTASK_FLAG_WAITONCONF 0x0000000000000002
+
+// If ON, the task is a wait point, and will only proceed if the FPS pointed to by fpsindex is NOT running 
+#define FPSTASK_FLAG_WAIT_FOR_FPS_NORUN 0x0000000000000004
+
+
 
 typedef struct {
 	
@@ -478,12 +484,12 @@ typedef struct {
 extern "C" {
 #endif
 
-errno_t function_parameter_struct_create    (int NBparam, const char *name);
+errno_t function_parameter_struct_create    (int NBparamMAX, const char *name);
 long    function_parameter_struct_connect   (const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
 int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
-int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, int NBparam);
+int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBparamMAX);
 
 int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 

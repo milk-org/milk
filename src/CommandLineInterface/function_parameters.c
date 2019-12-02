@@ -276,7 +276,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
 
 
 errno_t function_parameter_struct_create(
-    int NBparam,
+    int NBparamMAX,
     const char *name
 )
 {
@@ -297,11 +297,11 @@ errno_t function_parameter_struct_create(
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name);
     remove(SM_fname);
 
-    printf("Creating file %s\n", SM_fname);
+    printf("Creating file %s, holding NBparamMAX = %d\n", SM_fname, NBparamMAX);
     fflush(stdout);
 
     sharedsize = sizeof(FUNCTION_PARAMETER_STRUCT_MD);
-    sharedsize += sizeof(FUNCTION_PARAMETER)*NBparam;
+    sharedsize += sizeof(FUNCTION_PARAMETER)*NBparamMAX;
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (SM_fd == -1) {
@@ -345,9 +345,9 @@ errno_t function_parameter_struct_create(
     printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
 
-    fps.md->NBparam = NBparam;
+    fps.md->NBparamMAX = NBparamMAX;
 
-    for(index=0; index<NBparam; index++)
+    for(index=0; index<NBparamMAX; index++)
     {
         fps.parray[index].fpflag = 0; // not active
         fps.parray[index].cnt0 = 0;   // update counter
@@ -408,13 +408,14 @@ long function_parameter_struct_connect(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsconnectmode
 ) {
-    char SM_fname[200];
+	int stringmaxlen = 500;
+    char SM_fname[stringmaxlen];
     int SM_fd; // shared memory file descriptor
-    long NBparam;
+    long NBparamMAX;
     long NBparamActive;
     char *mapv;
 
-    char shmdname[200];
+    char shmdname[stringmaxlen];
     function_parameter_struct_shmdirname(shmdname);
 
     snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name);
@@ -452,50 +453,55 @@ long function_parameter_struct_connect(
     fps->parray = (FUNCTION_PARAMETER *) mapv;
 
     //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
-    NBparam = fps->md->NBparam;
-    printf("Connected to %s, %ld entries\n", SM_fname, NBparam);
+    NBparamMAX = fps->md->NBparamMAX;
+    printf("[%5d] Connected to %s, %ld entries\n", __LINE__, SM_fname, NBparamMAX);
     fflush(stdout);
 
 
     // decompose full name into pname and indices
     int NBi = 0;
-    char tmpstring[200];
-    char tmpstring1[100];
+    char tmpstring[stringmaxlen];
+    char tmpstring1[stringmaxlen];
     char *pch;
 
-    strncpy(tmpstring, name, 200);
+
+    strncpy(tmpstring, name, stringmaxlen);
     NBi = -1;
     pch = strtok(tmpstring, "-");
     while(pch != NULL) {
-        strncpy(tmpstring1, pch, 100);
+        strncpy(tmpstring1, pch, stringmaxlen);
 
         if(NBi == -1) {
-            strncpy(fps->md->pname, tmpstring1, 100);
+//            strncpy(fps->md->pname, tmpstring1, stringmaxlen);
+            snprintf(fps->md->pname, FPS_PNAME_STRMAXLEN, "%s", tmpstring1);
         }
 
         if((NBi >= 0) && (NBi < 10)) {
-            strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);
+            snprintf(fps->md->nameindexW[NBi], 16, "%s", tmpstring1);
+            //strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);            
         }
 
         NBi++;
         pch = strtok(NULL, "-");
     }
-    fps->md->NBnameindex = NBi;
+    
 
-    function_parameter_printlist(fps->parray, NBparam);
+    fps->md->NBnameindex = NBi;
+    function_parameter_printlist(fps->parray, NBparamMAX);
 
 
     if((fpsconnectmode == FPSCONNECT_CONF) || (fpsconnectmode == FPSCONNECT_RUN)) {
         // load streams
         int pindex;
-        for(pindex = 0; pindex < NBparam; pindex++) {			
+        for(pindex = 0; pindex < NBparamMAX; pindex++) {			
 			if( (fps->parray[pindex].fpflag & FPFLAG_ACTIVE) && (fps->parray[pindex].fpflag & FPFLAG_USED) && (fps->parray[pindex].type & FPTYPE_STREAMNAME)) {
                 functionparameter_LoadStream(fps, pindex, fpsconnectmode);
             }
         }
     }
 
-    return(NBparam);
+
+    return(NBparamMAX);
 }
 
 
@@ -504,12 +510,12 @@ long function_parameter_struct_connect(
 
 int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct)
 {
-    int NBparam;
+    int NBparamMAX;
 
-    NBparam = funcparamstruct->md->NBparam;
+    NBparamMAX = funcparamstruct->md->NBparamMAX;
     //funcparamstruct->md->NBparam = 0;
     funcparamstruct->parray = NULL;
-    munmap(funcparamstruct->md, sizeof(FUNCTION_PARAMETER_STRUCT_MD)+sizeof(FUNCTION_PARAMETER)*NBparam);
+    munmap(funcparamstruct->md, sizeof(FUNCTION_PARAMETER_STRUCT_MD)+sizeof(FUNCTION_PARAMETER)*NBparamMAX);
 
     return(0);
 }
@@ -564,20 +570,20 @@ int function_parameter_SetValue_int64(char *keywordfull, long val)
 
 int function_parameter_printlist(
     FUNCTION_PARAMETER  *funcparamarray,
-    int NBparam
+    long NBparamMAX
 )
 {
-    int pindex = 0;
-    int pcnt = 0;
+    long pindex = 0;
+    long pcnt = 0;
 
     printf("\n");
-    for(pindex=0; pindex<NBparam; pindex++)
+    for(pindex=0; pindex<NBparamMAX; pindex++)
     {
         if(funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)
         {
             int kl;
 
-            printf("Parameter %4d : %s\n", pindex, funcparamarray[pindex].keywordfull);
+            printf("Parameter %4ld : %s\n", pindex, funcparamarray[pindex].keywordfull);
             /*for(kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
             	printf("  %s", funcparamarray[pindex].keyword[kl]);
             printf("\n");*/
@@ -651,7 +657,7 @@ int function_parameter_printlist(
         }
     }
     printf("\n");
-    printf("%d parameters\n", pcnt);
+    printf("%ld/%ld active parameters\n", pcnt, NBparamMAX);
     printf("\n");
 
     return 0;
@@ -668,28 +674,29 @@ int functionparameter_GetFileName(
     char *outfname,
     char *tagname
 ) {
-    char fname[500];
-    char fname1[500];
-    char command[1000];
+	int stringmaxlen = 500;
+    char fname[stringmaxlen];
+    char fname1[stringmaxlen];
+    char command[stringmaxlen];
     int l;
 
-    sprintf(fname, "%s/fpsconf", fps->md->fpsdirectory);
-    sprintf(command, "mkdir -p %s", fname);
+    snprintf(fname, stringmaxlen, "%s/fpsconf", fps->md->fpsdirectory);
+    snprintf(command, stringmaxlen, "mkdir -p %s", fname);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
 
     for(l = 0; l < fparam->keywordlevel - 1; l++) {
-        sprintf(fname1, "/%s", fparam->keyword[l]);
+        snprintf(fname1, stringmaxlen, "/%s", fparam->keyword[l]);
         strcat(fname, fname1);
-        sprintf(command, "mkdir -p %s", fname);
+        snprintf(command, stringmaxlen, "mkdir -p %s", fname);
 
         if(system(command) != 0) {
             printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
         }
     }
 
-    sprintf(fname1, "/%s.%s.txt", fparam->keyword[l], tagname);
+    snprintf(fname1, stringmaxlen, "/%s.%s.txt", fparam->keyword[l], tagname);
     strcat(fname, fname1);
     strcpy(outfname, fname);
 
@@ -705,14 +712,14 @@ int functionparameter_GetParamIndex(
     const char *paramname
 )
 {
-    int index = -1;
-    int pindex = 0;
+    long index = -1;
+    long pindex = 0;
     int pcnt = 0;
 
-    int NBparam = fps->md->NBparam;
+    long NBparamMAX = fps->md->NBparamMAX;
 
     int found = 0;
-    for(pindex=0; pindex<NBparam; pindex++)
+    for(pindex=0; pindex<NBparamMAX; pindex++)
     {
         if(found==0)
         {
@@ -1024,14 +1031,16 @@ int function_parameter_add_entry(
     // 1: initialized using file value
     // 2: initialized to function argument value
 
-    int pindex = 0;
+    long pindex = 0;
     char *pch;
     char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     FUNCTION_PARAMETER *funcparamarray;
 
     funcparamarray = fps->parray;
 
-    int NBparam = fps->md->NBparam;
+    long NBparamMAX = -1;
+    
+    NBparamMAX = fps->md->NBparamMAX;
 
 
 
@@ -1049,8 +1058,8 @@ int function_parameter_add_entry(
 
     // scan for existing keyword
     int scanOK = 0;
-    int pindexscan;
-    for(pindexscan=0; pindexscan<NBparam; pindexscan++)
+    long pindexscan;
+    for(pindexscan=0; pindexscan<NBparamMAX; pindexscan++)
     {
         if(strcmp(keywordstringC, funcparamarray[pindexscan].keywordfull)==0)
         {
@@ -1063,12 +1072,12 @@ int function_parameter_add_entry(
     {
         // scan for first available entry
         pindex = 0;
-        while((funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)&&(pindex<NBparam))
+        while( (funcparamarray[pindex].fpflag & FPFLAG_ACTIVE) && (pindex<NBparamMAX) )
             pindex++;
 
-        if(pindex == NBparam)
+        if(pindex == NBparamMAX)
         {
-            printf("ERROR [%s line %d]: NBparam limit reached\n", __FILE__, __LINE__);
+            printf("ERROR [%s line %d]: NBparamMAX %ld limit reached\n", __FILE__, __LINE__, NBparamMAX);
             fflush(stdout);
             printf("STEP %s %d\n", __FILE__, __LINE__);
             fflush(stdout);
@@ -1510,15 +1519,15 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     uint32_t CMDmode,
     uint16_t *loopstatus
 ) {
-    int NBparam = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
+    long NBparamMAX = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
     uint32_t FPSCONNECTFLAG;
 
     FUNCTION_PARAMETER_STRUCT fps;
 
 
     if(CMDmode & CMDCODE_FPSINITCREATE) { // (re-)create fps even if it exists
-        printf("=== FPSINITCREATE\n");
-        function_parameter_struct_create(NBparam, fpsname);
+        printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
+        function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     } else { // load existing fps if exists
         printf("=== CHECK IF FPS EXISTS\n");
@@ -1530,8 +1539,8 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         }
 
         if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1) {
-            printf("=== FPS DOES NOT EXISTS\n");
-            function_parameter_struct_create(NBparam, fpsname);            
+            printf("=== FPS DOES NOT EXISTS -> CREATE\n");
+            function_parameter_struct_create(NBparamMAX, fpsname);            
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         else
@@ -2124,8 +2133,8 @@ int functionparameter_CheckParameter(
 	FUNCTION_PARAMETER_STRUCT fpstest;
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME) {
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED) {
-			int NBparam = function_parameter_struct_connect(fpsentry->parray[pindex].val.string[0], &fpstest, FPSCONNECT_SIMPLE);
-            if(NBparam < 1) {
+			long NBparamMAX = function_parameter_struct_connect(fpsentry->parray[pindex].val.string[0], &fpstest, FPSCONNECT_SIMPLE);
+            if(NBparamMAX < 1) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
                 snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "FPS %s: no connection", fpsentry->parray[pindex].val.string[0]);
@@ -2213,8 +2222,8 @@ int functionparameter_CheckParameter(
 int functionparameter_CheckParametersAll(
     FUNCTION_PARAMETER_STRUCT *fpsentry
 ) {
-    int NBparam;
-    int pindex;
+    long NBparamMAX;
+    long pindex;
     int errcnt = 0;
 
 	char msg[200];
@@ -2222,13 +2231,13 @@ int functionparameter_CheckParametersAll(
 	functionparameter_outlog("CHECKPARAMALL", msg);
 
     strcpy(fpsentry->md->message[0], "\0");
-    NBparam = fpsentry->md->NBparam;
+    NBparamMAX = fpsentry->md->NBparamMAX;
 
     // Check if Value is OK
     fpsentry->md->msgcnt = 0;
     fpsentry->md->conferrcnt = 0;
     //    printf("Checking %d parameter entries\n", NBparam);
-    for(pindex = 0; pindex < NBparam; pindex++) {
+    for(pindex = 0; pindex < NBparamMAX; pindex++) {
         errcnt += functionparameter_CheckParameter(fpsentry, pindex);
     }
     
@@ -2246,7 +2255,7 @@ int functionparameter_CheckParametersAll(
 
     // compute write status
 
-    for(pindex = 0; pindex < NBparam; pindex++) {
+    for(pindex = 0; pindex < NBparamMAX; pindex++) {
         int writeOK; // do we have write permission ?
 
         // by default, adopt FPFLAG_WRITE flag
@@ -2300,12 +2309,12 @@ int functionparameter_ConnectExternalFPS(
     FUNCTION_PARAMETER_STRUCT *FPSext
 )
 {
-    FPS->parray[pindex].info.fps.FPSNBparam = function_parameter_struct_connect(FPS->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
+    FPS->parray[pindex].info.fps.FPSNBparamMAX = function_parameter_struct_connect(FPS->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
 
     FPS->parray[pindex].info.fps.FPSNBparamActive = 0;
     FPS->parray[pindex].info.fps.FPSNBparamUsed = 0;
     int pindexext;
-    for(pindexext=0; pindexext<FPS->parray[pindex].info.fps.FPSNBparam; pindexext++) {
+    for(pindexext=0; pindexext<FPS->parray[pindex].info.fps.FPSNBparamMAX; pindexext++) {
         if(FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE) {
             FPS->parray[pindex].info.fps.FPSNBparamActive++;
         }
@@ -3212,6 +3221,7 @@ int functionparameter_UserInputSetParamValue(
  * - getval      : get value, write to output log
  * - fwrval      : get value, write to file or fifo
  * - confupdate  : update configuration
+ * - confwupdate : update configuration, wait for completion to proceed
  * - runstart    : start RUN process associated with parameter
  * - runstop     : stop RUN process associated with parameter
  * - fpsrm       : remove fps
@@ -3226,6 +3236,7 @@ int functionparameter_FPSprocess_cmdline(
     int NBkwn,
     FUNCTION_PARAMETER_STRUCT *fps
 ) {
+    int stringmaxlen = 500;
     int fpsindex;
     long pindex;
 
@@ -3250,19 +3261,19 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    char msgstring[500];
-    char inputcmd[500];
-    sprintf(inputcmd, "%s", FPScmdline);
+    char msgstring[stringmaxlen];
+    char inputcmd[stringmaxlen];
+    snprintf(inputcmd, stringmaxlen, "%s", FPScmdline);
 
-    sprintf(msgstring, "\"%s\"", inputcmd);
+    snprintf(msgstring, stringmaxlen, "\"%s\"", inputcmd);
     functionparameter_outlog("CMDRCV", msgstring);
 
 
     FUNCTIONPARAMETER_LOGEXEC;
 
-    if(strlen(FPScmdline)>1)
+    if(strlen(inputcmd)>1)
     {
-        pch = strtok(FPScmdline, " \t");
+        pch = strtok(inputcmd, " \t");
         sprintf(FPScommand, "%s", pch);
     }
     else {
@@ -3375,6 +3386,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
     // From this point on, FPSarg0 is expected to be a FPS entry
+    // so we resolve it and look for fps
     int kwnindex = -1;
     if(cmdFOUND == 0)
     {
@@ -3384,7 +3396,7 @@ int functionparameter_FPSprocess_cmdline(
 
         // look for entry, if found, kwnindex points to it
         if((nbword > 1) && (FPScommand[0] != '#')) {
-//                printf("Looking for entry for %s\n", FPSentryname);
+            //                printf("Looking for entry for %s\n", FPSentryname);
 
             int kwnindexscan = 0;
             while((kwnindex == -1) && (kwnindexscan < NBkwn)) {
@@ -3395,36 +3407,43 @@ int functionparameter_FPSprocess_cmdline(
             }
         }
 
-//            sprintf(msgstring, "nbword = %d  cmdOK = %d   kwnindex = %d",  nbword, cmdOK, kwnindex);
-//            functionparameter_outlog("INFO", msgstring);
+        //            sprintf(msgstring, "nbword = %d  cmdOK = %d   kwnindex = %d",  nbword, cmdOK, kwnindex);
+        //            functionparameter_outlog("INFO", msgstring);
     }
 
 
 
 
 
-
-
-
-
-
-
-    // confstart
-
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confstart") == 0))
+    int fpsOK = 0;
+    if(kwnindex != -1) {
+        fpsindex = keywnode[kwnindex].fpsindex;
+        pindex = keywnode[kwnindex].pindex;
+        sprintf(msgstring, "FPS ENTRY FOUND : %-40s  %d %ld", FPSentryname, fpsindex, pindex);
+        functionparameter_outlog("ERROR", msgstring);        
+    }
+    else
     {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND confstart NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
+        sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        functionparameter_outlog("ERROR", msgstring);
+        cmdOK = 0;
+    }
 
+
+
+    if(kwnindex != -1) { // if FPS has been found
+
+        // confstart
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confstart") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND confstart NBARGS = 1");
+                functionparameter_outlog("ERROR", msgstring);
+                cmdOK = 0;
+            }
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_CONFstart(fps, fpsindex);
 
@@ -3432,31 +3451,20 @@ int functionparameter_FPSprocess_cmdline(
                 functionparameter_outlog("CONFSTART", msgstring);
                 cmdOK = 1;
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+        // confstop
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confstop") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND confstop NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }
-
-    // confstop
-
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confstop") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND confstop NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_CONFstop(fps, fpsindex);
 
@@ -3464,41 +3472,30 @@ int functionparameter_FPSprocess_cmdline(
                 functionparameter_outlog("CONFSTOP", msgstring);
                 cmdOK = 1;
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+
+
+
+
+
+
+
+        // confupdate
+
+        FUNCTIONPARAMETER_LOGEXEC;
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confupdate") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND confupdate NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-    // confupdate
-
-    FUNCTIONPARAMETER_LOGEXEC;
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confupdate") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND confupdate NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
@@ -3507,159 +3504,115 @@ int functionparameter_FPSprocess_cmdline(
                 functionparameter_outlog("CONFUPDATE", msgstring);
                 cmdOK = 1;
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+
+
+        // confwupdate
+        // Wait until update is cleared
+
+        FUNCTIONPARAMETER_LOGEXEC;
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confwupdate") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND confwupdate NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }
-
-
-	
-
-
-    // confwupdate
-    // Wait until update is cleared
-
-    FUNCTIONPARAMETER_LOGEXEC;
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confwupdate") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND confwupdate NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
-                
+
                 unsigned int timercnt = 0;
                 useconds_t dt = 100;
                 unsigned int timercntmax = 10000; // 1 sec max
-                
+
                 while(  (( fps[fpsindex].md->signal & FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED )) && (timercnt<timercntmax)) {
-					usleep(dt);
-					timercnt++;
-				}
-                
+                    usleep(dt);
+                    timercnt++;
+                }
+
                 sprintf(msgstring, "waited %d us on FPS %d %s", dt*timercnt, fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("CONFWUPDATE", msgstring);
                 cmdOK = 1;
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+
+        // runstart
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runstart") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND runstart NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }
-
-
-
-
-    // runstart
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runstart") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND runstart NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstart(fps, fpsindex);
 
                 sprintf(msgstring, "start RUN process %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("RUNSTART", msgstring);
                 cmdOK = 1;
+
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+        // runwait
+        // wait until run process is completed
+
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runwait") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND runwait NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }
-    
-    
-    
-    // runwait
-    // wait until run process is completed
-    
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runwait") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND runwait NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
-                
-                
+
                 unsigned int timercnt = 0;
                 useconds_t dt = 10000;
                 unsigned int timercntmax = 100000; // 10000 sec max
-                                
+
                 while(  (( fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN )) && (timercnt<timercntmax)) {
-					usleep(dt);
-					timercnt++;
-				}
-                
+                    usleep(dt);
+                    timercnt++;
+                }
+
                 sprintf(msgstring, "waited %d us on FPS %d %s", dt*timercnt, fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("RUNWAIT", msgstring);
                 cmdOK = 1;
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+        // runstop
+
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runstop") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND runstop NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }    
-    
-    
-
-    // runstop
-
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "runstop") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND runstop NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_RUNstop(fps, fpsindex);
 
@@ -3667,34 +3620,23 @@ int functionparameter_FPSprocess_cmdline(
                 functionparameter_outlog("RUNSTOP", msgstring);
                 cmdOK = 1;
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+
+        // fpsrm
+
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2) {
+                sprintf(msgstring, "COMMAND fpsrm NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
-        }
-    }
-
-
-
-
-    // fpsrm
-
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 2) {
-            sprintf(msgstring, "COMMAND fpsrm NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-            cmdOK = 0;
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else
+            {
                 FUNCTIONPARAMETER_LOGEXEC;
                 functionparameter_FPSremove(fps, fpsindex);
 
@@ -3702,42 +3644,31 @@ int functionparameter_FPSprocess_cmdline(
                 functionparameter_outlog("FPSRM", msgstring);
                 cmdOK = 1;
             }
+        }
+
+
+
+
+
+
+
+
+        FUNCTIONPARAMETER_LOGEXEC;
+
+
+
+
+
+        // setval
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "setval") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 3) {
+                sprintf(msgstring, "COMMAND setval NBARGS = 2");
+                functionparameter_outlog("ERROR", msgstring);
+            }
             else
             {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
-                functionparameter_outlog("ERROR", msgstring);
-                cmdOK = 0;
-            }
-        }
-    }
-
-
-
-
-
-
-
-
-    FUNCTIONPARAMETER_LOGEXEC;
-
-
-
-
-
-    // setval
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "setval") == 0))
-    {
-        cmdFOUND = 1;
-        if(nbword != 3) {
-            sprintf(msgstring, "COMMAND setval NBARGS = 2");
-            functionparameter_outlog("ERROR", msgstring);
-        }
-        else
-        {
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
                 int updated = 0;
 
                 switch(fps[fpsindex].parray[pindex].type) {
@@ -3863,39 +3794,29 @@ int functionparameter_FPSprocess_cmdline(
                     cmdOK = 0;
 
             }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        }
+
+
+
+
+
+        // getval or fwrval
+        if((FPScommand[0] != '#') && (cmdFOUND == 0) && ((strcmp(FPScommand, "getval")==0) || (strcmp(FPScommand, "fwrval")== 0)) )
+        {
+            cmdFOUND = 1;
+            cmdOK = 0;
+
+            if((strcmp(FPScommand, "getval")==0)&&(nbword != 2)) {
+                sprintf(msgstring, "COMMAND getval NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
             }
-        }
-    }
-
-
-
-
-
-    // getval or fwrval
-    if((FPScommand[0] != '#') && (cmdFOUND == 0) && ((strcmp(FPScommand, "getval")==0) || (strcmp(FPScommand, "fwrval")== 0)) )
-    {
-        cmdFOUND = 1;
-        cmdOK = 0;
-
-        if((strcmp(FPScommand, "getval")==0)&&(nbword != 2)) {
-            sprintf(msgstring, "COMMAND getval NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
-        }
-        else if ((strcmp(FPScommand, "fwrval")==0)&&(nbword != 3))
-        {
-			sprintf(msgstring, "COMMAND fwrval NBARGS = 2");
-            functionparameter_outlog("ERROR", msgstring);
-		}
-        else
-        {			
-            if(kwnindex != -1) {
-                fpsindex = keywnode[kwnindex].fpsindex;
-                pindex = keywnode[kwnindex].pindex;
-
+            else if ((strcmp(FPScommand, "fwrval")==0)&&(nbword != 3))
+            {
+                sprintf(msgstring, "COMMAND fwrval NBARGS = 2");
+                functionparameter_outlog("ERROR", msgstring);
+            }
+            else
+            {
                 switch(fps[fpsindex].parray[pindex].type) {
 
                 case FPTYPE_INT64:
@@ -3964,49 +3885,43 @@ int functionparameter_FPSprocess_cmdline(
 
 
                 case FPTYPE_FPSNAME:
-                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);                    
+                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
                 }
-                
-                if(cmdOK==1) {
-					if(strcmp(FPScommand, "getval")==0) {
-						functionparameter_outlog("GETVAL", msgstring);
-					}
-					if(strcmp(FPScommand, "fwrval")==0) {
 
-						FILE *fpouttmp = fopen(FPScmdarg1, "a");
-						functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
-						fclose(fpouttmp);
-						
-						functionparameter_outlog("FWRVAL", msgstring);
-						char msgstring1[200];
-						sprintf(msgstring1, "WROTE to file %s", FPScmdarg1);
-						functionparameter_outlog("FWRVAL", msgstring1);
-					}
-				}
-                
-            }
-            else
-            {
-                sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
-                functionparameter_outlog("ERROR", msgstring);
+                if(cmdOK==1) {
+                    if(strcmp(FPScommand, "getval")==0) {
+                        functionparameter_outlog("GETVAL", msgstring);
+                    }
+                    if(strcmp(FPScommand, "fwrval")==0) {
+
+                        FILE *fpouttmp = fopen(FPScmdarg1, "a");
+                        functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
+                        fclose(fpouttmp);
+
+                        functionparameter_outlog("FWRVAL", msgstring);
+                        char msgstring1[200];
+                        sprintf(msgstring1, "WROTE to file %s", FPScmdarg1);
+                        functionparameter_outlog("FWRVAL", msgstring1);
+                    }
+                }
+
             }
         }
+
+
     }
 
 
-
-
-
     if(cmdOK == 0) {
-        sprintf(msgstring, "\"%s\"", inputcmd);
+        sprintf(msgstring, "\"%s\"", FPScmdline);
         functionparameter_outlog("CMDFAIL", msgstring);
     }
 
     if(cmdOK == 1) {
-        sprintf(msgstring, "\"%s\"", inputcmd);
+        sprintf(msgstring, "\"%s\"", FPScmdline);
         functionparameter_outlog("CMDOK", msgstring);
     }
 
@@ -4141,6 +4056,8 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
 
+				// set wait point for arbitrary FPS run to have finished
+				
 
 
                 // for all other commands, put in task list
@@ -4188,6 +4105,8 @@ int function_parameter_process_fpsCMDarray(
     int NBkwn,
     FUNCTION_PARAMETER_STRUCT *fps
 ) {
+	// the scheduler handles multiple queues
+	// in each queue, we look for a task to run, and run it if conditions are met
 
     for( int queue = 0; queue<NB_FPSCTRL_TASKQUEUE_MAX; queue++)
     {
@@ -4251,12 +4170,13 @@ errno_t functionparameter_RUNstart(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
-    char command[500];
-    char tmuxname[500];
+	int stringmaxlen = 500;
+    char command[stringmaxlen];
+    char tmuxname[stringmaxlen];
     int nameindexlevel;
 
     if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
-        sprintf(command, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
+        snprintf(command, stringmaxlen, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
         if(system(command) != 0) {
             // this is probably OK - duplicate session
             //printf("command: \"%s\"\n", command);
@@ -4266,16 +4186,16 @@ errno_t functionparameter_RUNstart(
 
 
 		// Move to correct launch directory
-		sprintf(command, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+		snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
 	    if(system(command) != 0) {
             printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
         }	
 
-        sprintf(command, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
+        snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
         for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
             char tmpstring[20];
 
-            sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
+            snprintf(tmpstring, stringmaxlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
             strcat(command, tmpstring);
         }
         strcat(command, "\" C-m");
@@ -4297,13 +4217,14 @@ errno_t functionparameter_RUNstop(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
-    char command[500];
+	int stringmaxlen = 500;
+    char command[stringmaxlen];
     int nameindexlevel;
 
 
 
     // First, run the runstop command
-    sprintf(command, "%s/fpscmd/%s-runstop", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname);
+    snprintf(command, stringmaxlen, "%s/fpscmd/%s-runstop", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname);
     for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
@@ -4319,7 +4240,7 @@ errno_t functionparameter_RUNstop(
 
 
     // Send C-c in case runstop command is not implemented
-    sprintf(command, "tmux send-keys -t %s-run C-c &> /dev/null", fps[fpsindex].md->name);
+    snprintf(command, stringmaxlen, "tmux send-keys -t %s-run C-c &> /dev/null", fps[fpsindex].md->name);
     if(system(command) != 0) {
         //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
@@ -4335,28 +4256,29 @@ errno_t functionparameter_CONFstart(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
-    char command[500];
+	int stringmaxlen = 500;
+    char command[stringmaxlen];
     int nameindexlevel;
 
 
-    sprintf(command, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name);
+    snprintf(command, stringmaxlen, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name);
     if(system(command) != 0) {
         // this is probably OK - duplicate session warning
         //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
 
     // Move to correct launch directory
-    sprintf(command, "tmux send-keys -t %s-conf \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+    snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
 
 
-    sprintf(command, "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
+    snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
     for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
-        sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
+        snprintf(tmpstring, stringmaxlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
         strcat(command, tmpstring);
     }
     strcat(command, "\" C-m");
@@ -4377,10 +4299,11 @@ errno_t functionparameter_CONFstop(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
-    char command[500];
+	int stringmaxlen = 500;
+    char command[stringmaxlen];
     
     fps[fpsindex].md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
-    sprintf(command, "tmux send-keys -t %s-conf C-c &> /dev/null", fps[fpsindex].md->name);
+    snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf C-c &> /dev/null", fps[fpsindex].md->name);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
@@ -4398,7 +4321,8 @@ errno_t functionparameter_FPSremove(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
-    char command[500];
+	int stringmaxlen = 500;
+    char command[stringmaxlen];
     int nameindexlevel;
 
 
@@ -4406,27 +4330,27 @@ errno_t functionparameter_FPSremove(
     functionparameter_CONFstop(fps, fpsindex);
 
 
-    char shmdname[200];
+    char shmdname[stringmaxlen];
     function_parameter_struct_shmdirname(shmdname);
 
     // conf log
-    char conflogfname[500];
-    sprintf(conflogfname, "%s/fpslog.%06d", shmdname, fps[fpsindex].md->confpid);
+    char conflogfname[stringmaxlen];
+    snprintf(conflogfname, stringmaxlen, "%s/fpslog.%06d", shmdname, fps[fpsindex].md->confpid);
 
     // FPS shm
-    char fpsfname[500];
-    sprintf(fpsfname, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
+    char fpsfname[stringmaxlen];
+    snprintf(fpsfname, stringmaxlen, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
 
     remove(conflogfname);
     remove(fpsfname);
 
 
 	
-    sprintf(command, "tmux send-keys -t %s-run \"exit\" C-m", fps[fpsindex].md->name);
+    snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"exit\" C-m", fps[fpsindex].md->name);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
-    sprintf(command, "tmux send-keys -t %s-conf \"exit\" C-m", fps[fpsindex].md->name);
+    snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"exit\" C-m", fps[fpsindex].md->name);
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
@@ -4528,6 +4452,7 @@ errno_t functionparameter_scan_fps(
     long *ptr_pindex,
     int verbose
 ) {
+	int stringmaxlen = 500;
     int fpsindex;
     int pindex;
     int fps_symlink[NB_FPS_MAX];
@@ -4558,7 +4483,7 @@ errno_t functionparameter_scan_fps(
             char *FPSlistline = NULL;
             size_t len = 0;
             ssize_t read;
-            char FPSlistentry[200];
+            char FPSlistentry[stringmaxlen];
 
             while((read = getline(&FPSlistline, &len, fpfpslist)) != -1) {
                 if(FPSlistline[0] != '#') {
@@ -4656,8 +4581,8 @@ errno_t functionparameter_scan_fps(
                 // is file sym link ?
                 struct stat buf;
                 int retv;
-                char fullname[200];
-                char shmdname[200];
+                char fullname[stringmaxlen];
+                char shmdname[stringmaxlen];
                 function_parameter_struct_shmdirname(shmdname);
 
                 sprintf(fullname, "%s/%s", shmdname, dir->d_name);
@@ -4673,16 +4598,16 @@ errno_t functionparameter_scan_fps(
                 }
 
                 if(S_ISLNK(buf.st_mode)) { // resolve link name
-                    char fullname[200];
-                    char linknamefull[200];
-                    char linkname[200];
+                    char fullname[stringmaxlen];
+                    char linknamefull[stringmaxlen];
+                    char linkname[stringmaxlen];
                     int nchar;
                     int ret;
-                    char shmdname[200];
+                    char shmdname[stringmaxlen];
                     function_parameter_struct_shmdirname(shmdname);
 
                     fps_symlink[fpsindex] = 1;
-                    sprintf(fullname, "%s/%s", shmdname, dir->d_name);
+                    snprintf(fullname, stringmaxlen, "%s/%s", shmdname, dir->d_name);
                     ret = readlink(fullname, linknamefull, 200 - 1); // todo: replace with realpath()
 
                     strcpy(linkname, basename(linknamefull));
@@ -4703,7 +4628,7 @@ errno_t functionparameter_scan_fps(
                 }
 
 
-                char fpsname[200];
+                char fpsname[stringmaxlen];
                 long strcplen = strlen(dir->d_name) - strlen(".fps.shm");
                 strncpy(fpsname, dir->d_name, strcplen);
                 fpsname[strcplen] = '\0';
@@ -4713,8 +4638,8 @@ errno_t functionparameter_scan_fps(
                     fflush(stdout);
                 }
 
-                int NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
-                int i;
+                long NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
+                long i;
                 for(i = 0; i < NBparamMAX; i++) {
                     if(fps[fpsindex].parray[i].fpflag & FPFLAG_ACTIVE) { // if entry is active
                         // find or allocate keyword node
@@ -4823,7 +4748,7 @@ errno_t functionparameter_scan_fps(
                 }
 
                 if(verbose > 0) {
-                    printf("Found fps %-20s %d parameters\n", fpsname, fps[fpsindex].md->NBparam);
+                    printf("Found fps %-20s %ld parameters\n", fpsname, fps[fpsindex].md->NBparamMAX);
                 }
 
                 fpsindex ++;
@@ -4886,6 +4811,8 @@ errno_t functionparameter_CTRLscreen(
     char *fpsnamemask,
     char *fpsCTRLfifoname
 ) {
+	int stringmaxlen = 500;
+	
     // function parameter structure(s)
     int NBfps;
     int fpsindex;
@@ -4908,7 +4835,7 @@ errno_t functionparameter_CTRLscreen(
 
     int l;
 
-    char  monstring[200];
+    char  monstring[stringmaxlen];
     int loopOK = 1;
     long long loopcnt = 0;
 
@@ -4922,7 +4849,7 @@ errno_t functionparameter_CTRLscreen(
     int nodeSelected = 1;
 
 
-    char msg[200];
+    char msg[stringmaxlen];
 
 
     int fpsCTRL_DisplayMode = 2;
@@ -5040,7 +4967,7 @@ errno_t functionparameter_CTRLscreen(
         char logfname[500];
         char shmdname[200];
         function_parameter_struct_shmdirname(shmdname);
-        sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+        snprintf(logfname, stringmaxlen, "%s/fpslog.%06d", shmdname, getpid());
         remove(logfname);
 
         return 0;
@@ -5116,7 +5043,7 @@ errno_t functionparameter_CTRLscreen(
             break;
 
         case 'e' : // erase FPS
-            sprintf(fname, "%s/%s.fps.shm", shmdname, fps[keywnode[nodeSelected].fpsindex].md->name);
+            snprintf(fname, stringmaxlen, "%s/%s.fps.shm", shmdname, fps[keywnode[nodeSelected].fpsindex].md->name);
             FUNCTIONPARAMETER_LOGEXEC;
             for(fpsindex = 0; fpsindex < NBfps; fpsindex++) {
                 function_parameter_struct_disconnect(&fps[fpsindex]);
@@ -5260,11 +5187,11 @@ errno_t functionparameter_CTRLscreen(
             }
 
             if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
-                sprintf(command, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+                snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
                 if(system(command) != 0) {
                     printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
                 }
-                sprintf(command, "tmux send-keys -t %s-run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
+                snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
                 if(system(command) != 0) {
                     printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
                 }
@@ -5276,21 +5203,21 @@ errno_t functionparameter_CTRLscreen(
         case 'u' : // update conf process
             fpsindex = keywnode[nodeSelected].fpsindex;
             fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-            sprintf(msg, "UPDATE %s", fps[fpsindex].md->name);
+            snprintf(msg, stringmaxlen, "UPDATE %s", fps[fpsindex].md->name);
             functionparameter_outlog("FPSCTRL", msg);
             //functionparameter_CONFupdate(fps, fpsindex);
             break;
 
         case 'R' : // start run process if possible
             fpsindex = keywnode[nodeSelected].fpsindex;
-            sprintf(msg, "RUNSTART %s", fps[fpsindex].md->name);
+            snprintf(msg, stringmaxlen,"RUNSTART %s", fps[fpsindex].md->name);
             functionparameter_outlog("FPSCTRL", msg);
             functionparameter_RUNstart(fps, fpsindex);
             break;
 
         case 'r' : // stop run process
             fpsindex = keywnode[nodeSelected].fpsindex;
-            sprintf(msg, "RUNSTOP %s", fps[fpsindex].md->name);
+            snprintf(msg, stringmaxlen, "RUNSTOP %s", fps[fpsindex].md->name);
             functionparameter_outlog("FPSCTRL", msg);
             functionparameter_RUNstop(fps, fpsindex);
             break;
@@ -5298,14 +5225,14 @@ errno_t functionparameter_CTRLscreen(
 
         case 'C' : // start conf process
             fpsindex = keywnode[nodeSelected].fpsindex;
-            sprintf(msg, "CONFSTART %s", fps[fpsindex].md->name);
+            snprintf(msg, stringmaxlen, "CONFSTART %s", fps[fpsindex].md->name);
             functionparameter_outlog("FPSCTRL", msg);
             functionparameter_CONFstart(fps, fpsindex);
             break;
 
         case 'c': // kill conf process
             fpsindex = keywnode[nodeSelected].fpsindex;
-            sprintf(msg, "CONFSTOP %s", fps[fpsindex].md->name);
+            snprintf(msg, stringmaxlen, "CONFSTOP %s", fps[fpsindex].md->name);
             functionparameter_outlog("FPSCTRL", msg);
             functionparameter_CONFstop(fps, fpsindex);
             break;
@@ -5379,7 +5306,7 @@ errno_t functionparameter_CTRLscreen(
         erase();
 
         attron(A_BOLD);
-        sprintf(monstring, "[%d %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP", wrow, wcol);
+        snprintf(monstring, stringmaxlen, "[%d %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP", wrow, wcol);
         print_header(monstring, '-');
         attroff(A_BOLD);
         printw("\n");
@@ -6170,7 +6097,7 @@ errno_t functionparameter_CTRLscreen(
                                     attron(COLOR_PAIR(4));
                                 }
 
-                                printw(" %10s [%ld %ld %ld]", fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].info.fps.FPSNBparam, fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive, fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
+                                printw(" %10s [%ld %ld %ld]", fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX, fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive, fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
                                 if(paramsync == 0) {
                                     attroff(COLOR_PAIR(2));
@@ -6312,7 +6239,7 @@ errno_t functionparameter_CTRLscreen(
 
 
     char logfname[500];
-    sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+    snprintf(logfname, stringmaxlen, "%s/fpslog.%06d", shmdname, getpid());
     remove(logfname);
 
     free(fpsctrltasklist);
