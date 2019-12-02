@@ -337,10 +337,14 @@ typedef struct {
 
 
 
+
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN    0x0001   // configuration process
 //#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFSTOP   0x0002   // stop configuration process
 #define FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE     0x0004   // re-run check of parameter
 
+#define FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED    0x0008   // CheckParametersAll been completed. 
+// Toggles to 1 upon update request
+// Toggles to 0 when update completed (in function CheckParametersAll)
 
 
 
@@ -418,6 +422,52 @@ typedef struct {
 
 
 
+
+
+
+//
+// Tasks can be sequenced
+// Typically these are read from command fifo
+// The structure is meant to provide basic scheduling functionality
+//
+#define NB_FPSCTRL_TASK_MAX 1024
+#define FPSCMD_MAXCHAR 1024
+#define NB_FPSCTRL_TASKQUEUE_MAX 10
+
+#define FPSTASK_STATUS_ACTIVE 0x0000000000000001   // is the task entry in the array used ?
+#define FPSTASK_STATUS_RUNNING 0x0000000000000002   
+#define FPSTASK_STATUS_WAITING 0x0000000000000004
+#define FPSTASK_STATUS_SHOW 0x0000000000000008 
+
+
+#define FPSTASK_FLAG_WAITONRUN 0x0000000000000001
+#define FPSTASK_FLAG_WAITONCONF 0x0000000000000002
+
+typedef struct {
+	
+	char cmdstring[FPSCMD_MAXCHAR];
+	
+	
+	uint64_t inputindex;  // order in which tasks are submitted
+	
+	// Tasks in separate queues can run in parallel (not waiting for last task to run new one)
+	// Tasks within a queue run sequentially
+	uint32_t queue; 
+	// Default queue is 0
+	
+	uint64_t status;
+	uint64_t flag;
+
+	int fpsindex;  // used to track status
+
+} FPSCTRL_TASK_ENTRY;
+
+
+
+
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -487,6 +537,7 @@ errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
 errno_t functionparameter_outlog(char* keyw, char *msgstring);
 
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
+
 
 #ifdef __cplusplus
 }
