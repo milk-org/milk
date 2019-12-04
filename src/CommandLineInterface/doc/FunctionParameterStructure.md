@@ -250,8 +250,8 @@ errno_t MyFunction_FPCONF(
 	// ===========================
 	// SETUP FPS
 	// ===========================
-	
-    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
+	int SMfd = -1;
+    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus, &SMfd);
 	strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);
 	fps.md->sourceline = __LINE__;
 
@@ -342,7 +342,7 @@ errno_t MyFunction_FPCONF(
 
 	}
 
-	function_parameter_FPCONFexit( &fps );
+	function_parameter_FPCONFexit( &fps, &SMfd );
 
     return RETURN_SUCCESS;
 }
@@ -514,9 +514,9 @@ errno_t MyFunction_RUN(
 	// ===========================
 	// ### Connect to FPS 
 	// ===========================
-
+	int SMfd = -1;
 	FUNCTION_PARAMETER_STRUCT fps;
-	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1)
+	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN, &SMfd) == -1)
 	{
 		printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
 		return RETURN_FAILURE;
@@ -625,7 +625,7 @@ errno_t MyFunction_RUN(
 	// ==================================
 
      processinfo_cleanExit(processinfo);
-	function_parameter_RUNexit( &fps );
+	function_parameter_RUNexit( &fps, &SMfd );
     
 	return RETURN_SUCCESS;
 }

@@ -252,6 +252,47 @@ static int_fast8_t help_command(char *cmdkey);
 /// signal catching
 
 
+
+errno_t set_signal_catching()
+{
+    // catch signals for clean exit
+    if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGTERM\n");
+    }
+
+    if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGINT\n");
+    }
+
+    if(sigaction(SIGABRT, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGABRT\n");
+    }
+
+    if(sigaction(SIGBUS, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGBUS\n");
+    }
+
+    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGSEGV\n");
+    }
+
+    if(sigaction(SIGHUP, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGHUP\n");
+    }
+
+    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
+        printf("\ncan't catch SIGPIPE\n");
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+/** 
+ * 
+ * 
+ * 
+ */ 
 void sig_handler(int signo) {
     pid_t thisPID;
     FILE *fpexit;
@@ -267,13 +308,13 @@ void sig_handler(int signo) {
             break;
 
         case SIGTERM:
-            printf("sig_handler received SIGTERM - see file exit.%d.log\n", thisPID);
-            sprintf(fname, "exit.%d.log", thisPID);
+            printf("sig_handler received SIGTERM - see file exit-SIGTERM.%d.log\n", thisPID);
+            sprintf(fname, "exit-SIGTERM.%d.log", thisPID);
             fpexit = fopen(fname, "w");
             if(fpexit != NULL) {
                 fprintf(fpexit, "SIGTERM %d\n", thisPID);
                 fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
                 fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
                 fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
                 fclose(fpexit);
@@ -292,13 +333,13 @@ void sig_handler(int signo) {
             break;
 
         case SIGBUS: // exit program after SIGSEGV
-            printf("sig_handler received SIGBUS -> exit - see file exit.%d.log\n", thisPID);
-            sprintf(fname, "exit.%d.log", thisPID);
+            printf("sig_handler received SIGBUS -> exit - see file exit-SIGBUS.%d.log\n", thisPID);
+            sprintf(fname, "exit-SIGBUS.%d.log", thisPID);
             fpexit = fopen(fname, "w");
             if(fpexit != NULL) {
                 fprintf(fpexit, "SIGBUS %d\n", thisPID);
                 fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
                 fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
                 fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
                 fclose(fpexit);
@@ -308,19 +349,35 @@ void sig_handler(int signo) {
             break;
 
         case SIGABRT:
-            printf("sig_handler received SIGABRT\n");
+            printf("sig_handler received SIGABRT -> exit - see file exit-SIGABRT.%d.log\n", thisPID);
+            printf("Last exec step:\n");
+            printf("  File Fnc : %s\n", data.execSRCfunc);
+            printf("  Line     : %d\n", data.execSRCline);
+            printf("  Message  : %s\n", data.execSRCmessage);
+            /*
+            sprintf(fname, "exit-SIGABRT.%d.log", thisPID);
+            fpexit = fopen(fname, "w");
+            if(fpexit != NULL) {
+                fprintf(fpexit, "SIGABRT %d\n", thisPID);
+                fprintf(fpexit, "Last exec step:\n");
+                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
+                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
+                fclose(fpexit);
+            }*/
             data.signal_ABRT = 1;
+            exit(EXIT_FAILURE);
             break;
 
         case SIGSEGV: // exit program after SIGSEGV
 //             if(data.signal_SEGV == 0)
-            printf("sig_handler received SIGSEGV -> exit - see file exit.%d.log\n", thisPID);
-            sprintf(fname, "exit.%d.log", thisPID);
+            printf("sig_handler received SIGSEGV -> exit - see file exit SIGSEGV.%d.log\n", thisPID);
+            sprintf(fname, "exit-SIGSEGV.%d.log", thisPID);
             fpexit = fopen(fname, "w");
             if(fpexit != NULL) {
                 fprintf(fpexit, "SIGSEGV %d\n", thisPID);
                 fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  Function : %s\n", data.execSRCfunc);
+                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
                 fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
                 fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
                 fclose(fpexit);
