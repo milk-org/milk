@@ -321,6 +321,8 @@ struct arg_struct {
 
 void *streamCTRL_scan(void* argptr)
 {
+	int stringmaxlen = 500;
+	
     long NBsindex = 0;
     long sindex = 0;
     long scancnt = 0;
@@ -417,7 +419,7 @@ void *streamCTRL_scan(void* argptr)
                     if(streaminfoproc->WriteFlistToFile == 1)
                         fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
 
-                    sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
+                    snprintf(fullname, stringmaxlen, "%s/%s", SHAREDSHMDIR, dir->d_name);
                     retv = lstat (fullname, &buf);
                     if (retv == -1 ) {
                         endwin();
@@ -437,7 +439,7 @@ void *streamCTRL_scan(void* argptr)
 
 
                         streaminfo[sindex].SymLink = 1;
-                        sprintf(fullname, "%s/%s", SHAREDSHMDIR, dir->d_name);
+                        snprintf(fullname, stringmaxlen, "%s/%s", SHAREDSHMDIR, dir->d_name);
 //                        readlink (fullname, linknamefull, 200-1);
                         linknamefull = realpath( fullname, NULL);
 
@@ -691,6 +693,9 @@ void *streamCTRL_scan(void* argptr)
  */
 
 errno_t streamCTRL_CTRLscreen() {
+	
+	int stringmaxlen = 300;
+	
     // Display fields
     STREAMINFO *streaminfo;
     STREAMINFOPROC streaminfoproc;
@@ -1366,7 +1371,7 @@ errno_t streamCTRL_CTRLscreen() {
                 if(DisplayFlag == 1) {
                     if(streaminfo[sindex].SymLink == 1) {
                         char namestring[200];
-                        sprintf(namestring, "%s->%s", streaminfo[sindex].sname, streaminfo[sindex].linkname);
+                        snprintf(namestring, stringmaxlen, "%s->%s", streaminfo[sindex].sname, streaminfo[sindex].linkname);
 
                         attron(COLOR_PAIR(5));
                         printw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
