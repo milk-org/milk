@@ -273,10 +273,7 @@ errno_t set_signal_catch()
     // catch signals for clean exit
     if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGTERM\n");
-    } else {
-		printf("catching SIGTERM\n");
-	}
-    
+    } 
 
     if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGINT\n");
@@ -330,28 +327,45 @@ errno_t write_process_exit_report(char *errortypestring)
 {
     FILE *fpexit;
     char fname[200];
-	pid_t thisPID;
-	long fd_counter = 0;
+    pid_t thisPID;
+    long fd_counter = 0;
 
-	thisPID = getpid();
+    thisPID = getpid();
     sprintf(fname, "exitreport-%s.%05d.log", errortypestring, thisPID);
 
     printf("EXIT CONDITION < %s >: See report in file %s\n", errortypestring, fname);
 
+
+    struct tm *uttime;
+    time_t tvsec;
+
+
     fpexit = fopen(fname, "w");
     if(fpexit != NULL) {
-        fprintf_stdout(fpexit, "PID : %d\n\n", thisPID);
+        fprintf_stdout(fpexit, "PID : %d\n", thisPID);
+
+        struct timespec tnow;
+        time_t now;
+        clock_gettime(CLOCK_REALTIME, &tnow);
+        tvsec = tnow.tv_sec;
+        uttime = gmtime(&tvsec);
+        fprintf_stdout(fpexit, "Time: %04d%02d%02dT%02d%02d%02d.%09ld\n\n", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+
         fprintf_stdout(fpexit, "Last encountered test point\n");
+        tvsec = data.testpoint_time.tv_sec;
+        uttime = gmtime(&tvsec);
+        fprintf_stdout(fpexit, "    Time    : %04d%02d%02dT%02d%02d%02d.%09ld\n", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, data.testpoint_time.tv_nsec);
+
         fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint_file);
         fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint_func);
         fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint_line);
-        fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint_msg);
+        fprintf_stdout(fpexit, "    Message : %s\n", data.testpoint_msg);
         fprintf_stdout(fpexit, "\n");
 
         // Check open file descriptors
         struct rlimit rlimits;
         int max_fd_number;
-        
+
         fprintf_stdout(fpexit, "File descriptors\n");
         getrlimit(RLIMIT_NOFILE, &rlimits);
         max_fd_number = getdtablesize();
@@ -359,8 +373,8 @@ errno_t write_process_exit_report(char *errortypestring)
         fprintf_stdout(fpexit, "    rlim_cur       : %lu\n", rlimits.rlim_cur );
         fprintf_stdout(fpexit, "    rlim_max       : %lu\n", rlimits.rlim_max );
         for ( int i = 0; i <= max_fd_number; i++ ) {
-			struct stat stats;
-			
+            struct stat stats;
+
             fstat(i, &stats);
             if ( errno != EBADF ) {
                 fd_counter++;
@@ -396,10 +410,10 @@ void sig_handler(int signo) {
             break;
 
         case SIGTERM:
-			printf("sig_handler received SIGTERM\n");			
+			printf("sig_handler received SIGTERM\n");						
+			data.signal_TERM = 1;
 			set_terminal_echo_on();
-			exit(EXIT_FAILURE);
-            data.signal_TERM = 1;
+			exit(EXIT_FAILURE);            
             break;
 
         case SIGUSR1:
@@ -1194,7 +1208,7 @@ int_fast8_t runCLI(
 	set_signal_catch();
 
 
-
+	TESTPOINT("CLI start");
 
 
 
