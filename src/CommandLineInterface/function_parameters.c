@@ -10,18 +10,6 @@
 
 #define FUNCTION_PARAMETERS_LOGDEBUG 1
 
-#if defined(FUNCTION_PARAMETERS_LOGDEBUG) && !defined(STANDALONE)
-#define TESTPOINT(...) do { \
-sprintf(data.testpoint_file, "testfile %s", __FILE__); \
-sprintf(data.testpoint_func, "testfunc %s", __func__); \
-data.testpoint_line = __LINE__; \
-sprintf(data.testpoint_msg, __VA_ARGS__); \
-} while(0)
-#else
-#define TESTPOINT(...)
-#endif
-
-
 
 
 #define _GNU_SOURCE
@@ -76,6 +64,11 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 /*                                      DEFINES, MACROS                                            */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
+#if !defined(FUNCTION_PARAMETERS_LOGDEBUG) || defined(STANDALONE)
+#define TESTPOINT(...)
+#endif
+
 
 
 #define NB_FPS_MAX 100
