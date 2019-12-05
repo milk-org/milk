@@ -48,7 +48,7 @@ typedef int errno_t;
 #define SZ_CLICOREVARRAY 1000
 
 
-
+#define STRINGMAXLEN_FILENAME 1000
 #define STRINGMAXLEN_FUNCTIONNAME 200
 #define STRINGMAXLEN_FUNCTIONARGS 1000
 
@@ -226,9 +226,10 @@ typedef struct
     
     // can be used to trace program execution for runtime profiling and debugging
     // todo: move to shared mem
-    int  execSRCline;
-    char execSRCfunc[STRINGMAXLEN_FUNCTIONNAME];
-    char execSRCmessage[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+    int  testpoint_line;
+    char testpoint_file[STRINGMAXLEN_FILENAME];
+    char testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
+    char testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
     
     
     int progStatus;  // main program status

@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <dirent.h> 
 #include <stddef.h> // offsetof()
+#include <sys/resource.h> // getrlimit
 
 
 //#include <pthread_np.h>
@@ -288,6 +289,76 @@ errno_t set_signal_catching()
 }
 
 
+
+static void fprintf_stdout(FILE *f, char const *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    va_start(ap, fmt);
+    vfprintf(f, fmt, ap);
+    va_end(ap);
+}
+
+
+/**
+ * @brief Write to disk a process report
+ *
+ * This function is typically called upon crash to help debugging
+ *
+ * errortypestring describes the type of error or reason to issue report
+ *
+ */
+errno_t write_process_exit_report(char *errortypestring)
+{
+    FILE *fpexit;
+    char fname[200];
+	pid_t thisPID;
+	long fd_counter = 0;
+
+	thisPID = getpid();
+    sprintf(fname, "exitreport-%s.%05d.log", errortypestring, thisPID);
+
+    printf("EXIT CONDITION < %s >: See report in file %s\n", errortypestring, fname);
+
+    fpexit = fopen(fname, "w");
+    if(fpexit != NULL) {
+        fprintf_stdout(fpexit, "PID : %d\n\n", thisPID);
+        fprintf_stdout(fpexit, "Last encountered test point\n");
+        fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint_file);
+        fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint_func);
+        fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint_line);
+        fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint_msg);
+        fprintf_stdout(fpexit, "\n");
+
+        // Check open file descriptors
+        struct rlimit rlimits;
+        int max_fd_number;
+        
+        fprintf_stdout(fpexit, "File descriptors\n");
+        getrlimit(RLIMIT_NOFILE, &rlimits);
+        max_fd_number = getdtablesize();
+        fprintf_stdout(fpexit, "    max_fd_number  : %d\n", max_fd_number );
+        fprintf_stdout(fpexit, "    rlim_cur       : %lu\n", rlimits.rlim_cur );
+        fprintf_stdout(fpexit, "    rlim_max       : %lu\n", rlimits.rlim_max );
+        for ( int i = 0; i <= max_fd_number; i++ ) {
+			struct stat stats;
+			
+            fstat(i, &stats);
+            if ( errno != EBADF ) {
+                fd_counter++;
+            }
+        }
+        fprintf_stdout(fpexit, "    Open files     : %ld\n", fd_counter );
+
+        fclose(fpexit);
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+
 /** 
  * 
  * 
@@ -308,17 +379,8 @@ void sig_handler(int signo) {
             break;
 
         case SIGTERM:
-            printf("sig_handler received SIGTERM - see file exit-SIGTERM.%d.log\n", thisPID);
-            sprintf(fname, "exit-SIGTERM.%d.log", thisPID);
-            fpexit = fopen(fname, "w");
-            if(fpexit != NULL) {
-                fprintf(fpexit, "SIGTERM %d\n", thisPID);
-                fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
-                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-                fclose(fpexit);
-            }
+			printf("sig_handler received SIGTERM\n");
+			write_process_exit_report("SIGTERM");
             data.signal_TERM = 1;
             break;
 
@@ -333,55 +395,22 @@ void sig_handler(int signo) {
             break;
 
         case SIGBUS: // exit program after SIGSEGV
-            printf("sig_handler received SIGBUS -> exit - see file exit-SIGBUS.%d.log\n", thisPID);
-            sprintf(fname, "exit-SIGBUS.%d.log", thisPID);
-            fpexit = fopen(fname, "w");
-            if(fpexit != NULL) {
-                fprintf(fpexit, "SIGBUS %d\n", thisPID);
-                fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
-                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-                fclose(fpexit);
-            }
+            printf("sig_handler received SIGBUS \n");
+            write_process_exit_report("SIGBUS");
             data.signal_BUS = 1;
             exit(EXIT_FAILURE);
             break;
 
         case SIGABRT:
-            printf("sig_handler received SIGABRT -> exit - see file exit-SIGABRT.%d.log\n", thisPID);
-            printf("Last exec step:\n");
-            printf("  File Fnc : %s\n", data.execSRCfunc);
-            printf("  Line     : %d\n", data.execSRCline);
-            printf("  Message  : %s\n", data.execSRCmessage);
-            /*
-            sprintf(fname, "exit-SIGABRT.%d.log", thisPID);
-            fpexit = fopen(fname, "w");
-            if(fpexit != NULL) {
-                fprintf(fpexit, "SIGABRT %d\n", thisPID);
-                fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
-                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-                fclose(fpexit);
-            }*/
+            printf("sig_handler received SIGABRT\n");
+            write_process_exit_report("SIGABRT");
             data.signal_ABRT = 1;
             exit(EXIT_FAILURE);
             break;
 
         case SIGSEGV: // exit program after SIGSEGV
-//             if(data.signal_SEGV == 0)
-            printf("sig_handler received SIGSEGV -> exit - see file exit SIGSEGV.%d.log\n", thisPID);
-            sprintf(fname, "exit-SIGSEGV.%d.log", thisPID);
-            fpexit = fopen(fname, "w");
-            if(fpexit != NULL) {
-                fprintf(fpexit, "SIGSEGV %d\n", thisPID);
-                fprintf(fpexit, "Last exec step:\n");
-                fprintf(fpexit, "  File Fnc : %s\n", data.execSRCfunc);
-                fprintf(fpexit, "  Line     : %d\n", data.execSRCline);
-                fprintf(fpexit, "  Message  : %s\n", data.execSRCmessage);
-                fclose(fpexit);
-            }
+            printf("sig_handler received SIGSEGV\n");
+            write_process_exit_report("SIGSEGV");
             data.signal_SEGV = 1;
             exit(EXIT_FAILURE);
             break;
@@ -1094,6 +1123,10 @@ int_fast8_t runCLI(
     if(system(command) != 0) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
+
+
+	set_signal_catching();
+
 
 
 

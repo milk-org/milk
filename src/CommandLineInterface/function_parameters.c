@@ -8,16 +8,17 @@
  */
 
 
-#define FUNCTIONPARAMETER_LOGDEBUG 1
-// handed by sig_handler in CLIcore.c
-#if defined(FUNCTIONPARAMETER_LOGDEBUG) && !defined(STANDALONE)
+#define FUNCTION_PARAMETERS_LOGDEBUG 1
 
-#define FUNCTIONPARAMETER_LOGEXEC do {                      \
-    sprintf(data.execSRCfunc, "%s %s", __FILE__, __FUNCTION__); \
-    data.execSRCline = __LINE__;                   \
-    } while(0)
+#if defined(FUNCTION_PARAMETERS_LOGDEBUG) && !defined(STANDALONE)
+#define TESTPOINT(...) do { \
+sprintf(data.testpoint_file, "testfile %s", __FILE__); \
+sprintf(data.testpoint_func, "testfunc %s", __func__); \
+data.testpoint_line = __LINE__; \
+sprintf(data.testpoint_msg, __VA_ARGS__); \
+} while(0)
 #else
-#define FUNCTIONPARAMETER_LOGEXEC 
+#define TESTPOINT(...)
 #endif
 
 
@@ -41,7 +42,6 @@
 #include <limits.h>
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
 #include <errno.h>
-#include <sys/resource.h> // getrlimit
  
 #include <time.h>
 
@@ -247,38 +247,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             }
             else
             {
-                struct rlimit rlimits;
-                long fd_counter = 0;
-                int max_fd_number;
-                struct stat stats;
-
-                max_fd_number = getdtablesize();
-
-                printf("PID = %d\n", getpid());
-                printf("Function count = %lu\n", functioncnt);
-
-                getrlimit(RLIMIT_NOFILE, &rlimits);
-                printf("max_fd_number: %d\n", max_fd_number );
-                printf("rlim_cur: %lu\n", rlimits.rlim_cur );
-                printf("rlim_max: %lu\n", rlimits.rlim_max );
-                for ( int i = 0; i <= max_fd_number; i++ ) {
-                    fstat(i, &stats);
-                    if ( errno != EBADF ) {
-                        fd_counter++;
-                    }
-                }
-                printf( " open files: %ld\n", fd_counter );
-
-                printf(" Max number of files : %d\n", getrlimit(RLIMIT_NOFILE, &rlimits) );
-                printf(" [ WARNING ] cannot open '%s'  : %s\n", MILK_SHM_DIR, strerror(errno));
-                printf("   File    : %s\n", __FILE__);
-                printf("   Function: %s\n", __func__);
-                printf("   Line    : %d\n", __LINE__);
-
-                char command[500];
-                sprintf(command, "ls -l /proc/%d/fd", getpid());
-                system(command);
-                exit(0);
+                abort();
             }
         }
 
@@ -3341,7 +3310,7 @@ int functionparameter_FPSprocess_cmdline(
     functionparameter_outlog("CMDRCV", msgstring);
 
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
     if(strlen(inputcmd)>1)
     {
@@ -3353,7 +3322,7 @@ int functionparameter_FPSprocess_cmdline(
     }
 
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
 
 
@@ -3408,7 +3377,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
 
     if(nbword==0) {
@@ -3541,7 +3510,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
                 functionparameter_CONFstart(fps, fpsindex);
 
                 sprintf(msgstring, "start CONF process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3562,7 +3531,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
                 functionparameter_CONFstop(fps, fpsindex);
 
                 sprintf(msgstring, "stop CONF process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3582,7 +3551,7 @@ int functionparameter_FPSprocess_cmdline(
 
         // confupdate
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
         if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confupdate") == 0))
         {
             cmdFOUND = 1;
@@ -3593,7 +3562,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
@@ -3611,7 +3580,7 @@ int functionparameter_FPSprocess_cmdline(
         // Wait until update is cleared
         // if not successful, retry until time lapsed
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
         if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confwupdate") == 0))
         {
             cmdFOUND = 1;
@@ -3631,7 +3600,7 @@ int functionparameter_FPSprocess_cmdline(
                 while ( looptry == 1)
                 {
 
-                    FUNCTIONPARAMETER_LOGEXEC;
+                    TESTPOINT(" ");
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
@@ -3675,7 +3644,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
                 functionparameter_RUNstart(fps, fpsindex);
 
                 sprintf(msgstring, "start RUN process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3700,7 +3669,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
 
                 unsigned int timercnt = 0;
                 useconds_t dt = 10000;
@@ -3731,7 +3700,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
                 functionparameter_RUNstop(fps, fpsindex);
 
                 sprintf(msgstring, "stop RUN process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3755,7 +3724,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
                 functionparameter_FPSremove(fps, SMfdarray, fpsindex);
 
                 sprintf(msgstring, "FPS remove %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3771,7 +3740,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
 
 
 
@@ -4049,7 +4018,7 @@ int functionparameter_FPSprocess_cmdline(
     }
 
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
 
     return (fpsindex);
@@ -4089,15 +4058,14 @@ int functionparameter_read_fpsCMD_fifo(
     int lineOK = 1; // keep reading
 
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
     while(lineOK == 1) {
         total_bytes = 0;
         lineOK = 0;
         for(;;) {
             bytes = read(fpsCTRLfifofd, buf0, 1);  // read one char at a time
-            snprintf(data.execSRCmessage, STRINGMAXLEN_FUNCTIONARGS, "ERRROR: BUFFER OVERFLOW %d %d\n", bytes, total_bytes);
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT("ERRROR: BUFFER OVERFLOW %d %d\n", bytes, total_bytes);
             if(bytes > 0) {
                 buff[total_bytes] = buf0[0];
                 total_bytes += (size_t)bytes;
@@ -4112,7 +4080,7 @@ int functionparameter_read_fpsCMD_fifo(
             }
 
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
 
             if(buf0[0] == '\n') {  // reached end of line
@@ -4139,7 +4107,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
 
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
 
                 // Some commands affect how the task list is configured instead of being inserted as entries
                 int cmdFOUND = 0;
@@ -4209,7 +4177,7 @@ int functionparameter_read_fpsCMD_fifo(
 
                 // set wait point for arbitrary FPS run to have finished
 
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
 
                 // for all other commands, put in task list
                 if(cmdFOUND == 0) {
@@ -4242,7 +4210,7 @@ int functionparameter_read_fpsCMD_fifo(
 
     }
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
     return cmdcnt;
 }
@@ -5086,7 +5054,7 @@ errno_t functionparameter_CTRLscreen(
 
     functionparameter_outlog("FPSCTRL", "START\n");
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
     // allocate memory
     
@@ -5158,7 +5126,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-    FUNCTIONPARAMETER_LOGEXEC;
+    TESTPOINT(" ");
 
 
 
@@ -5247,14 +5215,14 @@ errno_t functionparameter_CTRLscreen(
          fpsindex = keywnode[nodeSelected].fpsindex;
             functionparameter_FPSremove(fps, SMfdarray, fpsindex);
 //            snprintf(fname, stringmaxlen, "%s/%s.fps.shm", shmdname, fps[keywnode[nodeSelected].fpsindex].md->name);
-            /*FUNCTIONPARAMETER_LOGEXEC;
+            /*TESTPOINT(" ");
             for(fpsindex = 0; fpsindex < NBfps; fpsindex++) {
                 function_parameter_struct_disconnect(&fps[fpsindex], &SMfdarray[fpsindex]);
             }
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
             remove(fname);
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             free(fps);
             free(keywnode);
@@ -5276,7 +5244,7 @@ errno_t functionparameter_CTRLscreen(
             }
 
             clear();
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             fpsindexSelected = 0; // safeguard in case current selection disappears
             break;
@@ -5285,7 +5253,7 @@ errno_t functionparameter_CTRLscreen(
             fpsindex = keywnode[nodeSelected].fpsindex;
             functionparameter_FPSremove(fps, SMfdarray, fpsindex);
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
 /*
             for(fpsindex = 0; fpsindex < NBfps; fpsindex++) {
@@ -5309,7 +5277,7 @@ errno_t functionparameter_CTRLscreen(
             }
 
             clear();
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             fpsindexSelected = 0; // safeguard in case current selection disappears
 
@@ -5550,18 +5518,18 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
 
         printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLfifoname, fpsCTRLfifofd, fifocmdcnt);
         int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLfifofd, fpsctrltasklist, fpsctrlqueuelist);
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
         function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist, keywnode, NBkwn, fps, SMfdarray);
         fifocmdcnt += fcnt;
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
         printw("OUTPUT LOG:  %s/fpslog.%06d\n", shmdname, getpid());
 
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
 
 
         if(fpsCTRL_DisplayMode == 1) { // help
@@ -5649,12 +5617,12 @@ errno_t functionparameter_CTRLscreen(
             attron(attrval);
         }
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
 
         if(fpsCTRL_DisplayMode == 2) { // FPS content
 
             // check that selected node is OK
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
             if(strlen(keywnode[nodeSelected].keywordfull)<1) {
                 nodeSelected = 1;
                 while((strlen(keywnode[nodeSelected].keywordfull)<1) && (nodeSelected < NB_KEYWNODE_MAX))
@@ -5663,7 +5631,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             //printw("currentlevel = %d   Selected = %d/%d   Current node [%3d]: ", currentlevel, iSelected[currentlevel], NBindex, currentnode);
 
@@ -5676,17 +5644,16 @@ errno_t functionparameter_CTRLscreen(
              }*/
             //printw("  NBchild = %d\n", keywnode[currentnode].NBchild);
 
-			sprintf(data.execSRCmessage, "node %d %d", nodeSelected, keywnode[nodeSelected].fpsindex);
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT("node %d %d", nodeSelected, keywnode[nodeSelected].fpsindex);
 
             printw("========= FPS info node %d %d ============\n", nodeSelected, keywnode[nodeSelected].fpsindex);
             printw("Source  : %s %d\n", fps[keywnode[nodeSelected].fpsindex].md->sourcefname, fps[keywnode[nodeSelected].fpsindex].md->sourceline);
-             FUNCTIONPARAMETER_LOGEXEC;
+             TESTPOINT(" ");
             printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
-             FUNCTIONPARAMETER_LOGEXEC;
+             TESTPOINT(" ");
             printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
 
-			 FUNCTIONPARAMETER_LOGEXEC;
+			 TESTPOINT(" ");
 
             printw("========= NODE info ============\n");
             printw("%-30s ", keywnode[nodeSelected].keywordfull);
@@ -5717,12 +5684,12 @@ errno_t functionparameter_CTRLscreen(
             }
             printw("\n\n");
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             currentlevel = keywnode[currentnode].keywordlevel;
             int imax = keywnode[currentnode].NBchild; // number of lines to be displayed
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             nodechain[currentlevel] = currentnode;
             l = currentlevel - 1;
@@ -5732,7 +5699,7 @@ errno_t functionparameter_CTRLscreen(
             }
             nodechain[0] = 0; // root
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
 
             pcnt = 0;
@@ -5746,12 +5713,12 @@ errno_t functionparameter_CTRLscreen(
 
 
                 for(l = 0; l < currentlevel; l++) {
-                    FUNCTIONPARAMETER_LOGEXEC;
+                    TESTPOINT(" ");
                     // update imax, the maximum number of lines
                     if(keywnode[nodechain[l]].NBchild > imax) {
                         imax = keywnode[nodechain[l]].NBchild;
                     }
-                    FUNCTIONPARAMETER_LOGEXEC;
+                    TESTPOINT(" ");
                     if(i < keywnode[nodechain[l]].NBchild) {
                         int snode = 0; // selected node
                         int ii;
@@ -5886,7 +5853,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
 
 
                 int ii;
@@ -5901,7 +5868,7 @@ errno_t functionparameter_CTRLscreen(
                     pindex = keywnode[ii].pindex;
                 }
 
-                FUNCTIONPARAMETER_LOGEXEC;
+                TESTPOINT(" ");
 
                 if(i1 < keywnode[currentnode].NBchild) {
 
@@ -6348,7 +6315,7 @@ errno_t functionparameter_CTRLscreen(
                 printw("\n");
             }
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             NBindex = icnt;
 
@@ -6356,13 +6323,13 @@ errno_t functionparameter_CTRLscreen(
                 iSelected[currentlevel] = NBindex - 1;
             }
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
             printw("\n");
             printw("%d parameters\n", pcnt);
             printw("\n");
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
 
             printw("------------- FUNCTION PARAMETER STRUCTURE   %s\n", fps[fpsindexSelected].md->name);
@@ -6388,11 +6355,11 @@ errno_t functionparameter_CTRLscreen(
             }
 
 
-            FUNCTIONPARAMETER_LOGEXEC;
+            TESTPOINT(" ");
 
         }
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
 
         if(fpsCTRL_DisplayMode == 3) { // Task scheduler status
             struct timespec tnow;
@@ -6406,7 +6373,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 			// Sort entries from most recent to most ancient, using inputindex
-			FUNCTIONPARAMETER_LOGEXEC;
+			TESTPOINT(" ");
 			double * sort_evalarray;
 			sort_evalarray = (double*) malloc(sizeof(double)*NB_FPSCTRL_TASK_MAX);
 			long * sort_indexarray;
@@ -6420,23 +6387,22 @@ errno_t functionparameter_CTRLscreen(
 					sortcnt++;
 				}
 			}
-			FUNCTIONPARAMETER_LOGEXEC;
+			TESTPOINT(" ");
 			if(sortcnt>0) {
 				quick_sort2l(sort_evalarray, sort_indexarray, sortcnt);
 			}
 			free(sort_evalarray);
 			
-			FUNCTIONPARAMETER_LOGEXEC;
+			TESTPOINT(" ");
 
 			for(int sortindex=0; sortindex<sortcnt; sortindex++) {
 				
-				sprintf(data.execSRCmessage, "iteration %d / %ld", sortindex, sortcnt);
-				FUNCTIONPARAMETER_LOGEXEC;
+
+				TESTPOINT("iteration %d / %ld", sortindex, sortcnt);
 				
 				int fpscmdindex = sort_indexarray[sortindex];
 				
-				sprintf(data.execSRCmessage, "fpscmdindex = %d", fpscmdindex);
-				FUNCTIONPARAMETER_LOGEXEC;
+				TESTPOINT("fpscmdindex = %d", fpscmdindex);
 				
 				if(sortindex > wrow-8) {// remove oldest
 					fpsctrltasklist[fpscmdindex].status &= ~FPSTASK_STATUS_SHOW;
@@ -6521,7 +6487,7 @@ errno_t functionparameter_CTRLscreen(
             
         }
 
-        FUNCTIONPARAMETER_LOGEXEC;
+        TESTPOINT(" ");
 
 
         refresh();

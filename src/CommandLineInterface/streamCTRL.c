@@ -13,27 +13,17 @@
 
 #define _GNU_SOURCE
 
-
-// OPTIONAL LINE TRACKING FOR DEBUGGING
-//
-// Warning: enabling this feature will slow down execution
-// Use it for debugging only
-//
-//  Calling the LOGEXEC function will update :
-//  data.execSRCline      : current line of code
-//  data.execSRCfunc      : current function
-//  data.execSRCmessage   : User message
-//
-// Uncomment this line to turn on line tracking for debug purposes
-#define STREAMCTRL_LOGDEBUG
+#define STREAMCTRL_LOGDEBUG 1
 
 #if defined(STREAMCTRL_LOGDEBUG) && !defined(STANDALONE)
-#define STREAMCTRL_LOGEXEC do {                      \
-    sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
-    data.execSRCline = __LINE__;                   \
-    } while(0)
+#define TESTPOINT(...) do { \
+sprintf(data.testpoint_file, "%s", __FILE__); \
+sprintf(data.testpoint_func, "%s", __func__); \
+data.testpoint_line = __LINE__; \
+sprintf(data.testpoint_msg, __VA_ARGS__); \
+} while(0)
 #else
-#define STREAMCTRL_LOGEXEC 
+#define TESTPOINT(...)
 #endif
 
 
@@ -720,7 +710,7 @@ errno_t streamCTRL_CTRLscreen() {
     int SORT_TOGGLE = 0;
 
 
-    STREAMCTRL_LOGEXEC;
+    TESTPOINT(" ");
 
     pthread_t threadscan;
 
@@ -785,7 +775,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
     clear();
-    STREAMCTRL_LOGEXEC;
+    TESTPOINT(" ");
 
     // redirect stderr to /dev/null
 
@@ -805,7 +795,7 @@ errno_t streamCTRL_CTRLscreen() {
 #endif
 
 
-    STREAMCTRL_LOGEXEC;
+    TESTPOINT(" ");
 
 
 
@@ -814,7 +804,7 @@ errno_t streamCTRL_CTRLscreen() {
     pthread_create(&threadscan, NULL, streamCTRL_scan, (void *) &args);
 
 
-    STREAMCTRL_LOGEXEC;
+    TESTPOINT(" ");
 
     char c; // for user input
     int stringindex;
@@ -825,7 +815,7 @@ errno_t streamCTRL_CTRLscreen() {
         int pid;
         char command[200];
 
-		STREAMCTRL_LOGEXEC;
+		TESTPOINT(" ");
 
         if(streaminfoproc.loopcnt == 1) {
             SORTING = 2;
@@ -840,7 +830,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         NBsindex = streaminfoproc.NBstream;
         
-        STREAMCTRL_LOGEXEC;
+        TESTPOINT(" ");
 
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -918,14 +908,10 @@ errno_t streamCTRL_CTRLscreen() {
         // ============ ACTIONS
 
         case 'R': // remove stream
-            STREAMCTRL_LOGEXEC;
-            sindex = ssindex[dindexSelected];
-#if !defined(STANDALONE)
-            ImageStreamIO_filename(fname, sizeof(fname),images[streaminfo[sindex].ID].name);
-            sprintf(data.execSRCmessage, "%d  %s", dindexSelected, fname);
-#endif
+            TESTPOINT(" ");
+            sindex = ssindex[dindexSelected];            
             ImageStreamIO_destroyIm(&images[streaminfo[sindex].ID]);
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT("%d  %s", dindexSelected, fname);
             break;
 
 
@@ -1024,7 +1010,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         }
         
-        STREAMCTRL_LOGEXEC;
+        TESTPOINT(" ");
         
         if(dindexSelected < 0) {
                 dindexSelected = 0;
@@ -1033,7 +1019,7 @@ errno_t streamCTRL_CTRLscreen() {
                 dindexSelected = NBsindex - 1;
             }
 
-        STREAMCTRL_LOGEXEC;
+        TESTPOINT(" ");
 
         erase();
 
@@ -1048,7 +1034,7 @@ errno_t streamCTRL_CTRLscreen() {
         if(DisplayMode == 1) { // help
             int attrval = A_BOLD;
 
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT(" ");
 
             attron(attrval);
             printw("    x");
@@ -1152,7 +1138,7 @@ errno_t streamCTRL_CTRLscreen() {
 
             printw("\n\n");
         } else {
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT(" ");
             if(DisplayMode == 1) {
                 attron(A_REVERSE);
                 printw("[h] Help");
@@ -1237,7 +1223,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT(" ");
 
 
 
@@ -1251,7 +1237,7 @@ errno_t streamCTRL_CTRLscreen() {
             }
 
 
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT(" ");
 
             if(SORTING == 1) { // alphabetical sorting
                 long *larray;
@@ -1277,7 +1263,7 @@ errno_t streamCTRL_CTRLscreen() {
                 free(larray);
             }
 
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT(" ");
 
 
             if((SORTING == 2) || (SORTING == 3)) { // recent update and process access
@@ -1318,7 +1304,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-            STREAMCTRL_LOGEXEC;
+            TESTPOINT(" ");
 
             // compute doffsetindex
             
@@ -1392,7 +1378,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-                STREAMCTRL_LOGEXEC;
+                TESTPOINT(" ");
 
 
 
@@ -1460,7 +1446,7 @@ errno_t streamCTRL_CTRLscreen() {
                         printw(string);
                     }
 
-                    STREAMCTRL_LOGEXEC;
+                    TESTPOINT(" ");
                     if(images[streaminfo[sindex].ID].md == NULL)
                     {
                         sprintf(str, "???");
@@ -1477,7 +1463,7 @@ errno_t streamCTRL_CTRLscreen() {
                         strcpy(str, str1);
                     }
 
-                    STREAMCTRL_LOGEXEC;
+                    TESTPOINT(" ");
 
 
                     charcnt = sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
@@ -1520,7 +1506,7 @@ errno_t streamCTRL_CTRLscreen() {
 
                 }
 
-                STREAMCTRL_LOGEXEC;
+                TESTPOINT(" ");
 
                 if(images[streaminfo[sindex].ID].md != NULL) {
                     if((DisplayMode == 2) && (DisplayFlag == 1)) { // sem vals
@@ -1544,7 +1530,7 @@ errno_t streamCTRL_CTRLscreen() {
                     }
                 }
 
-                STREAMCTRL_LOGEXEC;
+                TESTPOINT(" ");
                 if(images[streaminfo[sindex].ID].md != NULL) {
                     if((DisplayMode == 3) && (DisplayFlag == 1)) { // sem write PIDs
                         charcnt = sprintf(string, " %3d sems ", images[ID].md[0].sem);
@@ -1579,7 +1565,7 @@ errno_t streamCTRL_CTRLscreen() {
                     }
                 }
 
-                STREAMCTRL_LOGEXEC;
+                TESTPOINT(" ");
 
                 if(images[streaminfo[sindex].ID].md != NULL) {
                     if((DisplayMode == 4) && (DisplayFlag == 1)) { // sem read PIDs
@@ -1621,7 +1607,7 @@ errno_t streamCTRL_CTRLscreen() {
                     }
 
 
-                    STREAMCTRL_LOGEXEC;
+                    TESTPOINT(" ");
 
                     int pidIndex;
 
@@ -1668,7 +1654,7 @@ errno_t streamCTRL_CTRLscreen() {
 
                 }
 
-                STREAMCTRL_LOGEXEC;
+                TESTPOINT(" ");
 
                 if(DisplayFlag == 1) {
                     if(dindex == dindexSelected) {
@@ -1684,7 +1670,7 @@ errno_t streamCTRL_CTRLscreen() {
                 }
 
 
-                STREAMCTRL_LOGEXEC;
+                TESTPOINT(" ");
 
 #ifndef STANDALONE
                 if(streaminfoproc.fuserUpdate == 1) {
@@ -1701,12 +1687,12 @@ errno_t streamCTRL_CTRLscreen() {
 
         }
 
-        STREAMCTRL_LOGEXEC;
+        TESTPOINT(" ");
 
 
         refresh();
 
-		STREAMCTRL_LOGEXEC;
+		TESTPOINT(" ");
 
         loopcnt++;
 #ifndef STANDALONE
@@ -1715,7 +1701,7 @@ errno_t streamCTRL_CTRLscreen() {
         }
 #endif
 
-		STREAMCTRL_LOGEXEC;
+		TESTPOINT(" ");
     }
 
 
@@ -1733,7 +1719,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 	remove(newstderrfname);
 
-    STREAMCTRL_LOGEXEC;
+    TESTPOINT(" ");
     
 
 
