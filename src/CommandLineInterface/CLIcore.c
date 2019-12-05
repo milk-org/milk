@@ -40,7 +40,7 @@
 #include <dirent.h> 
 #include <stddef.h> // offsetof()
 #include <sys/resource.h> // getrlimit
-
+#include <termios.h>
 
 //#include <pthread_np.h>
 
@@ -250,16 +250,32 @@ static int_fast8_t help_command(char *cmdkey);
 /** @name CLIcore functions */
 
 
+
+void set_terminal_echo_on()
+{
+	// Terminal settings
+    struct termios termInfo;
+    if(tcgetattr(0,&termInfo) == -1 ){
+	    perror("tcgetattr");
+	    exit(1);
+    }
+	termInfo.c_lflag |= ECHO;  /* turn on ECHO */
+	tcsetattr(0, TCSADRAIN, &termInfo);
+}
+
 /// signal catching
 
 
 
-errno_t set_signal_catching()
+errno_t set_signal_catch()
 {
     // catch signals for clean exit
     if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGTERM\n");
-    }
+    } else {
+		printf("catching SIGTERM\n");
+	}
+    
 
     if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGINT\n");
@@ -405,6 +421,7 @@ void sig_handler(int signo) {
             printf("sig_handler received SIGABRT\n");
             write_process_exit_report("SIGABRT");
             data.signal_ABRT = 1;
+            set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
@@ -1093,6 +1110,9 @@ int_fast8_t runCLI(
 
 
 
+
+
+
     strcpy(data.processname, argv[0]);
 
 
@@ -1125,12 +1145,7 @@ int_fast8_t runCLI(
     }
 
 
-	set_signal_catching();
-
-
-
-
-    atexit(fnExit1);
+    //atexit(fnExit1);
 
     data.progStatus = 0;
 
@@ -1171,6 +1186,10 @@ int_fast8_t runCLI(
     if(sigaction(SIGUSR2, &data.sigact, NULL) == -1) {
         printf("\ncan't catch SIGUSR2\n");
     }
+
+	set_signal_catch();
+
+
 
 
 
@@ -1353,6 +1372,9 @@ int_fast8_t runCLI(
     // LOAD MODULES
     load_module_shared_ALL();
 
+
+
+
     // load other libs specified by environment variable CLI_ADD_LIBS
     char *CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
     if(CLI_ADD_LIBS != NULL) {
@@ -1389,8 +1411,15 @@ int_fast8_t runCLI(
 
 //printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
+
+
+
+
     // initialize readline
     rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb);
+
+
+
 
     // fifo
     fdmax = fileno(stdin);
@@ -1422,6 +1451,8 @@ int_fast8_t runCLI(
     				atexitfifoclose = 1;
     			}
       */
+
+
 
 
     for(;;) {
@@ -1559,7 +1590,6 @@ int_fast8_t runCLI(
 
         //AOloopControl_bogusfunc();
     }
-
 
     return(0);
 }

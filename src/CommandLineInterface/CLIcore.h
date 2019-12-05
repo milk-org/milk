@@ -330,7 +330,7 @@ extern DATA data;
 #define MAX_NB_FRAMENAME_CHAR 500
 #define MAX_NB_EXCLUSIONS 40
 
-errno_t set_signal_catching();
+errno_t set_signal_catch();
 
 void sig_handler(int signo);
 

@@ -5095,7 +5095,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 #ifndef STANDALONE
-	set_signal_catching();
+	set_signal_catch();
 #endif
 
 
