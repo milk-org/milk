@@ -251,6 +251,7 @@ static int_fast8_t help_command(char *cmdkey);
 
 
 
+
 void set_terminal_echo_on()
 {
 	// Terminal settings
@@ -395,8 +396,9 @@ void sig_handler(int signo) {
             break;
 
         case SIGTERM:
-			printf("sig_handler received SIGTERM\n");
-			write_process_exit_report("SIGTERM");
+			printf("sig_handler received SIGTERM\n");			
+			set_terminal_echo_on();
+			exit(EXIT_FAILURE);
             data.signal_TERM = 1;
             break;
 
@@ -414,6 +416,7 @@ void sig_handler(int signo) {
             printf("sig_handler received SIGBUS \n");
             write_process_exit_report("SIGBUS");
             data.signal_BUS = 1;
+            set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
@@ -429,6 +432,7 @@ void sig_handler(int signo) {
             printf("sig_handler received SIGSEGV\n");
             write_process_exit_report("SIGSEGV");
             data.signal_SEGV = 1;
+            set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 

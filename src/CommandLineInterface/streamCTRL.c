@@ -15,16 +15,6 @@
 
 #define STREAMCTRL_LOGDEBUG 1
 
-#if defined(STREAMCTRL_LOGDEBUG) && !defined(STANDALONE)
-#define TESTPOINT(...) do { \
-sprintf(data.testpoint_file, "%s", __FILE__); \
-sprintf(data.testpoint_func, "%s", __func__); \
-data.testpoint_line = __LINE__; \
-sprintf(data.testpoint_msg, __VA_ARGS__); \
-} while(0)
-#else
-#define TESTPOINT(...)
-#endif
 
 
 
@@ -86,6 +76,11 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 /*                                      DEFINES, MACROS                                            */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
+
+ #if !defined(STREAMCTRL_LOGDEBUG) || defined(STANDALONE)
+#define TESTPOINT(...)
+#endif
 
 #define STRINGLENMAX  32
 

@@ -81,6 +81,24 @@ extern int C_ERRNO;			// C errno (from errno.h)
 
 
 
+
+
+
+
+#define TESTPOINT(...) do { \
+sprintf(data.testpoint_file, "%s", __FILE__); \
+sprintf(data.testpoint_func, "%s", __func__); \
+data.testpoint_line = __LINE__; \
+clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
+sprintf(data.testpoint_msg, __VA_ARGS__); \
+} while(0)
+
+
+
+
+
+
+
 // declare a boolean type "BOOL" 
 // TRUE and FALSE improve code readability
 //
@@ -224,12 +242,15 @@ typedef struct
     int signal_HUP;
     int signal_PIPE;
     
+    
+    
+    
     // can be used to trace program execution for runtime profiling and debugging
-    // todo: move to shared mem
     int  testpoint_line;
     char testpoint_file[STRINGMAXLEN_FILENAME];
     char testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
     char testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+    struct timespec testpoint_time;
     
     
     int progStatus;  // main program status

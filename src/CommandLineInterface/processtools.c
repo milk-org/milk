@@ -19,17 +19,6 @@
 
 #define PROCESSTOOLS_LOGDEBUG 1
 
-#if defined(PROCESSTOOLS_LOGDEBUG) && !defined(STANDALONE)
-#define TESTPOINT(...) do { \
-sprintf(data.testpoint_file, "%s", __FILE__); \
-sprintf(data.testpoint_func, "%s", __func__); \
-data.testpoint_line = __LINE__; \
-sprintf(data.testpoint_msg, __VA_ARGS__); \
-} while(0)
-#else
-#define TESTPOINT(...)
-#endif
-
 
 
 
@@ -96,6 +85,21 @@ static int CTRLscreenExitLine = 0; // for debugging
 #ifdef USE_HWLOC
 #include <hwloc.h>
 #endif
+
+
+
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                      DEFINES, MACROS                                            */
+/* =============================================================================================== */
+/* =============================================================================================== */
+
+
+
+#if !defined(PROCESSTOOLS_LOGDEBUG) || defined(STANDALONE)
+#define TESTPOINT(...)
+#endif
+
 
 
 
