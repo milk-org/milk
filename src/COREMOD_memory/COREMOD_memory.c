@@ -13,6 +13,29 @@
 
 #define _GNU_SOURCE
 
+
+
+
+
+#define COREMOD_MEMORY_LOGDEBUG 1
+
+#if defined(COREMOD_MEMORY_LOGDEBUG) && !defined(STANDALONE)
+#define TESTPOINT(...) do { \
+sprintf(data.testpoint_file, "%s", __FILE__); \
+sprintf(data.testpoint_func, "%s", __func__); \
+data.testpoint_line = __LINE__; \
+sprintf(data.testpoint_msg, __VA_ARGS__); \
+} while(0)
+#else
+#define TESTPOINT(...)
+#endif
+
+
+
+
+
+
+
 #include <stdint.h>
 #include <unistd.h>
 #include <malloc.h>
@@ -85,28 +108,6 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 #define SBUFFERSIZE 1000
 
 
-
-// OPTIONAL LINE TRACKING FOR DEBUGGING
-//
-// Warning: enabling this feature will slow down execution
-// Use it for debugging only
-//
-//  Calling the LOGEXEC function will update :
-//  data.execSRCline      : current line of code
-//  data.execSRCfunc      : current function
-//  data.execSRCmessage   : User message
-//
-// Uncomment this line to turn on line tracking for debug purposes
-#define COREMODMEMORY_LOGDEBUG 1
-
-#ifdef COREMODMEMORY_LOGDEBUG
-#define COREMODMEMORY_LOGEXEC do { \
-    sprintf(data.execSRCfunc, "%s", __FUNCTION__); \
-    data.execSRCline = __LINE__;                   \
-    } while(0)
-#else 
-#define COREMODMEMORY_LOGEXEC
-#endif
 
 
 
@@ -6062,8 +6063,8 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
     // ===========================
     /// ### SETUP FPS
     // ===========================
-
-    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus);
+	int SMfd = -1;
+    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus, &SMfd);
 	strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);
 	fps.md->sourceline = __LINE__;
 	
@@ -6124,7 +6125,7 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
             functionparameter_CheckParametersAll(&fps);  // check all parameter values
         }
     }
-    function_parameter_FPCONFexit(&fps);
+    function_parameter_FPCONFexit(&fps, &SMfd);
 
 
     return RETURN_SUCCESS;
@@ -6163,8 +6164,9 @@ int COREMOD_MEMORY_streamDelay_RUN(
     // ===========================
     /// ### CONNECT TO FPS
     // ===========================
+    int SMfd = -1;
     FUNCTION_PARAMETER_STRUCT fps;
-    if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1) {
+    if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN, &SMfd) == -1) {
         printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
         return RETURN_FAILURE;
     }
@@ -6195,7 +6197,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
 	long *kkin     = functionparameter_GetParamPtr_INT64(&fps, ".status.kkin");
 	long *kkout    = functionparameter_GetParamPtr_INT64(&fps, ".status.kkout");
 
-	COREMODMEMORY_LOGEXEC;
+	TESTPOINT(" ");
 
     // ===========================
     /// ### processinfo support
@@ -6211,7 +6213,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
                       __FUNCTION__, __FILE__, __LINE__
                   );
 
-	COREMODMEMORY_LOGEXEC;
+	TESTPOINT(" ");
     PROCESSINFO *processinfo_setup(
         char *pinfoname,
         char descriptionstring[200],
@@ -6220,7 +6222,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
         const char *filename,
         int   linenumber
     );
-	COREMODMEMORY_LOGEXEC;
+	TESTPOINT(" ");
 
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
@@ -6304,7 +6306,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
     }
 
 
-	COREMODMEMORY_LOGEXEC;
+	TESTPOINT(" ");
 
     // ===========================
     /// ### START LOOP
@@ -6312,13 +6314,13 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
     processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
-	COREMODMEMORY_LOGEXEC;
+	TESTPOINT(" ");
 
     while(loopOK == 1) {
         int kkinscan;
         float normframes = 0.0;
 
-		COREMODMEMORY_LOGEXEC;
+		TESTPOINT(" ");
         loopOK = processinfo_loopstep(processinfo);
 
         usleep(dtus); // main loop wait
@@ -6326,7 +6328,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
         processinfo_exec_start(processinfo);
 
         if(processinfo_compute_status(processinfo) == 1) {
-			COREMODMEMORY_LOGEXEC;
+			TESTPOINT(" ");
 
             // has new frame arrived ?
 //            cnt0 = data.image[IDin].md[0].cnt0;
@@ -6334,12 +6336,12 @@ int COREMOD_MEMORY_streamDelay_RUN(
 //            if(cnt0 != cnt0old) { // new frame
                 clock_gettime(CLOCK_REALTIME, &t0array[*kkin]);  // record time of input frame
 
-				COREMODMEMORY_LOGEXEC;
+				TESTPOINT(" ");
                 for(ii = 0; ii < xysize; ii++) {
                     data.image[IDimc].array.F[(*kkin) * xysize + ii] = data.image[IDin].array.F[ii];
                 }
                 (*kkin) ++;
-                COREMODMEMORY_LOGEXEC;
+                TESTPOINT(" ");
 
                 if((*kkin) == (*zsize)) {
                     (*kkin) = 0;
@@ -6350,14 +6352,14 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
 
             clock_gettime(CLOCK_REALTIME, &tnow);
-            COREMODMEMORY_LOGEXEC;
+            TESTPOINT(" ");
 
 
             cntskip = 0;
             tdiff = info_time_diff(t0array[*kkout], tnow);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             
-            COREMODMEMORY_LOGEXEC;
+            TESTPOINT(" ");
 
 
             while((tdiffv > 1.0e-6 * delayus) && (cntskip < *zsize)) {
@@ -6370,21 +6372,21 @@ int COREMOD_MEMORY_streamDelay_RUN(
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             }
             
-            COREMODMEMORY_LOGEXEC;
+            TESTPOINT(" ");
             
             *framelag = *kkin - *kkout;
             if(*framelag < 0)
 				*framelag += *zsize;
 				
 				
-			COREMODMEMORY_LOGEXEC;
+			TESTPOINT(" ");
 
 
             switch(timeavemode) {
 				
 
                 case 0: // no time averaging - pick more recent frame that matches requirement
-                    COREMODMEMORY_LOGEXEC;
+                    TESTPOINT(" ");
                     if(cntskip > 0) {
                         char *ptr; // pointer address
 
@@ -6403,7 +6405,7 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
                 default : // strict time window (note: other modes will be coded in the future)
                     normframes = 0.0;
-                    COREMODMEMORY_LOGEXEC;
+                    TESTPOINT(" ");
 
                     for(ii = 0; ii < xysize; ii++) {
                         arraytmpf[ii] = 0.0;
@@ -6435,14 +6437,14 @@ int COREMOD_MEMORY_streamDelay_RUN(
 
                     break;
             }
-            COREMODMEMORY_LOGEXEC;
+            TESTPOINT(" ");
 
 
 
         }
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
-        COREMODMEMORY_LOGEXEC;
+        TESTPOINT(" ");
 
 
     }
@@ -6451,7 +6453,9 @@ int COREMOD_MEMORY_streamDelay_RUN(
     /// ### ENDING LOOP
     // ==================================
     processinfo_cleanExit(processinfo);
-    COREMODMEMORY_LOGEXEC;
+    function_parameter_RUNexit( &fps, &SMfd );
+    
+    TESTPOINT(" ");
 
     delete_image_ID("_tmpc");
 
@@ -6498,12 +6502,13 @@ long COREMOD_MEMORY_streamDelay(
     char fpsname[200];
     unsigned int pindex = 0;
     FUNCTION_PARAMETER_STRUCT fps;
+	int SMfd = -1;
 
     // create FPS
     sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
     COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_FPSINIT);
 
-    function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN);
+    function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN, &SMfd);
 
     functionparameter_SetParamValue_STRING(&fps, ".instreamname", IDin_name);
     functionparameter_SetParamValue_STRING(&fps, ".outstreamname", IDout_name);
@@ -6511,7 +6516,7 @@ long COREMOD_MEMORY_streamDelay(
     functionparameter_SetParamValue_INT64(&fps, ".delayus", delayus);
     functionparameter_SetParamValue_INT64(&fps, ".dtus", delayus);
 
-    function_parameter_struct_disconnect(&fps);
+    function_parameter_struct_disconnect(&fps, &SMfd);
 
     COREMOD_MEMORY_streamDelay_RUN(fpsname);
 
@@ -6838,7 +6843,7 @@ long COREMOD_MEMORY_image_NETWORKtransmit(
 	printf("Transmit stream %s over IP %s port %d\n", IDname, IPaddr, port);
 	fflush(stdout);
 
-	COREMODMEMORY_LOGEXEC;
+	TESTPOINT(" ");
 
 	if(TMPDEBUG==1)
 		COREMOD_MEMORY_testfunction_semaphore(IDname, 0, 0);
