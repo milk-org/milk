@@ -375,10 +375,10 @@ errno_t MyFunction_RUN(
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
-	
+	int SMfd = -1;
 	FUNCTION_PARAMETER_STRUCT fps;
 	
-	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN) == -1)
+	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN, &SMfd) == -1)
 	{
 		printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
 		return RETURN_FAILURE;
@@ -429,7 +429,7 @@ errno_t MyFunction_RUN(
 		// This can use a separate shared memory path
 	}
 	
-	function_parameter_RUNexit( &fps );
+	function_parameter_RUNexit( &fps, &SMfd );
 	return RETURN_SUCCESS;
 }
 ~~~~
