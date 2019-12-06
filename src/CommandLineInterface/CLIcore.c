@@ -337,7 +337,7 @@ errno_t write_process_exit_report(char *errortypestring)
 
 
     struct tm *uttime;
-    time_t tvsec;
+    time_t tvsec0, tvsec1;
 
 
     fpexit = fopen(fname, "w");
@@ -347,14 +347,19 @@ errno_t write_process_exit_report(char *errortypestring)
         struct timespec tnow;
         time_t now;
         clock_gettime(CLOCK_REALTIME, &tnow);
-        tvsec = tnow.tv_sec;
-        uttime = gmtime(&tvsec);
-        fprintf_stdout(fpexit, "Time: %04d%02d%02dT%02d%02d%02d.%09ld\n\n", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+        tvsec0 = tnow.tv_sec;
+        uttime = gmtime(&tvsec0);
+        fprintf_stdout(fpexit, "Time: %04d%02d%02dT%02d%02d%02d.%09ld\n\n",
+                       1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
 
         fprintf_stdout(fpexit, "Last encountered test point\n");
-        tvsec = data.testpoint_time.tv_sec;
-        uttime = gmtime(&tvsec);
-        fprintf_stdout(fpexit, "    Time    : %04d%02d%02dT%02d%02d%02d.%09ld\n", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, data.testpoint_time.tv_nsec);
+        tvsec1 = data.testpoint_time.tv_sec;
+        uttime = gmtime(&tvsec1);
+        fprintf_stdout(fpexit, "    Time    : %04d%02d%02dT%02d%02d%02d.%09ld\n",
+                       1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, data.testpoint_time.tv_nsec);
+
+		double timediff = 1.0*(tvsec0-tvsec1) + 1.0e-9*(tnow.tv_nsec-data.testpoint_time.tv_nsec);
+		fprintf_stdout(fpexit, "              %.9f sec ago\n", timediff);
 
         fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint_file);
         fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint_func);

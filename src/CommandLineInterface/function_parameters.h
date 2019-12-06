@@ -377,8 +377,8 @@ typedef struct {
     char                name[200];         // example: pname-01-32
 
     char                fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
-	char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
-	int					sourceline;
+    char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
+    int					sourceline;
 
     // the name and indices are automatically parsed in the following format
     char                pname[FPS_PNAME_STRMAXLEN];          // example: pname
@@ -395,14 +395,14 @@ typedef struct {
 
     pid_t               confpid;            // PID of process owning parameter structure configuration
     pid_t               runpid;             // PID of process running on this fps
-	
+
 
     uint64_t            signal;       // Used to send signals to configuration process
     uint64_t            confwaitus;   // configuration wait timer value [us]
 
     uint32_t            status;          // conf and process status
 
-	long                 NBparamMAX;      // size of parameter array (= max number of parameter supported)
+    long                NBparamMAX;      // size of parameter array (= max number of parameter supported)
 
 
     char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
@@ -485,6 +485,29 @@ typedef struct {
 
 } FPSCTRL_TASK_ENTRY;
 
+
+
+
+
+
+
+typedef struct {
+	int fpsCTRL_DisplayMode; // Display mode
+    uint32_t mode;           // GUI mode
+    int NBfps;               // Number of FPS entries
+    int NBkwn;               // Number of keyword nodes
+    long NBindex;
+    char fpsnamemask[100]; 
+    int nodeSelected;
+    int run_display;
+    int fpsindexSelected;
+    int GUIlineSelected[100];
+    int currentlevel;
+    int directorynodeSelected;
+    int pindexSelected;
+    char fpsCTRLfifoname[200];
+    int fpsCTRLfifofd;
+} FPSCTRL_GUIVARS;
 
 
 
