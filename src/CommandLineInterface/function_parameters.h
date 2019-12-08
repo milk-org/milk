@@ -417,11 +417,15 @@ typedef struct {
 
 
 typedef struct {
-
-    FUNCTION_PARAMETER_STRUCT_MD *md;
-
+	// these two structures are shared 
+    FUNCTION_PARAMETER_STRUCT_MD *md;  
     FUNCTION_PARAMETER           *parray;   // array of function parameters
 
+	// these variables are local to each process
+	uint16_t  loopstatus;
+	int       SMfd;
+	uint32_t  CMDmode;
+	
 } FUNCTION_PARAMETER_STRUCT;
 
 
@@ -514,13 +518,73 @@ typedef struct {
 
 
 
+// ===========================
+// CONVENIENT MACROS FOR FPS
+// ===========================
+
+
+
+#define FPS_SETUP_INIT( VARfpsname, VARCMDmode ) FUNCTION_PARAMETER_STRUCT fps; do { \
+fps.SMfd =  -1; \
+fps = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
+strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);\
+fps.md->sourceline = __LINE__; \
+} while(0)
+
+
+#define FPS_CONNECT( VARfpsname, VARCMDmode ) FUNCTION_PARAMETER_STRUCT fps; do { \
+fps.SMfd = -1; \
+if(function_parameter_struct_connect( (VARfpsname) , &fps, (VARCMDmode) ) == -1) { \
+printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", VARfpsname); \
+return RETURN_FAILURE; \
+}} while(0)
+
+
+#define FPS_CONFLOOP_START if(fps.loopstatus == 0) { return RETURN_SUCCESS; } while(fps.loopstatus == 1) { usleep(50); if(function_parameter_FPCONFloopstep(&fps) == 1) {
+
+#define FPS_CONFLOOP_END  functionparameter_CheckParametersAll(&fps);}} function_parameter_FPCONFexit(&fps);
+
+#define FPS_ADDPARAM_FLT64_IN(key, pname, pdescr, dflt) long fp_##key = 0; do{ \
+fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, (dflt));\
+} while(0)
+
+
+
+#define FPS_ADDPARAM_INT64_IN(key, pname, pdescr, dflt) long fp_##key = 0; do{ \
+fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, (dflt));\
+} while(0)
+	
+#define FPS_ADDPARAM_INT64_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
+fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);\
+} while(0)
+
+
+
+#define FPS_ADDPARAM_STREAM_IN(key, pname, pdescr) long fp_##key = 0; do{ \
+fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);\
+} while(0)
+
+#define FPS_ADDPARAM_STREAM_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
+fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, pNull);\
+} while(0)
+
+
+
+
+//long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);
+
+
+
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-errno_t function_parameter_struct_create    (int NBparamMAX, const char *name, int *SMfd);
-long    function_parameter_struct_connect   (const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode, int * SMfd);
-int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct, int *SMfd);
+errno_t function_parameter_struct_create    (int NBparamMAX, const char *name);
+long    function_parameter_struct_connect   (const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
+int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBparamMAX);
@@ -557,16 +621,16 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pi
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 
 
-int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS, int pindex, FUNCTION_PARAMETER_STRUCT *FPSext, int *SMfd);
+int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS, int pindex, FUNCTION_PARAMETER_STRUCT *FPSext);
 errno_t functionparameter_GetTypeString(uint32_t type, char *typestring);
 int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 
 
 
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode, uint16_t *loopstatus, int *SMfd);
-uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps, uint32_t CMDmode, uint16_t *loopstatus);
-uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps, int *SMfd );
-uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps, int *SMfd );
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode);
+uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps);
 
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry, const char *paramname);
 
@@ -576,7 +640,7 @@ errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex
 errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
-errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps, int *SMfdarray, int fpsindex);
+errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
 
 
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);

@@ -234,6 +234,8 @@ errno_t MyFunction(long arg0num, long arg1num, long arg2num, long arg3num);
 Check function_parameters.h for full list of flags.
 
 ~~~~{.c} 
+
+
 //
 // manages configuration parameters
 // initializes configuration parameters structure
@@ -244,25 +246,19 @@ errno_t MyFunction_FPCONF(
     long optarg00
 )
 {
-	uint16_t loopstatus;
-	
-
-	// ===========================
-	// SETUP FPS
-	// ===========================
-	int SMfd = -1;
-    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fpsname, CMDmode, &loopstatus, &SMfd);
-	strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);
-	fps.md->sourceline = __LINE__;
+    // ===========================
+    // SETUP FPS
+    // ===========================
+    FPS_SETUP_INIT(fpsname, CMDmode); // macro in function_parameter.h
 
 
-	// ===========================
-	// ALLOCATE FPS ENTRIES	
-	// ===========================
-	
-	void *pNull = NULL;
+    // ==============================================
+    // ========= ALLOCATE FPS ENTRIES ===============
+    // ==============================================
+
+    void *pNull = NULL;
     uint64_t FPFLAG;
-    
+
     // Entries are added one by one with function_parameter_add_entry()
     // For each entry, we record the function parameter index (fpi_) returned by the function so that parameters can conveniently be accesses in the "LOGIC" section
     // Arguments:
@@ -274,78 +270,107 @@ errno_t MyFunction_FPCONF(
     //   - initialization pointer. If pNull, then the variable is not initialized
     //
     // Check CommandLineInterface/function_parameters.h for full list of flags.
-     
-    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter", 
-                                     FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
-    
+
+    long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter",
+                       FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
+
     // This parameter will be intitialized to a value of 5, min-max range from 0 to 10, and current value 5
     int64_t param02default[4] = { 5, 0, 10, 5 };
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
     FPFLAG &= ~FPFLAG_WRITECONF;  // Don't allow parameter to be written during configuration
     FPFLAG &= ~FPFLAG_WRITERUN;   // Don't allow parameter to be written during run
-    long fpi_param02 = function_parameter_add_entry(&fps, ".param02", "Second parameter", 
-                                     FPTYPE_INT64, FPFLAG, &param02default);
-    
+    long fpi_param02 = function_parameter_add_entry(&fps, ".param02", "Second parameter",
+                       FPTYPE_INT64, FPFLAG, &param02default);
+
     // if parameter type = FPTYPE_FLOAT32, make sure default is declared as float[4]
     // if parameter type = FPTYPE_FLOAT64, make sure default is declared as double[4]
     float gaindefault[4] = { 0.01, 0.0, 1.0, 0.01 };
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;  // required to enforce the min and max limits
-    long fpi_gain = function_parameter_add_entry(&fps, ".gain", "gain value", 
-                                     FPTYPE_FLOAT32, FPFLAG, &gaindefault);
+    long fpi_gain = function_parameter_add_entry(&fps, ".gain", "gain value",
+                    FPTYPE_FLOAT32, FPFLAG, &gaindefault);
 
 
-	// This parameter is a ON / OFF toggle
-	long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed", 
-                                     FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
-
-	
-	// stream that needs to be loaded on startup
-	FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
-	long fpi_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
-                                     FPTYPE_STREAMNAME, FPFLAG, pNull);
+    // This parameter is a ON / OFF toggle
+    long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed",
+                       FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
 
 
-	// Output file name
-	long fpi_filename_out1          = function_parameter_add_entry(&fps, ".out.fname_out1", "output file 1",
-                                     FPTYPE_FILENAME, FPFLAG_DEFAULT_OUTPUT, pNull);
-	
+    // stream that needs to be loaded on startup
+    FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
+    long fpi_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
+                                    FPTYPE_STREAMNAME, FPFLAG, pNull);
 
-    if( loopstatus == 0 ) // stop fps
-        return RETURN_SUCCESS;
-	
-	
-	// =====================================
-	// PARAMETER LOGIC AND UPDATE LOOP
-	// =====================================
 
-	while ( loopstatus == 1 )
-	{
-	   usleep(50);
-		if( function_parameter_FPCONFloopstep(&fps, CMDmode, &loopstatus) == 1) // Apply logic if update is needed
-		{
-			// here goes the logic
-			if ( fps.parray[fpi_gainset].fpflag & FPFLAG_ONOFF )  // ON state
-                {
-                    fps.parray[fpi_gain].fpflag |= FPFLAG_WRITERUN;
-                    fps.parray[fpi_gain].fpflag |= FPFLAG_USED;
-                    fps.parray[fpi_gain].fpflag |= FPFLAG_VISIBLE;
-                }
-                else // OFF state
-                {
-                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_WRITERUN;
-                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_USED;
-                    fps.parray[fpi_gain].fpflag &= ~FPFLAG_VISIBLE;
-                }
-                
-            functionparameter_CheckParametersAll(&fps);  // check all parameter values
-		}		
+    // Output file name
+    long fpi_filename_out1          = function_parameter_add_entry(&fps, ".out.fname_out1", "output file 1",
+                                      FPTYPE_FILENAME, FPFLAG_DEFAULT_OUTPUT, pNull);
 
-	}
 
-	function_parameter_FPCONFexit( &fps, &SMfd );
+
+
+    // Macros examples
+    // see function_parameters.h
+
+    FPS_ADDPARAM_STREAM_IN  (stream_inname,        ".in_name",     "input stream");
+    FPS_ADDPARAM_STREAM_OUT (stream_outname,       ".out_name",    "output stream");
+
+    long timeavemode_default[4] = { 0, 0, 3, 0 };
+    FPS_ADDPARAM_INT64_IN  (
+        option_timeavemode,
+        ".option.timeavemode",
+        "Enable time window averaging (>0)",
+        &timeavemode_default);
+
+    double avedt_default[4] = { 0.001, 0.0001, 1.0, 0.001};
+    FPS_ADDPARAM_FLT64_IN  (
+        option_avedt,
+        ".option.avedt",
+        "Averaging time window width",
+        &avedt_default);
+
+    // status
+    FPS_ADDPARAM_INT64_OUT (zsize,        ".status.zsize",     "cube size");
+    FPS_ADDPARAM_INT64_OUT (framelog,     ".status.framelag",  "lag in frame unit");
+    FPS_ADDPARAM_INT64_OUT (kkin,         ".status.kkin",      "input cube slice index");
+    FPS_ADDPARAM_INT64_OUT (kkout,        ".status.kkout",     "output cube slice index");
+
+
+
+
+    // ==============================================
+    // ======== START FPS CONF LOOP =================
+    // ==============================================
+    FPS_CONFLOOP_START  // macro in function_parameter.h
+
+    // here goes the logic
+    if ( fps.parray[fpi_gainset].fpflag & FPFLAG_ONOFF )  // ON state
+    {
+        fps.parray[fpi_gain].fpflag |= FPFLAG_WRITERUN;
+        fps.parray[fpi_gain].fpflag |= FPFLAG_USED;
+        fps.parray[fpi_gain].fpflag |= FPFLAG_VISIBLE;
+    }
+    else // OFF state
+    {
+
+        fps.parray[fpi_gain].fpflag &= ~FPFLAG_WRITERUN;
+        fps.parray[fpi_gain].fpflag &= ~FPFLAG_USED;
+        fps.parray[fpi_gain].fpflag &= ~FPFLAG_VISIBLE;
+    }
+
+
+
+    // ==============================================
+    // ======== STOP FPS CONF LOOP ==================
+    // ==============================================
+    FPS_CONFLOOP_END  // macro in function_parameter.h
+
 
     return RETURN_SUCCESS;
 }
+
+
+
+
 ~~~~	
 
 
@@ -375,14 +400,7 @@ errno_t MyFunction_RUN(
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
-	int SMfd = -1;
-	FUNCTION_PARAMETER_STRUCT fps;
-	
-	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN, &SMfd) == -1)
-	{
-		printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
-		return RETURN_FAILURE;
-	}
+	FPS_CONNECT( fpsname, FPSCONNECT_RUN );
 
 	
 	
@@ -429,7 +447,7 @@ errno_t MyFunction_RUN(
 		// This can use a separate shared memory path
 	}
 	
-	function_parameter_RUNexit( &fps, &SMfd );
+	function_parameter_RUNexit( &fps );
 	return RETURN_SUCCESS;
 }
 ~~~~
@@ -514,13 +532,8 @@ errno_t MyFunction_RUN(
 	// ===========================
 	// ### Connect to FPS 
 	// ===========================
-	int SMfd = -1;
-	FUNCTION_PARAMETER_STRUCT fps;
-	if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN, &SMfd) == -1)
-	{
-		printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", fpsname);
-		return RETURN_FAILURE;
-	}
+	FPS_CONNECT( fpsname, FPSCONNECT_RUN );
+	
 	
 	// ===========================	
 	// ### GET FUNCTION PARAMETER VALUES
@@ -625,7 +638,7 @@ errno_t MyFunction_RUN(
 	// ==================================
 
      processinfo_cleanExit(processinfo);
-	function_parameter_RUNexit( &fps, &SMfd );
+	function_parameter_RUNexit( &fps  );
     
 	return RETURN_SUCCESS;
 }
