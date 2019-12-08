@@ -284,13 +284,12 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
 
 errno_t function_parameter_struct_create(
     int NBparamMAX,
-    const char *name,
-    int *SMfd
+    const char *name
 )
 {
     int index;
     char *mapv;
-    FUNCTION_PARAMETER_STRUCT  fps;
+    FUNCTION_PARAMETER_STRUCT fps;
 
     //  FUNCTION_PARAMETER_STRUCT_MD *funcparammd;
     //  FUNCTION_PARAMETER *funcparamarray;
@@ -318,7 +317,7 @@ errno_t function_parameter_struct_create(
         exit(0);
     }
 
-	*SMfd = SM_fd;
+	fps.SMfd = SM_fd;
 
     int result;
     result = lseek(SM_fd, sharedsize-1, SEEK_SET);
@@ -416,8 +415,7 @@ errno_t function_parameter_struct_create(
 long function_parameter_struct_connect(
     const char *name,
     FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsconnectmode,
-    int *SMfd
+    int fpsconnectmode
 ) {
     int stringmaxlen = 500;
     char SM_fname[stringmaxlen];
@@ -428,9 +426,9 @@ long function_parameter_struct_connect(
 
     char shmdname[stringmaxlen];
     
-    if(*SMfd>-1) {
-		printf("[%s %s %d] ERROR: file descriptor already allocated", __FILE__, __func__, __LINE__);
-		exit(0);
+    if(fps->SMfd > -1) {
+		printf("[%s %s %d] ERROR: file descriptor already allocated : %d\n", __FILE__, __func__, __LINE__, fps->SMfd);
+	//	exit(0);
 	}
     
     
@@ -445,7 +443,7 @@ long function_parameter_struct_connect(
     }
     else
     {
-        *SMfd = SM_fd;
+        fps->SMfd = SM_fd;
     }
 
 
@@ -529,7 +527,7 @@ long function_parameter_struct_connect(
 
 
 
-int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct, int *SMfd)
+int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct)
 {
     int NBparamMAX;
 
@@ -537,8 +535,8 @@ int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstr
     //funcparamstruct->md->NBparam = 0;
     funcparamstruct->parray = NULL;
     munmap(funcparamstruct->md, sizeof(FUNCTION_PARAMETER_STRUCT_MD)+sizeof(FUNCTION_PARAMETER)*NBparamMAX);
-    close(*SMfd);
-    *SMfd = -1;
+    close(funcparamstruct->SMfd);
+    funcparamstruct->SMfd = -1;
 
     return(0);
 }
@@ -571,15 +569,14 @@ int function_parameter_SetValue_int64(char *keywordfull, long val)
         pch = strtok (NULL, ".");
     }
 
-	int SMfd = -1;
-    function_parameter_struct_connect(keyword[9], &fps, FPSCONNECT_SIMPLE, &SMfd);
+    function_parameter_struct_connect(keyword[9], &fps, FPSCONNECT_SIMPLE);
 
     int pindex = functionparameter_GetParamIndex(&fps, keywordfull);
 
 
     fps.parray[pindex].val.l[0] = val;
 
-    function_parameter_struct_disconnect(&fps, &SMfd);
+    function_parameter_struct_disconnect(&fps);
 
     return EXIT_SUCCESS;
 }
@@ -1540,20 +1537,21 @@ int function_parameter_add_entry(
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     const char *fpsname,
-    uint32_t CMDmode,
-    uint16_t *loopstatus,
-    int *SMfd
+    uint32_t CMDmode
 ) {
     long NBparamMAX = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
     uint32_t FPSCONNECTFLAG;
 
     FUNCTION_PARAMETER_STRUCT fps;
+    
+    fps.CMDmode = CMDmode;
+    fps.SMfd = -1;
 
 
     if(CMDmode & CMDCODE_FPSINITCREATE) { // (re-)create fps even if it exists
         printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
-        function_parameter_struct_create(NBparamMAX, fpsname, SMfd);
-        function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE, SMfd);
+        function_parameter_struct_create(NBparamMAX, fpsname);
+        function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     } else { // load existing fps if exists
         printf("=== CHECK IF FPS EXISTS\n");
 
@@ -1563,10 +1561,10 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
             FPSCONNECTFLAG = FPSCONNECT_CONF;
         }
 
-        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG, SMfd) == -1) {
+        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1) {
             printf("=== FPS DOES NOT EXISTS -> CREATE\n");
-            function_parameter_struct_create(NBparamMAX, fpsname, SMfd);            
-            function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG, SMfd);
+            function_parameter_struct_create(NBparamMAX, fpsname);            
+            function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         else
         {
@@ -1576,20 +1574,20 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
     if(CMDmode & CMDCODE_CONFSTOP) { // stop fps
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
-        function_parameter_struct_disconnect(&fps, SMfd);
-        *loopstatus = 0; // stop loop
+        function_parameter_struct_disconnect(&fps);
+        fps.loopstatus = 0; // stop loop
     } else {
-        *loopstatus = 1;
+        fps.loopstatus = 1;
     }
 
 
 
     if( (CMDmode & CMDCODE_FPSINITCREATE) || (CMDmode & CMDCODE_FPSINIT) || (CMDmode & CMDCODE_CONFSTOP) ) {
-        *loopstatus = 0; // do not start conf
+        fps.loopstatus = 0; // do not start conf
     }
 
     if ( CMDmode & CMDCODE_CONFSTART ) {
-        *loopstatus = 1;
+        fps.loopstatus = 1;
     }
 
 
@@ -1601,9 +1599,8 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
 
 uint16_t function_parameter_FPCONFloopstep(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    uint32_t CMDmode,
-    uint16_t *loopstatus)
+    FUNCTION_PARAMETER_STRUCT *fps
+    )
 {
     static int loopINIT = 0;
     uint16_t updateFLAG = 0;
@@ -1616,12 +1613,12 @@ uint16_t function_parameter_FPCONFloopstep(
         loopINIT = 1; // update on first loop iteration
         fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
-        if(CMDmode & CMDCODE_CONFSTART) {  // parameter configuration loop
+        if(fps->CMDmode & CMDCODE_CONFSTART) {  // parameter configuration loop
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
             fps->md->confpid = getpid();
-            *loopstatus = 1;
+            fps->loopstatus = 1;
         } else {
-            *loopstatus = 0;
+            fps->loopstatus = 0;
         }
     }
 
@@ -1654,7 +1651,7 @@ uint16_t function_parameter_FPCONFloopstep(
         }
         usleep(fps->md->confwaitus);
     } else {
-        *loopstatus = 0;
+        fps->loopstatus = 0;
     }
 
 
@@ -1669,26 +1666,26 @@ uint16_t function_parameter_FPCONFloopstep(
 
 
 
-uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps, int *SMfd)
+uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps)
 {
 	//fps->md->confpid = 0;
 	
 	
 	fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
-    function_parameter_struct_disconnect(fps, SMfd);
+    function_parameter_struct_disconnect(fps);
     
     return 0;	
 }
 
 
 
-uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps, int *SMfd)
+uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps)
 {
 	//fps->md->confpid = 0;
 	
 	
 	fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
-    function_parameter_struct_disconnect(fps, SMfd);
+    function_parameter_struct_disconnect(fps);
     
     return 0;	
 }
@@ -2159,7 +2156,7 @@ int functionparameter_CheckParameter(
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME) {
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED) {
 			int SMfd = -1;
-			long NBparamMAX = function_parameter_struct_connect(fpsentry->parray[pindex].val.string[0], &fpstest, FPSCONNECT_SIMPLE, &SMfd);
+			long NBparamMAX = function_parameter_struct_connect(fpsentry->parray[pindex].val.string[0], &fpstest, FPSCONNECT_SIMPLE);
             if(NBparamMAX < 1) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
@@ -2169,7 +2166,7 @@ int functionparameter_CheckParameter(
                 err = 1;
             }
             else {
-				function_parameter_struct_disconnect(&fpstest, &SMfd);
+				function_parameter_struct_disconnect(&fpstest);
 			}
         }
     }
@@ -2335,11 +2332,10 @@ int functionparameter_CheckParametersAll(
 int functionparameter_ConnectExternalFPS(
     FUNCTION_PARAMETER_STRUCT *FPS,
     int pindex,
-    FUNCTION_PARAMETER_STRUCT *FPSext,
-    int *SMfd
+    FUNCTION_PARAMETER_STRUCT *FPSext
 )
 {
-    FPS->parray[pindex].info.fps.FPSNBparamMAX = function_parameter_struct_connect(FPS->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE, SMfd);
+    FPS->parray[pindex].info.fps.FPSNBparamMAX = function_parameter_struct_connect(FPS->parray[pindex].val.string[0], FPSext, FPSCONNECT_SIMPLE);
 
     FPS->parray[pindex].info.fps.FPSNBparamActive = 0;
     FPS->parray[pindex].info.fps.FPSNBparamUsed = 0;
@@ -3255,8 +3251,8 @@ int functionparameter_UserInputSetParamValue(
  * - runstart    : start RUN process associated with parameter
  * - runstop     : stop RUN process associated with parameter
  * - fpsrm       : remove fps
- * 
- * - queueprio   : change queue priority 
+ *
+ * - queueprio   : change queue priority
  *
  *
  */
@@ -3267,8 +3263,7 @@ int functionparameter_FPSprocess_cmdline(
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
     KEYWORD_TREE_NODE *keywnode,
     int NBkwn,
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int *SMfdarray
+    FUNCTION_PARAMETER_STRUCT *fps
 ) {
     int stringmaxlen = 500;
     int fpsindex;
@@ -3423,16 +3418,16 @@ int functionparameter_FPSprocess_cmdline(
         }
         else
         {
-			int queue = atoi(FPSarg0);
-			int prio = atoi(FPSarg1);
-			
-			if((queue>=0) && (queue<FPSTASK_MAX_NBQUEUE))
-			{
-				fpsctrlqueuelist[queue].priority = prio;
-				
-				sprintf(msgstring, "QUEUE %d PRIO = %d", queue, prio);
-				functionparameter_outlog("INFO", msgstring);
-			}
+            int queue = atoi(FPSarg0);
+            int prio = atoi(FPSarg1);
+
+            if((queue>=0) && (queue<FPSTASK_MAX_NBQUEUE))
+            {
+                fpsctrlqueuelist[queue].priority = prio;
+
+                sprintf(msgstring, "QUEUE %d PRIO = %d", queue, prio);
+                functionparameter_outlog("INFO", msgstring);
+            }
         }
     }
 
@@ -3604,7 +3599,14 @@ int functionparameter_FPSprocess_cmdline(
                     usleep(dt);
                     timercnt++;
 
-                    sprintf(msgstring, "[%d] waited %d us on FPS %d %s. conferrcnt = %d", looptrycnt, dt*timercnt, fpsindex, fps[fpsindex].md->name, fps[fpsindex].md->conferrcnt);
+                    sprintf(
+                    msgstring, 
+                    "[%d] waited %d us on FPS %d %s. conferrcnt = %d", 
+                    looptrycnt, 
+                    dt*timercnt, 
+                    fpsindex, 
+                    fps[fpsindex].md->name, 
+                    fps[fpsindex].md->conferrcnt);
                     functionparameter_outlog("CONFWUPDATE", msgstring);
                     looptrycnt++;
 
@@ -3718,7 +3720,7 @@ int functionparameter_FPSprocess_cmdline(
             else
             {
                 TESTPOINT(" ");
-                functionparameter_FPSremove(fps, SMfdarray, fpsindex);
+                functionparameter_FPSremove(fps, fpsindex);
 
                 sprintf(msgstring, "FPS remove %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("FPSRM", msgstring);
@@ -3900,22 +3902,47 @@ int functionparameter_FPSprocess_cmdline(
                 switch(fps[fpsindex].parray[pindex].type) {
 
                 case FPTYPE_INT64:
-                    sprintf(msgstring, "%-40s INT64      %ld %ld %ld %ld", FPSentryname, fps[fpsindex].parray[pindex].val.l[0], fps[fpsindex].parray[pindex].val.l[1], fps[fpsindex].parray[pindex].val.l[2], fps[fpsindex].parray[pindex].val.l[3]);
+                    sprintf(
+                        msgstring,
+                        "%-40s INT64      %ld %ld %ld %ld",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.l[0],
+                        fps[fpsindex].parray[pindex].val.l[1],
+                        fps[fpsindex].parray[pindex].val.l[2],
+                        fps[fpsindex].parray[pindex].val.l[3]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_FLOAT64:
-                    sprintf(msgstring, "%-40s FLOAT64    %f %f %f %f", FPSentryname, fps[fpsindex].parray[pindex].val.f[0], fps[fpsindex].parray[pindex].val.f[1], fps[fpsindex].parray[pindex].val.f[2], fps[fpsindex].parray[pindex].val.f[3]);
+                    sprintf(
+                        msgstring,
+                        "%-40s FLOAT64    %f %f %f %f",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.f[0],
+                        fps[fpsindex].parray[pindex].val.f[1],
+                        fps[fpsindex].parray[pindex].val.f[2],
+                        fps[fpsindex].parray[pindex].val.f[3]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_FLOAT32:
-                    sprintf(msgstring, "%-40s FLOAT32    %f %f %f %f", FPSentryname, fps[fpsindex].parray[pindex].val.s[0], fps[fpsindex].parray[pindex].val.s[1], fps[fpsindex].parray[pindex].val.s[2], fps[fpsindex].parray[pindex].val.s[3]);
+                    sprintf(
+                        msgstring,
+                        "%-40s FLOAT32    %f %f %f %f",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.s[0],
+                        fps[fpsindex].parray[pindex].val.s[1],
+                        fps[fpsindex].parray[pindex].val.s[2],
+                        fps[fpsindex].parray[pindex].val.s[3]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_PID:
-                    sprintf(msgstring, "%-40s PID        %ld", FPSentryname, fps[fpsindex].parray[pindex].val.l[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s PID        %ld",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.l[0]);
                     cmdOK = 1;
                     break;
 
@@ -3924,32 +3951,56 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_FILENAME:
-                    sprintf(msgstring, "%-40s FILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s FILENAME   %s",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_FITSFILENAME:
-                    sprintf(msgstring, "%-40s FITSFILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s FITSFILENAME   %s",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_EXECFILENAME:
-                    sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s EXECFILENAME   %s",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_DIRNAME:
-                    sprintf(msgstring, "%-40s DIRNAME    %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s DIRNAME    %s",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_STREAMNAME:
-                    sprintf(msgstring, "%-40s STREAMNAME %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s STREAMNAME %s",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
                 case FPTYPE_STRING:
-                    sprintf(msgstring, "%-40s STRING     %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    sprintf(
+                        msgstring,
+                        "%-40s STRING     %s",
+                        FPSentryname,
+                        fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
@@ -4218,8 +4269,7 @@ int function_parameter_process_fpsCMDarray(
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
     KEYWORD_TREE_NODE *keywnode,
     int NBkwn,
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int *SMfdarray
+    FUNCTION_PARAMETER_STRUCT *fps
 ) {
     // the scheduler handles multiple queues
     // in each queue, we look for a task to run, and run it if conditions are met
@@ -4261,7 +4311,7 @@ int function_parameter_process_fpsCMDarray(
 
                     if(cmdOK == 1) {
                         if( !(fpsctrltasklist[cmdindexExec].status & FPSTASK_STATUS_RUNNING) ) { // if not running, launch it
-                            fpsctrltasklist[cmdindexExec].fpsindex = functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring, fpsctrlqueuelist, keywnode, NBkwn, fps, SMfdarray);
+                            fpsctrltasklist[cmdindexExec].fpsindex = functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring, fpsctrlqueuelist, keywnode, NBkwn, fps);
                             clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
                             fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_RUNNING; // update status to running
                         }
@@ -4459,7 +4509,6 @@ errno_t functionparameter_CONFstop(
 
 errno_t functionparameter_FPSremove(
     FUNCTION_PARAMETER_STRUCT *fps,
-    int *SMfdarray,
     int fpsindex
 ) {
 	int stringmaxlen = 500;
@@ -4483,8 +4532,8 @@ errno_t functionparameter_FPSremove(
     snprintf(fpsfname, stringmaxlen, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
 
 
-	SMfdarray[fpsindex] = -1;
-	close(SMfdarray[fpsindex]);
+	fps[fpsindex].SMfd = -1;
+	close(fps[fpsindex].SMfd);
 	
     remove(conflogfname);
     remove(fpsfname);
@@ -4519,21 +4568,30 @@ errno_t functionparameter_FPSremove(
 
 
 errno_t functionparameter_outlog_file(
-	char *keyw,
+    char *keyw,
     char *msgstring,
     FILE *fpout
 ) {
     // Get GMT time
     struct timespec tnow;
     time_t now;
-    
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     now = tnow.tv_sec;
     struct tm *uttime;
     uttime = gmtime(&now);
 
     char timestring[200];
-    sprintf(timestring, "%04d%02d%02d%02d%02d%02d.%09ld", 1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+    sprintf(
+        timestring,
+        "%04d%02d%02dT%02d%02d%02d.%09ld",
+        1900+uttime->tm_year,
+        1+uttime->tm_mon,
+        uttime->tm_mday,
+        uttime->tm_hour,
+        uttime->tm_min,
+        uttime->tm_sec,
+        tnow.tv_nsec);
 
     fprintf(fpout, "%s %-12s %s\n", timestring, keyw, msgstring);
     fflush(fpout);
@@ -4591,7 +4649,6 @@ static errno_t functionparameter_scan_fps(
     uint32_t mode,
     char *fpsnamemask,
     FUNCTION_PARAMETER_STRUCT *fps,
-    int *SMfdarray,
     KEYWORD_TREE_NODE *keywnode,
     int *ptr_NBkwn,
     int *ptr_fpsindex,
@@ -4643,8 +4700,8 @@ static errno_t functionparameter_scan_fps(
 
     // disconnect previous fps
     for(fpsindex=0; fpsindex<NB_FPS_MAX; fpsindex++) {
-        if(SMfdarray[fpsindex]>-1) { // connected
-            function_parameter_struct_disconnect(&fps[fpsindex], &SMfdarray[fpsindex]);
+        if(fps[fpsindex].SMfd > -1) { // connected
+            function_parameter_struct_disconnect(&fps[fpsindex]);
         }
     }
 
@@ -4692,6 +4749,12 @@ static errno_t functionparameter_scan_fps(
         nodechain[l] = 0;
         GUIlineSelected[l] = 0;
     }
+
+	for( int kindex = 0; kindex <NB_KEYWNODE_MAX; kindex++ ) {
+				keywnode[kindex].NBchild = 0;
+		}
+		 
+
 
 
     //    NBparam = function_parameter_struct_connect(fpsname, &fps[fpsindex]);
@@ -4813,7 +4876,7 @@ static errno_t functionparameter_scan_fps(
                 }
 
 
-                long NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE, &SMfdarray[fpsindex]);
+                long NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
 
 
                 long i;
@@ -5058,15 +5121,41 @@ inline static void fpsCTRLscreen_print_help() {
 
 
 
-inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps, KEYWORD_TREE_NODE *keywnode, int nodeSelected, int fpsindexSelected, int pindexSelected) {
-	
-    TESTPOINT("Selected node %d in fps %d", nodeSelected, keywnode[nodeSelected].fpsindex);
-    printw("========= FPS info node %d %d ============\n", nodeSelected, keywnode[nodeSelected].fpsindex);
-    printw("Source  : %s %d\n", fps[keywnode[nodeSelected].fpsindex].md->sourcefname, fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+inline static void fpsCTRLscreen_print_nodeinfo(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    KEYWORD_TREE_NODE *keywnode,
+    int nodeSelected,
+    int fpsindexSelected,
+    int pindexSelected) {
+
+    TESTPOINT("Selected node %d in fps %d",
+              nodeSelected,
+              keywnode[nodeSelected].fpsindex);
+
+    printw("========= FPS info node %d %d ============\n",
+           nodeSelected,
+           keywnode[nodeSelected].fpsindex);
+
+
+	char teststring[200];
+	sprintf(teststring, "%s", fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
+	TESTPOINT("TEST STRING : %s", teststring);
+
+
+	TESTPOINT("TEST LINE : %d", fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+
+    printw("Source  : %s %d\n",
+           fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
+           fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+
     TESTPOINT(" ");
-    printw("Root directory    : %s\n", fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
+    printw("Root directory    : %s\n",
+           fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
+
     TESTPOINT(" ");
-    printw("tmux sessions     :  %s-conf  %s-run\n", fps[keywnode[nodeSelected].fpsindex].md->name, fps[keywnode[nodeSelected].fpsindex].md->name);
+    printw("tmux sessions     :  %s-conf  %s-run\n",
+           fps[keywnode[nodeSelected].fpsindex].md->name,
+           fps[keywnode[nodeSelected].fpsindex].md->name);
 
     TESTPOINT(" ");
     printw("========= NODE info ============\n");
@@ -5074,7 +5163,9 @@ inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps, 
 
     if(keywnode[nodeSelected].leaf > 0) { // If this is not a directory
         char typestring[100];
-        functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type, typestring);
+        functionparameter_GetTypeString(
+            fps[fpsindexSelected].parray[pindexSelected].type,
+            typestring);
         printw("type %s\n", typestring);
 
         // print binary flag
@@ -5101,14 +5192,15 @@ inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps, 
 
 
 
+
+
+
+
 inline static void fpsCTRLscreen_level0node_summary(
     FUNCTION_PARAMETER_STRUCT *fps,
-    int *SMfdarray,
     int fpsindex)
 {
     pid_t pid;
-
-    //printw("%5d ", SMfdarray[fpsindex]);
 
     pid = fps[fpsindex].md->confpid;
     if((getpgid(pid) >= 0) && (pid > 0)) {
@@ -5180,7 +5272,6 @@ inline static void fpsCTRLscreen_level0node_summary(
 inline static int fpsCTRLscreen_process_user_key(
     int ch,
     FUNCTION_PARAMETER_STRUCT *fps,
-    int *SMfdarray,
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_TASK_ENTRY *fpsctrltasklist,
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
@@ -5220,7 +5311,6 @@ inline static int fpsCTRLscreen_process_user_key(
             fpsCTRLgui->mode,
             fpsCTRLgui->fpsnamemask,
             fps,
-            SMfdarray,
             keywnode,
             &fpsCTRLgui->NBkwn,
             &fpsCTRLgui->NBfps,
@@ -5231,13 +5321,12 @@ inline static int fpsCTRLscreen_process_user_key(
 
     case 'e' : // erase FPS
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
-        functionparameter_FPSremove(fps, SMfdarray, fpsindex);
+        functionparameter_FPSremove(fps, fpsindex);
         
         functionparameter_scan_fps(
             fpsCTRLgui->mode,
             fpsCTRLgui->fpsnamemask,
             fps,
-            SMfdarray,
             keywnode,
             &fpsCTRLgui->NBkwn,
             &(fpsCTRLgui->NBfps),
@@ -5253,12 +5342,11 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'E' : // Erase FPS and close tmux sessions
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
         
-        functionparameter_FPSremove(fps, SMfdarray, fpsindex);
+        functionparameter_FPSremove(fps, fpsindex);
         functionparameter_scan_fps(
             fpsCTRLgui->mode,
             fpsCTRLgui->fpsnamemask,
             fps,
-            SMfdarray,
             keywnode,
             &fpsCTRLgui->NBkwn,
             &fpsCTRLgui->NBfps,
@@ -5280,6 +5368,9 @@ inline static int fpsCTRLscreen_process_user_key(
         if(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > fpsCTRLgui->NBindex - 1) {
             fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = fpsCTRLgui->NBindex - 1;
         }
+        if(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > keywnode[fpsCTRLgui->directorynodeSelected].NBchild-1) {
+			fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = keywnode[fpsCTRLgui->directorynodeSelected].NBchild-1;
+		}        
         break;
 
     case KEY_PPAGE:
@@ -5291,9 +5382,12 @@ inline static int fpsCTRLscreen_process_user_key(
 
     case KEY_NPAGE:
         fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] += 10;
-        if(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > fpsCTRLgui->NBindex - 1) {
+        while(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > fpsCTRLgui->NBindex - 1) {
             fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = fpsCTRLgui->NBindex - 1;
         }
+        while(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > keywnode[fpsCTRLgui->directorynodeSelected].NBchild-1) {
+			fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = keywnode[fpsCTRLgui->directorynodeSelected].NBchild-1;
+		}    
         break;
 
 
@@ -5451,7 +5545,7 @@ inline static int fpsCTRLscreen_process_user_key(
 
             while((read = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
                 printf("Processing line : %s\n", FPScmdline);
-                functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode, fpsCTRLgui->NBkwn, fps, SMfdarray);
+                functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode, fpsCTRLgui->NBkwn, fps);
             }
             fclose(fpinputcmd);
         }
@@ -5496,7 +5590,6 @@ errno_t functionparameter_CTRLscreen(
 
 
     FUNCTION_PARAMETER_STRUCT *fps;
-    int *SMfdarray;
 
 
     // function parameters
@@ -5528,11 +5621,6 @@ errno_t functionparameter_CTRLscreen(
     char msg[stringmaxlen];
 
 
-    int fpsCTRL_DisplayMode = 2;
-    // 1: [h]  help
-    // 2: [F2] list of conf and run
-    // 3: [F3] fpscmdarray
-
 
 
     // input command
@@ -5555,20 +5643,25 @@ errno_t functionparameter_CTRLscreen(
     fpsCTRLgui.directorynodeSelected = 0;
     fpsCTRLgui.currentlevel = 0;
 
+    fpsCTRLgui.fpsCTRL_DisplayMode = 2;
+    // 1: [h]  help
+    // 2: [F2] list of conf and run
+    // 3: [F3] fpscmdarray
+
+
+
+
+
     // allocate memory
 
 
     // Array holding fps structures
     fps = (FUNCTION_PARAMETER_STRUCT *) malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * NB_FPS_MAX);
-
-    // File descriptors for each shared memory fps
-    // This is internal to the process (not shared) and keeps track of which entries in the fps
-    // array are loaded
-    SMfdarray = (int*) malloc(sizeof(int) * NB_FPS_MAX);
+    
 
     // Initialize file descriptors to -1
     for(fpsindex = 0; fpsindex<NB_FPS_MAX; fpsindex++) {
-        SMfdarray[fpsindex] = -1;
+		fps[fpsindex].SMfd = -1;
     }
 
     // All parameters held in this array
@@ -5610,8 +5703,18 @@ errno_t functionparameter_CTRLscreen(
         fpsCTRLgui.GUIlineSelected[level] = 0;
 
 
-    functionparameter_scan_fps(fpsCTRLgui.mode, fpsCTRLgui.fpsnamemask, fps, SMfdarray, keywnode, &fpsCTRLgui.NBkwn, &fpsCTRLgui.NBfps, &NBpindex, 1);
-    printf("%d function parameter structure(s) imported, %ld parameters\n", fpsCTRLgui.NBfps, NBpindex);
+
+
+    functionparameter_scan_fps(
+        fpsCTRLgui.mode,
+        fpsCTRLgui.fpsnamemask,
+        fps,
+        keywnode,
+        &fpsCTRLgui.NBkwn,
+        &fpsCTRLgui.NBfps,
+        &NBpindex, 1);
+    printf("%d function parameter structure(s) imported, %ld parameters\n",
+           fpsCTRLgui.NBfps, NBpindex);
     fflush(stdout);
     TESTPOINT(" ");
 
@@ -5672,7 +5775,6 @@ errno_t functionparameter_CTRLscreen(
         loopOK = fpsCTRLscreen_process_user_key(
                      ch,
                      fps,
-                     SMfdarray,
                      keywnode,
                      fpsctrltasklist,
                      fpsctrlqueuelist,
@@ -5698,16 +5800,8 @@ errno_t functionparameter_CTRLscreen(
         if( fpsCTRLgui.run_display == 1)	{
 
             erase();
-            fpsCTRLscreen_print_DisplayMode_status(fpsCTRL_DisplayMode, fpsCTRLgui.NBfps);
+            fpsCTRLscreen_print_DisplayMode_status(fpsCTRLgui.fpsCTRL_DisplayMode, fpsCTRLgui.NBfps);
 
-            printw("\n");
-            printw("psCTRLgui.nodeSelected            : %d\n", fpsCTRLgui.nodeSelected);
-            printw("psCTRLgui.fpsindexSelected        : %d\n", fpsCTRLgui.fpsindexSelected);
-            printw("psCTRLgui.currentlevel            : %d\n", fpsCTRLgui.currentlevel);
-            printw("psCTRLgui.directorynodeSelected   : %d\n", fpsCTRLgui.directorynodeSelected);
-            printw("psCTRLgui.pindexSelected          : %d\n", fpsCTRLgui.pindexSelected);
-            printw("knodeindex                        : %d\n", keywnode[fpsCTRLgui.directorynodeSelected].child[0]);
-            printw("\n");
 
 
             TESTPOINT(" ");
@@ -5715,19 +5809,20 @@ errno_t functionparameter_CTRLscreen(
             printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLgui.fpsCTRLfifoname, fpsCTRLgui.fpsCTRLfifofd, fifocmdcnt);
             int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLgui.fpsCTRLfifofd, fpsctrltasklist, fpsctrlqueuelist);
             TESTPOINT(" ");
-            function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist, keywnode, fpsCTRLgui.NBkwn, fps, SMfdarray);
+            function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist, keywnode, fpsCTRLgui.NBkwn, fps);
             fifocmdcnt += fcnt;
             TESTPOINT(" ");
             printw("OUTPUT LOG:  %s/fpslog.%06d\n", shmdname, getpid());
             TESTPOINT(" ");
 
 
-            if(fpsCTRL_DisplayMode == 1) { // help
+            if(fpsCTRLgui.fpsCTRL_DisplayMode == 1) { // help
                 fpsCTRLscreen_print_help();
             }
 
 
-            if(fpsCTRL_DisplayMode == 2) { // FPS content
+            if(fpsCTRLgui.fpsCTRL_DisplayMode == 2) { // FPS content
+
 
                 TESTPOINT("Check that selected node is OK");
                 if(strlen(keywnode[fpsCTRLgui.nodeSelected].keywordfull)<1) { // if not OK, set to last valid entry
@@ -5739,7 +5834,12 @@ errno_t functionparameter_CTRLscreen(
                 TESTPOINT("Get info from selected node");
                 fpsCTRLgui.fpsindexSelected = keywnode[fpsCTRLgui.nodeSelected].fpsindex;
                 fpsCTRLgui.pindexSelected = keywnode[fpsCTRLgui.nodeSelected].pindex;
-                fpsCTRLscreen_print_nodeinfo(fps, keywnode, fpsCTRLgui.nodeSelected, fpsCTRLgui.fpsindexSelected, fpsCTRLgui.pindexSelected);
+                fpsCTRLscreen_print_nodeinfo(
+                    fps,
+                    keywnode,
+                    fpsCTRLgui.nodeSelected,
+                    fpsCTRLgui.fpsindexSelected,
+                    fpsCTRLgui.pindexSelected);
 
 
 
@@ -5761,21 +5861,29 @@ errno_t functionparameter_CTRLscreen(
                         GUIlineMax = keywnode[nodechain[level]].NBchild;
                     }
                 }
+                printw("level = %d    NB child = %d\n", fpsCTRLgui.currentlevel,  keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
 
 
-                printw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
+          /*      printw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
                        fpsCTRLgui.directorynodeSelected,
                        fpsCTRLgui.nodeSelected,
                        GUIlineMax);
+                printw("LINE: %d / %d\n\n",
+                       fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel],
+                       keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
+				*/
+				
+				while(fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] >
+                       keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1) {
+						   fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]--;
+					   }
 
 
+                int child_index[MAXNBLEVELS];
+                for(level = 0; level <MAXNBLEVELS ; level ++) {
+                    child_index[level] = 0;
+                }
 
-
-
-
-
-
-                int child_index = 0;
 
 
 
@@ -5794,10 +5902,11 @@ errno_t functionparameter_CTRLscreen(
                             //TODO: adjust len to string
                             char pword[100];
 
-                            TESTPOINT("provide a fps status summary if at root");
+
                             if(level==0) {
+                                TESTPOINT("provide a fps status summary if at root");
                                 fpsindex = keywnode[knodeindex].fpsindex;
-                                fpsCTRLscreen_level0node_summary(fps, SMfdarray, fpsindex);
+                                fpsCTRLscreen_level0node_summary(fps, fpsindex);
                             }
 
                             // toggle highlight if node is in the chain
@@ -5833,31 +5942,38 @@ errno_t functionparameter_CTRLscreen(
 
                         } else { // blank space
                             if(level==0) {
-                                printw("                 ");
+                                printw("                  ");
                             }
-                            printw("             ");
+                            printw("            ");
                         }
                     }
 
 
+
+
+
+
                     int knodeindex;
-                    knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index];
+                    knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index[level]];
                     if(knodeindex < fpsCTRLgui.NBkwn )
                     {
                         fpsindex = keywnode[knodeindex].fpsindex;
                         pindex = keywnode[knodeindex].pindex;
 
-                        if(child_index > keywnode[fpsCTRLgui.directorynodeSelected].NBchild - 1) {
-                            child_index = keywnode[fpsCTRLgui.directorynodeSelected].NBchild - 1;
+                        if(child_index[level] > keywnode[fpsCTRLgui.directorynodeSelected].NBchild - 1) {
+                            child_index[level] = keywnode[fpsCTRLgui.directorynodeSelected].NBchild - 1;
                         }
 
                         if(fpsCTRLgui.currentlevel != 0) { // this does not apply to root menu
                             while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) &&
-                                    (child_index < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {     // if not visible, advance to next one
-                                child_index++;
-                                TESTPOINT("knodeindex = %d  child %d / %d", knodeindex, child_index,  keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
+                                    (child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {     // if not visible, advance to next one
+                                child_index[level] ++;
+                                TESTPOINT("knodeindex = %d  child %d / %d",
+                                          knodeindex,
+                                          child_index[level],
+                                          keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
                                 abort();//TBE
-                                knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index];
+                                knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index[level]];
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 pindex = keywnode[knodeindex].pindex;
                             }
@@ -5865,7 +5981,7 @@ errno_t functionparameter_CTRLscreen(
 
                         TESTPOINT(" ");
 
-                        if(child_index < keywnode[fpsCTRLgui.directorynodeSelected].NBchild) {
+                        if(child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild) {
 
                             if(fpsCTRLgui.currentlevel > 0)
                             {
@@ -5875,16 +5991,16 @@ errno_t functionparameter_CTRLscreen(
                             }
 
                             TESTPOINT(" ");
-                            
+
                             if(keywnode[knodeindex].leaf == 0) { // If this is a directory
-TESTPOINT(" ");
+                                TESTPOINT(" ");
                                 if(fpsCTRLgui.currentlevel == 0) { // provide a status summary if at root
                                     TESTPOINT(" ");
-                                    
+
                                     fpsindex = keywnode[knodeindex].fpsindex;
                                     pid_t pid;
                                     TESTPOINT(" ");
-                                    printw("%5d ", SMfdarray[fpsindex]);
+                                    printw("%5d ", fps[fpsindex].SMfd);
 
                                     pid = fps[fpsindex].md->confpid;
                                     if((getpgid(pid) >= 0) && (pid > 0)) {
@@ -5942,29 +6058,42 @@ TESTPOINT(" ");
                                     }
                                 }
 
+
+
+
+
                                 if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
                                     attron(A_REVERSE);
                                     fpsCTRLgui.nodeSelected = knodeindex;
                                     fpsCTRLgui.fpsindexSelected = keywnode[knodeindex].fpsindex;
                                 }
-                                attron(COLOR_PAIR(5));
-                                level = keywnode[knodeindex].keywordlevel;
-                                printw("%-16s", keywnode[knodeindex].keyword[level - 1]);
-                                attroff(COLOR_PAIR(5));
 
-                                if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
-                                    attroff(A_REVERSE);
+
+                                if(child_index[level+1] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild)
+                                {
+                                    attron(COLOR_PAIR(5));
+                                    level = keywnode[knodeindex].keywordlevel;
+                                    printw("%-16s", keywnode[knodeindex].keyword[level - 1]);
+                                    attroff(COLOR_PAIR(5));
+
+                                    if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
+                                        attroff(A_REVERSE);
+                                    }
                                 }
+                                else {
+                                    printw("%-16s", " ");
+                                }
+
 
                                 TESTPOINT(" ");
 
                             }
                             else { // If this is a parameter
-								TESTPOINT(" ");
+                                TESTPOINT(" ");
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 pindex = keywnode[knodeindex].pindex;
 
-TESTPOINT(" ");
+                                TESTPOINT(" ");
                                 if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE) {
                                     int kl;
 
@@ -5975,7 +6104,7 @@ TESTPOINT(" ");
 
                                         attron(COLOR_PAIR(10) | A_BOLD);
                                     }
-TESTPOINT(" ");
+                                    TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
                                         attron(COLOR_PAIR(10) | A_BLINK);
                                         printw("W "); // writable
@@ -5993,7 +6122,7 @@ TESTPOINT(" ");
                                     if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
                                         attroff(COLOR_PAIR(10));
                                     }
-TESTPOINT(" ");
+                                    TESTPOINT(" ");
                                     printw("   ");
 
                                     // VALUE
@@ -6097,7 +6226,8 @@ TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_PID) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(fps[fpsindex].parray[pindex].val.pid[0] != fps[fpsindex].parray[pindex].val.pid[1]) {
+                                                if(fps[fpsindex].parray[pindex].val.pid[0] !=
+                                                        fps[fpsindex].parray[pindex].val.pid[1]) {
                                                     paramsync = 0;
                                                 }
 
@@ -6125,7 +6255,8 @@ TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_FILENAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                          fps[fpsindex].parray[pindex].val.string[1])) {
                                                     paramsync = 0;
                                                 }
 
@@ -6144,7 +6275,8 @@ TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                          fps[fpsindex].parray[pindex].val.string[1])) {
                                                     paramsync = 0;
                                                 }
 
@@ -6162,7 +6294,8 @@ TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                          fps[fpsindex].parray[pindex].val.string[1])) {
                                                     paramsync = 0;
                                                 }
 
@@ -6180,7 +6313,8 @@ TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                          fps[fpsindex].parray[pindex].val.string[1])) {
                                                     paramsync = 0;
                                                 }
 
@@ -6207,7 +6341,9 @@ TESTPOINT(" ");
                                                     attron(COLOR_PAIR(2));
                                                 }
 
-                                        printw("[%d]  %10s", fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation, fps[fpsindex].parray[pindex].val.string[0]);
+                                        printw("[%d]  %10s",
+                                               fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
+                                               fps[fpsindex].parray[pindex].val.string[0]);
 
                                         if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
 
@@ -6261,7 +6397,8 @@ TESTPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_FPSNAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                          fps[fpsindex].parray[pindex].val.string[1])) {
                                                     paramsync = 0;
                                                 }
 
@@ -6272,7 +6409,11 @@ TESTPOINT(" ");
                                             attron(COLOR_PAIR(4));
                                         }
 
-                                        printw(" %10s [%ld %ld %ld]", fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX, fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive, fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
+                                        printw(" %10s [%ld %ld %ld]",
+                                               fps[fpsindex].parray[pindex].val.string[0],
+                                               fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
+                                               fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
+                                               fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
                                         if(paramsync == 0) {
                                             attroff(COLOR_PAIR(2));
@@ -6301,10 +6442,13 @@ TESTPOINT(" ");
                             }
 
 
-TESTPOINT(" ");
+                            TESTPOINT(" ");
                             icnt++;
 
-                            child_index ++;
+
+                            for(level = 0; level <MAXNBLEVELS ; level ++) {
+                                child_index[level] ++;
+                            }
                         }
                     }
 
@@ -6321,8 +6465,8 @@ TESTPOINT(" ");
 
                 TESTPOINT(" ");
 
+                printw("\n");
 
-                printw("------------- FUNCTION PARAMETER STRUCTURE   %s\n", fps[fpsCTRLgui.fpsindexSelected].md->name);
                 if(fps[fpsCTRLgui.fpsindexSelected].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
                     attron(COLOR_PAIR(2));
                     printw("[%ld] PARAMETERS OK - RUN function good to go\n", fps[fpsCTRLgui.fpsindexSelected].md->msgcnt);
@@ -6331,14 +6475,18 @@ TESTPOINT(" ");
                     int msgi;
 
                     attron(COLOR_PAIR(4));
-                    printw("[%ld] %d PARAMETER SETTINGS ERROR(s) :\n", fps[fpsCTRLgui.fpsindexSelected].md->msgcnt, fps[fpsCTRLgui.fpsindexSelected].md->conferrcnt);
+                    printw("[%ld] %d PARAMETER SETTINGS ERROR(s) :\n",
+                           fps[fpsCTRLgui.fpsindexSelected].md->msgcnt,
+                           fps[fpsCTRLgui.fpsindexSelected].md->conferrcnt);
                     attroff(COLOR_PAIR(4));
 
                     attron(A_BOLD);
 
                     for(msgi = 0; msgi < fps[fpsCTRLgui.fpsindexSelected].md->msgcnt; msgi++) {
                         pindex = fps[fpsCTRLgui.fpsindexSelected].md->msgpindex[msgi];
-                        printw("%-40s %s\n", fps[fpsCTRLgui.fpsindexSelected].parray[pindex].keywordfull, fps[fpsCTRLgui.fpsindexSelected].md->message[msgi]);
+                        printw("%-40s %s\n",
+                               fps[fpsCTRLgui.fpsindexSelected].parray[pindex].keywordfull,
+                               fps[fpsCTRLgui.fpsindexSelected].md->message[msgi]);
                     }
 
                     attroff(A_BOLD);
@@ -6351,7 +6499,7 @@ TESTPOINT(" ");
 
             TESTPOINT(" ");
 
-            if(fpsCTRL_DisplayMode == 3) { // Task scheduler status
+            if(fpsCTRLgui.fpsCTRL_DisplayMode == 3) { // Task scheduler status
                 struct timespec tnow;
                 struct timespec tdiff;
 
@@ -6489,7 +6637,13 @@ TESTPOINT(" ");
         loopcnt++;
 
 #ifndef STANDALONE
-        if((data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1) || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1) || (data.signal_PIPE == 1)) {
+        if((data.signal_TERM == 1)
+                || (data.signal_INT == 1)
+                || (data.signal_ABRT == 1)
+                || (data.signal_BUS == 1)
+                || (data.signal_SEGV == 1)
+                || (data.signal_HUP == 1)
+                || (data.signal_PIPE == 1)) {
             printf("Exit condition met\n");
             loopOK = 0;
         }
@@ -6501,11 +6655,10 @@ TESTPOINT(" ");
     functionparameter_outlog("FPSCTRL", "STOP");
 
     for(fpsindex = 0; fpsindex < fpsCTRLgui.NBfps; fpsindex++) {
-        function_parameter_struct_disconnect(&fps[fpsindex], &SMfdarray[fpsindex]);
+        function_parameter_struct_disconnect(&fps[fpsindex]);
     }
 
     free(fps);
-    free(SMfdarray);
     free(keywnode);
 
 
