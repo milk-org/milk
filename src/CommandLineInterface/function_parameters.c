@@ -201,6 +201,7 @@ typedef struct
     int leaf; // 1 if this is a leaf (no child)
     int fpsindex;
     int pindex;
+    
 
 } KEYWORD_TREE_NODE;
 
@@ -4879,12 +4880,12 @@ static errno_t functionparameter_scan_fps(
                 long NBparamMAX = function_parameter_struct_connect(fpsname, &fps[fpsindex], FPSCONNECT_SIMPLE);
 
 
-                long i;
-                for(i = 0; i < NBparamMAX; i++) {
-                    if(fps[fpsindex].parray[i].fpflag & FPFLAG_ACTIVE) { // if entry is active
+                long pindex0;
+                for(pindex0 = 0; pindex0 < NBparamMAX; pindex0++) {
+                    if(fps[fpsindex].parray[pindex0].fpflag & FPFLAG_ACTIVE) { // if entry is active
                         // find or allocate keyword node
                         int level;
-                        for(level = 1; level < fps[fpsindex].parray[i].keywordlevel + 1; level++) {
+                        for(level = 1; level < fps[fpsindex].parray[pindex0].keywordlevel + 1; level++) {
 
                             // does node already exist ?
                             int scanOK = 0;
@@ -4892,7 +4893,7 @@ static errno_t functionparameter_scan_fps(
                                 if(keywnode[kwnindex].keywordlevel == level) { // levels have to match
                                     int match = 1;
                                     for(l = 0; l < level; l++) { // keywords at all levels need to match
-                                        if(strcmp(fps[fpsindex].parray[i].keyword[l], keywnode[kwnindex].keyword[l]) != 0) {
+                                        if(strcmp(fps[fpsindex].parray[pindex0].keyword[l], keywnode[kwnindex].keyword[l]) != 0) {
                                             match = 0;
                                         }
                                         //                        printf("TEST MATCH : %16s %16s  %d\n", fps[fpsindex].parray[i].keyword[l], keywnode[kwnindex].keyword[l], match);
@@ -4918,7 +4919,7 @@ static errno_t functionparameter_scan_fps(
                                         int match = 1;
 
                                         for(l = 0; l < level - 1; l++) { // keywords at all levels need to match
-                                            if(strcmp(fps[fpsindex].parray[i].keyword[l], keywnode[kwnindexp].keyword[l]) != 0) {
+                                            if(strcmp(fps[fpsindex].parray[pindex0].keyword[l], keywnode[kwnindexp].keyword[l]) != 0) {
                                                 match = 0;
                                             }
                                         }
@@ -4937,20 +4938,14 @@ static errno_t functionparameter_scan_fps(
                                     keywnode[keywnode[kwnindex].parent_index].NBchild++;
                                 }
 
-
-
-
                                 if(verbose > 0) {
                                     printf("CREATING NODE %d ", kwnindex);
                                 }
                                 keywnode[kwnindex].keywordlevel = level;
 
-
-
-
                                 for(l = 0; l < level; l++) {
                                     char tmpstring[200];
-                                    strcpy(keywnode[kwnindex].keyword[l], fps[fpsindex].parray[i].keyword[l]);
+                                    strcpy(keywnode[kwnindex].keyword[l], fps[fpsindex].parray[pindex0].keyword[l]);
                                     printf(" %s", keywnode[kwnindex].keyword[l]);
                                     if(l == 0) {
                                         strcpy(keywnode[kwnindex].keywordfull, keywnode[kwnindex].keyword[l]);
@@ -4960,24 +4955,21 @@ static errno_t functionparameter_scan_fps(
                                     }
                                 }
                                 if(verbose > 0) {
-                                    printf("   %d %d\n", keywnode[kwnindex].keywordlevel, fps[fpsindex].parray[i].keywordlevel);
+                                    printf("   %d %d\n", keywnode[kwnindex].keywordlevel, fps[fpsindex].parray[pindex0].keywordlevel);
                                 }
 
-                                if(keywnode[kwnindex].keywordlevel == fps[fpsindex].parray[i].keywordlevel) {
+                                if(keywnode[kwnindex].keywordlevel == fps[fpsindex].parray[pindex0].keywordlevel) {
                                     //									strcpy(keywnode[kwnindex].keywordfull, fps[fpsindex].parray[i].keywordfull);
 
                                     keywnode[kwnindex].leaf = 1;
                                     keywnode[kwnindex].fpsindex = fpsindex;
-                                    keywnode[kwnindex].pindex = i;
+                                    keywnode[kwnindex].pindex = pindex0;
                                 } else {
 
 
                                     keywnode[kwnindex].leaf = 0;
                                     keywnode[kwnindex].fpsindex = fpsindex;
                                 }
-
-
-
 
                                 kwnindex ++;
                                 NBkwn = kwnindex;
@@ -5357,13 +5349,16 @@ inline static int fpsCTRLscreen_process_user_key(
         break;
 
     case KEY_UP:
+		fpsCTRLgui->direction = -1;
         fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] --;
         if(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] < 0) {
             fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = 0;
         }
         break;
 
+
     case KEY_DOWN:
+		fpsCTRLgui->direction = 1;
         fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] ++;
         if(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > fpsCTRLgui->NBindex - 1) {
             fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = fpsCTRLgui->NBindex - 1;
@@ -5374,6 +5369,7 @@ inline static int fpsCTRLscreen_process_user_key(
         break;
 
     case KEY_PPAGE:
+		fpsCTRLgui->direction = -1;
         fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] -= 10;
         if(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] < 0) {
             fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = 0;
@@ -5381,6 +5377,7 @@ inline static int fpsCTRLscreen_process_user_key(
         break;
 
     case KEY_NPAGE:
+		fpsCTRLgui->direction = 1;
         fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] += 10;
         while(fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] > fpsCTRLgui->NBindex - 1) {
             fpsCTRLgui->GUIlineSelected[fpsCTRLgui->currentlevel] = fpsCTRLgui->NBindex - 1;
@@ -5426,12 +5423,13 @@ inline static int fpsCTRLscreen_process_user_key(
         // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
             if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF) {
+								
                 if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {  // ON -> OFF
                     fps[fpsindex].parray[pindex].fpflag &= ~FPFLAG_ONOFF;
                 } else { // OFF -> ON
                     fps[fpsindex].parray[pindex].fpflag |= FPFLAG_ONOFF;
                 }
-
+				
                 // Save to disk
                 if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_SAVEONCHANGE) {
                     functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval", "UserInputSetParamValue");
@@ -5642,6 +5640,7 @@ errno_t functionparameter_CTRLscreen(
     fpsCTRLgui.pindexSelected = 0;
     fpsCTRLgui.directorynodeSelected = 0;
     fpsCTRLgui.currentlevel = 0;
+    fpsCTRLgui.direction = 1;
 
     fpsCTRLgui.fpsCTRL_DisplayMode = 2;
     // 1: [h]  help
@@ -5854,14 +5853,20 @@ errno_t functionparameter_CTRLscreen(
 
                 TESTPOINT("Get number of lines to be displayed");
                 fpsCTRLgui.currentlevel = keywnode[fpsCTRLgui.directorynodeSelected].keywordlevel;
-                int GUIlineMax = keywnode[fpsCTRLgui.directorynodeSelected].NBchild;
+                int GUIlineMax = keywnode[fpsCTRLgui.directorynodeSelected].NBchild; 
                 for(level = 0; level < fpsCTRLgui.currentlevel; level ++) {
                     TESTPOINT("update GUIlineMax, the maximum number of lines");
                     if(keywnode[nodechain[level]].NBchild > GUIlineMax) {
-                        GUIlineMax = keywnode[nodechain[level]].NBchild;
+                        GUIlineMax = keywnode[nodechain[level]].NBchild; 
                     }
                 }
-                printw("level = %d    NB child = %d\n", fpsCTRLgui.currentlevel,  keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
+                
+                
+                printw("level = %d   [%d] NB child = %d\n", 
+                fpsCTRLgui.currentlevel,  
+                fpsCTRLgui.directorynodeSelected, 
+                keywnode[fpsCTRLgui.directorynodeSelected].NBchild
+                );
 
 
           /*      printw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
@@ -5872,11 +5877,33 @@ errno_t functionparameter_CTRLscreen(
                        fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel],
                        keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
 				*/
+
+
+				//while(!(fps[fpsindexSelected].parray[pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
+				//		fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]++;
+				//}
+
+//if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+
+				
+				if( !(  fps[keywnode[fpsCTRLgui.nodeSelected].fpsindex].parray[keywnode[fpsCTRLgui.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+				if(fpsCTRLgui.direction > 0) {
+					fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] ++;
+				}
+				else
+				{
+					fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] --;
+				}
+				}
+				//HERE
+
+
 				
 				while(fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] >
                        keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1) {
 						   fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]--;
 					   }
+					   
 
 
                 int child_index[MAXNBLEVELS];
@@ -5964,20 +5991,21 @@ errno_t functionparameter_CTRLscreen(
                             child_index[level] = keywnode[fpsCTRLgui.directorynodeSelected].NBchild - 1;
                         }
 
+/*
                         if(fpsCTRLgui.currentlevel != 0) { // this does not apply to root menu
-                            while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) &&
-                                    (child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {     // if not visible, advance to next one
+                            while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) && // if not visible, advance to next one
+                                    (child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {     
                                 child_index[level] ++;
                                 TESTPOINT("knodeindex = %d  child %d / %d",
                                           knodeindex,
                                           child_index[level],
                                           keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
-                                abort();//TBE
                                 knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index[level]];
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 pindex = keywnode[knodeindex].pindex;
                             }
                         }
+*/
 
                         TESTPOINT(" ");
 
@@ -5998,9 +6026,7 @@ errno_t functionparameter_CTRLscreen(
                                     TESTPOINT(" ");
 
                                     fpsindex = keywnode[knodeindex].fpsindex;
-                                    pid_t pid;
-                                    TESTPOINT(" ");
-                                    printw("%5d ", fps[fpsindex].SMfd);
+                                    pid_t pid;                                   
 
                                     pid = fps[fpsindex].md->confpid;
                                     if((getpgid(pid) >= 0) && (pid > 0)) {
@@ -6093,18 +6119,32 @@ errno_t functionparameter_CTRLscreen(
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 pindex = keywnode[knodeindex].pindex;
 
+								
+
+
                                 TESTPOINT(" ");
-                                if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE) {
+                                int isVISIBLE = 1;
+                                if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+									isVISIBLE = 0;
+									attron(A_DIM|A_BLINK);
+								}
+									
+	
+									
                                     int kl;
 
                                     if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
                                         fpsCTRLgui.pindexSelected = keywnode[knodeindex].pindex;
                                         fpsCTRLgui.fpsindexSelected = keywnode[knodeindex].fpsindex;
                                         fpsCTRLgui.nodeSelected = knodeindex;
-
-                                        attron(COLOR_PAIR(10) | A_BOLD);
+                                        
+                                        if(isVISIBLE == 1) {
+											attron(COLOR_PAIR(10) | A_BOLD);
+										}
                                     }
                                     TESTPOINT(" ");
+                                    
+                                    if(isVISIBLE == 1) {
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
                                         attron(COLOR_PAIR(10) | A_BLINK);
                                         printw("W "); // writable
@@ -6114,6 +6154,9 @@ errno_t functionparameter_CTRLscreen(
                                         printw("NW"); // non writable
                                         attroff(COLOR_PAIR(4) | A_BLINK);
                                     }
+									} else {
+										printw("  ");
+									}
 
                                     TESTPOINT(" ");
                                     level = keywnode[knodeindex].keywordlevel;
@@ -6130,7 +6173,7 @@ errno_t functionparameter_CTRLscreen(
                                     int paramsync = 1; // parameter is synchronized
 
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
-                                        attron(COLOR_PAIR(4));
+                                        if(isVISIBLE == 1) { attron(COLOR_PAIR(4)); }
                                     }
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_UNDEF) {
@@ -6147,13 +6190,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10d", (int) fps[fpsindex].parray[pindex].val.l[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
 
@@ -6179,13 +6222,13 @@ errno_t functionparameter_CTRLscreen(
                                             }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) {  attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10f", (float) fps[fpsindex].parray[pindex].val.f[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
 
@@ -6211,7 +6254,7 @@ errno_t functionparameter_CTRLscreen(
                                             }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) {  attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10f", (float) fps[fpsindex].parray[pindex].val.s[0]);
@@ -6232,13 +6275,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10d", (float) fps[fpsindex].parray[pindex].val.pid[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) {  attroff(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10d", (int) fps[fpsindex].parray[pindex].val.pid[0]);
@@ -6261,13 +6304,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
                                     TESTPOINT(" ");
@@ -6281,13 +6324,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
                                     TESTPOINT(" ");
@@ -6300,13 +6343,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
                                     TESTPOINT(" ");
@@ -6319,13 +6362,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) {  attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
 
@@ -6338,7 +6381,7 @@ errno_t functionparameter_CTRLscreen(
                                                 //  }
 
                                                 if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
-                                                    attron(COLOR_PAIR(2));
+                                                    if(isVISIBLE == 1) { attron(COLOR_PAIR(2)); }
                                                 }
 
                                         printw("[%d]  %10s",
@@ -6354,7 +6397,7 @@ errno_t functionparameter_CTRLscreen(
                                                 printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
 
                                             printw(" ]");
-                                            attroff(COLOR_PAIR(2));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(2)); }
                                         }
 
                                     }
@@ -6368,13 +6411,13 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
                                         }
 
                                         printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(3));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
                                     TESTPOINT(" ");
@@ -6403,10 +6446,10 @@ errno_t functionparameter_CTRLscreen(
                                                 }
 
                                         if(paramsync == 0) {
-                                            attron(COLOR_PAIR(2));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(2)); }
                                         }
                                         else {
-                                            attron(COLOR_PAIR(4));
+                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(4)); }
                                         }
 
                                         printw(" %10s [%ld %ld %ld]",
@@ -6416,10 +6459,10 @@ errno_t functionparameter_CTRLscreen(
                                                fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
                                         if(paramsync == 0) {
-                                            attroff(COLOR_PAIR(2));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(2)); }
                                         }
                                         else {
-                                            attroff(COLOR_PAIR(4));
+                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(4)); }
                                         }
 
                                     }
@@ -6427,7 +6470,7 @@ errno_t functionparameter_CTRLscreen(
                                     TESTPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
-                                        attroff(COLOR_PAIR(4));
+                                        if(isVISIBLE == 1) { attroff(COLOR_PAIR(4)); }
                                     }
 
                                     printw("    %s", fps[fpsindex].parray[pindex].description);
@@ -6435,10 +6478,16 @@ errno_t functionparameter_CTRLscreen(
 
 
                                     if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
-                                        attroff(A_BOLD);
+                                        if(isVISIBLE == 1) { attroff(A_BOLD); }
                                     }
 
-                                }
+								
+								if(isVISIBLE==0) {
+									 attroff(A_DIM|A_BLINK);									 
+								}
+                                // END LOOP
+                                
+                                
                             }
 
 
