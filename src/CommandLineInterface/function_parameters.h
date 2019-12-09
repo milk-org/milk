@@ -365,17 +365,19 @@ typedef struct {
 #define FPS_MSG_FLAG_INFO                   0x0010
 
 
-
+#define FPS_NAME_STRMAXLEN 100
 #define FPS_CWD_STRLENMAX 200
 #define FPS_SRCDIR_STRLENMAX 200
 #define FPS_PNAME_STRMAXLEN 100
+#define FPS_DESCR_STRMAXLEN 200
 
 // metadata
 typedef struct {
     // process name
     // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
-    char                name[200];         // example: pname-01-32
+    char                name[FPS_NAME_STRMAXLEN];         // example: pname-01-32
 
+	char                description[FPS_DESCR_STRMAXLEN];
     char                fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
     char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
     int					sourceline;
@@ -511,6 +513,7 @@ typedef struct {
     int pindexSelected;
     char fpsCTRLfifoname[200];
     int fpsCTRLfifofd;
+    int direction;
 } FPSCTRL_GUIVARS;
 
 
