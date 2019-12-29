@@ -97,6 +97,15 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 
 
 
+// testing argument type for command line interface
+#define ARG_IS_FLOAT            1
+#define ARG_IS_LONG             2
+#define ARG_IS_STR_NOT_IMG      3  // string, not existing image
+#define ARG_IS_IMG              4  // existing image
+#define ARG_IS_STR              5  // string
+
+
+
 
 
 // declare a boolean type "BOOL" 
