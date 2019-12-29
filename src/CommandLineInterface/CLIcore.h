@@ -104,7 +104,8 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 #define CLIARG_IMG              4  // existing image
 #define CLIARG_STR              5  // string
 
-
+#define CLICMD_SUCCESS          0
+#define CLICMD_INVALID_ARG      1
 
 
 
