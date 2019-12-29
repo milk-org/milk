@@ -49,38 +49,29 @@ static char errormessage_iofits[SBUFFERSIZE];
 
 
 
-// CLI commands
-//
-// function CLI_checkarg used to check arguments
-// 1: float
-// 2: long
-// 3: string, not existing image
-// 4: existing image
-// 5: string 
-//
 
 int_fast8_t load_fits_cli()
 {
-  load_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string, 1);
+    load_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string, 1);
 
-  return 0;
+    return 0;
 }
 
 
 int_fast8_t save_fl_fits_cli()
 {
-  char fname[1000];
-  
-  switch(data.cmdNBarg){
-  case 3:
-    save_fl_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
-    break;
-  case 2:
-    sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
-    save_fl_fits( data.cmdargtoken[1].val.string, fname);
-    break;
-  }
-  return 0;
+    char fname[1000];
+
+    switch(data.cmdNBarg) {
+    case 3:
+        save_fl_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
+        break;
+    case 2:
+        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        save_fl_fits( data.cmdargtoken[1].val.string, fname);
+        break;
+    }
+    return 0;
 }
 
 
@@ -88,38 +79,38 @@ int_fast8_t save_fl_fits_cli()
 
 int_fast8_t save_db_fits_cli()
 {
-  char fname[1000];
-  
-  switch(data.cmdNBarg){
-  case 3:
-    save_db_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
-    break;
-  case 2:
-    sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
-    save_db_fits( data.cmdargtoken[1].val.string, fname);
-    break;
-  }
-  
-  return 0;
+    char fname[1000];
+
+    switch(data.cmdNBarg) {
+    case 3:
+        save_db_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
+        break;
+    case 2:
+        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        save_db_fits( data.cmdargtoken[1].val.string, fname);
+        break;
+    }
+
+    return 0;
 }
 
 
 
-int_fast8_t save_sh_fits_cli()
+int_fast8_t save_sh16_fits_cli()
 {
-  char fname[1000];
-  
-  switch(data.cmdNBarg){
-  case 3:
-    save_sh_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
-    break;
-  case 2:
-    sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
-    save_sh_fits( data.cmdargtoken[1].val.string, fname);
-    break;
-  }
-  
-  return 0;
+    char fname[1000];
+
+    switch(data.cmdNBarg) {
+    case 3:
+        save_sh16_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
+        break;
+    case 2:
+        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        save_sh16_fits( data.cmdargtoken[1].val.string, fname);
+        break;
+    }
+
+    return 0;
 }
 
 
@@ -127,19 +118,19 @@ int_fast8_t save_sh_fits_cli()
 
 int_fast8_t save_fits_cli()
 {
-  char fname[1000];
-  
-  switch(data.cmdNBarg){
-  case 3:
-    save_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
-    break;
-  case 2:
-    sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
-    save_fits( data.cmdargtoken[1].val.string, fname);
-    break;
-  }
-  
-  return 0;
+    char fname[1000];
+
+    switch(data.cmdNBarg) {
+    case 3:
+        save_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
+        break;
+    case 2:
+        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        save_fits( data.cmdargtoken[1].val.string, fname);
+        break;
+    }
+
+    return 0;
 }
 
 
@@ -148,30 +139,30 @@ int_fast8_t save_fits_cli()
 
 int_fast8_t break_cube_cli()
 {
-  break_cube( data.cmdargtoken[1].val.string);
+    break_cube( data.cmdargtoken[1].val.string);
 
-  return 0;
+    return 0;
 }
 
 
 int_fast8_t images_to_cube_cli()
 {
-  /*  if(data.cmdargtoken[1].type != 4)
-    {
-      printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
-      return -1;
-      }*/
+    /*  if(data.cmdargtoken[1].type != 4)
+      {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return -1;
+        }*/
 
-  if(data.cmdargtoken[2].type != 2)
+    if(data.cmdargtoken[2].type != 2)
     {
-      printf("second argument has to be integer\n");
-      return -1;
+        printf("second argument has to be integer\n");
+        return -1;
     }
-  
-  images_to_cube(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.string);
 
-  return 0;
- }
+    images_to_cube(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.string);
+
+    return 0;
+}
 
 
 
@@ -183,12 +174,12 @@ int_fast8_t images_to_cube_cli()
 
 void __attribute__ ((constructor)) libinit_COREMOD_iofits()
 {
-	if ( INITSTATUS_COREMOD_iofits == 0 )
-	{
-		init_COREMOD_iofits();
-		RegisterModule(__FILE__, "milk", "FITS format input/output");
-		INITSTATUS_COREMOD_iofits = 1;
-	}
+    if ( INITSTATUS_COREMOD_iofits == 0 )
+    {
+        init_COREMOD_iofits();
+        RegisterModule(__FILE__, "milk", "FITS format input/output");
+        INITSTATUS_COREMOD_iofits = 1;
+    }
 }
 
 
@@ -204,15 +195,57 @@ int init_COREMOD_iofits() {
     /*                                                                                                 */
     /* =============================================================================================== */
 
-    RegisterCLIcommand("loadfits", __FILE__, load_fits_cli, "load FITS format file", "input output", "loadfits im.fits im", "long load_fits()");
+    RegisterCLIcommand(
+        "loadfits",
+        __FILE__,
+        load_fits_cli,
+        "load FITS format file",
+        "input output",
+        "loadfits im.fits im",
+        "long load_fits()"
+    );
 
-    RegisterCLIcommand("saveflfits", __FILE__, save_fl_fits_cli, "save FITS format file, float", "input output", "saveflfits im im.fits", "int save_fl_fits(char *ID_name, char *file_name)");
 
-    RegisterCLIcommand("savedbfits", __FILE__, save_db_fits_cli, "save FITS format file, double", "input output", "savedbfits im im.fits", "int save_db_fits(char *ID_name, char *file_name)");
+    RegisterCLIcommand(
+        "saveflfits",
+        __FILE__,
+        save_fl_fits_cli,
+        "save FITS format file, float",
+        "input output",
+        "saveflfits im im.fits",
+        "int save_fl_fits(char *ID_name, char *file_name)"
+    );
 
-    RegisterCLIcommand("saveshfits", __FILE__, save_sh_fits_cli, "save FITS format file, short", "input output", "saveshfits im im.fits", "int save_sh_fits(char *ID_name, char *file_name)");
 
-    RegisterCLIcommand("savefits", __FILE__, save_fits_cli, "save FITS format file", "input output", "savefits im im.fits", "int save_fits(char *ID_name, char *file_name)");
+    RegisterCLIcommand(
+        "savedbfits",
+        __FILE__,
+        save_db_fits_cli,
+        "save FITS format file, double",
+        "input output",
+        "savedbfits im im.fits",
+        "int save_db_fits(char *ID_name, char *file_name)"
+    );
+
+    RegisterCLIcommand(
+        "saveshfits",
+        __FILE__,
+        save_sh16_fits_cli,
+        "save FITS format file, short",
+        "input output",
+        "saveshfits im im.fits",
+        "int save_sh16_fits(char *ID_name, char *file_name)"
+    );
+
+    RegisterCLIcommand(
+        "savefits",
+        __FILE__,
+        save_fits_cli,
+        "save FITS format file",
+        "input output",
+        "savefits im im.fits", 
+        "int save_fits(char *ID_name, char *file_name)"
+    );
 
     /* =============================================================================================== */
     /*                                                                                                 */
@@ -220,9 +253,23 @@ int init_COREMOD_iofits() {
     /*                                                                                                 */
     /* =============================================================================================== */
 
-    RegisterCLIcommand("breakcube", __FILE__, break_cube_cli, "break cube into individual images (slices)", "<input image>", "breakcube imc", "int break_cube(char *ID_name)");
+    RegisterCLIcommand(
+        "breakcube",
+        __FILE__,
+        break_cube_cli,
+        "break cube into individual images (slices)",
+        "<input image>",
+        "breakcube imc",
+        "int break_cube(char *ID_name)"
+    );
 
-    RegisterCLIcommand("imgs2cube", __FILE__, images_to_cube_cli, "combine individual images into cube, image name is prefix followed by 5 digits", "<input image format> <max index> <output cube>", "imgs2cube im_ 100 imc", "int images_to_cube(char *img_name, long nbframes, char *cube_name)");
+    RegisterCLIcommand(
+        "imgs2cube",
+        __FILE__,
+        images_to_cube_cli,
+        "combine individual images into cube, image name is prefix followed by 5 digits",
+        "<input image format> <max index> <output cube>", "imgs2cube im_ 100 imc", "int images_to_cube(char *img_name, long nbframes, char *cube_name)"
+    );
 
 
     // add atexit functions here
@@ -254,14 +301,20 @@ static int FITSIO_status = 0;
 
 // set print to 0 if error message should not be printed to stderr
 // set print to 1 if error message should be printed to stderr
-int check_FITSIO_status(const char *restrict cfile, const char *restrict cfunc, long cline, int print) {
+int check_FITSIO_status(
+    const char* restrict cfile,
+    const char* restrict cfunc,
+    long cline,
+    int print) {
     int Ferr = 0;
 
     if(FITSIO_status != 0) {
         if(print == 1) {
             char errstr[SBUFFERSIZE];
             fits_get_errstatus(FITSIO_status, errstr);
-            fprintf(stderr, "%c[%d;%dmFITSIO error %d [%s, %s, %ld]: %s%c[%d;m\n\a", (char) 27, 1, 31, FITSIO_status, cfile, cfunc, cline, errstr, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dmFITSIO error %d [%s, %s, %ld]: %s%c[%d;m\n\a",
+                    (char) 27, 1, 31, FITSIO_status, cfile, cfunc, cline, errstr, (char) 27, 0);
         }
         Ferr = FITSIO_status;
     }
@@ -271,7 +324,11 @@ int check_FITSIO_status(const char *restrict cfile, const char *restrict cfunc, 
 }
 
 
-int file_exists(const char *restrict file_name) {
+
+int file_exists(
+    const char* restrict file_name
+)
+{
     FILE *fp;
     int exists = 1;
 
@@ -289,7 +346,9 @@ int file_exists(const char *restrict file_name) {
 
 
 
-int is_fits_file(const char *restrict file_name) {
+int is_fits_file(
+    const char* restrict file_name
+) {
     int value = 0;
     fitsfile *fptr;
 
@@ -313,7 +372,11 @@ int is_fits_file(const char *restrict file_name) {
 
 
 
-int read_keyword(const char *restrict file_name, const char *restrict KEYWORD, char *restrict content) {
+int read_keyword(
+    const char* restrict file_name,
+    const char* restrict KEYWORD,
+    char* restrict content
+) {
     fitsfile *fptr;         /* FITS file pointer, defined in fitsio.h */
     int exists = 0;
     int n;
@@ -354,7 +417,10 @@ int read_keyword(const char *restrict file_name, const char *restrict KEYWORD, c
 
 
 
-int read_keyword_alone(const char *restrict file_name, const char *restrict KEYWORD) {
+int read_keyword_alone(
+    const char* restrict file_name,
+    const char* restrict KEYWORD
+) {
     char *content = (char *) malloc(sizeof(char) * SBUFFERSIZE);
 
     if(content == NULL) {
@@ -371,7 +437,13 @@ int read_keyword_alone(const char *restrict file_name, const char *restrict KEYW
     return(0);
 }
 
-int data_type_code(int bitpix) {
+
+
+
+
+int data_type_code(
+    int bitpix
+) {
     int code;
     /*
       bitpix      Datatype             typecode    Mnemonic
@@ -433,8 +505,8 @@ int data_type_code(int bitpix) {
 /// errcode = 2: exit program at error
 /// errcode = 3: do not show error message, try = 1, no wait
 long load_fits(
-    const char *restrict file_name,
-    const char *restrict ID_name,
+    const char* restrict file_name,
+    const char* restrict ID_name,
     int errcode
 ) {
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
@@ -819,7 +891,10 @@ long load_fits(
 
 /* saves an image in a double format */
 
-int save_db_fits(const char *restrict ID_name, const char *restrict file_name) {
+int save_db_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
     fitsfile *fptr;
     long nelements;
     long ID;
@@ -880,67 +955,67 @@ int save_db_fits(const char *restrict ID_name, const char *restrict file_name) {
             }
 
             switch(datatype) {
-                case _DATATYPE_UINT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.UI8[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.UI8[ii];
+                }
+                break;
 
-                case _DATATYPE_INT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.SI8[ii];
-                    }
-                    break;
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.SI8[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT16 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.UI16[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.UI16[ii];
+                }
+                break;
 
-                case _DATATYPE_INT16 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.SI16[ii];
-                    }
-                    break;
+            case _DATATYPE_INT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.SI16[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.UI32[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.UI32[ii];
+                }
+                break;
 
-                case _DATATYPE_INT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.SI32[ii];
-                    }
-                    break;
+            case _DATATYPE_INT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.SI32[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.UI64[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.UI64[ii];
+                }
+                break;
 
-                case _DATATYPE_INT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.SI64[ii];
-                    }
-                    break;
+            case _DATATYPE_INT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.SI64[ii];
+                }
+                break;
 
-                case _DATATYPE_FLOAT :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (double) data.image[ID].array.F[ii];
-                    }
-                    break;
+            case _DATATYPE_FLOAT :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (double) data.image[ID].array.F[ii];
+                }
+                break;
 
-                default :
-                    list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
-                    printf("ID %ld  datatype = %d\n", ID, datatype);
-                    free(array);
-                    exit(0);
-                    break;
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                free(array);
+                exit(0);
+                break;
             }
         }
 
@@ -998,7 +1073,10 @@ int save_db_fits(const char *restrict ID_name, const char *restrict file_name) {
 
 /* saves an image in a float format */
 
-int save_fl_fits(const char *restrict ID_name, const char *restrict file_name) {
+int save_fl_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
     fitsfile *fptr;
     long  naxis, nelements;
     float *array = NULL;
@@ -1055,67 +1133,67 @@ int save_fl_fits(const char *restrict ID_name, const char *restrict file_name) {
             }
 
             switch(datatype) {
-                case _DATATYPE_UINT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.UI8[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.UI8[ii];
+                }
+                break;
 
-                case _DATATYPE_INT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.SI8[ii];
-                    }
-                    break;
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.SI8[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT16 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.UI16[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.UI16[ii];
+                }
+                break;
 
-                case _DATATYPE_INT16 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.SI16[ii];
-                    }
-                    break;
+            case _DATATYPE_INT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.SI16[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.UI32[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.UI32[ii];
+                }
+                break;
 
-                case _DATATYPE_INT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.SI32[ii];
-                    }
-                    break;
+            case _DATATYPE_INT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.SI32[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.UI64[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.UI64[ii];
+                }
+                break;
 
-                case _DATATYPE_INT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.SI64[ii];
-                    }
-                    break;
+            case _DATATYPE_INT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.SI64[ii];
+                }
+                break;
 
-                case _DATATYPE_DOUBLE :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (float) data.image[ID].array.D[ii];
-                    }
-                    break;
+            case _DATATYPE_DOUBLE :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (float) data.image[ID].array.D[ii];
+                }
+                break;
 
-                default :
-                    list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
-                    printf("ID %ld  datatype = %d\n", ID, datatype);
-                    free(array);
-                    exit(0);
-                    break;
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                free(array);
+                exit(0);
+                break;
             }
         }
 
@@ -1176,7 +1254,10 @@ int save_fl_fits(const char *restrict ID_name, const char *restrict file_name) {
 
 /* saves an image in a short int format */
 
-int save_sh_fits(const char *restrict ID_name, const char *restrict file_name) {
+int save_sh16_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
     uint32_t naxes[3];
@@ -1238,67 +1319,67 @@ int save_sh_fits(const char *restrict ID_name, const char *restrict file_name) {
             }
 
             switch(datatype) {
-                case _DATATYPE_UINT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.UI8[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.UI8[ii];
+                }
+                break;
 
-                case _DATATYPE_INT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.SI8[ii];
-                    }
-                    break;
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.SI8[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT16 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.UI16[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.UI16[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.UI32[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.UI32[ii];
+                }
+                break;
 
-                case _DATATYPE_INT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.SI32[ii];
-                    }
-                    break;
+            case _DATATYPE_INT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.SI32[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.UI64[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.UI64[ii];
+                }
+                break;
 
-                case _DATATYPE_INT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.SI64[ii];
-                    }
-                    break;
+            case _DATATYPE_INT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.SI64[ii];
+                }
+                break;
 
-                case _DATATYPE_FLOAT :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.F[ii];
-                    }
-                    break;
+            case _DATATYPE_FLOAT :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.F[ii];
+                }
+                break;
 
-                case _DATATYPE_DOUBLE :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (int16_t) data.image[ID].array.D[ii];
-                    }
-                    break;
+            case _DATATYPE_DOUBLE :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int16_t) data.image[ID].array.D[ii];
+                }
+                break;
 
-                default :
-                    list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
-                    free(array);
-                    printf("ID %ld  datatype = %d\n", ID, datatype);
-                    exit(0);
-                    break;
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                free(array);
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                exit(0);
+                break;
             }
         } else {
             printf("No data conversion required\n"); //TEST
@@ -1308,12 +1389,18 @@ int save_sh_fits(const char *restrict ID_name, const char *restrict file_name) {
 
         fits_create_file(&fptr, file_name1, &FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n", (char) 27, 1, 31, file_name1, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n",
+                    (char) 27, 1, 31, file_name1, (char) 27, 0);
             if(file_exists(file_name1) == 1) {
-                fprintf(stderr, "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n", (char) 27, 1, 31, file_name1, (char) 27, 0);
+                fprintf(stderr,
+                        "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n",
+                        (char) 27, 1, 31, file_name1, (char) 27, 0);
                 exit(0);
             } else {
-                fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+                fprintf(stderr,
+                        "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                        (char) 27, 1, 31, (char) 27, 0);
                 list_image_ID();
             }
         }
@@ -1322,8 +1409,12 @@ int save_sh_fits(const char *restrict ID_name, const char *restrict file_name) {
         //    16          short integer, I        21        TSHORT
         fits_create_img(fptr, SHORT_IMG, naxis, naxesl, &FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
             list_image_ID();
         }
 
@@ -1340,22 +1431,30 @@ int save_sh_fits(const char *restrict ID_name, const char *restrict file_name) {
 
 
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
             list_image_ID();
         }
 
         fits_close_file(fptr, &FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
             list_image_ID();
         }
     } else {
-        fprintf(stderr, "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n", (char) 27, 1, 31, ID_name, (char) 27, 0);
+        fprintf(stderr,
+                "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n",
+                (char) 27, 1, 31, ID_name, (char) 27, 0);
     }
-
-
 
 
     return EXIT_SUCCESS;
@@ -1368,7 +1467,10 @@ int save_sh_fits(const char *restrict ID_name, const char *restrict file_name) {
 
 /* saves an image in a unsigned short int format */
 
-int save_ush_fits(const char *restrict ID_name, const char *restrict file_name) {
+int save_ush16_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
     uint32_t naxes[3];
@@ -1380,6 +1482,210 @@ int save_ush_fits(const char *restrict ID_name, const char *restrict file_name) 
     uint8_t datatype;
     char file_name1[SBUFFERSIZE];
     int n;
+
+
+    if((data.overwrite == 1) && (file_name[0] != '!') && (file_exists(file_name) == 1)) {
+        n = snprintf(errormessage_iofits, SBUFFERSIZE, "automatic overwrite on file \"%s\"\n", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__,
+                       "Attempted to write string buffer with too many characters");
+        }
+        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
+        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
+        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__,
+                       "Attempted to write string buffer with too many characters");
+        }
+    } else {
+        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__,
+                       "Attempted to write string buffer with too many characters");
+        }
+    }
+
+    ID = image_ID(ID_name);
+
+    if(ID != -1) {
+        datatype = data.image[ID].md[0].datatype;
+        naxis = data.image[ID].md[0].naxis;
+        for(i = 0; i < naxis; i++) {
+            naxes[i] = data.image[ID].md[0].size[i];
+            naxesl[i] = (long) naxes[i]; // CFITSIO expects long int *
+        }
+
+        nelements = 1;
+        for(i = 0; i < naxis; i++) {
+            nelements *= naxes[i];
+        }
+
+        if(datatype != _DATATYPE_UINT16) { // data conversion required
+            array = (uint16_t *) malloc(SIZEOF_DATATYPE_UINT16 * nelements);
+            if(array == NULL) {
+                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                exit(0);
+            }
+
+            switch(datatype) {
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.UI8[ii];
+                }
+                break;
+
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.SI8[ii];
+                }
+                break;
+
+            case _DATATYPE_INT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.SI16[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.UI32[ii];
+                }
+                break;
+
+            case _DATATYPE_INT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.SI32[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.UI64[ii];
+                }
+                break;
+
+            case _DATATYPE_INT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.SI64[ii];
+                }
+                break;
+
+            case _DATATYPE_FLOAT :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.F[ii];
+                }
+                break;
+
+            case _DATATYPE_DOUBLE :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint16_t) data.image[ID].array.D[ii];
+                }
+                break;
+
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                free(array);
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                exit(0);
+                break;
+            }
+        }
+
+        fits_create_file(&fptr, file_name1, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n",
+                    (char) 27, 1, 31, file_name1, (char) 27, 0);
+            if(file_exists(file_name1) == 1) {
+                fprintf(stderr,
+                        "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n",
+                        (char) 27, 1, 31, file_name1, (char) 27, 0);
+                exit(0);
+            } else {
+                fprintf(stderr,
+                        "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                        (char) 27, 1, 31, (char) 27, 0);
+                list_image_ID();
+            }
+        }
+
+        fits_create_img(fptr, USHORT_IMG, naxis, naxesl, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+
+        if(datatype == _DATATYPE_UINT16) {
+            fits_write_img(fptr, TUSHORT, fpixel, nelements, data.image[ID].array.UI16, &FITSIO_status);
+        } else {
+            fits_write_img(fptr, TUSHORT, fpixel, nelements, array, &FITSIO_status);
+            free(array);
+            array = NULL;
+        }
+
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+
+        fits_close_file(fptr, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+    } else {
+        fprintf(stderr,
+                "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n",
+                (char) 27, 1, 31, ID_name, (char) 27, 0);
+    }
+
+    return(0);
+}
+
+
+
+
+
+
+
+
+
+
+/* saves an image in a int format (32 bit) */
+
+int save_int32_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
+    fitsfile *fptr;
+    long  fpixel = 1, naxis, nelements;
+    uint32_t naxes[3];
+    long naxesl[3];
+    int32_t *array = NULL;
+    long ID;
+    long ii;
+    long i;
+    uint8_t datatype;
+    char file_name1[SBUFFERSIZE];
+    int n;
+
+
 
 
     if((data.overwrite == 1) && (file_name[0] != '!') && (file_exists(file_name) == 1)) {
@@ -1407,6 +1713,220 @@ int save_ush_fits(const char *restrict ID_name, const char *restrict file_name) 
         naxis = data.image[ID].md[0].naxis;
         for(i = 0; i < naxis; i++) {
             naxes[i] = data.image[ID].md[0].size[i];
+            naxesl[i] = (long) naxes[i];
+        }
+
+        nelements = 1;
+        for(i = 0; i < naxis; i++) {
+            nelements *= naxes[i];
+        }
+
+        if(datatype != _DATATYPE_INT32) { // data conversion required
+
+            printf("Data conversion required\n"); //TEST
+            fflush(stdout);
+
+
+            array = (int32_t *) malloc(SIZEOF_DATATYPE_INT32 * nelements);
+            if(array == NULL) {
+                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                exit(0);
+            }
+
+            switch(datatype) {
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.UI8[ii];
+                }
+                break;
+
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.SI8[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.UI16[ii];
+                }
+                break;
+
+            case _DATATYPE_INT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.SI16[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.UI32[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.UI64[ii];
+                }
+                break;
+
+            case _DATATYPE_INT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.SI64[ii];
+                }
+                break;
+
+            case _DATATYPE_FLOAT :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.F[ii];
+                }
+                break;
+
+            case _DATATYPE_DOUBLE :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int32_t) data.image[ID].array.D[ii];
+                }
+                break;
+
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                free(array);
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                exit(0);
+                break;
+            }
+        } else {
+            printf("No data conversion required\n"); //TEST
+            fflush(stdout);
+        }
+
+
+        fits_create_file(&fptr, file_name1, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n",
+                    (char) 27, 1, 31, file_name1, (char) 27, 0);
+            if(file_exists(file_name1) == 1) {
+                fprintf(stderr,
+                        "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n",
+                        (char) 27, 1, 31, file_name1, (char) 27, 0);
+                exit(0);
+            } else {
+                fprintf(stderr,
+                        "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                        (char) 27, 1, 31, (char) 27, 0);
+                list_image_ID();
+            }
+        }
+
+
+        //    32          long integer        TLONG
+        fits_create_img(fptr, LONG_IMG, naxis, naxesl, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+
+        if(datatype == _DATATYPE_INT32) {
+            printf("Direct copy --- \n");
+            fflush(stdout);
+
+            fits_write_img(fptr, TINT, fpixel, nelements, data.image[ID].array.SI32, &FITSIO_status);
+        } else {
+            fits_write_img(fptr, TINT, fpixel, nelements, array, &FITSIO_status);
+            free(array);
+            array = NULL;
+        }
+
+
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+
+        fits_close_file(fptr, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+    } else {
+        fprintf(stderr,
+                "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n",
+                (char) 27, 1, 31, ID_name, (char) 27, 0);
+    }
+
+
+    return EXIT_SUCCESS;
+}
+
+
+
+
+
+
+/* saves an image in a unsigned short int format */
+
+int save_uint32_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
+    fitsfile *fptr;
+    long  fpixel = 1, naxis, nelements;
+    uint32_t naxes[3];
+    long naxesl[3];
+    uint32_t *array = NULL;
+    long ID;
+    long ii;
+    long i;
+    uint8_t datatype;
+    char file_name1[SBUFFERSIZE];
+    int n;
+
+
+    if((data.overwrite == 1) && (file_name[0] != '!') && (file_exists(file_name) == 1)) {
+        n = snprintf(errormessage_iofits, SBUFFERSIZE, "automatic overwrite on file \"%s\"\n", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__,
+                       "Attempted to write string buffer with too many characters");
+        }
+        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
+        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
+        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__,
+                       "Attempted to write string buffer with too many characters");
+        }
+    } else {
+        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__,
+                       "Attempted to write string buffer with too many characters");
+        }
+    }
+
+    ID = image_ID(ID_name);
+
+    if(ID != -1) {
+        datatype = data.image[ID].md[0].datatype;
+        naxis = data.image[ID].md[0].naxis;
+        for(i = 0; i < naxis; i++) {
+            naxes[i] = data.image[ID].md[0].size[i];
             naxesl[i] = (long) naxes[i]; // CFITSIO expects long int *
         }
 
@@ -1415,119 +1935,139 @@ int save_ush_fits(const char *restrict ID_name, const char *restrict file_name) 
             nelements *= naxes[i];
         }
 
-        if(datatype != _DATATYPE_UINT16) { // data conversion required
-            array = (uint16_t *) malloc(SIZEOF_DATATYPE_UINT16 * nelements);
+        if(datatype != _DATATYPE_UINT32) { // data conversion required
+            array = (uint32_t *) malloc(SIZEOF_DATATYPE_UINT32 * nelements);
             if(array == NULL) {
                 printERROR(__FILE__, __func__, __LINE__, "malloc error");
                 exit(0);
             }
 
             switch(datatype) {
-                case _DATATYPE_UINT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.UI8[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.UI8[ii];
+                }
+                break;
 
-                case _DATATYPE_INT8 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.SI8[ii];
-                    }
-                    break;
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.SI8[ii];
+                }
+                break;
 
-                case _DATATYPE_INT16 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.SI16[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.UI16[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.UI32[ii];
-                    }
-                    break;
+            case _DATATYPE_INT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.SI16[ii];
+                }
+                break;
 
-                case _DATATYPE_INT32 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.SI32[ii];
-                    }
-                    break;
+            case _DATATYPE_INT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.SI32[ii];
+                }
+                break;
 
-                case _DATATYPE_UINT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.UI64[ii];
-                    }
-                    break;
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.UI64[ii];
+                }
+                break;
 
-                case _DATATYPE_INT64 :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.SI64[ii];
-                    }
-                    break;
+            case _DATATYPE_INT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.SI64[ii];
+                }
+                break;
 
-                case _DATATYPE_FLOAT :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.F[ii];
-                    }
-                    break;
+            case _DATATYPE_FLOAT :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.F[ii];
+                }
+                break;
 
-                case _DATATYPE_DOUBLE :
-                    for(ii = 0; ii < nelements; ii++) {
-                        array[ii] = (uint16_t) data.image[ID].array.D[ii];
-                    }
-                    break;
+            case _DATATYPE_DOUBLE :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (uint32_t) data.image[ID].array.D[ii];
+                }
+                break;
 
-                default :
-                    list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
-                    free(array);
-                    printf("ID %ld  datatype = %d\n", ID, datatype);
-                    exit(0);
-                    break;
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                free(array);
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                exit(0);
+                break;
             }
         }
 
         fits_create_file(&fptr, file_name1, &FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n", (char) 27, 1, 31, file_name1, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n",
+                    (char) 27, 1, 31, file_name1, (char) 27, 0);
             if(file_exists(file_name1) == 1) {
-                fprintf(stderr, "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n", (char) 27, 1, 31, file_name1, (char) 27, 0);
+                fprintf(stderr,
+                        "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n",
+                        (char) 27, 1, 31, file_name1, (char) 27, 0);
                 exit(0);
             } else {
-                fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+                fprintf(stderr,
+                        "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                        (char) 27, 1, 31, (char) 27, 0);
                 list_image_ID();
             }
         }
 
         fits_create_img(fptr, USHORT_IMG, naxis, naxesl, &FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
             list_image_ID();
         }
 
-        if(datatype == _DATATYPE_UINT16) {
-            fits_write_img(fptr, TUSHORT, fpixel, nelements, data.image[ID].array.UI16, &FITSIO_status);
+        if(datatype == _DATATYPE_UINT32) {
+            fits_write_img(fptr, TUINT, fpixel, nelements, data.image[ID].array.UI32, &FITSIO_status);
         } else {
-            fits_write_img(fptr, TUSHORT, fpixel, nelements, array, &FITSIO_status);
+            fits_write_img(fptr, TUINT, fpixel, nelements, array, &FITSIO_status);
             free(array);
             array = NULL;
         }
 
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
             list_image_ID();
         }
 
         fits_close_file(fptr, &FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
             list_image_ID();
         }
     } else {
-        fprintf(stderr, "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n", (char) 27, 1, 31, ID_name, (char) 27, 0);
+        fprintf(stderr,
+                "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n",
+                (char) 27, 1, 31, ID_name, (char) 27, 0);
     }
 
     return(0);
@@ -1538,12 +2078,261 @@ int save_ush_fits(const char *restrict ID_name, const char *restrict file_name) 
 
 
 
+/* saves an image in a int format (64 bit) */
+
+int save_int64_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
+    fitsfile *fptr;
+    long  fpixel = 1, naxis, nelements;
+    uint32_t naxes[3];
+    long naxesl[3];
+    int64_t *array = NULL;
+    long ID;
+    long ii;
+    long i;
+    uint8_t datatype;
+    char file_name1[SBUFFERSIZE];
+    int n;
+
+
+
+
+    if((data.overwrite == 1) && (file_name[0] != '!') && (file_exists(file_name) == 1)) {
+        n = snprintf(errormessage_iofits, SBUFFERSIZE, "automatic overwrite on file \"%s\"\n", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__, "Attempted to write string buffer with too many characters");
+        }
+        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
+        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
+        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__, "Attempted to write string buffer with too many characters");
+        }
+    } else {
+        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
+        if(n >= SBUFFERSIZE) {
+            printERROR(__FILE__, __func__, __LINE__, "Attempted to write string buffer with too many characters");
+        }
+    }
+
+    ID = image_ID(ID_name);
+
+    if(ID != -1) {
+        datatype = data.image[ID].md[0].datatype;
+        naxis = data.image[ID].md[0].naxis;
+        for(i = 0; i < naxis; i++) {
+            naxes[i] = data.image[ID].md[0].size[i];
+            naxesl[i] = (long) naxes[i];
+        }
+
+        nelements = 1;
+        for(i = 0; i < naxis; i++) {
+            nelements *= naxes[i];
+        }
+
+        if(datatype != _DATATYPE_INT64) { // data conversion required
+
+            printf("Data conversion required\n"); //TEST
+            fflush(stdout);
+
+
+            array = (int64_t *) malloc(SIZEOF_DATATYPE_INT64 * nelements);
+            if(array == NULL) {
+                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                exit(0);
+            }
+
+            switch(datatype) {
+            case _DATATYPE_UINT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.UI8[ii];
+                }
+                break;
+
+            case _DATATYPE_INT8 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.SI8[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.UI16[ii];
+                }
+                break;
+
+            case _DATATYPE_INT16 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.SI16[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.UI32[ii];
+                }
+                break;
+
+            case _DATATYPE_INT32 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.SI32[ii];
+                }
+                break;
+
+            case _DATATYPE_UINT64 :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.UI64[ii];
+                }
+                break;
+
+            case _DATATYPE_FLOAT :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.F[ii];
+                }
+                break;
+
+            case _DATATYPE_DOUBLE :
+                for(ii = 0; ii < nelements; ii++) {
+                    array[ii] = (int64_t) data.image[ID].array.D[ii];
+                }
+                break;
+
+            default :
+                list_image_ID();
+                printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                free(array);
+                printf("ID %ld  datatype = %d\n", ID, datatype);
+                exit(0);
+                break;
+            }
+        } else {
+            printf("No data conversion required\n"); //TEST
+            fflush(stdout);
+        }
+
+
+        fits_create_file(&fptr, file_name1, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_file\" with filename \"%s\" %c[%d;m\n",
+                    (char) 27, 1, 31, file_name1, (char) 27, 0);
+            if(file_exists(file_name1) == 1) {
+                fprintf(stderr,
+                        "%c[%d;%dm File \"%s\" already exists. Make sure you remove this file before attempting to write file with identical name. %c[%d;m\n",
+                        (char) 27, 1, 31, file_name1, (char) 27, 0);
+                exit(0);
+            } else {
+                fprintf(stderr,
+                        "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                        (char) 27, 1, 31, (char) 27, 0);
+                list_image_ID();
+            }
+        }
+
+
+        //    32          long integer        TLONG
+        fits_create_img(fptr, LONGLONG_IMG, naxis, naxesl, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+
+        if(datatype == _DATATYPE_INT32) {
+            printf("Direct copy --- \n");
+            fflush(stdout);
+
+            fits_write_img(fptr, TLONG, fpixel, nelements, data.image[ID].array.SI64, &FITSIO_status);
+        } else {
+            fits_write_img(fptr, TLONG, fpixel, nelements, array, &FITSIO_status);
+            free(array);
+            array = NULL;
+        }
+
+
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+
+        fits_close_file(fptr, &FITSIO_status);
+        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0) {
+            fprintf(stderr,
+                    "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            fprintf(stderr,
+                    "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                    (char) 27, 1, 31, (char) 27, 0);
+            list_image_ID();
+        }
+    } else {
+        fprintf(stderr,
+                "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n",
+                (char) 27, 1, 31, ID_name, (char) 27, 0);
+    }
+
+
+    return EXIT_SUCCESS;
+}
 
 
 
 
 
-int save_fits(const char *restrict ID_name, const char *restrict file_name) {
+
+
+/*
+    LONG_IMG      =  32   (32-bit integer pixels)
+    LONGLONG_IMG  =  64   (64-bit integer pixels)
+    FLOAT_IMG     = -32   (32-bit floating point pixels)
+    DOUBLE_IMG    = -64   (64-bit floating point pixels)
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int save_fits(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
     char savename[1000];
     if(file_name[0] == '!') {
         strcpy(savename, file_name + 1);    // avoid the leading '!'
@@ -1563,7 +2352,10 @@ int save_fits(const char *restrict ID_name, const char *restrict file_name) {
  * (2) change file name
  *
  */
-int save_fits_atomic(const char *restrict ID_name, const char *restrict file_name) {
+int save_fits_atomic(
+    const char* restrict ID_name,
+    const char* restrict file_name
+) {
     long ID;
     uint8_t datatype;
     char fnametmp[1000];
@@ -1588,28 +2380,46 @@ int save_fits_atomic(const char *restrict ID_name, const char *restrict file_nam
 
         datatype = data.image[ID].md[0].datatype;
         switch(datatype) {
-            case _DATATYPE_UINT8:
-                save_ush_fits(ID_name, savename);
-                break;
-            case _DATATYPE_INT8:
-                save_sh_fits(ID_name, savename);
-                break;
-            case _DATATYPE_UINT16:
-                save_ush_fits(ID_name, savename);
-                break;
+			
+        case _DATATYPE_UINT8:
+            save_ush16_fits(ID_name, savename);
+            break;
+            
+        case _DATATYPE_INT8:
+            save_sh16_fits(ID_name, savename);
+            break;
+            
+        case _DATATYPE_UINT16:
+            save_ush16_fits(ID_name, savename);
+            break;
 
-            case _DATATYPE_INT16:
-                save_sh_fits(ID_name, savename);
-                break;
+        case _DATATYPE_INT16:
+            save_sh16_fits(ID_name, savename);
+            break;
 
+        case _DATATYPE_UINT32:
+            save_uint32_fits(ID_name, savename);
+            break;
 
-            // TBD: i32 and i64
-            case _DATATYPE_FLOAT:
-                save_fl_fits(ID_name, savename);
-                break;
-            case _DATATYPE_DOUBLE:
-                save_db_fits(ID_name, savename);
-                break;
+        case _DATATYPE_INT32:
+            save_int32_fits(ID_name, savename);
+            break;
+
+        case _DATATYPE_UINT64:
+            save_int64_fits(ID_name, savename);
+            break;
+
+        case _DATATYPE_INT64:
+            save_int64_fits(ID_name, savename);
+            break;
+
+        case _DATATYPE_FLOAT:
+            save_fl_fits(ID_name, savename);
+            break;
+            
+        case _DATATYPE_DOUBLE:
+            save_db_fits(ID_name, savename);
+            break;
         }
 
         if(sprintf(command, "mv %s %s", fnametmp, file_name) < 1) {
@@ -1626,17 +2436,21 @@ int save_fits_atomic(const char *restrict ID_name, const char *restrict file_nam
 
 
 
-int saveall_fits(const char *restrict savedirname) {
+int saveall_fits(
+    const char* restrict savedirname
+) {
     long i;
     char fname[1000];
     char command[1000];
 
     if(sprintf(command, "mkdir -p %s", savedirname) < 1) {
-        printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
+        printERROR(__FILE__, __func__, __LINE__,
+                   "sprintf wrote <1 char");
     }
 
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        printERROR(__FILE__, __func__, __LINE__,
+                   "system() returns non-zero value");
     }
 
     for(i = 0; i < data.NB_MAX_IMAGE; i++)
@@ -1669,7 +2483,9 @@ int saveall_fits(const char *restrict savedirname) {
 /* =============================================================================================== */
 
 
-int break_cube(const char *restrict ID_name) {
+int break_cube(
+    const char* restrict ID_name
+) {
     long ID;
     uint32_t naxes[3];
     long ii, jj, kk;
@@ -1707,7 +2523,11 @@ int break_cube(const char *restrict ID_name) {
 
 
 
-int images_to_cube(const char *restrict img_name, long nbframes, const char *restrict cube_name) {
+int images_to_cube(
+    const char* restrict img_name,
+    long                 nbframes,
+    const char* restrict cube_name
+) {
     long ID, ID1;
     long frame;
     char imname[SBUFFERSIZE];
