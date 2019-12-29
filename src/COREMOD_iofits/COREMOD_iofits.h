@@ -24,7 +24,12 @@ int save_db_fits(const char * restrict ID_name, const char * restrict file_name)
 
 int save_fl_fits(const char * restrict ID_name, const char * restrict file_name);
 
-int save_sh_fits(const char * restrict ID_name, const char * restrict file_name);
+int save_sh16_fits(const char * restrict ID_name, const char * restrict file_name);
+int save_ush16_fits(const char * restrict ID_name, const char * restrict file_name);
+int save_int32_fits(const char * restrict ID_name, const char * restrict file_name);
+int save_uint32_fits(const char * restrict ID_name, const char * restrict file_name);
+int save_long64_fits(const char * restrict ID_name, const char * restrict file_name);
+
 
 int save_fits(const char * restrict ID_name, const char * restrict file_name);
 int save_fits_atomic(const char * restrict ID_name, const char * restrict file_name);
