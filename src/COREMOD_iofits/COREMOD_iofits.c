@@ -567,7 +567,8 @@ long load_fits(
 
 
 
-    for(try = 0; try < NBtry; try++) {
+    for(try = 0; try < NBtry; try++)
+                {
                     if(fileOK == 0) {
                         if(fits_open_file(&fptr, file_name, READONLY, &FITSIO_status)) {
                             if(check_FITSIO_status(__FILE__, __func__, __LINE__, PrintErrorMsg) != 0) {
@@ -792,11 +793,11 @@ long load_fits(
 
         /* bitpix = 32   TLONG */
         if(bitpix == 32) {
-            fits_read_key(fptr, TLONG, "NDR", &NDR, comment, &FITSIO_status);
+            /*fits_read_key(fptr, TLONG, "NDR", &NDR, comment, &FITSIO_status);
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1) {
                 NDR = 1;
-            }
-            ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
+            }*/
+            ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_INT32, data.SHARED_DFT, data.NBKEWORD_DFT);
             larray = (long *) malloc(sizeof(long) * nelements);
             if(larray == NULL) {
                 printERROR(__FILE__, __func__, __LINE__, "malloc error");
@@ -831,7 +832,7 @@ long load_fits(
 
             bzero = 0.0;
             for(ii = 0; ii < nelements; ii++) {
-                data.image[ID].array.F[ii] = ((1.0 * larray[ii] * bscale + bzero) / NDR);
+                data.image[ID].array.SI32[ii] = larray[ii] * bscale + bzero;
             }
             free(larray);
             larray = NULL;
