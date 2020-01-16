@@ -333,7 +333,11 @@ errno_t write_process_exit_report(char *errortypestring)
     sprintf(fname, "exitreport-%s.%05d.log", errortypestring, thisPID);
 
     printf("EXIT CONDITION < %s >: See report in file %s\n", errortypestring, fname);
-
+    printf("    File    : %s\n", data.testpoint_file);
+    printf("    Function: %s\n", data.testpoint_func);
+    printf("    Line    : %d\n", data.testpoint_line);
+    printf("    Message : %s\n", data.testpoint_msg);
+    fflush(stdout);
 
     struct tm *uttime;
     time_t tvsec0, tvsec1;
@@ -357,8 +361,8 @@ errno_t write_process_exit_report(char *errortypestring)
         fprintf_stdout(fpexit, "    Time    : %04d%02d%02dT%02d%02d%02d.%09ld\n",
                        1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, data.testpoint_time.tv_nsec);
 
-		double timediff = 1.0*(tvsec0-tvsec1) + 1.0e-9*(tnow.tv_nsec-data.testpoint_time.tv_nsec);
-		fprintf_stdout(fpexit, "              %.9f sec ago\n", timediff);
+        double timediff = 1.0*(tvsec0-tvsec1) + 1.0e-9*(tnow.tv_nsec-data.testpoint_time.tv_nsec);
+        fprintf_stdout(fpexit, "              %.9f sec ago\n", timediff);
 
         fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint_file);
         fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint_func);

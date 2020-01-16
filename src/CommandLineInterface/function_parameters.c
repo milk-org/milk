@@ -5586,7 +5586,6 @@ errno_t functionparameter_CTRLscreen(
 
     FPSCTRL_GUIVARS fpsCTRLgui;
 
-
     FUNCTION_PARAMETER_STRUCT *fps;
 
 
@@ -5629,6 +5628,7 @@ errno_t functionparameter_CTRLscreen(
 
     TESTPOINT(" ");
 
+	
 
     // initialize fpsCTRLgui
     fpsCTRLgui.mode = mode;
