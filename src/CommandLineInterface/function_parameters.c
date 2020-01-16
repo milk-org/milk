@@ -5023,9 +5023,9 @@ static errno_t functionparameter_scan_fps(
 
 void functionparameter_CTRLscreen_atexit()
 {
-    //	printf("exiting CTRLscreen\n");
+   	printf("exiting CTRLscreen\n");
 
-    //	endwin();
+    endwin();
 }
 
 
@@ -6675,9 +6675,9 @@ errno_t functionparameter_CTRLscreen(
             }
 
             TESTPOINT(" ");
-
-
             refresh();
+            TESTPOINT(" ");
+            
 
         } // end run_display
 
