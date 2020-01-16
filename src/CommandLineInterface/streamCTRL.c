@@ -78,7 +78,7 @@
 /* =============================================================================================== */
 
 
- #if !defined(STREAMCTRL_LOGDEBUG) || defined(STANDALONE)
+#if !defined(STREAMCTRL_LOGDEBUG) || defined(STANDALONE)
 #define TESTPOINT(...)
 #endif
 
