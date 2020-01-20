@@ -331,10 +331,13 @@ errno_t processinfo_loopstart(
         // ===========================
         schedpar.sched_priority = processinfo->RT_priority;
 #ifndef __MACH__
-        int r;
-        r = seteuid(data.euid); // This goes up to maximum privileges
-        sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
-        r = seteuid(data.ruid); //Go back to normal privileges
+    if( seteuid(data.euid) != 0 ) { //This goes up to maximum privileges
+		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+	}        
+    sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
+    if( seteuid(data.ruid) != 0 ) { //Go back to normal privileges
+		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+	}
 #endif
     }
 
@@ -488,7 +491,7 @@ long processinfo_shm_list_create()
     else
     {
 		int SM_fd;
-		struct stat file_stat;
+		//struct stat file_stat;
 		
         pinfolist = (PROCESSINFOLIST *)processinfo_shm_link(SM_fname, &SM_fd);
         while((pinfolist->active[pindex] != 0)&&(pindex<PROCESSINFOLISTSIZE))
@@ -648,7 +651,7 @@ PROCESSINFO *processinfo_shm_create(
 
 
     // create logfile
-    char logfilename[300];
+    //char logfilename[300];
     struct timespec tnow;
 
     clock_gettime(CLOCK_REALTIME, &tnow);
@@ -905,13 +908,13 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 
 
 
-int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring) {
+int processinfo_WriteMessage(
+    PROCESSINFO *processinfo,
+    const char  *msgstring
+) {
 #ifdef PROCESSINFO_ENABLED
     struct timespec tnow;
     struct tm *tmnow;
-    char msgstringFull[300];
-    FILE *fp;
-
 
     TESTPOINT(" ");
 
@@ -922,11 +925,12 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring) {
 
     TESTPOINT(" ");
 
-    fprintf(processinfo->logFile, "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
-            tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int)(0.001 * (tnow.tv_nsec)),
-            tnow.tv_sec, tnow.tv_nsec,
-            (int) processinfo->PID,
-            msgstring);
+    fprintf( processinfo->logFile,
+             "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
+             tmnow->tm_hour, tmnow->tm_min, tmnow->tm_sec, (int)(0.001 * (tnow.tv_nsec)),
+             tnow.tv_sec, tnow.tv_nsec,
+             (int) processinfo->PID,
+             msgstring);
 
     TESTPOINT(" ");
     fflush(processinfo->logFile);
@@ -1520,9 +1524,9 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 	clock_gettime(CLOCK_REALTIME, &t1);
     if(level == 0)
     {
-        FILE *fpout;
-        char command[200];
-        char outstring[200];
+        //FILE *fpout;
+        //char command[200];
+        //char outstring[200];
 
         pinfodisp->subprocPIDarray[0] = PID;
         pinfodisp->NBsubprocesses = 1;
@@ -1539,7 +1543,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 			if (dp != NULL)
 			{
-				while (ep = readdir(dp))
+				while ((ep = readdir(dp)))
 					{
 						if(ep->d_name[0] != '.')
 						{
@@ -2083,14 +2087,14 @@ void *processinfo_scan(void *thptr) {
 
                 if((pindex < pinfop->NBpinfodisp) && (pinfop->updatearray[pindex] == 1)) {
                     // (RE)LOAD
-                    struct stat file_stat;
+                    //struct stat file_stat;
                     
                     TESTPOINT(" ");
 
                     // if already mmapped, first unmap
                     if(pinfop->pinfommapped[pindex] == 1) {
                         processinfo_shm_close(pinfop->pinfoarray[pindex], pinfop->fdarray[pindex]);
-                        pinfop->pinfommapped[pindex] == 0;
+                        pinfop->pinfommapped[pindex] = 0;
                     }
                     
                     
@@ -2372,6 +2376,7 @@ void processinfo_CTRLscreen_handle_winch(int sig)
 
 
 
+
 /**
  * ## Purpose
  *
@@ -2400,7 +2405,7 @@ errno_t processinfo_CTRLscreen()
     // timers
     struct timespec t1loop;
     struct timespec t2loop;
-    struct timespec tdiffloop;
+    //struct timespec tdiffloop;
 
     struct timespec t01loop;
     struct timespec t02loop;
@@ -2582,7 +2587,7 @@ errno_t processinfo_CTRLscreen()
     while( loopOK == 1 )
     {
         int pid;
-        char command[200];
+        //char command[200];
 
         TESTPOINT(" ");
 
@@ -3889,13 +3894,13 @@ errno_t processinfo_CTRLscreen()
                                     int spindex; // sub process index, 0 for main
                                     for(spindex = 0; spindex < procinfoproc.pinfodisp[pindex].NBsubprocesses; spindex++)
                                     {
-                                        int TID; // thread ID
+                                        //int TID; // thread ID
 
 
 
                                         if(spindex>0)
                                         {
-                                            TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
+                                            //TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
                                             sprintf(string, " %*.*s %-*.*d %-*.*s",
                                                     pstrlen_status, pstrlen_status, "|---",
                                                     pstrlen_pid, pstrlen_pid, procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex],
@@ -3906,7 +3911,7 @@ errno_t processinfo_CTRLscreen()
                                         }
                                         else
                                         {
-                                            TID = procinfoproc.pinfodisp[pindex].PID;
+                                            //TID = procinfoproc.pinfodisp[pindex].PID;
                                             procinfoproc.pinfodisp[pindex].subprocPIDarray[0] = procinfoproc.pinfodisp[pindex].PID;
                                         }
 
@@ -4034,13 +4039,13 @@ errno_t processinfo_CTRLscreen()
 
                                         //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                         memColor = 1;
-                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex]>100*1024>10)        // 10 MB
+                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex] > 10*1024)        // 10 MB
                                             memColor = 2;
-                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex]>100*1024)       // 100 MB
+                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex] > 100*1024)       // 100 MB
                                             memColor = 3;
-                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex]>1024*1024)  // 1 GB
+                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex] > 1024*1024)      // 1 GB
                                             memColor = 4;
-                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex]<1024)            // 1 MB
+                                        if(procinfoproc.pinfodisp[pindex].VmRSSarray[spindex] < 1024)           // 1 MB
                                             memColor = 5;
 
                                         printw(" ");
@@ -4121,7 +4126,7 @@ errno_t processinfo_CTRLscreen()
                                 {
                                     long *dtiter_array;
                                     long *dtexec_array;
-                                    int dtindex;
+                                    //int dtindex;
 
 
                                     printw(" %3d ..%02ld  ", procinfoproc.pinfoarray[pindex]->timerindex, procinfoproc.pinfoarray[pindex]->timingbuffercnt % 100);
@@ -4131,7 +4136,7 @@ errno_t processinfo_CTRLscreen()
                                     dtexec_array = (long*) malloc(sizeof(long)*(PROCESSINFO_NBtimer-1));
 
                                     int tindex;
-                                    dtindex = 0;
+                                    //dtindex = 0;
 
                                     // we exclude the current timerindex, as timers may not all be written
                                     for(tindex=0; tindex<PROCESSINFO_NBtimer-1; tindex++)
@@ -4393,7 +4398,7 @@ errno_t processinfo_CTRLscreen()
         if(procinfoproc.pinfommapped[pindex] == 1)
         {
             processinfo_shm_close(procinfoproc.pinfoarray[pindex], procinfoproc.fdarray[pindex]);
-            procinfoproc.pinfommapped[pindex] == 0;
+            procinfoproc.pinfommapped[pindex] = 0;
         }
 
     }
