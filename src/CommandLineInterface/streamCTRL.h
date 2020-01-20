@@ -144,13 +144,10 @@ extern "C" {
  * INITIALIZE ncurses
  *
  */
-static int initncurses();
 
 int get_process_name_by_pid(const int pid, char *pname);
 
 int streamCTRL_CatchSignals();
-
-static int get_PIDmax();
 
 void *streamCTRL_scan(void* thptr);
 

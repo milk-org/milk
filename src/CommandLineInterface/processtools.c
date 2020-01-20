@@ -2383,7 +2383,6 @@ void processinfo_CTRLscreen_handle_winch(int sig)
  *
  *
  */
-
 errno_t processinfo_CTRLscreen()
 {
     long pindex, index;

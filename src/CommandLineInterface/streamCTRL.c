@@ -155,11 +155,15 @@ static int initncurses()
 
 
 
-
-long image_ID_from_images(IMAGE* images, const char *name) /* ID number corresponding to a name */
+/*
+ * returns ID number corresponding to a name
+ */
+long image_ID_from_images(
+    IMAGE* images,
+    const char* restrict name
+) 
 {
     long i;
-    struct timespec timenow;
 
     i = 0;
     do {
@@ -168,7 +172,6 @@ long image_ID_from_images(IMAGE* images, const char *name) /* ID number correspo
             if((strncmp(name, images[i].name, strlen(name))==0) && (images[i].name[strlen(name)]=='\0'))
             {
                 clock_gettime(CLOCK_REALTIME, &images[i].md[0].lastaccesstime);
-//                images[i].md[0].lastaccess = 1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec;
                 return i;
             }
         }
@@ -181,18 +184,19 @@ long image_ID_from_images(IMAGE* images, const char *name) /* ID number correspo
 
 
 
-long image_get_first_ID_available_from_images(IMAGE* images)
+long image_get_first_ID_available_from_images(
+    IMAGE* images
+)
 {
     long i;
-    struct timespec timenow;
 
     i = 0;
     do {
-      if(images[i].used == 0){
-        images[i].used = 1;
-        return i;
-      }
-      i++;
+        if(images[i].used == 0) {
+            images[i].used = 1;
+            return i;
+        }
+        i++;
     } while(i != streamNBID_MAX);
     printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
     printf("NB_MAX_IMAGE should be increased above current value (%d)\n", streamNBID_MAX);
@@ -304,10 +308,12 @@ struct arg_struct {
 
 
 
-void *streamCTRL_scan(void* argptr)
+void *streamCTRL_scan(
+    void* argptr
+)
 {
-	int stringmaxlen = 500;
-	
+    int stringmaxlen = 500;
+
     long NBsindex = 0;
     long sindex = 0;
     long scancnt = 0;
@@ -336,7 +342,7 @@ void *streamCTRL_scan(void* argptr)
 
 
     // if set, write file list to file on first scan
-    int WriteFlistToFile = 1;
+    //int WriteFlistToFile = 1;
 
 
     FILE *fpfscan;
@@ -420,7 +426,6 @@ void *streamCTRL_scan(void* argptr)
                         char fullname[200];
                         char *linknamefull; //[200];
                         char linkname[200];
-                        int nchar;
 
 
                         streaminfo[sindex].SymLink = 1;
@@ -587,8 +592,6 @@ void *streamCTRL_scan(void* argptr)
                     }
                     else
                     {
-                        size_t len = 0;
-
                         if(fgets(plistoutline, 2000-1, fp) == NULL)
                             sprintf(plistoutline, " ");
 
@@ -686,20 +689,20 @@ errno_t streamCTRL_CTRLscreen() {
     STREAMINFOPROC streaminfoproc;
 
     long sindex;  // scan index
-    long IDscan;
+    //long IDscan;
     long dindex;  // display index
     long doffsetindex = 0; // offset index if more entries than can be displayed
 
     long ssindex[streamNBID_MAX]; // sorted index array
 
-    long index;
+    //long index;
 
     float frequ = 32.0; // Hz
     char  monstring[200];
 
-    long IDmax = streamNBID_MAX;
+    //long IDmax = streamNBID_MAX;
 
-    int sOK;
+    //int sOK;
 
     int SORTING = 0;
     int SORT_TOGGLE = 0;
@@ -807,8 +810,8 @@ errno_t streamCTRL_CTRLscreen() {
     loopcnt = 0;
 
     while(loopOK == 1) {
-        int pid;
-        char command[200];
+        //int pid;
+        //char command[200];
 
 		TESTPOINT(" ");
 
@@ -828,7 +831,7 @@ errno_t streamCTRL_CTRLscreen() {
         TESTPOINT(" ");
 
 
-        int selectedOK = 0; // goes to 1 if at least one process is selected
+        //int selectedOK = 0; // goes to 1 if at least one process is selected
         switch(ch) {
         case 'x':     // Exit control screen
             loopOK = 0;
@@ -1337,7 +1340,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-                char line[200];
+                //char line[200];
                 char string[200];
                 int charcnt = 0;        // how many chars are about to be printed
                 int linecharcnt = 0;    // keeping track of number of characters in line
@@ -1477,7 +1480,7 @@ errno_t streamCTRL_CTRLscreen() {
                         charcnt = sprintf(string, " %10ld", images[ID].md[0].cnt0);
                     }
                     linecharcnt += charcnt;
-                    if(linecharcnt < wcol)
+                    if(linecharcnt < wcol) {
                         if(streaminfo[sindex].deltacnt0 == 0) {
                             printw(string);
                         } else {
@@ -1485,6 +1488,7 @@ errno_t streamCTRL_CTRLscreen() {
                             printw(string);
                             attroff(COLOR_PAIR(2));
                         }
+					}
 
                     if(images[streaminfo[sindex].ID].md == NULL)
                     {
