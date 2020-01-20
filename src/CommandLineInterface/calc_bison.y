@@ -32,7 +32,7 @@ int yyerror(char *);
   long     val_l;  /* long */  
   float    val_f;  /* float */
   double   val_d;  /* For returning numbers.     */
-  char  *string;   /* For returning strings (variables, images)  */
+  char  string[200];   /* For returning strings (variables, images)  */
   double (*fnctptr)();    /* pointer to function -> double */
 }
 
@@ -137,38 +137,39 @@ expd:      TKNUMd      { $$ = $1;        if(data.Debug>0){printf("this is a doub
 | '(' expd ')'         { $$ = $2;                         }
 ;
 
+//$$ = strdup($1)
 
-exps:    TKNVAR         {$$ = strdup($1);        data.cmdargtoken[data.cmdNBarg].type = 3; if(data.Debug>0){printf("this is a string (new variable/image)\n");}}
-| TKIMAGE               {$$ = strdup($1);        data.cmdargtoken[data.cmdNBarg].type = 4; if(data.Debug>0){printf("this is a string (existing image)\n");}}
-| TKCOMMAND             {$$ = strdup($1);        data.cmdargtoken[data.cmdNBarg].type = 5; if(data.Debug>0){printf("this is a string (command)\n");}}
-| TKIMAGE '=' exps    {$$ = strdup($1);        delete_image_ID($1); chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
-| TKNVAR '=' exps    {$$ = strdup($1);        chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
-| exps '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_add($1, $3, calctmpimname); $$ = strdup(calctmpimname); if(data.Debug>0){printf("image + image\n");}}
-| exps '+' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) $3, calctmpimname); $$=strdup(calctmpimname);  if(data.Debug>0){printf("image + double\n");}}
-| exps '+' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image + long\n");}}
-| expd '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("double + image\n");}}
-| expl '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("long + image\n");}}
-| exps '-' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_sub($1, $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image + image\n");}}
-| exps '-' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) -$3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image - double\n");}}
-| exps '-' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) -$3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image - long\n");}}
-| expd '-' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstsubm($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("double - image\n");}}
-| expl '-' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstsubm($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("long - image\n");}}
-| exps '*' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_mult($1, $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image * image\n");}}
-| exps '*' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image * double\n");}}
-| exps '*' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image * long\n");}}
-| expd '*' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("double * image\n");}}
-| expl '*' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("long * image\n");}}
-| exps '/' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_div($1, $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image / image\n");}}
-| exps '/' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image - double\n");}}
-| exps '/' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image - long\n");}}
-| expd '/' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("double - image\n");}}
-| expl '/' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($3,(double) $1, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("long - image\n");}}
-| exps '^' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstpow($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image^long\n");}}
-| exps '^' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstpow($1,(double) $3, calctmpimname); $$=strdup(calctmpimname); if(data.Debug>0){printf("image^double\n");}}
-| TKFUNC_d_d exps ')'           {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_im_im__d_d($2, calctmpimname, $1); $$=strdup(calctmpimname); if(data.Debug>0){printf("double_func(double)\n");}}
-| TKFUNC_dd_d exps ',' expd ')' {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_imd_im__dd_d($2, (double) $4, calctmpimname, $1); $$=strdup(calctmpimname); if(data.Debug>0){printf("double_func(double, double)\n");}}
-| TKFUNC_ddd_d exps ',' expd ',' expd ')' {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_imdd_im__ddd_d($2, (double) $4, (double) $6, calctmpimname, $1); $$=strdup(calctmpimname); if(data.Debug>0){printf("double_func(double, double, double)\n");}}
-| '(' exps ')'         { $$ = strdup($2);                         }
+exps:    TKNVAR         {strcpy($$, $1);        data.cmdargtoken[data.cmdNBarg].type = 3; if(data.Debug>0){printf("this is a string (new variable/image)\n");}}
+| TKIMAGE               {strcpy($$, $1);        data.cmdargtoken[data.cmdNBarg].type = 4; if(data.Debug>0){printf("this is a string (existing image)\n");}}
+| TKCOMMAND             {strcpy($$, $1);        data.cmdargtoken[data.cmdNBarg].type = 5; if(data.Debug>0){printf("this is a string (command)\n");}}
+| TKIMAGE '=' exps    {strcpy($$, $1);        delete_image_ID($1); chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
+| TKNVAR '=' exps    {strcpy($$, $1);        chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
+| exps '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_add($1, $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image + image\n");}}
+| exps '+' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) $3, calctmpimname); strcpy($$, calctmpimname);  if(data.Debug>0){printf("image + double\n");}}
+| exps '+' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image + long\n");}}
+| expd '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("double + image\n");}}
+| expl '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("long + image\n");}}
+| exps '-' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_sub($1, $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image + image\n");}}
+| exps '-' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) -$3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image - double\n");}}
+| exps '-' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) -$3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image - long\n");}}
+| expd '-' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstsubm($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("double - image\n");}}
+| expl '-' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstsubm($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("long - image\n");}}
+| exps '*' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_mult($1, $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image * image\n");}}
+| exps '*' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image * double\n");}}
+| exps '*' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image * long\n");}}
+| expd '*' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("double * image\n");}}
+| expl '*' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstmult($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("long * image\n");}}
+| exps '/' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_div($1, $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image / image\n");}}
+| exps '/' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image - double\n");}}
+| exps '/' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image - long\n");}}
+| expd '/' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("double - image\n");}}
+| expl '/' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstdiv($3,(double) $1, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("long - image\n");}}
+| exps '^' expl      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstpow($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image^long\n");}}
+| exps '^' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstpow($1,(double) $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image^double\n");}}
+| TKFUNC_d_d exps ')'           {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_im_im__d_d($2, calctmpimname, $1); strcpy($$, calctmpimname); if(data.Debug>0){printf("double_func(double)\n");}}
+| TKFUNC_dd_d exps ',' expd ')' {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_imd_im__dd_d($2, (double) $4, calctmpimname, $1); strcpy($$, calctmpimname); if(data.Debug>0){printf("double_func(double, double)\n");}}
+| TKFUNC_ddd_d exps ',' expd ',' expd ')' {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_function_imdd_im__ddd_d($2, (double) $4, (double) $6, calctmpimname, $1); strcpy($$, calctmpimname); if(data.Debug>0){printf("double_func(double, double, double)\n");}}
+| '(' exps ')'         { strcpy($$, $2);                         }
 ;
 
 

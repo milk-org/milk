@@ -39,7 +39,6 @@ return TKNUMd;
 
 
 
- 
 
 "sin("	{
 if(data.Debug>0){printf("Found function %s\n", yytext);} 
@@ -184,7 +183,7 @@ return TKFUNC_imd_d;
 
 {string}      {
 if(data.Debug>0){printf("Found string %s\n", yytext);}
-yylval.string = strdup(yytext);
+strcpy(yylval.string, yytext);
 if(variable_ID(yytext)!=-1) {if(data.Debug>0){printf("THIS IS A VARIABLE\n");} return TKVAR;}
 if(image_ID(yytext)!=-1) {if(data.Debug>0){printf("THIS IS AN IMAGE\n");} return TKIMAGE;}
 if(data.cmdNBarg==0)

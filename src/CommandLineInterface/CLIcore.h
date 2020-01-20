@@ -4,7 +4,6 @@
  * 
  * Command line interface (CLI) definitions and function prototypes
  * 
- *
  * @bug No known bugs. 
  * 
  */
@@ -36,9 +35,17 @@
 
 
 
+// define (custom) types for function return value
+
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
 #endif
+
+typedef long imageID;
+typedef long variableID;
+
+
+
 
 
 
@@ -150,13 +157,13 @@ extern uid_t suid;
 
 
 typedef struct {
-    char key[100];            // command keyword
-    char module[200];          // module name
-    int_fast8_t (* fp) ();    // command function pointer
-    char info   [1000];       // short description/help
-    char syntax [1000];       // command syntax
-    char example[1000];       // command example
-    char Ccall[1000];
+    char     key[100];           // command keyword
+    char     module[200];        // module name
+    errno_t  (* fp) ();          // command function pointer
+    char     info[1000];         // short description/help
+    char     syntax[1000];       // command syntax
+    char     example[1000];      // command example
+    char     Ccall[1000];
 } CMD;
 
 
@@ -229,6 +236,8 @@ typedef struct
 } VARIABLE;
 
 
+
+
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
 {
@@ -276,38 +285,39 @@ typedef struct
 	// when root privileges needed, we set euid <- suid
 	// when reverting to user privileges : euid <- ruid
     
-    int Debug;
-    int quiet;
-    int overwrite;		// automatically overwrite FITS files
-    double INVRANDMAX;
-    gsl_rng *rndgen;		// random number generator
-    int precision;		// default precision: 0 for float, 1 for double
+    int       Debug;
+    int       quiet;
+    int       overwrite;		// automatically overwrite FITS files
+    double    INVRANDMAX;
+    gsl_rng * rndgen;		// random number generator
+    int       precision;		// default precision: 0 for float, 1 for double
 
     // logging, process monitoring
-    int CLIlogON;
-    char CLIlogname[200];  
-    int processinfo;       // 1 if processes info is to be logged
-    int processinfoActive; // 1 is the process is currently logged
-    PROCESSINFO *pinfo;    // pointer to process info structure
+    int          CLIloopON;
+    int          CLIlogON;
+    char         CLIlogname[200];  
+    int          processinfo;       // 1 if processes info is to be logged
+    int          processinfoActive; // 1 is the process is currently logged
+    PROCESSINFO *pinfo;             // pointer to process info structure
 
     // Command Line Interface (CLI) INPUT
-    int fifoON;
+    int  fifoON;
     char processname[100];
     char processname0[100];
-    int processnameflag;
+    int  processnameflag;
     char fifoname[100];
     uint_fast16_t NBcmd;
     
-    long NB_MAX_COMMAND;
-    CMD cmd[1000];
+    long  NB_MAX_COMMAND;
+    CMD   cmd[1000];
     
-    int parseerror; // 1 if error, 0 otherwise
-    long cmdNBarg;  // number of arguments in last command line
-    CMDARGTOKEN cmdargtoken[NB_ARG_MAX];
-    long cmdindex; // when command is found in command line, holds index of command
-    long calctmp_imindex; // used to create temporary images
-    int CMDexecuted; // 0 if command has not been executed, 1 otherwise
-    long NBmodule;
+    int          parseerror;         // 1 if error, 0 otherwise
+    long         cmdNBarg;           // number of arguments in last command line
+    CMDARGTOKEN  cmdargtoken[NB_ARG_MAX];
+    long         cmdindex;           // when command is found in command line, holds index of command
+    long         calctmp_imindex;    // used to create temporary images
+    int          CMDexecuted;        // 0 if command has not been executed, 1 otherwise
+    long         NBmodule;
     
     long NB_MAX_MODULE;
     MODULE module[100];
@@ -365,10 +375,23 @@ errno_t set_signal_catch();
 
 void sig_handler(int signo);
 
-int_fast8_t RegisterModule(char *FileName, char *PackageName, char *InfoString);
+errno_t RegisterModule(
+    const char * restrict FileName,
+    const char * restrict PackageName,
+    const char * restrict InfoString
+);
 
-uint_fast16_t RegisterCLIcommand(char *CLIkey, char *CLImodule, int_fast8_t (*CLIfptr)(), char *CLIinfo, char *CLIsyntax, char *CLIexample, char *CLICcall);
+uint_fast16_t RegisterCLIcommand(
+    const char * restrict CLIkey,
+    const char * restrict CLImodule,
+    errno_t (*CLIfptr)(),
+    const char * restrict CLIinfo,
+    const char * restrict CLIsyntax,
+    const char * restrict CLIexample,
+    const char * restrict CLICcall
+);
 
-int_fast8_t runCLI(int argc, char *argv[], char *promptstring);
+errno_t runCLItest(int argc, char *argv[], char *promptstring);
+errno_t runCLI(int argc, char *argv[], char *promptstring);
 
 #endif
