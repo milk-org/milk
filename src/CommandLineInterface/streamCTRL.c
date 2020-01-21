@@ -78,10 +78,6 @@
 /* =============================================================================================== */
 
 
-#if !defined(STREAMCTRL_LOGDEBUG) || defined(STANDALONE)
-#define TESTPOINT(...)
-#endif
-
 #define STRINGLENMAX  32
 
 #define streamNBID_MAX 10000
@@ -708,7 +704,7 @@ errno_t streamCTRL_CTRLscreen() {
     int SORT_TOGGLE = 0;
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     pthread_t threadscan;
 
@@ -773,7 +769,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
     clear();
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     // redirect stderr to /dev/null
 
@@ -793,7 +789,7 @@ errno_t streamCTRL_CTRLscreen() {
 #endif
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
 
@@ -802,7 +798,7 @@ errno_t streamCTRL_CTRLscreen() {
     pthread_create(&threadscan, NULL, streamCTRL_scan, (void *) &args);
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     char c; // for user input
     int stringindex;
@@ -813,7 +809,7 @@ errno_t streamCTRL_CTRLscreen() {
         //int pid;
         //char command[200];
 
-		TESTPOINT(" ");
+		DEBUG_TRACEPOINT(" ");
 
         if(streaminfoproc.loopcnt == 1) {
             SORTING = 2;
@@ -828,7 +824,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         NBsindex = streaminfoproc.NBstream;
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
         //int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -906,10 +902,10 @@ errno_t streamCTRL_CTRLscreen() {
         // ============ ACTIONS
 
         case 'R': // remove stream
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             sindex = ssindex[dindexSelected];            
             ImageStreamIO_destroyIm(&images[streaminfo[sindex].ID]);
-            TESTPOINT("%d  %s", dindexSelected, fname);
+            DEBUG_TRACEPOINT("%d  %s", dindexSelected, fname);
             break;
 
 
@@ -1008,7 +1004,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         }
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         
         if(dindexSelected < 0) {
                 dindexSelected = 0;
@@ -1017,7 +1013,7 @@ errno_t streamCTRL_CTRLscreen() {
                 dindexSelected = NBsindex - 1;
             }
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         erase();
 
@@ -1032,7 +1028,7 @@ errno_t streamCTRL_CTRLscreen() {
         if(DisplayMode == 1) { // help
             int attrval = A_BOLD;
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             attron(attrval);
             printw("    x");
@@ -1136,7 +1132,7 @@ errno_t streamCTRL_CTRLscreen() {
 
             printw("\n\n");
         } else {
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             if(DisplayMode == 1) {
                 attron(A_REVERSE);
                 printw("[h] Help");
@@ -1221,7 +1217,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
 
@@ -1235,7 +1231,7 @@ errno_t streamCTRL_CTRLscreen() {
             }
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             if(SORTING == 1) { // alphabetical sorting
                 long *larray;
@@ -1261,7 +1257,7 @@ errno_t streamCTRL_CTRLscreen() {
                 free(larray);
             }
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
             if((SORTING == 2) || (SORTING == 3)) { // recent update and process access
@@ -1302,7 +1298,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             // compute doffsetindex
             
@@ -1376,7 +1372,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
 
 
@@ -1444,7 +1440,7 @@ errno_t streamCTRL_CTRLscreen() {
                         printw(string);
                     }
 
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                     if(images[streaminfo[sindex].ID].md == NULL)
                     {
                         sprintf(str, "???");
@@ -1461,7 +1457,7 @@ errno_t streamCTRL_CTRLscreen() {
                         strcpy(str, str1);
                     }
 
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
 
                     charcnt = sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
@@ -1505,7 +1501,7 @@ errno_t streamCTRL_CTRLscreen() {
 
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 if(images[streaminfo[sindex].ID].md != NULL) {
                     if((DisplayMode == 2) && (DisplayFlag == 1)) { // sem vals
@@ -1529,7 +1525,7 @@ errno_t streamCTRL_CTRLscreen() {
                     }
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 if(images[streaminfo[sindex].ID].md != NULL) {
                     if((DisplayMode == 3) && (DisplayFlag == 1)) { // sem write PIDs
                         charcnt = sprintf(string, " %3d sems ", images[ID].md[0].sem);
@@ -1564,7 +1560,7 @@ errno_t streamCTRL_CTRLscreen() {
                     }
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 if(images[streaminfo[sindex].ID].md != NULL) {
                     if((DisplayMode == 4) && (DisplayFlag == 1)) { // sem read PIDs
@@ -1606,7 +1602,7 @@ errno_t streamCTRL_CTRLscreen() {
                     }
 
 
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                     int pidIndex;
 
@@ -1653,7 +1649,7 @@ errno_t streamCTRL_CTRLscreen() {
 
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 if(DisplayFlag == 1) {
                     if(dindex == dindexSelected) {
@@ -1669,7 +1665,7 @@ errno_t streamCTRL_CTRLscreen() {
                 }
 
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
 #ifndef STANDALONE
                 if(streaminfoproc.fuserUpdate == 1) {
@@ -1686,12 +1682,12 @@ errno_t streamCTRL_CTRLscreen() {
 
         }
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
         refresh();
 
-		TESTPOINT(" ");
+		DEBUG_TRACEPOINT(" ");
 
         loopcnt++;
 #ifndef STANDALONE
@@ -1700,7 +1696,7 @@ errno_t streamCTRL_CTRLscreen() {
         }
 #endif
 
-		TESTPOINT(" ");
+		DEBUG_TRACEPOINT(" ");
     }
 
 
@@ -1718,7 +1714,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 	remove(newstderrfname);
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     
 
 

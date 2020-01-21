@@ -1448,7 +1448,7 @@ errno_t runCLI(
     command_line_process_options(argc, argv);
 
 
-    TESTPOINT("CLI start");
+    DEBUG_TRACEPOINT("CLI start");
 
 
 
