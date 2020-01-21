@@ -25,9 +25,6 @@
 /* =============================================================================================== */
 
 
-
-
-
 #include <stdint.h>
 #include <unistd.h>
 #include <malloc.h>
@@ -102,10 +99,6 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 /* =============================================================================================== */
 
  
- 
- #if !defined(COREMOD_MEMORY_LOGDEBUG) || defined(STANDALONE)
-#define TESTPOINT(...)
-#endif
 
  
 # ifdef _OPENMP
@@ -166,7 +159,6 @@ static long tret; // thread return value
 
 
 
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                                                                                 */
@@ -212,7 +204,7 @@ errno_t image_write_keyword_L_cli()
             + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
             + CLI_checkarg(3, CLIARG_LONG)
             + CLI_checkarg(4, CLIARG_STR_NOT_IMG)
-            ==0)
+            == 0 )
     {
         image_write_keyword_L(
             data.cmdargtoken[1].val.string,
@@ -2215,12 +2207,12 @@ long compute_nb_image()
 {
     long NBimage = 0;
 
-    for(int i=0; i<data.NB_MAX_IMAGE; i++)
+    for(imageID i=0; i<data.NB_MAX_IMAGE; i++)
     {
-        if(data.image[i].used==1)
+        if(data.image[i].used == 1)
             NBimage += 1;
     }
-    
+  
     return NBimage;
 }
 
@@ -2229,7 +2221,7 @@ long compute_nb_variable()
 {
     long NBvar = 0;
 
-    for(int i=0; i<data.NB_MAX_VARIABLE; i++)
+    for(variableID i=0; i<data.NB_MAX_VARIABLE; i++)
     {
         if(data.variable[i].used==1)
             NBvar += 1;
@@ -2247,7 +2239,7 @@ long long compute_image_memory()
 //	printf("Computing num images\n");
 //	fflush(stdout);
 	
-    for(int i=0; i<data.NB_MAX_IMAGE; i++)
+    for(imageID i=0; i<data.NB_MAX_IMAGE; i++)
     {
 		//printf("%5ld / %5ld  %d\n", i, data.NB_MAX_IMAGE, data.image[i].used);
 	//	fflush(stdout);
@@ -2265,7 +2257,7 @@ long compute_variable_memory()
 {
     long totalvmem = 0;
 
-    for(int i=0; i<data.NB_MAX_VARIABLE; i++)
+    for(variableID i=0; i<data.NB_MAX_VARIABLE; i++)
     {
         totalvmem += sizeof(VARIABLE);
         if(data.variable[i].used==1)
@@ -7114,7 +7106,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 	long *kkin     = functionparameter_GetParamPtr_INT64(&fps, ".status.kkin");
 	long *kkout    = functionparameter_GetParamPtr_INT64(&fps, ".status.kkout");
 
-	TESTPOINT(" ");
+	DEBUG_TRACEPOINT(" ");
 
     // ===========================
     /// ### processinfo support
@@ -7212,7 +7204,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     }
 
 
-	TESTPOINT(" ");
+	DEBUG_TRACEPOINT(" ");
 
     // ===========================
     /// ### START LOOP
@@ -7220,13 +7212,13 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
     processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
-	TESTPOINT(" ");
+	DEBUG_TRACEPOINT(" ");
 
     while(loopOK == 1) {
         int kkinscan;
         float normframes = 0.0;
 
-		TESTPOINT(" ");
+		DEBUG_TRACEPOINT(" ");
         loopOK = processinfo_loopstep(processinfo);
 
         usleep(dtus); // main loop wait
@@ -7234,7 +7226,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
         processinfo_exec_start(processinfo);
 
         if(processinfo_compute_status(processinfo) == 1) {
-			TESTPOINT(" ");
+			DEBUG_TRACEPOINT(" ");
 
             // has new frame arrived ?
 //            cnt0 = data.image[IDin].md[0].cnt0;
@@ -7242,12 +7234,12 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 //            if(cnt0 != cnt0old) { // new frame
                 clock_gettime(CLOCK_REALTIME, &t0array[*kkin]);  // record time of input frame
 
-				TESTPOINT(" ");
+				DEBUG_TRACEPOINT(" ");
                 for(ii = 0; ii < xysize; ii++) {
                     data.image[IDimc].array.F[(*kkin) * xysize + ii] = data.image[IDin].array.F[ii];
                 }
                 (*kkin) ++;
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 if((*kkin) == (*zsize)) {
                     (*kkin) = 0;
@@ -7258,14 +7250,14 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
 
             clock_gettime(CLOCK_REALTIME, &tnow);
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
             cntskip = 0;
             tdiff = info_time_diff(t0array[*kkout], tnow);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
             while((tdiffv > 1.0e-6 * delayus) && (cntskip < *zsize)) {
@@ -7278,21 +7270,21 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             }
             
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             
             *framelag = *kkin - *kkout;
             if(*framelag < 0)
 				*framelag += *zsize;
 				
 				
-			TESTPOINT(" ");
+			DEBUG_TRACEPOINT(" ");
 
 
             switch(timeavemode) {
 				
 
                 case 0: // no time averaging - pick more recent frame that matches requirement
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                     if(cntskip > 0) {
                         char *ptr; // pointer address
 
@@ -7311,7 +7303,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
                 default : // strict time window (note: other modes will be coded in the future)
                     normframes = 0.0;
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                     for(ii = 0; ii < xysize; ii++) {
                         arraytmpf[ii] = 0.0;
@@ -7343,14 +7335,14 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
                     break;
             }
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
 
         }
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
     }
 
     // ==================================
@@ -7359,7 +7351,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     processinfo_cleanExit(processinfo);
     function_parameter_RUNexit( &fps );
     
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     delete_image_ID("_tmpc");
 
@@ -7759,7 +7751,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 	printf("Transmit stream %s over IP %s port %d\n", IDname, IPaddr, port);
 	fflush(stdout);
 
-	TESTPOINT(" ");
+	DEBUG_TRACEPOINT(" ");
 
 	if(TMPDEBUG==1)
 		COREMOD_MEMORY_testfunction_semaphore(IDname, 0, 0);
