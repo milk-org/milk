@@ -1950,7 +1950,9 @@ int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
  * Runs in background loop as thread initiated by processinfo_CTRL
  *
  */
-void *processinfo_scan(void *thptr) {
+void *processinfo_scan(
+    void *thptr
+) {
     PROCINFOPROC *pinfop;
 
     pinfop = (PROCINFOPROC *) thptr;
@@ -1961,11 +1963,12 @@ void *processinfo_scan(void *thptr) {
     pinfop->loopcnt = 0;
 
     // timing
-    static int firstIter = 1;
-    static struct timespec t0;
-    struct timespec t1;
-    double tdiffv;
-    struct timespec tdiff;
+    static int       firstIter = 1;
+    static struct    timespec t0;
+    struct timespec  t1;
+    double           tdiffv;
+    struct timespec  tdiff;
+
 
     char  procdname[200];
     processinfo_procdirname(procdname);
