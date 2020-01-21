@@ -17,14 +17,6 @@
 
 
 
-#define PROCESSTOOLS_LOGDEBUG 1
-
-
-
-
-
-
-
 static int CTRLscreenExitLine = 0; // for debugging
 
 
@@ -93,12 +85,6 @@ static int CTRLscreenExitLine = 0; // for debugging
 /*                                      DEFINES, MACROS                                            */
 /* =============================================================================================== */
 /* =============================================================================================== */
-
-
-
-#if !defined(PROCESSTOOLS_LOGDEBUG) || defined(STANDALONE)
-#define TESTPOINT(...)
-#endif
 
 
 
@@ -244,24 +230,24 @@ PROCESSINFO *processinfo_setup(
     static PROCESSINFO *processinfo; // Only one instance of processinfo created by process
     // subsequent calls to this function will re-use the same processinfo structure
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
 
 #ifdef PROCESSINFO_ENABLED
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     if(data.processinfoActive == 0) {
 //        PROCESSINFO *processinfo;
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
         char pinfoname0[200];
         sprintf(pinfoname0, "%s", pinfoname);
        
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
@@ -270,7 +256,7 @@ PROCESSINFO *processinfo_setup(
     }
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     processinfo->loopstat = 0; // loop initialization
     strcpy(processinfo->source_FUNCTION, functionname);
@@ -285,12 +271,12 @@ PROCESSINFO *processinfo_setup(
     processinfo->MeasureTiming =  0;  // default: do not measure timing
     processinfo->RT_priority   = -1;  // default: do not assign RT priority
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 // Process signals are caught for suitable processing and reporting.
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 #endif
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     return processinfo;
 }
 
@@ -916,14 +902,14 @@ int processinfo_WriteMessage(
     struct timespec tnow;
     struct tm *tmnow;
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     clock_gettime(CLOCK_REALTIME, &tnow);
     tmnow = gmtime(&tnow.tv_sec);
 
     strcpy(processinfo->statusmsg, msgstring);
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     fprintf( processinfo->logFile,
              "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
@@ -932,7 +918,7 @@ int processinfo_WriteMessage(
              (int) processinfo->PID,
              msgstring);
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     fflush(processinfo->logFile);
 #endif
     return 0;
@@ -1491,13 +1477,13 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     char fname[200];
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     // cpuset
     
     int PID = pinfodisp->PID;
     
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     
     clock_gettime(CLOCK_REALTIME, &t1);
     sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
@@ -1519,7 +1505,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     char string1[300];
 
 
-    TESTPOINT(" ");	
+    DEBUG_TRACEPOINT(" ");	
 
 	clock_gettime(CLOCK_REALTIME, &t1);
     if(level == 0)
@@ -1798,7 +1784,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     #endif
     
     
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     return 0;
 
@@ -1978,11 +1964,11 @@ void *processinfo_scan(
     pinfop->scandebugline = __LINE__;
 
     while(pinfop->loop == 1) {
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         pinfop->scandebugline = __LINE__;
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         // timing measurement
         clock_gettime(CLOCK_REALTIME, &t1);
@@ -1996,7 +1982,7 @@ void *processinfo_scan(
         clock_gettime(CLOCK_REALTIME, &t0);
         pinfop->dtscan = tdiffv;
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
 
@@ -2017,19 +2003,19 @@ void *processinfo_scan(
         pinfop->SCANBLOCK_requested = 0; // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
 
-		TESTPOINT(" ");
+		DEBUG_TRACEPOINT(" ");
 
         // LOAD / UPDATE process information
         // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
         //
         pinfop->scandebugline = __LINE__;
 
-		TESTPOINT(" ");
+		DEBUG_TRACEPOINT(" ");
 
         for(pindex = 0; pindex < pinfop->NBpinfodisp; pindex++) {
             if(pinfop->loop == 1) {
 				
-				TESTPOINT(" ");
+				DEBUG_TRACEPOINT(" ");
 
                 char SM_fname[200];    // shared memory file name
                 struct stat file_stat;
@@ -2053,7 +2039,7 @@ void *processinfo_scan(
                     pinfop->updatearray[pindex] = 0;
                 }
                 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
 
                 pinfop->scandebugline = __LINE__;
@@ -2069,7 +2055,7 @@ void *processinfo_scan(
                     pinfop->updatearray[pindex] = 0;
                 }
                 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
 
                 if(pinfolist->active[pindex] == 1) {
@@ -2084,7 +2070,7 @@ void *processinfo_scan(
                     }
                 }
                 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 pinfop->scandebugline = __LINE__;
 
@@ -2092,7 +2078,7 @@ void *processinfo_scan(
                     // (RE)LOAD
                     //struct stat file_stat;
                     
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                     // if already mmapped, first unmap
                     if(pinfop->pinfommapped[pindex] == 1) {
@@ -2101,7 +2087,7 @@ void *processinfo_scan(
                     }
                     
                     
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
 
                     // COLLECT INFORMATION FROM PROCESSINFO FILE
@@ -2127,7 +2113,7 @@ void *processinfo_scan(
                         pinfop->pinfodisp[pindex].loopcnt = pinfop->pinfoarray[pindex]->loopcnt;
                     }
                     
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                     pinfop->pinfodisp[pindex].active = pinfolist->active[pindex];
                     pinfop->pinfodisp[pindex].PID = pinfolist->PIDarray[pindex];
@@ -2136,7 +2122,7 @@ void *processinfo_scan(
 
                     // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
                     
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                 }
 
@@ -2157,7 +2143,7 @@ void *processinfo_scan(
           */
         int index;
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         pinfop->NBpindexActive = 0;
         for(pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
@@ -2184,7 +2170,7 @@ void *processinfo_scan(
                 listcnt++;
             }
         }
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         
         pinfop->NBpindexActive = listcnt;
         quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
@@ -2193,7 +2179,7 @@ void *processinfo_scan(
             pinfop->sorted_pindex_time[index] = indexarray[index];
         }
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         free(timearray);
         free(indexarray);
@@ -2212,19 +2198,19 @@ void *processinfo_scan(
 
         pinfop->scandebugline = __LINE__;
         
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
 
         if(pinfop->DisplayMode == 3) { // only compute of displayed processes
-			TESTPOINT(" ");
+			DEBUG_TRACEPOINT(" ");
             pinfop->scandebugline = __LINE__;
             GetCPUloads(pinfop);
             pinfop->scandebugline = __LINE__;
             // collect required info for display
             for(pindexdisp = 0; pindexdisp < pinfop->NBpinfodisp ; pindexdisp++) {
                 if(pinfop->loop == 1) {
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                     if(pinfolist->active[pindexdisp] != 0) {
                         pinfop->scandebugline = __LINE__;
@@ -2301,7 +2287,7 @@ void *processinfo_scan(
                 }
                 else
                 {
-					TESTPOINT(" ");
+					DEBUG_TRACEPOINT(" ");
                     int line = __LINE__;
                     pthread_exit(&line);
                 }
@@ -2312,7 +2298,7 @@ void *processinfo_scan(
         } // end of DisplayMode 3
 
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
         pinfop->loopcnt++;
@@ -2431,7 +2417,7 @@ errno_t processinfo_CTRLscreen()
 
     int ToggleValue;
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     char  procdname[200];
     processinfo_procdirname(procdname);
@@ -2592,7 +2578,7 @@ errno_t processinfo_CTRLscreen()
         int pid;
         //char command[200];
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         if(procinfoproc.SCANBLOCK_requested == 1)
         {
@@ -2626,7 +2612,7 @@ errno_t processinfo_CTRLscreen()
         scantime_CPUload = 0.0;
         scantime_CPUpcnt = 0.0;
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
         if(freeze==0)
@@ -2839,7 +2825,7 @@ errno_t processinfo_CTRLscreen()
             break;
 
         case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
             for(index=0; index<procinfoproc.NBpindexActive; index++)
             {
                 pindex = procinfoproc.pindexActive[index];
@@ -2852,7 +2838,7 @@ errno_t processinfo_CTRLscreen()
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                 }
             }
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             if((selectedOK == 0) && (pindexSelectedOK == 1))
             {
                 pindex = pindexSelected;
@@ -2861,7 +2847,7 @@ errno_t processinfo_CTRLscreen()
                 else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
                     procinfoproc.pinfoarray[pindex]->CTRLval = 0;
             }
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             break;
 
         case 's': // step
@@ -3060,7 +3046,7 @@ errno_t processinfo_CTRLscreen()
             break;
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
         // ============ SCREENS
@@ -3145,7 +3131,7 @@ errno_t processinfo_CTRLscreen()
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         if(freeze==0)
         {
@@ -3368,7 +3354,7 @@ errno_t processinfo_CTRLscreen()
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 
                 printw("pindexSelected = %d    %d\n", pindexSelected, pindexSelectedOK);
 
@@ -3447,7 +3433,7 @@ errno_t processinfo_CTRLscreen()
 
                 printw("\n");
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n",
                        (int) (frequ+0.5),
@@ -3457,7 +3443,7 @@ errno_t processinfo_CTRLscreen()
                        100.0*(procinfoproc.dtscan-1.0e-6*procinfoproc.twaitus)/procinfoproc.dtscan);
 
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 if(procinfoproc.pinfommapped[pindexSelected] == 1)
                 {
@@ -3480,7 +3466,7 @@ errno_t processinfo_CTRLscreen()
 
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 clock_gettime(CLOCK_REALTIME, &t03loop);
 
@@ -3503,12 +3489,12 @@ errno_t processinfo_CTRLscreen()
                 else
                     dispindexMax = procinfoproc.NBpindexActive;
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 if(procinfoproc.DisplayMode == 3)
                 {
                     int cpu;
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
                     // List CPUs
 
@@ -3527,7 +3513,7 @@ errno_t processinfo_CTRLscreen()
                     int CPUpcntLim2 = 4;
                     int CPUpcntLim3 = 8;
 
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
 
                     // List CPUs
@@ -3595,7 +3581,7 @@ errno_t processinfo_CTRLscreen()
                     printw(" <- PROCESSES\n");
 
 
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
 
 
                     // Print CPU LOAD
@@ -3646,7 +3632,7 @@ errno_t processinfo_CTRLscreen()
                 // print header for display mode 2
                 if(procinfoproc.DisplayMode == 2)
                 {
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                     printw("\n");
                     printw("\n");
                     printw(" %*.*s %*.*s %-*.*s %-*.*s C# tstart       %-*.*s %-*.*s   %-*.*s   %-*.*s\n",
@@ -3660,21 +3646,21 @@ errno_t processinfo_CTRLscreen()
                            pstrlen_msg,     pstrlen_msg,     "Message"
                           );
                     printw("\n");
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                 }
 
                 // print header for display mode 4
                 if(procinfoproc.DisplayMode == 4)
                 {
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                     printw("\n");
                     printw("\n");
                     printw("   STATUS    PID   process name                    \n");
                     printw("\n");
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 clock_gettime(CLOCK_REALTIME, &t05loop);
 
@@ -3693,7 +3679,7 @@ errno_t processinfo_CTRLscreen()
 
                     if(pindex<procinfoproc.NBpinfodisp)
                     {
-						TESTPOINT("%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+						DEBUG_TRACEPOINT("%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
 
                         if(pindex == pindexSelected)
                         {
@@ -3707,7 +3693,7 @@ errno_t processinfo_CTRLscreen()
                             printw(" ");
                         pstrlen_total = 1;
 
-                        TESTPOINT("procinfoproc.selectedarray[pindex] = %d", procinfoproc.selectedarray[pindex]);
+                        DEBUG_TRACEPOINT("procinfoproc.selectedarray[pindex] = %d", procinfoproc.selectedarray[pindex]);
 
                         if(pinfolist->active[pindex] == 1)
                         {
@@ -3719,7 +3705,7 @@ errno_t processinfo_CTRLscreen()
                         }
 
 
-                        TESTPOINT("pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
+                        DEBUG_TRACEPOINT("pinfolist->active[pindex] = %d", pinfolist->active[pindex]);
 
 
                         if(pinfolist->active[pindex] == 2)  // not active: error, crashed or terminated
@@ -3753,7 +3739,7 @@ errno_t processinfo_CTRLscreen()
                         }
 
 
-                        TESTPOINT("%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
+                        DEBUG_TRACEPOINT("%d %d   %ld %ld", dispindex, dispindexMax, pindex, procinfoproc.NBpinfodisp);
 
                         if(pinfolist->active[pindex] != 0)
                         {
@@ -4292,7 +4278,7 @@ errno_t processinfo_CTRLscreen()
             clock_gettime(CLOCK_REALTIME, &t06loop);
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             clock_gettime(CLOCK_REALTIME, &t07loop);
 

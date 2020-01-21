@@ -89,17 +89,17 @@ extern int C_ERRNO;			// C errno (from errno.h)
 
 
 
-
-
-
-#define TESTPOINT(...) do { \
+#if defined NDEBUG || defined STANDALONE
+#define DEBUG_TRACEPOINT(...)
+#else
+#define DEBUG_TRACEPOINT(...) do { \
 sprintf(data.testpoint_file, "%s", __FILE__); \
 sprintf(data.testpoint_func, "%s", __func__); \
 data.testpoint_line = __LINE__; \
 clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
 sprintf(data.testpoint_msg, __VA_ARGS__); \
 } while(0)
-
+#endif
 
 
 

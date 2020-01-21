@@ -8,10 +8,6 @@
  */
 
 
-#define FUNCTION_PARAMETERS_LOGDEBUG 1
-
-
-
 #define _GNU_SOURCE
 
 
@@ -64,10 +60,6 @@
 /*                                      DEFINES, MACROS                                            */
 /* =============================================================================================== */
 /* =============================================================================================== */
-
-#if !defined(FUNCTION_PARAMETERS_LOGDEBUG) || defined(STANDALONE)
-#define TESTPOINT(...)
-#endif
 
 
 
@@ -3299,7 +3291,7 @@ int functionparameter_FPSprocess_cmdline(
     functionparameter_outlog("CMDRCV", msgstring);
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     if(strlen(inputcmd)>1)
     {
@@ -3311,7 +3303,7 @@ int functionparameter_FPSprocess_cmdline(
     }
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
 
@@ -3366,7 +3358,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
     if(nbword==0) {
@@ -3499,7 +3491,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 functionparameter_CONFstart(fps, fpsindex);
 
                 sprintf(msgstring, "start CONF process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3520,7 +3512,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 functionparameter_CONFstop(fps, fpsindex);
 
                 sprintf(msgstring, "stop CONF process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3540,7 +3532,7 @@ int functionparameter_FPSprocess_cmdline(
 
         // confupdate
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confupdate") == 0))
         {
             cmdFOUND = 1;
@@ -3551,7 +3543,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
@@ -3569,7 +3561,7 @@ int functionparameter_FPSprocess_cmdline(
         // Wait until update is cleared
         // if not successful, retry until time lapsed
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         if((FPScommand[0] != '#') && (cmdFOUND == 0) && (strcmp(FPScommand, "confwupdate") == 0))
         {
             cmdFOUND = 1;
@@ -3589,7 +3581,7 @@ int functionparameter_FPSprocess_cmdline(
                 while ( looptry == 1)
                 {
 
-                    TESTPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
@@ -3640,7 +3632,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 functionparameter_RUNstart(fps, fpsindex);
 
                 sprintf(msgstring, "start RUN process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3665,7 +3657,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 unsigned int timercnt = 0;
                 useconds_t dt = 10000;
@@ -3696,7 +3688,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 functionparameter_RUNstop(fps, fpsindex);
 
                 sprintf(msgstring, "stop RUN process %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3720,7 +3712,7 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 functionparameter_FPSremove(fps, fpsindex);
 
                 sprintf(msgstring, "FPS remove %d %s", fpsindex, fps[fpsindex].md->name);
@@ -3736,7 +3728,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
 
@@ -4063,7 +4055,7 @@ int functionparameter_FPSprocess_cmdline(
     }
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
     return (fpsindex);
@@ -4103,14 +4095,14 @@ int functionparameter_read_fpsCMD_fifo(
     int lineOK = 1; // keep reading
 
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     while(lineOK == 1) {
         total_bytes = 0;
         lineOK = 0;
         for(;;) {
             bytes = read(fpsCTRLfifofd, buf0, 1);  // read one char at a time
-            TESTPOINT("ERRROR: BUFFER OVERFLOW %d %d\n", bytes, total_bytes);
+            DEBUG_TRACEPOINT("ERRROR: BUFFER OVERFLOW %d %d\n", bytes, total_bytes);
             if(bytes > 0) {
                 buff[total_bytes] = buf0[0];
                 total_bytes += (size_t)bytes;
@@ -4125,7 +4117,7 @@ int functionparameter_read_fpsCMD_fifo(
             }
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
             if(buf0[0] == '\n') {  // reached end of line
@@ -4152,7 +4144,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 // Some commands affect how the task list is configured instead of being inserted as entries
                 int cmdFOUND = 0;
@@ -4222,7 +4214,7 @@ int functionparameter_read_fpsCMD_fifo(
 
                 // set wait point for arbitrary FPS run to have finished
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 // for all other commands, put in task list
                 if(cmdFOUND == 0) {
@@ -4255,7 +4247,7 @@ int functionparameter_read_fpsCMD_fifo(
 
     }
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     return cmdcnt;
 }
@@ -5120,7 +5112,7 @@ inline static void fpsCTRLscreen_print_nodeinfo(
     int fpsindexSelected,
     int pindexSelected) {
 
-    TESTPOINT("Selected node %d in fps %d",
+    DEBUG_TRACEPOINT("Selected node %d in fps %d",
               nodeSelected,
               keywnode[nodeSelected].fpsindex);
 
@@ -5131,25 +5123,25 @@ inline static void fpsCTRLscreen_print_nodeinfo(
 
 	char teststring[200];
 	sprintf(teststring, "%s", fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
-	TESTPOINT("TEST STRING : %s", teststring);
+	DEBUG_TRACEPOINT("TEST STRING : %s", teststring);
 
 
-	TESTPOINT("TEST LINE : %d", fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+	DEBUG_TRACEPOINT("TEST LINE : %d", fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
     printw("Source  : %s %d\n",
            fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
            fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     printw("Root directory    : %s\n",
            fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     printw("tmux sessions     :  %s-conf  %s-run\n",
            fps[keywnode[nodeSelected].fpsindex].md->name,
            fps[keywnode[nodeSelected].fpsindex].md->name);
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     printw("========= NODE info ============\n");
     printw("%-30s ", keywnode[nodeSelected].keywordfull);
 
@@ -5325,7 +5317,7 @@ inline static int fpsCTRLscreen_process_user_key(
             &fpsCTRLgui->NBindex,
             0);
         clear();
-        //TESTPOINT("fpsCTRLgui->NBfps = %d\n", fpsCTRLgui->NBfps);
+        //DEBUG_TRACEPOINT("fpsCTRLgui->NBfps = %d\n", fpsCTRLgui->NBfps);
        // abort();
         fpsCTRLgui->run_display = 0; // skip next display
         fpsCTRLgui->fpsindexSelected = 0; // safeguard in case current selection disappears
@@ -5344,7 +5336,7 @@ inline static int fpsCTRLscreen_process_user_key(
             &fpsCTRLgui->NBfps,
             &fpsCTRLgui->NBindex, 0);
         clear();
-        TESTPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         fpsCTRLgui->fpsindexSelected = 0; // safeguard in case current selection disappears
         break;
 
@@ -5626,7 +5618,7 @@ errno_t functionparameter_CTRLscreen(
 
     functionparameter_outlog("FPSCTRL", "START\n");
 
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 	
 
@@ -5715,7 +5707,7 @@ errno_t functionparameter_CTRLscreen(
     printf("%d function parameter structure(s) imported, %ld parameters\n",
            fpsCTRLgui.NBfps, NBpindex);
     fflush(stdout);
-    TESTPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
 
@@ -5803,16 +5795,16 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLgui.fpsCTRLfifoname, fpsCTRLgui.fpsCTRLfifofd, fifocmdcnt);
             int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLgui.fpsCTRLfifofd, fpsctrltasklist, fpsctrlqueuelist);
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist, keywnode, fpsCTRLgui.NBkwn, fps);
             fifocmdcnt += fcnt;
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             printw("OUTPUT LOG:  %s/fpslog.%06d\n", shmdname, getpid());
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
 
             if(fpsCTRLgui.fpsCTRL_DisplayMode == 1) { // help
@@ -5823,14 +5815,14 @@ errno_t functionparameter_CTRLscreen(
             if(fpsCTRLgui.fpsCTRL_DisplayMode == 2) { // FPS content
 
 
-                TESTPOINT("Check that selected node is OK");
+                DEBUG_TRACEPOINT("Check that selected node is OK");
                 if(strlen(keywnode[fpsCTRLgui.nodeSelected].keywordfull)<1) { // if not OK, set to last valid entry
                     fpsCTRLgui.nodeSelected = 1;
                     while((strlen(keywnode[fpsCTRLgui.nodeSelected].keywordfull)<1) && (fpsCTRLgui.nodeSelected < NB_KEYWNODE_MAX))
                         fpsCTRLgui.nodeSelected ++;
                 }
 
-                TESTPOINT("Get info from selected node");
+                DEBUG_TRACEPOINT("Get info from selected node");
                 fpsCTRLgui.fpsindexSelected = keywnode[fpsCTRLgui.nodeSelected].fpsindex;
                 fpsCTRLgui.pindexSelected = keywnode[fpsCTRLgui.nodeSelected].pindex;
                 fpsCTRLscreen_print_nodeinfo(
@@ -5842,7 +5834,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-                TESTPOINT("trace back node chain");
+                DEBUG_TRACEPOINT("trace back node chain");
                 nodechain[fpsCTRLgui.currentlevel] = fpsCTRLgui.directorynodeSelected;
                 level = fpsCTRLgui.currentlevel - 1;
                 while(level > 0) {
@@ -5851,11 +5843,11 @@ errno_t functionparameter_CTRLscreen(
                 }
                 nodechain[0] = 0; // root
 
-                TESTPOINT("Get number of lines to be displayed");
+                DEBUG_TRACEPOINT("Get number of lines to be displayed");
                 fpsCTRLgui.currentlevel = keywnode[fpsCTRLgui.directorynodeSelected].keywordlevel;
                 int GUIlineMax = keywnode[fpsCTRLgui.directorynodeSelected].NBchild; 
                 for(level = 0; level < fpsCTRLgui.currentlevel; level ++) {
-                    TESTPOINT("update GUIlineMax, the maximum number of lines");
+                    DEBUG_TRACEPOINT("update GUIlineMax, the maximum number of lines");
                     if(keywnode[nodechain[level]].NBchild > GUIlineMax) {
                         GUIlineMax = keywnode[nodechain[level]].NBchild; 
                     }
@@ -5931,7 +5923,7 @@ errno_t functionparameter_CTRLscreen(
 
 
                             if(level==0) {
-                                TESTPOINT("provide a fps status summary if at root");
+                                DEBUG_TRACEPOINT("provide a fps status summary if at root");
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 fpsCTRLscreen_level0node_summary(fps, fpsindex);
                             }
@@ -5996,7 +5988,7 @@ errno_t functionparameter_CTRLscreen(
                             while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) && // if not visible, advance to next one
                                     (child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {     
                                 child_index[level] ++;
-                                TESTPOINT("knodeindex = %d  child %d / %d",
+                                DEBUG_TRACEPOINT("knodeindex = %d  child %d / %d",
                                           knodeindex,
                                           child_index[level],
                                           keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
@@ -6007,7 +5999,7 @@ errno_t functionparameter_CTRLscreen(
                         }
 */
 
-                        TESTPOINT(" ");
+                        DEBUG_TRACEPOINT(" ");
 
                         if(child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild) {
 
@@ -6018,12 +6010,12 @@ errno_t functionparameter_CTRLscreen(
                                 attroff(A_REVERSE);
                             }
 
-                            TESTPOINT(" ");
+                            DEBUG_TRACEPOINT(" ");
 
                             if(keywnode[knodeindex].leaf == 0) { // If this is a directory
-                                TESTPOINT(" ");
+                                DEBUG_TRACEPOINT(" ");
                                 if(fpsCTRLgui.currentlevel == 0) { // provide a status summary if at root
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     fpsindex = keywnode[knodeindex].fpsindex;
                                     pid_t pid;                                   
@@ -6111,18 +6103,18 @@ errno_t functionparameter_CTRLscreen(
                                 }
 
 
-                                TESTPOINT(" ");
+                                DEBUG_TRACEPOINT(" ");
 
                             }
                             else { // If this is a parameter
-                                TESTPOINT(" ");
+                                DEBUG_TRACEPOINT(" ");
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 pindex = keywnode[knodeindex].pindex;
 
 								
 
 
-                                TESTPOINT(" ");
+                                DEBUG_TRACEPOINT(" ");
                                 int isVISIBLE = 1;
                                 if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
 									isVISIBLE = 0;
@@ -6142,7 +6134,7 @@ errno_t functionparameter_CTRLscreen(
 											attron(COLOR_PAIR(10) | A_BOLD);
 										}
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     
                                     if(isVISIBLE == 1) {
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
@@ -6158,14 +6150,14 @@ errno_t functionparameter_CTRLscreen(
 										printw("  ");
 									}
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     level = keywnode[knodeindex].keywordlevel;
                                     printw(" %-20s", fps[fpsindex].parray[pindex].keyword[level - 1]);
 
                                     if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
                                         attroff(COLOR_PAIR(10));
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     printw("   ");
 
                                     // VALUE
@@ -6180,7 +6172,7 @@ errno_t functionparameter_CTRLscreen(
                                         printw("  %s", "-undef-");
                                     }
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_INT64) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
@@ -6200,7 +6192,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT64) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
@@ -6232,7 +6224,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT32) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
@@ -6265,7 +6257,7 @@ errno_t functionparameter_CTRLscreen(
                                     }
 
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_PID) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
@@ -6288,7 +6280,7 @@ errno_t functionparameter_CTRLscreen(
                                     }
 
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC) {
                                         printw("  %10s", "-timespec-");
@@ -6313,7 +6305,7 @@ errno_t functionparameter_CTRLscreen(
                                             if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
@@ -6333,7 +6325,7 @@ errno_t functionparameter_CTRLscreen(
                                             if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
@@ -6352,7 +6344,7 @@ errno_t functionparameter_CTRLscreen(
                                             if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
@@ -6372,7 +6364,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
                                             if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
@@ -6401,7 +6393,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
 
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_STRING) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
@@ -6420,7 +6412,7 @@ errno_t functionparameter_CTRLscreen(
                                             if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
                                         }
                                     }
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF) {
                                         if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {
@@ -6467,7 +6459,7 @@ errno_t functionparameter_CTRLscreen(
 
                                     }
 
-                                    TESTPOINT(" ");
+                                    DEBUG_TRACEPOINT(" ");
 
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
                                         if(isVISIBLE == 1) { attroff(COLOR_PAIR(4)); }
@@ -6491,7 +6483,7 @@ errno_t functionparameter_CTRLscreen(
                             }
 
 
-                            TESTPOINT(" ");
+                            DEBUG_TRACEPOINT(" ");
                             icnt++;
 
 
@@ -6504,7 +6496,7 @@ errno_t functionparameter_CTRLscreen(
                     printw("\n");
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 fpsCTRLgui.NBindex = icnt;
 
@@ -6512,7 +6504,7 @@ errno_t functionparameter_CTRLscreen(
                     fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] = fpsCTRLgui.NBindex - 1;
                 }
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 printw("\n");
 
@@ -6542,11 +6534,11 @@ errno_t functionparameter_CTRLscreen(
                 }
 
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
             }
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             if(fpsCTRLgui.fpsCTRL_DisplayMode == 3) { // Task scheduler status
                 struct timespec tnow;
@@ -6560,7 +6552,7 @@ errno_t functionparameter_CTRLscreen(
 
 
                 // Sort entries from most recent to most ancient, using inputindex
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 double * sort_evalarray;
                 sort_evalarray = (double*) malloc(sizeof(double)*NB_FPSCTRL_TASK_MAX);
                 long * sort_indexarray;
@@ -6574,22 +6566,22 @@ errno_t functionparameter_CTRLscreen(
                         sortcnt++;
                     }
                 }
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
                 if(sortcnt>0) {
                     quick_sort2l(sort_evalarray, sort_indexarray, sortcnt);
                 }
                 free(sort_evalarray);
 
-                TESTPOINT(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 for(int sortindex=0; sortindex<sortcnt; sortindex++) {
 
 
-                    TESTPOINT("iteration %d / %ld", sortindex, sortcnt);
+                    DEBUG_TRACEPOINT("iteration %d / %ld", sortindex, sortcnt);
 
                     int fpscmdindex = sort_indexarray[sortindex];
 
-                    TESTPOINT("fpscmdindex = %d", fpscmdindex);
+                    DEBUG_TRACEPOINT("fpscmdindex = %d", fpscmdindex);
 
                     if(sortindex > wrow-8) {// remove oldest
                         fpsctrltasklist[fpscmdindex].status &= ~FPSTASK_STATUS_SHOW;
@@ -6676,11 +6668,11 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             refresh();
 
-            TESTPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             
         } // end run_display
 
