@@ -55,18 +55,18 @@ typedef long variableID;
 #define SZ_CLICOREVARRAY 1000
 
 
-#define STRINGMAXLEN_FILENAME 1000
-#define STRINGMAXLEN_FUNCTIONNAME 200
+#define STRINGMAXLEN_FILENAME     1000
+#define STRINGMAXLEN_FUNCTIONNAME  200
 #define STRINGMAXLEN_FUNCTIONARGS 1000
 
 
 /// important directories and info
 extern pid_t CLIPID;            // command line interface PID
-extern char DocDir[200];		// location of documentation
-extern char SrcDir[200];		// location of source
-extern char BuildFile[200];		// file name for source
-extern char BuildDate[200];
-extern char BuildTime[200];
+extern char  DocDir[200];		// location of documentation
+extern char  SrcDir[200];		// location of source
+extern char  BuildFile[200];		// file name for source
+extern char  BuildDate[200];
+extern char  BuildTime[200];
 
 extern int C_ERRNO;			// C errno (from errno.h)
 
@@ -132,7 +132,7 @@ typedef uint_fast8_t BOOL;
 // In STATIC allocation mode, IMAGE and VARIABLE arrays are allocated statically
 
 //#define DATA_STATIC_ALLOC // comment if DYNAMIC
-#define STATIC_NB_MAX_IMAGE 5020
+#define STATIC_NB_MAX_IMAGE 520
 #define STATIC_NB_MAX_VARIABLE 5030
 
 
@@ -285,73 +285,74 @@ typedef struct
 	// when root privileges needed, we set euid <- suid
 	// when reverting to user privileges : euid <- ruid
     
-    int       Debug;
-    int       quiet;
-    int       overwrite;		// automatically overwrite FITS files
-    double    INVRANDMAX;
-    gsl_rng * rndgen;		// random number generator
-    int       precision;		// default precision: 0 for float, 1 for double
+    int            Debug;
+    int            quiet;
+    int            overwrite;		// automatically overwrite FITS files
+    double         INVRANDMAX;
+    gsl_rng       *rndgen;		// random number generator
+    int            precision;		// default precision: 0 for float, 1 for double
 
     // logging, process monitoring
-    int          CLIloopON;
-    int          CLIlogON;
-    char         CLIlogname[200];  
-    int          processinfo;       // 1 if processes info is to be logged
-    int          processinfoActive; // 1 is the process is currently logged
-    PROCESSINFO *pinfo;             // pointer to process info structure
+    int            CLIloopON;
+    int            CLIlogON;
+    char           CLIlogname[200];  
+    int            processinfo;       // 1 if processes info is to be logged
+    int            processinfoActive; // 1 is the process is currently logged
+    PROCESSINFO   *pinfo;             // pointer to process info structure
 
     // Command Line Interface (CLI) INPUT
-    int  fifoON;
-    char processname[100];
-    char processname0[100];
-    int  processnameflag;
-    char fifoname[100];
-    uint_fast16_t NBcmd;
+    int            fifoON;
+    char           processname[100];
+    char           processname0[100];
+    int            processnameflag;
+    char           fifoname[100];
+    uint_fast16_t  NBcmd;
     
-    long  NB_MAX_COMMAND;
-    CMD   cmd[1000];
+    long           NB_MAX_COMMAND;
+    CMD            cmd[1000];
     
-    int          parseerror;         // 1 if error, 0 otherwise
-    long         cmdNBarg;           // number of arguments in last command line
-    CMDARGTOKEN  cmdargtoken[NB_ARG_MAX];
-    long         cmdindex;           // when command is found in command line, holds index of command
-    long         calctmp_imindex;    // used to create temporary images
-    int          CMDexecuted;        // 0 if command has not been executed, 1 otherwise
-    long         NBmodule;
+    int            parseerror;         // 1 if error, 0 otherwise
+    long           cmdNBarg;           // number of arguments in last command line
+    CMDARGTOKEN    cmdargtoken[NB_ARG_MAX];
+    long           cmdindex;           // when command is found in command line, holds index of command
+    long           calctmp_imindex;    // used to create temporary images
+    int            CMDexecuted;        // 0 if command has not been executed, 1 otherwise
+    long           NBmodule;
     
-    long NB_MAX_MODULE;
-    MODULE module[100];
+    long           NB_MAX_MODULE;
+    MODULE         module[100];
 
     // shared memory default
-    int SHARED_DFT;
+    int            SHARED_DFT;
 
     // Number of keyword per iamge default
-    int NBKEWORD_DFT;
+    int            NBKEWORD_DFT;
 
     // images, variables
-    long NB_MAX_IMAGE;
+    long           NB_MAX_IMAGE;
     #ifdef DATA_STATIC_ALLOC
-    IMAGE image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
+    IMAGE          image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
 	#else
-	IMAGE *image;
+	IMAGE         *image;
 	#endif
 	
-    long NB_MAX_VARIABLE;
+    long           NB_MAX_VARIABLE;
     #ifdef DATA_STATIC_ALLOC
-    VARIABLE variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
+    VARIABLE       variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
 	#else
-	VARIABLE *variable;
+	VARIABLE      *variable;
 	#endif
 	
 
 
-    float FLOATARRAY[1000];	// array to store temporary variables
-    double DOUBLEARRAY[1000];    // for convenience
-    char SAVEDIR[500];
+    float          FLOATARRAY[1000];	// array to store temporary variables
+    double         DOUBLEARRAY[1000];    // for convenience
+    char           SAVEDIR[500];
 
     // status counter (used for profiling)
-    int status0;
-    int status1;
+    int            status0;
+    int            status1;
+
 } DATA;
 
 

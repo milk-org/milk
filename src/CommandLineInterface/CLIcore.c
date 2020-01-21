@@ -211,7 +211,7 @@ void *xmalloc (int);
 
 
 
-static int memory_re_alloc();
+static errno_t memory_re_alloc();
 
 static int command_line_process_options( int argc, char **argv );
 
@@ -871,14 +871,16 @@ errno_t streamCTRL_CTRLscreen_cli()
 
 
 static errno_t CLI_execute_line() {
-    long i, j;
-    char *cmdargstring;
-    char str[200];
-    FILE *fp;
-    time_t t;
-    struct tm *uttime;
-    struct timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
-    char command[200];
+	
+    long    i;
+    long    j;
+    char   *cmdargstring;
+    char    str[200];
+    FILE   *fp;
+    time_t  t;
+    struct  tm *uttime;
+    struct  timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
+    char    command[200];
 
 
     if(line[0] == '!') {
@@ -1062,9 +1064,9 @@ errno_t RegisterModule(
 ) {
     int OKmsg = 0;
 
-    strcpy(data.module[data.NBmodule].name, basename(FileName));
+    strcpy(data.module[data.NBmodule].name,    basename(FileName));
     strcpy(data.module[data.NBmodule].package, PackageName);
-    strcpy(data.module[data.NBmodule].info, InfoString);
+    strcpy(data.module[data.NBmodule].info,    InfoString);
 
     if(data.progStatus == 0) {
         OKmsg = 1;
@@ -1108,7 +1110,6 @@ uint_fast16_t RegisterCLIcommand(
     const char* restrict CLIexample,
     const char* restrict CLICcall
 ) {
-
 //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
 
     strcpy(data.cmd[data.NBcmd].key, CLIkey);
@@ -1157,8 +1158,6 @@ void fnExit_fifoclose()
 
 static errno_t runCLI_initialize(
 ) {
-
-
     // NOTE: change to function call to ImageStreamIO_typename
     TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
     TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
@@ -1237,18 +1236,18 @@ static errno_t runCLI_initialize(
     //    v1 = gsl_rng_uniform (data.rndgen);
 
 
-    data.progStatus = 0;
+    data.progStatus        = 0;
 
-    data.Debug = 0;
-    data.overwrite = 0;
-    data.precision = 0; // float is default precision
-    data.SHARED_DFT = 0; // do not allocate shared memory for images
-    data.NBKEWORD_DFT = 10; // allocate memory for 10 keyword per image
+    data.Debug             = 0;
+    data.overwrite         = 0;
+    data.precision         = 0; // float is default precision
+    data.SHARED_DFT        = 0; // do not allocate shared memory for images
+    data.NBKEWORD_DFT      = 10; // allocate memory for 10 keyword per image
     sprintf(data.SAVEDIR, ".");
 
-    data.CLIlogON = 0;     // log every command
-    data.fifoON = 0;
-    data.processinfo = 1;  // process info for intensive processes
+    data.CLIlogON          = 0;     // log every command
+    data.fifoON            = 0;
+    data.processinfo       = 1;  // process info for intensive processes
     data.processinfoActive = 0; // toggles to 1 when process is logged
 
 
@@ -1410,25 +1409,23 @@ static errno_t runCLI_prompt(
 
 
 errno_t runCLI(
-    int argc,
+    int   argc,
     char *argv[],
     char *promptstring
 ) {
-    int fdmax;
-    int n;
+    int     fdmax;
+    int     n;
 
     ssize_t bytes;
-    size_t total_bytes;
-    char buf0[1];
-    char buf1[1024];
+    size_t  total_bytes;
+    char    buf0[1];
+    char    buf1[1024];
 
-    int initstartup = 0; /// becomes 1 after startup
+    int     initstartup = 0; /// becomes 1 after startup
 
-    int blockCLIinput = 0;
-    int cliwaitus = 100;
-    struct timeval tv;   // sleep 100 us after reading FIFO
-
-
+    int     blockCLIinput = 0;
+    int     cliwaitus = 100;
+    struct  timeval tv;   // sleep 100 us after reading FIFO
 
 
 
@@ -1562,6 +1559,7 @@ errno_t runCLI(
 
 
     data.CLIloopON = 1; // start CLI loop
+    
     while( data.CLIloopON == 1 ) {
         FILE *fp;
 
@@ -1586,14 +1584,16 @@ errno_t runCLI(
         //  Keep the number of variables addresses available
         //  NB_VARIABLES_BUFFER above the number of used variables
         
-        if(memory_re_alloc() != 0) {
+        
+        
+        if( memory_re_alloc() != RETURN_SUCCESS ) {
             fprintf(stderr,
                     "%c[%d;%dm ERROR [ FILE: %s   FUNCTION: %s   LINE: %d ]  %c[%d;m\n",
                     (char) 27, 1, 31, __FILE__, __func__, __LINE__, (char) 27, 0);
             fprintf(stderr,
                     "%c[%d;%dm Memory re-allocation failed  %c[%d;m\n",
                     (char) 27, 1, 31, (char) 27, 0);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         compute_image_memory(data);
@@ -1699,7 +1699,7 @@ errno_t runCLI(
             printf("Command not found, or command with no effect\n");
         }
 
-        //AOloopControl_bogusfunc();
+		//TEST data.CLIloopON = 0;
     }
 
 	
@@ -1752,10 +1752,12 @@ static char **CLI_completion(
 
 char *CLI_generator(
     const char *text,
-    int state
+    int         state
 ) {
-    static int list_index, list_index1, len;
-    char *name;
+    static int list_index;
+    static int list_index1;
+    static int len;
+    char      *name;
 
     if(!state) {
         list_index = 0;
@@ -2216,26 +2218,31 @@ void fnExit1 (void)
 | NOTE:  this should probably be renamed and put in the module/memory/memory.c
 |
 +-----------------------------------------------------------------------------*/
-static int memory_re_alloc()
+static errno_t memory_re_alloc()
 {
     /* keeps the number of images addresses available
      *  NB_IMAGES_BUFFER above the number of used images
      */
-     
-     #ifdef DATA_STATIC_ALLOC
+
+
+#ifdef DATA_STATIC_ALLOC
     // image static allocation mode
-    #else
-    if( (compute_nb_image(data)+NB_IMAGES_BUFFER) > data.NB_MAX_IMAGE)
+#else
+	int current_NBimage = compute_nb_image(data);
+	
+//	printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %d\n", current_NBimage, NB_IMAGES_BUFFER, data.NB_MAX_IMAGE);///
+	
+    if( (current_NBimage + NB_IMAGES_BUFFER) > data.NB_MAX_IMAGE)
     {
-		long tmplong;
-		IMAGE *ptrtmp;
-        
-    //   if(data.Debug>0)
-    //    {
-            printf("%p IMAGE STRUCT SIZE = %ld\n", data.image, (long) sizeof(IMAGE));
-            printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n", data.NB_MAX_IMAGE, data.NB_MAX_IMAGE + NB_IMAGES_BUFFER_REALLOC);
-            fflush(stdout);
-    //    }
+        long tmplong;
+        IMAGE *ptrtmp;
+
+        //   if(data.Debug>0)
+        //    {
+        printf("%p IMAGE STRUCT SIZE = %ld\n", data.image, (long) sizeof(IMAGE));
+        printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n", data.NB_MAX_IMAGE, data.NB_MAX_IMAGE + NB_IMAGES_BUFFER_REALLOC);
+        fflush(stdout);
+        //    }
         tmplong = data.NB_MAX_IMAGE;
         data.NB_MAX_IMAGE = data.NB_MAX_IMAGE + NB_IMAGES_BUFFER_REALLOC;
         ptrtmp = (IMAGE*) realloc(data.image, sizeof(IMAGE)*data.NB_MAX_IMAGE);
@@ -2254,29 +2261,31 @@ static int memory_re_alloc()
             printf("REALLOCATION DONE\n");
             fflush(stdout);
         }
-        
-        int i;
+
+        imageID i;
         for(i=tmplong; i<data.NB_MAX_IMAGE; i++)   {
-            data.image[i].used = 0;
-            data.image[i].shmfd = -1;
+            data.image[i].used    = 0;
+            data.image[i].shmfd   = -1;
             data.image[i].memsize = 0;
-            data.image[i].semptr = NULL;
-            data.image[i].semlog = NULL;
+            data.image[i].semptr  = NULL;
+            data.image[i].semlog  = NULL;
         }
     }
-    #endif
+#endif
 
 
     /* keeps the number of variables addresses available
      *  NB_VARIABLES_BUFFER above the number of used variables
      */
-     #ifdef DATA_STATIC_ALLOC
-     // variable static allocation mode 
-     #else
+     
+
+#ifdef DATA_STATIC_ALLOC
+    // variable static allocation mode
+#else
     if((compute_nb_variable(data)+NB_VARIABLES_BUFFER)>data.NB_MAX_VARIABLE)
     {
-		long tmplong;
-		
+        long tmplong;
+
         if(data.Debug>0)
         {
             printf("REALLOCATING VARIABLE DATA BUFFER\n");
@@ -2290,16 +2299,17 @@ static int memory_re_alloc()
             printERROR(__FILE__,__func__,__LINE__,"Reallocation of data.variable has failed - exiting program");
             return -1;   // exit(0);
         }
-        
+
         int i;
         for(i=tmplong; i<data.NB_MAX_VARIABLE; i++)   {
             data.variable[i].used = 0;
             data.variable[i].type = -1;
         }
     }
-    #endif
+#endif
 
-    return 0;
+
+    return RETURN_SUCCESS;
 }
 
 

@@ -108,7 +108,6 @@ endif()
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS scripts/cr2tofits
               scripts/Fits2shm
-              scripts/fpsCTRL
               scripts/milk-fpsmkcmd
               scripts/logshim
               scripts/logshimkill
@@ -118,13 +117,10 @@ install(PROGRAMS scripts/cr2tofits
               scripts/merge3DfitsTelemetry
               scripts/milkFits2shm
               scripts/milkStreamLink
-              scripts/procCTRL
               scripts/runidle
               scripts/shmim2fits
-              scripts/shmimmon
               scripts/shmimview
               scripts/shmimview2
-              scripts/streamCTRL
               scripts/tmuxkillall
               scripts/tmuxsessionname
               scripts/waitforfile
