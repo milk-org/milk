@@ -16,7 +16,10 @@ echo "------------------------------------------------------------------------"
 echo "  Monitors and controls loop processes"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-h]"
+echo "     $0 [-hD]"
+echo ""
+echo " $(tput bold)OPTIONS:$(tput sgr0)"
+echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -48,9 +51,9 @@ done
 
 
 
+DEBUG="0"
 
-
-while getopts :h FLAG; do
+while getopts :hD FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -60,6 +63,9 @@ while getopts :h FLAG; do
       fi
       exit
       ;;
+    D)
+		DEBUG="1"
+	;;
     \?) 
       echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
       printHELP
@@ -89,9 +95,28 @@ ttystring=$( tty | tr -d \/ )
 pname="procCTRL"
 fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
-
 echo "procCTRL" > $SF
 echo "exitCLI" >> $SF
+
+if [ "$DEBUG" = "1" ]; then
+
+cp $(which milk) .
+OPTION="--leak-check=full --show-leak-kinds=all"
+OPTION="$OPTION --show-reachable=yes"
+#OPTION="$OPTION --gen-suppressions=all"
+OPTION="$OPTION --log-file=milk.memcheck.log"
+OPTION="$OPTION --suppressions=milk.memcheck.supp"
+OPTION="$OPTION --max-stackframe=4442392"
+
+valgrind ${OPTION} ./milk -n ${pname} -f ${fifoname} -s ${SF}
+rm ./milk
+
+else
+
 milk -n ${pname} -f ${fifoname} -s ${SF}
+
+fi
+
 rm ${SF}
+
 

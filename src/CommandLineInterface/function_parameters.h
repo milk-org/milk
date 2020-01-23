@@ -12,6 +12,8 @@
 
 #define FUNCTION_PARAMETERS_H
 
+
+
 /* ===============================================================================================
  */
 /* ===============================================================================================
@@ -21,6 +23,8 @@
  */
 /* ===============================================================================================
  */
+
+
 
 #define NB_FPS_MAX 100
 
@@ -616,7 +620,11 @@ uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps, c
 
 
 
-long functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps, int pindex, int fpsconnectmode);
+imageID functionparameter_LoadStream(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int                        pindex,
+    int                        fpsconnectmode
+);
 
 int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, const char *keywordstring, const char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
 

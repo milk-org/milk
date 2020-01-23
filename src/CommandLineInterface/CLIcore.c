@@ -202,7 +202,7 @@ void main_free();
 
 int CLImatchMode = 0;
 
-static char** CLI_completion(const char*, int ,int);
+static char** CLI_completion(const char*, int, int );
 char* CLI_generator(const char*,int);
 char *dupstr (char*);
 void *xmalloc (int);
@@ -871,9 +871,8 @@ errno_t streamCTRL_CTRLscreen_cli()
 
 
 static errno_t CLI_execute_line() {
-	
+
     long    i;
-    long    j;
     char   *cmdargstring;
     char    str[200];
     FILE   *fp;
@@ -882,7 +881,9 @@ static errno_t CLI_execute_line() {
     struct  timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
     char    command[200];
 
-
+    //
+    // If line starts with !, use system()
+    //
     if(line[0] == '!') {
         line[0] = ' ';
         if(system(line) != 0) {
@@ -890,10 +891,14 @@ static errno_t CLI_execute_line() {
             exit(4);
         }
         data.CMDexecuted = 1;
-    } else if(line[0] == '#') {
+    }
+    else if(line[0] == '#')
+    {
         // do nothing... this is a comment
         data.CMDexecuted = 1;
-    } else {
+    }
+    else
+    {
         // some initialization
         data.parseerror = 0;
         data.calctmp_imindex = 0;
@@ -901,6 +906,8 @@ static errno_t CLI_execute_line() {
             data.cmdargtoken[0].type = 0;
         }
 
+
+		// log command if CLIlogON active
         if(data.CLIlogON == 1) {
             t = time(NULL);
             uttime = gmtime(&t);
@@ -947,32 +954,42 @@ static errno_t CLI_execute_line() {
             }
         }
 
+
+		
+		// 
         data.cmdNBarg = 0;
+        // extract first word
         cmdargstring = strtok(line, " ");
-        while(cmdargstring != NULL) {
+        
+        while(cmdargstring != NULL) { // iterate on words
+			
             if((cmdargstring[0] == '\"') && (cmdargstring[strlen(cmdargstring) - 1] == '\"')) {
+				// if within quotes, store as string
                 printf("Unprocessed string : ");
-                for(j = 0; j < strlen(cmdargstring) - 2; j++) {
-                    cmdargstring[j] = cmdargstring[j + 1];
+                unsigned int stri;
+                for(stri = 0; stri < strlen(cmdargstring) - 2; stri++) {
+                    cmdargstring[stri] = cmdargstring[stri + 1];
                 }
-                cmdargstring[j] = '\0';
+                cmdargstring[stri] = '\0';
                 printf("%s\n", cmdargstring);
                 data.cmdargtoken[data.cmdNBarg].type = 6;
                 sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
-            } else {
+            } else { // otherwise, process it
                 sprintf(str, "%s\n", cmdargstring);
                 yy_scan_string(str);
                 data.calctmp_imindex = 0;
                 yyparse();
+                yylex_destroy();
             }
             cmdargstring = strtok(NULL, " ");
             data.cmdNBarg++;
         }
         data.cmdargtoken[data.cmdNBarg].type = 0;
-        yylex_destroy();
+        
 
         i = 0;
         if(data.Debug == 1)
+        {
             while(data.cmdargtoken[i].type != 0) {
                 printf("TOKEN %ld type : %d\n", i, data.cmdargtoken[i].type);
                 if(data.cmdargtoken[i].type == 1) { // double
@@ -995,6 +1012,8 @@ static errno_t CLI_execute_line() {
                 }
                 i++;
             }
+         }   
+            
         if(data.parseerror == 0) {
             if(data.cmdargtoken[0].type == 5) {
                 if(data.Debug == 1) {
@@ -1227,7 +1246,7 @@ static errno_t runCLI_initialize(
     const gsl_rng_type *rndgenType;
     //rndgenType = gsl_rng_ranlxs2; // best algorithm but slow
     //rndgenType = gsl_rng_ranlxs0; // not quite as good, slower
-    rndgenType = gsl_rng_rand; // not as good but ~10x faster fast
+    rndgenType  = gsl_rng_rand; // not as good but ~10x faster fast
     data.rndgen = gsl_rng_alloc(rndgenType);
     gsl_rng_set(data.rndgen, time(NULL));
 
@@ -1283,7 +1302,6 @@ static errno_t runCLI_initialize(
 
     return RETURN_SUCCESS;
 }
-
 
 
 
@@ -1363,7 +1381,7 @@ static errno_t setSHMdir()
 
 
     // change / to . and write to shmsemdirname
-    int stri;
+    unsigned int stri;
     for(stri = 0; stri < strlen(shmdirname); stri++)
         if(shmdirname[stri] == '/') { // replace '/' by '.'
             shmdirname[stri] = '.';
@@ -1701,14 +1719,20 @@ errno_t runCLI(
 
 		//TEST data.CLIloopON = 0;
     }
+    DEBUG_TRACEPOINT("exit from CLI loop");
+    
+    // clear all images and variables
+	clearall(); 
+	
 
-	
-	
 	main_free();
+	
+	rl_clear_history();
 	rl_callback_handler_remove();
 	
 
-
+	 DEBUG_TRACEPOINT("exit from runCLI function");
+	 
     return RETURN_SUCCESS;
 }
 
@@ -1727,7 +1751,7 @@ errno_t runCLI(
 static char **CLI_completion(
     const char *text,
     int start,
-    int end
+    int __attribute__((unused)) end
 ) {
     char **matches;
 
@@ -1754,9 +1778,9 @@ char *CLI_generator(
     const char *text,
     int         state
 ) {
-    static int list_index;
-    static int list_index1;
-    static int len;
+    static unsigned int list_index;
+    static unsigned int list_index1;
+    static unsigned int len;
     char      *name;
 
     if(!state) {
@@ -2508,11 +2532,10 @@ static int command_line_process_options( int argc, char **argv)
 
 static errno_t list_commands()
 {
-  long i;
   char cmdinfoshort[38];
 
   printf("----------- LIST OF COMMANDS ---------\n");
-  for(i=0;i<data.NBcmd;i++)
+  for(unsigned int i=0; i<data.NBcmd; i++)
     {
       strncpy(cmdinfoshort, data.cmd[i].info, 38);
       printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
@@ -2527,13 +2550,12 @@ static errno_t list_commands_module(
     const char* restrict modulename
 )
 {
-    long i;
     int mOK = 0;
     char cmdinfoshort[38];
 
     if(strlen(modulename)>0)
     {
-        for(i=0; i<data.NBcmd; i++)
+        for(unsigned int i=0; i<data.NBcmd; i++)
         {
             char cmpstring[200];
             sprintf(cmpstring, "%s", basename(data.cmd[i].module));
@@ -2557,7 +2579,7 @@ static errno_t list_commands_module(
         if(strlen(modulename)>0)
             printf("---- MODULE %s DOES NOT EXIST OR DOES NOT HAVE COMMANDS ---------\n", modulename);
 
-        for(i=0; i<data.NBcmd; i++)
+        for(unsigned int i=0; i<data.NBcmd; i++)
         {
             char cmpstring[200];
             sprintf(cmpstring, "%s", basename(data.cmd[i].module));
@@ -2728,10 +2750,9 @@ static errno_t help_command(
     const char* restrict cmdkey
 )
 {
-    long i;
     int cOK = 0;
 
-    for(i=0; i<data.NBcmd; i++)
+    for(unsigned int i=0; i<data.NBcmd; i++)
     {
         if(!strcmp(cmdkey, data.cmd[i].key))
         {

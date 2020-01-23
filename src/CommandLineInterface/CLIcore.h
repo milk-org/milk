@@ -27,11 +27,7 @@
 #include <signal.h>
 
 
-#include "ImageStreamIO/ImageStreamIO.h"
-#include "ImageStreamIO/ImageStruct.h"
-#include "processtools.h"
-#include "streamCTRL.h"
-#include "function_parameters.h"
+
 
 
 
@@ -45,7 +41,11 @@ typedef long imageID;
 typedef long variableID;
 
 
-
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "ImageStreamIO/ImageStruct.h"
+#include "processtools.h"
+#include "streamCTRL.h"
+#include "function_parameters.h"
 
 
 
