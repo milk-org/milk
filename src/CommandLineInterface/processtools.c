@@ -1346,33 +1346,39 @@ static long getTopOutput()
 
 
 static int GetCPUloads(PROCINFOPROC *pinfop) {
-    char *line = NULL;
-    FILE *fp;
-    ssize_t read;
-    size_t len = 0;
-    int cpu;
-    long long vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
-    long long v0, v1, v2, v3, v4, v5, v6, v7, v8;
-    char string0[80];
+    char      *line = NULL;
+    size_t     maxstrlen = 256;
+    FILE      *fp;
+    ssize_t    read;
+    int        cpu;
+    long long  vall0, vall1, vall2, vall3, vall4, vall5, vall6, vall7, vall8;
+    long long  v0, v1, v2, v3, v4, v5, v6, v7, v8;
+    char       string0[80];
 
     static int cnt = 0;
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
+	line = (char *)malloc(sizeof(char)*maxstrlen);
+    
     fp = fopen("/proc/stat", "r");
     if(fp == NULL) {
         exit(EXIT_FAILURE);
     }
 
     cpu = 0;
-    if(getline(&line, &len, fp) == -1) {
+    
+    read = getline(&line, &maxstrlen, fp);
+    if(read == -1) {
         printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
 
-    while(((read = getline(&line, &len, fp)) != -1) && (cpu < pinfop->NBcpus)) {
+    while( ((read = getline(&line, &maxstrlen, fp)) != -1)
+            && (cpu < pinfop->NBcpus) ) {
 
-        sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld", string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
+        sscanf(line, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld",
+               string0, &vall0, &vall1, &vall2, &vall3, &vall4, &vall5, &vall6, &vall7, &vall8);
 
         v0 = vall0 - pinfop->CPUcnt0[cpu];
         v1 = vall1 - pinfop->CPUcnt1[cpu];
@@ -1397,7 +1403,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
         pinfop->CPUload[cpu] = (1.0 * v0 + v1 + v2 + v4 + v5 + v6) / (v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8);
         cpu++;
     }
-
+	free(line);
     fclose(fp);
     clock_gettime(CLOCK_REALTIME, &t2);
     tdiff = info_time_diff(t1, t2);
@@ -1417,8 +1423,8 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 
     // use ps command to scan processes, store result in file psoutfname
 
-//    sprintf(command, "echo \"%5d CREATE\" >> cmdlog.txt\n", cnt);
-//    system(command);
+    //    sprintf(command, "echo \"%5d CREATE\" >> cmdlog.txt\n", cnt);
+    //    system(command);
 
 
     sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", procdname, procdname, psoutfname, procdname);
@@ -1426,16 +1432,16 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
         printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
     }
 
-//    sprintf(command, "echo \"%5d CREATED\" >> cmdlog.txt\n", cnt);
-//    system(command);
+    //    sprintf(command, "echo \"%5d CREATED\" >> cmdlog.txt\n", cnt);
+    //    system(command);
 
 
     // read and process psoutfname file
 
     if( access( psoutfname, F_OK ) != -1 ) {
 
-//        sprintf(command, "echo \"%5d READ\" >> cmdlog.txt\n", cnt);
-//        system(command);
+        //        sprintf(command, "echo \"%5d READ\" >> cmdlog.txt\n", cnt);
+        //        system(command);
 
         for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
             char outstring[200];
@@ -1452,8 +1458,8 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
                 pinfop->CPUpcnt[cpu] = atoi(outstring);
             }
         }
-//        sprintf(command, "echo \"%5d REMOVE\" >> cmdlog.txt\n", cnt);
-//        system(command);
+        //        sprintf(command, "echo \"%5d REMOVE\" >> cmdlog.txt\n", cnt);
+        //        system(command);
         remove(psoutfname);
     }
     cnt++;
@@ -2467,7 +2473,7 @@ errno_t processinfo_CTRLscreen()
 
     STRINGLISTENTRY *CPUsetList;
     int NBCPUset;
-    CPUsetList = (STRINGLISTENTRY *)malloc(1000 * sizeof(STRINGLISTENTRY));
+    CPUsetList = (STRINGLISTENTRY *)malloc(sizeof(STRINGLISTENTRY)*1000);
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
 
 
@@ -4411,7 +4417,8 @@ errno_t processinfo_CTRLscreen()
 
     free(procinfoproc.pinfodisp);
 
-
+	free(CPUsetList);
+	
     fflush(stderr);
     dup2(backstderr, STDERR_FILENO);
     close(backstderr);
