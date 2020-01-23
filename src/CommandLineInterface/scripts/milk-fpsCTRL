@@ -18,7 +18,7 @@ echo "  Connects to <name>.fps.shm shared memory structures"
 echo "  Argument is string match filter to select fps structures"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-hlm] <stringfilter>"
+echo "     $0 [-hlmD] <stringfilter>"
 echo ""
 echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
 echo "     <stringfilter>                      string filter (optional)"
@@ -28,6 +28,7 @@ echo "     $(tput bold)-h$(tput sgr0)          help"
 echo "     $(tput bold)-f$(tput sgr0) <fname>  input (f)ifo name"
 echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
 echo "     $(tput bold)-m$(tput sgr0)          must (m)atch fpscmd/fpslist.txt"
+echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -61,6 +62,7 @@ done
 
 
 MODE="0"
+DEBUG="0"
 
 #FIFONAME="$MILK_SHM_DIR/fpsCTRL.cmd.fifo"
 
@@ -69,7 +71,7 @@ pname="fpsCTRL"
 fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
 outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
 
-while getopts :hlm:f:o: FLAG; do
+while getopts :hlmDf:o: FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -91,6 +93,9 @@ while getopts :hlm:f:o: FLAG; do
     m)
 		MODE="1"
     ;;
+    D)
+		DEBUG="1"
+	;;
     \?) 
       echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
       printHELP
@@ -134,9 +139,28 @@ echo "exitCLI" >> $SF
 echo "fifoname = ${fifoname}"
 echo "SF       = ${SF}"
 
+
+if [ "$DEBUG" = "1" ]; then
+
+cp $(which milk) .
+OPTION="--leak-check=full --show-leak-kinds=all"
+OPTION="$OPTION --show-reachable=yes"
+#OPTION="$OPTION --gen-suppressions=all"
+OPTION="$OPTION --log-file=milk.memcheck.log"
+OPTION="$OPTION --suppressions=milk.memcheck.supp"
+OPTION="$OPTION --max-stackframe=4442392"
+
+valgrind ${OPTION} ./milk -n ${pname} -f ${CLIfifoname} -s ${SF}
+rm ./milk
+
+else
+
 milk -n ${pname} -f ${CLIfifoname} -s ${SF}
+
+fi
 
 rm ${SF}
 
 rm ${fifoname}
+
 

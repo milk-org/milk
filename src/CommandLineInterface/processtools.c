@@ -1132,7 +1132,7 @@ static int print_header(const char *str, char c)
  * INITIALIZE ncurses
  * 
  */ 
-static int initncurses()
+static errno_t initncurses()
 {
     if ( initscr() == NULL ) {
         fprintf(stderr, "Error initialising ncurses.\n");
@@ -1140,10 +1140,18 @@ static int initncurses()
     }
     getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
     wcolmax = wcol;
+    
     cbreak();
-    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
+    // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
+    // making characters typed by the user immediately available to the program
+
+    keypad(stdscr, TRUE);		
+    // enable F1, F2 etc..
+    
     nodelay(stdscr, TRUE);
     curs_set(0);
+    
+    
     noecho();			/* Don't echo() while we do getch */
 
 
@@ -1168,7 +1176,7 @@ static int initncurses()
     init_pair(9, COLOR_BLACK, COLOR_RED);
 
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 
@@ -1192,40 +1200,47 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
 
 #ifdef USE_HWLOC
 
-    unsigned int depth = 0;
-    hwloc_topology_t topology;
+    static int initStatus = 0;
 
-    /* Allocate and initialize topology object. */
-    hwloc_topology_init(&topology);
+    if(initStatus == 0) {
+        initStatus = 1;
+        unsigned int depth = 0;
+        hwloc_topology_t topology;
 
-    /* ... Optionally, put detection configuration here to ignore
-       some objects types, define a synthetic topology, etc....
-       The default is to detect all the objects of the machine that
-       the caller is allowed to access.  See Configure Topology
-       Detection. */
+        /* Allocate and initialize topology object. */
+        hwloc_topology_init(&topology);
 
-    /* Perform the topology detection. */
-    hwloc_topology_load(topology);
+        /* ... Optionally, put detection configuration here to ignore
+           some objects types, define a synthetic topology, etc....
+           The default is to detect all the objects of the machine that
+           the caller is allowed to access.  See Configure Topology
+           Detection. */
 
-    depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
-    pinfop->NBcpusocket = hwloc_get_nbobjs_by_depth(topology, depth);
+        /* Perform the topology detection. */
+        hwloc_topology_load(topology);
 
-    depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
-    pinfop->NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
+        depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PACKAGE);
+        pinfop->NBcpusocket = hwloc_get_nbobjs_by_depth(topology, depth);
 
-    hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth, 0);
-    do {
-        pinfop->CPUids[pu_index] = obj->os_index;
-        ++pu_index;
-        obj = obj->next_cousin;
-    } while (obj != NULL);
+        depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+        pinfop->NBcpus = hwloc_get_nbobjs_by_depth(topology, depth);
+
+        hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth, 0);
+        do {
+            pinfop->CPUids[pu_index] = obj->os_index;
+            ++pu_index;
+            obj = obj->next_cousin;
+        } while (obj != NULL);
+
+        hwloc_topology_destroy(topology);
+    }
 
 #else
 
     FILE *fpout;
     char outstring[16];
-	char buf[100];
-	
+    char buf[100];
+
     unsigned int tmp_index = 0;
 
     fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
@@ -1241,19 +1256,19 @@ static int GetNumberCPUs(PROCINFOPROC *pinfop)
     }
     pinfop->NBcpus = atoi(outstring);
 
-	fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'", "r");
-	pu_index = 0;
-	pinfop->NBcpusocket = 1;
-	while ((fgets(buf, sizeof(buf), fpout) != NULL)&&(pu_index<pinfop->NBcpus)) {
-		pinfop->CPUids[pu_index] = pu_index;
-		pinfop->CPUphys[pu_index] = atoi(buf);
-		
-		//printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
-		if(pinfop->CPUphys[pu_index]+1 > pinfop->NBcpusocket)
-			pinfop->NBcpusocket = pinfop->CPUphys[pu_index]+1;
-		
-		pu_index++;
-	}
+    fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'", "r");
+    pu_index = 0;
+    pinfop->NBcpusocket = 1;
+    while ((fgets(buf, sizeof(buf), fpout) != NULL)&&(pu_index<pinfop->NBcpus)) {
+        pinfop->CPUids[pu_index] = pu_index;
+        pinfop->CPUphys[pu_index] = atoi(buf);
+
+        //printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
+        if(pinfop->CPUphys[pu_index]+1 > pinfop->NBcpusocket)
+            pinfop->NBcpusocket = pinfop->CPUphys[pu_index]+1;
+
+        pu_index++;
+    }
 
 #endif
 
@@ -2438,7 +2453,9 @@ errno_t processinfo_CTRLscreen()
 
     setlocale(LC_ALL, "");
 
-
+	// initialize
+	procinfoproc.loopcnt = 0;
+    
     // initialize ALL entries
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
@@ -2446,8 +2463,6 @@ errno_t processinfo_CTRLscreen()
         procinfoproc.pinfommapped[pindex]  = 0;
         procinfoproc.selectedarray[pindex] = 0; // initially not selected
         procinfoproc.loopcntoffsetarray[pindex] = 0;
-
-
     }
 
     STRINGLISTENTRY *CPUsetList;
@@ -3358,7 +3373,8 @@ errno_t processinfo_CTRLscreen()
                 
                 printw("pindexSelected = %d    %d\n", pindexSelected, pindexSelectedOK);
 
-                printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+                printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", 
+                CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
                 if(procinfoproc.DisplayMode==1)
                 {

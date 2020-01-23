@@ -41,6 +41,8 @@
 #include <sys/stat.h> // fstat
 #include <signal.h>
 
+
+
 #ifndef STANDALONE
 #include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
@@ -53,7 +55,9 @@
 #include "standalone_dependencies.h"
 #endif
 
+#include "CLIcore.h"
 #include "function_parameters.h"
+
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -414,7 +418,7 @@ long function_parameter_struct_connect(
     char SM_fname[stringmaxlen];
     int SM_fd; // shared memory file descriptor
     long NBparamMAX;
-    long NBparamActive;
+//    long NBparamActive;
     char *mapv;
 
     char shmdname[stringmaxlen];
@@ -595,10 +599,8 @@ int function_parameter_printlist(
     {
         if(funcparamarray[pindex].fpflag & FPFLAG_ACTIVE)
         {
-            int kl;
-
             printf("Parameter %4ld : %s\n", pindex, funcparamarray[pindex].keywordfull);
-            /*for(kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
+            /*for(int kl=0; kl< funcparamarray[pindex].keywordlevel; kl++)
             	printf("  %s", funcparamarray[pindex].keyword[kl]);
             printf("\n");*/
             printf("    %s\n", funcparamarray[pindex].description);
@@ -723,12 +725,11 @@ int functionparameter_GetFileName(
 
 int functionparameter_GetParamIndex(
     FUNCTION_PARAMETER_STRUCT *fps,
-    const char *paramname
+    const char                *paramname
 )
 {
     long index = -1;
     long pindex = 0;
-    int pcnt = 0;
 
     long NBparamMAX = fps->md->NBparamMAX;
 
@@ -973,13 +974,13 @@ uint64_t *functionparameter_GetParamPtr_fpflag(
 
 
 
-long functionparameter_LoadStream(
+imageID functionparameter_LoadStream(
     FUNCTION_PARAMETER_STRUCT *fps,
-    int pindex,
-    int fpsconnectmode
+    int                        pindex,
+    int                        fpsconnectmode
 ) {
-    long ID = -1;
-    int imLOC;
+    imageID ID = -1;
+    uint32_t     imLOC;
 
 
 #ifdef STANDALONE
@@ -1696,7 +1697,7 @@ uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps)
  * INITIALIZE ncurses
  *
  */
-static int initncurses()
+static errno_t initncurses()
 {
     if ( initscr() == NULL ) {
         fprintf(stderr, "Error initialising ncurses.\n");
@@ -1704,23 +1705,23 @@ static int initncurses()
     }
     getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
 
-    cbreak();  
-    // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected), 
+    cbreak();
+    // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
     // making characters typed by the user immediately available to the program
-    
-    keypad(stdscr, TRUE);		
-    // enable F1, F2 etc..	
-        
+
+    keypad(stdscr, TRUE);
+    // enable F1, F2 etc..
+
     nodelay(stdscr, TRUE);
     curs_set(0);
 
-    noecho();			
+    noecho();
     // Don't echo() while we do getch
-    
-    
-    
-	//nonl();             
-	// Do not translates newline into return and line-feed on output
+
+
+
+    //nonl();
+    // Do not translates newline into return and line-feed on output
 
 
     init_color(COLOR_GREEN, 400, 1000, 400);
@@ -1738,7 +1739,8 @@ static int initncurses()
     init_pair(9, COLOR_BLACK, COLOR_RED);
     init_pair(10, COLOR_BLACK, COLOR_CYAN);
 
-    return 0;
+
+    return RETURN_SUCCESS;
 }
 
 
@@ -1988,23 +1990,17 @@ int functionparameter_CheckParameter(
     int pindex
 ) {
     int err = 0;
-    int msglen;
-    char msgadd[200];
 
-
-
-		
-            
     // if entry is not active or not used, no error reported
     if(  (!(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE))  ) {
         return 0;
     }
     else
-    {				
-		char msg[200];
-		sprintf(msg, "%s", fpsentry->parray[pindex].keywordfull);
-		functionparameter_outlog("CHECKPARAM", msg);
-	}
+    {
+        char msg[200];
+        sprintf(msg, "%s", fpsentry->parray[pindex].keywordfull);
+        functionparameter_outlog("CHECKPARAM", msg);
+    }
 
     // if entry is not used, no error reported
     if(!(fpsentry->parray[pindex].fpflag & FPFLAG_USED)) {
@@ -2029,7 +2025,11 @@ int functionparameter_CheckParameter(
                 if(fpsentry->parray[pindex].val.l[0] < fpsentry->parray[pindex].val.l[1]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN | FPS_MSG_FLAG_ERROR;
-                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "int64 value %ld below min %ld", fpsentry->parray[pindex].val.l[0], fpsentry->parray[pindex].val.l[1]);
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                             "int64 value %ld below min %ld",
+                             fpsentry->parray[pindex].val.l[0],
+                             fpsentry->parray[pindex].val.l[1]);
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
                     err = 1;
@@ -2040,7 +2040,11 @@ int functionparameter_CheckParameter(
                 if(fpsentry->parray[pindex].val.f[0] < fpsentry->parray[pindex].val.f[1]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN | FPS_MSG_FLAG_ERROR;
-                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float64 value %lf below min %lf", fpsentry->parray[pindex].val.f[0],  fpsentry->parray[pindex].val.f[1]);
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                             "float64 value %lf below min %lf",
+                             fpsentry->parray[pindex].val.f[0],
+                             fpsentry->parray[pindex].val.f[1]);
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
                     err = 1;
@@ -2051,7 +2055,11 @@ int functionparameter_CheckParameter(
                 if(fpsentry->parray[pindex].val.s[0] < fpsentry->parray[pindex].val.s[1]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN | FPS_MSG_FLAG_ERROR;
-                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float32 value %f below min %f", fpsentry->parray[pindex].val.s[0], fpsentry->parray[pindex].val.s[1]);
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                             "float32 value %f below min %f",
+                             fpsentry->parray[pindex].val.s[0],
+                             fpsentry->parray[pindex].val.s[1]);
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
                     err = 1;
@@ -2065,32 +2073,44 @@ int functionparameter_CheckParameter(
                 if(fpsentry->parray[pindex].val.l[0] > fpsentry->parray[pindex].val.l[2]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
-                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "int64 value %ld above max %ld", fpsentry->parray[pindex].val.l[0], fpsentry->parray[pindex].val.l[2]);
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                             "int64 value %ld above max %ld",
+                             fpsentry->parray[pindex].val.l[0],
+                             fpsentry->parray[pindex].val.l[2]);
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
-			
-                
+
+
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
                 if(fpsentry->parray[pindex].val.f[0] > fpsentry->parray[pindex].val.f[2]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
-                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float64 value %lf above max %lf", fpsentry->parray[pindex].val.f[0], fpsentry->parray[pindex].val.f[2]);
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                             "float64 value %lf above max %lf",
+                             fpsentry->parray[pindex].val.f[0],
+                             fpsentry->parray[pindex].val.f[2]);
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
-			
-                
-                
+
+
+
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
                 if(fpsentry->parray[pindex].val.s[0] > fpsentry->parray[pindex].val.s[2]) {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX | FPS_MSG_FLAG_ERROR;
-                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "float32 value %f above max %f", fpsentry->parray[pindex].val.s[0], fpsentry->parray[pindex].val.s[2]);
+                    snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                             "float32 value %f above max %f",
+                             fpsentry->parray[pindex].val.s[0],
+                             fpsentry->parray[pindex].val.s[2]);
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
                     err = 1;
@@ -2104,7 +2124,10 @@ int functionparameter_CheckParameter(
             if(file_exists(fpsentry->parray[pindex].val.string[0])==0) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
-                snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "File %s does not exist", fpsentry->parray[pindex].val.string[0]);
+                snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                         FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                         "File %s does not exist",
+                         fpsentry->parray[pindex].val.string[0]);
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
                 err = 1;
@@ -2119,7 +2142,10 @@ int functionparameter_CheckParameter(
             if(is_fits_file(fpsentry->parray[pindex].val.string[0])==0) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
-                snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "FITS file %s does not exist", fpsentry->parray[pindex].val.string[0]);
+                snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                         FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                         "FITS file %s does not exist",
+                         fpsentry->parray[pindex].val.string[0]);
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
                 err = 1;
@@ -2130,12 +2156,15 @@ int functionparameter_CheckParameter(
 
 
     if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME) {
-		if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
-		struct stat sb;
-		if (!(stat(fpsentry->parray[pindex].val.string[0], &sb) == 0 && sb.st_mode & S_IXUSR)) {
+        if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED) {
+            struct stat sb;
+            if (!(stat(fpsentry->parray[pindex].val.string[0], &sb) == 0 && sb.st_mode & S_IXUSR)) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
-                snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "File %s cannot be executed", fpsentry->parray[pindex].val.string[0]);
+                snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                         FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                         "File %s cannot be executed",
+                         fpsentry->parray[pindex].val.string[0]);
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
                 err = 1;
@@ -2143,28 +2172,30 @@ int functionparameter_CheckParameter(
         }
     }
 
-    
-    
-	FUNCTION_PARAMETER_STRUCT fpstest;
+
+
+    FUNCTION_PARAMETER_STRUCT fpstest;
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME) {
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED) {
-			int SMfd = -1;
-			long NBparamMAX = function_parameter_struct_connect(fpsentry->parray[pindex].val.string[0], &fpstest, FPSCONNECT_SIMPLE);
+            long NBparamMAX = function_parameter_struct_connect(fpsentry->parray[pindex].val.string[0], &fpstest, FPSCONNECT_SIMPLE);
             if(NBparamMAX < 1) {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
-                snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "FPS %s: no connection", fpsentry->parray[pindex].val.string[0]);
+                snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
+                         FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
+                         "FPS %s: no connection",
+                         fpsentry->parray[pindex].val.string[0]);
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
             else {
-				function_parameter_struct_disconnect(&fpstest);
-			}
+                function_parameter_struct_disconnect(&fpstest);
+            }
         }
     }
 
-    
+
 
 
 
@@ -2175,7 +2206,7 @@ int functionparameter_CheckParameter(
     
     if( (fpsentry->parray[pindex].type & FPTYPE_STREAMNAME) ) {
 
-            int imLOC;
+            uint32_t imLOC;
             long ID = COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0], &(fpsentry->parray[pindex].fpflag), &imLOC);
 			fpsentry->parray[pindex].info.stream.streamID = ID;
 			
@@ -3068,10 +3099,9 @@ int functionparameter_UserInputSetParamValue(
 
         if(c != 27) { // do not update value if escape key
 
-            long lval;
-            double fval;
+            long lval = 0;
+            double fval = 0.0;
             char *endptr;
-            char c;
             int vOK = 1;
 
             switch(fpsentry->parray[pindex].type) {
@@ -3105,7 +3135,7 @@ int functionparameter_UserInputSetParamValue(
 
                     /* Check for various possible errors */
                     if((errno == ERANGE)
-                            || (errno != 0 && lval == 0)) {
+                            || (errno != 0 && fval == 0.0)) {
                         perror("strtod");
                         vOK = 0;
                         sleep(1);
@@ -3129,7 +3159,7 @@ int functionparameter_UserInputSetParamValue(
 
                     /* Check for various possible errors */
                     if((errno == ERANGE)
-                            || (errno != 0 && lval == 0)) {
+                            || (errno != 0 && fval == 0.0)) {
                         perror("strtod");
                         vOK = 0;
                         sleep(1);
@@ -3383,7 +3413,6 @@ int functionparameter_FPSprocess_cmdline(
         else
         {
             char logfname[200];
-            char linkname[500];
             char shmdname[200];
             function_parameter_struct_shmdirname(shmdname);
 
@@ -3462,7 +3491,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    int fpsOK = 0;
+
     if(kwnindex != -1) {
         fpsindex = keywnode[kwnindex].fpsindex;
         pindex = keywnode[kwnindex].pindex;
@@ -3770,6 +3799,7 @@ int functionparameter_FPSprocess_cmdline(
                     }
                     sprintf(msgstring, "%-40s FLOAT32    %f", FPSentryname, atof(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
+                    break;
 
                 case FPTYPE_PID:
                     if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPScmdarg1)) == EXIT_SUCCESS) {
@@ -4079,9 +4109,7 @@ int functionparameter_read_fpsCMD_fifo(
     char buff[200];
     int total_bytes = 0;
     int bytes;
-    int fifofd;
     char buf0[1];
-    char *line;
 
     // toggles
     static uint32_t queue = 0;
@@ -4257,19 +4285,19 @@ int functionparameter_read_fpsCMD_fifo(
 
 // find next command to execute
 //
-int function_parameter_process_fpsCMDarray(
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
-    KEYWORD_TREE_NODE *keywnode,
-    int NBkwn,
-    FUNCTION_PARAMETER_STRUCT *fps
+static errno_t function_parameter_process_fpsCMDarray(
+    FPSCTRL_TASK_ENTRY         *fpsctrltasklist,
+    FPSCTRL_TASK_QUEUE         *fpsctrlqueuelist,
+    KEYWORD_TREE_NODE          *keywnode,
+    int                         NBkwn,
+    FUNCTION_PARAMETER_STRUCT  *fps
 ) {
     // the scheduler handles multiple queues
     // in each queue, we look for a task to run, and run it if conditions are met
 
 
     // sort priorities
-    long *queuepriolist = (long*) malloc(sizeof(int)*NB_FPSCTRL_TASKQUEUE_MAX);
+    long *queuepriolist = (long*) malloc(sizeof(long)*NB_FPSCTRL_TASKQUEUE_MAX);
     for( int queue = 0; queue<NB_FPSCTRL_TASKQUEUE_MAX; queue++) {
         queuepriolist[queue] = fpsctrlqueuelist[queue].priority;
     }
@@ -4281,7 +4309,7 @@ int function_parameter_process_fpsCMDarray(
         if(priority > 0)
         {
 
-            for( int queue = 0; queue<NB_FPSCTRL_TASKQUEUE_MAX; queue++)
+            for( unsigned int queue = 0; queue<NB_FPSCTRL_TASKQUEUE_MAX; queue++)
             {
                 if(priority == fpsctrlqueuelist[queue].priority) {
 
@@ -4292,7 +4320,7 @@ int function_parameter_process_fpsCMDarray(
 
 
                     for(int cmdindex=0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++) {
-                        if((fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_ACTIVE) && (fpsctrltasklist[cmdindex].queue == queue)) {
+                        if((fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_ACTIVE) && (fpsctrltasklist[cmdindex].queue == queue) ) {
                             if(fpsctrltasklist[cmdindex].inputindex < inputindexmin) {
                                 inputindexmin = fpsctrltasklist[cmdindex].inputindex;
                                 cmdindexExec = cmdindex;
@@ -4304,7 +4332,8 @@ int function_parameter_process_fpsCMDarray(
 
                     if(cmdOK == 1) {
                         if( !(fpsctrltasklist[cmdindexExec].status & FPSTASK_STATUS_RUNNING) ) { // if not running, launch it
-                            fpsctrltasklist[cmdindexExec].fpsindex = functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring, fpsctrlqueuelist, keywnode, NBkwn, fps);
+                            fpsctrltasklist[cmdindexExec].fpsindex =
+                                functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring, fpsctrlqueuelist, keywnode, NBkwn, fps);
                             clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
                             fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_RUNNING; // update status to running
                         }
@@ -4332,15 +4361,15 @@ int function_parameter_process_fpsCMDarray(
                             }
                         }
                     } // end cmdOK
-                    
-                    
+
+
                 }
             }
         }
     }
     free(queuepriolist);
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 
@@ -4353,10 +4382,8 @@ errno_t functionparameter_RUNstart(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 ) {
-	int stringmaxlen = 500;
+	int  stringmaxlen = 500;
     char command[stringmaxlen];
-    char tmuxname[stringmaxlen];
-    int nameindexlevel;
 
     if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
         snprintf(command, stringmaxlen, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name);
@@ -4375,7 +4402,7 @@ errno_t functionparameter_RUNstart(
         }	
 
         snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
-        for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
+        for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
             char tmpstring[20];
 
             snprintf(tmpstring, stringmaxlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
@@ -4402,13 +4429,11 @@ errno_t functionparameter_RUNstop(
 ) {
 	int stringmaxlen = 500;
     char command[stringmaxlen];
-    int nameindexlevel;
-
 
 
     // First, run the runstop command
     snprintf(command, stringmaxlen, "%s/fpscmd/%s-runstop", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname);
-    for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
+    for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
         sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
@@ -4441,7 +4466,6 @@ errno_t functionparameter_CONFstart(
 ) {
 	int stringmaxlen = 500;
     char command[stringmaxlen];
-    int nameindexlevel;
 
 
     snprintf(command, stringmaxlen, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name);
@@ -4458,7 +4482,7 @@ errno_t functionparameter_CONFstart(
 
 
     snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name, fps[fpsindex].md->pname);
-    for(nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
+    for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
         char tmpstring[20];
 
         snprintf(tmpstring, stringmaxlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
@@ -4506,7 +4530,6 @@ errno_t functionparameter_FPSremove(
 ) {
 	int stringmaxlen = 500;
     char command[stringmaxlen];
-    int nameindexlevel;
 
 
     functionparameter_RUNstop(fps, fpsindex);
@@ -4620,6 +4643,11 @@ errno_t functionparameter_outlog(
     }
 
    functionparameter_outlog_file(keyw, msgstring, fpout);
+   
+   if(strcmp(keyw, "LOGFILECLOSE") == 0) {
+		fclose(fpout);
+		LogOutOpen = 1;
+   }
 
     return RETURN_SUCCESS;
 }
@@ -4651,14 +4679,14 @@ static errno_t functionparameter_scan_fps(
     int stringmaxlen = 500;
     int fpsindex;
     int pindex;
-    int fps_symlink[NB_FPS_MAX];
+    //int fps_symlink[NB_FPS_MAX];
     int kwnindex;
     int NBkwn;
     int l;
 
 
-    int nodechain[MAXNBLEVELS];
-    int GUIlineSelected[MAXNBLEVELS];
+   // int nodechain[MAXNBLEVELS];
+    //int GUIlineSelected[MAXNBLEVELS];
 
     // FPS list file
     FILE *fpfpslist;
@@ -4706,12 +4734,10 @@ static errno_t functionparameter_scan_fps(
             char *FPSlistline = NULL;
             size_t len = 0;
             ssize_t read;
-            char FPSlistentry[stringmaxlen];
 
             while((read = getline(&FPSlistline, &len, fpfpslist)) != -1) {
                 if(FPSlistline[0] != '#') {
                     char *pch;
-                    int nbword = 0;
 
                     pch = strtok(FPSlistline, " \t\n\r");
                     if(pch != NULL) {
@@ -4738,10 +4764,10 @@ static errno_t functionparameter_scan_fps(
 
 
 
-    for(l = 0; l < MAXNBLEVELS; l++) {
-        nodechain[l] = 0;
-        GUIlineSelected[l] = 0;
-    }
+  //  for(l = 0; l < MAXNBLEVELS; l++) {
+       // nodechain[l] = 0;
+       // GUIlineSelected[l] = 0;
+    //}
 
 	for( int kindex = 0; kindex <NB_KEYWNODE_MAX; kindex++ ) {
 				keywnode[kindex].NBchild = 0;
@@ -4828,19 +4854,21 @@ static errno_t functionparameter_scan_fps(
                     char fullname[stringmaxlen];
                     char linknamefull[stringmaxlen];
                     char linkname[stringmaxlen];
-                    int nchar;
-                    int ret;
+                    
                     char shmdname[stringmaxlen];
                     function_parameter_struct_shmdirname(shmdname);
 
-                    fps_symlink[fpsindex] = 1;
+                    //fps_symlink[fpsindex] = 1;
                     snprintf(fullname, stringmaxlen, "%s/%s", shmdname, dir->d_name);
-                    ret = readlink(fullname, linknamefull, 200 - 1); // todo: replace with realpath()
-
+                    
+                    if ( readlink(fullname, linknamefull, 200 - 1) == -1 ) {
+						 // todo: replace with realpath()
+						printERROR(__FILE__,__func__,__LINE__, "readlink() error");
+					}
                     strcpy(linkname, basename(linknamefull));
 
                     int lOK = 1;
-                    int ii = 0;
+                    unsigned int ii = 0;
                     while((lOK == 1) && (ii < strlen(linkname))) {
                         if(linkname[ii] == '.') {
                             linkname[ii] = '\0';
@@ -4850,12 +4878,13 @@ static errno_t functionparameter_scan_fps(
                     }
 
                     //                        strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
-                } else {
-                    fps_symlink[fpsindex] = 0;
-                }
+                } 
+                //else {
+                  //  fps_symlink[fpsindex] = 0;
+                //}
 
 
-                fps_symlink[fpsindex] = 0;
+                //fps_symlink[fpsindex] = 0;
 
 
                 char fpsname[stringmaxlen];
@@ -5079,7 +5108,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMod
 
 
 inline static void fpsCTRLscreen_print_help() {
-    int attrval = A_BOLD;
+   // int attrval = A_BOLD;
 
     printw("\n");
     print_help_entry("x", "Exit");
@@ -5510,7 +5539,7 @@ inline static int fpsCTRLscreen_process_user_key(
         printf("Reading FIFO file \"%s\"  fd=%d\n", fpsCTRLgui->fpsCTRLfifoname, fpsCTRLgui->fpsCTRLfifofd);
 
         if(fpsCTRLgui->fpsCTRLfifofd > 0) {
-            int verbose = 1;
+           // int verbose = 1;
             functionparameter_read_fpsCMD_fifo(fpsCTRLgui->fpsCTRLfifofd, fpsctrltasklist, fpsctrlqueuelist);
         }
 
@@ -5584,11 +5613,11 @@ errno_t functionparameter_CTRLscreen(
     // function parameters
     long NBpindex = 0;
     long pindex;
-    int *p_fpsindex; // fps index for parameter
-    int *p_pindex;   // index within fps
+    //int *p_fpsindex; // fps index for parameter
+    //int *p_pindex;   // index within fps
 
     // keyword tree
-    int kwnindex;
+    //int kwnindex;
     KEYWORD_TREE_NODE *keywnode;
 
     int level;
@@ -5600,39 +5629,30 @@ errno_t functionparameter_CTRLscreen(
     int nodechain[MAXNBLEVELS];
 
 
-
-    // current selection
-
-
-
-
-
-    char msg[stringmaxlen];
-
-
-
-
-    // input command
-    FILE *fpinputcmd;
+    // What to run ?
+    // disable for testing
+    int run_display = 1;
+	loopOK = 1;
 
 
     functionparameter_outlog("FPSCTRL", "START\n");
 
-    DEBUG_TRACEPOINT(" ");
+    DEBUG_TRACEPOINT("function start");
 
-	
+
 
     // initialize fpsCTRLgui
-    fpsCTRLgui.mode = mode;
+    fpsCTRLgui.mode                  = mode;
+    fpsCTRLgui.nodeSelected          = 1;
+    fpsCTRLgui.run_display           = run_display;
+    fpsCTRLgui.fpsindexSelected      = 0;
+    fpsCTRLgui.pindexSelected        = 0;
+    fpsCTRLgui.directorynodeSelected = 0;
+    fpsCTRLgui.currentlevel          = 0;
+    fpsCTRLgui.direction             = 1;
     strcpy(fpsCTRLgui.fpsnamemask, fpsnamemask);
     strcpy(fpsCTRLgui.fpsCTRLfifoname, fpsCTRLfifoname);
-    fpsCTRLgui.nodeSelected = 1;
-    fpsCTRLgui.run_display = 1;
-    fpsCTRLgui.fpsindexSelected = 0;
-    fpsCTRLgui.pindexSelected = 0;
-    fpsCTRLgui.directorynodeSelected = 0;
-    fpsCTRLgui.currentlevel = 0;
-    fpsCTRLgui.direction = 1;
+
 
     fpsCTRLgui.fpsCTRL_DisplayMode = 2;
     // 1: [h]  help
@@ -5647,15 +5667,18 @@ errno_t functionparameter_CTRLscreen(
 
 
     // Array holding fps structures
+    //
     fps = (FUNCTION_PARAMETER_STRUCT *) malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * NB_FPS_MAX);
-    
+
 
     // Initialize file descriptors to -1
+    //
     for(fpsindex = 0; fpsindex<NB_FPS_MAX; fpsindex++) {
-		fps[fpsindex].SMfd = -1;
+        fps[fpsindex].SMfd = -1;
     }
 
     // All parameters held in this array
+    //
     keywnode = (KEYWORD_TREE_NODE *) malloc(sizeof(KEYWORD_TREE_NODE) * NB_KEYWNODE_MAX);
 
 
@@ -5670,11 +5693,12 @@ errno_t functionparameter_CTRLscreen(
         fpsctrltasklist[cmdindex].queue = 0;
     }
 
-    // set up task queue list
+    // Set up task queue list
+    //
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist;
     fpsctrlqueuelist = (FPSCTRL_TASK_QUEUE*) malloc(sizeof(FPSCTRL_TASK_QUEUE) * FPSTASK_MAX_NBQUEUE);
     for(int queueindex = 0; queueindex < FPSTASK_MAX_NBQUEUE; queueindex++) {
-        fpsctrlqueuelist[queueindex].priority = 1; // 0=not active
+        fpsctrlqueuelist[queueindex].priority = 1; // 0 = not active
     }
 
 
@@ -5722,7 +5746,7 @@ errno_t functionparameter_CTRLscreen(
         snprintf(logfname, stringmaxlen, "%s/fpslog.%06d", shmdname, getpid());
         remove(logfname);
 
-        return 0;
+        return RETURN_SUCCESS;
     }
 
     fpsCTRLgui.nodeSelected = 1;
@@ -5730,11 +5754,23 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-    // INITIALIZE ncurses
-    initncurses();
-    atexit(functionparameter_CTRLscreen_atexit);
-    clear();
 
+
+
+
+
+
+
+
+
+    // INITIALIZE ncurses
+
+    if(run_display == 1) {
+        initncurses();
+        atexit(functionparameter_CTRLscreen_atexit);
+        clear();
+    }
+    
 
 
     fpsCTRLgui.NBindex = 0;
@@ -5743,15 +5779,13 @@ errno_t functionparameter_CTRLscreen(
 
 
 
+    if(run_display == 0) {
+        loopOK = 0;
+    }
 
     while(loopOK == 1) {
-        int GUIline;
 
-        //int fpsindex;
-        //long pindex;
-        char command[stringmaxlen];
         long icnt = 0;
-        char fname[stringmaxlen];
 
         usleep(10000); // 100 Hz display
 
@@ -5777,10 +5811,8 @@ errno_t functionparameter_CTRLscreen(
             endwin();
 
             printf("\n fpsCTRLgui.NBfps = %d ->  No FPS on system - nothing to display\n", fpsCTRLgui.NBfps);
-            return(RETURN_FAILURE);
+            return RETURN_FAILURE;
         }
-
-
 
 
 
@@ -5798,12 +5830,19 @@ errno_t functionparameter_CTRLscreen(
             DEBUG_TRACEPOINT(" ");
 
             printw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n", fpsCTRLgui.fpsCTRLfifoname, fpsCTRLgui.fpsCTRLfifofd, fifocmdcnt);
+
             int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLgui.fpsCTRLfifofd, fpsctrltasklist, fpsctrlqueuelist);
+
             DEBUG_TRACEPOINT(" ");
+
             function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist, keywnode, fpsCTRLgui.NBkwn, fps);
+
             fifocmdcnt += fcnt;
+
             DEBUG_TRACEPOINT(" ");
+
             printw("OUTPUT LOG:  %s/fpslog.%06d\n", shmdname, getpid());
+
             DEBUG_TRACEPOINT(" ");
 
 
@@ -5845,57 +5884,56 @@ errno_t functionparameter_CTRLscreen(
 
                 DEBUG_TRACEPOINT("Get number of lines to be displayed");
                 fpsCTRLgui.currentlevel = keywnode[fpsCTRLgui.directorynodeSelected].keywordlevel;
-                int GUIlineMax = keywnode[fpsCTRLgui.directorynodeSelected].NBchild; 
+                int GUIlineMax = keywnode[fpsCTRLgui.directorynodeSelected].NBchild;
                 for(level = 0; level < fpsCTRLgui.currentlevel; level ++) {
                     DEBUG_TRACEPOINT("update GUIlineMax, the maximum number of lines");
                     if(keywnode[nodechain[level]].NBchild > GUIlineMax) {
-                        GUIlineMax = keywnode[nodechain[level]].NBchild; 
+                        GUIlineMax = keywnode[nodechain[level]].NBchild;
                     }
                 }
-                
-                
-                printw("level = %d   [%d] NB child = %d\n", 
-                fpsCTRLgui.currentlevel,  
-                fpsCTRLgui.directorynodeSelected, 
-                keywnode[fpsCTRLgui.directorynodeSelected].NBchild
-                );
 
 
-          /*      printw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
+                printw("level = %d   [%d] NB child = %d\n",
+                       fpsCTRLgui.currentlevel,
                        fpsCTRLgui.directorynodeSelected,
-                       fpsCTRLgui.nodeSelected,
-                       GUIlineMax);
-                printw("LINE: %d / %d\n\n",
-                       fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel],
-                       keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
-				*/
+                       keywnode[fpsCTRLgui.directorynodeSelected].NBchild
+                      );
 
 
-				//while(!(fps[fpsindexSelected].parray[pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
-				//		fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]++;
-				//}
-
-//if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
-
-				
-				if( !(  fps[keywnode[fpsCTRLgui.nodeSelected].fpsindex].parray[keywnode[fpsCTRLgui.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
-				if(fpsCTRLgui.direction > 0) {
-					fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] ++;
-				}
-				else
-				{
-					fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] --;
-				}
-				}
-				//HERE
+                /*      printw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
+                             fpsCTRLgui.directorynodeSelected,
+                             fpsCTRLgui.nodeSelected,
+                             GUIlineMax);
+                      printw("LINE: %d / %d\n\n",
+                             fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel],
+                             keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
+                	*/
 
 
-				
-				while(fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] >
-                       keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1) {
-						   fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]--;
-					   }
-					   
+                //while(!(fps[fpsindexSelected].parray[pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
+                //		fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]++;
+                //}
+
+                //if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+
+
+                if( !(  fps[keywnode[fpsCTRLgui.nodeSelected].fpsindex].parray[keywnode[fpsCTRLgui.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+                    if(fpsCTRLgui.direction > 0) {
+                        fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] ++;
+                    }
+                    else
+                    {
+                        fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] --;
+                    }
+                }
+
+
+
+                while(fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] >
+                        keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1) {
+                    fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]--;
+                }
+
 
 
                 int child_index[MAXNBLEVELS];
@@ -5983,21 +6021,21 @@ errno_t functionparameter_CTRLscreen(
                             child_index[level] = keywnode[fpsCTRLgui.directorynodeSelected].NBchild - 1;
                         }
 
-/*
-                        if(fpsCTRLgui.currentlevel != 0) { // this does not apply to root menu
-                            while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) && // if not visible, advance to next one
-                                    (child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {     
-                                child_index[level] ++;
-                                DEBUG_TRACEPOINT("knodeindex = %d  child %d / %d",
-                                          knodeindex,
-                                          child_index[level],
-                                          keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
-                                knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index[level]];
-                                fpsindex = keywnode[knodeindex].fpsindex;
-                                pindex = keywnode[knodeindex].pindex;
-                            }
-                        }
-*/
+                        /*
+                                                if(fpsCTRLgui.currentlevel != 0) { // this does not apply to root menu
+                                                    while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) && // if not visible, advance to next one
+                                                            (child_index[level] < keywnode[fpsCTRLgui.directorynodeSelected].NBchild-1)) {
+                                                        child_index[level] ++;
+                                                        DEBUG_TRACEPOINT("knodeindex = %d  child %d / %d",
+                                                                  knodeindex,
+                                                                  child_index[level],
+                                                                  keywnode[fpsCTRLgui.directorynodeSelected].NBchild);
+                                                        knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index[level]];
+                                                        fpsindex = keywnode[knodeindex].fpsindex;
+                                                        pindex = keywnode[knodeindex].pindex;
+                                                    }
+                                                }
+                        */
 
                         DEBUG_TRACEPOINT(" ");
 
@@ -6018,7 +6056,7 @@ errno_t functionparameter_CTRLscreen(
                                     DEBUG_TRACEPOINT(" ");
 
                                     fpsindex = keywnode[knodeindex].fpsindex;
-                                    pid_t pid;                                   
+                                    pid_t pid;
 
                                     pid = fps[fpsindex].md->confpid;
                                     if((getpgid(pid) >= 0) && (pid > 0)) {
@@ -6111,32 +6149,32 @@ errno_t functionparameter_CTRLscreen(
                                 fpsindex = keywnode[knodeindex].fpsindex;
                                 pindex = keywnode[knodeindex].pindex;
 
-								
+
 
 
                                 DEBUG_TRACEPOINT(" ");
                                 int isVISIBLE = 1;
                                 if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
-									isVISIBLE = 0;
-									attron(A_DIM|A_BLINK);
-								}
-									
-	
-									
-                                    int kl;
+                                    isVISIBLE = 0;
+                                    attron(A_DIM|A_BLINK);
+                                }
 
-                                    if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
-                                        fpsCTRLgui.pindexSelected = keywnode[knodeindex].pindex;
-                                        fpsCTRLgui.fpsindexSelected = keywnode[knodeindex].fpsindex;
-                                        fpsCTRLgui.nodeSelected = knodeindex;
-                                        
-                                        if(isVISIBLE == 1) {
-											attron(COLOR_PAIR(10) | A_BOLD);
-										}
-                                    }
-                                    DEBUG_TRACEPOINT(" ");
-                                    
+
+
+                                //int kl;
+
+                                if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
+                                    fpsCTRLgui.pindexSelected = keywnode[knodeindex].pindex;
+                                    fpsCTRLgui.fpsindexSelected = keywnode[knodeindex].fpsindex;
+                                    fpsCTRLgui.nodeSelected = knodeindex;
+
                                     if(isVISIBLE == 1) {
+                                        attron(COLOR_PAIR(10) | A_BOLD);
+                                    }
+                                }
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(isVISIBLE == 1) {
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS) {
                                         attron(COLOR_PAIR(10) | A_BLINK);
                                         printw("W "); // writable
@@ -6146,340 +6184,392 @@ errno_t functionparameter_CTRLscreen(
                                         printw("NW"); // non writable
                                         attroff(COLOR_PAIR(4) | A_BLINK);
                                     }
-									} else {
-										printw("  ");
-									}
+                                } else {
+                                    printw("  ");
+                                }
 
-                                    DEBUG_TRACEPOINT(" ");
-                                    level = keywnode[knodeindex].keywordlevel;
-                                    printw(" %-20s", fps[fpsindex].parray[pindex].keyword[level - 1]);
+                                DEBUG_TRACEPOINT(" ");
+                                level = keywnode[knodeindex].keywordlevel;
+                                printw(" %-20s", fps[fpsindex].parray[pindex].keyword[level - 1]);
 
-                                    if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
-                                        attroff(COLOR_PAIR(10));
+                                if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
+                                    attroff(COLOR_PAIR(10));
+                                }
+                                DEBUG_TRACEPOINT(" ");
+                                printw("   ");
+
+                                // VALUE
+
+                                int paramsync = 1; // parameter is synchronized
+
+                                if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
+                                    if(isVISIBLE == 1) {
+                                        attron(COLOR_PAIR(4));
                                     }
-                                    DEBUG_TRACEPOINT(" ");
-                                    printw("   ");
+                                }
 
-                                    // VALUE
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_UNDEF) {
+                                    printw("  %s", "-undef-");
+                                }
 
-                                    int paramsync = 1; // parameter is synchronized
+                                DEBUG_TRACEPOINT(" ");
 
-                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
-                                        if(isVISIBLE == 1) { attron(COLOR_PAIR(4)); }
-                                    }
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_UNDEF) {
-                                        printw("  %s", "-undef-");
-                                    }
-
-                                    DEBUG_TRACEPOINT(" ");
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_INT64) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(fps[fpsindex].parray[pindex].val.l[0] != fps[fpsindex].parray[pindex].val.l[3]) {
-                                                    paramsync = 0;
-                                                }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10d", (int) fps[fpsindex].parray[pindex].val.l[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
-                                        }
-                                    }
-
-                                    DEBUG_TRACEPOINT(" ");
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT64) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR)) {
-                                                double absdiff;
-                                                double abssum;
-                                                double epsrel = 1.0e-6;
-                                                double epsabs = 1.0e-10;
-
-                                                absdiff = fabs(fps[fpsindex].parray[pindex].val.f[0] - fps[fpsindex].parray[pindex].val.f[3]);
-                                                abssum = fabs(fps[fpsindex].parray[pindex].val.f[0]) + fabs(fps[fpsindex].parray[pindex].val.f[3]);
-
-
-                                                if((absdiff < epsrel * abssum) || (absdiff < epsabs)) {
-                                                    paramsync = 1;
-                                                } else {
-                                                    paramsync = 0;
-                                                }
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_INT64) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(fps[fpsindex].parray[pindex].val.l[0] != fps[fpsindex].parray[pindex].val.l[3]) {
+                                                paramsync = 0;
                                             }
 
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) {  attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10f", (float) fps[fpsindex].parray[pindex].val.f[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
                                         }
                                     }
 
-                                    DEBUG_TRACEPOINT(" ");
+                                    printw("  %10d", (int) fps[fpsindex].parray[pindex].val.l[0]);
 
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT32) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR)) {
-                                                double absdiff;
-                                                double abssum;
-                                                double epsrel = 1.0e-6;
-                                                double epsabs = 1.0e-10;
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
 
-                                                absdiff = fabs(fps[fpsindex].parray[pindex].val.s[0] - fps[fpsindex].parray[pindex].val.s[3]);
-                                                abssum = fabs(fps[fpsindex].parray[pindex].val.s[0]) + fabs(fps[fpsindex].parray[pindex].val.s[3]);
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT64) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR)) {
+                                            double absdiff;
+                                            double abssum;
+                                            double epsrel = 1.0e-6;
+                                            double epsabs = 1.0e-10;
+
+                                            absdiff = fabs(fps[fpsindex].parray[pindex].val.f[0] - fps[fpsindex].parray[pindex].val.f[3]);
+                                            abssum = fabs(fps[fpsindex].parray[pindex].val.f[0]) + fabs(fps[fpsindex].parray[pindex].val.f[3]);
 
 
-                                                if((absdiff < epsrel * abssum) || (absdiff < epsabs)) {
-                                                    paramsync = 1;
-                                                } else {
-                                                    paramsync = 0;
-                                                }
+                                            if((absdiff < epsrel * abssum) || (absdiff < epsabs)) {
+                                                paramsync = 1;
+                                            } else {
+                                                paramsync = 0;
                                             }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) {  attron(COLOR_PAIR(3)); }
                                         }
 
-                                        printw("  %10f", (float) fps[fpsindex].parray[pindex].val.s[0]);
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
 
-                                        if(paramsync == 0) {
+                                    printw("  %10f", (float) fps[fpsindex].parray[pindex].val.f[0]);
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
+
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT32) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR)) {
+                                            double absdiff;
+                                            double abssum;
+                                            double epsrel = 1.0e-6;
+                                            double epsabs = 1.0e-10;
+
+                                            absdiff = fabs(fps[fpsindex].parray[pindex].val.s[0] - fps[fpsindex].parray[pindex].val.s[3]);
+                                            abssum = fabs(fps[fpsindex].parray[pindex].val.s[0]) + fabs(fps[fpsindex].parray[pindex].val.s[3]);
+
+
+                                            if((absdiff < epsrel * abssum) || (absdiff < epsabs)) {
+                                                paramsync = 1;
+                                            } else {
+                                                paramsync = 0;
+                                            }
+                                        }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
+
+                                    printw("  %10f", (float) fps[fpsindex].parray[pindex].val.s[0]);
+
+                                    if(paramsync == 0) {
+                                        attroff(COLOR_PAIR(3));
+                                    }
+                                }
+
+
+                                DEBUG_TRACEPOINT(" ");
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_PID) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(fps[fpsindex].parray[pindex].val.pid[0] !=
+                                                    fps[fpsindex].parray[pindex].val.pid[1]) {
+                                                paramsync = 0;
+                                            }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
+
+                                    printw("  %10d", (float) fps[fpsindex].parray[pindex].val.pid[0]);
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
                                             attroff(COLOR_PAIR(3));
                                         }
                                     }
 
+                                    printw("  %10d", (int) fps[fpsindex].parray[pindex].val.pid[0]);
+                                }
 
-                                    DEBUG_TRACEPOINT(" ");
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_PID) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(fps[fpsindex].parray[pindex].val.pid[0] !=
-                                                        fps[fpsindex].parray[pindex].val.pid[1]) {
-                                                    paramsync = 0;
+
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC) {
+                                    printw("  %10s", "-timespec-");
+                                }
+
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FILENAME) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                      fps[fpsindex].parray[pindex].val.string[1])) {
+                                                paramsync = 0;
+                                            }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
+
+                                    printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                      fps[fpsindex].parray[pindex].val.string[1])) {
+                                                paramsync = 0;
+                                            }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
+
+                                    printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
+                                DEBUG_TRACEPOINT(" ");
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                      fps[fpsindex].parray[pindex].val.string[1])) {
+                                                paramsync = 0;
+                                            }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
+
+                                    printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
+                                DEBUG_TRACEPOINT(" ");
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                      fps[fpsindex].parray[pindex].val.string[1])) {
+                                                paramsync = 0;
+                                            }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
+                                        }
+                                    }
+
+                                    printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
+
+                                DEBUG_TRACEPOINT(" ");
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            //  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                            //      paramsync = 0;
+                                            //  }
+
+                                            if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
+                                                if(isVISIBLE == 1) {
+                                                    attron(COLOR_PAIR(2));
                                                 }
+                                            }
 
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
-                                        }
+                                    printw("[%d]  %10s",
+                                           fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
+                                           fps[fpsindex].parray[pindex].val.string[0]);
 
-                                        printw("  %10d", (float) fps[fpsindex].parray[pindex].val.pid[0]);
+                                    if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
 
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) {  attroff(COLOR_PAIR(3)); }
-                                        }
+                                        printw(" [ %d", fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+                                        if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>1)
+                                            printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+                                        if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>2)
+                                            printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
 
-                                        printw("  %10d", (int) fps[fpsindex].parray[pindex].val.pid[0]);
-                                    }
-
-
-                                    DEBUG_TRACEPOINT(" ");
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC) {
-                                        printw("  %10s", "-timespec-");
-                                    }
-
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_FILENAME) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                          fps[fpsindex].parray[pindex].val.string[1])) {
-                                                    paramsync = 0;
-                                                }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
-                                        }
-                                    }
-                                    DEBUG_TRACEPOINT(" ");
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                          fps[fpsindex].parray[pindex].val.string[1])) {
-                                                    paramsync = 0;
-                                                }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
-                                        }
-                                    }
-                                    DEBUG_TRACEPOINT(" ");
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                          fps[fpsindex].parray[pindex].val.string[1])) {
-                                                    paramsync = 0;
-                                                }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
-                                        }
-                                    }
-                                    DEBUG_TRACEPOINT(" ");
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                          fps[fpsindex].parray[pindex].val.string[1])) {
-                                                    paramsync = 0;
-                                                }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) {  attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
-                                        }
-                                    }
-
-                                    DEBUG_TRACEPOINT(" ");
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                //  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
-                                                //      paramsync = 0;
-                                                //  }
-
-                                                if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
-                                                    if(isVISIBLE == 1) { attron(COLOR_PAIR(2)); }
-                                                }
-
-                                        printw("[%d]  %10s",
-                                               fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
-                                               fps[fpsindex].parray[pindex].val.string[0]);
-
-                                        if(fps[fpsindex].parray[pindex].info.stream.streamID > -1) {
-
-                                            printw(" [ %d", fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
-                                            if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>1)
-                                                printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
-                                            if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0]>2)
-                                                printw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
-
-                                            printw(" ]");
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(2)); }
-                                        }
-
-                                    }
-                                    DEBUG_TRACEPOINT(" ");
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_STRING) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
-                                                    paramsync = 0;
-                                                }
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(3)); }
-                                        }
-
-                                        printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(3)); }
-                                        }
-                                    }
-                                    DEBUG_TRACEPOINT(" ");
-
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {
-                                            attron(COLOR_PAIR(2));
-                                            printw("  ON ", fps[fpsindex].parray[pindex].val.string[1]);
+                                        printw(" ]");
+                                        if(isVISIBLE == 1) {
                                             attroff(COLOR_PAIR(2));
-                                            printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[1]);
-                                        } else {
-                                            attron(COLOR_PAIR(1));
-                                            printw(" OFF ", fps[fpsindex].parray[pindex].val.string[0]);
-                                            attroff(COLOR_PAIR(1));
-                                            printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[0]);
                                         }
                                     }
 
+                                }
+                                DEBUG_TRACEPOINT(" ");
 
-                                    if(fps[fpsindex].parray[pindex].type == FPTYPE_FPSNAME) {
-                                        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
-                                            if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                                if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                          fps[fpsindex].parray[pindex].val.string[1])) {
-                                                    paramsync = 0;
-                                                }
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_STRING) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
+                                                paramsync = 0;
+                                            }
 
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(2)); }
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(3));
                                         }
-                                        else {
-                                            if(isVISIBLE == 1) { attron(COLOR_PAIR(4)); }
-                                        }
-
-                                        printw(" %10s [%ld %ld %ld]",
-                                               fps[fpsindex].parray[pindex].val.string[0],
-                                               fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
-                                               fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
-                                               fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
-
-                                        if(paramsync == 0) {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(2)); }
-                                        }
-                                        else {
-                                            if(isVISIBLE == 1) { attroff(COLOR_PAIR(4)); }
-                                        }
-
                                     }
 
-                                    DEBUG_TRACEPOINT(" ");
+                                    printw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
 
-                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
-                                        if(isVISIBLE == 1) { attroff(COLOR_PAIR(4)); }
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(3));
+                                        }
+                                    }
+                                }
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {
+                                        attron(COLOR_PAIR(2));
+                                        printw("  ON ", fps[fpsindex].parray[pindex].val.string[1]);
+                                        attroff(COLOR_PAIR(2));
+                                        printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[1]);
+                                    } else {
+                                        attron(COLOR_PAIR(1));
+                                        printw(" OFF ", fps[fpsindex].parray[pindex].val.string[0]);
+                                        attroff(COLOR_PAIR(1));
+                                        printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[0]);
+                                    }
+                                }
+
+
+                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FPSNAME) {
+                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)   // Check value feedback if available
+                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
+                                                      fps[fpsindex].parray[pindex].val.string[1])) {
+                                                paramsync = 0;
+                                            }
+
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(2));
+                                        }
+                                    }
+                                    else {
+                                        if(isVISIBLE == 1) {
+                                            attron(COLOR_PAIR(4));
+                                        }
                                     }
 
-                                    printw("    %s", fps[fpsindex].parray[pindex].description);
+                                    printw(" %10s [%ld %ld %ld]",
+                                           fps[fpsindex].parray[pindex].val.string[0],
+                                           fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
+                                           fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
+                                           fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
-
-
-                                    if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
-                                        if(isVISIBLE == 1) { attroff(A_BOLD); }
+                                    if(paramsync == 0) {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(2));
+                                        }
+                                    }
+                                    else {
+                                        if(isVISIBLE == 1) {
+                                            attroff(COLOR_PAIR(4));
+                                        }
                                     }
 
-								
-								if(isVISIBLE==0) {
-									 attroff(A_DIM|A_BLINK);									 
-								}
+                                }
+
+                                DEBUG_TRACEPOINT(" ");
+
+                                if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) { // parameter setting error
+                                    if(isVISIBLE == 1) {
+                                        attroff(COLOR_PAIR(4));
+                                    }
+                                }
+
+                                printw("    %s", fps[fpsindex].parray[pindex].description);
+
+
+
+                                if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel]) {
+                                    if(isVISIBLE == 1) {
+                                        attroff(A_BOLD);
+                                    }
+                                }
+
+
+                                if(isVISIBLE==0) {
+                                    attroff(A_DIM|A_BLINK);
+                                }
                                 // END LOOP
-                                
-                                
+
+
                             }
 
 
@@ -6548,7 +6638,7 @@ errno_t functionparameter_CTRLscreen(
 
                 printw(" \n");
 
-                int dispcnt = 0;
+                //int dispcnt = 0;
 
 
                 // Sort entries from most recent to most ancient, using inputindex
@@ -6603,16 +6693,16 @@ errno_t functionparameter_CTRLscreen(
 
                         // measure age since submission
                         tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
-                        double tdiffv = tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+                        double tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
                         printw("%6.2f s ", tdiffv);
 
                         if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RUNNING) { // run time (ongoing)
                             tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
-                            tdiffv = tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+                            tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
                             printw(" %6.2f s ", tdiffv);
                         } else if (!(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE)) { // run time (past)
                             tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].activationtime, fpsctrltasklist[fpscmdindex].completiontime);
-                            tdiffv = tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+                            tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
                             attron(COLOR_PAIR(3));
                             printw(" %6.2f s ", tdiffv);
                             attroff(COLOR_PAIR(3));
@@ -6673,10 +6763,12 @@ errno_t functionparameter_CTRLscreen(
             refresh();
 
             DEBUG_TRACEPOINT(" ");
-            
+
         } // end run_display
 
-        fpsCTRLgui.run_display = 1;
+        DEBUG_TRACEPOINT("exit from if( fpsCTRLgui.run_display == 1)");
+
+        fpsCTRLgui.run_display = run_display;
 
         loopcnt++;
 
@@ -6693,12 +6785,15 @@ errno_t functionparameter_CTRLscreen(
         }
 #endif
     }
-    endwin();
 
 
+    if(run_display == 1) {
+        endwin();
+    }
 
     functionparameter_outlog("FPSCTRL", "STOP");
 
+    DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for(fpsindex = 0; fpsindex < fpsCTRLgui.NBfps; fpsindex++) {
         function_parameter_struct_disconnect(&fps[fpsindex]);
     }
@@ -6713,7 +6808,9 @@ errno_t functionparameter_CTRLscreen(
 
     free(fpsctrltasklist);
     free(fpsctrlqueuelist);
+    functionparameter_outlog("LOGFILECLOSE", "close log file");
 
+    DEBUG_TRACEPOINT("exit from function");
 
     return RETURN_SUCCESS;
 }
