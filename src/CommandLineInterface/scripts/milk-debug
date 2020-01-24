@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo ""
+echo "milk running in debug mode"
+echo "check valgrind output file milk.memcheck.log :"
+echo "$ tail -f milk.memcheck.log"
+echo ""
+
+cp $(which milk) milkdebugtest
+OPTION="--leak-check=full --show-leak-kinds=all"
+OPTION="$OPTION --show-reachable=yes"
+#OPTION="$OPTION --gen-suppressions=all"
+OPTION="$OPTION --log-file=milk.memcheck.log"
+OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
+OPTION="$OPTION --max-stackframe=4442392"
+
+valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${CLIfifoname} -s ${SF}
+rm ./milkdebugtest
+
