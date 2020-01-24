@@ -2470,7 +2470,7 @@ errno_t processinfo_CTRLscreen()
         procinfoproc.selectedarray[pindex] = 0; // initially not selected
         procinfoproc.loopcntoffsetarray[pindex] = 0;
     }
-
+	
     STRINGLISTENTRY *CPUsetList;
     int NBCPUset;
     CPUsetList = (STRINGLISTENTRY *)malloc(sizeof(STRINGLISTENTRY)*1000);
@@ -2547,10 +2547,8 @@ errno_t processinfo_CTRLscreen()
     {
         procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;  // by default, each process is assumed to be single-threaded
-    }
-
-
-
+		procinfoproc.loopcntarray[pindex] = 0;
+	}
 
     pindexActiveSelected = 0;
     procinfoproc.DisplayMode = 2; // default upon startup
@@ -2592,6 +2590,7 @@ errno_t processinfo_CTRLscreen()
     clear();
     int Xexit = 0; // toggles to 1 when users types x
 
+	pindexSelected = 0;
 	int pindexSelectedOK = 0; // no process selected by cursor
 
     while( loopOK == 1 )
@@ -3377,7 +3376,7 @@ errno_t processinfo_CTRLscreen()
             {
                 DEBUG_TRACEPOINT(" ");
                 
-                printw("pindexSelected = %d    %d\n", pindexSelected, pindexSelectedOK);
+                printw("pindexSelected = %d    %d\n", pindexSelected, pindexSelectedOK); 
 
                 printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", 
                 CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
@@ -3466,8 +3465,11 @@ errno_t processinfo_CTRLscreen()
 
 
                 DEBUG_TRACEPOINT(" ");
+                
 
-                if(procinfoproc.pinfommapped[pindexSelected] == 1)
+				if( (pindexSelected >= 0) && (pindexSelected < PROCESSINFOLISTSIZE) ) 
+				{
+                if( procinfoproc.pinfommapped[pindexSelected] == 1 )
                 {
 
                     strcpy(pselected_FILE, procinfoproc.pinfoarray[pindexSelected]->source_FILE);
@@ -3483,6 +3485,9 @@ errno_t processinfo_CTRLscreen()
                     pselected_LINE = 0;
                     printw("\n");
                 }
+			} else {
+				printw("---\n");
+			}
 
                 printw("\n");
 
@@ -3850,7 +3855,8 @@ errno_t processinfo_CTRLscreen()
 
                                 sprintf(string, " %- *.*ld", pstrlen_loopcnt, pstrlen_loopcnt, procinfoproc.pinfoarray[pindex]->loopcnt-procinfoproc.loopcntoffsetarray[pindex]);
                                 pstrlen_total += strlen(string);
-                                if(procinfoproc.pinfoarray[pindex]->loopcnt==procinfoproc.loopcntarray[pindex])
+                                //if(procinfoproc.pinfoarray[pindex]->loopcnt == procinfoproc.loopcntarray[pindex])
+                                if(procinfoproc.pinfoarray[pindex]->loopcnt == procinfoproc.loopcntarray[pindex])
                                 {   // loopcnt has not changed
                                     printw("%s", string);
                                 }

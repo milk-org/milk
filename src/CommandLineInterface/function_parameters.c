@@ -182,6 +182,7 @@
 
 static int wrow, wcol;
 
+#define MAX_NB_CHILD 500
 
 typedef struct
 {
@@ -192,7 +193,7 @@ typedef struct
     int parent_index;
 
     int NBchild;
-    int child[500];
+    int child[MAX_NB_CHILD];
 
     int leaf; // 1 if this is a leaf (no child)
     int fpsindex;
@@ -4990,6 +4991,7 @@ static errno_t functionparameter_scan_fps(
 
                                     keywnode[kwnindex].leaf = 0;
                                     keywnode[kwnindex].fpsindex = fpsindex;
+                                    keywnode[kwnindex].pindex = 0;
                                 }
 
                                 kwnindex ++;
@@ -5680,7 +5682,19 @@ errno_t functionparameter_CTRLscreen(
     // All parameters held in this array
     //
     keywnode = (KEYWORD_TREE_NODE *) malloc(sizeof(KEYWORD_TREE_NODE) * NB_KEYWNODE_MAX);
+    for(int kn=0; kn<NB_KEYWNODE_MAX; kn++) {
+		strcpy(keywnode[kn].keywordfull,"");
+		for(int ch=0; ch<MAX_NB_CHILD; ch++){
+			keywnode[kn].child[ch] = 0;
+		}
+	}
 
+
+
+	// initialize nodechain
+	for(int l=0; l<MAXNBLEVELS; l++) {
+		nodechain[l] = 0;
+	}
 
 
 
@@ -5855,7 +5869,9 @@ errno_t functionparameter_CTRLscreen(
 
 
                 DEBUG_TRACEPOINT("Check that selected node is OK");
-                if(strlen(keywnode[fpsCTRLgui.nodeSelected].keywordfull)<1) { // if not OK, set to last valid entry
+               /* printw("node selected : %d\n", fpsCTRLgui.nodeSelected);
+                printw("full keyword :  %s\n", keywnode[fpsCTRLgui.nodeSelected].keywordfull);*/
+                if(strlen(keywnode[fpsCTRLgui.nodeSelected].keywordfull) < 1) { // if not OK, set to last valid entry
                     fpsCTRLgui.nodeSelected = 1;
                     while((strlen(keywnode[fpsCTRLgui.nodeSelected].keywordfull)<1) && (fpsCTRLgui.nodeSelected < NB_KEYWNODE_MAX))
                         fpsCTRLgui.nodeSelected ++;
@@ -5875,11 +5891,19 @@ errno_t functionparameter_CTRLscreen(
 
                 DEBUG_TRACEPOINT("trace back node chain");
                 nodechain[fpsCTRLgui.currentlevel] = fpsCTRLgui.directorynodeSelected;
+                
+                printw("[level %d %d] ", fpsCTRLgui.currentlevel+1, nodechain[fpsCTRLgui.currentlevel + 1]);
+                
+                if(fpsCTRLgui.currentlevel>0) {
+					printw("[level %d %d] ", fpsCTRLgui.currentlevel, nodechain[fpsCTRLgui.currentlevel]);
+				}
                 level = fpsCTRLgui.currentlevel - 1;
                 while(level > 0) {
                     nodechain[level] = keywnode[nodechain[level + 1]].parent_index;
+                    printw("[level %d %d] ", level, nodechain[level]);
                     level --;
                 }
+                printw("[level 0 0]\n");
                 nodechain[0] = 0; // root
 
                 DEBUG_TRACEPOINT("Get number of lines to be displayed");
@@ -5893,12 +5917,22 @@ errno_t functionparameter_CTRLscreen(
                 }
 
 
-                printw("level = %d   [%d] NB child = %d\n",
+                printw("[node %d] level = %d   [%d] NB child = %d",
+                       fpsCTRLgui.nodeSelected,
                        fpsCTRLgui.currentlevel,
                        fpsCTRLgui.directorynodeSelected,
                        keywnode[fpsCTRLgui.directorynodeSelected].NBchild
                       );
 
+                printw("   fps %d",
+                       fpsCTRLgui.fpsindexSelected
+                      );
+
+                printw("   pindex %d ",
+                       keywnode[fpsCTRLgui.nodeSelected].pindex
+                      );
+				
+				printw("\n");
 
                 /*      printw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
                              fpsCTRLgui.directorynodeSelected,
@@ -5917,7 +5951,9 @@ errno_t functionparameter_CTRLscreen(
                 //if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
 
 
-                if( !(  fps[keywnode[fpsCTRLgui.nodeSelected].fpsindex].parray[keywnode[fpsCTRLgui.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+//              if( !(  fps[keywnode[fpsCTRLgui.nodeSelected].fpsindex].parray[keywnode[fpsCTRLgui.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
+//				if( !(  fps[fpsCTRLgui.fpsindexSelected].parray[fpsCTRLgui.pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
+				if( !(  fps[fpsCTRLgui.fpsindexSelected].parray[0].fpflag & FPFLAG_VISIBLE)) { // if invisible
                     if(fpsCTRLgui.direction > 0) {
                         fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel] ++;
                     }
@@ -5967,7 +6003,9 @@ errno_t functionparameter_CTRLscreen(
                             }
 
                             // toggle highlight if node is in the chain
-                            if(keywnode[nodechain[level]].child[GUIline] == nodechain[level + 1]) {
+                            int v1 = keywnode[nodechain[level]].child[GUIline];
+                            int v2 = nodechain[level + 1];
+                            if(v1 == v2) {
                                 snode = 1;
                                 attron(A_REVERSE);
                             }
@@ -6010,7 +6048,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-                    int knodeindex;
+                    int knodeindex;                    
                     knodeindex = keywnode[fpsCTRLgui.directorynodeSelected].child[child_index[level]];
                     if(knodeindex < fpsCTRLgui.NBkwn )
                     {
