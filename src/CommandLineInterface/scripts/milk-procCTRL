@@ -100,7 +100,7 @@ echo "exitCLI" >> $SF
 
 if [ "$DEBUG" = "1" ]; then
 
-cp $(which milk) .
+cp $(which milk) milkdebugtest
 OPTION="--leak-check=full --show-leak-kinds=all"
 OPTION="$OPTION --show-reachable=yes"
 #OPTION="$OPTION --gen-suppressions=all"
@@ -108,8 +108,8 @@ OPTION="$OPTION --log-file=milk.memcheck.log"
 OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
 OPTION="$OPTION --max-stackframe=4442392"
 
-valgrind ${OPTION} ./milk -n ${pname} -f ${fifoname} -s ${SF}
-rm ./milk
+valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${fifoname} -s ${SF}
+rm ./milkdebugtest
 
 else
 
