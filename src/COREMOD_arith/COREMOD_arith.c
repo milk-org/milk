@@ -5,8 +5,6 @@
  * Addition, multiplication and much more
  *
  * 
- * @bug No known bugs.
- * 
  */
 
 
@@ -48,7 +46,6 @@ static char errmsg_arith[SBUFFERSIZE];
 
 
 
-
 // CLI commands
 //
 // function CLI_checkarg used to check arguments
@@ -59,50 +56,210 @@ static char errmsg_arith[SBUFFERSIZE];
 //
 
 
-int_fast8_t arith_image_extract2D_cli() {
-  if(CLI_checkarg(1,4)+CLI_checkarg(2,3)+CLI_checkarg(3,2)+CLI_checkarg(4,2)+CLI_checkarg(5,2)+CLI_checkarg(6,2)==0)    {
-      arith_image_extract2D(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.numl, data.cmdargtoken[5].val.numl, data.cmdargtoken[6].val.numl);
-      return 0;}  else    return 1;}
+errno_t arith_image_extract2D_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            + CLI_checkarg(6, CLIARG_LONG)
+            == 0 )
+    {
+        arith_image_extract2D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl,
+            data.cmdargtoken[6].val.numl);
 
-int_fast8_t arith_image_extract3D_cli(){
-  if(CLI_checkarg(1,4)+CLI_checkarg(2,3)+CLI_checkarg(3,2)+CLI_checkarg(4,2)+CLI_checkarg(5,2)+CLI_checkarg(6,2)+CLI_checkarg(7,2)+CLI_checkarg(8,2)==0)    {
-      arith_image_extract3D(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.numl, data.cmdargtoken[5].val.numl, data.cmdargtoken[6].val.numl, data.cmdargtoken[7].val.numl, data.cmdargtoken[8].val.numl);
-      return 0;    }  else    return 1;}
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return CLICMD_INVALID_ARG;
+    }
+}
 
-int_fast8_t arith_set_pixel_cli(){
-  if(CLI_checkarg(1,4)+CLI_checkarg(2,1)+CLI_checkarg(3,2)+CLI_checkarg(4,2)==0)    {
-      arith_set_pixel(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.numl);
-      return 0;    }  else    return 1;}
 
-int_fast8_t arith_set_pixel_1Drange_cli(){
-  if(CLI_checkarg(1,4)+CLI_checkarg(2,1)+CLI_checkarg(3,2)+CLI_checkarg(4,2)==0)    {
-      arith_set_pixel_1Drange(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[3].val.numl, data.cmdargtoken[4].val.numl);
-      return 0;    }  else    return 1;}
+errno_t arith_image_extract3D_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            + CLI_checkarg(6, CLIARG_LONG)
+            + CLI_checkarg(7, CLIARG_LONG)
+            + CLI_checkarg(8, CLIARG_LONG)
+            == 0 )
+    {
+        arith_image_extract3D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl,
+            data.cmdargtoken[6].val.numl,
+            data.cmdargtoken[7].val.numl,
+            data.cmdargtoken[8].val.numl);
 
-int_fast8_t arith_set_row_cli(){
-    if(CLI_checkarg(1,4)+CLI_checkarg(2,1)+CLI_checkarg(3,2)==0)    {
-      arith_set_row(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[3].val.numl);
-      return 0;    }  else    return 1;}
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
 
-int_fast8_t arith_set_col_cli(){
-    if(CLI_checkarg(1,4)+CLI_checkarg(2,1)+CLI_checkarg(3,2)==0)    {
-      arith_set_col(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[3].val.numl);
-      return 0;    }  else    return 1;}
 
-int_fast8_t arith_image_zero_cli(){
-    if(CLI_checkarg(1,4)==0)    {
-      arith_image_zero(data.cmdargtoken[1].val.string);
-      return 0;    }  else    return 1;}
+errno_t arith_set_pixel_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            == 0 )
+    {
+        arith_set_pixel(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl);
 
-int_fast8_t arith_image_trunc_cli(){
-  if(CLI_checkarg(1,4)+CLI_checkarg(2,1)+CLI_checkarg(3,1)+CLI_checkarg(4,3)==0)    {
-      arith_image_trunc(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[3].val.numf, data.cmdargtoken[4].val.string);
-      return 0;    }  else    return 1;}
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
 
-int_fast8_t arith_image_merge3D_cli(){
-  if(CLI_checkarg(1,4)+CLI_checkarg(2,4)+CLI_checkarg(3,3)==0)    {
-      arith_image_merge3D(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.string);
-      return 0;    }  else    return 1;}
+
+errno_t arith_set_pixel_1Drange_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            == 0 )
+    {
+        arith_set_pixel_1Drange(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
+
+
+errno_t arith_set_row_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0 )
+    {
+        arith_set_row(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
+
+
+errno_t arith_set_col_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0 )
+    {
+        arith_set_col(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
+
+
+errno_t arith_image_zero_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            == 0 )
+    {
+        arith_image_zero(data.cmdargtoken[1].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
+
+
+errno_t arith_image_trunc_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_FLOAT)
+            + CLI_checkarg(4, CLIARG_STR_NOT_IMG)
+            == 0 )
+    {
+        arith_image_trunc(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numf,
+            data.cmdargtoken[4].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return 1;
+    }
+}
+
+
+errno_t arith_image_merge3D_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, CLIARG_STR_NOT_IMG)
+            == 0 )
+    {
+        arith_image_merge3D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else  {
+        return 1;
+    }
+}
 
 
 
@@ -121,96 +278,113 @@ void __attribute__ ((constructor)) libinit_COREMOD_arith()
 
 
 
-int init_COREMOD_arith()
+errno_t init_COREMOD_arith()
 {
 
-  strcpy(data.cmd[data.NBcmd].key,"extractim");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_image_extract2D_cli;
-  strcpy(data.cmd[data.NBcmd].info,"crop 2D image");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <output image> <sizex> <sizey> <xstart> <ystart>");
-  strcpy(data.cmd[data.NBcmd].example,"extractim im ime 256 256 100 100");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_image_extract2D(const char *in_name, const char *out_name, long size_x, long size_y, long xstart, long ystart)"); 
-  data.NBcmd++;
-  
+    RegisterCLIcommand(
+        "cmemtestf",
+        __FILE__,
+        COREMOD_MEMORY_testfunc,
+        "testfunc",
+        "no arg",
+        "cmemtestf",
+        "COREMOD_MEMORY_testfunc()");
 
-  strcpy(data.cmd[data.NBcmd].key,"extract3Dim");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_image_extract3D_cli;
-  strcpy(data.cmd[data.NBcmd].info,"crop 3D image");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <output image> <sizex> <sizey> <sizez> <xstart> <ystart> <zstart>");
-  strcpy(data.cmd[data.NBcmd].example,"extractim im ime 256 256 5 100 100 0");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_image_extract3D(const char *in_name, const char *out_name, long size_x, long size_y, long size_z, long xstart, long ystart, long zstart)"); 
-  data.NBcmd++;
-  
-
-  strcpy(data.cmd[data.NBcmd].key,"setpix");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_set_pixel_cli;
-  strcpy(data.cmd[data.NBcmd].info,"set pixel value");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <value> <x> <y>");
-  strcpy(data.cmd[data.NBcmd].example,"setpix im 1.24 100 100");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_set_pixel(const char *ID_name, double value, long x, long y)");
-  data.NBcmd++;
-  
-  strcpy(data.cmd[data.NBcmd].key,"setpix1Drange");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_set_pixel_1Drange_cli;
-  strcpy(data.cmd[data.NBcmd].info,"set pixel value for 1D area");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <value> <first pix> <last pix>");
-  strcpy(data.cmd[data.NBcmd].example,"setpix im 1.24 10 200");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)");
-  data.NBcmd++;
-  
-  strcpy(data.cmd[data.NBcmd].key,"setrow");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_set_row_cli;
-  strcpy(data.cmd[data.NBcmd].info,"set pixel row value");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <value> <row>");
-  strcpy(data.cmd[data.NBcmd].example,"setrow im 1.24 100");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_set_row(const char *ID_name, double value, long y)");
-  data.NBcmd++;
-
-  strcpy(data.cmd[data.NBcmd].key,"setcol");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_set_col_cli;
-  strcpy(data.cmd[data.NBcmd].info,"set pixel column value");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <value> <col>");
-  strcpy(data.cmd[data.NBcmd].example,"setcol im 1.24 100");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_set_col(const char *ID_name, double value, long x)");
-  data.NBcmd++;
-
-  strcpy(data.cmd[data.NBcmd].key,"imzero");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_image_zero_cli;
-  strcpy(data.cmd[data.NBcmd].info,"set pixels to zero");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image>");
-  strcpy(data.cmd[data.NBcmd].example,"imzero im");
-  strcpy(data.cmd[data.NBcmd].Ccall,"int arith_image_zero(const char *ID_name)");
-  data.NBcmd++;
-
-  strcpy(data.cmd[data.NBcmd].key,"imtrunc");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_image_trunc_cli;
-  strcpy(data.cmd[data.NBcmd].info,"trucate pixel values");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input image> <min> <max> <output image>");
-  strcpy(data.cmd[data.NBcmd].example,"imtrunc im 0.0 1.0 out");
-  strcpy(data.cmd[data.NBcmd].Ccall,"arith_image_trunc(const char *ID_name, double f1, double f2, const char *ID_out)");
-  data.NBcmd++;
-
-  strcpy(data.cmd[data.NBcmd].key,"merge3d");
-  strcpy(data.cmd[data.NBcmd].module,__FILE__);
-  data.cmd[data.NBcmd].fp = arith_image_merge3D_cli;
-  strcpy(data.cmd[data.NBcmd].info,"merge two 3D cubes into one");
-  strcpy(data.cmd[data.NBcmd].syntax,"<input cube 1> <input cube 2> <output cube>");
-  strcpy(data.cmd[data.NBcmd].example,"merge3d imc1 imc2 imcout");
-  strcpy(data.cmd[data.NBcmd].Ccall,"long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char *IDout_name)");
-  data.NBcmd++;
+    RegisterCLIcommand(
+        "extractim",
+        __FILE__,
+        arith_image_extract2D_cli,
+        "crop 2D image",
+        "<input image> <output image> <sizex> <sizey> <xstart> <ystart>",
+        "extractim im ime 256 256 100 100",
+        "int arith_image_extract2D(const char *in_name, const char *out_name, long size_x, long size_y, long xstart, long ystart)");
 
 
- // add atexit functions here
+
+    RegisterCLIcommand(
+        "extract3Dim",
+        __FILE__,
+        arith_image_extract3D_cli,
+        "crop 3D image",
+        "<input image> <output image> <sizex> <sizey> <sizez> <xstart> <ystart> <zstart>",
+        "extractim im ime 256 256 5 100 100 0",
+        "int arith_image_extract3D(const char *in_name, const char *out_name, long size_x, long size_y, long size_z, long xstart, long ystart, long zstart)");
 
 
+    RegisterCLIcommand(
+        "setpix",
+        __FILE__,
+        arith_set_pixel_cli,
+        "set pixel value",
+        "<input image> <value> <x> <y>",
+        "setpix im 1.24 100 100",
+        "int arith_set_pixel(const char *ID_name, double value, long x, long y)");
+
+
+    RegisterCLIcommand(
+        "setpix1Drange",
+        __FILE__,
+        arith_set_pixel_1Drange_cli,
+        "set pixel value for 1D area",
+        "<input image> <value> <first pix> <last pix>",
+        "setpix im 1.24 10 200",
+        "int arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)");
+
+
+    RegisterCLIcommand(
+        "setrow",
+        __FILE__,
+        arith_set_row_cli,
+        "set pixel row value",
+        "<input image> <value> <row>",
+        "setrow im 1.24 100",
+        "int arith_set_row(const char *ID_name, double value, long y)");
+
+
+    RegisterCLIcommand(
+        "setcol",
+        __FILE__,
+        arith_set_col_cli,
+        "set pixel column value",
+        "<input image> <value> <col>",
+        "setcol im 1.24 100",
+        "int arith_set_col(const char *ID_name, double value, long x)");
+
+
+    RegisterCLIcommand(
+        "imzero",
+        __FILE__,
+        arith_image_zero_cli,
+        "set pixels to zero",
+        "<input image>",
+        "imzero im",
+        "int arith_image_zero(const char *ID_name)");
+
+
+    RegisterCLIcommand(
+        "imtrunc",
+        __FILE__,
+        arith_image_trunc_cli,
+        "trucate pixel values",
+        "<input image> <min> <max> <output image>",
+        "imtrunc im 0.0 1.0 out",
+        "arith_image_trunc(const char *ID_name, double f1, double f2, const char *ID_out)");
+
+
+    RegisterCLIcommand(
+        "merge3d",
+        __FILE__,
+        arith_image_merge3D_cli,
+        "merge two 3D cubes into one",
+        "<input cube 1> <input cube 2> <output cube>",
+        "merge3d imc1 imc2 imcout",
+        "long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char *IDout_name)");
+
+
+
+    // add atexit functions here
+
+	return RETURN_SUCCESS;
 }
 
 
@@ -220,25 +394,30 @@ int init_COREMOD_arith()
 
 
 
-long arith_set_pixel(const char *ID_name, double value, long x, long y)
+imageID arith_set_pixel(
+    const char *ID_name,
+    double      value,
+    long        x,
+    long        y
+)
 {
-    long ID;
+    imageID  ID;
     uint32_t naxes[2];
-    uint8_t datatype;
-    int n;
+    uint8_t  datatype;
+    int      nbchar;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
-  //  printf("Setting pixel %ld %ld of image %s [%ld] to %f\n", x, y, ID_name, ID, (float) value);
+    //  printf("Setting pixel %ld %ld of image %s [%ld] to %f\n", x, y, ID_name, ID, (float) value);
 
     data.image[ID].md[0].write = 1;
     if(datatype == _DATATYPE_FLOAT)
     {
         data.image[ID].array.F[y*naxes[0]+x] = (float) value;
-    //    printf("float -> %f\n", data.image[ID].array.F[y*naxes[0]+x]);
+        //    printf("float -> %f\n", data.image[ID].array.F[y*naxes[0]+x]);
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
@@ -278,8 +457,8 @@ long arith_set_pixel(const char *ID_name, double value, long x, long y)
     }
     else
     {
-        n = snprintf(errmsg_arith, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
+        nbchar = snprintf(errmsg_arith, SBUFFERSIZE, "Wrong image type(s)\n");
+        if(nbchar >= SBUFFERSIZE)
             printERROR(__FILE__,__func__,__LINE__,"Attempted to write string buffer with too many characters");
         printERROR(__FILE__,__func__,__LINE__,errmsg_arith);
         exit( EXIT_FAILURE );
@@ -293,45 +472,50 @@ long arith_set_pixel(const char *ID_name, double value, long x, long y)
 
 
 
-long arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)
+imageID arith_set_pixel_1Drange(
+    const char *ID_name,
+    double      value,
+    long        x,
+    long        y
+)
 {
-    long ID;
+    imageID ID;
     uint32_t naxes[2];
     uint8_t datatype;
     int n;
     long ii, iistart, iiend;
-    
-    
+
+
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     iistart = x;
     iiend = y+1;
-    
+
     if(iistart<0)
         iistart = 0;
     if(iistart>=naxes[0]*naxes[1])
         iistart = naxes[0]*naxes[1];
-        
+
     if(iiend<0)
         iiend = 0;
     if(iiend>=naxes[0]*naxes[1])
         iiend = naxes[0]*naxes[1];
-         
-          list_image_ID();
+
+    list_image_ID();
     printf("%ld -> %ld\n", iistart, iiend);
-    fflush(stdout);   
-  
+    fflush(stdout);
+
     data.image[ID].md[0].write = 1;
     if(datatype == _DATATYPE_FLOAT)
     {
-        for(ii=iistart;ii<iiend;ii++)
+        for(ii=iistart; ii<iiend; ii++)
             data.image[ID].array.F[ii] = (float) value;
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        for(ii=iistart;ii<iiend;ii++)
+        for(ii=iistart; ii<iiend; ii++)
             data.image[ID].array.D[ii] = value;
     }
     else
@@ -352,13 +536,17 @@ long arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)
 
 
 
-long arith_set_row(const char *ID_name, double value, long y)
+imageID arith_set_row(
+    const char *ID_name,
+    double      value,
+    long        y
+)
 {
-    long ID;
-    uint32_t naxes[2];
-    long ii;
-    uint8_t datatype;
-    int n;
+    imageID   ID;
+    uint32_t  naxes[2];
+    long      ii;
+    uint8_t   datatype;
+    int       nbchar;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
@@ -378,8 +566,8 @@ long arith_set_row(const char *ID_name, double value, long y)
     }
     else
     {
-        n = snprintf(errmsg_arith,SBUFFERSIZE,"Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
+        nbchar = snprintf(errmsg_arith,SBUFFERSIZE,"Wrong image type(s)\n");
+        if(nbchar >= SBUFFERSIZE)
             printERROR(__FILE__,__func__,__LINE__,"Attempted to write string buffer with too many characters");
         printERROR(__FILE__,__func__,__LINE__,errmsg_arith);
         exit(0);
@@ -395,13 +583,17 @@ long arith_set_row(const char *ID_name, double value, long y)
 
 
 
-long arith_set_col(const char *ID_name, double value, long x)
+imageID arith_set_col(
+    const char *ID_name,
+    double      value,
+    long        x
+)
 {
-    long ID;
+    imageID  ID;
     uint32_t naxes[2];
-    long y;
-    uint8_t datatype;
-    int n;
+    long     y;
+    uint8_t  datatype;
+    int      nbchar;
 
     ID = image_ID(ID_name);
     naxes[0]=data.image[ID].md[0].size[0];
@@ -422,8 +614,8 @@ long arith_set_col(const char *ID_name, double value, long x)
     }
     else
     {
-        n = snprintf(errmsg_arith,SBUFFERSIZE,"Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
+        nbchar = snprintf(errmsg_arith,SBUFFERSIZE,"Wrong image type(s)\n");
+        if(nbchar >= SBUFFERSIZE)
             printERROR(__FILE__,__func__,__LINE__,"Attempted to write string buffer with too many characters");
         printERROR(__FILE__,__func__,__LINE__,errmsg_arith);
         exit(0);
@@ -440,14 +632,16 @@ long arith_set_col(const char *ID_name, double value, long x)
 
 
 
-long arith_image_zero(const char *ID_name)
+imageID arith_image_zero(
+    const char *ID_name
+)
 {
-    long ID;
+    imageID ID;
     long nelem;
     int n;
 
     ID = image_ID(ID_name);
-    
+
     if(ID!=-1)
     {
     nelem = data.image[ID].md[0].nelement;
@@ -498,10 +692,17 @@ long arith_image_zero(const char *ID_name)
 
 
 
-int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long *end, long cropdim)
+imageID arith_image_crop(
+    const char *ID_name,
+    const char *ID_out,
+    long       *start,
+    long       *end,
+    long        cropdim
+)
 {
     long naxis;
-    long IDin,IDout;
+    imageID IDin;
+    imageID IDout;
     long i;
     uint32_t *naxes = NULL;
     uint32_t *naxesout = NULL;
@@ -685,21 +886,25 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.F[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.F[jj*naxes[0]+ii];
+                    data.image[IDout].array.F[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.F[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.D[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.D[jj*naxes[0]+ii];
+                    data.image[IDout].array.D[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.D[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
                 {
-                    data.image[IDout].array.CF[(jj-start[1])*naxesout[0]+(ii-start[0])].re = data.image[IDin].array.CF[jj*naxes[0]+ii].re;
-                    data.image[IDout].array.CF[(jj-start[1])*naxesout[0]+(ii-start[0])].im = data.image[IDin].array.CF[jj*naxes[0]+ii].im;
+                    data.image[IDout].array.CF[(jj-start[1])*naxesout[0]+(ii-start[0])].re
+                        = data.image[IDin].array.CF[jj*naxes[0]+ii].re;
+                    data.image[IDout].array.CF[(jj-start[1])*naxesout[0]+(ii-start[0])].im
+                        = data.image[IDin].array.CF[jj*naxes[0]+ii].im;
                 }
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
@@ -707,57 +912,67 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
                 {
-                    data.image[IDout].array.CD[(jj-start[1])*naxesout[0]+(ii-start[0])].re = data.image[IDin].array.CD[jj*naxes[0]+ii].re;
-                    data.image[IDout].array.CD[(jj-start[1])*naxesout[0]+(ii-start[0])].im = data.image[IDin].array.CD[jj*naxes[0]+ii].im;
+                    data.image[IDout].array.CD[(jj-start[1])*naxesout[0]+(ii-start[0])].re
+                        = data.image[IDin].array.CD[jj*naxes[0]+ii].re;
+                    data.image[IDout].array.CD[(jj-start[1])*naxesout[0]+(ii-start[0])].im
+                        = data.image[IDin].array.CD[jj*naxes[0]+ii].im;
                 }
         }
         else if(datatype == _DATATYPE_UINT8)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.UI8[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI8[jj*naxes[0]+ii];
+                    data.image[IDout].array.UI8[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.UI8[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_UINT16)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.UI16[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI16[jj*naxes[0]+ii];
+                    data.image[IDout].array.UI16[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.UI16[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_UINT32)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.UI32[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI32[jj*naxes[0]+ii];
+                    data.image[IDout].array.UI32[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.UI32[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_UINT64)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.UI64[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI64[jj*naxes[0]+ii];
+                    data.image[IDout].array.UI64[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.UI64[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_INT8)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.SI8[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI8[jj*naxes[0]+ii];
+                    data.image[IDout].array.SI8[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.SI8[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_INT16)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.SI16[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI16[jj*naxes[0]+ii];
+                    data.image[IDout].array.SI16[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.SI16[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_INT32)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.SI32[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI32[jj*naxes[0]+ii];
+                    data.image[IDout].array.SI32[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.SI32[jj*naxes[0]+ii];
         }
         else if(datatype == _DATATYPE_INT64)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    data.image[IDout].array.SI64[(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI64[jj*naxes[0]+ii];
+                    data.image[IDout].array.SI64[(jj-start[1])*naxesout[0]+(ii-start[0])]
+                        = data.image[IDin].array.SI64[jj*naxes[0]+ii];
         }
         else
         {
@@ -767,20 +982,24 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
     }
     if(naxis==3)
     {
-	//	printf("naxis = 3\n");
+        //	printf("naxis = 3\n");
         if(datatype == _DATATYPE_FLOAT)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.F[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.F[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.F[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.F[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.D[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.D[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.D[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.D[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
@@ -788,8 +1007,10 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
                     for(kk=start_c[2]; kk<end_c[2]; kk++)
                     {
-                        data.image[IDout].array.CF[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].re = data.image[IDin].array.CF[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].re;
-                        data.image[IDout].array.CF[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].im = data.image[IDin].array.CF[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].im;
+                        data.image[IDout].array.CF[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].re
+                            = data.image[IDin].array.CF[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].re;
+                        data.image[IDout].array.CF[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].im
+                            = data.image[IDin].array.CF[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].im;
                     }
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
@@ -798,66 +1019,84 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
                     for(kk=start_c[2]; kk<end_c[2]; kk++)
                     {
-                        data.image[IDout].array.CD[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].re = data.image[IDin].array.CD[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].re;
-                        data.image[IDout].array.CD[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].im = data.image[IDin].array.CD[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].im;
+                        data.image[IDout].array.CD[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].re
+                            = data.image[IDin].array.CD[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].re;
+                        data.image[IDout].array.CD[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])].im
+                            = data.image[IDin].array.CD[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii].im;
                     }
         }
         else if(datatype == _DATATYPE_UINT8)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.UI8[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI8[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.UI8[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.UI8[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_UINT16)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.UI16[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI16[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.UI16[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.UI16[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_UINT32)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.UI32[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI32[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.UI32[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.UI32[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_UINT64)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.UI64[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.UI64[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.UI64[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.UI64[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_INT8)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.SI8[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI8[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.SI8[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.SI8[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_INT16)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.SI16[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI16[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.SI16[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.SI16[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_INT32)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.SI32[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI32[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.SI32[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.SI32[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
         }
         else if(datatype == _DATATYPE_INT64)
         {
             for(ii=start_c[0]; ii<end_c[0]; ii++)
                 for(jj=start_c[1]; jj<end_c[1]; jj++)
-                    for(kk=start_c[2]; kk<end_c[2]; kk++)
-                        data.image[IDout].array.SI64[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])] = data.image[IDin].array.SI64[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
-        }        
+                    for(kk=start_c[2]; kk<end_c[2]; kk++) {
+                        data.image[IDout].array.SI64[(kk-start[2])*naxesout[0]*naxesout[1]+(jj-start[1])*naxesout[0]+(ii-start[0])]
+                            = data.image[IDin].array.SI64[kk*naxes[0]*naxes[1]+jj*naxes[0]+ii];
+                    }
+        }
         else
         {
             printERROR(__FILE__,__func__,__LINE__,"invalid data type");
@@ -868,25 +1107,33 @@ int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long 
     free(naxesout);
     free(naxes);
 
-    return(0);
+    return IDout;
 }
 
 
 
 
 
-int arith_image_extract2D(const char *in_name, const char *out_name, long size_x, long size_y, long xstart, long ystart)
+imageID arith_image_extract2D(
+    const char *in_name,
+    const char *out_name,
+    long        size_x,
+    long        size_y,
+    long        xstart,
+    long        ystart
+)
 {
-    long *start = NULL;
-    long *end = NULL;
-	int naxis;
-	long ID;
-	uint_fast8_t k;
-	
-	ID = image_ID(in_name);
-	naxis = data.image[ID].md[0].naxis;
-	
-	
+    long    *start = NULL;
+    long    *end = NULL;
+    int      naxis;
+    imageID  ID;
+    imageID  IDout;
+    uint_fast8_t k;
+
+    ID = image_ID(in_name);
+    naxis = data.image[ID].md[0].naxis;
+
+
     start = (long*) malloc(sizeof(long)*naxis);
     if(start==NULL)
     {
@@ -901,22 +1148,22 @@ int arith_image_extract2D(const char *in_name, const char *out_name, long size_x
         exit(0);
     }
 
-	for(k=0;k<naxis;k++)
-		{
-			start[k] = 0;
-			end[k] = data.image[ID].md[0].size[k];
-		}
+    for(k=0; k<naxis; k++)
+    {
+        start[k] = 0;
+        end[k] = data.image[ID].md[0].size[k];
+    }
 
     start[0]=xstart;
     start[1]=ystart;
     end[0]=xstart+size_x;
     end[1]=ystart+size_y;
-    arith_image_crop(in_name, out_name, start, end, naxis);
+    IDout = arith_image_crop(in_name, out_name, start, end, naxis);
 
     free(start);
     free(end);
 
-    return(0);
+    return IDout;
 }
 
 
@@ -924,10 +1171,20 @@ int arith_image_extract2D(const char *in_name, const char *out_name, long size_x
 
 
 
-int arith_image_extract3D(const char *in_name, const char *out_name, long size_x, long size_y, long size_z, long xstart, long ystart, long zstart)
+imageID arith_image_extract3D(
+    const char *in_name,
+    const char *out_name,
+    long        size_x,
+    long        size_y,
+    long        size_z,
+    long        xstart,
+    long        ystart,
+    long        zstart
+)
 {
-    long *start = NULL;
-    long *end = NULL;
+	imageID   IDout;
+    long     *start = NULL;
+    long     *end = NULL;
 
     start = (long*) malloc(sizeof(long)*3);
     if(start==NULL)
@@ -951,22 +1208,27 @@ int arith_image_extract3D(const char *in_name, const char *out_name, long size_x
     end[0]=xstart+size_x;
     end[1]=ystart+size_y;
     end[2]=zstart+size_z;
-    arith_image_crop(in_name, out_name, start, end, 3);
+    IDout = arith_image_crop(in_name, out_name, start, end, 3);
 
     free(start);
     free(end);
 
-    return(0);
+    return IDout;
 }
 
 
 
 // join two cubes
-long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char *IDout_name)
+imageID arith_image_merge3D(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *IDout_name
+)
 {
-    long ID1, ID2, IDout;
-    long xsize, ysize, zsize1, zsize2, zsizeout;
-    long ii, jj, kk;
+    imageID ID1;
+    imageID ID2;
+    imageID IDout;
+    long xsize, ysize, zsize1, zsize2;
     void *mapv;
 
     ID1 = image_ID(ID_name1);
@@ -1004,7 +1266,7 @@ long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char 
     mapv += sizeof(float)*xsize*ysize*zsize1;
     memcpy ( mapv, data.image[ID2].array.F, sizeof(float)*xsize*ysize*zsize2);
 
-    return(IDout);
+    return IDout;
 }
 
 
@@ -1012,10 +1274,12 @@ long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char 
 
 
 
-double arith_image_total(const char *ID_name)
+double arith_image_total(
+    const char *ID_name
+)
 {
     long double lvalue; // uses long double internally
-    long ID;
+    imageID ID;
     long ii;
     long nelement;
     uint8_t datatype;
@@ -1102,10 +1366,12 @@ double arith_image_total(const char *ID_name)
 
 
 
-double arith_image_mean(const char *ID_name)
+double arith_image_mean(
+    const char *ID_name
+)
 {
     double value;
-    long ID;
+    imageID ID;
 
     ID = image_ID(ID_name);
 
@@ -1115,9 +1381,11 @@ double arith_image_mean(const char *ID_name)
 }
 
 
-double arith_image_min(const char *ID_name)
+double arith_image_min(
+    const char *ID_name
+)
 {
-    long ID;
+    imageID ID;
     long ii;
     long nelement;
     uint8_t datatype;
@@ -1131,8 +1399,8 @@ double arith_image_min(const char *ID_name)
 
     if(datatype==_DATATYPE_FLOAT)
     {
-		float value, value1;
-		
+        float value, value1;
+
         value = data.image[ID].array.F[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1143,11 +1411,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_DOUBLE)
     {
-		double value, value1;
-		
+        double value, value1;
+
         value = data.image[ID].array.D[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1158,11 +1426,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return (value);
     }
-    
+
     if(datatype==_DATATYPE_UINT8)
     {
-		uint8_t value, value1;
-		
+        uint8_t value, value1;
+
         value = data.image[ID].array.UI8[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1173,11 +1441,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_UINT16)
     {
-		uint16_t value, value1;
-		
+        uint16_t value, value1;
+
         value = data.image[ID].array.UI16[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1188,11 +1456,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_UINT32)
     {
-		uint32_t value, value1;
-		
+        uint32_t value, value1;
+
         value = data.image[ID].array.UI32[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1203,11 +1471,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_UINT64)
     {
-		uint64_t value, value1;
-		
+        uint64_t value, value1;
+
         value = data.image[ID].array.UI64[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1218,11 +1486,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_INT8)
     {
-		int8_t value, value1;
-		
+        int8_t value, value1;
+
         value = data.image[ID].array.SI8[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1233,11 +1501,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_INT16)
     {
-		int16_t value, value1;
-		
+        int16_t value, value1;
+
         value = (double) data.image[ID].array.SI16[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1248,11 +1516,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_INT32)
     {
-		int32_t value, value1;
-		
+        int32_t value, value1;
+
         value = data.image[ID].array.SI32[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1263,11 +1531,11 @@ double arith_image_min(const char *ID_name)
         OK=1;
         return ((double) value);
     }
-    
+
     if(datatype==_DATATYPE_INT64)
     {
-		int64_t value, value1;
-		
+        int64_t value, value1;
+
         value = data.image[ID].array.SI64[0];
         for (ii = 0; ii < nelement; ii++)
         {
@@ -1287,14 +1555,15 @@ double arith_image_min(const char *ID_name)
 
 
 
-double arith_image_max(const char *ID_name)
+double arith_image_max(
+    const char *ID_name
+)
 {
-    double value,value1;
-    long ID;
-    long ii;
-    long nelement;
+    imageID ID;
+    long    ii;
+    long    nelement;
     uint8_t datatype;
-    int OK=0;
+    int     OK=0;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
@@ -1460,18 +1729,21 @@ double arith_image_max(const char *ID_name)
 
 
 
-double arith_image_percentile(const char *ID_name, double fraction)
+double arith_image_percentile(
+    const char *ID_name,
+    double      fraction
+)
 {
-    long ID;
-    long ii;
-    double value = 0;
-    long *arrayL = NULL;
-    float *arrayF = NULL;
-    double *arrayD = NULL;
+    imageID  ID;
+    long     ii;
+    double   value = 0;
+    long    *arrayL = NULL;
+    float   *arrayF = NULL;
+    double  *arrayD = NULL;
     unsigned short *arrayU = NULL;
-    long nelement;
-    uint8_t datatype;
-    int atypeOK = 1;
+    long     nelement;
+    uint8_t  datatype;
+    int      atypeOK = 1;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
@@ -1629,95 +1901,106 @@ double arith_image_percentile(const char *ID_name, double fraction)
     }
 
     if(atypeOK == 0)
-        exit(0);
+        exit(EXIT_FAILURE);
 
     return(value);
 }
 
 
-double arith_image_median(const char *ID_name)
+double arith_image_median(
+    const char *ID_name
+)
 {
-  double value = 0.0;
-  value = arith_image_percentile(ID_name, 0.5);
-  return(value);
+    double value = 0.0;
+
+    value = arith_image_percentile(ID_name, 0.5);
+
+    return(value);
 }
 
 
 
-long arith_image_dx(const char *ID_name, const char *IDout_name)
+long arith_image_dx(
+    const char *ID_name,
+    const char *IDout_name
+)
 {
-  long ID, IDout;
-  uint32_t *naxes = NULL;
-  long naxis;
-  long ii,jj;
-  long nelement;
-  uint8_t datatype;
-  long i;
+    imageID ID;
+    imageID IDout;
+    uint32_t *naxes = NULL;
+    long naxis;
+    long ii, jj;
+    uint8_t datatype;
 
-  ID = image_ID(ID_name);
-  datatype = data.image[ID].md[0].datatype;
-  naxis = data.image[ID].md[0].naxis;
-  if(naxis!=2)
+    ID = image_ID(ID_name);
+    datatype = data.image[ID].md[0].datatype;
+    naxis = data.image[ID].md[0].naxis;
+    if(naxis!=2)
     {
-      printERROR(__FILE__,__func__,__LINE__,"Function only supports 2-D images\n");
-      exit(0);
+        printERROR(__FILE__,__func__,__LINE__,"Function only supports 2-D images\n");
+        exit(0);
     }
-  naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
-  naxes[0] = data.image[ID].md[0].size[0];
-  naxes[1] = data.image[ID].md[0].size[1];
+    naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
+    naxes[0] = data.image[ID].md[0].size[0];
+    naxes[1] = data.image[ID].md[0].size[1];
 
-  IDout = create_image_ID(IDout_name, naxis, naxes, datatype, data.SHARED_DFT, data.NBKEWORD_DFT);
-  for(jj=0;jj<naxes[1];jj++)
+    IDout = create_image_ID(IDout_name, naxis, naxes, datatype, data.SHARED_DFT, data.NBKEWORD_DFT);
+    for(jj=0; jj<naxes[1]; jj++)
     {
-      for(ii=1;ii<naxes[0]-1;ii++)
-	data.image[IDout].array.F[jj*naxes[0]+ii] = (data.image[ID].array.F[jj*naxes[0]+ii+1]-data.image[ID].array.F[jj*naxes[0]+ii-1])/2.0;
-      data.image[IDout].array.F[jj*naxes[0]] = data.image[ID].array.F[jj*naxes[0]+1]-data.image[ID].array.F[jj*naxes[0]];
-      data.image[IDout].array.F[jj*naxes[0]+naxes[0]-1] = data.image[ID].array.F[jj*naxes[0]+naxes[0]-1]-data.image[ID].array.F[jj*naxes[0]+naxes[0]-2];
+        for(ii=1; ii<naxes[0]-1; ii++)
+            data.image[IDout].array.F[jj*naxes[0]+ii] =
+                (data.image[ID].array.F[jj*naxes[0]+ii+1]-data.image[ID].array.F[jj*naxes[0]+ii-1])/2.0;
+        data.image[IDout].array.F[jj*naxes[0]] =
+            data.image[ID].array.F[jj*naxes[0]+1]-data.image[ID].array.F[jj*naxes[0]];
+        data.image[IDout].array.F[jj*naxes[0]+naxes[0]-1] =
+            data.image[ID].array.F[jj*naxes[0]+naxes[0]-1]-data.image[ID].array.F[jj*naxes[0]+naxes[0]-2];
     }
-  
-  free(naxes);
-  
-  return(IDout);
+
+    free(naxes);
+
+    return(IDout);
 }
 
 
-long arith_image_dy(const char *ID_name, const char *IDout_name)
+long arith_image_dy(
+    const char *ID_name,
+    const char *IDout_name
+)
 {
-  long ID, IDout;
-  uint32_t *naxes = NULL;
-  long naxis;
-  long ii,jj;
-  long nelement;
-  uint8_t datatype;
-  long i;
+    imageID ID;
+    imageID IDout;
+    uint32_t *naxes = NULL;
+    long naxis;
+    long ii, jj;
+    uint8_t datatype;
 
-  ID = image_ID(ID_name);
-  datatype = data.image[ID].md[0].datatype;
-  naxis = data.image[ID].md[0].naxis;
-  if(naxis!=2)
+    ID = image_ID(ID_name);
+    datatype = data.image[ID].md[0].datatype;
+    naxis = data.image[ID].md[0].naxis;
+    if(naxis!=2)
     {
-      printERROR(__FILE__,__func__,__LINE__,"Function only supports 2-D images\n");
-      exit(0);
+        printERROR(__FILE__,__func__,__LINE__,"Function only supports 2-D images\n");
+        exit(0);
     }
-  naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
-  naxes[0] = data.image[ID].md[0].size[0];
-  naxes[1] = data.image[ID].md[0].size[1];
+    naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
+    naxes[0] = data.image[ID].md[0].size[0];
+    naxes[1] = data.image[ID].md[0].size[1];
 
-  IDout = create_image_ID(IDout_name, naxis, naxes, datatype, data.SHARED_DFT, data.NBKEWORD_DFT);
-  for(ii=0;ii<naxes[0];ii++)
+    IDout = create_image_ID(IDout_name, naxis, naxes, datatype, data.SHARED_DFT, data.NBKEWORD_DFT);
+    for(ii=0; ii<naxes[0]; ii++)
     {
-      for(jj=1;jj<naxes[1]-1;jj++)
-	data.image[IDout].array.F[jj*naxes[0]+ii] = (data.image[ID].array.F[(jj+1)*naxes[0]+ii]-data.image[ID].array.F[(jj-1)*naxes[0]+ii])/2.0;
+        for(jj=1; jj<naxes[1]-1; jj++)
+            data.image[IDout].array.F[jj*naxes[0]+ii] = (data.image[ID].array.F[(jj+1)*naxes[0]+ii]-data.image[ID].array.F[(jj-1)*naxes[0]+ii])/2.0;
 
-      data.image[IDout].array.F[ii] = data.image[ID].array.F[1*naxes[0]+ii]-data.image[ID].array.F[ii];
+        data.image[IDout].array.F[ii] = data.image[ID].array.F[1*naxes[0]+ii]-data.image[ID].array.F[ii];
 
-      data.image[IDout].array.F[(naxes[1]-1)*naxes[0]+ii] = data.image[ID].array.F[(naxes[1]-1)*naxes[0]+ii]-data.image[ID].array.F[(naxes[1]-2)*naxes[0]+ii];
+        data.image[IDout].array.F[(naxes[1]-1)*naxes[0]+ii] = data.image[ID].array.F[(naxes[1]-1)*naxes[0]+ii]-data.image[ID].array.F[(naxes[1]-2)*naxes[0]+ii];
 
     }
-  
-  free(naxes);
-  
-  return(IDout);
+
+    free(naxes);
+
+    return(IDout);
 }
 
 
@@ -1738,10 +2021,14 @@ long arith_image_dy(const char *ID_name, const char *IDout_name)
   ------------------------------------------------------------------------- */
 
 
-int arith_image_function_im_im__d_d(const char *ID_name, const char *ID_out, double (*pt2function)(double))
+errno_t arith_image_function_im_im__d_d(
+    const char *ID_name,
+    const char *ID_out,
+    double (*pt2function)(double)
+)
 {
-    long ID;
-    long IDout;
+    imageID ID;
+    imageID IDout;
     uint32_t *naxes = NULL;
     long naxis;
     long ii;
@@ -1883,17 +2170,22 @@ int arith_image_function_im_im__d_d(const char *ID_name, const char *ID_out, dou
     }
 
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
 
 
 
-int arith_image_function_imd_im__dd_d(const char *ID_name, double v0, const char *ID_out, double (*pt2function)(double, double))
+errno_t arith_image_function_imd_im__dd_d(
+    const char *ID_name,
+    double      v0,
+    const char *ID_out,
+    double (*pt2function)(double, double)
+)
 {
-    long ID;
-    long IDout;
+    imageID ID;
+    imageID IDout;
     uint32_t *naxes = NULL;
     long naxis;
     long ii;
@@ -2032,16 +2324,22 @@ int arith_image_function_imd_im__dd_d(const char *ID_name, double v0, const char
     }
 
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
 
 
-int arith_image_function_imdd_im__ddd_d(const char *ID_name, double v0, double v1, const char *ID_out, double (*pt2function)(double, double, double))
+errno_t arith_image_function_imdd_im__ddd_d(
+    const char *ID_name,
+    double      v0,
+    double      v1,
+    const char *ID_out,
+    double (*pt2function)(double, double, double)
+)
 {
-    long ID;
-    long IDout;
+    imageID ID;
+    imageID IDout;
     uint32_t *naxes = NULL;
     long naxis;
     long ii;
@@ -2180,7 +2478,7 @@ int arith_image_function_imdd_im__ddd_d(const char *ID_name, double v0, double v
     }
 
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -2199,19 +2497,24 @@ int arith_image_function_imdd_im__ddd_d(const char *ID_name, double v0, double v
 
 
 
-int arith_image_function_1_1_byID(long ID, long IDout, double (*pt2function)(double))
+errno_t arith_image_function_1_1_byID(
+    imageID ID,
+    imageID IDout,
+    double (*pt2function)(double)
+)
 {
     uint32_t *naxes = NULL;
     long naxis;
     long ii;
     long nelement;
-    uint8_t datatype, datatypeout;
+    uint8_t datatype;
+    //, datatypeout;
     long i;
 
     //  printf("arith_image_function_1_1\n");
 
     datatype = data.image[ID].md[0].datatype;
-    naxis=data.image[ID].md[0].naxis;
+    naxis = data.image[ID].md[0].naxis;
     naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
     if(naxes==NULL)
     {
@@ -2220,15 +2523,14 @@ int arith_image_function_1_1_byID(long ID, long IDout, double (*pt2function)(dou
     }
 
 
-    for(i=0; i<naxis; i++)
-    {
+    for(i=0; i<naxis; i++) {
         naxes[i] = data.image[ID].md[0].size[i];
     }
 
 
-    datatypeout = _DATATYPE_FLOAT;
-    if(datatype == _DATATYPE_DOUBLE)
-        datatypeout = _DATATYPE_DOUBLE;
+//    datatypeout = _DATATYPE_FLOAT;
+//    if(datatype == _DATATYPE_DOUBLE)
+//        datatypeout = _DATATYPE_DOUBLE;
 
     free(naxes);
 
@@ -2310,9 +2612,9 @@ int arith_image_function_1_1_byID(long ID, long IDout, double (*pt2function)(dou
 # endif
             for (ii = 0; ii < nelement; ii++)
                 data.image[IDout].array.F[ii] = pt2function((double) (data.image[ID].array.SI64[ii]));
-        }        
-        
-        
+        }
+
+
         if(datatype == _DATATYPE_FLOAT)
         {
 # ifdef _OPENMP
@@ -2333,7 +2635,7 @@ int arith_image_function_1_1_byID(long ID, long IDout, double (*pt2function)(dou
     }
 # endif
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -2341,10 +2643,14 @@ int arith_image_function_1_1_byID(long ID, long IDout, double (*pt2function)(dou
 
 
 
-int arith_image_function_1_1(const char *ID_name, const char *ID_out, double (*pt2function)(double))
+errno_t arith_image_function_1_1(
+    const char *ID_name,
+    const char *ID_out,
+    double (*pt2function)(double)
+)
 {
-    long ID;
-    long IDout;
+    imageID ID;
+    imageID IDout;
     uint32_t *naxes = NULL;
     long naxis;
     long ii;
@@ -2475,7 +2781,7 @@ int arith_image_function_1_1(const char *ID_name, const char *ID_out, double (*p
     }
 # endif
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -2485,19 +2791,23 @@ int arith_image_function_1_1(const char *ID_name, const char *ID_out, double (*p
 
 
 // imagein -> imagein (in place)
-int arith_image_function_1_1_inplace_byID(long ID, double (*pt2function)(double))
+errno_t arith_image_function_1_1_inplace_byID(
+    imageID ID,
+    double (*pt2function)(double)
+)
 {
     long ii;
     long nelement;
-    uint8_t datatype, datatypeout;
+    uint8_t datatype;
+    //, datatypeout;
 
     // printf("arith_image_function_1_1_inplace\n");
 
     datatype = data.image[ID].md[0].datatype;
 
-    datatypeout = _DATATYPE_FLOAT;
-    if(datatype == _DATATYPE_DOUBLE)
-        datatypeout = _DATATYPE_DOUBLE;
+    //datatypeout = _DATATYPE_FLOAT;
+    //if(datatype == _DATATYPE_DOUBLE)
+     //   datatypeout = _DATATYPE_DOUBLE;
 
     nelement = data.image[ID].md[0].nelement;
 
@@ -2600,28 +2910,32 @@ int arith_image_function_1_1_inplace_byID(long ID, double (*pt2function)(double)
     data.image[ID].md[0].write = 0;
     data.image[ID].md[0].cnt0++;
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
 
 
 // imagein -> imagein (in place)
-int arith_image_function_1_1_inplace(const char *ID_name, double (*pt2function)(double))
+errno_t arith_image_function_1_1_inplace(
+    const char *ID_name,
+    double (*pt2function)(double)
+)
 {
-    long ID;
+    imageID ID;
     long ii;
     long nelement;
-    uint8_t datatype, datatypeout;
+    uint8_t datatype;
+    //, datatypeout;
 
     // printf("arith_image_function_1_1_inplace\n");
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
 
-    datatypeout = _DATATYPE_FLOAT;
-    if(datatype == _DATATYPE_DOUBLE)
-        datatypeout = _DATATYPE_DOUBLE;
+//    datatypeout = _DATATYPE_FLOAT;
+//    if(datatype == _DATATYPE_DOUBLE)
+//        datatypeout = _DATATYPE_DOUBLE;
 
     nelement = data.image[ID].md[0].nelement;
 
@@ -2723,7 +3037,7 @@ int arith_image_function_1_1_inplace(const char *ID_name, double (*pt2function)(
     data.image[ID].md[0].write = 0;
     data.image[ID].md[0].cnt0++;
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -2850,10 +3164,16 @@ int arith_image_positive_inplace(const char *ID_name){ arith_image_function_1_1_
 /* ------------------------------------------------------------------------- */
 
 
-int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const char *ID_out, double (*pt2function)(double, double))
+errno_t arith_image_function_2_1(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *ID_out,
+    double (*pt2function)(double, double)
+)
 {
-    long ID1, ID2;
-    long IDout;
+    imageID ID1;
+    imageID ID2;
+    imageID IDout;
     long ii, kk;
     uint32_t *naxes = NULL; // input, output
     uint32_t *naxes2 = NULL;
@@ -4847,7 +5167,7 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
     free(naxes);
     free(naxes2);
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -4855,7 +5175,11 @@ int arith_image_function_2_1(const char *ID_name1, const char *ID_name2, const c
 
 
 
-int arith_image_function_2_1_inplace_byID(long ID1, long ID2, double (*pt2function)(double,double))
+errno_t arith_image_function_2_1_inplace_byID(
+    imageID ID1,
+    imageID ID2,
+    double (*pt2function)(double,double)
+)
 {
     long ii;
     long nelement1,nelement2,nelement;
@@ -5123,16 +5447,21 @@ int arith_image_function_2_1_inplace_byID(long ID1, long ID2, double (*pt2functi
 
 
 
-int arith_image_function_2_1_inplace(const char *ID_name1, const char *ID_name2, double (*pt2function)(double,double))
+errno_t arith_image_function_2_1_inplace(
+    const char *ID_name1,
+    const char *ID_name2,
+    double (*pt2function)(double,double)
+)
 {
-	long ID1, ID2;
+    imageID ID1;
+    imageID ID2;
 
     ID1 = image_ID(ID_name1);
     ID2 = image_ID(ID_name2);
 
-	arith_image_function_2_1_inplace_byID(ID1, ID2, pt2function);
+    arith_image_function_2_1_inplace_byID(ID1, ID2, pt2function);
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 
@@ -5216,21 +5545,27 @@ int arith_image_testmt_inplace_byID(long ID1, long ID2){ arith_image_function_2_
 /* complex image, complex image  -> complex image                            */
 /* ------------------------------------------------------------------------- */
 // complex float (CF), complex float (CF) -> complex float (CF)
-int arith_image_function_CF_CF__CF(const char *ID_name1, const char *ID_name2, const char *ID_out, complex_float (*pt2function)(complex_float, complex_float))
+errno_t arith_image_function_CF_CF__CF(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *ID_out,
+    complex_float (*pt2function)(complex_float, complex_float)
+)
 {
-    long ID1,ID2;
-    long IDout;
+    imageID ID1;
+    imageID ID2;
+    imageID IDout;
     long ii;
     uint32_t *naxes = NULL;
     long nelement;
     long naxis;
-    uint8_t datatype1, datatype2;
+    uint8_t datatype1; //, datatype2;
     long i;
 
     ID1 = image_ID(ID_name1);
     ID2 = image_ID(ID_name2);
     datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    //datatype2 = data.image[ID2].md[0].datatype;
     naxis=data.image[ID1].md[0].naxis;
     naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
     if(naxes==NULL)
@@ -5259,28 +5594,34 @@ int arith_image_function_CF_CF__CF(const char *ID_name1, const char *ID_name2, c
     }
 # endif
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
 
 
 // complex double (CD), complex double (CD) -> complex double (CD)
-int arith_image_function_CD_CD__CD(const char *ID_name1, const char *ID_name2, const char *ID_out, complex_double (*pt2function)(complex_double, complex_double))
+errno_t arith_image_function_CD_CD__CD(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *ID_out,
+    complex_double (*pt2function)(complex_double, complex_double)
+)
 {
-    long ID1,ID2;
-    long IDout;
+    imageID ID1;
+    imageID ID2;
+    imageID IDout;
     long ii;
     uint32_t *naxes = NULL;
     long nelement;
     long naxis;
-    uint8_t datatype1, datatype2;
+    uint8_t datatype1; //, datatype2;
     long i;
 
     ID1 = image_ID(ID_name1);
     ID2 = image_ID(ID_name2);
     datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    //datatype2 = data.image[ID2].md[0].datatype;
     naxis=data.image[ID1].md[0].naxis;
     naxes = (uint32_t*) malloc(sizeof(uint32_t)*naxis);
     if(naxes==NULL)
@@ -5309,7 +5650,7 @@ int arith_image_function_CD_CD__CD(const char *ID_name1, const char *ID_name2, c
     }
 # endif
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -5377,9 +5718,14 @@ complex_float CPdiv_CF_CF(complex_float a, complex_float b)
 
 
 
-int arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out) {
-    int atype1, atype2;
-    long ID1, ID2;
+errno_t arith_image_Cadd(
+    const char *ID1_name,
+    const char *ID2_name,
+    const char *ID_out
+) {
+    uint8_t atype1, atype2;
+    imageID ID1;
+    imageID ID2;
 
     ID1 = image_ID(ID1_name);
     ID2 = image_ID(ID2_name);
@@ -5389,24 +5735,30 @@ int arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_
     if((atype1 == _DATATYPE_COMPLEX_FLOAT)&&(atype2 ==  _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name, ID2_name, ID_out, &CPadd_CF_CF);
-        return 0;
+        return RETURN_SUCCESS;
     }
 
     if((atype1 == _DATATYPE_COMPLEX_DOUBLE)&&(atype2 ==  _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPadd_CD_CD);
-        return 0;
+        return RETURN_SUCCESS;
     }
     printERROR(__FILE__,__func__,__LINE__,"data types do not match");
 
-    return 1;
+    return RETURN_FAILURE;
 }
 
 
 
-int arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out) {
+errno_t arith_image_Csub(
+    const char *ID1_name,
+    const char *ID2_name,
+    const char *ID_out
+)
+{
     uint8_t datatype1, datatype2;
-    long ID1, ID2;
+    imageID ID1;
+    imageID ID2;
 
     ID1 = image_ID(ID1_name);
     ID2 = image_ID(ID2_name);
@@ -5416,24 +5768,30 @@ int arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) && (datatype2 ==  _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name, ID2_name, ID_out, &CPsub_CF_CF);
-        return 0;
+        return RETURN_SUCCESS;
     }
 
     if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) && (datatype2 ==  _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPsub_CD_CD);
-        return 0;
+        return RETURN_SUCCESS;
     }
     printERROR(__FILE__,__func__,__LINE__,"data types do not match");
 
-    return 1;
+    return RETURN_FAILURE;
 }
 
 
 
-int arith_image_Cmult(const char *ID1_name, const char *ID2_name, const char *ID_out) {
+errno_t arith_image_Cmult(
+    const char *ID1_name,
+    const char *ID2_name,
+    const char *ID_out
+)
+{
     uint8_t datatype1, datatype2;
-    long ID1, ID2;
+    imageID ID1;
+    imageID ID2;
 
     ID1 = image_ID(ID1_name);
     ID2 = image_ID(ID2_name);
@@ -5443,24 +5801,30 @@ int arith_image_Cmult(const char *ID1_name, const char *ID2_name, const char *ID
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) && (datatype2 ==  _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name, ID2_name, ID_out, &CPmult_CF_CF);
-        return 0;
+        return RETURN_SUCCESS;
     }
 
     if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) && (datatype2 ==  _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPmult_CD_CD);
-        return 0;
+        return RETURN_SUCCESS;
     }
     printERROR(__FILE__,__func__,__LINE__,"data types do not match");
 
-    return(0);
+    return RETURN_FAILURE;
 }
 
 
 
-int arith_image_Cdiv(const char *ID1_name, const char *ID2_name, const char *ID_out) {
+int arith_image_Cdiv(
+    const char *ID1_name,
+    const char *ID2_name,
+    const char *ID_out
+)
+{
     uint8_t datatype1, datatype2;
-    long ID1, ID2;
+    imageID ID1;
+    imageID ID2;
 
     ID1 = image_ID(ID1_name);
     ID2 = image_ID(ID2_name);
@@ -5470,17 +5834,17 @@ int arith_image_Cdiv(const char *ID1_name, const char *ID2_name, const char *ID_
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) && (datatype2 ==  _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name, ID2_name, ID_out, &CPdiv_CF_CF);
-        return 0;
+        return RETURN_SUCCESS;
     }
 
     if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) && (datatype2 ==  _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPdiv_CD_CD);
-        return 0;
+        return RETURN_SUCCESS;
     }
     printERROR(__FILE__,__func__,__LINE__,"data types do not match");
 
-    return(0);
+    return RETURN_FAILURE;
 }
 
 
@@ -6174,127 +6538,131 @@ int arith_image_trunc_inplace_byID(long ID, double f1, double f2) { arith_image_
 
 
 
+
 int isoperand(const char *word)
 {
-  int value = 0;
-  
-  if (strcmp(word,"+")==0)
-    value = 1;
-  if (strcmp(word,"-")==0)
-    value = 1;
-  if (strcmp(word,"/")==0)
-    value = 1;
-  if (strcmp(word,"*")==0)
-    value = 1;
-  if (strcmp(word,"^")==0)
-    value = 1;
+    int value = 0;
 
-  return(value);
+    if (strcmp(word,"+")==0)
+        value = 1;
+    if (strcmp(word,"-")==0)
+        value = 1;
+    if (strcmp(word,"/")==0)
+        value = 1;
+    if (strcmp(word,"*")==0)
+        value = 1;
+    if (strcmp(word,"^")==0)
+        value = 1;
+
+    return(value);
 }
+
 
 int isfunction(const char *word)
 {
-  int value = 0;
+    int value = 0;
 
-  if (strcmp(word,"acos")==0)
-    value = 1;
-  if (strcmp(word,"asin")==0)
-    value = 1;
-  if (strcmp(word,"atan")==0)
-    value = 1;
-  if (strcmp(word,"ceil")==0)
-    value = 1;
-  if (strcmp(word,"cos")==0)
-    value = 1;
-  if (strcmp(word,"cosh")==0)
-    value = 1;
-  if (strcmp(word,"exp")==0)
-    value = 1;
-  if (strcmp(word,"fabs")==0)
-    value = 1;
-  if (strcmp(word,"floor")==0)
-    value = 1;
-  if (strcmp(word,"imedian")==0)
-    value = 1;
-  if (strcmp(word,"itot")==0)
-    value = 1;
-  if (strcmp(word,"imean")==0)
-    value = 1;
-  if (strcmp(word,"imin")==0)
-    value = 1;
-  if (strcmp(word,"imax")==0)
-    value = 1;
-  if (strcmp(word,"ln")==0)
-    value = 1;
-  if (strcmp(word,"log")==0)
-    value = 1;
-  if (strcmp(word,"sqrt")==0)
-    value = 1;
-  if (strcmp(word,"sin")==0)
-    value = 1;
-  if (strcmp(word,"sinh")==0)
-    value = 1;
-  if (strcmp(word,"tan")==0)
-    value = 1;
-  if (strcmp(word,"tanh")==0)
-    value = 1;
-  if (strcmp(word,"posi")==0)
-    value = 1;
-  if (strcmp(word,"imdx")==0)
-    value = 1;
-  if (strcmp(word,"imdy")==0)
-    value = 1;
+    if (strcmp(word,"acos")==0)
+        value = 1;
+    if (strcmp(word,"asin")==0)
+        value = 1;
+    if (strcmp(word,"atan")==0)
+        value = 1;
+    if (strcmp(word,"ceil")==0)
+        value = 1;
+    if (strcmp(word,"cos")==0)
+        value = 1;
+    if (strcmp(word,"cosh")==0)
+        value = 1;
+    if (strcmp(word,"exp")==0)
+        value = 1;
+    if (strcmp(word,"fabs")==0)
+        value = 1;
+    if (strcmp(word,"floor")==0)
+        value = 1;
+    if (strcmp(word,"imedian")==0)
+        value = 1;
+    if (strcmp(word,"itot")==0)
+        value = 1;
+    if (strcmp(word,"imean")==0)
+        value = 1;
+    if (strcmp(word,"imin")==0)
+        value = 1;
+    if (strcmp(word,"imax")==0)
+        value = 1;
+    if (strcmp(word,"ln")==0)
+        value = 1;
+    if (strcmp(word,"log")==0)
+        value = 1;
+    if (strcmp(word,"sqrt")==0)
+        value = 1;
+    if (strcmp(word,"sin")==0)
+        value = 1;
+    if (strcmp(word,"sinh")==0)
+        value = 1;
+    if (strcmp(word,"tan")==0)
+        value = 1;
+    if (strcmp(word,"tanh")==0)
+        value = 1;
+    if (strcmp(word,"posi")==0)
+        value = 1;
+    if (strcmp(word,"imdx")==0)
+        value = 1;
+    if (strcmp(word,"imdy")==0)
+        value = 1;
 
 
-/*  if (!strcmp(word,"pow"))
-    value = 1;
-  if (!strcmp(word,"max"))
-    value = 1;
-  if (!strcmp(word,"min"))
-    value = 1;
-  if (!strcmp(word,"median"))
-    value = 1;
-*/
-  return(value);
+    /*  if (!strcmp(word,"pow"))
+        value = 1;
+      if (!strcmp(word,"max"))
+        value = 1;
+      if (!strcmp(word,"min"))
+        value = 1;
+      if (!strcmp(word,"median"))
+        value = 1;
+    */
+    return(value);
 }
+
+
 
 int isfunction_sev_var(const char *word)
 {
-  int value = 0; /* number of input variables */
+    int value = 0; /* number of input variables */
 
-  if (strcmp(word,"fmod")==0)
-    value = 2;
-  if (strcmp(word,"trunc")==0)
-    value = 3;
-  if (strcmp(word,"perc")==0)
-    value = 2;
-  if (strcmp(word,"min")==0)
-    value = 2;
-  if (strcmp(word,"max")==0)
-    value = 2;
-  if (strcmp(word,"testlt")==0)
-    value = 2;
-  if (strcmp(word,"testmt")==0)
-    value = 2;
- 
+    if (strcmp(word,"fmod")==0)
+        value = 2;
+    if (strcmp(word,"trunc")==0)
+        value = 3;
+    if (strcmp(word,"perc")==0)
+        value = 2;
+    if (strcmp(word,"min")==0)
+        value = 2;
+    if (strcmp(word,"max")==0)
+        value = 2;
+    if (strcmp(word,"testlt")==0)
+        value = 2;
+    if (strcmp(word,"testmt")==0)
+        value = 2;
 
-  return(value);
+
+    return(value);
 }
 
 
 int isanumber(const char *word)
 {
-  int value = 1; // 1 if number, 0 otherwise
-  char *endptr;
-  double v1;
+    int value = 1; // 1 if number, 0 otherwise
+    char *endptr;
+    __attribute__((unused)) double v1;
 
-  v1 = strtod(word, &endptr);
-  if( (long) (endptr-word) == (long) strlen(word))
-    value = 1;
-  else
-    value = 0;
+    v1 = strtod(word, &endptr);
+    if( (long) (endptr-word) == (long) strlen(word))
+        value = 1;
+    else
+        value = 0;
 
-  return(value);
+    return(value);
 }
 
 
