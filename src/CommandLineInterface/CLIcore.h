@@ -103,6 +103,24 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 
 
 
+#if defined NDEBUG || defined STANDALONE
+#define DEBUG_TRACEPOINTLOG(...)
+#else
+#define DEBUG_TRACEPOINTLOG(...) do { \
+sprintf(data.testpoint_file, "%s", __FILE__); \
+sprintf(data.testpoint_func, "%s", __func__); \
+data.testpoint_line = __LINE__; \
+clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
+sprintf(data.testpoint_msg, __VA_ARGS__); \
+write_process_log(); \
+} while(0)
+#endif
+
+
+
+
+
+
 
 // testing argument type for command line interface
 #define CLIARG_FLOAT            1
@@ -288,6 +306,7 @@ typedef struct
     int            Debug;
     int            quiet;
     int            overwrite;		// automatically overwrite FITS files
+    int            rmSHMfile;       // remove shared memory files upon delete
     double         INVRANDMAX;
     gsl_rng       *rndgen;		// random number generator
     int            precision;		// default precision: 0 for float, 1 for double
@@ -394,5 +413,8 @@ uint_fast16_t RegisterCLIcommand(
 
 errno_t runCLItest(int argc, char *argv[], char *promptstring);
 errno_t runCLI(int argc, char *argv[], char *promptstring);
+
+
+errno_t write_process_log();
 
 #endif

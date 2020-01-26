@@ -14,6 +14,6 @@ OPTION="$OPTION --log-file=milk.memcheck.log"
 OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
 OPTION="$OPTION --max-stackframe=4442392"
 
-valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${CLIfifoname} -s ${SF}
+valgrind ${OPTION} ./milkdebugtest
 rm ./milkdebugtest
 

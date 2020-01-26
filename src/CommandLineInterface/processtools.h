@@ -163,6 +163,15 @@ typedef struct
 	int           cpuOKarray[MAXNBCPU];
 	int           threads;
 	
+	int           rt_priority;
+	float         memload;
+		
+	char          statusmsg[200];
+	char          tmuxname[100];
+	
+	int           NBsubprocesses;
+	int           subprocPIDarray[MAXNBSUBPROCESS];	
+	
 	double        sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
 	double        sampletimearray_prev[MAXNBSUBPROCESS];
 	
@@ -176,19 +185,10 @@ typedef struct
 	float         subprocCPUloadarray[MAXNBSUBPROCESS];
 	float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
 	
-	
 	long          VmRSSarray[MAXNBSUBPROCESS];
 	
 	int           processorarray[MAXNBSUBPROCESS];
-	int           rt_priority;
-	float         memload;
-	
-	
-	int           NBsubprocesses;
-	int           subprocPIDarray[MAXNBSUBPROCESS];
-	
-	char          statusmsg[200];
-	char          tmuxname[100];
+
 	
 } PROCESSINFODISP;
 
@@ -198,18 +198,18 @@ typedef struct
 
 typedef struct
 {
-	int loop;   // 1 : loop     0 : exit
-	long loopcnt;
+	int      loop;   // 1 : loop     0 : exit
+	long     loopcnt;
 	
-	int twaitus; // sleep time between scans
-	double dtscan; // measured time interval between scans [s]
-	pid_t scanPID;
-	int scandebugline; // for debugging	
+	int      twaitus; // sleep time between scans
+	double   dtscan; // measured time interval between scans [s]
+	pid_t    scanPID;
+	int      scandebugline; // for debugging	
 	
 	
 	// ensure list of process and mmap operation blocks display
-	int SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
-	int SCANBLOCK_OK;         // display thread toggles to 1 to let scan know it can proceed
+	int      SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
+	int      SCANBLOCK_OK;         // display thread toggles to 1 to let scan know it can proceed
 		
 	PROCESSINFOLIST *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
 

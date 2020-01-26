@@ -194,8 +194,8 @@ static fd_set cli_fdin_set;
 */
 int user_function();
 void fnExit1 (void);
-void main_init();
-void main_free();
+static void runCLI_data_init();
+static void runCLI_free();
 
 
 // readline auto-complete
@@ -306,6 +306,50 @@ static void fprintf_stdout(FILE *f, char const *fmt, ...) {
     vfprintf(f, fmt, ap);
     va_end(ap);
 }
+
+
+
+
+/**
+ * @brief Write entry into debug log
+ * 
+ * 
+ */
+errno_t write_process_log()
+{
+	FILE *fplog;
+	char fname[200];
+	pid_t thisPID;
+	
+	thisPID = getpid();
+    sprintf(fname, "logreport.%05d.log", thisPID);
+    
+    struct tm *uttime;
+    time_t tvsec0;
+
+
+    fplog = fopen(fname, "a");
+    if(fplog != NULL) {
+        struct timespec tnow;
+        //        time_t now;
+        clock_gettime(CLOCK_REALTIME, &tnow);
+        tvsec0 = tnow.tv_sec;
+        uttime = gmtime(&tvsec0);
+        fprintf(fplog, "%04d%02d%02dT%02d%02d%02d.%09ld ",
+                       1900+uttime->tm_year, 1+uttime->tm_mon, uttime->tm_mday, uttime->tm_hour, uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+
+        fprintf(fplog, "    File    : %s\n", data.testpoint_file);
+        fprintf(fplog, "    Function: %s\n", data.testpoint_func);
+        fprintf(fplog, "    Line    : %d\n", data.testpoint_line);
+        fprintf(fplog, "    Message : %s\n", data.testpoint_msg);
+        fprintf(fplog, "\n");
+
+        fclose(fplog);
+    }    
+    
+    return RETURN_SUCCESS;
+}
+
 
 
 /**
@@ -477,8 +521,6 @@ errno_t exitCLI() {
             printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
         }
     }
-
-   // main_free();
 
 
     if(Listimfile == 1) {
@@ -1538,7 +1580,7 @@ errno_t runCLI(
 
 
     // Initialize data control block 
-    main_init();
+    runCLI_data_init();
 
 
     // initialize readline
@@ -1725,7 +1767,7 @@ errno_t runCLI(
 	clearall(); 
 	
 
-	main_free();
+	runCLI_free();
 	
 	rl_clear_history();
 	rl_callback_handler_remove();
@@ -1864,13 +1906,13 @@ void *xmalloc(int size) {
 
 
 /*^-----------------------------------------------------------------------------
-| void main_init : Initialization the "data" structure
+|  Initialization the "data" structure
 |
 |
 |
 |
 +-----------------------------------------------------------------------------*/
-void main_init() {
+void runCLI_data_init() {
 
     long tmplong;
 //  int i;
@@ -1884,6 +1926,8 @@ void main_init() {
     data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
     data.INVRANDMAX      = 1.0 / RAND_MAX;
 
+	// do not remove files when delete command on SHM
+	data.rmSHMfile       = 0;
 
     // initialize modules
     data.NB_MAX_MODULE = DATA_NB_MAX_MODULE;
@@ -2176,7 +2220,7 @@ void main_init() {
 
 
 
-void main_free()
+static void runCLI_free()
 {
 #ifndef DATA_STATIC_ALLOC
     // Free
