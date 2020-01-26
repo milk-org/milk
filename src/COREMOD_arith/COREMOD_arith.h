@@ -8,22 +8,78 @@ int init_COREMOD_arith();
 
 
 
-long arith_set_pixel(const char *ID_name, double value, long x, long y);
-long arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y);
+imageID arith_set_pixel(
+    const char *ID_name,
+    double      value,
+    long        x,
+    long        y
+);
 
-long arith_set_row(const char *ID_name, double value, long y);
 
-long arith_set_col(const char *ID_name, double value, long x);
+imageID arith_set_pixel_1Drange(
+    const char *ID_name,
+    double      value,
+    long        x,
+    long        y
+);
 
-long arith_image_zero(const char *ID_name);
 
-int arith_image_crop(const char *ID_name, const char *ID_out, long *start, long *end, long cropdim);
+imageID arith_set_row(
+    const char *ID_name,
+    double      value,
+    long        y
+);
 
-int arith_image_extract2D(const char *in_name, const char *out_name, long size_x, long size_y, long xstart, long ystart);
 
-int arith_image_extract3D(const char *in_name, const char *out_name, long size_x, long size_y, long size_z, long xstart, long ystart, long zstart);
+imageID arith_set_col(
+    const char *ID_name,
+    double      value,
+    long        x
+);
 
-long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char *IDout_name);
+
+imageID arith_image_zero(
+    const char *ID_name
+);
+
+
+imageID arith_image_crop(
+    const char *ID_name,
+    const char *ID_out,
+    long       *start,
+    long       *end,
+    long        cropdim
+);
+
+
+imageID arith_image_extract2D(
+    const char *in_name,
+    const char *out_name,
+    long size_x,
+    long size_y,
+    long xstart,
+    long ystart
+);
+
+
+imageID arith_image_extract3D(
+    const char *in_name,
+    const char *out_name,
+    long        size_x,
+    long        size_y,
+    long        size_z,
+    long        xstart,
+    long        ystart,
+    long        zstart
+);
+
+
+imageID arith_image_merge3D(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *IDout_name
+);
+
 
 double arith_image_total(const char *ID_name);
 double arith_image_mean(const char *ID_name);
