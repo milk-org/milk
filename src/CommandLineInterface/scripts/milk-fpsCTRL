@@ -144,6 +144,8 @@ if [ "$DEBUG" = "1" ]; then
 
 cp $(which milk) milkdebugtest
 OPTION="--leak-check=full --show-leak-kinds=all"
+OPTION="$OPTION --track-origins=yes"
+OPTION="$OPTION --num-callers=200"
 OPTION="$OPTION --show-reachable=yes"
 #OPTION="$OPTION --gen-suppressions=all"
 OPTION="$OPTION --log-file=milk.memcheck.log"

@@ -1194,7 +1194,7 @@ static errno_t initncurses()
  * 
  */
 
-static int GetNumberCPUs(PROCINFOPROC *pinfop)
+int GetNumberCPUs(PROCINFOPROC *pinfop)
 {
     unsigned int pu_index = 0;
 
@@ -1988,7 +1988,7 @@ void *processinfo_scan(
         DEBUG_TRACEPOINT(" ");
 
         pinfop->scandebugline = __LINE__;
-        
+
         DEBUG_TRACEPOINT(" ");
 
         // timing measurement
@@ -2002,7 +2002,7 @@ void *processinfo_scan(
         }
         clock_gettime(CLOCK_REALTIME, &t0);
         pinfop->dtscan = tdiffv;
-        
+
         DEBUG_TRACEPOINT(" ");
 
 
@@ -2024,19 +2024,19 @@ void *processinfo_scan(
         pinfop->SCANBLOCK_requested = 0; // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
 
-		DEBUG_TRACEPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         // LOAD / UPDATE process information
         // This step re-mmaps pinfo and rebuilds list, so we need to ensure it is run exclusively of the dislpay
         //
         pinfop->scandebugline = __LINE__;
 
-		DEBUG_TRACEPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         for(pindex = 0; pindex < pinfop->NBpinfodisp; pindex++) {
             if(pinfop->loop == 1) {
-				
-				DEBUG_TRACEPOINT(" ");
+
+                DEBUG_TRACEPOINT(" ");
 
                 char SM_fname[200];    // shared memory file name
                 struct stat file_stat;
@@ -2059,7 +2059,7 @@ void *processinfo_scan(
                 if(pinfolist->active[pindex] == 3) { // file has gone away
                     pinfop->updatearray[pindex] = 0;
                 }
-                
+
                 DEBUG_TRACEPOINT(" ");
 
 
@@ -2075,7 +2075,7 @@ void *processinfo_scan(
                     pinfolist->active[pindex] = 0;
                     pinfop->updatearray[pindex] = 0;
                 }
-                
+
                 DEBUG_TRACEPOINT(" ");
 
 
@@ -2090,7 +2090,7 @@ void *processinfo_scan(
                         pinfolist->active[pindex] = 2;
                     }
                 }
-                
+
                 DEBUG_TRACEPOINT(" ");
 
                 pinfop->scandebugline = __LINE__;
@@ -2098,7 +2098,7 @@ void *processinfo_scan(
                 if((pindex < pinfop->NBpinfodisp) && (pinfop->updatearray[pindex] == 1)) {
                     // (RE)LOAD
                     //struct stat file_stat;
-                    
+
                     DEBUG_TRACEPOINT(" ");
 
                     // if already mmapped, first unmap
@@ -2106,8 +2106,8 @@ void *processinfo_scan(
                         processinfo_shm_close(pinfop->pinfoarray[pindex], pinfop->fdarray[pindex]);
                         pinfop->pinfommapped[pindex] = 0;
                     }
-                    
-                    
+
+
                     DEBUG_TRACEPOINT(" ");
 
 
@@ -2133,7 +2133,7 @@ void *processinfo_scan(
 
                         pinfop->pinfodisp[pindex].loopcnt = pinfop->pinfoarray[pindex]->loopcnt;
                     }
-                    
+
                     DEBUG_TRACEPOINT(" ");
 
                     pinfop->pinfodisp[pindex].active = pinfolist->active[pindex];
@@ -2142,7 +2142,7 @@ void *processinfo_scan(
                     pinfop->pinfodisp[pindex].updatecnt ++;
 
                     // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
-                    
+
                     DEBUG_TRACEPOINT(" ");
 
                 }
@@ -2163,7 +2163,7 @@ void *processinfo_scan(
           *
           */
         int index;
-        
+
         DEBUG_TRACEPOINT(" ");
 
         pinfop->NBpindexActive = 0;
@@ -2172,40 +2172,40 @@ void *processinfo_scan(
                 pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
                 pinfop->NBpindexActive++;
             }
-            
+
         if(pinfop->NBpindexActive>0)
-        {    
-            
-        double *timearray;
-        long *indexarray;
-        timearray  = (double *) malloc(sizeof(double) * pinfop->NBpindexActive);
-        indexarray = (long *)   malloc(sizeof(long)  * pinfop->NBpindexActive);
-        int listcnt = 0;
-        for(index = 0; index < pinfop->NBpindexActive; index++) {
-            pindex = pinfop->pindexActive[index];
-            if(pinfop->pinfommapped[pindex] == 1) {
-                indexarray[index] = pindex;
-                // minus sign for most recent first
-                //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
-                timearray[index] = -1.0 * pinfop->pinfoarray[pindex]->createtime.tv_sec - 1.0e-9 * pinfop->pinfoarray[pindex]->createtime.tv_nsec;
-                listcnt++;
+        {
+
+            double *timearray;
+            long *indexarray;
+            timearray  = (double *) malloc(sizeof(double) * pinfop->NBpindexActive);
+            indexarray = (long *)   malloc(sizeof(long)  * pinfop->NBpindexActive);
+            int listcnt = 0;
+            for(index = 0; index < pinfop->NBpindexActive; index++) {
+                pindex = pinfop->pindexActive[index];
+                if(pinfop->pinfommapped[pindex] == 1) {
+                    indexarray[index] = pindex;
+                    // minus sign for most recent first
+                    //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+                    timearray[index] = -1.0 * pinfop->pinfoarray[pindex]->createtime.tv_sec - 1.0e-9 * pinfop->pinfoarray[pindex]->createtime.tv_nsec;
+                    listcnt++;
+                }
             }
-        }
-        DEBUG_TRACEPOINT(" ");
-        
-        pinfop->NBpindexActive = listcnt;
-        quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
+            DEBUG_TRACEPOINT(" ");
 
-        for(index = 0; index < pinfop->NBpindexActive; index++) {
-            pinfop->sorted_pindex_time[index] = indexarray[index];
-        }
-        
-        DEBUG_TRACEPOINT(" ");
+            pinfop->NBpindexActive = listcnt;
+            quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
 
-        free(timearray);
-        free(indexarray);
-        
-		}
+            for(index = 0; index < pinfop->NBpindexActive; index++) {
+                pinfop->sorted_pindex_time[index] = indexarray[index];
+            }
+
+            DEBUG_TRACEPOINT(" ");
+
+            free(timearray);
+            free(indexarray);
+
+        }
 
         pinfop->scandebugline = __LINE__;
 
@@ -2218,13 +2218,13 @@ void *processinfo_scan(
 
 
         pinfop->scandebugline = __LINE__;
-        
+
         DEBUG_TRACEPOINT(" ");
 
 
 
         if(pinfop->DisplayMode == 3) { // only compute of displayed processes
-			DEBUG_TRACEPOINT(" ");
+            DEBUG_TRACEPOINT(" ");
             pinfop->scandebugline = __LINE__;
             GetCPUloads(pinfop);
             pinfop->scandebugline = __LINE__;
@@ -2270,9 +2270,17 @@ void *processinfo_scan(
                                         // get CPU and MEM load
 
                                         // THIS DOES NOT WORK ON TICKLESS KERNEL
-                                        pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex] = 100.0 * ((1.0 * pinfop->pinfodisp[pindexdisp].cpuloadcntarray[spindex] - pinfop->pinfodisp[pindexdisp].cpuloadcntarray_prev[spindex]) / sysconf(_SC_CLK_TCK)) / (pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] - pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]);
+                                        pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex] =
+                                            100.0 * (
+                                                (1.0 * pinfop->pinfodisp[pindexdisp].cpuloadcntarray[spindex] 
+                                                - pinfop->pinfodisp[pindexdisp].cpuloadcntarray_prev[spindex])
+                                                / sysconf(_SC_CLK_TCK) )
+                                            / (pinfop->pinfodisp[pindexdisp].sampletimearray[spindex] 
+                                            - pinfop->pinfodisp[pindexdisp].sampletimearray_prev[spindex]);
 
-                                        pinfop->pinfodisp[pindexdisp].subprocCPUloadarray_timeaveraged[spindex] = 0.9 * pinfop->pinfodisp[pindexdisp].subprocCPUloadarray_timeaveraged[spindex] + 0.1 * pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex];
+                                        pinfop->pinfodisp[pindexdisp].subprocCPUloadarray_timeaveraged[spindex] =
+                                            0.9 * pinfop->pinfodisp[pindexdisp].subprocCPUloadarray_timeaveraged[spindex]
+                                            + 0.1 * pinfop->pinfodisp[pindexdisp].subprocCPUloadarray[spindex];
                                     }
                                 }
 
@@ -2308,7 +2316,7 @@ void *processinfo_scan(
                 }
                 else
                 {
-					DEBUG_TRACEPOINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                     int line = __LINE__;
                     pthread_exit(&line);
                 }
@@ -2367,12 +2375,11 @@ void processinfo_CTRLscreen_atexit()
 
 
 
-void processinfo_CTRLscreen_handle_winch(int sig)
+void processinfo_CTRLscreen_handle_winch(int __attribute__((unused)) sig)
 {
     endwin();
     refresh();
     clear();
-
 
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
@@ -2459,18 +2466,47 @@ errno_t processinfo_CTRLscreen()
 
     setlocale(LC_ALL, "");
 
-	// initialize
-	procinfoproc.loopcnt = 0;
-    
-    // initialize ALL entries
+
+
+    // initialize procinfoproc entries
+    procinfoproc.loopcnt = 0;
     for(pindex=0; pindex<PROCESSINFOLISTSIZE; pindex++)
     {
-        procinfoproc.updatearray[pindex]   = 1; // initialize: load all
-        procinfoproc.pinfommapped[pindex]  = 0;
-        procinfoproc.selectedarray[pindex] = 0; // initially not selected
+        procinfoproc.pinfoarray[pindex]         = NULL;
+        procinfoproc.pinfommapped[pindex]       = 0; // 1 if mmapped, 0 otherwise
+        procinfoproc.PIDarray[pindex]           = 0; // used to track changes
+        procinfoproc.updatearray[pindex]        = 1; // initialize: load all
+        procinfoproc.fdarray[pindex]            = 0; // file descriptors
+        procinfoproc.loopcntarray[pindex]       = 0;
         procinfoproc.loopcntoffsetarray[pindex] = 0;
+        procinfoproc.selectedarray[pindex]      = 0; // initially not selected
+        procinfoproc.sorted_pindex_time[pindex] = pindex;
+
+        procinfoproc.pindexActive[pindex]       = 0;
+        procinfoproc.psysinfostatus[pindex]     = 0;
     }
-	
+    procinfoproc.NBcpus      = 1;
+    procinfoproc.NBcpusocket = 1;
+    for(int cpu=0; cpu<MAXNBCPU; cpu++) {
+
+        procinfoproc.CPUload[cpu] = 0.0;
+
+        procinfoproc.CPUcnt0[cpu] = 0;
+        procinfoproc.CPUcnt1[cpu] = 0;
+        procinfoproc.CPUcnt2[cpu] = 0;
+        procinfoproc.CPUcnt3[cpu] = 0;
+        procinfoproc.CPUcnt4[cpu] = 0;
+        procinfoproc.CPUcnt5[cpu] = 0;
+        procinfoproc.CPUcnt6[cpu] = 0;
+        procinfoproc.CPUcnt7[cpu] = 0;
+        procinfoproc.CPUcnt8[cpu] = 0;
+
+        procinfoproc.CPUids[cpu]  = cpu;
+        procinfoproc.CPUphys[cpu] = 0;
+        procinfoproc.CPUpcnt[cpu] = 0;
+
+    }
+
     STRINGLISTENTRY *CPUsetList;
     int NBCPUset;
     CPUsetList = (STRINGLISTENTRY *)malloc(sizeof(STRINGLISTENTRY)*1000);
@@ -2480,9 +2516,9 @@ errno_t processinfo_CTRLscreen()
     // Create / read process list
     //
     if ( processinfo_shm_list_create() == 0) {
-		printf("==== NO PROCESS TO DISPLAY -> EXITING ====\n");
-		return(0);
-	}
+        printf("==== NO PROCESS TO DISPLAY -> EXITING ====\n");
+        return(0);
+    }
 
 
     // copy pointer
@@ -2492,7 +2528,7 @@ errno_t processinfo_CTRLscreen()
     GetCPUloads(&procinfoproc);
 
 
-	
+
 
     // INITIALIZE ncurses
     initncurses();
@@ -2545,10 +2581,59 @@ errno_t processinfo_CTRLscreen()
     procinfoproc.pinfodisp = (PROCESSINFODISP*) malloc(sizeof(PROCESSINFODISP)*procinfoproc.NBpinfodisp);
     for(pindex=0; pindex<procinfoproc.NBpinfodisp; pindex++)
     {
-        procinfoproc.pinfodisp[pindex].updatecnt = 0;
         procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;  // by default, each process is assumed to be single-threaded
-		procinfoproc.loopcntarray[pindex] = 0;
-	}
+
+        procinfoproc.pinfodisp[pindex].active         = 0;
+        procinfoproc.pinfodisp[pindex].PID            = 0;
+        strcpy( procinfoproc.pinfodisp[pindex].name, "null");
+        procinfoproc.pinfodisp[pindex].updatecnt      = 0;
+
+        procinfoproc.pinfodisp[pindex].loopcnt         = 0;
+        procinfoproc.pinfodisp[pindex].loopstat        = 0;
+
+        procinfoproc.pinfodisp[pindex].createtime_hr   = 0;
+        procinfoproc.pinfodisp[pindex].createtime_min  = 0;
+        procinfoproc.pinfodisp[pindex].createtime_sec  = 0;
+        procinfoproc.pinfodisp[pindex].createtime_ns   = 0;
+
+        strcpy( procinfoproc.pinfodisp[pindex].cpuset, "null" );
+        strcpy( procinfoproc.pinfodisp[pindex].cpusallowed, "null");
+        for(int cpu=0; cpu<MAXNBCPU; cpu++) {
+            procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] = 0;
+        }
+        procinfoproc.pinfodisp[pindex].threads         = 0;
+
+
+        procinfoproc.pinfodisp[pindex].rt_priority     = 0;
+        procinfoproc.pinfodisp[pindex].memload         = 0.0;
+
+
+        strcpy( procinfoproc.pinfodisp[pindex].statusmsg, "" );
+        strcpy( procinfoproc.pinfodisp[pindex].tmuxname, "" );
+
+
+        procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;
+        for(int spi=0; spi<MAXNBSUBPROCESS; spi++) {
+            procinfoproc.pinfodisp[pindex].sampletimearray[spi]          = 0.0;
+            procinfoproc.pinfodisp[pindex].sampletimearray_prev[spi]     = 0.0;
+
+            procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spi]         = 0;
+            procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spi]      = 0;
+            procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spi]    = 0;
+            procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spi] = 0;
+
+            procinfoproc.pinfodisp[pindex].cpuloadcntarray[spi]          = 0;
+            procinfoproc.pinfodisp[pindex].cpuloadcntarray_prev[spi]     = 0;
+            procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spi]      = 0.0;
+            procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spi] = 0.0;
+
+            procinfoproc.pinfodisp[pindex].VmRSSarray[spi]               = 0;
+            procinfoproc.pinfodisp[pindex].processorarray[spi]           = 0;
+
+            procinfoproc.pinfodisp[pindex].subprocPIDarray[spi]          = 0;
+
+        }
+    }
 
     pindexActiveSelected = 0;
     procinfoproc.DisplayMode = 2; // default upon startup
@@ -2864,7 +2949,7 @@ errno_t processinfo_CTRLscreen()
                 pindex = pindexSelected;
                 if(procinfoproc.pinfoarray[pindex]->CTRLval == 0) // if running, turn compute to off
                     procinfoproc.pinfoarray[pindex]->CTRLval = 5;
-                else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if compute off, turn compute back on
+                else if (procinfoproc.pinfoarray[pindex]->CTRLval == 5) // if procinfoproccompute off, turn compute back on
                     procinfoproc.pinfoarray[pindex]->CTRLval = 0;
             }
             DEBUG_TRACEPOINT(" ");
@@ -3064,9 +3149,6 @@ errno_t processinfo_CTRLscreen()
                 initncurses();
             }
             break;
-
-
-            DEBUG_TRACEPOINT(" ");
 
 
         // ============ SCREENS
