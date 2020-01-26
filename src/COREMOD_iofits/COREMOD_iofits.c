@@ -4,7 +4,6 @@
  * 
  * Uses CFITSIO library heavily
  * 
- * @bug No known bugs. 
  * 
  */
 
@@ -50,15 +49,29 @@ static char errormessage_iofits[SBUFFERSIZE];
 
 
 
-int_fast8_t load_fits_cli()
+errno_t load_fits_cli()
 {
-    load_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string, 1);
+    if ( 0
+            + CLI_checkarg(1, CLIARG_STR)
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            == 0 )
+    {
+        load_fits(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            1);
 
-    return 0;
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return CLICMD_INVALID_ARG;
+    }
+
+    return CLICMD_SUCCESS;
 }
 
 
-int_fast8_t save_fl_fits_cli()
+errno_t save_fl_fits_cli()
 {
     char fname[1000];
 
@@ -71,13 +84,13 @@ int_fast8_t save_fl_fits_cli()
         save_fl_fits( data.cmdargtoken[1].val.string, fname);
         break;
     }
-    return 0;
+    return CLICMD_SUCCESS;
 }
 
 
 
 
-int_fast8_t save_db_fits_cli()
+errno_t save_db_fits_cli()
 {
     char fname[1000];
 
@@ -91,12 +104,12 @@ int_fast8_t save_db_fits_cli()
         break;
     }
 
-    return 0;
+    return CLICMD_SUCCESS;
 }
 
 
 
-int_fast8_t save_sh16_fits_cli()
+errno_t save_sh16_fits_cli()
 {
     char fname[1000];
 
@@ -110,13 +123,13 @@ int_fast8_t save_sh16_fits_cli()
         break;
     }
 
-    return 0;
+    return CLICMD_SUCCESS;
 }
 
 
 
 
-int_fast8_t save_fits_cli()
+errno_t save_fits_cli()
 {
     char fname[1000];
 
@@ -130,22 +143,37 @@ int_fast8_t save_fits_cli()
         break;
     }
 
-    return 0;
+    return CLICMD_SUCCESS;
 }
 
 
 
 
 
-int_fast8_t break_cube_cli()
+errno_t break_cube_cli()
 {
+    if ( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            == 0 )
+    {
+        break_cube( data.cmdargtoken[1].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else {
+        return CLICMD_INVALID_ARG;
+    }
+
+    return CLICMD_SUCCESS;
+
     break_cube( data.cmdargtoken[1].val.string);
 
-    return 0;
+    return CLICMD_SUCCESS;
 }
 
 
-int_fast8_t images_to_cube_cli()
+
+errno_t images_to_cube_cli()
 {
     /*  if(data.cmdargtoken[1].type != 4)
       {
@@ -161,7 +189,7 @@ int_fast8_t images_to_cube_cli()
 
     images_to_cube(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.string);
 
-    return 0;
+    return CLICMD_SUCCESS;
 }
 
 
@@ -186,7 +214,7 @@ void __attribute__ ((constructor)) libinit_COREMOD_iofits()
 
 
 
-int init_COREMOD_iofits() {
+errno_t init_COREMOD_iofits() {
 
 
     /* =============================================================================================== */
@@ -274,7 +302,7 @@ int init_COREMOD_iofits() {
 
     // add atexit functions here
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 
@@ -376,7 +404,8 @@ int read_keyword(
     const char* restrict file_name,
     const char* restrict KEYWORD,
     char* restrict content
-) {
+)
+{
     fitsfile *fptr;         /* FITS file pointer, defined in fitsio.h */
     int exists = 0;
     int n;
@@ -417,10 +446,11 @@ int read_keyword(
 
 
 
-int read_keyword_alone(
+errno_t read_keyword_alone(
     const char* restrict file_name,
     const char* restrict KEYWORD
-) {
+)
+{
     char *content = (char *) malloc(sizeof(char) * SBUFFERSIZE);
 
     if(content == NULL) {
@@ -434,7 +464,7 @@ int read_keyword_alone(
     free(content);
     content = NULL;
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -504,24 +534,25 @@ int data_type_code(
 /// errcode = 1: print error, continue
 /// errcode = 2: exit program at error
 /// errcode = 3: do not show error message, try = 1, no wait
-long load_fits(
+imageID load_fits(
     const char* restrict file_name,
     const char* restrict ID_name,
-    int errcode
-) {
+    int         errcode
+)
+{
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
-    int nulval, anynul;
-    long bitpixl = 0;
-    char errstr[SBUFFERSIZE];
-    long naxis = 0;
-    uint32_t naxes[3];
-    long ID = -1;
-    double bscale;
-    double bzero;
+    int       nulval, anynul;
+    long      bitpixl = 0;
+//    char      errstr[SBUFFERSIZE];
+    long      naxis = 0;
+    uint32_t  naxes[3];
+    imageID   ID;
+    double    bscale;
+    double    bzero;
     unsigned char *barray = NULL;
-    long *larray = NULL;
-    unsigned short *sarray = NULL;
-    long NDR = 1; /* non-destructive reads */
+    long     *larray = NULL;
+//    unsigned short *sarray = NULL;
+//    long      NDR = 1; /* non-destructive reads */
 
 
     int fileOK;
@@ -892,13 +923,14 @@ long load_fits(
 
 /* saves an image in a double format */
 
-int save_db_fits(
+errno_t save_db_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+) 
+{
     fitsfile *fptr;
     long nelements;
-    long ID;
+    imageID ID;
     char file_name1[SBUFFERSIZE];
     int n;
 
@@ -1065,7 +1097,7 @@ int save_db_fits(
         printf("image does not exist in memory\n");
     }
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -1074,18 +1106,19 @@ int save_db_fits(
 
 /* saves an image in a float format */
 
-int save_fl_fits(
+errno_t save_fl_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+) 
+{
     fitsfile *fptr;
-    long  naxis, nelements;
-    float *array = NULL;
-    long ID;
-    long ii;
-    long i;
-    char file_name1[SBUFFERSIZE];
-    int n;
+    long      naxis, nelements;
+    float    *array = NULL;
+    imageID   ID;
+    long      ii;
+    long      i;
+    char      file_name1[SBUFFERSIZE];
+    int       n;
 
     if((data.overwrite == 1) && (file_name[0] != '!') && (file_exists(file_name) == 1)) {
         n = snprintf(errormessage_iofits, SBUFFERSIZE, "automatic overwrite on file \"%s\"\n", file_name);
@@ -1246,7 +1279,7 @@ int save_fl_fits(
         fprintf(stderr, "%c[%d;%dm image \"%s\" does not exist in memory %c[%d;m\n", (char) 27, 1, 31, ID_name, (char) 27, 0);
     }
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -1255,7 +1288,7 @@ int save_fl_fits(
 
 /* saves an image in a short int format */
 
-int save_sh16_fits(
+errno_t save_sh16_fits(
     const char* restrict ID_name,
     const char* restrict file_name
 ) {
@@ -1264,7 +1297,7 @@ int save_sh16_fits(
     uint32_t naxes[3];
     long naxesl[3];
     int16_t *array = NULL;
-    long ID;
+    imageID ID;
     long ii;
     long i;
     uint8_t datatype;
@@ -1468,16 +1501,17 @@ int save_sh16_fits(
 
 /* saves an image in a unsigned short int format */
 
-int save_ush16_fits(
+errno_t save_ush16_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+) 
+{
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
     uint32_t naxes[3];
     long naxesl[3];
     uint16_t *array = NULL;
-    long ID;
+    imageID ID;
     long ii;
     long i;
     uint8_t datatype;
@@ -1656,7 +1690,7 @@ int save_ush16_fits(
                 (char) 27, 1, 31, ID_name, (char) 27, 0);
     }
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -1670,16 +1704,17 @@ int save_ush16_fits(
 
 /* saves an image in a int format (32 bit) */
 
-int save_int32_fits(
+errno_t save_int32_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+) 
+{
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
     uint32_t naxes[3];
     long naxesl[3];
     int32_t *array = NULL;
-    long ID;
+    imageID ID;
     long ii;
     long i;
     uint8_t datatype;
@@ -1883,16 +1918,17 @@ int save_int32_fits(
 
 /* saves an image in a unsigned short int format */
 
-int save_uint32_fits(
+errno_t save_uint32_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+) 
+{
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
     uint32_t naxes[3];
     long naxesl[3];
     uint32_t *array = NULL;
-    long ID;
+    imageID ID;
     long ii;
     long i;
     uint8_t datatype;
@@ -2071,7 +2107,7 @@ int save_uint32_fits(
                 (char) 27, 1, 31, ID_name, (char) 27, 0);
     }
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -2081,16 +2117,17 @@ int save_uint32_fits(
 
 /* saves an image in a int format (64 bit) */
 
-int save_int64_fits(
+errno_t save_int64_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+) 
+{
     fitsfile *fptr;
     long  fpixel = 1, naxis, nelements;
     uint32_t naxes[3];
     long naxesl[3];
     int64_t *array = NULL;
-    long ID;
+    imageID ID;
     long ii;
     long i;
     uint8_t datatype;
@@ -2292,48 +2329,11 @@ int save_int64_fits(
 
 
 
-
-/*
-    LONG_IMG      =  32   (32-bit integer pixels)
-    LONGLONG_IMG  =  64   (64-bit integer pixels)
-    FLOAT_IMG     = -32   (32-bit floating point pixels)
-    DOUBLE_IMG    = -64   (64-bit floating point pixels)
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-int save_fits(
+errno_t save_fits(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
+)
+{
     char savename[1000];
     if(file_name[0] == '!') {
         strcpy(savename, file_name + 1);    // avoid the leading '!'
@@ -2353,11 +2353,12 @@ int save_fits(
  * (2) change file name
  *
  */
-int save_fits_atomic(
+errno_t save_fits_atomic(
     const char* restrict ID_name,
     const char* restrict file_name
-) {
-    long ID;
+) 
+{
+    imageID ID;
     uint8_t datatype;
     char fnametmp[1000];
     char savename[1000];
@@ -2432,14 +2433,15 @@ int save_fits_atomic(
         }
     }
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 
 
-int saveall_fits(
+errno_t saveall_fits(
     const char* restrict savedirname
-) {
+) 
+{
     long i;
     char fname[1000];
     char command[1000];
@@ -2463,7 +2465,8 @@ int saveall_fits(
 
             save_fits(data.image[i].name, fname);
         }
-    return(0);
+        
+    return RETURN_SUCCESS;
 }
 
 
@@ -2484,10 +2487,11 @@ int saveall_fits(
 /* =============================================================================================== */
 
 
-int break_cube(
+imageID break_cube(
     const char* restrict ID_name
-) {
-    long ID;
+) 
+{
+    imageID ID;
     uint32_t naxes[3];
     long ii, jj, kk;
     char framename[SBUFFERSIZE];
@@ -2518,18 +2522,20 @@ int break_cube(
             }
     }
 
-    return(0);
+    return ID;
 }
 
 
 
 
-int images_to_cube(
+errno_t images_to_cube(
     const char* restrict img_name,
     long                 nbframes,
     const char* restrict cube_name
-) {
-    long ID, ID1;
+) 
+{
+    imageID ID;
+    imageID ID1;
     long frame;
     char imname[SBUFFERSIZE];
     uint32_t naxes[2];
@@ -2595,7 +2601,7 @@ int images_to_cube(
         fflush(stdout);
     }
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -2606,13 +2612,14 @@ int images_to_cube(
 // High-level load to stream
 
 
-long COREMOD_IOFITS_LoadMemStream(
+imageID COREMOD_IOFITS_LoadMemStream(
     const char *sname,
-    uint64_t *streamflag,
-    uint32_t *imLOC
-) {
-    long ID = -1;
-    int updateSHAREMEM = 0; // toggles to 1 if updating shared mem
+    uint64_t   *streamflag,
+    uint32_t   *imLOC
+) 
+{
+    imageID ID = 0;
+    __attribute__((unused)) int updateSHAREMEM = 0; // toggles to 1 if updating shared mem
     int updateCONFFITS = 0; // toggles to 1 if updating CONF FITS
 
 
@@ -2980,7 +2987,7 @@ long COREMOD_IOFITS_LoadMemStream(
                         ID = load_fits(streamfname, sname, 1);
                         if(ID != -1) {
                             *imLOC = STREAM_LOAD_SOURCE_CONFNAME;
-                            updateCONFFITS;
+                            updateCONFFITS = 1;
                             if(MEMLOADREPORT == 1) {
                                 sprintf(msg, "%s SUCCESS CONFNAME", sname);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
@@ -3030,7 +3037,7 @@ long COREMOD_IOFITS_LoadMemStream(
     COREMOD_IOFITS_PRINTDEBUG;
 
 
-	if(*imLOC == STREAM_LOAD_SOURCE_EXITFAILURE)
+	if( (int) *imLOC == STREAM_LOAD_SOURCE_EXITFAILURE)
 		*imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
 
     if(MEMLOADREPORT == 1) {
