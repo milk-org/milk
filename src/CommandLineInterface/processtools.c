@@ -16,6 +16,10 @@
 #endif
 
 
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
 
 static int CTRLscreenExitLine = 0; // for debugging
 
