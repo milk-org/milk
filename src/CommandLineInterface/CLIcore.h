@@ -8,7 +8,9 @@
  * 
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 
 #ifndef _CLICORE_H
@@ -119,6 +121,18 @@ write_process_log(); \
 
 
 
+// *************************** FUNCTION RETURN VALUE *********************************************
+// For function returning type errno_t (= int) 
+//
+#define RETURN_SUCCESS        0 
+#define RETURN_FAILURE       1   // generic error code
+#define RETURN_MISSINGFILE   2  
+
+
+#define MAX_NB_FRAMENAME_CHAR 500
+#define MAX_NB_EXCLUSIONS 40
+
+#ifndef STANDALONE
 
 
 
@@ -380,17 +394,6 @@ extern DATA data;
 
 
 
-// *************************** FUNCTION RETURN VALUE *********************************************
-// For function returning type errno_t (= int) 
-//
-#define RETURN_SUCCESS        0 
-#define RETURN_FAILURE       1   // generic error code
-#define RETURN_MISSINGFILE   2  
-
-
-#define MAX_NB_FRAMENAME_CHAR 500
-#define MAX_NB_EXCLUSIONS 40
-
 errno_t set_signal_catch();
 
 void sig_handler(int signo);
@@ -414,6 +417,7 @@ uint_fast16_t RegisterCLIcommand(
 errno_t runCLItest(int argc, char *argv[], char *promptstring);
 errno_t runCLI(int argc, char *argv[], char *promptstring);
 
+#endif // ifndef STANDALONE
 
 errno_t write_process_log();
 

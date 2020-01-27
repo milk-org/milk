@@ -59,11 +59,12 @@ typedef int errno_t;
 
 #include <pthread.h>
 
+#include <CLIcore.h> // useful for imageID
+
 #ifdef STANDALONE
 #include "standalone_dependencies.h"
 #else
 #include <00CORE/00CORE.h>
-#include <CommandLineInterface/CLIcore.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "info/info.h"
