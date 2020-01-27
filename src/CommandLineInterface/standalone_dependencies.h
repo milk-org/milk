@@ -46,6 +46,8 @@ typedef int errno_t;
 typedef long imageID;
 typedef long variableID;
 
+#define DEBUG_TRACEPOINT(...)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
