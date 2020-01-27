@@ -42,7 +42,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern int C_ERRNO;			// C errno (from errno.h)
 
 struct timespec info_time_diff(struct timespec start, struct timespec end);
 int print_header(const char *str, char c);
