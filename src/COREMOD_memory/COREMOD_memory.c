@@ -13,11 +13,6 @@
 
 
 
-
-#define COREMOD_MEMORY_LOGDEBUG 1
-
-
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                        HEADER FILES                                             */
@@ -1369,7 +1364,7 @@ errno_t COREMOD_MEMORY_image_NETWORKreceive_cli()
 errno_t COREMOD_MEMORY_PixMapDecode_U_cli()
 {
     if ( 0
-    + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(1, CLIARG_IMG)
             + CLI_checkarg(2, CLIARG_LONG)
             + CLI_checkarg(3, CLIARG_LONG)
             + CLI_checkarg(4, CLIARG_STR_NOT_IMG)
@@ -2450,15 +2445,14 @@ errno_t delete_image_ID(
     {
         data.image[ID].used = 0;
 
-        for(s=0; s<data.image[ID].md[0].sem; s++)
-            sem_close(data.image[ID].semptr[s]);
-
-        data.image[ID].md[0].sem = 0;
-        free(data.image[ID].semptr);
-        data.image[ID].semptr = NULL;
-
         if(data.image[ID].md[0].shared == 1)
         {
+            for(s=0; s<data.image[ID].md[0].sem; s++)
+                sem_close(data.image[ID].semptr[s]);
+
+            free(data.image[ID].semptr);
+            data.image[ID].semptr = NULL;
+
 
             if(data.image[ID].semlog!=NULL)
             {
@@ -2470,24 +2464,32 @@ errno_t delete_image_ID(
                 printf("unmapping ID %ld : %p  %ld\n", ID, data.image[ID].md, data.image[ID].memsize);
                 perror("Error un-mmapping the file");
             }
+
             close(data.image[ID].shmfd);
+            data.image[ID].shmfd = -1;
+
             data.image[ID].md = NULL;
             data.image[ID].kw = NULL;
-            data.image[ID].shmfd = -1;
+
             data.image[ID].memsize = 0;
 
-            sprintf(command, "rm /dev/shm/sem.%s.%s_sem*", data.shmsemdirname, imname);
+            if(data.rmSHMfile == 1 ) { // remove files from disk
+                sprintf(command,
+                        "rm /dev/shm/sem.%s.%s_sem*",
+                        data.shmsemdirname, imname);
 
-            if(system(command) != 0) {
-                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
-            }
-            sprintf(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
-            remove(fname);
+                if(system(command) != 0) {
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                }
+                sprintf(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
+                remove(fname);
 
-            sprintf(command, "rm %s/%s.im.shm", data.shmdir, imname);
-            if(system(command) != 0) {
-                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                sprintf(command, "rm %s/%s.im.shm", data.shmdir, imname);
+                if(system(command) != 0) {
+                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                }
             }
+
         }
         else
         {
@@ -2573,8 +2575,10 @@ errno_t delete_image_ID(
         //      data.image[ID].md[0].last_access = 0;
     }
     else
-        fprintf(stderr,"%c[%d;%dm WARNING: image %s does not exist [ %s  %s  %d ] %c[%d;m\n", (char) 27, 1, 31, imname, __FILE__, __func__, __LINE__, (char) 27, 0);
-
+    {
+        fprintf(stderr,"%c[%d;%dm WARNING: image %s does not exist [ %s  %s  %d ] %c[%d;m\n",
+                (char) 27, 1, 31, imname, __FILE__, __func__, __LINE__, (char) 27, 0);
+    }
 
     if(MEM_MONITOR == 1)
         list_image_ID_ncurses();
@@ -2633,12 +2637,12 @@ errno_t clearall()
 
     for(ID=0; ID<data.NB_MAX_IMAGE; ID++)
     {
-        if(data.image[ID].used==1)
+        if(data.image[ID].used == 1)
             delete_image_ID(data.image[ID].name);
     }
     for(ID=0; ID<data.NB_MAX_VARIABLE; ID++)
     {
-        if(data.variable[ID].used==1)
+        if(data.variable[ID].used == 1)
             delete_variable_ID(data.variable[ID].name);
     }
 
@@ -5825,7 +5829,7 @@ imageID COREMOD_MEMORY_streamDiff(
 	uint32_t   xysize;
 	long       ii;
 	uint32_t  *arraysize;
-	long long  cnt;
+	unsigned long long  cnt;
 	imageID    IDmask; // optional 
 	
 	ID0 = image_ID(IDstream0_name);
@@ -5855,7 +5859,7 @@ imageID COREMOD_MEMORY_streamDiff(
 		// has new frame arrived ?
 		if(data.image[ID0].md[0].sem==0)
         {
-            while(cnt==data.image[ID0].md[0].cnt0) // test if new frame exists
+            while( cnt == data.image[ID0].md[0].cnt0 ) // test if new frame exists
                 usleep(5);
             cnt = data.image[ID0].md[0].cnt0;
         }
@@ -5915,7 +5919,7 @@ imageID COREMOD_MEMORY_streamPaste(
     long        ii;
     long        jj;
     uint32_t   *arraysize;
-    long long   cnt;
+    unsigned long long   cnt;
     uint8_t     datatype;
     int         FrameIndex;
 
@@ -6103,7 +6107,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
     uint32_t   xysize;
     long       ii;
     uint32_t  *arraysize;
-    long long  cnt;
+    unsigned long long  cnt;
     uint8_t    datatype;
     uint8_t    datatypeout;
 
@@ -6436,14 +6440,14 @@ imageID COREMOD_MEMORY_image_streamupdateloop(
     long        offsetus,
     const char *IDsync_name,
     int         semtrig,
-    int         timingmode
+    __attribute__((unused)) int         timingmode
 )
 {
     imageID   *IDin;
     long       cubeindex;
     char       imname[200];
     long       IDsync;
-    long long  cntsync;
+    unsigned long long  cntsync;
     long       pcnt = 0;
     long       offsetfr = 0;
     long       offsetfrcnt = 0;
@@ -6786,7 +6790,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     long        offsetus,
     const char *IDsync_name,
     int         semtrig,
-    int         timingmode
+    __attribute__((unused)) int         timingmode
 )
 {
     imageID    IDin;
@@ -7409,7 +7413,7 @@ errno_t COREMOD_MEMORY_streamDelay(
     functionparameter_SetParamValue_STRING(&fps, ".outstreamname", IDout_name);
 
     functionparameter_SetParamValue_INT64(&fps, ".delayus", delayus);
-    functionparameter_SetParamValue_INT64(&fps, ".dtus", delayus);
+    functionparameter_SetParamValue_INT64(&fps, ".dtus", dtus);
 
     function_parameter_struct_disconnect(&fps);
 
@@ -7717,7 +7721,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     int        fds_client;
     int        flag = 1;
     int        result;
-    long long  cnt = -1;
+    unsigned long long  cnt = 0;
     long long  iter = 0;
     long       framesize; // pixel data only
     uint32_t   xsize, ysize;
@@ -8134,7 +8138,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
 imageID COREMOD_MEMORY_image_NETWORKreceive(
     int port,
-    int mode,
+    __attribute__((unused)) int mode,
     int RT_priority
 ) {
     struct sockaddr_in   sock_server;
@@ -8143,11 +8147,11 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     int                  fds_client;
     socklen_t            slen_client;
 
-    int     flag = 1;
-    long    recvsize;
-    int     result;
-    long    totsize = 0;
-    int     MAXPENDING = 5;
+    int             flag = 1;
+    long            recvsize;
+    int             result;
+    long            totsize = 0;
+    int             MAXPENDING = 5;
     
     
     IMAGE_METADATA *imgmd;
@@ -8724,7 +8728,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     uint32_t *sizearray;
     imageID   IDout_pixslice;
     long      ii;
-    long      cnt = 0;
+    unsigned long long      cnt = 0;
     //    int RT_priority = 80; //any number from 0-99
 
     //    struct sched_param schedpar;
@@ -9324,7 +9328,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
 )
 {
     // WAIT time. If no new frame during this time, save existing cube
-    int WaitSec = 5;
+    int        WaitSec = 5;
 
     imageID    ID;
     uint32_t   xsize;
@@ -9335,7 +9339,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     imageID    IDb0;
     imageID    IDb1;
     long       index = 0;
-    long       cnt = -1;
+    unsigned long long       cnt = 0;
     int        buffer;
     uint8_t    datatype;
     uint32_t  *imsizearray;

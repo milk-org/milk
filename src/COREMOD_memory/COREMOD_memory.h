@@ -5,8 +5,6 @@
  * Functions to handle images and streams
  *  
  * 
- * @bug No known bugs.
- * 
  */
 
 
@@ -28,7 +26,7 @@
 /*void print_sys_mem_info();*/
 
 
-
+typedef long imageID;
 
 /** data logging of shared memory image stream
  *
