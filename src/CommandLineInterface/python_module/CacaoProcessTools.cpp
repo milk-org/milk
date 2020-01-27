@@ -2,6 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <CLIcore.h> // useful for imageID
 #include "standalone_dependencies.h"
 #include "processtools.h"
 #include "streamCTRL.h"

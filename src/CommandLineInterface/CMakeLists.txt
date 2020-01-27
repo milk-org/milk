@@ -58,7 +58,7 @@ if(${python_build})
       add_subdirectory($ENV{OCTOPUS_ROOT}/tplib/ImageStreamIO ImageStreamIO)
     endif()
   endif()
-  target_compile_definitions(CLIcore PRIVATE STANDALONE)
+  target_compile_definitions(CLIcore PUBLIC STANDALONE)
   target_include_directories(
     CLIcore
     PUBLIC ${CUDA_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ImageStreamIO)
