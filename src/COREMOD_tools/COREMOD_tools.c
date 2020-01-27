@@ -5,8 +5,6 @@
  * Includes basic file I/O
  *
  *
- * @bug No known bugs.
- *
  */
 
 /* =============================================================================================== */
@@ -98,50 +96,73 @@ static FILE *fpgnuplot;
 // 4: existing image
 // 5: string
 
-int_fast8_t COREMOD_TOOLS_mvProcCPUset_cli()
+errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 {
-    if(CLI_checkarg(1,3)==0)
+    if( 0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            == 0 )
     {
-      COREMOD_TOOLS_mvProcCPUset(data.cmdargtoken[1].val.string);
-      return 0;
-    }
-  else
-    return 1;
-}
+        COREMOD_TOOLS_mvProcCPUset(
+            data.cmdargtoken[1].val.string);
 
-
-int_fast8_t write_flot_file_cli()
-{
-  if(CLI_checkarg(1,3)+CLI_checkarg(2,1)==0)
-    {
-      write_float_file(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf);
-      return 0;
-    }
-  else
-    return 1;
-}
-
-
-int_fast8_t COREMOD_TOOLS_imgdisplay3D_cli()
-{
- if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
-    {
-	COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
-      return 0;
-    }
-  else
-    return 1;
-}
-
-int_fast8_t COREMOD_TOOLS_statusStat_cli()
-{
-    if(CLI_checkarg(1,4)+CLI_checkarg(2,2)==0)
-    {
-        COREMOD_TOOLS_statusStat(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
-        return 0;
+        return CLICMD_SUCCESS;
     }
     else
-        return 1;
+        return CLICMD_INVALID_ARG;
+}
+
+
+errno_t write_flot_file_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            == 0 )
+    {
+        write_float_file(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+        return CLICMD_INVALID_ARG;
+}
+
+
+errno_t COREMOD_TOOLS_imgdisplay3D_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0 )
+    {
+        COREMOD_TOOLS_imgdisplay3D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+        return CLICMD_INVALID_ARG;
+}
+
+
+errno_t COREMOD_TOOLS_statusStat_cli()
+{
+    if( 0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0 )
+    {
+        COREMOD_TOOLS_statusStat(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+        return CLICMD_INVALID_ARG;
 }
 
 
@@ -230,21 +251,24 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 {
     int pid;
     char command[200];
-	int r;
 
     pid = getpid();
     
     #ifndef __MACH__
     
-    r = seteuid(data.euid); //This goes up to maximum privileges
-
+    if( seteuid(data.euid) != 0 ) { //This goes up to maximum privileges
+		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+	}        
+    
     sprintf(command, "sudo -n cset proc -m -p %d -t %s\n", pid, csetname);
 	printf("Executing command: %s\n", command);
 
     if(system(command) != 0)
         printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
     
-    r = seteuid(data.ruid);//Go back to normal privileges
+    if( seteuid(data.ruid) != 0 ) { //Go back to normal privileges
+		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+	}
 	#endif
 
     return(0);
@@ -608,8 +632,8 @@ void qs2l(
         }
     } while(i<=j);
 
-    if(left<j) qs2l(array,array1,left,j);
-    if(i<right) qs2l(array,array1,i,right);
+    if(left<j) qs2l(array, array1, left, j);
+    if(i<right) qs2l(array, array1, i, right);
 }
 
 
@@ -648,8 +672,8 @@ void qs2ul(
         }
     } while(i<=j);
 
-    if(left<j) qs2l(array,array1,left,j);
-    if(i<right) qs2l(array,array1,i,right);
+    if(left<j) qs2ul(array, array1, left, j);
+    if(i<right) qs2ul(array, array1, i, right);
 }
 
 
@@ -901,10 +925,18 @@ void quick_sort3ulul_double(double *array, unsigned long *array1, unsigned long 
 
 
 
-int lin_regress(double *a, double *b, double *Xi2, double *x, double *y, double *sig, unsigned int nb_points)
+errno_t lin_regress(
+    double *a,
+    double *b,
+    double *Xi2,
+    double *x,
+    double *y,
+    double *sig,
+    unsigned int nb_points
+)
 {
     double S,Sx,Sy,Sxx,Sxy,Syy;
-    int i;
+    unsigned int i;
     double delta;
 
     S = 0;
@@ -913,6 +945,7 @@ int lin_regress(double *a, double *b, double *Xi2, double *x, double *y, double 
     Sxx = 0;
     Syy = 0;
     Sxy = 0;
+    
     for(i=0; i<nb_points; i++)
     {
         S += 1.0/sig[i]/sig[i];
@@ -928,12 +961,18 @@ int lin_regress(double *a, double *b, double *Xi2, double *x, double *y, double 
     *b = (S*Sxy-Sx*Sy)/delta;
     *Xi2 = Syy-2*(*a)*Sy-2*(*a)*(*b)*Sx+(*a)*(*a)*S+2*(*a)*(*b)*Sx-(*b)*(*b)*Sxx;
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
-int replace_char(char *content, char cin, char cout)
+
+
+int replace_char(
+    char *content,
+    char cin,
+    char cout
+)
 {
-    long i;
+    unsigned long i;
 
     for(i=0; i<strlen(content); i++)
         if(content[i]==cin)
@@ -943,12 +982,15 @@ int replace_char(char *content, char cin, char cout)
 }
 
 
-int read_config_parameter_exists(const char *config_file, const char *keyword)
+
+int read_config_parameter_exists(
+    const char *config_file,
+    const char *keyword
+)
 {
     FILE *fp;
     char line[1000];
     char keyw[200];
-    char cont[200];
     int read;
 
     read = 0;
@@ -977,7 +1019,13 @@ int read_config_parameter_exists(const char *config_file, const char *keyword)
 }
 
 
-int read_config_parameter(const char *config_file, const char *keyword, char *content)
+
+
+int read_config_parameter(
+    const char *config_file,
+    const char *keyword,
+    char *content
+)
 {
     FILE *fp;
     char line[1000];
@@ -1016,6 +1064,9 @@ int read_config_parameter(const char *config_file, const char *keyword, char *co
 
     return(read);
 }
+
+
+
 
 float read_config_parameter_float(const char *config_file, const char *keyword)
 {
@@ -1110,7 +1161,12 @@ FILE* open_file_r(const char *filename)
     return(fp);
 }
 
-int write_1D_array(double *array, long nbpoints, const char *filename)
+
+errno_t write_1D_array(
+    double *array,
+    long nbpoints,
+    const char *filename
+)
 {
     FILE *fp;
     long ii;
@@ -1120,10 +1176,16 @@ int write_1D_array(double *array, long nbpoints, const char *filename)
         fprintf(fp,"%ld\t%f\n",ii,array[ii]);
     fclose(fp);
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
-int read_1D_array(double *array, long nbpoints, const char *filename)
+
+
+errno_t read_1D_array(
+    double *array,
+    long nbpoints,
+    const char *filename
+)
 {
     FILE *fp;
     long ii;
@@ -1140,21 +1202,26 @@ int read_1D_array(double *array, long nbpoints, const char *filename)
     }
     fclose(fp);
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
 
 /* test point */
-int tp(const char *word)
+errno_t tp(
+    const char *word
+)
 {
     printf("---- Test point %s ----\n",word);
     fflush(stdout);
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
-int read_int_file(const char *fname)
+
+int read_int_file(
+    const char *fname
+)
 {
     int value;
     FILE *fp;
@@ -1176,7 +1243,12 @@ int read_int_file(const char *fname)
     return(value);
 }
 
-int write_int_file(const char *fname, int value)
+
+
+errno_t write_int_file(
+    const char *fname,
+    int         value
+)
 {
     FILE *fp;
 
@@ -1190,10 +1262,15 @@ int write_int_file(const char *fname, int value)
     fprintf(fp,"%d\n",value);
     fclose(fp);
 
-    return(value);
+    return RETURN_SUCCESS;
 }
 
-int write_float_file(const char *fname, float value)
+
+
+errno_t write_float_file(
+    const char *fname,
+    float       value
+)
 {
     FILE *fp;
     int mode = 0; // default, create single file
@@ -1225,15 +1302,18 @@ int write_float_file(const char *fname, float value)
         fclose(fp);
     }
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
 // displays 2D image in 3D using gnuplot
 //
-int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
+errno_t COREMOD_TOOLS_imgdisplay3D(
+    const char *IDname,
+    long        step
+)
 {
-    char ID;
+    imageID ID;
     long xsize, ysize;
     long ii, jj;
     char cmd[512];
@@ -1279,7 +1359,7 @@ int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fclose(fp);
 
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -1288,16 +1368,19 @@ int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
 //
 // watch shared memory status image and perform timing statistics
 //
-long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
+imageID COREMOD_TOOLS_statusStat(
+    const char *IDstat_name,
+    long        indexmax
+)
 {
-    long IDout;
-    int RT_priority = 91; //any number from 0-99
-    struct sched_param schedpar;
-    float usec0 = 50.0;
-    float usec1 = 150.0;
+    imageID  IDout;
+    int      RT_priority = 91; //any number from 0-99
+    struct   sched_param schedpar;
+    float    usec0 = 50.0;
+    float    usec1 = 150.0;
     long long k;
     long long NBkiter = 2000000000;
-    long IDstat;
+    imageID  IDstat;
 
     unsigned short st;
 
@@ -1335,8 +1418,8 @@ long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     clock_gettime(CLOCK_REALTIME, &t1);
     for(k=0; k<NBkiter; k++)
     {
-	    double tdiffv;
-		
+        double tdiffv;
+
         usleep((long) (usec0+usec1*(1.0*k/NBkiter)));
         st = data.image[IDstat].array.UI16[0];
         if(st<indexmax)
@@ -1351,7 +1434,7 @@ long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
         {
             tdiffv1 += tdisplay;
             printf("\n");
-            printf("============== %10lld  %d  ==================\n", k , st);
+            printf("============== %10lld  %d  ==================\n", k, st);
             printf("\n");
             cnttot = 0;
             for(st=0; st<indexmax; st++)
@@ -1368,7 +1451,6 @@ long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
         printf("STATUS  %5d    %10ld\n", st, data.image[IDout].array.SI64[st]);
 
     printf("\n");
-
 
 
     return(IDout);

@@ -40,7 +40,17 @@ void quick_sort2ul_double(double *array, unsigned long *array1, unsigned long co
 void quick_sort3ll_double(double *array, long *array1, long *array2, unsigned long count);
 void quick_sort3ulul_double(double *array, unsigned long *array1, unsigned long *array2, unsigned long count);
 
-int lin_regress(double *a, double *b, double *Xi2, double *x, double *y, double *sig, unsigned int nb_points);
+
+errno_t lin_regress(
+    double *a,
+    double *b,
+    double *Xi2,
+    double *x,
+    double *y,
+    double *sig,
+    unsigned int nb_points
+);
+
 
 int replace_char(char *content, char cin, char cout);
 
@@ -60,23 +70,50 @@ FILE* open_file_w(const char *filename);
 
 FILE* open_file_r(const char *filename);
 
-int write_1D_array(double *array, long nbpoints, const char *filename);
 
-int read_1D_array(double *array, long nbpoints, const char *filename);
-
-int tp(const char *word);
-
-int read_int_file(const char *fname);
-
-int write_int_file(const char *fname, int value);
-
-int write_float_file(const char *fname, float value);
+errno_t write_1D_array(
+    double *array,
+    long nbpoints,
+    const char *filename
+);
 
 
-int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
+errno_t read_1D_array(
+    double *array,
+    long nbpoints,
+    const char *filename
+);
 
-long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);
 
+errno_t tp(
+    const char *word
+);
+
+
+int read_int_file(
+    const char *fname
+);
+
+errno_t write_int_file(
+    const char *fname,
+    int         value
+);
+
+
+errno_t write_float_file(
+    const char *fname,
+    float       value
+);
+
+errno_t COREMOD_TOOLS_imgdisplay3D(
+    const char *IDname,
+    long        step
+);
+
+imageID COREMOD_TOOLS_statusStat(
+    const char *IDstat_name,
+    long        indexmax
+);
 
 #endif
 
