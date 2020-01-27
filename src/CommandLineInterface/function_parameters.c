@@ -18,6 +18,10 @@
 /* =============================================================================================== */
 
 
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
