@@ -16,6 +16,8 @@ long i;
 %}
 
 %option noyywrap
+%option nounput
+%option noinput
 
 alpha   [A-Za-z?]
 digit     [0-9]
@@ -189,7 +191,7 @@ if(image_ID(yytext)!=-1) {if(data.Debug>0){printf("THIS IS AN IMAGE\n");} return
 if(data.cmdNBarg==0)
 {
 data.cmdindex = -1;
- for(i=0;i<data.NBcmd;i++)
+ for(i=0;i<(long) data.NBcmd;i++)
   { 
    if(!strcmp(yytext, data.cmd[i].key))
     {
