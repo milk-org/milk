@@ -1398,7 +1398,8 @@ errno_t streamCTRL_CTRLscreen() {
 
                 if(DisplayFlag == 1) {
                     if(streaminfo[sindex].SymLink == 1) {
-                        char namestring[200];
+                        char namestring[stringmaxlen];
+
                         snprintf(namestring, stringmaxlen, "%s->%s", streaminfo[sindex].sname, streaminfo[sindex].linkname);
 
                         attron(COLOR_PAIR(5));
