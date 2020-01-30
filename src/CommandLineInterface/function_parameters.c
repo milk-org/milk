@@ -4518,9 +4518,10 @@ errno_t functionparameter_RUNstart(
         }
 
         for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
-            char tmpstring[20];
+            int tmpstrlen = 20;
+            char tmpstring[tmpstrlen];
 
-            if (snprintf(tmpstring, stringmaxlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]) < 0 ) {
+            if (snprintf(tmpstring, tmpstrlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]) < 0 ) {
                 printERROR(__FILE__, __func__, __LINE__, "snprintf error");
             }
 
@@ -4555,9 +4556,10 @@ errno_t functionparameter_RUNstop(
     }
 
     for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
-        char tmpstring[20];
+        int tmpstrlen = 20;
+        char tmpstring[tmpstrlen];
 
-        sprintf(tmpstring, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
+        snprintf(tmpstring, tmpstrlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]);
         strcat(command, tmpstring);
     }
     if(system(command) != 0) {
@@ -4616,9 +4618,10 @@ errno_t functionparameter_CONFstart(
     }
 
     for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
-        char tmpstring[20];
+        int tmpstrlen = 20;
+        char tmpstring[tmpstrlen];
 
-        if (snprintf(tmpstring, stringmaxlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel])< 0 ) {
+        if (snprintf(tmpstring, tmpstrlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel])< 0 ) {
             printERROR(__FILE__, __func__, __LINE__, "snprintf error");
         }
 
