@@ -145,7 +145,7 @@ write_process_log(); \
 
 #define CLICMD_SUCCESS          0
 #define CLICMD_INVALID_ARG      1
-
+#define CLICMD_ERROR            2 
 
 
 // declare a boolean type "BOOL" 
