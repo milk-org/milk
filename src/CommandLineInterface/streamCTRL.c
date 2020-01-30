@@ -404,7 +404,7 @@ void *streamCTRL_scan(
                     // is file sym link ?
                     struct stat buf;
                     int retv;
-                    char fullname[200];
+                    char fullname[stringmaxlen];
 
 
                     if(streaminfoproc->WriteFlistToFile == 1)
@@ -423,9 +423,9 @@ void *streamCTRL_scan(
 
                     if (S_ISLNK(buf.st_mode)) // resolve link name
                     {
-                        char fullname[200];
+                        char fullname[stringmaxlen];
                         char *linknamefull; //[200];
-                        char linkname[200];
+                        char linkname[stringmaxlen];
                         int pathOK = 1;
 
 
@@ -1398,7 +1398,8 @@ errno_t streamCTRL_CTRLscreen() {
 
                 if(DisplayFlag == 1) {
                     if(streaminfo[sindex].SymLink == 1) {
-                        char namestring[200];
+                        char namestring[stringmaxlen];
+
                         snprintf(namestring, stringmaxlen, "%s->%s", streaminfo[sindex].sname, streaminfo[sindex].linkname);
 
                         attron(COLOR_PAIR(5));
