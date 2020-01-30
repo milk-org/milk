@@ -454,8 +454,8 @@ void *streamCTRL_scan(
                             strcpy(linkname, basename(linknamefull));
 
                             int lOK = 1;
-                            int ii = 0;
-                            while((lOK == 1)&&(ii<strlen(linkname)))
+                            unsigned int ii = 0;
+                            while((lOK == 1) && (ii<strlen(linkname)))
                             {
                                 if(linkname[ii] == '.')
                                 {
@@ -708,9 +708,6 @@ errno_t streamCTRL_CTRLscreen() {
     long doffsetindex = 0; // offset index if more entries than can be displayed
 
     long ssindex[streamNBID_MAX]; // sorted index array
-
-	char command[500];
-	char fname[500];
 
     float frequ = 32.0; // Hz
     char  monstring[200];
@@ -1412,7 +1409,7 @@ errno_t streamCTRL_CTRLscreen() {
                         printw("%-*.*s", DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
                     }
 
-                    if(strlen(streaminfo[sindex].sname) > DispName_NBchar) {
+                    if((int) strlen(streaminfo[sindex].sname) > DispName_NBchar) {
                         attron(COLOR_PAIR(9));
                         printw("+");
                         attroff(COLOR_PAIR(9));
