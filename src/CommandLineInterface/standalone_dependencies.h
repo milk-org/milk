@@ -39,6 +39,15 @@
 #include <errno.h>
 #include "ImageStreamIO.h"
 
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
+typedef long imageID;
+typedef long variableID;
+
+#define DEBUG_TRACEPOINT(...)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -59,7 +59,6 @@ typedef int errno_t;
 #include "standalone_dependencies.h"
 #endif
 
-#include "CLIcore.h"
 #include "function_parameters.h"
 
 
