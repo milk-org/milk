@@ -590,7 +590,15 @@ extern "C" {
 #endif
 
 errno_t function_parameter_struct_create    (int NBparamMAX, const char *name);
-long    function_parameter_struct_connect   (const char *name, FUNCTION_PARAMETER_STRUCT *fps, int fpsconnectmode);
+
+
+long    function_parameter_struct_connect   (
+    const char                *name,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int                        fpsconnectmode
+);
+
+
 int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 
