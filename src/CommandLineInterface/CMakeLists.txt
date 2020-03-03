@@ -117,10 +117,7 @@ install(PROGRAMS scripts/cr2tofits
               scripts/merge3DfitsTelemetry
               scripts/milkFits2shm
               scripts/milkStreamLink
-              scripts/runidle
               scripts/shmim2fits
-              scripts/shmimview
-              scripts/shmimview2
               scripts/tmuxkillall
               scripts/tmuxsessionname
               scripts/waitforfile
