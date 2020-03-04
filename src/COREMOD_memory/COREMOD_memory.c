@@ -4057,9 +4057,9 @@ errno_t init_list_image_ID_ncurses(
 
 errno_t list_image_ID_ncurses()
 {
-    char      str[500];
+    char      str[300];
     char      str1[500];
-    char      str2[500];
+    char      str2[512];
     long      i, j;
     long long tmp_long;
     char      type[STYPESIZE];
@@ -4119,7 +4119,7 @@ errno_t list_image_ID_ncurses()
 
             attron(COLOR_PAIR(3));
             n = 0;
-            
+
             if(datatype == _DATATYPE_UINT8)
                 n = snprintf(type,STYPESIZE,"UINT8  ");
             if(datatype == _DATATYPE_INT8)
@@ -4137,24 +4137,26 @@ errno_t list_image_ID_ncurses()
             if(datatype == _DATATYPE_INT64)
                 n = snprintf(type,STYPESIZE,"INT64  ");
             if(datatype == _DATATYPE_FLOAT)
-                n = snprintf(type,STYPESIZE,"FLOAT  ");            
+                n = snprintf(type,STYPESIZE,"FLOAT  ");
             if(datatype == _DATATYPE_DOUBLE)
                 n = snprintf(type,STYPESIZE,"DOUBLE ");
             if(datatype == _DATATYPE_COMPLEX_FLOAT)
-                n = snprintf(type,STYPESIZE,"CFLOAT ");            
+                n = snprintf(type,STYPESIZE,"CFLOAT ");
             if(datatype == _DATATYPE_COMPLEX_DOUBLE)
                 n = snprintf(type,STYPESIZE,"CDOUBLE");
-            
+
             printw("%7s ", type);
 
             attroff(COLOR_PAIR(3));
 
             if(n >= STYPESIZE)
-                printERROR(__FILE__,__func__,__LINE__,"Attempted to write string buffer with too many characters");
+                printERROR(__FILE__,__func__,__LINE__,
+                           "Attempted to write string buffer with too many characters");
 
             printw("%10ld Kb %6.2f   ", (long) (tmp_long/1024), (float) (100.0*tmp_long/sizeb));
 
-            timediff = (1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec) - (1.0*data.image[i].md[0].lastaccesstime.tv_sec + 0.000000001*data.image[i].md[0].lastaccesstime.tv_nsec);
+            timediff = (1.0*timenow.tv_sec + 0.000000001*timenow.tv_nsec) -
+                       (1.0*data.image[i].md[0].lastaccesstime.tv_sec + 0.000000001*data.image[i].md[0].lastaccesstime.tv_nsec);
 
             if(timediff<0.01)
             {
@@ -4195,25 +4197,25 @@ errno_t list_image_ID_ncurses()
     //attron(A_BOLD);
 
     sprintf(str, "%ld image(s)      ", compute_nb_image());
-    if(sizeGb>0){
+    if(sizeGb>0) {
         sprintf(str1, "%s %ld GB", str, (long) (sizeGb));
-		strcpy(str, str1);
-	}
-    
-    if(sizeMb>0){
+        strcpy(str, str1);
+    }
+
+    if(sizeMb>0) {
         sprintf(str1, "%s %ld MB", str, (long) (sizeMb));
-		strcpy(str, str1);
-	}
+        strcpy(str, str1);
+    }
 
-    if(sizeKb>0){
+    if(sizeKb>0) {
         sprintf(str1, "%s %ld KB", str, (long) (sizeKb));
-		strcpy(str, str1);
-	}
+        strcpy(str, str1);
+    }
 
-    if(sizeb>0){
+    if(sizeb>0) {
         sprintf(str1, "%s %ld B", str, (long) (sizeb));
-		strcpy(str, str1);
-	}
+        strcpy(str, str1);
+    }
 
     mvprintw(listim_scr_wrow-1, 0, "%s\n", str);
     //  attroff(A_BOLD);
@@ -4223,6 +4225,7 @@ errno_t list_image_ID_ncurses()
 
     return RETURN_SUCCESS;
 }
+
 
 
 
@@ -4254,7 +4257,7 @@ errno_t list_image_ID_ofp(
     int         n;
     unsigned long long sizeb, sizeKb, sizeMb, sizeGb;
     char        str[500];
-    char        str1[500];
+    char        str1[512];
     struct      timespec timenow;
     double      timediff;
     //struct mallinfo minfo;
@@ -6985,20 +6988,23 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 
     FPS_SETUP_INIT(fpsname, CMDmode);
 
-//    void *pNull = NULL;
+    void *pNull = NULL;
     uint64_t FPFLAG;
 
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
-//    long delayus_default[4] = { 1000, 1, 10000, 1000 };
-//    long dtus_default[4] = { 50, 1, 200, 50 };
-//    long fp_delayus = function_parameter_add_entry(&fps, ".delayus", "Delay [us]",    FPTYPE_INT64, FPFLAG, &delayus_default);
-//    long fp_dtus    = function_parameter_add_entry(&fps, ".dtus", "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
+    
+    long delayus_default[4] = { 1000, 1, 10000, 1000 };
+    long fp_delayus = function_parameter_add_entry(&fps, ".delayus", "Delay [us]",    FPTYPE_INT64, FPFLAG, &delayus_default);
+    (void) fp_delayus; // suppresses unused parameter compiler warning
+
+    long dtus_default[4] = { 50, 1, 200, 50 };
+    long fp_dtus    = function_parameter_add_entry(&fps, ".dtus", "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
+    (void) fp_dtus; // suppresses unused parameter compiler warning
 
 
-//    FPS_ADDPARAM_STREAM_IN  (stream_inname,        ".in_name",     "input stream");
-//    FPS_ADDPARAM_STREAM_OUT (stream_outname,       ".out_name",    "output stream");
-
+    FPS_ADDPARAM_STREAM_IN  (stream_inname,        ".in_name",     "input stream");
+    FPS_ADDPARAM_STREAM_OUT (stream_outname,       ".out_name",    "output stream");
 
     long timeavemode_default[4] = { 0, 0, 3, 0 };
     FPS_ADDPARAM_INT64_IN  (
@@ -7015,14 +7021,19 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
         &avedt_default);
 
     // status
-//    FPS_ADDPARAM_INT64_OUT (zsize,        ".status.zsize",     "cube size");
-//    FPS_ADDPARAM_INT64_OUT (framelog,     ".status.framelag",  "lag in frame unit");
-//    FPS_ADDPARAM_INT64_OUT (kkin,         ".status.kkin",      "input cube slice index");
-//    FPS_ADDPARAM_INT64_OUT (kkout,        ".status.kkout",     "output cube slice index");
+    FPS_ADDPARAM_INT64_OUT (zsize,        ".status.zsize",     "cube size");
+    FPS_ADDPARAM_INT64_OUT (framelog,     ".status.framelag",  "lag in frame unit");
+    FPS_ADDPARAM_INT64_OUT (kkin,         ".status.kkin",      "input cube slice index");
+    FPS_ADDPARAM_INT64_OUT (kkout,        ".status.kkout",     "output cube slice index");
+
+
+
 
 
     // ==============================================
+    // start function parameter conf loop, defined in function_parameter.h
     FPS_CONFLOOP_START
+    // ==============================================
 
 
     // here goes the logic
@@ -7036,9 +7047,12 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
         fps.parray[fp_option_avedt].fpflag &= ~FPFLAG_VISIBLE;
     }
 
+    
+    // ==============================================
+    // stop function parameter conf loop, defined in function_parameter.h
     FPS_CONFLOOP_END
     // ==============================================
-
+    
 
     return RETURN_SUCCESS;
 }
@@ -7118,7 +7132,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     PROCESSINFO *processinfo;
 
     char pinfodescr[200];
-    sprintf(pinfodescr, "streamdelay %s %s", IDin_name, IDout_name);
+    sprintf(pinfodescr, "streamdelay %.10s %.10s", IDin_name, IDout_name);
     processinfo = processinfo_setup(
                       fpsname,                 // re-use fpsname as processinfo name
                       pinfodescr,    // description
@@ -7164,7 +7178,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
                 IDin_name);
 
         char msgstring[200];
-        sprintf(msgstring, "Input stream %s does not exist", IDin_name);
+        sprintf(msgstring, "Input stream %.20s does not exist", IDin_name);
         processinfo_error(processinfo, msgstring);
         loopOK = 0;
     }
