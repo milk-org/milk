@@ -547,32 +547,45 @@ return RETURN_FAILURE; \
 }} while(0)
 
 
-#define FPS_CONFLOOP_START if(fps.loopstatus == 0) { return RETURN_SUCCESS; } while(fps.loopstatus == 1) { usleep(50); if(function_parameter_FPCONFloopstep(&fps) == 1) {
+
+#define FPS_CONFLOOP_START if(fps.loopstatus == 0) { \
+return RETURN_SUCCESS; \
+} \
+while(fps.loopstatus == 1) { \
+usleep(50); \
+if(function_parameter_FPCONFloopstep(&fps) == 1) {
+
 
 #define FPS_CONFLOOP_END  functionparameter_CheckParametersAll(&fps);}} function_parameter_FPCONFexit(&fps);
 
+
 #define FPS_ADDPARAM_FLT64_IN(key, pname, pdescr, dflt) long fp_##key = 0; do{ \
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, (dflt));\
+(void) fp_##key;\
 } while(0)
 
 
 
 #define FPS_ADDPARAM_INT64_IN(key, pname, pdescr, dflt) long fp_##key = 0; do{ \
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, (dflt));\
+(void) fp_##key;\
 } while(0)
 	
 #define FPS_ADDPARAM_INT64_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);\
+(void) fp_##key;\
 } while(0)
 
 
 
 #define FPS_ADDPARAM_STREAM_IN(key, pname, pdescr) long fp_##key = 0; do{ \
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);\
+(void) fp_##key;\
 } while(0)
 
 #define FPS_ADDPARAM_STREAM_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, pNull);\
+(void) fp_##key;\
 } while(0)
 
 
