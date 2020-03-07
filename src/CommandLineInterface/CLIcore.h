@@ -354,10 +354,10 @@ typedef struct
     
     
     // can be used to trace program execution for runtime profiling and debugging
-    int  testpoint_line;
-    char testpoint_file[STRINGMAXLEN_FILENAME];
-    char testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
-    char testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+    int    testpoint_line;
+    char   testpoint_file[STRINGMAXLEN_FILENAME];
+    char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
+    char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
     struct timespec testpoint_time;
     
     
@@ -411,6 +411,9 @@ typedef struct
     
     long           NB_MAX_MODULE;
     MODULE         module[100];
+
+	// FPS instegration
+	char           fpsname[FUNCTION_PARAMETER_STRMAXLEN]; // name of FPS if in use
 
     // shared memory default
     int            SHARED_DFT;
