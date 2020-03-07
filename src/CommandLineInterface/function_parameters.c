@@ -1601,7 +1601,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     fps.SMfd = -1;
 
 
-    if(CMDmode & CMDCODE_FPSINITCREATE) { // (re-)create fps even if it exists
+    if(CMDmode & FPSCMDCODE_FPSINITCREATE) { // (re-)create fps even if it exists
         printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
@@ -1610,7 +1610,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
 
         FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
-        if(CMDmode & CMDCODE_CONFSTART) {
+        if(CMDmode & FPSCMDCODE_CONFSTART) {
             FPSCONNECTFLAG = FPSCONNECT_CONF;
         }
 
@@ -1625,7 +1625,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         }
     }
 
-    if(CMDmode & CMDCODE_CONFSTOP) { // stop fps
+    if(CMDmode & FPSCMDCODE_CONFSTOP) { // stop fps
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
         function_parameter_struct_disconnect(&fps);
         fps.loopstatus = 0; // stop loop
@@ -1635,11 +1635,11 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
 
 
-    if( (CMDmode & CMDCODE_FPSINITCREATE) || (CMDmode & CMDCODE_FPSINIT) || (CMDmode & CMDCODE_CONFSTOP) ) {
+    if( (CMDmode & FPSCMDCODE_FPSINITCREATE) || (CMDmode & FPSCMDCODE_FPSINIT) || (CMDmode & FPSCMDCODE_CONFSTOP) ) {
         fps.loopstatus = 0; // do not start conf
     }
 
-    if ( CMDmode & CMDCODE_CONFSTART ) {
+    if ( CMDmode & FPSCMDCODE_CONFSTART ) {
         fps.loopstatus = 1;
     }
 
@@ -1666,7 +1666,7 @@ uint16_t function_parameter_FPCONFloopstep(
         loopINIT = 1; // update on first loop iteration
         fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
-        if(fps->CMDmode & CMDCODE_CONFSTART) {  // parameter configuration loop
+        if(fps->CMDmode & FPSCMDCODE_CONFSTART) {  // parameter configuration loop
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
             fps->md->confpid = getpid();
             fps->loopstatus = 1;
