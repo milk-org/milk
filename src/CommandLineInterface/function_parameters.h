@@ -504,22 +504,22 @@ typedef struct {
 
 
 typedef struct {
-	int fpsCTRL_DisplayMode; // Display mode
+	int      fpsCTRL_DisplayMode; // Display mode
     uint32_t mode;           // GUI mode
-    int NBfps;               // Number of FPS entries
-    int NBkwn;               // Number of keyword nodes
-    long NBindex;
-    char fpsnamemask[100]; 
-    int nodeSelected;
-    int run_display;
-    int fpsindexSelected;
-    int GUIlineSelected[100];
-    int currentlevel;
-    int directorynodeSelected;
-    int pindexSelected;
-    char fpsCTRLfifoname[200];
-    int fpsCTRLfifofd;
-    int direction;
+    int      NBfps;               // Number of FPS entries
+    int      NBkwn;               // Number of keyword nodes
+    long     NBindex;
+    char     fpsnamemask[100]; 
+    int      nodeSelected;
+    int      run_display;
+    int      fpsindexSelected;
+    int      GUIlineSelected[100];
+    int      currentlevel;
+    int      directorynodeSelected;
+    int      pindexSelected;
+    char     fpsCTRLfifoname[200];
+    int      fpsCTRLfifofd;
+    int      direction;
 } FPSCTRL_GUIVARS;
 
 
@@ -605,10 +605,9 @@ extern "C" {
 #endif
 
 
-errno_t function_parameter_getname_from_CLIfunc(
-    char     *fpsname_default,
-    uint32_t *FPSCMDCODE
-);
+errno_t function_parameter_getFPSname_from_CLIfunc(char *fpsname_default);
+
+errno_t function_parameter_execFPScmd();
 
 
 errno_t function_parameter_struct_create    (int NBparamMAX, const char *name);

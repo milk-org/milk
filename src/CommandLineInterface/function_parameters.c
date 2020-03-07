@@ -277,7 +277,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         sprintf(shmdname, "%s", shmdname_static);
     }
 
-    return EXIT_SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 
@@ -296,15 +296,13 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
  *
  */
 
-errno_t function_parameter_getname_from_CLIfunc(
-    char     *fpsname_default,
-    uint32_t *FPSCMDCODE
+errno_t function_parameter_getFPSname_from_CLIfunc(
+    char     *fpsname_default
 )
 {
-
     // Check if function will be executed through FPS interface
     // set to 0 as default (no FPS)
-    FPSCMDCODE = 0;
+    data.FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     if(CLI_checkarg(1, 5) == 0) {
@@ -313,25 +311,25 @@ errno_t function_parameter_getname_from_CLIfunc(
 
         // check if recognized FPSCMDCODE
         if(strcmp(data.cmdargtoken[1].val.string, "_FPSINIT_") == 0) {  // Initialize FPS
-            FPSCMDCODE = FPSCMDCODE_FPSINIT;
+            data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
         }
         else if (strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") == 0) {  // Start conf process
-            FPSCMDCODE = FPSCMDCODE_CONFSTART;
+            data.FPS_CMDCODE = FPSCMDCODE_CONFSTART;
         }
         else if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") == 0) { // Stop conf process
-            FPSCMDCODE = FPSCMDCODE_CONFSTOP;
+            data.FPS_CMDCODE = FPSCMDCODE_CONFSTOP;
         }
         else if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") == 0) { // Run process
-            FPSCMDCODE = FPSCMDCODE_RUNSTART;
+            data.FPS_CMDCODE = FPSCMDCODE_RUNSTART;
         }
         else if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") == 0) { // Stop process
-            FPSCMDCODE = FPSCMDCODE_RUNSTOP;
+            data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP;
         }
     }
 
 
     // if recognized FPSCMDCODE, use FPS implementation
-    if(FPSCMDCODE != 0) {
+    if(data.FPS_CMDCODE != 0) {
         // ===============================
         //     SET FPS INTERFACE NAME
         // ===============================
@@ -339,12 +337,12 @@ errno_t function_parameter_getname_from_CLIfunc(
         // if main CLI process has been named with -n option, than use the process name to construct fpsname
         if(data.processnameflag == 1) {
             // Automatically set fps name to be process name up to first instance of character '.'
-            strcpy(data.fpsname, data.processname0);
+            strcpy(data.FPS_name, data.processname0);
         }
         else { // otherwise, construct name as follows
 
             // Adopt default name for fpsname
-            int slen = snprintf(data.fpsname, FUNCTION_PARAMETER_STRMAXLEN, "%s", fpsname_default);
+            int slen = snprintf(data.FPS_name, FUNCTION_PARAMETER_STRMAXLEN, "%s", fpsname_default);
             if(slen < 1) {
                 print_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
@@ -354,7 +352,7 @@ errno_t function_parameter_getname_from_CLIfunc(
                             "Full string  : %s\n"
                             "Truncated to : %s",
                             fpsname_default,
-                            data.fpsname);
+                            data.FPS_name);
                 abort(); // can't handle this error any other way
             }
 
@@ -367,7 +365,7 @@ errno_t function_parameter_getname_from_CLIfunc(
                 char fpsname1[FUNCTION_PARAMETER_STRMAXLEN];
 
                 int slen = snprintf(fpsname1, FUNCTION_PARAMETER_STRMAXLEN,
-                                    "%s-%s", data.fpsname, data.cmdargtoken[2].val.string);
+                                    "%s-%s", data.FPS_name, data.cmdargtoken[2].val.string);
                 if(slen < 1) {
                     print_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
@@ -376,20 +374,54 @@ errno_t function_parameter_getname_from_CLIfunc(
                     print_ERROR("snprintf string truncation.\n"
                                 "Full string  : %s-%s\n"
                                 "Truncated to : %s",
-                                data.fpsname,
+                                data.FPS_name,
                                 data.cmdargtoken[argindex].val.string,
                                 fpsname1);
                     abort(); // can't handle this error any other way
                 }
 
-                strncpy(data.fpsname, fpsname1, FUNCTION_PARAMETER_STRMAXLEN);
+                strncpy(data.FPS_name, fpsname1, FUNCTION_PARAMETER_STRMAXLEN);
                 argindex ++;
             }
         }
 
     }
+    
+    return RETURN_SUCCESS;
 }
 
+
+
+
+errno_t function_parameter_execFPScmd()
+{
+    if(data.FPS_CMDCODE == FPSCMDCODE_FPSINIT) { // Initialize FPS
+        data.FPS_CONFfunc();
+        return RETURN_SUCCESS;
+    }
+
+    if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTART) {  // Start conf process
+        data.FPS_CONFfunc();
+        return RETURN_SUCCESS;
+    }
+
+    if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTOP) { // Stop conf process
+        data.FPS_CONFfunc();
+        return RETURN_SUCCESS;
+    }
+
+    if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTART) { // Run process
+        data.FPS_RUNfunc();
+        return RETURN_SUCCESS;
+    }
+
+    if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTOP) { // Stop process
+        data.FPS_CONFfunc();
+        return RETURN_SUCCESS;
+    }
+
+    return RETURN_SUCCESS;
+}
 
 
 
