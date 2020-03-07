@@ -56,10 +56,18 @@ typedef long variableID;
 /// Size of array CLICOREVARRAY
 #define SZ_CLICOREVARRAY 1000
 
+#define STRINGMAXLEN_DEFAULT       1000
+#define STRINGMAXLEN_ERRORMSG      1000
+#define STRINGMAXLEN_CLICMD        1000
+#define STRINGMAXLEN_COMMAND       1000
+#define STRINGMAXLEN_STREAMNAME     100
+#define STRINGMAXLEN_IMGNAME        100
+#define STRINGMAXLEN_FILENAME       200  // without directory, includes extension
+#define STRINGMAXLEN_FULLFILENAME  1000  // includes directory name 
+#define STRINGMAXLEN_FUNCTIONNAME   200
+#define STRINGMAXLEN_FUNCTIONARGS  1000
 
-#define STRINGMAXLEN_FILENAME     1000
-#define STRINGMAXLEN_FUNCTIONNAME  200
-#define STRINGMAXLEN_FUNCTIONARGS 1000
+
 
 
 /// important directories and info
@@ -91,6 +99,48 @@ extern int C_ERRNO;			// C errno (from errno.h)
 
 
 
+//
+// ************ ERROR HANDLING **********************************
+// 
+
+/** @brief Print error (in red) and continue */
+#define print_ERROR(...) do { \
+sprintf(data.testpoint_msg, __VA_ARGS__); \
+printf("ERROR: %c[%d;%dm %s %c[%d;m\n", (char) 27, 1, 31, data.testpoint_msg, (char) 27, 0); \
+sprintf(data.testpoint_file, "%s", __FILE__); \
+sprintf(data.testpoint_func, "%s", __func__); \
+data.testpoint_line = __LINE__; \
+clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
+} while(0)
+
+
+/** @brief Print warning and continue */
+#define print_WARNING(...) do { \
+char warnmessage[1000]; \
+sprintf(warnmessage, __VA_ARGS__); \
+fprintf(stderr, \
+"%c[%d;%dm WARNING [ FILE: %s   FUNCTION: %s  LINE: %d ]  %c[%d;m\n", \
+(char) 27, 1, 35, __FILE__, __func__, __LINE__, (char) 27, 0); \
+if(C_ERRNO != 0) \
+{ \
+char buff[256]; \
+if( strerror_r( errno, buff, 256 ) == 0 ) { \
+fprintf(stderr,"C Error: %s\n", buff ); \
+} else { \
+fprintf(stderr,"Unknown C Error\n"); \
+} \
+} else { \
+fprintf(stderr,"No C error (errno = 0)\n"); } \
+fprintf(stderr, "%c[%d;%dm ", (char) 27, 1, 35); \
+fprintf(stderr, "%s", warnmessage); \
+fprintf(stderr, " %c[%d;m\n", (char) 27, 0); \
+C_ERRNO = 0; \
+} while(0)
+
+
+
+
+
 #if defined NDEBUG || defined STANDALONE
 #define DEBUG_TRACEPOINT(...)
 #else
@@ -117,6 +167,13 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 write_process_log(); \
 } while(0)
 #endif
+
+
+
+
+
+
+
 
 
 
