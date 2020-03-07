@@ -35,11 +35,13 @@
 #define FPSCONNECT_RUN    2
 
 
-
-#define CMDCODE_CONFSTART          0x0001  // run configuration loop
-#define CMDCODE_CONFSTOP           0x0002  // stop configuration process
-#define CMDCODE_FPSINIT            0x0004  // initialize FPS if does not exist
-#define CMDCODE_FPSINITCREATE      0x0008  // (re-)create FPS even if it exists
+// CMCODE type is uint32_t
+#define FPSCMDCODE_CONFSTART          0x00000001  // start configuration process
+#define FPSCMDCODE_CONFSTOP           0x00000002  // stop configuration process
+#define FPSCMDCODE_FPSINIT            0x00000004  // initialize FPS if does not exist
+#define FPSCMDCODE_FPSINITCREATE      0x00000008  // (re-)create FPS even if it exists
+#define FPSCMDCODE_RUNSTART           0x00000010  // start run process
+#define FPSCMDCODE_RUNSTOP            0x00000020  // stop run process
 
 
 // function can use this structure to expose parameters for external control or monitoring

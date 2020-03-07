@@ -310,6 +310,10 @@ static void fprintf_stdout(FILE *f, char const *fmt, ...) {
 
 
 
+
+
+
+
 /**
  * @brief Write entry into debug log
  * 
@@ -512,7 +516,7 @@ void sig_handler(
 /// CLI functions
 
 errno_t exitCLI() {
-	
+
     if(data.fifoON == 1) {
         char command[500];
         sprintf(command, "rm %s", data.fifoname);
@@ -533,7 +537,7 @@ errno_t exitCLI() {
     printf("Closing PID %ld (prompt process)\n", (long) getpid());
 //    exit(0);
     data.CLIloopON = 0; // stop CLI loop
-
+	
     return RETURN_SUCCESS;
 }
 
@@ -1772,6 +1776,7 @@ errno_t runCLI(
 	rl_clear_history();
 	rl_callback_handler_remove();
 	
+
 
 	 DEBUG_TRACEPOINT("exit from runCLI function");
 	 
