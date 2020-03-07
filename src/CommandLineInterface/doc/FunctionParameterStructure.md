@@ -125,7 +125,7 @@ The FPS control tool is started from the command line :
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
 - arg1: A command code
-- arg2: Optional argument 
+- arg2+: Optional arguments 
 
 The command code is a string, and will determine the action to be executed:
 - `_FPSINIT_`  : Initialize FPS for the function
@@ -136,77 +136,45 @@ The command code is a string, and will determine the action to be executed:
  
  
  
-@note Why Optional argument to CLI function ?
-@note Multiple instances of a C function may need to be running, each with its own FPS. An optional argument provides a mechanism to differentiate the FPSs. It is appended to the FPS name following a dash. The optional argument can be a number (usually integer) or a string.
+@note Why Optional arguments to CLI function ?
+@note Multiple instances of a C function may need to be running, each with its own FPS. Optional arguments provides a mechanism to differentiate the FPSs. They are appended to the FPS name following a dash. Optional arguments can be a number (usually integer) or a string.
  
 
-Example source code below, assuming one optional long type argument. 
+Example source code below.
 
 ~~~~{.c}
 
-errno_t MyFunction_cli() {
-    int stringmaxlen = 200;
-    char fpsname[stringmaxlen];
+errno_t ExampleFunction_cli()
+{
+    // try FPS implementation
+    // set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value
+    // default FPS name will be used if CLI process has NOT been named
+    // see code in function_parameter.c for detailed rules
+    function_parameter_getFPSname_from_CLIfunc("measlinRM");
+	
+	if(data.FPS_CMDCODE != 0) {	// use FPS implementation	
+		// set pointers to CONF and RUN functions
+		data.FPS_CONFfunc = ExampleFunction_FPCONF;
+		data.FPS_RUNfunc  = ExampleFunction_RUN;
+		function_parameter_execFPScmd();
+		return RETURN_SUCCESS;
+	}
 
-    // First, we try to execute function through FPS interface
-    if(CLI_checkarg(1, 5) == 0) { // check that first arg is string
-        unsigned int OptionalArg00 = data.cmdargtoken[2].val.numl;
 
-        // Set FPS interface name
-        // By convention, if there are optional arguments, they should be appended to the fps name
-        //
-        if(data.processnameflag == 0) {
-            // the process has not been named with -n CLI option
-            // name fps to something different than the process name
-            // by appending user-provided string if available
-             if(strlen(data.cmdargtoken[2].val.string)>0)
-                snprintf(fpsname, stringmaxlen, "myfunc-%s", data.cmdargtoken[2].val.string);
-            else
-                sprintf(fpsname, "myfunc");
-        } else { 
-            // Automatically set fps name to be process name up to first instance of character '.'
-            // This is the preferred option
-            strcpy(fpsname, data.processname0);
-        }
+    // call non FPS implementation - all parameters specified at function launch
+    if(
+        CLI_checkarg(1, 1) +
+        CLI_checkarg(2, 2) 
+        == 0) {
+        ExampleFunction(
+            data.cmdargtoken[1].val.numf,
+            data.cmdargtoken[2].val.numl
+        );
 
-        if(strcmp(data.cmdargtoken[1].val.string, "_FPSFINIT_") == 0) {  // Initialize FPS and conf process
-            printf("Function parameters configure\n");
-            MyFunction_FPCONF(fpsname, CMDCODE_FPSINIT);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") == 0) {  // Start conf process
-            printf("Function parameters configure\n");
-            MyFunction_FPCONF(fpsname, CMDCODE_CONFSTART);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") == 0) { // Stop conf process
-            printf("Function parameters configure\n");
-            MyFunction_FPCONF(fpsname, CMDCODE_CONFSTOP);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") == 0) { // Run process
-            printf("Run function\n");
-            MyFunction_RUN(fpsname);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") == 0) { // Stop process
-            printf("Run function\n");
-            MyFunction_STOP();
-            return RETURN_SUCCESS;
-        }
+        return RETURN_SUCCESS;
+    } else {
+        return CLICMD_INVALID_ARG;
     }
-
-    // non FPS implementation - all parameters specified at function launch
-    if(CLI_checkarg(1, 2) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) + CLI_checkarg(4, 2) == 0) {
-        MyFunction(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.numl, data.cmdargtoken[3].val.numl, ata.cmdargtoken[4].val.numl);
-            return RETURN_SUCCESS;
-        } else {
-            return RETURN_FAILURE;
-        }
 }
 ~~~~
 
@@ -220,9 +188,9 @@ errno_t MyFunction_cli() {
 
 
 ~~~~{.c}
-errno_t MyFunction_FPCONF(char *fpsname, uint32_t CMDmode, long optarg00);
-errno_t MyFunction_RUN(char *fpsname);
-errno_t MyFunction(long arg0num, long arg1num, long arg2num, long arg3num);
+errno_t ExampleFunction_FPCONF();
+errno_t ExampleFunction_RUN();
+errno_t ExampleFunction(long arg0num, long arg1num, long arg2num, long arg3num);
 ~~~~ 
 
 
@@ -240,16 +208,13 @@ Check function_parameters.h for full list of flags.
 // manages configuration parameters
 // initializes configuration parameters structure
 //
-errno_t MyFunction_FPCONF(
-    char *fpsname,
-    uint32_t CMDmode,
-    long optarg00
+errno_t ExampleFunction_FPCONF(
 )
 {
     // ===========================
     // SETUP FPS
     // ===========================
-    FPS_SETUP_INIT(fpsname, CMDmode); // macro in function_parameter.h
+    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDMODE); // macro in function_parameter.h
 
 
     // ==============================================
@@ -393,14 +358,13 @@ The RUN function will connect to the FPS and execute the run loop.
 //
 // run loop process
 //
-errno_t MyFunction_RUN(
-    char *fpsname
+errno_t ExampleFunction_RUN(
 )
 {
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
-	FPS_CONNECT( fpsname, FPSCONNECT_RUN );
+	FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN );
 
 	
 	
@@ -456,7 +420,7 @@ errno_t MyFunction_RUN(
 ## 6.2. Non-FPS fallback function
 
 ~~~{.c}
-long MyFunction(
+errno_t ExampleFunction(
     long arg0num, 
     long arg1num, 
     long arg2num, 
@@ -470,10 +434,11 @@ long MyFunction(
     FUNCTION_PARAMETER_STRUCT fps;
 
     // create FPS
-    sprintf(fpsname, "myfunc-%06ld", pindex);
-    MyFunction_FPCONF(fpsname, CMDCODE_FPSINIT, DMindex);
+    sprintf(data.FPS_name, "exfunc-%06ld", pindex);
+    data.FPS_CMDMODE = FPSCMDCODE_FPSINIT;
+    ExampleFunction_FPCONF();
 
-    function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+    function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
 
     functionparameter_SetParamValue_INT64(&fps, ".arg0", arg0);
     functionparameter_SetParamValue_INT64(&fps, ".arg1", arg1);
@@ -482,9 +447,9 @@ long MyFunction(
 
     function_parameter_struct_disconnect(&fps);
 
-    MyFunction_RUN(fpsname);
+    ExampleFunction_RUN();
 
-    return(IDout);
+    return RETURN_SUCCESS;
 }
 
 
@@ -512,11 +477,6 @@ The example also shows using FPS to set the process realtime priority.
  *
  * This example demonstrates use of processinfo and fps structures.\n
  *
- * ## Arguments
- *
- * @param[in]
- * char		fpsname*
- * 			name of function parameter structure
  *
  * All function parameters are held inside the function parameter structure (FPS).\n
  * 
@@ -526,13 +486,12 @@ The example also shows using FPS to set the process realtime priority.
  */
 
 errno_t MyFunction_RUN(
-    char *fpsname
 )
 {
 	// ===========================
 	// ### Connect to FPS 
 	// ===========================
-	FPS_CONNECT( fpsname, FPSCONNECT_RUN );
+	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
 	
 	
 	// ===========================	

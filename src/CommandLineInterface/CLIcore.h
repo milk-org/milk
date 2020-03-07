@@ -413,7 +413,12 @@ typedef struct
     MODULE         module[100];
 
 	// FPS instegration
-	char           fpsname[FUNCTION_PARAMETER_STRMAXLEN]; // name of FPS if in use
+	// these entries are set when CLI process enters FPS function
+	char           FPS_name[FUNCTION_PARAMETER_STRMAXLEN]; // name of FPS if in use
+	uint32_t       FPS_CMDCODE;
+	errno_t        (*FPS_CONFfunc)();
+	errno_t        (*FPS_RUNfunc)();
+
 
     // shared memory default
     int            SHARED_DFT;
