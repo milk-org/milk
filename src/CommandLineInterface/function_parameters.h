@@ -604,6 +604,13 @@ fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNA
 extern "C" {
 #endif
 
+
+errno_t function_parameter_getname_from_CLIfunc(
+    char     *fpsname_default,
+    uint32_t *FPSCMDCODE
+);
+
+
 errno_t function_parameter_struct_create    (int NBparamMAX, const char *name);
 
 
