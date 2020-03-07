@@ -1194,19 +1194,19 @@ errno_t COREMOD_MEMORY_streamDelay_cli() {
 
         if(strcmp(data.cmdargtoken[1].val.string, "_FPSINIT_") == 0) {  // Initialize FPS and conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_FPSINIT);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_FPSINIT);
             return RETURN_SUCCESS;
         }
 
         if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") == 0) {  // Start conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTART);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_CONFSTART);
             return RETURN_SUCCESS;
         }
 
         if(strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") == 0) { // Stop conf process
             printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_CONFSTOP);
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_CONFSTOP);
             return RETURN_SUCCESS;
         }
 
@@ -7419,7 +7419,7 @@ errno_t COREMOD_MEMORY_streamDelay(
 
     // create FPS
     sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
-    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, CMDCODE_FPSINIT);
+    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_FPSINIT);
 
     function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN);
 
