@@ -215,12 +215,13 @@ typedef struct
 /* =============================================================================================== */
 
 
+
 errno_t function_parameter_struct_shmdirname(char *shmdname)
 {
     int shmdirOK = 0;
     DIR *tmpdir;
     static unsigned long functioncnt = 0;
-    static char shmdname_static[200];
+    static char shmdname_static[STRINGMAXLEN_SHMDIRNAME];
 
     if(functioncnt == 0)
     {
@@ -230,7 +231,18 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         char* MILK_SHM_DIR = getenv("MILK_SHM_DIR");
         if(MILK_SHM_DIR != NULL) {
             printf(" [ MILK_SHM_DIR ] is '%s'\n", MILK_SHM_DIR);
-            sprintf(shmdname, "%s", MILK_SHM_DIR);
+
+            {
+                int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", MILK_SHM_DIR);
+                if(slen<1) {
+                    PRINT_ERROR("snprintf wrote <1 char");
+                    abort(); // can't handle this error any other way
+                }
+                if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                    PRINT_ERROR("snprintf string truncation");
+                    abort(); // can't handle this error any other way
+                }
+            }
 
             // does this direcory exist ?
             tmpdir = opendir(shmdname);
@@ -251,7 +263,19 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             tmpdir = opendir(SHAREDSHMDIR);
             if(tmpdir) // directory exits
             {
-                sprintf(shmdname, "%s", SHAREDSHMDIR);
+                {
+                    int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", SHAREDSHMDIR);
+                    if(slen<1) {
+                        PRINT_ERROR("snprintf wrote <1 char");
+                        abort(); // can't handle this error any other way
+                    }
+                    if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                        PRINT_ERROR("snprintf string truncation");
+                        abort(); // can't handle this error any other way
+                    }
+                }
+
+
                 shmdirOK = 1;
                 closedir(tmpdir);
             }
@@ -271,10 +295,32 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             }
         }
 
-        sprintf(shmdname_static, "%s", shmdname); // keep it memory
+
+        {
+            int slen = snprintf(shmdname_static, STRINGMAXLEN_SHMDIRNAME, "%s", shmdname); // keep it memory
+            if(slen<1) {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
+        }
     }
     else {
-        sprintf(shmdname, "%s", shmdname_static);
+        {
+            int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", shmdname_static);
+            if(slen<1) {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
+        }
+
     }
 
     return RETURN_SUCCESS;
@@ -344,11 +390,11 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
             // Adopt default name for fpsname
             int slen = snprintf(data.FPS_name, FUNCTION_PARAMETER_STRMAXLEN, "%s", fpsname_default);
             if(slen < 1) {
-                print_ERROR("snprintf wrote <1 char");
+                PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
             if(slen >= FUNCTION_PARAMETER_STRMAXLEN) {
-                print_ERROR("snprintf string truncation.\n"
+                PRINT_ERROR("snprintf string truncation.\n"
                             "Full string  : %s\n"
                             "Truncated to : %s",
                             fpsname_default,
@@ -367,11 +413,11 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
                 int slen = snprintf(fpsname1, FUNCTION_PARAMETER_STRMAXLEN,
                                     "%s-%s", data.FPS_name, data.cmdargtoken[2].val.string);
                 if(slen < 1) {
-                    print_ERROR("snprintf wrote <1 char");
+                    PRINT_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
                 }
                 if(slen >= FUNCTION_PARAMETER_STRMAXLEN) {
-                    print_ERROR("snprintf string truncation.\n"
+                    PRINT_ERROR("snprintf string truncation.\n"
                                 "Full string  : %s-%s\n"
                                 "Truncated to : %s",
                                 data.FPS_name,
@@ -453,7 +499,7 @@ errno_t function_parameter_struct_create(
     function_parameter_struct_shmdirname(shmdname);
 
     if(snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     remove(SM_fname);
 
@@ -592,7 +638,7 @@ long function_parameter_struct_connect(
     function_parameter_struct_shmdirname(shmdname);
 
     if(snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     printf("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
@@ -653,13 +699,13 @@ long function_parameter_struct_connect(
         if(NBi == -1) {
             //            strncpy(fps->md->pname, tmpstring1, stringmaxlen);
             if(snprintf(fps->md->pname, FPS_PNAME_STRMAXLEN, "%s", tmpstring1)< 0 ) {
-                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                PRINT_ERROR("snprintf error");
             }
         }
 
         if((NBi >= 0) && (NBi < 10)) {
             if(snprintf(fps->md->nameindexW[NBi], 16, "%s", tmpstring1)< 0 ) {
-                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                PRINT_ERROR("snprintf error");
             }
             //strncpy(fps->md->nameindexW[NBi], tmpstring1, 16);
         }
@@ -863,31 +909,31 @@ int functionparameter_GetFileName(
     int l;
 
     if(snprintf(fname, stringmaxlen, "%s/fpsconf", fps->md->fpsdirectory)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     if(snprintf(command, stringmaxlen, "mkdir -p %s", fname)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
 
     for(l = 0; l < fparam->keywordlevel - 1; l++) {
         if(snprintf(fname1, stringmaxlen, "/%s", fparam->keyword[l])< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         strcat(fname, fname1);
         if(snprintf(command, stringmaxlen, "mkdir -p %s", fname)< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
 
         if(system(command) != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            PRINT_ERROR("system() returns non-zero value");
         }
     }
 
     if(snprintf(fname1, stringmaxlen, "/%s.%s.txt", fparam->keyword[l], tagname)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     strcat(fname, fname1);
     strcpy(outfname, fname);
@@ -1242,9 +1288,12 @@ int function_parameter_add_entry(
     // if string starts with ".", insert fps name
     char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     if(keywordstring[0] == '.')
+    {
         sprintf(keywordstringC, "%s%s", fps->md->name, keywordstring);
-    else
+    }
+    else {
         strcpy(keywordstringC, keywordstring);
+    }
 
 
 
@@ -1341,67 +1390,67 @@ int function_parameter_add_entry(
         break;
     case FPTYPE_FILENAME :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_FITSFILENAME :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_EXECFILENAME :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_DIRNAME :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_STREAMNAME :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_STRING :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_ONOFF :
         funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF; // initialize state to OFF
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "OFF state")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, " ON state")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     case FPTYPE_FPSNAME :
         if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL")< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         break;
     }
@@ -2206,8 +2255,8 @@ int functionparameter_CheckParameter(
     }
     else
     {
-        char msg[200];
-        sprintf(msg, "%s", fpsentry->parray[pindex].keywordfull);
+        char msg[STRINGMAXLEN_FPS_LOGMSG];
+        SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s", fpsentry->parray[pindex].keywordfull);
         functionparameter_outlog("CHECKPARAM", msg);
     }
 
@@ -2222,7 +2271,7 @@ int functionparameter_CheckParameter(
             fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
             fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_NOTINITIALIZED | FPS_MSG_FLAG_ERROR;
             if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "Not initialized")< 0 ) {
-                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                PRINT_ERROR("snprintf error");
             }
             fpsentry->md->msgcnt++;
             fpsentry->md->conferrcnt++;
@@ -2241,7 +2290,7 @@ int functionparameter_CheckParameter(
                                 "int64 value %ld below min %ld",
                                 fpsentry->parray[pindex].val.l[0],
                                 fpsentry->parray[pindex].val.l[1])< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
@@ -2258,7 +2307,7 @@ int functionparameter_CheckParameter(
                                 "float64 value %lf below min %lf",
                                 fpsentry->parray[pindex].val.f[0],
                                 fpsentry->parray[pindex].val.f[1])< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
@@ -2275,7 +2324,7 @@ int functionparameter_CheckParameter(
                                 "float32 value %f below min %f",
                                 fpsentry->parray[pindex].val.s[0],
                                 fpsentry->parray[pindex].val.s[1])< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
@@ -2295,7 +2344,7 @@ int functionparameter_CheckParameter(
                                 "int64 value %ld above max %ld",
                                 fpsentry->parray[pindex].val.l[0],
                                 fpsentry->parray[pindex].val.l[2])< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
@@ -2313,7 +2362,7 @@ int functionparameter_CheckParameter(
                                 "float64 value %lf above max %lf",
                                 fpsentry->parray[pindex].val.f[0],
                                 fpsentry->parray[pindex].val.f[2])< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
@@ -2332,7 +2381,7 @@ int functionparameter_CheckParameter(
                                 "float32 value %f above max %f",
                                 fpsentry->parray[pindex].val.s[0],
                                 fpsentry->parray[pindex].val.s[2])< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
                     fpsentry->md->conferrcnt++;
@@ -2351,7 +2400,7 @@ int functionparameter_CheckParameter(
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "File %s does not exist",
                             fpsentry->parray[pindex].val.string[0])< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
@@ -2371,7 +2420,7 @@ int functionparameter_CheckParameter(
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "FITS file %s does not exist",
                             fpsentry->parray[pindex].val.string[0])< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
@@ -2392,7 +2441,7 @@ int functionparameter_CheckParameter(
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "File %s cannot be executed",
                             fpsentry->parray[pindex].val.string[0])< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
@@ -2414,7 +2463,7 @@ int functionparameter_CheckParameter(
                             FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                             "FPS %s: no connection",
                             fpsentry->parray[pindex].val.string[0])< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
@@ -2471,7 +2520,7 @@ int functionparameter_CheckParameter(
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                 fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ERROR;
                 if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream %s", fpsentry->parray[pindex].val.string[0])< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
                 fpsentry->md->conferrcnt++;
@@ -3436,43 +3485,43 @@ int functionparameter_UserInputSetParamValue(
 
             case FPTYPE_FILENAME :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
             case FPTYPE_FITSFILENAME :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
             case FPTYPE_EXECFILENAME :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
             case FPTYPE_DIRNAME :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
             case FPTYPE_STREAMNAME :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
             case FPTYPE_STRING :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
             case FPTYPE_FPSNAME :
                 if(snprintf(fpsentry->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "%s", buff)< 0 ) {
-                    printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                    PRINT_ERROR("snprintf error");
                 }
                 break;
 
@@ -3560,15 +3609,12 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    char msgstring[stringmaxlen];
+    char msgstring[STRINGMAXLEN_FPS_LOGMSG];
     char inputcmd[stringmaxlen];
-    if(snprintf(inputcmd, stringmaxlen, "%s", FPScmdline)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
-    }
-
-    if(snprintf(msgstring, stringmaxlen, "\"%s\"", inputcmd)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
-    }
+	
+	SNPRINTF_CHECK(inputcmd, stringmaxlen, "%s", FPScmdline);
+	SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", inputcmd);
+    
     functionparameter_outlog("CMDRCV", msgstring);
 
 
@@ -3657,24 +3703,25 @@ int functionparameter_FPSprocess_cmdline(
     {
         cmdFOUND = 1;
         if(nbword != 2) {
-            sprintf(msgstring, "COMMAND logsymlink NBARGS = 1");
+			SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND logsymlink NBARGS = 1");            
             functionparameter_outlog("ERROR", msgstring);
             cmdOK = 0;
         }
         else
         {
-            char logfname[200];
-            char shmdname[200];
+            char logfname[STRINGMAXLEN_FULLFILENAME];
+            char shmdname[STRINGMAXLEN_SHMDIRNAME];
             function_parameter_struct_shmdirname(shmdname);
 
 
-            sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+            //sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+            WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
 
-            sprintf(msgstring, "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
+			SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "CREATE SYM LINK %s <- %s", FPSarg0, logfname);           
             functionparameter_outlog("INFO", msgstring);
 
             if( symlink(logfname, FPSarg0) != 0) {
-                printERROR(__FILE__, __func__, __LINE__, "symlink error");
+                PRINT_ERROR("symlink error");
             }
 
         }
@@ -3688,7 +3735,7 @@ int functionparameter_FPSprocess_cmdline(
     {
         cmdFOUND = 1;
         if(nbword != 3) {
-            sprintf(msgstring, "COMMAND queueprio NBARGS = 2");
+			SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND queueprio NBARGS = 2");
             functionparameter_outlog("ERROR", msgstring);
             cmdOK = 0;
         }
@@ -3700,8 +3747,8 @@ int functionparameter_FPSprocess_cmdline(
             if((queue>=0) && (queue<FPSTASK_MAX_NBQUEUE))
             {
                 fpsctrlqueuelist[queue].priority = prio;
-
-                sprintf(msgstring, "QUEUE %d PRIO = %d", queue, prio);
+				
+				SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "QUEUE %d PRIO = %d", queue, prio);               
                 functionparameter_outlog("INFO", msgstring);
             }
         }
@@ -3749,12 +3796,12 @@ int functionparameter_FPSprocess_cmdline(
     if(kwnindex != -1) {
         fpsindex = keywnode[kwnindex].fpsindex;
         pindex = keywnode[kwnindex].pindex;
-        sprintf(msgstring, "FPS ENTRY FOUND : %-40s  %d %ld", FPSentryname, fpsindex, pindex);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "FPS ENTRY FOUND : %-40s  %d %ld", FPSentryname, fpsindex, pindex);
         functionparameter_outlog("INFO", msgstring);
     }
     else
     {
-        sprintf(msgstring, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
         functionparameter_outlog("ERROR", msgstring);
         cmdOK = 0;
     }
@@ -3768,7 +3815,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND confstart NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,"COMMAND confstart NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3777,7 +3824,7 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_CONFstart(fps, fpsindex);
 
-                sprintf(msgstring, "start CONF process %d %s", fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "start CONF process %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("CONFSTART", msgstring);
                 cmdOK = 1;
             }
@@ -3789,7 +3836,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND confstop NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND confstop NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3798,7 +3845,7 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_CONFstop(fps, fpsindex);
 
-                sprintf(msgstring, "stop CONF process %d %s", fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "stop CONF process %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("CONFSTOP", msgstring);
                 cmdOK = 1;
             }
@@ -3820,7 +3867,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND confupdate NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND confupdate NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3830,7 +3877,7 @@ int functionparameter_FPSprocess_cmdline(
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED; // update status: check waiting to be done
                 fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
-                sprintf(msgstring, "update CONF process %d %s", fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "update CONF process %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("CONFUPDATE", msgstring);
                 cmdOK = 1;
             }
@@ -3849,7 +3896,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND confwupdate NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND confwupdate NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3875,8 +3922,9 @@ int functionparameter_FPSprocess_cmdline(
                     usleep(dt);
                     timercnt++;
 
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "[%d] waited %d us on FPS %d %s. conferrcnt = %d",
                         looptrycnt,
                         dt*timercnt,
@@ -3909,7 +3957,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND runstart NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND runstart NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3918,7 +3966,7 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_RUNstart(fps, fpsindex);
 
-                sprintf(msgstring, "start RUN process %d %s", fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "start RUN process %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("RUNSTART", msgstring);
                 cmdOK = 1;
 
@@ -3934,7 +3982,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND runwait NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND runwait NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3951,7 +3999,7 @@ int functionparameter_FPSprocess_cmdline(
                     timercnt++;
                 }
 
-                sprintf(msgstring, "waited %d us on FPS %d %s", dt*timercnt, fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "waited %d us on FPS %d %s", dt*timercnt, fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("RUNWAIT", msgstring);
                 cmdOK = 1;
             }
@@ -3965,7 +4013,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND runstop NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND runstop NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3974,7 +4022,7 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_RUNstop(fps, fpsindex);
 
-                sprintf(msgstring, "stop RUN process %d %s", fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "stop RUN process %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("RUNSTOP", msgstring);
                 cmdOK = 1;
             }
@@ -3989,7 +4037,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 2) {
-                sprintf(msgstring, "COMMAND fpsrm NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND fpsrm NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
                 cmdOK = 0;
             }
@@ -3998,7 +4046,7 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_FPSremove(fps, fpsindex);
 
-                sprintf(msgstring, "FPS remove %d %s", fpsindex, fps[fpsindex].md->name);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "FPS remove %d %s", fpsindex, fps[fpsindex].md->name);
                 functionparameter_outlog("FPSRM", msgstring);
                 cmdOK = 1;
             }
@@ -4022,7 +4070,7 @@ int functionparameter_FPSprocess_cmdline(
         {
             cmdFOUND = 1;
             if(nbword != 3) {
-                sprintf(msgstring, "COMMAND setval NBARGS = 2");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND setval NBARGS = 2");
                 functionparameter_outlog("ERROR", msgstring);
             }
             else
@@ -4035,7 +4083,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s INT64      %ld", FPSentryname, atol(FPScmdarg1));
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s INT64      %ld", FPSentryname, atol(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4043,7 +4091,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname, atof(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FLOAT64    %f", FPSentryname, atof(FPScmdarg1));
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FLOAT64    %f", FPSentryname, atof(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4051,7 +4099,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_FLOAT32(&fps[fpsindex], FPSentryname, atof(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FLOAT32    %f", FPSentryname, atof(FPScmdarg1));
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FLOAT32    %f", FPSentryname, atof(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4059,7 +4107,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname, atol(FPScmdarg1)) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s PID        %ld", FPSentryname, atol(FPScmdarg1));
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s PID        %ld", FPSentryname, atol(FPScmdarg1));
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4071,7 +4119,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FILENAME   %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FILENAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4079,7 +4127,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FITSFILENAME   %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FITSFILENAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4087,7 +4135,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s EXECFILENAME   %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s EXECFILENAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4095,7 +4143,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s DIRNAME    %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s DIRNAME    %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4103,7 +4151,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s STREAMNAME %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s STREAMNAME %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4111,7 +4159,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s STRING     %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s STRING     %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4120,14 +4168,14 @@ int functionparameter_FPSprocess_cmdline(
                         if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 1) == EXIT_SUCCESS) {
                             updated = 1;
                         }
-                        sprintf(msgstring, "%-40s ONOFF      ON", FPSentryname);
+                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s ONOFF      ON", FPSentryname);
                         functionparameter_outlog("SETVAL", msgstring);
                     }
                     if(strncmp(FPScmdarg1, "OFF", 3) == 0) {
                         if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname, 0) == EXIT_SUCCESS) {
                             updated = 1;
                         }
-                        sprintf(msgstring, "%-40s ONOFF      OFF", FPSentryname);
+                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s ONOFF      OFF", FPSentryname);
                         functionparameter_outlog("SETVAL", msgstring);
                     }
                     break;
@@ -4137,7 +4185,7 @@ int functionparameter_FPSprocess_cmdline(
                     if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname, FPScmdarg1) == EXIT_SUCCESS) {
                         updated = 1;
                     }
-                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, FPScmdarg1);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FPSNAME   %s", FPSentryname, FPScmdarg1);
                     functionparameter_outlog("SETVAL", msgstring);
                     break;
 
@@ -4166,12 +4214,12 @@ int functionparameter_FPSprocess_cmdline(
             cmdOK = 0;
 
             if((strcmp(FPScommand, "getval")==0)&&(nbword != 2)) {
-                sprintf(msgstring, "COMMAND getval NBARGS = 1");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND getval NBARGS = 1");
                 functionparameter_outlog("ERROR", msgstring);
             }
             else if ((strcmp(FPScommand, "fwrval")==0)&&(nbword != 3))
             {
-                sprintf(msgstring, "COMMAND fwrval NBARGS = 2");
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND fwrval NBARGS = 2");
                 functionparameter_outlog("ERROR", msgstring);
             }
             else
@@ -4179,8 +4227,9 @@ int functionparameter_FPSprocess_cmdline(
                 switch(fps[fpsindex].parray[pindex].type) {
 
                 case FPTYPE_INT64:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s INT64      %ld %ld %ld %ld",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.l[0],
@@ -4191,8 +4240,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_FLOAT64:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s FLOAT64    %f %f %f %f",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.f[0],
@@ -4203,8 +4253,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_FLOAT32:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s FLOAT32    %f %f %f %f",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.s[0],
@@ -4215,8 +4266,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_PID:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s PID        %ld",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.l[0]);
@@ -4228,8 +4280,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_FILENAME:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s FILENAME   %s",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.string[0]);
@@ -4237,8 +4290,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_FITSFILENAME:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s FITSFILENAME   %s",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.string[0]);
@@ -4246,8 +4300,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_EXECFILENAME:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s EXECFILENAME   %s",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.string[0]);
@@ -4255,8 +4310,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_DIRNAME:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s DIRNAME    %s",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.string[0]);
@@ -4264,8 +4320,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_STREAMNAME:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s STREAMNAME %s",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.string[0]);
@@ -4273,8 +4330,9 @@ int functionparameter_FPSprocess_cmdline(
                     break;
 
                 case FPTYPE_STRING:
-                    sprintf(
+                    SNPRINTF_CHECK(
                         msgstring,
+                        STRINGMAXLEN_FPS_LOGMSG,
                         "%-40s STRING     %s",
                         FPSentryname,
                         fps[fpsindex].parray[pindex].val.string[0]);
@@ -4283,17 +4341,17 @@ int functionparameter_FPSprocess_cmdline(
 
                 case FPTYPE_ONOFF:
                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF) {
-                        sprintf(msgstring, "%-40s ONOFF      ON", FPSentryname);
+                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s ONOFF      ON", FPSentryname);
                     }
                     else {
-                        sprintf(msgstring, "%-40s ONOFF      OFF", FPSentryname);
+                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s ONOFF      OFF", FPSentryname);
                     }
                     cmdOK = 1;
                     break;
 
 
                 case FPTYPE_FPSNAME:
-                    sprintf(msgstring, "%-40s FPSNAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
+                    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FPSNAME   %s", FPSentryname, fps[fpsindex].parray[pindex].val.string[0]);
                     cmdOK = 1;
                     break;
 
@@ -4310,8 +4368,8 @@ int functionparameter_FPSprocess_cmdline(
                         fclose(fpouttmp);
 
                         functionparameter_outlog("FWRVAL", msgstring);
-                        char msgstring1[200];
-                        sprintf(msgstring1, "WROTE to file %s", FPScmdarg1);
+                        char msgstring1[STRINGMAXLEN_FPS_LOGMSG];
+                        SNPRINTF_CHECK(msgstring1, STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s", FPScmdarg1);
                         functionparameter_outlog("FWRVAL", msgstring1);
                     }
                 }
@@ -4324,17 +4382,17 @@ int functionparameter_FPSprocess_cmdline(
 
 
     if(cmdOK == 0) {
-        sprintf(msgstring, "\"%s\"", FPScmdline);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
         functionparameter_outlog("CMDFAIL", msgstring);
     }
 
     if(cmdOK == 1) {
-        sprintf(msgstring, "\"%s\"", FPScmdline);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
         functionparameter_outlog("CMDOK", msgstring);
     }
 
     if(cmdFOUND == 0) {
-        sprintf(msgstring, "COMMAND NOT FOUND: %s", FPScommand);
+        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND NOT FOUND: %s", FPScommand);
         functionparameter_outlog("ERROR", msgstring);
     }
 
@@ -4642,29 +4700,29 @@ errno_t functionparameter_RUNstart(
     if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK) {
 
         if ( snprintf(command, stringmaxlen, "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name) < 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
 
         if(system(command) != 0) {
             // this is probably OK - duplicate session
             //printf("command: \"%s\"\n", command);
-            //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            //PRINT_ERROR("system() returns non-zero value");
             //printf("This error message may be due to pre-existing session\n");
         }
 
 
         // Move to correct launch directory
         if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory) < 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
 
 
         if(system(command) != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            PRINT_ERROR("system() returns non-zero value");
         }
 
         if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name, fps[fpsindex].md->pname) < 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
 
         for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
@@ -4672,14 +4730,14 @@ errno_t functionparameter_RUNstart(
             char tmpstring[tmpstrlen];
 
             if (snprintf(tmpstring, tmpstrlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel]) < 0 ) {
-                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                PRINT_ERROR("snprintf error");
             }
 
             strcat(command, tmpstring);
         }
         strcat(command, "\" C-m");
         if(system(command) != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            PRINT_ERROR("system() returns non-zero value");
         }
         fps[fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
         fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -4702,7 +4760,7 @@ errno_t functionparameter_RUNstop(
 
     // First, run the runstop command
     if (snprintf(command, stringmaxlen, "%s/fpscmd/%s-runstop", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname) < 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
     for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
@@ -4713,7 +4771,7 @@ errno_t functionparameter_RUNstop(
         strcat(command, tmpstring);
     }
     if(system(command) != 0) {
-        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //PRINT_ERROR("system() returns non-zero value");
     }
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -4722,11 +4780,11 @@ errno_t functionparameter_RUNstop(
 
     // Send C-c in case runstop command is not implemented
     if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-run C-c &> /dev/null", fps[fpsindex].md->name) < 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
     if(system(command) != 0) {
-        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //PRINT_ERROR("system() returns non-zero value");
     }
 
     return RETURN_SUCCESS;
@@ -4745,26 +4803,26 @@ errno_t functionparameter_CONFstart(
 
 
     if ( snprintf(command, stringmaxlen, "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name) < 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
     if(system(command) != 0) {
         // this is probably OK - duplicate session warning
-        //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        //PRINT_ERROR("system() returns non-zero value");
     }
 
     // Move to correct launch directory
     if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
 
 
     if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name, fps[fpsindex].md->pname) < 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
     for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex; nameindexlevel++) {
@@ -4772,14 +4830,14 @@ errno_t functionparameter_CONFstart(
         char tmpstring[tmpstrlen];
 
         if (snprintf(tmpstring, tmpstrlen, " %s", fps[fpsindex].md->nameindexW[nameindexlevel])< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
 
         strcat(command, tmpstring);
     }
     strcat(command, "\" C-m");
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
     fps[fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -4800,10 +4858,10 @@ errno_t functionparameter_CONFstop(
 
     fps[fpsindex].md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf C-c &> /dev/null", fps[fpsindex].md->name)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -4833,13 +4891,13 @@ errno_t functionparameter_FPSremove(
     // conf log
     char conflogfname[stringmaxlen];
     if(snprintf(conflogfname, stringmaxlen, "%s/fpslog.%06d", shmdname, fps[fpsindex].md->confpid)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
     // FPS shm
     char fpsfname[stringmaxlen];
     if(snprintf(fpsfname, stringmaxlen, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
 
 
@@ -4852,16 +4910,16 @@ errno_t functionparameter_FPSremove(
 
 
     if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"exit\" C-m", fps[fpsindex].md->name)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
     if (snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"exit\" C-m", fps[fpsindex].md->name)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
 
 
@@ -4896,9 +4954,9 @@ errno_t functionparameter_outlog_file(
     struct tm *uttime;
     uttime = gmtime(&now);
 
-    char timestring[200];
+    char timestring[30];
     sprintf(
-        timestring,
+        timestring,        
         "%04d%02d%02dT%02d%02d%02d.%09ld",
         1900+uttime->tm_year,
         1+uttime->tm_mon,
@@ -4928,11 +4986,12 @@ errno_t functionparameter_outlog(
 
 
     if(LogOutOpen == 0) {
-        char logfname[200];
-        char shmdname[200];
+        char logfname[STRINGMAXLEN_FULLFILENAME];
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
 
-        sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+        WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
+        
         fpout = fopen(logfname, "a");
         if(fpout == NULL) {
             printf("ERROR: cannot open file\n");
@@ -5159,12 +5218,12 @@ static errno_t functionparameter_scan_fps(
 
                     //fps_symlink[fpsindex] = 1;
                     if (snprintf(fullname, stringmaxlen, "%s/%s", shmdname, dir->d_name)< 0 ) {
-                        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                        PRINT_ERROR("snprintf error");
                     }
 
                     if ( readlink(fullname, linknamefull, 200 - 1) == -1 ) {
                         // todo: replace with realpath()
-                        printERROR(__FILE__,__func__,__LINE__, "readlink() error");
+                        PRINT_ERROR("readlink() error");
                     }
                     strcpy(linkname, basename(linknamefull));
 
@@ -5375,7 +5434,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMod
 
     attron(A_BOLD);
     if (snprintf(monstring, stringmaxlen, "[%d %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP   PID %d  [%d FPS]", wrow, wcol, (int) getpid(), NBfps)< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     print_header(monstring, '-');
     attroff(A_BOLD);
@@ -5734,7 +5793,7 @@ inline static int fpsCTRLscreen_process_user_key(
         if(keywnode[fpsCTRLgui->nodeSelected].leaf == 1) { // this is a leaf
             endwin();
             if(system("clear") != 0) { // clear screen
-                printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                PRINT_ERROR("system() returns non-zero value");
             }
             functionparameter_UserInputSetParamValue(&fps[fpsCTRLgui->fpsindexSelected], fpsCTRLgui->pindexSelected);
             initncurses();
@@ -5766,16 +5825,16 @@ inline static int fpsCTRLscreen_process_user_key(
 
         if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME) {
             if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory)< 0 ) {
-                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                PRINT_ERROR("snprintf error");
             }
             if(system(command) != 0) {
-                printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                PRINT_ERROR("system() returns non-zero value");
             }
             if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name)< 0 ) {
-                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                PRINT_ERROR("snprintf error");
             }
             if(system(command) != 0) {
-                printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                PRINT_ERROR("system() returns non-zero value");
             }
         }
 
@@ -5786,7 +5845,7 @@ inline static int fpsCTRLscreen_process_user_key(
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
         fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
         if(snprintf(msg, stringmaxlen, "UPDATE %s", fps[fpsindex].md->name)< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         functionparameter_outlog("FPSCTRL", msg);
         //functionparameter_CONFupdate(fps, fpsindex);
@@ -5795,7 +5854,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'R' : // start run process if possible
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
         if(snprintf(msg, stringmaxlen,"RUNSTART %s", fps[fpsindex].md->name)< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         functionparameter_outlog("FPSCTRL", msg);
         functionparameter_RUNstart(fps, fpsindex);
@@ -5804,7 +5863,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'r' : // stop run process
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
         if(snprintf(msg, stringmaxlen, "RUNSTOP %s", fps[fpsindex].md->name)< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         functionparameter_outlog("FPSCTRL", msg);
         functionparameter_RUNstop(fps, fpsindex);
@@ -5814,7 +5873,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'C' : // start conf process
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
         if(snprintf(msg, stringmaxlen, "CONFSTART %s", fps[fpsindex].md->name)< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         functionparameter_outlog("FPSCTRL", msg);
         functionparameter_CONFstart(fps, fpsindex);
@@ -5823,7 +5882,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'c': // kill conf process
         fpsindex = keywnode[fpsCTRLgui->nodeSelected].fpsindex;
         if(snprintf(msg, stringmaxlen, "CONFSTOP %s", fps[fpsindex].md->name)< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         functionparameter_outlog("FPSCTRL", msg);
         functionparameter_CONFstop(fps, fpsindex);
@@ -5832,7 +5891,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'l': // list all parameters
         endwin();
         if(system("clear") != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            PRINT_ERROR("system() returns non-zero value");
         }
         printf("FPS entries - Full list \n");
         printf("\n");
@@ -5852,7 +5911,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'F': // process FIFO
         endwin();
         if(system("clear") != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            PRINT_ERROR("system() returns non-zero value");
         }
         printf("Reading FIFO file \"%s\"  fd=%d\n", fpsCTRLgui->fpsCTRLfifoname, fpsCTRLgui->fpsCTRLfifofd);
 
@@ -5871,7 +5930,7 @@ inline static int fpsCTRLscreen_process_user_key(
     case 'P': // process input command file
         endwin();
         if(system("clear") != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+            PRINT_ERROR("system() returns non-zero value");
         }
         printf("Reading file confscript\n");
         fpinputcmd = fopen("confscript", "r");
@@ -6074,7 +6133,7 @@ errno_t functionparameter_CTRLscreen(
         char shmdname[stringmaxlen];
         function_parameter_struct_shmdirname(shmdname);
         if(snprintf(logfname, stringmaxlen, "%s/fpslog.%06d", shmdname, getpid())< 0 ) {
-            printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+            PRINT_ERROR("snprintf error");
         }
         remove(logfname);
 
@@ -6335,7 +6394,7 @@ errno_t functionparameter_CTRLscreen(
 
                             // print keyword
                             if(snprintf(pword, 10, "%s", keywnode[keywnode[nodechain[level]].child[GUIline]].keyword[level])< 0 ) {
-                                printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+                                PRINT_ERROR("snprintf error");
                             }
                             printw("%-10s ", pword);
 
@@ -7162,7 +7221,7 @@ errno_t functionparameter_CTRLscreen(
 
     char logfname[500];
     if(snprintf(logfname, stringmaxlen, "%s/fpslog.%06d", shmdname, getpid())< 0 ) {
-        printERROR(__FILE__, __func__, __LINE__, "snprintf error");
+        PRINT_ERROR("snprintf error");
     }
     remove(logfname);
 

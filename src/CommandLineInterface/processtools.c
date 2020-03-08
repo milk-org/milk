@@ -176,7 +176,18 @@ errno_t processinfo_procdirname(char *procdname)
     char* MILK_PROC_DIR = getenv("MILK_PROC_DIR");
     if(MILK_PROC_DIR != NULL) {
         printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
-        sprintf(procdname, "%s", MILK_PROC_DIR);
+
+        {
+            int slen = snprintf(procdname, STRINGMAXLEN_FULLFILENAME, "%s", MILK_PROC_DIR);
+            if(slen<1) {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_FULLFILENAME) {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
+        }
 
         // does this direcory exist ?
         tmpdir = opendir(procdname);
@@ -187,7 +198,7 @@ errno_t processinfo_procdirname(char *procdname)
         }
         else
         {
-          printf(" [ WARNING ] '%s' does not exist\n", MILK_PROC_DIR);
+            printf(" [ WARNING ] '%s' does not exist\n", MILK_PROC_DIR);
         }
     }
 
@@ -220,6 +231,7 @@ errno_t processinfo_procdirname(char *procdname)
 }
 
 
+
 // High level processinfo function
 
 PROCESSINFO *processinfo_setup(
@@ -242,13 +254,21 @@ PROCESSINFO *processinfo_setup(
 
     DEBUG_TRACEPOINT(" ");
     if(data.processinfoActive == 0) {
-//        PROCESSINFO *processinfo;
+        //        PROCESSINFO *processinfo;
         DEBUG_TRACEPOINT(" ");
 
-
-        char pinfoname0[200];
-        sprintf(pinfoname0, "%s", pinfoname);
-       
+        char pinfoname0[STRINGMAXLEN_PROCESSINFO_NAME];
+        {
+            int slen = snprintf(pinfoname0, STRINGMAXLEN_PROCESSINFO_NAME, "%s", pinfoname);
+            if(slen<1) {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_PROCESSINFO_NAME) {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
+        }
 
         DEBUG_TRACEPOINT(" ");
 
@@ -420,13 +440,13 @@ int processinfo_compute_status(
 
 long processinfo_shm_list_create()
 {
-    char  SM_fname[200];
+    char  SM_fname[STRINGMAXLEN_FULLFILENAME];
 	long pindex = 0;
 
     char  procdname[200];
     processinfo_procdirname(procdname);
 
-    sprintf(SM_fname, "%s/processinfo.list.shm", procdname);
+    WRITE_FULLFILENAME(SM_fname, "%s/processinfo.list.shm", procdname);
 
     /*
     * Check if a file exist using stat() function.
@@ -523,7 +543,7 @@ PROCESSINFO *processinfo_shm_create(
 	
     sharedsize = sizeof(PROCESSINFO);
 
-    char  SM_fname[200];
+    char  SM_fname[STRINGMAXLEN_FULLFILENAME];
     pid_t PID;
 
 
@@ -535,10 +555,11 @@ PROCESSINFO *processinfo_shm_create(
     pinfolist->PIDarray[pindex] = PID;
 	strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME);
 
-    char  procdname[200];
+    char  procdname[STRINGMAXLEN_FULLFILENAME];
     processinfo_procdirname(procdname);
 
-    sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
+    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname, (int) PID);
+
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1) {
         perror("Error opening file for writing");
@@ -730,164 +751,181 @@ int processinfo_cleanExit(PROCESSINFO *processinfo) {
 
 
 
-
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
 {
-	char       timestring[200];
+    char       timestring[200];
     struct     timespec tstop;
     struct tm *tstoptm;
-    char       msgstring[200];
+    char       msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
     clock_gettime(CLOCK_REALTIME, &tstop);
     tstoptm = gmtime(&tstop.tv_sec);
-	
-	sprintf(timestring, "%02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
-	processinfo->loopstat = 3; // clean exit
-	
 
-	switch ( SignalNumber ) {
+    sprintf(timestring, "%02d:%02d:%02d.%03d", tstoptm->tm_hour, tstoptm->tm_min, tstoptm->tm_sec, (int) (0.000001*(tstop.tv_nsec)));
+    processinfo->loopstat = 3; // clean exit
 
-		case SIGHUP :  // Hangup detected on controlling terminal or death of controlling process
-		sprintf(msgstring, "SIGHUP at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
-		
-		case SIGINT :  // Interrupt from keyboard
-		sprintf(msgstring, "SIGINT at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
-		
-		case SIGQUIT :  // Quit from keyboard
-		sprintf(msgstring, "SIGQUIT at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
 
-		case SIGILL :  // Illegal Instruction
-		sprintf(msgstring, "SIGILL at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    char SIGstr[12];
+    int SIGflag = 0;
+    switch ( SignalNumber ) {
 
-		case SIGABRT :  // Abort signal from abort
-		sprintf(msgstring, "SIGABRT at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGHUP :  // Hangup detected on controlling terminal or death of controlling process
+        strcpy(SIGstr, "SIGHUP");
+        SIGflag = 1;
+        break;
 
-		case SIGFPE :  // Floating-point exception
-		sprintf(msgstring, "SIGFPE at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGINT :  // Interrupt from keyboard
+        strcpy(SIGstr, "SIGINT");
+        SIGflag = 1;
+        break;
 
-		case SIGKILL :  // Kill signal
-		sprintf(msgstring, "SIGKILL at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGQUIT :  // Quit from keyboard
+        strcpy(SIGstr, "SIGQUIT");
+        SIGflag = 1;
+        break;
 
-		case SIGSEGV :  // Invalid memory reference
-		sprintf(msgstring, "SIGSEGV at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGILL :  // Illegal Instruction
+        strcpy(SIGstr, "SIGILL");
+        SIGflag = 1;
+        break;
 
-		case SIGPIPE :  // Broken pipe: write to pipe with no readers
-		sprintf(msgstring, "SIGPIPE at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGABRT :  // Abort signal from abort
+        strcpy(SIGstr, "SIGABRT");
+        SIGflag = 1;
+        break;
 
-		case SIGALRM :  // Timer signal from alarm
-		sprintf(msgstring, "SIGALRM at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGFPE :  // Floating-point exception
+        strcpy(SIGstr, "SIGFPE");
+        SIGflag = 1;
+        break;
 
-		case SIGTERM :  // Termination signal
-		sprintf(msgstring, "SIGTERM at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGKILL :  // Kill signal
+        strcpy(SIGstr, "SIGKILL");
+        SIGflag = 1;
+        break;
 
-		case SIGUSR1 :  // User-defined signal 1
-		sprintf(msgstring, "SIGUSR1 at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGSEGV :  // Invalid memory reference
+        strcpy(SIGstr, "SIGSEGV");
+        SIGflag = 1;
+        break;
 
-		case SIGUSR2 :  // User-defined signal 1
-		sprintf(msgstring, "SIGUSR2 at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGPIPE :  // Broken pipe: write to pipe with no readers
+        strcpy(SIGstr, "SIGPIPE");
+        SIGflag = 1;
+        break;
 
-		case SIGCHLD :  // Child stopped or terminated
-		sprintf(msgstring, "SIGCHLD at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGALRM :  // Timer signal from alarm
+        strcpy(SIGstr, "SIGALRM");
+        SIGflag = 1;
+        break;
 
-		case SIGCONT :  // Continue if stoppedshmimTCPtransmit
-		sprintf(msgstring, "SIGCONT at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGTERM :  // Termination signal
+        strcpy(SIGstr, "SIGTERM");
+        SIGflag = 1;
+        break;
 
-		case SIGSTOP :  // Stop process
-		sprintf(msgstring, "SIGSTOP at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGUSR1 :  // User-defined signal 1
+        strcpy(SIGstr, "SIGUSR1");
+        SIGflag = 1;
+        break;
 
-		case SIGTSTP :  // Stop typed at terminal
-		sprintf(msgstring, "SIGTSTP at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGUSR2 :  // User-defined signal 1
+        strcpy(SIGstr, "SIGUSR2");
+        SIGflag = 1;
+        break;
 
-		case SIGTTIN :  // Terminal input for background process
-		sprintf(msgstring, "SIGTTIN at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGCHLD :  // Child stopped or terminated
+        strcpy(SIGstr, "SIGCHLD");
+        SIGflag = 1;
+        break;
 
-		case SIGTTOU :  // Terminal output for background process
-		sprintf(msgstring, "SIGTTOU at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGCONT :  // Continue if stoppedshmimTCPtransmit
+        strcpy(SIGstr, "SIGCONT");
+        SIGflag = 1;
+        break;
 
-		case SIGBUS :  // Bus error (bad memory access)
-		sprintf(msgstring, "SIGBUS at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGSTOP :  // Stop process
+        strcpy(SIGstr, "SIGSTOP");
+        SIGflag = 1;
+        break;
 
-		case SIGPOLL :  // Pollable event (Sys V).
-		sprintf(msgstring, "SIGPOLL at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGTSTP :  // Stop typed at terminal
+        strcpy(SIGstr, "SIGTSTP");
+        SIGflag = 1;
+        break;
 
-		case SIGPROF :  // Profiling timer expired
-		sprintf(msgstring, "SIGPROF at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGTTIN :  // Terminal input for background process
+        strcpy(SIGstr, "SIGTTIN");
+        SIGflag = 1;
+        break;
 
-		case SIGSYS :  // Bad system call (SVr4)
-		sprintf(msgstring, "SIGSYS at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGTTOU :  // Terminal output for background process
+        strcpy(SIGstr, "SIGTTOU");
+        SIGflag = 1;
+        break;
 
-		case SIGTRAP :  // Trace/breakpoint trap
-		sprintf(msgstring, "SIGTRAP at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGBUS :  // Bus error (bad memory access)
+        strcpy(SIGstr, "SIGBUS");
+        SIGflag = 1;
+        break;
 
-		case SIGURG :  // Urgent condition on socket (4.2BSD)
-		sprintf(msgstring, "SIGURG at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGPOLL :  // Pollable event (Sys V).
+        strcpy(SIGstr, "SIGPOLL");
+        SIGflag = 1;
+        break;
 
-		case SIGVTALRM :  // Virtual alarm clock (4.2BSD)
-		sprintf(msgstring, "SIGVTALRM at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGPROF :  // Profiling timer expired
+        strcpy(SIGstr, "SIGPROF");
+        SIGflag = 1;
+        break;
 
-		case SIGXCPU :  // CPU time limit exceeded (4.2BSD)
-		sprintf(msgstring, "SIGXCPU at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
+    case SIGSYS :  // Bad system call (SVr4)
+        strcpy(SIGstr, "SIGSYS");
+        SIGflag = 1;
+        break;
 
-		case SIGXFSZ :  // File size limit exceeded (4.2BSD)
-		sprintf(msgstring, "SIGXFSZ at %s", timestring);
-		processinfo_WriteMessage(processinfo, msgstring);
-		break;
-	}
-	
+    case SIGTRAP :  // Trace/breakpoint trap
+        strcpy(SIGstr, "SIGTRAP");
+        SIGflag = 1;
+        break;
+
+    case SIGURG :  // Urgent condition on socket (4.2BSD)
+        strcpy(SIGstr, "SIGURG");
+        SIGflag = 1;
+        break;
+
+    case SIGVTALRM :  // Virtual alarm clock (4.2BSD)
+        strcpy(SIGstr, "SIGVTALRM");
+        SIGflag = 1;
+        break;
+
+    case SIGXCPU :  // CPU time limit exceeded (4.2BSD)
+        strcpy(SIGstr, "SIGXCPU");
+        SIGflag = 1;
+        break;
+
+    case SIGXFSZ :  // File size limit exceeded (4.2BSD)
+        strcpy(SIGstr, "SIGXFSZ");
+        SIGflag = 1;
+        break;
+    }
+
+
+    if(SIGflag == 1)
+    {
+        int slen = snprintf(msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "%s at %s", SIGstr, timestring);
+        if(slen<1) {
+            PRINT_ERROR("snprintf wrote <1 char");
+            abort(); // can't handle this error any other way
+        }
+        if(slen >= STRINGMAXLEN_IMGNAME) {
+            PRINT_ERROR("snprintf string truncation");
+            abort(); // can't handle this error any other way
+        }
+
+        processinfo_WriteMessage(processinfo, msgstring);
+    }
+
     return 0;
 }
 
@@ -1050,9 +1088,26 @@ int processinfo_exec_start(PROCESSINFO *processinfo) {
 
 
             if(dtiter > processinfo->dtiter_limit_value) {
-                char msgstring[200];
+                char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
-                sprintf(msgstring, "dtiter %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtiter_limit_cnt, processinfo->timerindex, 0.001 * dtiter, 0.001 * processinfo->dtiter_limit_value);
+                {
+                    int slen = snprintf(msgstring,
+                                        STRINGMAXLEN_PROCESSINFO_STATUSMSG,
+                                        "dtiter %4ld  %4d %6.1f us  > %6.1f us",
+                                        processinfo->dtiter_limit_cnt,
+                                        processinfo->timerindex,
+                                        0.001 * dtiter,
+                                        0.001 * processinfo->dtiter_limit_value);
+                    if(slen<1) {
+                        PRINT_ERROR("snprintf wrote <1 char");
+                        abort(); // can't handle this error any other way
+                    }
+                    if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG) {
+                        PRINT_ERROR("snprintf string truncation");
+                        abort(); // can't handle this error any other way
+                    }
+                }
+
                 processinfo_WriteMessage(processinfo, msgstring);
 
                 if(processinfo->dtiter_limit_enable == 2) { // pause process due to timing limit
@@ -1071,35 +1126,61 @@ int processinfo_exec_start(PROCESSINFO *processinfo) {
 
 
 int processinfo_exec_end(PROCESSINFO *processinfo) {
-	int loopOK = 1;
+    int loopOK = 1;
 #ifdef PROCESSINFO_ENABLED
-        if(processinfo->MeasureTiming == 1) {
-            clock_gettime(CLOCK_REALTIME, &processinfo->texecend[processinfo->timerindex]);
+    if(processinfo->MeasureTiming == 1) {
+        clock_gettime(CLOCK_REALTIME, &processinfo->texecend[processinfo->timerindex]);
 
-            if(processinfo->dtexec_limit_enable != 0) {
-                long dtexec;
+        if(processinfo->dtexec_limit_enable != 0) {
+            long dtexec;
 
-                dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecstart[processinfo->timerindex].tv_nsec;
-                dtexec += 1000000000 * (processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[processinfo->timerindex].tv_sec);
+            dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec - processinfo->texecstart[processinfo->timerindex].tv_nsec;
+            dtexec += 1000000000 * (processinfo->texecend[processinfo->timerindex].tv_sec - processinfo->texecend[processinfo->timerindex].tv_sec);
 
-                if(dtexec > processinfo->dtexec_limit_value) {
-                    char msgstring[200];
+            if(dtexec > processinfo->dtexec_limit_value) {
+                char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
-                    sprintf(msgstring, "dtexec %4ld  %4d %6.1f us  > %6.1f us", processinfo->dtexec_limit_cnt, processinfo->timerindex, 0.001 * dtexec, 0.001 * processinfo->dtexec_limit_value);
-                    processinfo_WriteMessage(processinfo, msgstring);
-
-                    if(processinfo->dtexec_limit_enable == 2) { // pause process due to timing limit
-                        processinfo->CTRLval = 1;
-                        sprintf(msgstring, "dtexec lim -> paused");
-                        processinfo_WriteMessage(processinfo, msgstring);
+                {
+                    int slen = snprintf(msgstring,
+                                        STRINGMAXLEN_PROCESSINFO_STATUSMSG,
+                                        "dtexec %4ld  %4d %6.1f us  > %6.1f us",
+                                        processinfo->dtexec_limit_cnt,
+                                        processinfo->timerindex,
+                                        0.001 * dtexec, 0.001 * processinfo->dtexec_limit_value);
+                    if(slen<1) {
+                        PRINT_ERROR("snprintf wrote <1 char");
+                        abort(); // can't handle this error any other way
                     }
-                    processinfo->dtexec_limit_cnt ++;
+                    if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG) {
+                        PRINT_ERROR("snprintf string truncation");
+                        abort(); // can't handle this error any other way
+                    }
                 }
+                processinfo_WriteMessage(processinfo, msgstring);
+
+                if(processinfo->dtexec_limit_enable == 2) { // pause process due to timing limit
+                    processinfo->CTRLval = 1;
+                    {
+						int slen = snprintf(msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "dtexec lim -> paused");
+						if(slen<1) {
+                        PRINT_ERROR("snprintf wrote <1 char");
+                        abort(); // can't handle this error any other way
+						}
+						if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG) {
+							PRINT_ERROR("snprintf string truncation");
+							abort(); // can't handle this error any other way
+						}
+					}
+                    
+                    processinfo_WriteMessage(processinfo, msgstring);
+                }
+                processinfo->dtexec_limit_cnt ++;
             }
         }
+    }
 
-        loopOK = processinfo_ProcessSignals(processinfo);
-        processinfo->loopcnt++;
+    loopOK = processinfo_ProcessSignals(processinfo);
+    processinfo->loopcnt++;
 #endif
 
     return loopOK;  // returns 0 if signal stops loop
@@ -1199,7 +1280,7 @@ static errno_t initncurses()
 
 int GetNumberCPUs(PROCINFOPROC *pinfop)
 {
-    unsigned int pu_index = 0;
+    int pu_index = 0;
 
 #ifdef USE_HWLOC
 
@@ -1244,7 +1325,7 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
     char outstring[16];
     char buf[100];
 
-    unsigned int tmp_index = 0;
+    //unsigned int tmp_index = 0;
 
     fpout = popen ("getconf _NPROCESSORS_ONLN", "r");
     if(fpout==NULL)
@@ -1262,7 +1343,8 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
     fpout = popen("cat /proc/cpuinfo |grep \"physical id\" | awk '{ print $NF }'", "r");
     pu_index = 0;
     pinfop->NBcpusocket = 1;
-    while ((fgets(buf, sizeof(buf), fpout) != NULL)&&(pu_index<pinfop->NBcpus)) {
+    while ( (fgets(buf, sizeof(buf), fpout) != NULL)  &&
+            (pu_index < pinfop->NBcpus) ) {
         pinfop->CPUids[pu_index] = pu_index;
         pinfop->CPUphys[pu_index] = atoi(buf);
 
@@ -1362,15 +1444,15 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 
     clock_gettime(CLOCK_REALTIME, &t1);
 
-	line = (char *)malloc(sizeof(char)*maxstrlen);
-    
+    line = (char *)malloc(sizeof(char)*maxstrlen);
+
     fp = fopen("/proc/stat", "r");
     if(fp == NULL) {
         exit(EXIT_FAILURE);
     }
 
     cpu = 0;
-    
+
     read = getline(&line, &maxstrlen, fp);
     if(read == -1) {
         printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
@@ -1406,7 +1488,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
         pinfop->CPUload[cpu] = (1.0 * v0 + v1 + v2 + v4 + v5 + v6) / (v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8);
         cpu++;
     }
-	free(line);
+    free(line);
     fclose(fp);
     clock_gettime(CLOCK_REALTIME, &t2);
     tdiff = info_time_diff(t1, t2);
@@ -1416,13 +1498,12 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     clock_gettime(CLOCK_REALTIME, &t1);
 
     // number of process per CPU -> we can get that from ps
-    char command[200];
-    char psoutfname[200];
-    char  procdname[200];
+    char command[STRINGMAXLEN_COMMAND];
+    char psoutfname[STRINGMAXLEN_FULLFILENAME];
+    char procdname[200];
     processinfo_procdirname(procdname);
 
-    sprintf(psoutfname, "%s/_psoutput.txt", procdname);
-
+    WRITE_FULLFILENAME(psoutfname, "%s/_psoutput.txt", procdname);
 
     // use ps command to scan processes, store result in file psoutfname
 
@@ -1430,10 +1511,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     //    system(command);
 
 
-    sprintf(command, "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", procdname, procdname, psoutfname, procdname);
-    if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-    }
+    EXECUTE_SYSTEM_COMMAND("{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o pid,psr,cpu,cmd > %s; fi; rm %s/_psOKlock &> /dev/null; }", procdname, procdname, psoutfname, procdname);
 
     //    sprintf(command, "echo \"%5d CREATED\" >> cmdlog.txt\n", cnt);
     //    system(command);
@@ -1447,14 +1525,24 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
         //        system(command);
 
         for(cpu = 0; cpu < pinfop->NBcpus; cpu++) {
-            char outstring[200];
+            char outstring[STRINGMAXLEN_DEFAULT];
             FILE *fpout;
-            sprintf(command, "CORENUM=%d; cat %s | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu, psoutfname);
+            {
+                int slen = snprintf(command, STRINGMAXLEN_COMMAND, "CORENUM=%d; cat %s | grep -E  \"^[[:space:]][[:digit:]]+[[:space:]]+${CORENUM}\"|wc -l", cpu, psoutfname);
+                if(slen<1) {
+                    PRINT_ERROR("snprintf wrote <1 char");
+                    abort(); // can't handle this error any other way
+                }
+                if(slen >= STRINGMAXLEN_COMMAND) {
+                    PRINT_ERROR("snprintf string truncation");
+                    abort(); // can't handle this error any other way
+                }
+            }
             fpout = popen(command, "r");
             if(fpout == NULL) {
                 printf("WARNING: cannot run command \"%s\"\n", command);
             } else {
-                if(fgets(outstring, 100, fpout) == NULL) {
+                if(fgets(outstring, STRINGMAXLEN_DEFAULT, fpout) == NULL) {
                     printf("WARNING: fgets error\n");
                 }
                 pclose(fpout);
@@ -1498,7 +1586,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
     // COLLECT INFO FROM SYSTEM
     FILE *fp;
-    char fname[200];
+    char fname[STRINGMAXLEN_FULLFILENAME];
 
 
     DEBUG_TRACEPOINT(" ");
@@ -1510,12 +1598,14 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     DEBUG_TRACEPOINT(" ");
     
     clock_gettime(CLOCK_REALTIME, &t1);
-    sprintf(fname, "/proc/%d/task/%d/cpuset", PID, PID);
+
+    WRITE_FULLFILENAME(fname, "/proc/%d/task/%d/cpuset", PID, PID);
+
     fp=fopen(fname, "r");
     if (fp == NULL)
         return -1;
     if(fscanf(fp, "%s", pinfodisp->cpuset) != 1)
-		printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+		PRINT_ERROR("fscanf returns value != 1");
     fclose(fp);
 	clock_gettime(CLOCK_REALTIME, &t2);
 	tdiff = info_time_diff(t1, t2);
@@ -1545,10 +1635,11 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         // {
 			DIR *dp;
 			struct dirent *ep;
-			char dirname[200];
+			char dirname[STRINGMAXLEN_FULLFILENAME];
 			
             // fprintf(stderr, "reading /proc/%d/task\n", PID);
-			sprintf(dirname, "/proc/%d/task/", PID);
+            WRITE_FULLFILENAME(dirname, "/proc/%d/task/", PID);
+			//sprintf(dirname, "/proc/%d/task/", PID);
 			dp = opendir(dirname);
 
 			if (dp != NULL)
@@ -1584,9 +1675,8 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     	clock_gettime(CLOCK_REALTIME, &t1);
         PID = pinfodisp->subprocPIDarray[spindex];
 
-
-
-        sprintf(fname, "/proc/%d/status", PID);
+        
+        WRITE_FULLFILENAME(fname, "/proc/%d/status", PID);
         fp = fopen(fname, "r");
         if (fp == NULL)
             return -1;
@@ -1637,7 +1727,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
         // read /proc/PID/stat
         clock_gettime(CLOCK_REALTIME, &t1);
-        sprintf(fname, "/proc/%d/stat", PID);
+        WRITE_FULLFILENAME(fname, "/proc/%d/stat", PID);
 
         int           stat_pid;       // (1) The process ID.
         char          stat_comm[20];  // (2) The filename of the executable, in parentheses.
@@ -1833,7 +1923,6 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
 int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 {
-	char syscommand[200];
 	char line[200];
 	FILE *fp;
 	int NBsetMax = 1000;
@@ -1842,11 +1931,8 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 	char word1[200];
 	int NBset = 0;
 	
-	sprintf(syscommand, "cset set -l | awk '/root/{stop=1} stop==1{print $0}' > _tmplist.txt");
-	if(system(syscommand) != 0)
-		printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
-	
-	
+	EXECUTE_SYSTEM_COMMAND("cset set -l | awk '/root/{stop=1} stop==1{print $0}' > _tmplist.txt");
+		
 	// first scan: get number of entries
 	fp = fopen("_tmplist.txt", "r");
 	while ( NBset < NBsetMax ) {
@@ -2070,7 +2156,7 @@ void *processinfo_scan(
 
 
                 // check if process info file exists
-                sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
 
                 // Does file exist ?
                 if(stat(SM_fname, &file_stat) == -1 && errno == ENOENT) {
@@ -2085,9 +2171,9 @@ void *processinfo_scan(
                 if(pinfolist->active[pindex] == 1) {
                     // check if process still exists
                     struct stat sts;
-                    char procfname[200];
+                    char procfname[STRINGMAXLEN_FULLFILENAME];
 
-                    sprintf(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
+                    WRITE_FULLFILENAME(procfname, "/proc/%d", (int) pinfolist->PIDarray[pindex]);
                     if(stat(procfname, &sts) == -1 && errno == ENOENT) {
                         // process doesn't exist -> flag as inactive
                         pinfolist->active[pindex] = 2;
@@ -2417,7 +2503,6 @@ errno_t processinfo_CTRLscreen()
 
     int cpusocket;
 
-    char syscommand[300];
     char pselected_FILE[200];
     char pselected_FUNCTION[200];
     int  pselected_LINE;
@@ -2873,8 +2958,8 @@ errno_t processinfo_CTRLscreen()
                     selectedOK = 1;
                     if(pinfolist->active[pindex]!=1)
                     {
-                        char SM_fname[200];
-                        sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                        char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                        WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                         remove(SM_fname);
                     }
                 }
@@ -2886,8 +2971,8 @@ errno_t processinfo_CTRLscreen()
                 {
 					remove(procinfoproc.pinfoarray[pindex]->logfilename);
 					
-                    char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                    char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
@@ -2901,8 +2986,8 @@ errno_t processinfo_CTRLscreen()
                 {
 					remove(procinfoproc.pinfoarray[pindex]->logfilename);
 					
-                    char SM_fname[200];
-                    sprintf(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                    char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                     remove(SM_fname);
                 }
             }
@@ -2984,12 +3069,12 @@ errno_t processinfo_CTRLscreen()
             {
                 endwin();
                 if(system("clear") != 0) // clear screen
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                    PRINT_ERROR("system() returns non-zero value");
                 printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
                 listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
-                sprintf(syscommand,"sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
-                if(system(syscommand) != 0)
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                
+                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex], CPUsetList[listindex].name);
+                
                 initncurses();
             }
             break;
@@ -2999,12 +3084,10 @@ errno_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
-                sprintf(syscommand,"sudo cset proc -m %d root &> /dev/null", pinfolist->PIDarray[pindex]);
-                if(system(syscommand) != 0)
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
-                sprintf(syscommand,"sudo cset proc --force -m %d %s &> /dev/null", pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
-                if(system(syscommand) != 0)
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                
+                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null", pinfolist->PIDarray[pindex]);
+                EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null", pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
+                
                 initncurses();
             }
             break;
@@ -3064,9 +3147,7 @@ errno_t processinfo_CTRLscreen()
 
         case 't':
             endwin();
-            sprintf(syscommand, "tmux a -t %s", procinfoproc.pinfoarray[pindexSelected]->tmuxname);
-            if(system(syscommand) != 0)
-                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+            EXECUTE_SYSTEM_COMMAND("tmux a -t %s", procinfoproc.pinfoarray[pindexSelected]->tmuxname);
             initncurses();
             break;
 
@@ -3075,9 +3156,7 @@ errno_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
-                sprintf(syscommand, "watch -n 0.1 cat /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
-                if(system(syscommand) != 0)
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status", (int) pinfolist->PIDarray[pindex]);
                 initncurses();
             }
             break;
@@ -3087,9 +3166,8 @@ errno_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
-                sprintf(syscommand, "watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
-                if(system(syscommand) != 0)
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);
+                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched", (int) pinfolist->PIDarray[pindex]);                
                 initncurses();
             }
             break;
@@ -3145,10 +3223,7 @@ errno_t processinfo_CTRLscreen()
             if(pinfolist->active[pindex]==1)
             {
                 endwin();
-                sprintf(syscommand, "clear; tail -f %s", procinfoproc.pinfoarray[pindex]->logfilename);
-                //sprintf(syscommand, "ls -l %s", pinfoarray[pindex]->logfilename);
-                if(system(syscommand) != 0)
-                    printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+                EXECUTE_SYSTEM_COMMAND("clear; tail -f %s", procinfoproc.pinfoarray[pindex]->logfilename);
                 initncurses();
             }
             break;
@@ -3174,25 +3249,22 @@ errno_t processinfo_CTRLscreen()
 
         case KEY_F(5): // htop
             endwin();
-            sprintf(syscommand, "htop");
-            if(system(syscommand) != 0)
-                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+            if(system("htop") != 0)
+                PRINT_ERROR("system() returns non-zero value");
             initncurses();
             break;
 
         case KEY_F(6): // iotop
             endwin();
-            sprintf(syscommand, "sudo iotop -o");
-            if(system(syscommand) != 0)
-                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+            if(system("sudo iotop -o") != 0)
+                PRINT_ERROR("system() returns non-zero value");
             initncurses();
             break;
 
         case KEY_F(7): // atop
-            endwin();
-            sprintf(syscommand, "sudo atop");
-            if(system(syscommand) != 0)
-                printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
+            endwin();            
+            if(system("sudo atop") != 0)
+                PRINT_ERROR("system() returns non-zero value");
             initncurses();
             break;
 
@@ -4037,9 +4109,9 @@ errno_t processinfo_CTRLscreen()
                                         else if(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex] != procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex])
                                             attron(COLOR_PAIR(3));
 
-                                        sprintf(string, " +%02d +%02d",
-                                                abs(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex]    - procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
-                                                abs(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex] - procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
+                                        sprintf(string, " +%02ld +%02ld",
+                                                labs(procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spindex]    - procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spindex])%100,
+                                                labs(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex] - procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex])%100
                                                );
                                         pstrlen_total += strlen(string);
                                         printw("%s", string);
