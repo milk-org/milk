@@ -1,4 +1,3 @@
-
 /**
  * @file function_parameters.h
  * @brief Tools to help expose and control function parameters
@@ -13,7 +12,6 @@
 #define FUNCTION_PARAMETERS_H
 
 
-#include <unistd.h> // usleep
 
 
 
@@ -557,7 +555,12 @@ return RETURN_FAILURE; \
 return RETURN_SUCCESS; \
 } \
 while(fps.loopstatus == 1) { \
-usleep(50); \
+{ \
+struct timespec treq, trem; \
+treq.tv_sec = 0; \
+treq.tv_nsec = 50000; \
+nanosleep(&treq, &trem); \
+} \
 if(function_parameter_FPCONFloopstep(&fps) == 1) {
 
 
