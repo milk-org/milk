@@ -113,7 +113,7 @@ extern int C_ERRNO;			// C errno (from errno.h)
 // 
 
 /** @brief Print error (in red) and continue */
-#define print_ERROR(...) do { \
+#define PRINT_ERROR(...) do { \
 sprintf(data.testpoint_msg, __VA_ARGS__); \
 printf("ERROR: %c[%d;%dm %s %c[%d;m\n", (char) 27, 1, 31, data.testpoint_msg, (char) 27, 0); \
 sprintf(data.testpoint_file, "%s", __FILE__); \
@@ -124,7 +124,7 @@ clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
 
 
 /** @brief Print warning and continue */
-#define print_WARNING(...) do { \
+#define PRINT_WARNING(...) do { \
 char warnmessage[1000]; \
 sprintf(warnmessage, __VA_ARGS__); \
 fprintf(stderr, \
@@ -153,12 +153,12 @@ C_ERRNO = 0; \
 #if defined NDEBUG || defined STANDALONE
 #define DEBUG_TRACEPOINT(...)
 #else
-#define DEBUG_TRACEPOINT(...) do { \
-sprintf(data.testpoint_file, "%s", __FILE__); \
-sprintf(data.testpoint_func, "%s", __func__); \
-data.testpoint_line = __LINE__; \
-clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
-sprintf(data.testpoint_msg, __VA_ARGS__); \
+#define DEBUG_TRACEPOINT(...) do {                    \
+sprintf(data.testpoint_file, "%s", __FILE__);         \
+sprintf(data.testpoint_func, "%s", __func__);         \
+data.testpoint_line = __LINE__;                       \
+clock_gettime(CLOCK_REALTIME, &data.testpoint_time);  \
+sprintf(data.testpoint_msg, __VA_ARGS__);             \
 } while(0)
 #endif
 
@@ -167,16 +167,88 @@ sprintf(data.testpoint_msg, __VA_ARGS__); \
 #if defined NDEBUG || defined STANDALONE
 #define DEBUG_TRACEPOINTLOG(...)
 #else
-#define DEBUG_TRACEPOINTLOG(...) do { \
-sprintf(data.testpoint_file, "%s", __FILE__); \
-sprintf(data.testpoint_func, "%s", __func__); \
-data.testpoint_line = __LINE__; \
+#define DEBUG_TRACEPOINTLOG(...) do {                \
+sprintf(data.testpoint_file, "%s", __FILE__);        \
+sprintf(data.testpoint_func, "%s", __func__);        \
+data.testpoint_line = __LINE__;                      \
 clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
-sprintf(data.testpoint_msg, __VA_ARGS__); \
-write_process_log(); \
+sprintf(data.testpoint_msg, __VA_ARGS__);            \
+write_process_log();                                 \
 } while(0)
 #endif
 
+
+
+//
+// ************ ERROR-CHECKING FUNCTIONS **********************************
+// 
+
+
+
+#define EXECUTE_SYSTEM_COMMAND(...) do {                                   \
+char syscommandstring[STRINGMAXLEN_COMMAND];                               \
+int slen = snprintf(syscommandstring, STRINGMAXLEN_COMMAND, __VA_ARGS__);  \
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_COMMAND) {                                         \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+if(system(syscommandstring) != 0) {                                        \
+    PRINT_ERROR("system() returns non-zero value\ncommand \"%s\" failed", syscommandstring); \
+}                                                                          \
+} while(0)
+
+
+
+//
+// requires existing image string of len STRINGMAXLEN_IMGNAME
+// 
+#define WRITE_IMAGENAME(imname, ...) do { \
+int slen = snprintf(imname, STRINGMAXLEN_IMGNAME, __VA_ARGS__); \
+if(slen<1) {                                                    \
+    PRINT_ERROR("snprintf wrote <1 char");                      \
+    abort();                                                    \
+}                                                               \
+if(slen >= STRINGMAXLEN_IMGNAME) {                              \
+    PRINT_ERROR("snprintf string truncation");                  \
+    abort();                                                    \
+}                                                               \
+} while(0)
+
+
+//
+// requires existing image string of len STRINGMAXLEN_FILENAME
+// 
+#define WRITE_FILENAME(fname, ...) do { \
+int slen = snprintf(fname, STRINGMAXLEN_FILENAME, __VA_ARGS__); \
+if(slen<1) {                                                    \
+    PRINT_ERROR("snprintf wrote <1 char");                      \
+    abort();                                                    \
+}                                                               \
+if(slen >= STRINGMAXLEN_FILENAME) {                              \
+    PRINT_ERROR("snprintf string truncation");                  \
+    abort();                                                    \
+}                                                               \
+} while(0)
+
+
+//
+// requires existing image string of len STRINGMAXLEN_FULLFILENAME
+// 
+#define WRITE_FULLFILENAME(ffname, ...) do { \
+int slen = snprintf(ffname, STRINGMAXLEN_FULLFILENAME, __VA_ARGS__); \
+if(slen<1) {                                                    \
+    PRINT_ERROR("snprintf wrote <1 char");                      \
+    abort();                                                    \
+}                                                               \
+if(slen >= STRINGMAXLEN_FULLFILENAME) {                              \
+    PRINT_ERROR("snprintf string truncation");                  \
+    abort();                                                    \
+}                                                               \
+} while(0)
 
 
 

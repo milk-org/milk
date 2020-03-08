@@ -518,20 +518,12 @@ void sig_handler(
 errno_t exitCLI() {
 
     if(data.fifoON == 1) {
-        char command[500];
-        sprintf(command, "rm %s", data.fifoname);
-
-        if(system(command) != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-        }
+		EXECUTE_SYSTEM_COMMAND("rm %s", data.fifoname);
     }
 
 
     if(Listimfile == 1) {
-        if(system("rm imlist.txt") == -1) {
-            printERROR(__FILE__, __func__, __LINE__, "system() error");
-            exit(4);
-        }
+		EXECUTE_SYSTEM_COMMAND("rm imlist.txt");
     }
 
     printf("Closing PID %ld (prompt process)\n", (long) getpid());
@@ -770,26 +762,17 @@ static errno_t printInfo() {
 
 
 static errno_t help() {
-    char command[200];
 
-    sprintf(command, "more %s/src/CommandLineInterface/doc/help.txt", data.sourcedir);
-    if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system call error");
-        exit(4);
-    }
+	EXECUTE_SYSTEM_COMMAND("more %s/src/CommandLineInterface/doc/help.txt", data.sourcedir);
+ 
     return RETURN_SUCCESS;
 }
 
 
 static errno_t helpreadline() {
-    char command[200];
-
-    sprintf(command, "more %s/src/CommandLineInterface/doc/helpreadline.md", data.sourcedir);
-    if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__, "system call error");
-        exit(4);
-    }
-
+	
+	EXECUTE_SYSTEM_COMMAND("more %s/src/CommandLineInterface/doc/helpreadline.md", data.sourcedir);
+  
     return RETURN_SUCCESS;
 }
 
@@ -1666,18 +1649,8 @@ errno_t runCLI(
         // If fifo is on and file CLIstatup.txt exists, load it 
         if(initstartup == 0)
             if(data.fifoON == 1) {
-				char command[200];
-				
-                printf("IMPORTING FILE %s ... ", CLIstartupfilename);
-                sprintf(command, "cat %s > %s 2> /dev/null", CLIstartupfilename, data.fifoname);
-                if(system(command) != 0) { // no startup file - this is OK
-                    printf("File does not exist\n");
-                    //printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-                }
-                else
-                {
-                    printf("Done\n");
-                }
+				EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null", CLIstartupfilename, data.fifoname);		
+                printf("IMPORTING FILE %s ... ", CLIstartupfilename);                
             }
         initstartup = 1;
 
@@ -1776,9 +1749,11 @@ errno_t runCLI(
 	rl_clear_history();
 	rl_callback_handler_remove();
 	
-
+	
 
 	 DEBUG_TRACEPOINT("exit from runCLI function");
+
+
 	 
     return RETURN_SUCCESS;
 }
@@ -2679,16 +2654,26 @@ static errno_t load_module_shared(
     const char* restrict modulename
 )
 {
-    char libname[200];
-    char modulenameLC[200];
-//    char c;
-//    int n;
+    int STRINGMAXLEN_LIBRARYNAME = 200;
+    char libname[STRINGMAXLEN_LIBRARYNAME];
+    char modulenameLC[STRINGMAXLEN_LIBRARYNAME];
+    //    char c;
+    //    int n;
     //    int (*libinitfunc) ();
     //    char *error;
     //    char initfuncname[200];
 
-
-    sprintf(modulenameLC, "%s", modulename);
+    {
+        int slen = snprintf(modulenameLC, STRINGMAXLEN_LIBRARYNAME, "%s", modulename);
+        if(slen<1) {
+            PRINT_ERROR("snprintf wrote <1 char");
+            abort(); // can't handle this error any other way
+        }
+        if(slen >= STRINGMAXLEN_LIBRARYNAME) {
+            PRINT_ERROR("snprintf string truncation");
+            abort(); // can't handle this error any other way
+        }
+    }
 
     /*    for(n=0; n<strlen(modulenameLC); n++)
         {
@@ -2698,7 +2683,18 @@ static errno_t load_module_shared(
     */
 
     //    sprintf(libname, "%s/lib/lib%s.so", data.sourcedir, modulenameLC);
-    sprintf(libname, "/usr/local/lib/lib%s.so", modulenameLC);
+    {
+        int slen = snprintf(libname, STRINGMAXLEN_LIBRARYNAME, "/usr/local/lib/lib%s.so", modulenameLC);
+        if(slen<1) {
+            PRINT_ERROR("snprintf wrote <1 char");
+            abort(); // can't handle this error any other way
+        }
+        if(slen >= STRINGMAXLEN_LIBRARYNAME) {
+            PRINT_ERROR("snprintf string truncation");
+            abort(); // can't handle this error any other way
+        }
+    }
+
     printf("libname = %s\n", libname);
 
 
@@ -3007,6 +3003,7 @@ int CLI_checkarg0(int argnum, int argtype, int errmsg)
             rval = 0;
             break;
         }
+        break;
     case 5: // should be string (image or not)
         switch (data.cmdargtoken[argnum].type) {
         case 1:

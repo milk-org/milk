@@ -344,11 +344,11 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
             // Adopt default name for fpsname
             int slen = snprintf(data.FPS_name, FUNCTION_PARAMETER_STRMAXLEN, "%s", fpsname_default);
             if(slen < 1) {
-                print_ERROR("snprintf wrote <1 char");
+                PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
             if(slen >= FUNCTION_PARAMETER_STRMAXLEN) {
-                print_ERROR("snprintf string truncation.\n"
+                PRINT_ERROR("snprintf string truncation.\n"
                             "Full string  : %s\n"
                             "Truncated to : %s",
                             fpsname_default,
@@ -367,11 +367,11 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
                 int slen = snprintf(fpsname1, FUNCTION_PARAMETER_STRMAXLEN,
                                     "%s-%s", data.FPS_name, data.cmdargtoken[2].val.string);
                 if(slen < 1) {
-                    print_ERROR("snprintf wrote <1 char");
+                    PRINT_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
                 }
                 if(slen >= FUNCTION_PARAMETER_STRMAXLEN) {
-                    print_ERROR("snprintf string truncation.\n"
+                    PRINT_ERROR("snprintf string truncation.\n"
                                 "Full string  : %s-%s\n"
                                 "Truncated to : %s",
                                 data.FPS_name,
