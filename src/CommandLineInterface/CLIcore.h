@@ -13,8 +13,17 @@
 #endif
 
 
+
+
 #ifndef _CLICORE_H
 #define _CLICORE_H
+
+
+// include sem_timedwait
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE	200809L
+#endif
+
 
 #include <stdint.h>
 #include <stdio.h>
