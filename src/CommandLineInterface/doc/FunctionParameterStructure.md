@@ -494,9 +494,9 @@ errno_t MyFunction_RUN(
 	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
 	
 	
-	// ===========================	
+	// ===================================	
 	// ### GET FUNCTION PARAMETER VALUES
-	// ===========================
+	// ===================================
 	// parameters are addressed by their tag name
 	
 	// These parameters are read once, before running the loop
@@ -523,7 +523,7 @@ errno_t MyFunction_RUN(
     PROCESSINFO *processinfo;
 
     processinfo = processinfo_setup(
-        fpsname,	             // re-use fpsname as processinfo name
+        data.FPS_name,	             // re-use fpsname as processinfo name
         "computes something",    // description
         "add image1 to image2",  // message on startup
         __FUNCTION__, __FILE__, __LINE__

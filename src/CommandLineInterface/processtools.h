@@ -33,7 +33,6 @@
 // timing info for real-time loop processes
 #define PROCESSINFO_NBtimer 100
 
-#define PROCESSINFONAME_MAXCHAR 80
 
 
 #ifndef __STDC_LIB_EXT1__
@@ -45,8 +44,13 @@ typedef int errno_t;
 
 // --------------------- MANAGING PROCESSES -------------------------------
 
-
-
+#define STRINGMAXLEN_PROCESSINFO_NAME          80
+#define STRINGMAXLEN_PROCESSINFO_SRCFUNC      200
+#define STRINGMAXLEN_PROCESSINFO_SRCFILE      200
+#define STRINGMAXLEN_PROCESSINFO_TMUXNAME     100
+#define STRINGMAXLEN_PROCESSINFO_STATUSMSG    200
+#define STRINGMAXLEN_PROCESSINFO_LOGFILENAME  250
+#define STRINGMAXLEN_PROCESSINFO_DESCRIPTION  200
 
 /**
  *
@@ -59,11 +63,11 @@ typedef int errno_t;
  *
  */
 typedef struct {
-    char name[PROCESSINFONAME_MAXCHAR];             /// process name (human-readable)
+    char name[STRINGMAXLEN_PROCESSINFO_NAME];             /// process name (human-readable)
 
-    char source_FUNCTION[200];  /// source code function
-    char source_FILE[200];      /// source code file
-    int source_LINE;            /// source code line
+    char source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC];  /// source code function
+    char source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE];      /// source code file
+    int  source_LINE;            /// source code line
 
     pid_t PID;                  /// process ID; file name is /tmp/proc.PID.shm
 
@@ -71,13 +75,13 @@ typedef struct {
 
     long loopcnt;    // counter, useful for loop processes to monitor activity
     long loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
-    int CTRLval;     // control value to be externally written.
+    int  CTRLval;     // control value to be externally written.
     // 0: run                     (default)
     // 1: pause
     // 2: increment single step (will go back to 1)
     // 3: exit loop
 
-    char tmuxname[100];  // name of tmux session in which process is running, or
+    char tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];  // name of tmux session in which process is running, or
     // "NULL"
     int loopstat;        
     // 0: INIT       Initialization before loop
@@ -88,11 +92,11 @@ typedef struct {
     // 5: SPINNING   do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
 	// 6: CRASHED    pid has gone away without proper exit sequence. Will attempt to generate exit log file (using atexit) to identify crash location
 
-    char statusmsg[200];  // status message
-    int statuscode;       // status code
+    char statusmsg[STRINGMAXLEN_PROCESSINFO_STATUSMSG];  // status message
+    int  statuscode;       // status code
 
     FILE *logFile;
-    char logfilename[250];
+    char  logfilename[STRINGMAXLEN_PROCESSINFO_LOGFILENAME];
 
     // OPTIONAL TIMING MEASUREMENT
     // Used to measure how long loop process takes to complete task
@@ -122,7 +126,7 @@ typedef struct {
     long dtexec_limit_value;
     long dtexec_limit_cnt;
 
-    char description[200];
+    char description[STRINGMAXLEN_PROCESSINFO_DESCRIPTION];
 
 } PROCESSINFO;
 
@@ -137,7 +141,7 @@ typedef struct {
 typedef struct {
     pid_t PIDarray[PROCESSINFOLISTSIZE];
     int   active[PROCESSINFOLISTSIZE];
-    char  pnamearray[PROCESSINFOLISTSIZE][PROCESSINFONAME_MAXCHAR];  // short name
+    char  pnamearray[PROCESSINFOLISTSIZE][STRINGMAXLEN_PROCESSINFO_NAME];  // short name
 
 } PROCESSINFOLIST;
 
