@@ -533,7 +533,7 @@ PROCESSINFO *processinfo_shm_create(
     pindex = processinfo_shm_list_create();
   
     pinfolist->PIDarray[pindex] = PID;
-	strncpy(pinfolist->pnamearray[pindex], pname, PROCESSINFONAME_MAXCHAR);
+	strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME);
 
     char  procdname[200];
     processinfo_procdirname(procdname);
