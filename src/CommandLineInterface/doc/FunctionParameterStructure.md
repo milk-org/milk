@@ -125,7 +125,7 @@ The FPS control tool is started from the command line :
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
 - arg1: A command code
-- arg2: Optional argument 
+- arg2+: Optional arguments 
 
 The command code is a string, and will determine the action to be executed:
 - `_FPSINIT_`  : Initialize FPS for the function
@@ -136,26 +136,26 @@ The command code is a string, and will determine the action to be executed:
  
  
  
-@note Why Optional argument to CLI function ?
-@note Multiple instances of a C function may need to be running, each with its own FPS. An optional argument provides a mechanism to differentiate the FPSs. It is appended to the FPS name following a dash. The optional argument can be a number (usually integer) or a string.
+@note Why Optional arguments to CLI function ?
+@note Multiple instances of a C function may need to be running, each with its own FPS. Optional arguments provides a mechanism to differentiate the FPSs. They are appended to the FPS name following a dash. Optional arguments can be a number (usually integer) or a string.
  
 
-Example source code below, assuming one optional long type argument. 
+Example source code below.
 
 ~~~~{.c}
 
 errno_t ExampleFunction_cli()
 {
     // try FPS implementation
-    // set data.fpsname, providing default value as first arg, and set data.FPSCMDCODE value
+    // set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value
     // default FPS name will be used if CLI process has NOT been named
     // see code in function_parameter.c for detailed rules
     function_parameter_getFPSname_from_CLIfunc("measlinRM");
 	
-	
-	if(data.FPS_CMDCODE != 0) {	// call FPS implementation	
-		data.FPS_CONFfunc = AOcontrolLoop_acquireCalib_Measure_WFS_linResponse_FPCONF;
-		data.FPS_RUNfunc  = AOcontrolLoop_acquireCalib_Measure_WFS_linResponse_RUN;
+	if(data.FPS_CMDCODE != 0) {	// use FPS implementation	
+		// set pointers to CONF and RUN functions
+		data.FPS_CONFfunc = ExampleFunction_FPCONF;
+		data.FPS_RUNfunc  = ExampleFunction_RUN;
 		function_parameter_execFPScmd();
 		return RETURN_SUCCESS;
 	}
@@ -167,7 +167,6 @@ errno_t ExampleFunction_cli()
         CLI_checkarg(2, 2) 
         == 0) {
         ExampleFunction(
-            LOOPNUMBER,
             data.cmdargtoken[1].val.numf,
             data.cmdargtoken[2].val.numl
         );
@@ -210,15 +209,12 @@ Check function_parameters.h for full list of flags.
 // initializes configuration parameters structure
 //
 errno_t ExampleFunction_FPCONF(
-    char *fpsname,
-    uint32_t CMDmode,
-    long optarg00
 )
 {
     // ===========================
     // SETUP FPS
     // ===========================
-    FPS_SETUP_INIT(fpsname, CMDmode); // macro in function_parameter.h
+    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDMODE); // macro in function_parameter.h
 
 
     // ==============================================
@@ -363,13 +359,12 @@ The RUN function will connect to the FPS and execute the run loop.
 // run loop process
 //
 errno_t ExampleFunction_RUN(
-    char *fpsname
 )
 {
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
-	FPS_CONNECT( fpsname, FPSCONNECT_RUN );
+	FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN );
 
 	
 	
@@ -425,7 +420,7 @@ errno_t ExampleFunction_RUN(
 ## 6.2. Non-FPS fallback function
 
 ~~~{.c}
-long ExampleFunction(
+errno_t ExampleFunction(
     long arg0num, 
     long arg1num, 
     long arg2num, 
@@ -439,10 +434,11 @@ long ExampleFunction(
     FUNCTION_PARAMETER_STRUCT fps;
 
     // create FPS
-    sprintf(fpsname, "exfunc-%06ld", pindex);
-    ExampleFunction_FPCONF(fpsname, CMDCODE_FPSINIT, DMindex);
+    sprintf(data.FPS_name, "exfunc-%06ld", pindex);
+    data.FPS_CMDMODE = FPSCMDCODE_FPSINIT;
+    ExampleFunction_FPCONF();
 
-    function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+    function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
 
     functionparameter_SetParamValue_INT64(&fps, ".arg0", arg0);
     functionparameter_SetParamValue_INT64(&fps, ".arg1", arg1);
@@ -451,9 +447,9 @@ long ExampleFunction(
 
     function_parameter_struct_disconnect(&fps);
 
-    MyFunction_RUN(fpsname);
+    ExampleFunction_RUN();
 
-    return(IDout);
+    return RETURN_SUCCESS;
 }
 
 
@@ -481,11 +477,6 @@ The example also shows using FPS to set the process realtime priority.
  *
  * This example demonstrates use of processinfo and fps structures.\n
  *
- * ## Arguments
- *
- * @param[in]
- * char		fpsname*
- * 			name of function parameter structure
  *
  * All function parameters are held inside the function parameter structure (FPS).\n
  * 
@@ -495,13 +486,12 @@ The example also shows using FPS to set the process realtime priority.
  */
 
 errno_t MyFunction_RUN(
-    char *fpsname
 )
 {
 	// ===========================
 	// ### Connect to FPS 
 	// ===========================
-	FPS_CONNECT( fpsname, FPSCONNECT_RUN );
+	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
 	
 	
 	// ===========================	

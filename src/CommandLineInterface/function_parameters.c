@@ -400,22 +400,22 @@ errno_t function_parameter_execFPScmd()
         return RETURN_SUCCESS;
     }
 
-    if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTART) {  // Start conf process
+    if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTART) {  // Start CONF process
         data.FPS_CONFfunc();
         return RETURN_SUCCESS;
     }
 
-    if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTOP) { // Stop conf process
+    if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTOP) { // Stop CONF process
         data.FPS_CONFfunc();
         return RETURN_SUCCESS;
     }
 
-    if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTART) { // Run process
+    if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTART) { // Start RUN process
         data.FPS_RUNfunc();
         return RETURN_SUCCESS;
     }
 
-    if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTOP) { // Stop process
+    if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTOP) { // Stop RUN process
         data.FPS_CONFfunc();
         return RETURN_SUCCESS;
     }
