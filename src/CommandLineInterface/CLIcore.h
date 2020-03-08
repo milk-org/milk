@@ -414,7 +414,7 @@ typedef struct
 
 	// FPS instegration
 	// these entries are set when CLI process enters FPS function
-	char           FPS_name[FUNCTION_PARAMETER_STRMAXLEN]; // name of FPS if in use
+	char           FPS_name[FPS_NAME_STRMAXLEN]; // name of FPS if in use
 	uint32_t       FPS_CMDCODE;
 	errno_t        (*FPS_CONFfunc)();
 	errno_t        (*FPS_RUNfunc)();
