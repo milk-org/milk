@@ -5733,13 +5733,18 @@ imageID COREMOD_MEMORY_streamPoke(
     int loopCTRLexit = 0; // toggles to 1 when loop is set to exit cleanly
     long loopcnt = 0;
 
+
     while(loopOK == 1)
     {
         // processinfo control
         if(data.processinfo==1)
         {
-            while(processinfo->CTRLval == 1)  // pause
-                usleep(50);
+            while(processinfo->CTRLval == 1) { // pause
+                struct timespec treq, trem;
+                treq.tv_sec = 0;
+                treq.tv_nsec = 50000;
+                nanosleep(&treq, &trem);
+			}
 
             if(processinfo->CTRLval == 2) // single iteration
                 processinfo->CTRLval = 1;
