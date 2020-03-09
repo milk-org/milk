@@ -204,11 +204,13 @@ imageID image_get_first_ID_available_from_images(
 }
 
 
-int get_process_name_by_pid(const int pid, char *pname)
-{
-    char* fname = (char*) calloc(1024, sizeof(char));
 
-    sprintf(fname, "/proc/%d/cmdline",pid);
+int get_process_name_by_pid(const int pid, char *pname)
+{	
+    char* fname = (char*) calloc(STRINGMAXLEN_FULLFILENAME, sizeof(char));
+
+	WRITE_FULLFILENAME(fname, "/proc/%d/cmdline", pid);
+//    sprintf(fname, "/proc/%d/cmdline", pid);
     FILE* fp = fopen(fname,"r");
     if(fp) {
         size_t size;
@@ -431,21 +433,21 @@ void *streamCTRL_scan(
 
                         streaminfo[sindex].SymLink = 1;
                         snprintf(fullname, stringmaxlen, "%s/%s", SHAREDSHMDIR, dir->d_name);
-//                        readlink (fullname, linknamefull, 200-1);
+                        //                        readlink (fullname, linknamefull, 200-1);
                         linknamefull = realpath( fullname, NULL);
 
-						if(linknamefull == NULL) {
-							pathOK = 0;
-						}
-						else if ( access(linknamefull, R_OK ) ) // file cannot be read
-						{
-							pathOK = 0;
-						}
+                        if(linknamefull == NULL) {
+                            pathOK = 0;
+                        }
+                        else if ( access(linknamefull, R_OK ) ) // file cannot be read
+                        {
+                            pathOK = 0;
+                        }
 
                         if( pathOK == 0 ) // file cannot be read
                         {
-							if(streaminfoproc->WriteFlistToFile == 1)
-								fprintf(fpfscan, " %s <-> LINK %s CANNOT BE READ -> off", fullname, linknamefull);
+                            if(streaminfoproc->WriteFlistToFile == 1)
+                                fprintf(fpfscan, " %s <-> LINK %s CANNOT BE READ -> off", fullname, linknamefull);
                             scanentryOK = 0;
                         }
                         else
@@ -465,10 +467,10 @@ void *streamCTRL_scan(
                             }
                             strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
                         }
-                        
+
                         if(linknamefull != NULL) {
-							free(linknamefull);
-						}
+                            free(linknamefull);
+                        }
 
                     }
                     else
@@ -483,22 +485,22 @@ void *streamCTRL_scan(
                     {
                         strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
-                    
-						if(streaminfoproc->WriteFlistToFile == 1)
-						{
-						if( streaminfo[sindex].SymLink == 1)
-							fprintf(fpfscan, "| %12s -> [ %12s ] ", streaminfo[sindex].sname, streaminfo[sindex].linkname);
-						else
-							fprintf(fpfscan, "| %12s -> [ %12s ] ", streaminfo[sindex].sname, " ");
-						}
-					}
+
+                        if(streaminfoproc->WriteFlistToFile == 1)
+                        {
+                            if( streaminfo[sindex].SymLink == 1)
+                                fprintf(fpfscan, "| %12s -> [ %12s ] ", streaminfo[sindex].sname, streaminfo[sindex].linkname);
+                            else
+                                fprintf(fpfscan, "| %12s -> [ %12s ] ", streaminfo[sindex].sname, " ");
+                        }
+                    }
 
 
                     if(scanentryOK == 1)
                     {
-					
-						ID = image_ID_from_images(images, streaminfo[sindex].sname);
-					
+
+                        ID = image_ID_from_images(images, streaminfo[sindex].sname);
+
 
                         // connect to stream
                         if(ID == -1)
@@ -516,10 +518,10 @@ void *streamCTRL_scan(
                             float gainv = 1.0;
                             if(firstIter == 0)
                             {
-								streaminfo[sindex].deltacnt0 = images[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
+                                streaminfo[sindex].deltacnt0 = images[ID].md[0].cnt0 - streaminfo[sindex].cnt0;
                                 streaminfo[sindex].updatevalue = (1.0 - gainv) * streaminfo[sindex].updatevalue + gainv * (1.0*streaminfo[sindex].deltacnt0/tdiffv);
-							}
-							
+                            }
+
                             streaminfo[sindex].cnt0 = images[ID].md[0].cnt0; // keep memory of cnt0
                             streaminfo[sindex].ID = ID;
                             streaminfo[sindex].datatype = images[ID].md[0].datatype;
@@ -553,8 +555,9 @@ void *streamCTRL_scan(
         if(streaminfoproc->fuserUpdate==1)
         {
             FILE *fp;
-            char plistoutline[2000];
-            char command[2000];
+            int STRINGMAXLEN_LINE = 2000;
+            char plistoutline[STRINGMAXLEN_LINE];
+            char command[STRINGMAXLEN_COMMAND];
 
             int NBpid = 0;
 
@@ -573,7 +576,18 @@ void *streamCTRL_scan(
                 if(PReadMode == 0)
                 {
                     // popen option
-                    sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null", SHAREDSHMDIR, streaminfo[sindexscan1].sname);
+                    {
+                        int slen = snprintf(command, STRINGMAXLEN_COMMAND, "/bin/fuser %s/%s.im.shm 2>/dev/null", SHAREDSHMDIR, streaminfo[sindexscan1].sname);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort(); // can't handle this error any other way
+                        }
+                        if(slen >= STRINGMAXLEN_COMMAND) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort(); // can't handle this error any other way
+                        }
+                    }
+
                     fp = popen(command, "r");
                     if (fp == NULL) {
                         streaminfo[sindexscan1].streamOpenPID_status = 2; // failed
@@ -582,7 +596,7 @@ void *streamCTRL_scan(
                     {
                         streaminfo[sindexscan1].streamOpenPID_status = 1;
 
-                        if (fgets(plistoutline, 2000-1, fp) == NULL)
+                        if (fgets(plistoutline, STRINGMAXLEN_LINE-1, fp) == NULL)
                             sprintf(plistoutline, " ");
                         pclose(fp);
                     }
@@ -590,15 +604,26 @@ void *streamCTRL_scan(
                 else
                 {
                     // filesystem option
-                    char plistfname[2000];
+                    char plistfname[STRINGMAXLEN_FULLFILENAME];
+                    WRITE_FULLFILENAME(plistfname, "%s/%s.shmplist", SHAREDSHMDIR, streaminfo[sindexscan1].sname);
 
-                    sprintf(plistfname, "%s/%s.shmplist", SHAREDSHMDIR, streaminfo[sindexscan1].sname);
-                    sprintf(command, "/bin/fuser %s/%s.im.shm 2>/dev/null > %s", SHAREDSHMDIR, streaminfo[sindexscan1].sname, plistfname);
+                    {
+                        int slen = snprintf(command, STRINGMAXLEN_COMMAND, "/bin/fuser %s/%s.im.shm 2>/dev/null > %s", SHAREDSHMDIR, streaminfo[sindexscan1].sname, plistfname);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort(); // can't handle this error any other way
+                        }
+                        if(slen >= STRINGMAXLEN_COMMAND) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort(); // can't handle this error any other way
+                        }
+                    }
+
                     if( system(command) == -1)
                     {
-						perror("Command system() failed");
-						exit( EXIT_FAILURE );
-					}
+                        perror("Command system() failed");
+                        exit( EXIT_FAILURE );
+                    }
 
                     fp = fopen(plistfname, "r");
                     if (fp == NULL) {
@@ -606,7 +631,7 @@ void *streamCTRL_scan(
                     }
                     else
                     {
-                        if(fgets(plistoutline, 2000-1, fp) == NULL)
+                        if(fgets(plistoutline, STRINGMAXLEN_LINE-1, fp) == NULL)
                             sprintf(plistoutline, " ");
 
                         fclose(fp);
@@ -660,8 +685,8 @@ void *streamCTRL_scan(
 
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
-        
-        
+
+
         usleep(streaminfoproc->twaitus);
 
         scancnt ++;
@@ -713,7 +738,7 @@ errno_t streamCTRL_CTRLscreen() {
 
 
 
-   
+
 
     int SORTING = 0;
     int SORT_TOGGLE = 0;
@@ -808,12 +833,13 @@ errno_t streamCTRL_CTRLscreen() {
 
     int backstderr;
     int newstderr;
-    char newstderrfname[200];
+    char newstderrfname[STRINGMAXLEN_FULLFILENAME];
 
 
     fflush(stderr);
     backstderr = dup(STDERR_FILENO);
-    sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
+    WRITE_FULLFILENAME(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
+    //sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
 
 #ifndef STANDALONE  // TODO(sevin): why it fails in STANDALONE mode?
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, 0644);
@@ -1326,7 +1352,7 @@ errno_t streamCTRL_CTRLscreen() {
                     SORT_TOGGLE = 0;
                 }
 
-		
+
 
                 for(sindex = 0; sindex < NBsindex; sindex++) {
                     larray[sindex] = sindex;
@@ -1426,8 +1452,8 @@ errno_t streamCTRL_CTRLscreen() {
 
 
                 if((DisplayMode < 5) && (DisplayFlag == 1)) {
-                    char str[200];
-                    char str1[200];
+                    char str[STRINGMAXLEN_DEFAULT];
+                    char str1[STRINGMAXLEN_DEFAULT];
                     int j;
 
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
@@ -1499,10 +1525,31 @@ errno_t streamCTRL_CTRLscreen() {
                         sprintf(str, " [%3ld", (long) streamCTRLimages[ID].md[0].size[0]);
 
                         for(j = 1; j < streamCTRLimages[ID].md[0].naxis; j++) {
-                            sprintf(str1, "%sx%3ld", str, (long) streamCTRLimages[ID].md[0].size[j]);
+                            {
+                                int slen = snprintf(str1, STRINGMAXLEN_DEFAULT, "%sx%3ld", str, (long) streamCTRLimages[ID].md[0].size[j]);
+                                if(slen<1) {
+                                    PRINT_ERROR("snprintf wrote <1 char");
+                                    abort(); // can't handle this error any other way
+                                }
+                                if(slen >= STRINGMAXLEN_DEFAULT) {
+                                    PRINT_ERROR("snprintf string truncation");
+                                    abort(); // can't handle this error any other way
+                                }
+                            }
                             strcpy(str, str1);
                         }
-                        sprintf(str1, "%s]", str);
+                        {
+                            int slen = snprintf(str1, STRINGMAXLEN_DEFAULT, "%s]", str);
+                            if(slen<1) {
+                                PRINT_ERROR("snprintf wrote <1 char");
+                                abort(); // can't handle this error any other way
+                            }
+                            if(slen >= STRINGMAXLEN_DEFAULT) {
+                                PRINT_ERROR("snprintf string truncation");
+                                abort(); // can't handle this error any other way
+                            }
+                        }
+
                         strcpy(str, str1);
                     }
 
@@ -1663,8 +1710,8 @@ errno_t streamCTRL_CTRLscreen() {
                             pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
                             if((getpgid(pid) >= 0) && (pid != getpid())) {
 
-                                charcnt = sprintf(string, "%6d:%-*.*s", 
-									(int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                charcnt = sprintf(string, "%6d:%-*.*s",
+                                                  (int) pid, PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                 linecharcnt += charcnt;
                                 if(linecharcnt < wcol) {
                                     printw(string);
@@ -1755,17 +1802,17 @@ errno_t streamCTRL_CTRLscreen() {
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
 
-	for(int pidi = 0; pidi < PIDmax; pidi++) {
-		if(PIDname_array[pidi] != NULL) {
-			free(PIDname_array[pidi]);
-		}
-	}
+    for(int pidi = 0; pidi < PIDmax; pidi++) {
+        if(PIDname_array[pidi] != NULL) {
+            free(PIDname_array[pidi]);
+        }
+    }
     free(PIDname_array);
 
-	for(imageID ID=0; ID<streamNBID_MAX; ID++)
+    for(imageID ID=0; ID<streamNBID_MAX; ID++)
     {
         if(streamCTRLimages[ID].used == 1)
-			ImageStreamIO_closeIm( &streamCTRLimages[ID] );
+            ImageStreamIO_closeIm( &streamCTRLimages[ID] );
     }
     free(streamCTRLimages);
 
