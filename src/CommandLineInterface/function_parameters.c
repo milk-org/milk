@@ -215,12 +215,13 @@ typedef struct
 /* =============================================================================================== */
 
 
+
 errno_t function_parameter_struct_shmdirname(char *shmdname)
 {
     int shmdirOK = 0;
     DIR *tmpdir;
     static unsigned long functioncnt = 0;
-    static char shmdname_static[200];
+    static char shmdname_static[STRINGMAXLEN_SHMDIRNAME];
 
     if(functioncnt == 0)
     {
@@ -230,7 +231,18 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         char* MILK_SHM_DIR = getenv("MILK_SHM_DIR");
         if(MILK_SHM_DIR != NULL) {
             printf(" [ MILK_SHM_DIR ] is '%s'\n", MILK_SHM_DIR);
-            sprintf(shmdname, "%s", MILK_SHM_DIR);
+
+            {
+                int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", MILK_SHM_DIR);
+                if(slen<1) {
+                    PRINT_ERROR("snprintf wrote <1 char");
+                    abort(); // can't handle this error any other way
+                }
+                if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                    PRINT_ERROR("snprintf string truncation");
+                    abort(); // can't handle this error any other way
+                }
+            }
 
             // does this direcory exist ?
             tmpdir = opendir(shmdname);
@@ -251,7 +263,19 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             tmpdir = opendir(SHAREDSHMDIR);
             if(tmpdir) // directory exits
             {
-                sprintf(shmdname, "%s", SHAREDSHMDIR);
+                {
+                    int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", SHAREDSHMDIR);
+                    if(slen<1) {
+                        PRINT_ERROR("snprintf wrote <1 char");
+                        abort(); // can't handle this error any other way
+                    }
+                    if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                        PRINT_ERROR("snprintf string truncation");
+                        abort(); // can't handle this error any other way
+                    }
+                }
+
+
                 shmdirOK = 1;
                 closedir(tmpdir);
             }
@@ -271,10 +295,32 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             }
         }
 
-        sprintf(shmdname_static, "%s", shmdname); // keep it memory
+
+        {
+            int slen = snprintf(shmdname_static, STRINGMAXLEN_SHMDIRNAME, "%s", shmdname); // keep it memory
+            if(slen<1) {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
+        }
     }
     else {
-        sprintf(shmdname, "%s", shmdname_static);
+        {
+            int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", shmdname_static);
+            if(slen<1) {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_SHMDIRNAME) {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
+        }
+
     }
 
     return RETURN_SUCCESS;
@@ -1242,9 +1288,12 @@ int function_parameter_add_entry(
     // if string starts with ".", insert fps name
     char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     if(keywordstring[0] == '.')
+    {
         sprintf(keywordstringC, "%s%s", fps->md->name, keywordstring);
-    else
+    }
+    else {
         strcpy(keywordstringC, keywordstring);
+    }
 
 
 
@@ -3663,18 +3712,19 @@ int functionparameter_FPSprocess_cmdline(
         }
         else
         {
-            char logfname[200];
-            char shmdname[200];
+            char logfname[STRINGMAXLEN_FULLFILENAME];
+            char shmdname[STRINGMAXLEN_SHMDIRNAME];
             function_parameter_struct_shmdirname(shmdname);
 
 
-            sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+            //sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+            WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
 
             sprintf(msgstring, "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
             functionparameter_outlog("INFO", msgstring);
 
             if( symlink(logfname, FPSarg0) != 0) {
-                printERROR(__FILE__, __func__, __LINE__, "symlink error");
+                PRINT_ERROR("symlink error");
             }
 
         }
@@ -4928,11 +4978,13 @@ errno_t functionparameter_outlog(
 
 
     if(LogOutOpen == 0) {
-        char logfname[200];
-        char shmdname[200];
+        char logfname[STRINGMAXLEN_FULLFILENAME];
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
 
-        sprintf(logfname, "%s/fpslog.%06d", shmdname, getpid());
+       // sprintf(logfname, STRINGMAXLEN_FULLFILENAME, "%s/fpslog.%06d", shmdname, getpid());
+        WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
+        
         fpout = fopen(logfname, "a");
         if(fpout == NULL) {
             printf("ERROR: cannot open file\n");

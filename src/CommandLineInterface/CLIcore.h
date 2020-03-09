@@ -75,7 +75,7 @@ typedef long variableID;
 #define STRINGMAXLEN_FULLFILENAME  1000  // includes directory name 
 #define STRINGMAXLEN_FUNCTIONNAME   200
 #define STRINGMAXLEN_FUNCTIONARGS  1000
-
+#define STRINGMAXLEN_SHMDIRNAME     200
 
 
 
