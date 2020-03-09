@@ -2127,7 +2127,7 @@ void *processinfo_scan(
 
                 DEBUG_TRACEPOINT(" ");
 
-                char SM_fname[200];    // shared memory file name
+                char SM_fname[STRINGMAXLEN_FULLFILENAME];    // shared memory file name
                 struct stat file_stat;
 
                 pinfop->scandebugline = __LINE__;
