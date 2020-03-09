@@ -1752,10 +1752,6 @@ errno_t runCLI(
 	
 	DEBUG_TRACEPOINT("exit from runCLI function");
 
-	printf("exit test\n");
-	char fnametest[STRINGMAXLEN_FILENAME];
-	SNPRINTF_CHECK(fnametest, STRINGMAXLEN_FILENAME, "testfile_name%d", 43);
-	printf("file name : %s\n", fnametest);
 	 
     return RETURN_SUCCESS;
 }
