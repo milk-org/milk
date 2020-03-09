@@ -2671,14 +2671,14 @@ imageID COREMOD_IOFITS_LoadMemStream(
             if(ID == -1) {
                 *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
                     SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_SHAREDMEM: Image does not exist in shared memory", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             } else {
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
                     SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS STREAM_LOAD_FORCE_SHAREDMEM", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                     SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
