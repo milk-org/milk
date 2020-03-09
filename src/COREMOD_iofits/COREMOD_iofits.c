@@ -51,10 +51,10 @@ static char errormessage_iofits[SBUFFERSIZE];
 
 errno_t load_fits_cli()
 {
-    if ( 0
-            + CLI_checkarg(1, CLIARG_STR)
-            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
-            == 0 )
+    if (
+        CLI_checkarg(1, CLIARG_STR) +
+        CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+        == 0 )
     {
         load_fits(
             data.cmdargtoken[1].val.string,
@@ -73,14 +73,14 @@ errno_t load_fits_cli()
 
 errno_t save_fl_fits_cli()
 {
-    char fname[1000];
+    char fname[STRINGMAXLEN_FILENAME];
 
     switch(data.cmdNBarg) {
     case 3:
         save_fl_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
         break;
     case 2:
-        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        WRITE_FILENAME(fname, "%s.fits", data.cmdargtoken[1].val.string);
         save_fl_fits( data.cmdargtoken[1].val.string, fname);
         break;
     }
@@ -92,14 +92,14 @@ errno_t save_fl_fits_cli()
 
 errno_t save_db_fits_cli()
 {
-    char fname[1000];
+    char fname[STRINGMAXLEN_FILENAME];
 
     switch(data.cmdNBarg) {
     case 3:
         save_db_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
         break;
     case 2:
-        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+		WRITE_FILENAME(fname, "%s.fits", data.cmdargtoken[1].val.string);        
         save_db_fits( data.cmdargtoken[1].val.string, fname);
         break;
     }
@@ -111,14 +111,14 @@ errno_t save_db_fits_cli()
 
 errno_t save_sh16_fits_cli()
 {
-    char fname[1000];
+    char fname[STRINGMAXLEN_FILENAME];
 
     switch(data.cmdNBarg) {
     case 3:
         save_sh16_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
         break;
     case 2:
-        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        WRITE_FILENAME(fname, "%s.fits", data.cmdargtoken[1].val.string);
         save_sh16_fits( data.cmdargtoken[1].val.string, fname);
         break;
     }
@@ -131,14 +131,14 @@ errno_t save_sh16_fits_cli()
 
 errno_t save_fits_cli()
 {
-    char fname[1000];
+    char fname[STRINGMAXLEN_FILENAME];
 
     switch(data.cmdNBarg) {
     case 3:
         save_fits( data.cmdargtoken[1].val.string,  data.cmdargtoken[2].val.string);
         break;
     case 2:
-        sprintf(fname, "%s.fits", data.cmdargtoken[1].val.string);
+        WRITE_FILENAME(fname, "%s.fits", data.cmdargtoken[1].val.string);
         save_fits( data.cmdargtoken[1].val.string, fname);
         break;
     }
@@ -2360,8 +2360,8 @@ errno_t save_fits_atomic(
 {
     imageID ID;
     uint8_t datatype;
-    char fnametmp[1000];
-    char savename[1000];
+    char fnametmp[STRINGMAXLEN_FILENAME];
+    char savename[STRINGMAXLEN_FILENAME];
     pthread_t self_id;
 
     ID = image_ID(ID_name);
@@ -2369,17 +2369,10 @@ errno_t save_fits_atomic(
     // get PID to include in file name, so that file name is unique
     self_id = pthread_self();
 
-    if(sprintf(fnametmp, "_savefits_atomic_%s_%d_%ld.tmp.fits", ID_name, (int) getpid(), (long) self_id) < 1) {
-        printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
-    }
-
-    if(sprintf(savename, "!%s", fnametmp) < 1) {
-        printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
-    }
+	WRITE_FILENAME(fnametmp, "_savefits_atomic_%s_%d_%ld.tmp.fits", ID_name, (int) getpid(), (long) self_id);
+	WRITE_FILENAME(savename, "!%s", fnametmp);
 
     if(ID != -1) {
-        char command[2000];
-
         datatype = data.image[ID].md[0].datatype;
         switch(datatype) {
 			
@@ -2424,13 +2417,7 @@ errno_t save_fits_atomic(
             break;
         }
 
-        if(sprintf(command, "mv %s %s", fnametmp, file_name) < 1) {
-            printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
-        }
-
-        if(system(command) != 0) {
-            printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-        }
+		EXECUTE_SYSTEM_COMMAND("mv %s %s", fnametmp, file_name);        
     }
 
     return RETURN_SUCCESS;
@@ -2443,26 +2430,14 @@ errno_t saveall_fits(
 ) 
 {
     long i;
-    char fname[1000];
-    char command[1000];
+    char fname[STRINGMAXLEN_FULLFILENAME];
 
-    if(sprintf(command, "mkdir -p %s", savedirname) < 1) {
-        printERROR(__FILE__, __func__, __LINE__,
-                   "sprintf wrote <1 char");
-    }
-
-    if(system(command) != 0) {
-        printERROR(__FILE__, __func__, __LINE__,
-                   "system() returns non-zero value");
-    }
+	EXECUTE_SYSTEM_COMMAND("mkdir -p %s", savedirname);
 
     for(i = 0; i < data.NB_MAX_IMAGE; i++)
         if(data.image[i].used == 1) {
-            if(sprintf(fname, "!./%s/%s.fits", savedirname, data.image[i].name) < 1) {
-                printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
-            }
-
-
+			
+			WRITE_FULLFILENAME(fname, "!./%s/%s.fits", savedirname, data.image[i].name);            
             save_fits(data.image[i].name, fname);
         }
         
@@ -2643,16 +2618,16 @@ imageID COREMOD_IOFITS_LoadMemStream(
         imLOCALMEM = 0;
         COREMOD_IOFITS_PRINTDEBUG;
         if(MEMLOADREPORT==1) {
-            char msg[200];
-            sprintf(msg, "%s stream not in local memory", sname);
+            char msg[STRINGMAXLEN_FPS_LOGMSG];
+            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s stream not in local memory", sname);
             functionparameter_outlog("LOADMEMSTREAM", msg);
         }
     } else {
         imLOCALMEM = 1;
         COREMOD_IOFITS_PRINTDEBUG;
         if(MEMLOADREPORT==1) {
-            char msg[200];
-            sprintf(msg, "%s stream in local memory", sname);
+            char msg[STRINGMAXLEN_FPS_LOGMSG];
+            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s stream in local memory", sname);
             functionparameter_outlog("LOADMEMSTREAM", msg);
         }
     }
@@ -2669,16 +2644,16 @@ imageID COREMOD_IOFITS_LoadMemStream(
             *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT) {
-                char msg[200];
-                sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_LOCALMEM: Image does not exist in local memory", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_LOCALMEM: Image does not exist in local memory", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
         } else {
             *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT==1) {
-                char msg[200];
-                sprintf(msg, "%s SUCCESS STREAM_LOAD_FORCE_LOCALMEM", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS STREAM_LOAD_FORCE_LOCALMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
                 sprintf(msg, "%s imLOC %u", sname, *imLOC);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
@@ -2697,16 +2672,16 @@ imageID COREMOD_IOFITS_LoadMemStream(
                 *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                 if(MEMLOADREPORT==1) {
                     char msg[200];
-                    sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_SHAREDMEM: Image does not exist in shared memory", sname);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_SHAREDMEM: Image does not exist in shared memory", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             } else {
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 if(MEMLOADREPORT==1) {
                     char msg[200];
-                    sprintf(msg, "%s SUCCESS STREAM_LOAD_FORCE_SHAREDMEM", sname);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS STREAM_LOAD_FORCE_SHAREDMEM", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
@@ -2725,17 +2700,17 @@ imageID COREMOD_IOFITS_LoadMemStream(
             if(ID == -1) {
                 *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_CONFFITS: Image does not exist as conf FITS", sname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_CONFFITS: Image does not exist as conf FITS", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             } else {
                 *imLOC = STREAM_LOAD_SOURCE_CONFFITS;
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s SUCCESS STREAM_LOAD_FORCE_CONFFITS", sname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS STREAM_LOAD_FORCE_CONFFITS", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
@@ -2760,10 +2735,10 @@ imageID COREMOD_IOFITS_LoadMemStream(
                 printf("ERROR: stream %s could not be loaded from CONF\n", sname);
                 *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: File %s does not exist", sname, fname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: File %s does not exist", sname, fname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             } else {
@@ -2773,18 +2748,18 @@ imageID COREMOD_IOFITS_LoadMemStream(
                         perror("fscanf");
                         *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                         if(MEMLOADREPORT==1) {
-                            char msg[200];
-                            sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: fscanf cannot read stream fname", sname);
+                            char msg[STRINGMAXLEN_FPS_LOGMSG];
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: fscanf cannot read stream fname", sname);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
                         }
                     } else {
                         fprintf(stderr, "Error: fscanf reached end of file, no matching characters, no matching failure\n");
                         *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                         if(MEMLOADREPORT==1) {
-                            char msg[200];
-                            sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: fscanf reached end of file, no matching characters", sname);
+                            char msg[STRINGMAXLEN_FPS_LOGMSG];
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: fscanf reached end of file, no matching characters", sname);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
-                            sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
                         }
                     }
@@ -2800,19 +2775,19 @@ imageID COREMOD_IOFITS_LoadMemStream(
                         if(ID == -1) {
                             *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                             if(MEMLOADREPORT==1) {
-                                char msg[200];
-                                sprintf(msg, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: cannot load stream fname", sname);
+                                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAIL STREAM_LOAD_FORCE_CONFNAME: cannot load stream fname", sname);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
-                                sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
                             }
                         } else {
                             *imLOC = STREAM_LOAD_SOURCE_CONFNAME;
                             if(MEMLOADREPORT==1) {
-                                char msg[200];
-                                sprintf(msg, "%s SUCCESS STREAM_LOAD_FORCE_CONFFITS", sname);
+                                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS STREAM_LOAD_FORCE_CONFFITS", sname);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
-                                sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
                             }
                         }
@@ -2831,24 +2806,24 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT == 1) {
-                char msg[200];
-                sprintf(msg, "%s Search LOCALMEM", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s Search LOCALMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
             if(imLOCALMEM == 1) {
                 *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s SUCCESS found image in LOCALMEM", sname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS found image in LOCALMEM", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
             else
             {
-				char msg[200];
-                sprintf(msg, "%s localmem stream not found", sname);
+				char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s localmem stream not found", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);				
 			}            
         }
@@ -2863,25 +2838,25 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT == 1) {
-                char msg[200];
-                sprintf(msg, "%s Search SHAREMEM", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s Search SHAREMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
             ID = read_sharedmem_image(sname);
             if(ID != -1) {
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s SUCCESS found image in SHAREMEM", sname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS found image in SHAREMEM", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
             else
             {
-				char msg[200];
-                sprintf(msg, "%s sharedmem stream not found", sname);
+				char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s sharedmem stream not found", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);				
 			}            
         }
@@ -2894,8 +2869,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT == 1) {
-                char msg[200];
-                sprintf(msg, "%s Search CONFFITS", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s Search CONFFITS", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
             //printf("imLOC = %d\n", *imLOC);
@@ -2905,17 +2880,17 @@ imageID COREMOD_IOFITS_LoadMemStream(
             if(ID != -1) {
                 *imLOC = STREAM_LOAD_SOURCE_CONFFITS;
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s SUCCESS found image in CONFFITS", sname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS found image in CONFFITS", sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
             else
             {
-				char msg[200];
-                sprintf(msg, "%s File %s not found", sname, fname);
+				char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s File %s not found", sname, fname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);				
 			}
             // printf("imLOC = %d\n", *imLOC);
@@ -2928,8 +2903,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME & *streamflag)) {
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT == 1) {
-                char msg[200];
-                sprintf(msg, "%s Search CONFNAME", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s Search CONFNAME", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
 
@@ -2945,8 +2920,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
             if(fp == NULL) {
                 printf("ERROR: stream %s could not be loaded from CONF\n", sname);
                 if(MEMLOADREPORT==1) {
-                    char msg[200];
-                    sprintf(msg, "%s Cannot find CONFNAME file %s", sname, fname);
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s Cannot find CONFNAME file %s", sname, fname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                     // don't fail... keep going
                 }
@@ -2957,20 +2932,20 @@ imageID COREMOD_IOFITS_LoadMemStream(
                         perror("fscanf");
                         *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                         if(MEMLOADREPORT == 1) {
-                            char msg[200];
-                            sprintf(msg, "%s EXITFAILURE fscanf error reading %s", sname,  fname);
+                            char msg[STRINGMAXLEN_FPS_LOGMSG];
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAILURE fscanf error reading %s", sname,  fname);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
-                            sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
                         }
                     } else {
                         fprintf(stderr, "Error: fscanf reached end of file, no matching characters, no matching failure\n");
                         *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
                         if(MEMLOADREPORT == 1) {
-                            char msg[200];
-                            sprintf(msg, "%s EXITFAILURE fscanf error reading %s. fscanf reached end of file, no matching characters", sname, fname);
+                            char msg[STRINGMAXLEN_FPS_LOGMSG];
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s EXITFAILURE fscanf error reading %s. fscanf reached end of file, no matching characters", sname, fname);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
-                            sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                             functionparameter_outlog("LOADMEMSTREAM", msg);
                         }
                     }
@@ -2981,17 +2956,17 @@ imageID COREMOD_IOFITS_LoadMemStream(
             if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND) {
                 if(fscanfcnt > 0) {
                     {
-                        char msg[200];
-                        sprintf(msg, "%s LOADING %s", sname, streamfname);
+                        char msg[STRINGMAXLEN_FPS_LOGMSG];
+                        SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s LOADING %s", sname, streamfname);
                         functionparameter_outlog("LOADMEMSTREAM", msg);
                         ID = load_fits(streamfname, sname, 1);
                         if(ID != -1) {
                             *imLOC = STREAM_LOAD_SOURCE_CONFNAME;
                             updateCONFFITS = 1;
                             if(MEMLOADREPORT == 1) {
-                                sprintf(msg, "%s SUCCESS CONFNAME", sname);
+                                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s SUCCESS CONFNAME", sname);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
-                                sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s imLOC %u", sname, *imLOC);
                                 functionparameter_outlog("LOADMEMSTREAM", msg);
                             }
                         }
@@ -3008,8 +2983,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM & *streamflag) {
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT == 1) {
-                char msg[200];
-                sprintf(msg, "%s copy to SHAREMEM", sname);
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s copy to SHAREMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
             copy_image_ID(sname, sname, 1);
@@ -3026,8 +3001,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         COREMOD_IOFITS_PRINTDEBUG;
         char fname[200];
         if(MEMLOADREPORT == 1) {
-            char msg[200];
-            sprintf(msg, "%s copy to CONFFITS", sname);
+            char msg[STRINGMAXLEN_FPS_LOGMSG];
+            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s copy to CONFFITS", sname);
             functionparameter_outlog("LOADMEMSTREAM", msg);
         }
         sprintf(fname, "./conf/shmim.%s.fits", sname);
@@ -3041,8 +3016,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
 		*imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
 
     if(MEMLOADREPORT == 1) {
-        char msg[200];
-        sprintf(msg, "%s FINAL imLOC %u", sname, *imLOC);
+        char msg[STRINGMAXLEN_FPS_LOGMSG];
+        SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s FINAL imLOC %u", sname, *imLOC);
         functionparameter_outlog("LOADMEMSTREAM", msg);
     }
 
