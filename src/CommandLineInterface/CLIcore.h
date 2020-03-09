@@ -203,6 +203,24 @@ if(system(syscommandstring) != 0) {                                        \
 
 
 
+
+//
+// requires existing image string of len STRINGMAXLEN_IMGNAME
+// 
+#define SNPRINTF_CHECK(string, maxlen, ...) do { \
+int slen = snprintf(string, maxlen, __VA_ARGS__); \
+if(slen<1) {                                                    \
+    PRINT_ERROR("snprintf wrote <1 char");                      \
+    abort();                                                    \
+}                                                               \
+if(slen >= maxlen) {                              \
+    PRINT_ERROR("snprintf string truncation");                  \
+    abort();                                                    \
+}                                                               \
+} while(0)
+
+
+
 //
 // requires existing image string of len STRINGMAXLEN_IMGNAME
 // 

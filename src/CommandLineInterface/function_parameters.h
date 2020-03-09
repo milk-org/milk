@@ -26,6 +26,8 @@
  */
 
 
+#define STRINGMAXLEN_FPS_LOGMSG       1000
+
 
 #define NB_FPS_MAX 100
 
