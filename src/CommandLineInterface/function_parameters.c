@@ -3612,7 +3612,10 @@ int functionparameter_FPSprocess_cmdline(
     char msgstring[STRINGMAXLEN_FPS_LOGMSG];
     char inputcmd[stringmaxlen];
 	
-	SNPRINTF_CHECK(inputcmd, stringmaxlen, "%s", FPScmdline);
+	if(strlen(FPScmdline) > 0) { // only send command if non-empty
+		SNPRINTF_CHECK(inputcmd, stringmaxlen, "%s", FPScmdline);
+	}
+	
 	SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", inputcmd);
     
     functionparameter_outlog("CMDRCV", msgstring);
