@@ -27,6 +27,8 @@
 
 
 #define STRINGMAXLEN_FPS_LOGMSG       1000
+#define STRINGMAXLEN_FPS_CMDLINE      1000
+
 
 
 #define NB_FPS_MAX 100
@@ -451,7 +453,7 @@ typedef struct {
 // The structure is meant to provide basic scheduling functionality
 //
 #define NB_FPSCTRL_TASK_MAX 1024
-#define FPSCMD_MAXCHAR 1024
+//#define FPSCMD_MAXCHAR 1024
 #define NB_FPSCTRL_TASKQUEUE_MAX 10
 
 #define FPSTASK_STATUS_ACTIVE 0x0000000000000001   // is the task entry in the array used ?
@@ -479,7 +481,7 @@ typedef struct {
 
 typedef struct {
 	
-	char cmdstring[FPSCMD_MAXCHAR];
+	char cmdstring[STRINGMAXLEN_FPS_CMDLINE];
 	
 	
 	uint64_t inputindex;  // order in which tasks are submitted

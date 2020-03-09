@@ -3584,7 +3584,6 @@ int functionparameter_FPSprocess_cmdline(
     int NBkwn,
     FUNCTION_PARAMETER_STRUCT *fps
 ) {
-    int stringmaxlen = 500;
     int fpsindex;
     long pindex;
 
@@ -3610,10 +3609,10 @@ int functionparameter_FPSprocess_cmdline(
 
 
     char msgstring[STRINGMAXLEN_FPS_LOGMSG];
-    char inputcmd[stringmaxlen];
+    char inputcmd[STRINGMAXLEN_FPS_CMDLINE];
 	
 	if(strlen(FPScmdline) > 0) { // only send command if non-empty
-		SNPRINTF_CHECK(inputcmd, stringmaxlen, "%s", FPScmdline);
+		SNPRINTF_CHECK(inputcmd, STRINGMAXLEN_FPS_CMDLINE, "%s", FPScmdline);
 	}
 	
 	SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", inputcmd);
@@ -4561,7 +4560,9 @@ int functionparameter_read_fpsCMD_fifo(
 
                 // for all other commands, put in task list
                 if(cmdFOUND == 0) {
-                    strncpy(fpsctrltasklist[cmdindex].cmdstring, FPScmdline, FPSCMD_MAXCHAR);
+                    
+                    strncpy(fpsctrltasklist[cmdindex].cmdstring, FPScmdline, STRINGMAXLEN_FPS_CMDLINE);
+                    
                     fpsctrltasklist[cmdindex].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
                     fpsctrltasklist[cmdindex].queue = queue;
