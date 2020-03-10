@@ -2612,65 +2612,73 @@ imageID COREMOD_IOFITS_LoadMemStream(
     printf("imLOC = %d\n", *imLOC);
 
 
+
+
     COREMOD_IOFITS_PRINTDEBUG;
 
-    // Does image exist in memory ?
-    int imLOCALMEM;
-    ID = image_ID(sname);
-    if(ID == -1) {
-        imLOCALMEM = 0;
-        COREMOD_IOFITS_PRINTDEBUG;
-        if(MEMLOADREPORT==1) {
-            char msg[STRINGMAXLEN_FPS_LOGMSG];
-            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
-                           "%s stream not in local memory", sname);
-            functionparameter_outlog("LOADMEMSTREAM", msg);
-        }
-    } else {
-        imLOCALMEM = 1;
-        COREMOD_IOFITS_PRINTDEBUG;
-        if(MEMLOADREPORT==1) {
-            char msg[STRINGMAXLEN_FPS_LOGMSG];
-            SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
-                           "%s stream in local memory", sname);
-            functionparameter_outlog("LOADMEMSTREAM", msg);
-        }
+    if(strcmp(sname, "NULL") == 0) { // don't bother looking for it
+        *imLOC = STREAM_LOAD_SOURCE_NULL;
+        ID = -1;
     }
 
-    COREMOD_IOFITS_PRINTDEBUG;
-
-    //    printf("imLOC = %d\n", *imLOC);
-
-
-    // FORCE_LOCALMEM
-    if(FPFLAG_STREAM_LOAD_FORCE_LOCALMEM & *streamflag) {
-        COREMOD_IOFITS_PRINTDEBUG;
-        if(imLOCALMEM == 0) {
-            *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
-            COREMOD_IOFITS_PRINTDEBUG;
-            if(MEMLOADREPORT) {
-                char msg[STRINGMAXLEN_FPS_LOGMSG];
-                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
-                               "%s EXITFAIL STREAM_LOAD_FORCE_LOCALMEM: Image does not exist in local memory", sname);
-                functionparameter_outlog("LOADMEMSTREAM", msg);
-            }
-        } else {
-            *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
+	int imLOCALMEM;
+    if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND) { // still searching
+        // Does image exist in memory ?
+        ID = image_ID(sname);
+        if(ID == -1) {
+            imLOCALMEM = 0;
             COREMOD_IOFITS_PRINTDEBUG;
             if(MEMLOADREPORT==1) {
                 char msg[STRINGMAXLEN_FPS_LOGMSG];
                 SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
-                               "%s SUCCESS STREAM_LOAD_FORCE_LOCALMEM", sname);
+                               "%s stream not in local memory", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
-                sprintf(msg, "%s imLOC %u", sname, *imLOC);
+            }
+        } else {
+            imLOCALMEM = 1;
+            COREMOD_IOFITS_PRINTDEBUG;
+            if(MEMLOADREPORT==1) {
+                char msg[STRINGMAXLEN_FPS_LOGMSG];
+                SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
+                               "%s stream in local memory", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
+            }
+        }
+
+        COREMOD_IOFITS_PRINTDEBUG;
+
+        //    printf("imLOC = %d\n", *imLOC);
+
+
+        // FORCE_LOCALMEM
+        if(FPFLAG_STREAM_LOAD_FORCE_LOCALMEM & *streamflag) {
+            COREMOD_IOFITS_PRINTDEBUG;
+            if(imLOCALMEM == 0) {
+                *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
+                COREMOD_IOFITS_PRINTDEBUG;
+                if(MEMLOADREPORT) {
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
+                                   "%s EXITFAIL STREAM_LOAD_FORCE_LOCALMEM: Image does not exist in local memory", sname);
+                    functionparameter_outlog("LOADMEMSTREAM", msg);
+                }
+            } else {
+                *imLOC = STREAM_LOAD_SOURCE_LOCALMEM;
+                COREMOD_IOFITS_PRINTDEBUG;
+                if(MEMLOADREPORT==1) {
+                    char msg[STRINGMAXLEN_FPS_LOGMSG];
+                    SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
+                                   "%s SUCCESS STREAM_LOAD_FORCE_LOCALMEM", sname);
+                    functionparameter_outlog("LOADMEMSTREAM", msg);
+                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    functionparameter_outlog("LOADMEMSTREAM", msg);
+                }
             }
         }
     }
 
-
     // FORCE_SHAREMEM
-    if(*imLOC == 0) { // still searching
+    if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND) { // still searching
         if(FPFLAG_STREAM_LOAD_FORCE_SHAREMEM & *streamflag) {
             COREMOD_IOFITS_PRINTDEBUG;
             // search SHAREMEM
@@ -2786,7 +2794,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
             }
 
 
-            if(*imLOC == 0) {
+            if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND) {
                 if(fscanfcnt > 0) {
                     {
                         ID = load_fits(streamfname, sname, 0);
@@ -3060,41 +3068,45 @@ imageID COREMOD_IOFITS_LoadMemStream(
     if(MEMLOADREPORT == 1) {
         char msg[STRINGMAXLEN_FPS_LOGMSG];
         char locstring[100];
-                
+
         switch (*imLOC) {
-			
-			case STREAM_LOAD_SOURCE_NOTFOUND :
-			strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
-			break;
-			
-			case STREAM_LOAD_SOURCE_LOCALMEM :
-			strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
-			break;
 
-			case STREAM_LOAD_SOURCE_SHAREMEM :
-			strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
-			break;
+        case STREAM_LOAD_SOURCE_NOTFOUND :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
+            break;
 
-			case STREAM_LOAD_SOURCE_CONFFITS :
-			strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
-			break;
+        case STREAM_LOAD_SOURCE_LOCALMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
+            break;
 
-			case STREAM_LOAD_SOURCE_CONFNAME :
-			strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
-			break;
+        case STREAM_LOAD_SOURCE_SHAREMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
+            break;
 
-			case STREAM_LOAD_SOURCE_EXITFAILURE :
-			strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
-			break;
+        case STREAM_LOAD_SOURCE_CONFFITS :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
+            break;
 
-			default :
-			strcpy(locstring, "unknown");
-			break;
-		}
-			
-			
-		SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s FINAL imLOC %u %s", sname, *imLOC, locstring);
-        
+        case STREAM_LOAD_SOURCE_CONFNAME :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
+            break;
+
+        case STREAM_LOAD_SOURCE_NULL :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
+            break;
+
+        case STREAM_LOAD_SOURCE_EXITFAILURE :
+            strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
+            break;
+
+        default :
+            strcpy(locstring, "unknown");
+            break;
+        }
+
+
+        SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s FINAL imLOC %u %s", sname, *imLOC, locstring);
+
         functionparameter_outlog("LOADMEMSTREAM", msg);
     }
 
