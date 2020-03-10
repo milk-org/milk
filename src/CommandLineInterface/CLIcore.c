@@ -1751,7 +1751,6 @@ errno_t runCLI(
 	
 	
 	DEBUG_TRACEPOINT("exit from runCLI function");
-
 	 
     return RETURN_SUCCESS;
 }
