@@ -3584,26 +3584,26 @@ int functionparameter_FPSprocess_cmdline(
     int NBkwn,
     FUNCTION_PARAMETER_STRUCT *fps
 ) {
-    int fpsindex;
+    int  fpsindex;
     long pindex;
 
     // break FPScmdline in words
     // [FPScommand] [FPSentryname]
     //
     char *pch;
-    int nbword = 0;
-    char FPScommand[50];
+    int   nbword = 0;
+    char  FPScommand[50];
 
-    int cmdOK = 2;    // 0 : failed, 1: OK
-    int cmdFOUND = 0; // toggles to 1 when command has been found
+    int   cmdOK = 2;    // 0 : failed, 1: OK
+    int   cmdFOUND = 0; // toggles to 1 when command has been found
 
-    char FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];  // first arg is always an FPS entry name
-    char FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
+    char  FPSentryname[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];  // first arg is always an FPS entry name
+    char  FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
 
-    char FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
-    char FPSarg2[FUNCTION_PARAMETER_STRMAXLEN];
-    char FPSarg3[FUNCTION_PARAMETER_STRMAXLEN];
+    char  FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char  FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
+    char  FPSarg2[FUNCTION_PARAMETER_STRMAXLEN];
+    char  FPSarg3[FUNCTION_PARAMETER_STRMAXLEN];
 
 
 
@@ -3611,9 +3611,27 @@ int functionparameter_FPSprocess_cmdline(
     char msgstring[STRINGMAXLEN_FPS_LOGMSG];
     char inputcmd[STRINGMAXLEN_FPS_CMDLINE];
 	
+	
+	int inputcmdOK = 0; // 1 if command should be processed
+	
+	
 	if(strlen(FPScmdline) > 0) { // only send command if non-empty
 		SNPRINTF_CHECK(inputcmd, STRINGMAXLEN_FPS_CMDLINE, "%s", FPScmdline);
+		inputcmdOK = 1;
 	}
+	
+	// don't process lines starting with # (comment)
+	if(inputcmdOK == 1) {
+		if (inputcmd[0] == '#') {
+			inputcmdOK = 0;
+		}
+	}
+	
+	if(inputcmdOK == 0) {
+		return (-1);
+	}
+	
+	
 	
 	SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", inputcmd);
     

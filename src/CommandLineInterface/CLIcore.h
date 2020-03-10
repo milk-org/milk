@@ -271,6 +271,24 @@ if(slen >= STRINGMAXLEN_FULLFILENAME) {                              \
 
 
 
+// 
+#define WRITE_STRING_TO_FILE(fname, ...) do { \
+FILE *fptmp;                                                                \
+fptmp = fopen(fname, "w");                                                  \
+if (fptmp == NULL) {                                                        \
+int errnum = errno;                                                         \
+PRINT_ERROR("fopen() returns NULL");                                        \
+fprintf(stderr, "Error opening file %s: %s\n", fname, strerror( errnum ));  \
+abort();                                                                    \
+} else {                                                                    \
+fprintf(fptmp, __VA_ARGS__);                                                \
+fclose(fptmp);                                                              \
+}                                                                           \
+} while(0)
+
+
+
+
 
 
 
