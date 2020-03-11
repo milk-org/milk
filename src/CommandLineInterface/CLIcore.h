@@ -51,13 +51,13 @@ typedef int errno_t;
 typedef long imageID;
 typedef long variableID;
 
-
+#ifndef STANDALONE
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "processtools.h"
 #include "streamCTRL.h"
 #include "function_parameters.h"
-
+#endif
 
 
 #define PI 3.14159265358979323846264338328
@@ -111,8 +111,8 @@ extern int C_ERRNO;			// C errno (from errno.h)
 //
 // ************ ERROR HANDLING **********************************
 // 
-
 /** @brief Print error (in red) and continue */
+#ifndef STANDALONE
 #define PRINT_ERROR(...) do { \
 sprintf(data.testpoint_msg, __VA_ARGS__); \
 printf("ERROR: %c[%d;%dm %s %c[%d;m\n", (char) 27, 1, 31, data.testpoint_msg, (char) 27, 0); \
@@ -121,7 +121,9 @@ sprintf(data.testpoint_func, "%s", __func__); \
 data.testpoint_line = __LINE__; \
 clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
 } while(0)
-
+#else
+#define PRINT_ERROR(...) printf("ERROR: %c[%d;%dm %s %c[%d;m\n", (char) 27, 1, 31, __VA_ARGS__, (char) 27, 0)
+#endif
 
 /** @brief Print warning and continue */
 #define PRINT_WARNING(...) do { \
