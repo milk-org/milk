@@ -14,7 +14,7 @@
 #ifndef _CACAO_DEPENDENCY_H
 #define _CACAO_DEPENDENCY_H
 
-// #include <fftw3.h>
+#include <CLIcore.h>
 // #include <gsl/gsl_rng.h>  // for random numbers
 // #include <semaphore.h>
 // #include <signal.h>

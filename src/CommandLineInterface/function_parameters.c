@@ -346,6 +346,8 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
     char     *fpsname_default
 )
 {
+
+#ifndef STANDALONE
     // Check if function will be executed through FPS interface
     // set to 0 as default (no FPS)
     data.FPS_CMDCODE = 0;
@@ -433,6 +435,7 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
 
     }
     
+#endif
     return RETURN_SUCCESS;
 }
 
@@ -441,6 +444,7 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
 
 errno_t function_parameter_execFPScmd()
 {
+#ifndef STANDALONE
     if(data.FPS_CMDCODE == FPSCMDCODE_FPSINIT) { // Initialize FPS
         data.FPS_CONFfunc();
         return RETURN_SUCCESS;
@@ -465,6 +469,7 @@ errno_t function_parameter_execFPScmd()
         data.FPS_CONFfunc();
         return RETURN_SUCCESS;
     }
+#endif
 
     return RETURN_SUCCESS;
 }
