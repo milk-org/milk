@@ -5012,7 +5012,7 @@ errno_t functionparameter_outlog(
     static FILE *fpout;
 
 
-    if(LogOutOpen == 0) {
+    if(LogOutOpen == 0) { // file not open
         char logfname[STRINGMAXLEN_FULLFILENAME];
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
@@ -5024,7 +5024,7 @@ errno_t functionparameter_outlog(
             printf("ERROR: cannot open file\n");
             exit(EXIT_FAILURE);
         }
-        LogOutOpen = 1;
+        LogOutOpen = 1;        
     }
 
     functionparameter_outlog_file(keyw, msgstring, fpout);
