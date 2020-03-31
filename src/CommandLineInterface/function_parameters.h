@@ -126,9 +126,9 @@
 
 // The stream location may be in :
 // --- convention : this is downstream ---
-// [a]-LOCALMEM local process memory 
+// [a]-LOCALMEM local process memory
 // [b]-SHAREMEM system shared memory .. which may itself be a link to another shared memory
-// [c]-CONFFITS fits file in conf: a file ./conf/shmim.<stream>.fits, which may itself be a link to another FITS file 
+// [c]-CONFFITS fits file in conf: a file ./conf/shmim.<stream>.fits, which may itself be a link to another FITS file
 // [d]-CONFNAME name of fits file configuration: a file ./conf/shmim.<stream>.fname.conf contains the name of the disk file to be loaded as the stream, relative to current running directory
 // --- convention : this is upstream ---
 
@@ -159,12 +159,12 @@
 // The default policy is to look for the source location first in [a], then [b], etc..., until [d]
 // Once source location is found, the downstream locations are updated. For example: search[a]; search[b], find[c]->update[b]->update[a]
 //
-// 
+//
 //
 // Important scripts (should be in PATH):
 // - milkstreamlink  : build sym link between streams
 // - milkFits2shm    : smart loading/updating of FITS to SHM
-// 
+//
 // loading CONF to SHM must use script milkFits2shm
 //
 //
@@ -206,7 +206,7 @@
 
 #define FPFLAG_FILE_CONF_REQUIRED                0x0000000040000000  // file must exist for CONF process to proceed
 #define FPFLAG_FILE_RUN_REQUIRED                 0x0000000080000000  // file must exist for RUN process to proceed
-// note: we can reuse same codes 
+// note: we can reuse same codes
 
 #define FPFLAG_FPS_CONF_REQUIRED                 0x0000000040000000  // file must exist for CONF process to proceed
 #define FPFLAG_FPS_RUN_REQUIRED                  0x0000000080000000  // file must exist for RUN process to proceed
@@ -225,7 +225,7 @@
     long ysize,
     float DefaultValue)
 */
-// 
+//
 
 
 
@@ -282,7 +282,8 @@
 
 
 
-typedef struct {
+typedef struct
+{
     long      streamID; // if type is stream and MASK_CHECKSTREAM. For CONF only
     uint8_t   stream_atype;
 
@@ -297,7 +298,8 @@ typedef struct {
 
 
 
-typedef struct {
+typedef struct
+{
     long FPSNBparamMAX; // to be written by connect function
     long FPSNBparamActive;
     long FPSNBparamUsed;
@@ -305,16 +307,19 @@ typedef struct {
 
 
 
-typedef struct {
+typedef struct
+{
     uint64_t fpflag;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
 
     // Parameter name
-    char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel; // number of levels in keyword
 
     // if this parameter value imported from another parameter, source is:
-    char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
 
     char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
@@ -322,13 +327,16 @@ typedef struct {
 
     union
     {
-        int64_t         l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
-        double          f[4];  // value, min, max, current state (if different from request)
+        int64_t
+        l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
+        double
+        f[4];  // value, min, max, current state (if different from request)
         float           s[4];
         pid_t           pid[2]; // first value is set point, second is current state
         struct timespec ts[2]; // first value is set point, second is current state
 
-        char            string[2][FUNCTION_PARAMETER_STRMAXLEN]; // first value is set point, second is current state
+        char
+        string[2][FUNCTION_PARAMETER_STRMAXLEN]; // first value is set point, second is current state
         // if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
     } val;
 
@@ -397,13 +405,15 @@ typedef struct {
 #define FPS_DESCR_STRMAXLEN 200
 
 // metadata
-typedef struct {
+typedef struct
+{
     // process name
     // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
     char                name[FPS_NAME_STRMAXLEN];         // example: pname-01-32
 
-	char                description[FPS_DESCR_STRMAXLEN];
-    char                fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
+    char                description[FPS_DESCR_STRMAXLEN];
+    char
+    fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
     char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
     int					sourceline;
 
@@ -420,21 +430,27 @@ typedef struct {
     //   ./cmdproc/<pname>-run-stop XX YY
     //
 
-    pid_t               confpid;            // PID of process owning parameter structure configuration
+    pid_t
+    confpid;            // PID of process owning parameter structure configuration
     pid_t               runpid;             // PID of process running on this fps
 
 
-    uint64_t            signal;       // Used to send signals to configuration process
+    uint64_t
+    signal;       // Used to send signals to configuration process
     uint64_t            confwaitus;   // configuration wait timer value [us]
 
     uint32_t            status;          // conf and process status
 
-    long                NBparamMAX;      // size of parameter array (= max number of parameter supported)
+    long
+    NBparamMAX;      // size of parameter array (= max number of parameter supported)
 
 
-    char                          message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
-    int                           msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
-    uint32_t                      msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
+    char
+    message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
+    int
+    msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
+    uint32_t
+    msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
     long                          msgcnt;
     uint32_t                      conferrcnt;
 
@@ -443,16 +459,17 @@ typedef struct {
 
 
 
-typedef struct {
-	// these two structures are shared 
-    FUNCTION_PARAMETER_STRUCT_MD *md;  
+typedef struct
+{
+    // these two structures are shared
+    FUNCTION_PARAMETER_STRUCT_MD *md;
     FUNCTION_PARAMETER           *parray;   // array of function parameters
 
-	// these variables are local to each process
-	uint16_t  loopstatus;
-	int       SMfd;
-	uint32_t  CMDmode;
-	
+    // these variables are local to each process
+    uint16_t  loopstatus;
+    int       SMfd;
+    uint32_t  CMDmode;
+
 } FUNCTION_PARAMETER_STRUCT;
 
 
@@ -471,48 +488,50 @@ typedef struct {
 #define NB_FPSCTRL_TASKQUEUE_MAX 10
 
 #define FPSTASK_STATUS_ACTIVE 0x0000000000000001   // is the task entry in the array used ?
-#define FPSTASK_STATUS_RUNNING 0x0000000000000002   
+#define FPSTASK_STATUS_RUNNING 0x0000000000000002
 #define FPSTASK_STATUS_WAITING 0x0000000000000004
-#define FPSTASK_STATUS_SHOW 0x0000000000000008 
+#define FPSTASK_STATUS_SHOW 0x0000000000000008
 
 // use WAITONRUN to ensure the queue is blocked until the current run process is done
 #define FPSTASK_FLAG_WAITONRUN 0x0000000000000001
 #define FPSTASK_FLAG_WAITONCONF 0x0000000000000002
 
-// If ON, the task is a wait point, and will only proceed if the FPS pointed to by fpsindex is NOT running 
+// If ON, the task is a wait point, and will only proceed if the FPS pointed to by fpsindex is NOT running
 #define FPSTASK_FLAG_WAIT_FOR_FPS_NORUN 0x0000000000000004
 
 
 #define FPSTASK_MAX_NBQUEUE 10
 
-typedef struct {
-	int priority;  
-	// high number = high priority
-	// 0 = queue not active
+typedef struct
+{
+    int priority;
+    // high number = high priority
+    // 0 = queue not active
 
 } FPSCTRL_TASK_QUEUE;
 
 
-typedef struct {
-	
-	char cmdstring[STRINGMAXLEN_FPS_CMDLINE];
-	
-	
-	uint64_t inputindex;  // order in which tasks are submitted
-	
-	// Tasks in separate queues can run in parallel (not waiting for last task to run new one)
-	// Tasks within a queue run sequentially
-	uint32_t queue; 
-	// Default queue is 0
-	
-	uint64_t status;
-	uint64_t flag;
+typedef struct
+{
 
-	int fpsindex;  // used to track status
+    char cmdstring[STRINGMAXLEN_FPS_CMDLINE];
 
-	struct timespec creationtime;
-	struct timespec activationtime;
-	struct timespec completiontime;
+
+    uint64_t inputindex;  // order in which tasks are submitted
+
+    // Tasks in separate queues can run in parallel (not waiting for last task to run new one)
+    // Tasks within a queue run sequentially
+    uint32_t queue;
+    // Default queue is 0
+
+    uint64_t status;
+    uint64_t flag;
+
+    int fpsindex;  // used to track status
+
+    struct timespec creationtime;
+    struct timespec activationtime;
+    struct timespec completiontime;
 
 } FPSCTRL_TASK_ENTRY;
 
@@ -522,13 +541,14 @@ typedef struct {
 
 
 
-typedef struct {
-	int      fpsCTRL_DisplayMode; // Display mode
+typedef struct
+{
+    int      fpsCTRL_DisplayMode; // Display mode
     uint32_t mode;           // GUI mode
     int      NBfps;               // Number of FPS entries
     int      NBkwn;               // Number of keyword nodes
     long     NBindex;
-    char     fpsnamemask[100]; 
+    char     fpsnamemask[100];
     int      nodeSelected;
     int      run_display;
     int      fpsindexSelected;
@@ -596,7 +616,7 @@ fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64,
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, (dflt));\
 (void) fp_##key;\
 } while(0)
-	
+
 #define FPS_ADDPARAM_INT64_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
 fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);\
 (void) fp_##key;\
@@ -634,42 +654,59 @@ errno_t function_parameter_getFPSname_from_CLIfunc(char *fpsname_default);
 errno_t function_parameter_execFPScmd();
 
 
-errno_t function_parameter_struct_create    (int NBparamMAX, const char *name);
+errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
 
-long    function_parameter_struct_connect   (
+long    function_parameter_struct_connect(
     const char                *name,
     FUNCTION_PARAMETER_STRUCT *fps,
     int                        fpsconnectmode
 );
 
 
-int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
+int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT
+        *funcparamstruct);
 
 
-int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBparamMAX);
+int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray,
+                                 long NBparamMAX);
 
-int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps,
+                                    const char *paramname);
 
-long   functionparameter_GetParamValue_INT64   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int    functionparameter_SetParamValue_INT64   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, long value);
-long * functionparameter_GetParamPtr_INT64     (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+long   functionparameter_GetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
+int    functionparameter_SetParamValue_INT64(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname, long value);
+long *functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
 
-double   functionparameter_GetParamValue_FLOAT64 (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int      functionparameter_SetParamValue_FLOAT64 (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, double value);
-double * functionparameter_GetParamPtr_FLOAT64   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+double   functionparameter_GetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
+int      functionparameter_SetParamValue_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname, double value);
+double *functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
 
-float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int   functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, float value);
-float * functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
+int   functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname, float value);
+float *functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
 
-char * functionparameter_GetParamPtr_STRING   (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int    functionparameter_SetParamValue_STRING (FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, const char *stringvalue);
+char *functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
+int    functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname, const char *stringvalue);
 
-int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
-int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname, int ONOFFvalue);
+int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
+int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname, int ONOFFvalue);
 
-uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
+uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps,
+        const char *paramname);
 
 
 
@@ -679,38 +716,51 @@ imageID functionparameter_LoadStream(
     int                        fpsconnectmode
 );
 
-int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps, const char *keywordstring, const char *descriptionstring, uint64_t type, uint64_t fpflag, void *dataptr);
+int function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
+                                 const char *keywordstring, const char *descriptionstring, uint64_t type,
+                                 uint64_t fpflag, void *dataptr);
 
-int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
+int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
+                                     int pindex);
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry);
 
 
-int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS, int pindex, FUNCTION_PARAMETER_STRUCT *FPSext);
+int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS,
+        int pindex, FUNCTION_PARAMETER_STRUCT *FPSext);
 errno_t functionparameter_GetTypeString(uint32_t type, char *typestring);
-int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
+int functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry,
+        int pindex);
 
 
 
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode);
-uint16_t function_parameter_FPCONFloopstep( FUNCTION_PARAMETER_STRUCT *fps);
-uint16_t function_parameter_FPCONFexit( FUNCTION_PARAMETER_STRUCT *fps);
-uint16_t function_parameter_RUNexit( FUNCTION_PARAMETER_STRUCT *fps);
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname,
+        uint32_t CMDmode);
+uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_FPCONFexit(FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 
-int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry, const char *paramname);
+int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
+                                     const char *paramname);
 
-int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, char *tagname, char *commentstr);
+int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
+        int pindex, char *tagname, char *commentstr);
 
-errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
-errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
-errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps,
+                                    int fpsindex);
+errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps,
+                                   int fpsindex);
+errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps,
+                                   int fpsindex);
 errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
-errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
+errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps,
+                                    int fpsindex);
 
 
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
-errno_t functionparameter_outlog(char* keyw, char *msgstring);
+errno_t functionparameter_outlog(char *keyw, char *msgstring);
 
-errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname, char *fpsCTRLfifoname);
+errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname,
+                                     char *fpsCTRLfifoname);
 
 
 #ifdef __cplusplus
