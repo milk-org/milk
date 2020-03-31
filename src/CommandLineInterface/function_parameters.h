@@ -577,6 +577,11 @@ fps.SMfd =  -1; \
 fps = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
 strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);\
 fps.md->sourceline = __LINE__; \
+{ \
+char msgstring[STRINGMAXLEN_FPS_LOGMSG]; \
+SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%s %d %s %d", (VARfpsname), (VARCMDmode), fps.md->sourcefname, fps.md->sourceline); \
+functionparameter_outlog("FPSINIT", msgstring); \
+} \
 } while(0)
 
 
