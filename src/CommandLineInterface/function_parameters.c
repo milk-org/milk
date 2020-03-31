@@ -5926,6 +5926,64 @@ errno_t functionparameter_outlog(
 }
 
 
+/**
+ * @brief Establish sym link for convenience
+ * 
+ * This is a one-time function when running FPS init.\n
+ * Creates a human-readable informative sym link to outlog\n
+ */ 
+errno_t functionparameter_outlog_namelink(
+	char *fpsname,
+	int cmdcode
+)
+{
+	char shmdname[STRINGMAXLEN_SHMDIRNAME];
+	
+	char logfname[STRINGMAXLEN_FULLFILENAME];
+	char linkfname[STRINGMAXLEN_FULLFILENAME];
+	
+	function_parameter_struct_shmdirname(shmdname);
+	
+	WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
+	
+	char cmdcodestring[40];
+	
+	switch ( cmdcode ) {
+		
+		case FPSCMDCODE_CONFSTART :
+		strcpy(cmdcodestring, "CONFSTART");
+		break;
+		
+		case FPSCMDCODE_CONFSTOP :
+		strcpy(cmdcodestring, "CONFSTOP");
+		break;
+		
+		case FPSCMDCODE_FPSINIT :
+		strcpy(cmdcodestring, "FPSINIT");
+		break;
+		
+		case FPSCMDCODE_FPSINITCREATE :
+		strcpy(cmdcodestring, "FPSINITCREATE");
+		break;
+		
+		case FPSCMDCODE_RUNSTART :
+		strcpy(cmdcodestring, "RUNSTART");
+		break;
+		
+		case FPSCMDCODE_RUNSTOP :
+		strcpy(cmdcodestring, "RUNSTOP");
+		break;
+		
+		default :
+		strcpy(cmdcodestring, "UNKNOWN");
+		break;
+	}
+	
+	WRITE_FULLFILENAME(linkfname, "%s/fpslog.%06d.%s.%s", shmdname, getpid(), fpsname, cmdcodestring);
+	
+	
+	return RETURN_SUCCESS;
+}
 
 
 
