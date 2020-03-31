@@ -306,41 +306,41 @@ typedef struct {
 
 
 typedef struct {
-	uint64_t fpflag;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
+    uint64_t fpflag;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
 
-	// Parameter name
-	char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-	char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
-	int keywordlevel; // number of levels in keyword
-	
-	// if this parameter value imported from another parameter, source is:
-	char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-	
-	char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
-	
-	uint32_t type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
-	
-	union
-	{
-		int64_t         l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
-		double          f[4];  // value, min, max, current state (if different from request)
+    // Parameter name
+    char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+    int keywordlevel; // number of levels in keyword
+
+    // if this parameter value imported from another parameter, source is:
+    char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+
+    char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+
+    uint32_t type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
+
+    union
+    {
+        int64_t         l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
+        double          f[4];  // value, min, max, current state (if different from request)
         float           s[4];
-		pid_t           pid[2]; // first value is set point, second is current state
-		struct timespec ts[2]; // first value is set point, second is current state
-		
-		char            string[2][FUNCTION_PARAMETER_STRMAXLEN]; // first value is set point, second is current state
-		// if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
-	} val;
-	
-	
-	union
-	{
-		FUNCTION_PARAMETER_SUBINFO_STREAM stream;   // if type stream
-		FUNCTION_PARAMETER_SUBINFO_FPS    fps;      // if FPTYPE_FPSNAME
-	} info;
-	
-	
-	long cnt0; // increments when changed
+        pid_t           pid[2]; // first value is set point, second is current state
+        struct timespec ts[2]; // first value is set point, second is current state
+
+        char            string[2][FUNCTION_PARAMETER_STRMAXLEN]; // first value is set point, second is current state
+        // if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
+    } val;
+
+
+    union
+    {
+        FUNCTION_PARAMETER_SUBINFO_STREAM stream;   // if type stream
+        FUNCTION_PARAMETER_SUBINFO_FPS    fps;      // if FPTYPE_FPSNAME
+    } info;
+
+
+    long cnt0; // increments when changed
 
 } FUNCTION_PARAMETER;
 
