@@ -5806,8 +5806,10 @@ errno_t functionparameter_FPSremove(
     }
 
 
-	// delete sym links
-	snprintf(command1, stringmaxlen, "find %s -follow -type f -name \"fpslog.*.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete", shmdname, fps[fpsindex].md->name);
+    // delete sym links
+    snprintf(command1, stringmaxlen,
+             "find %s -follow -type f -name \"fpslog.*.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
+             shmdname, fps[fpsindex].md->name);
     if(system(command1) != 0)
     {
         PRINT_ERROR("system() returns non-zero value");
@@ -5816,16 +5818,16 @@ errno_t functionparameter_FPSremove(
 
 
 
-	// TEST
-/*	
-	FILE *fpcmd;
-	char fnamecmd[200];
-	sprintf(fnamecmd, "fpcmd.%s.bash", fps[fpsindex].md->name);
-	fpcmd = fopen(fnamecmd, "w");
-	fprintf(fpcmd, "%s\n", command1);
-	fprintf(fpcmd, "%s\n", command2);
-	fclose(fpcmd);
-*/
+    // TEST
+    /*
+    	FILE *fpcmd;
+    	char fnamecmd[200];
+    	sprintf(fnamecmd, "fpcmd.%s.bash", fps[fpsindex].md->name);
+    	fpcmd = fopen(fnamecmd, "w");
+    	fprintf(fpcmd, "%s\n", command1);
+    	fprintf(fpcmd, "%s\n", command2);
+    	fclose(fpcmd);
+    */
 
     fps[fpsindex].SMfd = -1;
     close(fps[fpsindex].SMfd);
@@ -5835,8 +5837,10 @@ errno_t functionparameter_FPSremove(
 
 
 
-	// delete targets
-	snprintf(command2, stringmaxlen, "find %s -type f -name \"fpslog.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete", shmdname, fps[fpsindex].md->name);
+    // delete targets
+    snprintf(command2, stringmaxlen,
+             "find %s -type f -name \"fpslog.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
+             shmdname, fps[fpsindex].md->name);
     if(system(command2) != 0)
     {
         PRINT_ERROR("system() returns non-zero value");
@@ -6015,7 +6019,7 @@ errno_t functionparameter_outlog_namelink(
 
     WRITE_FULLFILENAME(linkfname, "%s/fpslog.%06d.%s.%s", shmdname, getpid(),
                        fpsname, cmdcodestring);
-    
+
     symlink(logfname, linkfname);
 
 
