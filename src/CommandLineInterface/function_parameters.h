@@ -579,7 +579,7 @@ strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);\
 fps.md->sourceline = __LINE__; \
 { \
 char msgstring[STRINGMAXLEN_FPS_LOGMSG]; \
-SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%s %d %s %d", (VARfpsname), (VARCMDmode), fps.md->sourcefname, fps.md->sourceline); \
+SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "LOGSTART %s %d %s %d", (VARfpsname), (VARCMDmode), fps.md->sourcefname, fps.md->sourceline); \
 functionparameter_outlog("FPSINIT", msgstring); \
 functionparameter_outlog_namelink((VARfpsname), (VARCMDmode)); \
 } \
@@ -700,7 +700,7 @@ double *functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
 
 float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
         const char *paramname);
-        
+
 int   functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
         const char *paramname, float value);
 
@@ -772,7 +772,7 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps,
 
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
 errno_t functionparameter_outlog(char *keyw, char *msgstring);
-errno_t functionparameter_outlog_namelink(char *fpsname, int cmdcode);
+errno_t functionparameter_outlog_namelink(const char *fpsname, int cmdcode);
 
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname,
                                      char *fpsCTRLfifoname);

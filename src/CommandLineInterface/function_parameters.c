@@ -5779,7 +5779,8 @@ errno_t functionparameter_FPSremove(
 {
     int stringmaxlen = 500;
     char command[stringmaxlen];
-
+    char command1[stringmaxlen];
+    char command2[stringmaxlen];
 
     functionparameter_RUNstop(fps, fpsindex);
     functionparameter_CONFstop(fps, fpsindex);
@@ -5805,11 +5806,41 @@ errno_t functionparameter_FPSremove(
     }
 
 
+	// delete sym links
+	snprintf(command1, stringmaxlen, "find %s -follow -type f -name \"fpslog.*.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete", shmdname, fps[fpsindex].md->name);
+    if(system(command1) != 0)
+    {
+        PRINT_ERROR("system() returns non-zero value");
+    }
+
+
+
+
+	// TEST
+/*	
+	FILE *fpcmd;
+	char fnamecmd[200];
+	sprintf(fnamecmd, "fpcmd.%s.bash", fps[fpsindex].md->name);
+	fpcmd = fopen(fnamecmd, "w");
+	fprintf(fpcmd, "%s\n", command1);
+	fprintf(fpcmd, "%s\n", command2);
+	fclose(fpcmd);
+*/
+
     fps[fpsindex].SMfd = -1;
     close(fps[fpsindex].SMfd);
 
     remove(conflogfname);
     remove(fpsfname);
+
+
+
+	// delete targets
+	snprintf(command2, stringmaxlen, "find %s -type f -name \"fpslog.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete", shmdname, fps[fpsindex].md->name);
+    if(system(command2) != 0)
+    {
+        PRINT_ERROR("system() returns non-zero value");
+    }
 
 
 
@@ -5822,6 +5853,8 @@ errno_t functionparameter_FPSremove(
     {
         PRINT_ERROR("system() returns non-zero value");
     }
+
+
     if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"exit\" C-m",
                 fps[fpsindex].md->name) < 0)
     {
@@ -5928,61 +5961,65 @@ errno_t functionparameter_outlog(
 
 /**
  * @brief Establish sym link for convenience
- * 
+ *
  * This is a one-time function when running FPS init.\n
  * Creates a human-readable informative sym link to outlog\n
- */ 
+ */
 errno_t functionparameter_outlog_namelink(
-	char *fpsname,
-	int cmdcode
+    const char *fpsname,
+    int cmdcode
 )
 {
-	char shmdname[STRINGMAXLEN_SHMDIRNAME];
-	
-	char logfname[STRINGMAXLEN_FULLFILENAME];
-	char linkfname[STRINGMAXLEN_FULLFILENAME];
-	
-	function_parameter_struct_shmdirname(shmdname);
-	
-	WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
-	
-	char cmdcodestring[40];
-	
-	switch ( cmdcode ) {
-		
-		case FPSCMDCODE_CONFSTART :
-		strcpy(cmdcodestring, "CONFSTART");
-		break;
-		
-		case FPSCMDCODE_CONFSTOP :
-		strcpy(cmdcodestring, "CONFSTOP");
-		break;
-		
-		case FPSCMDCODE_FPSINIT :
-		strcpy(cmdcodestring, "FPSINIT");
-		break;
-		
-		case FPSCMDCODE_FPSINITCREATE :
-		strcpy(cmdcodestring, "FPSINITCREATE");
-		break;
-		
-		case FPSCMDCODE_RUNSTART :
-		strcpy(cmdcodestring, "RUNSTART");
-		break;
-		
-		case FPSCMDCODE_RUNSTOP :
-		strcpy(cmdcodestring, "RUNSTOP");
-		break;
-		
-		default :
-		strcpy(cmdcodestring, "UNKNOWN");
-		break;
-	}
-	
-	WRITE_FULLFILENAME(linkfname, "%s/fpslog.%06d.%s.%s", shmdname, getpid(), fpsname, cmdcodestring);
-	
-	
-	return RETURN_SUCCESS;
+    char shmdname[STRINGMAXLEN_SHMDIRNAME];
+
+    char logfname[STRINGMAXLEN_FULLFILENAME];
+    char linkfname[STRINGMAXLEN_FULLFILENAME];
+
+    function_parameter_struct_shmdirname(shmdname);
+
+    WRITE_FULLFILENAME(logfname, "%s/fpslog.%06d", shmdname, getpid());
+
+    char cmdcodestring[40];
+
+    switch(cmdcode)
+    {
+
+        case FPSCMDCODE_CONFSTART :
+            strcpy(cmdcodestring, "CONFSTART");
+            break;
+
+        case FPSCMDCODE_CONFSTOP :
+            strcpy(cmdcodestring, "CONFSTOP");
+            break;
+
+        case FPSCMDCODE_FPSINIT :
+            strcpy(cmdcodestring, "FPSINIT");
+            break;
+
+        case FPSCMDCODE_FPSINITCREATE :
+            strcpy(cmdcodestring, "FPSINITCREATE");
+            break;
+
+        case FPSCMDCODE_RUNSTART :
+            strcpy(cmdcodestring, "RUNSTART");
+            break;
+
+        case FPSCMDCODE_RUNSTOP :
+            strcpy(cmdcodestring, "RUNSTOP");
+            break;
+
+        default :
+            strcpy(cmdcodestring, "UNKNOWN");
+            break;
+    }
+
+    WRITE_FULLFILENAME(linkfname, "%s/fpslog.%06d.%s.%s", shmdname, getpid(),
+                       fpsname, cmdcodestring);
+    
+    symlink(logfname, linkfname);
+
+
+    return RETURN_SUCCESS;
 }
 
 
