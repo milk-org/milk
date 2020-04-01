@@ -1538,28 +1538,33 @@ int function_parameter_add_entry(
             funcparamarray[pindex].val.l[2] = 0;
             funcparamarray[pindex].val.l[3] = 0;
             break;
+        
         case FPTYPE_FLOAT64 :
             funcparamarray[pindex].val.f[0] = 0.0;
             funcparamarray[pindex].val.f[1] = 0.0;
             funcparamarray[pindex].val.f[2] = 0.0;
             funcparamarray[pindex].val.f[3] = 0.0;
             break;
+        
         case FPTYPE_FLOAT32 :
             funcparamarray[pindex].val.s[0] = 0.0;
             funcparamarray[pindex].val.s[1] = 0.0;
             funcparamarray[pindex].val.s[2] = 0.0;
             funcparamarray[pindex].val.s[3] = 0.0;
             break;
+        
         case FPTYPE_PID :
             funcparamarray[pindex].val.pid[0] = 0;
             funcparamarray[pindex].val.pid[1] = 0;
             break;
+        
         case FPTYPE_TIMESPEC :
             funcparamarray[pindex].val.ts[0].tv_sec = 0;
             funcparamarray[pindex].val.ts[0].tv_nsec = 0;
             funcparamarray[pindex].val.ts[1].tv_sec = 0;
             funcparamarray[pindex].val.ts[1].tv_nsec = 0;
             break;
+        
         case FPTYPE_FILENAME :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -1572,6 +1577,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+        
         case FPTYPE_FITSFILENAME :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -1584,6 +1590,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+        
         case FPTYPE_EXECFILENAME :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -1596,6 +1603,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+        
         case FPTYPE_DIRNAME :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -1608,6 +1616,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+        
         case FPTYPE_STREAMNAME :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -1620,6 +1629,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+        
         case FPTYPE_STRING :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -1632,6 +1642,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+        
         case FPTYPE_ONOFF :
             funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF; // initialize state to OFF
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
@@ -1645,6 +1656,7 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
+            
         case FPTYPE_FPSNAME :
             if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
                         "NULL") < 0)
@@ -3856,11 +3868,11 @@ errno_t functionparameter_PrintParameterInfo(
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_ONOFF)
-    {
-        /*if ( fpsentry->parray[pindex].status & FPFLAG_ONOFF )
-        	printf("    ON  %s\n", fpsentry->parray[pindex].val.string[1]);
+    {				
+        if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
+        	printf("    ON  [ %s ]\n", fpsentry->parray[pindex].val.string[1]);
         else
-        	printf("   OFF  %s\n", fpsentry->parray[pindex].val.string[0]);*/
+        	printf("   OFF  [ %s ]\n", fpsentry->parray[pindex].val.string[0]);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
@@ -8270,14 +8282,14 @@ errno_t functionparameter_CTRLscreen(
                                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)
                                     {
                                         attron(COLOR_PAIR(2));
-                                        printw("  ON ", fps[fpsindex].parray[pindex].val.string[1]);
+                                        printw("  ON "); //, fps[fpsindex].parray[pindex].val.string[1]);
                                         attroff(COLOR_PAIR(2));
-                                        printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[1]);
+                                        printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[0]);
                                     }
                                     else
                                     {
                                         attron(COLOR_PAIR(1));
-                                        printw(" OFF ", fps[fpsindex].parray[pindex].val.string[0]);
+                                        printw(" OFF "); //, fps[fpsindex].parray[pindex].val.string[0]);
                                         attroff(COLOR_PAIR(1));
                                         printw(" [%15s]", fps[fpsindex].parray[pindex].val.string[0]);
                                     }

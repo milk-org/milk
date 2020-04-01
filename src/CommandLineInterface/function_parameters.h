@@ -548,7 +548,7 @@ typedef struct
     int      NBfps;               // Number of FPS entries
     int      NBkwn;               // Number of keyword nodes
     long     NBindex;
-char     fpsnamemask[100];
+    char     fpsnamemask[100];
     int      nodeSelected;
     int      run_display;
     int      fpsindexSelected;
