@@ -571,8 +571,22 @@ typedef struct
 // ===========================
 
 
-
-#define FPS_SETUP_INIT( VARfpsname, VARCMDmode ) FUNCTION_PARAMETER_STRUCT fps; do { \
+/** @defgroup fpsmacro          MACROS: Function parameter structure
+ * 
+ * Frequently used function parameter structure (FPS) operations :
+ * - Create / initialize FPS
+ * - Add parameters to existing FPS
+ * 
+ * @{
+ */
+  
+/**
+ * @brief Initialize function parameter structure (FPS)
+ *
+ * @param[in] VARfpsname FPS name
+ * @param[in] VARCMDmode command code
+ */
+#define FPS_SETUP_INIT(VARfpsname,VARCMDmode) FUNCTION_PARAMETER_STRUCT fps; do { \
 fps.SMfd =  -1; \
 fps = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
 strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);\
@@ -641,6 +655,7 @@ fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNA
 } while(0)
 
 
+/** @} */ // end group fpsmacro
 
 
 //long fp_stream_inname  = function_parameter_add_entry(&fps, ".in_name",  "input stream",  FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);
