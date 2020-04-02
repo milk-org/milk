@@ -4,6 +4,8 @@
  *
  * @see @ref page_FunctionParameterStructure
  *
+ * @defgroup FPSconf Configuration function for Function Parameter Structure (FPS)
+ * @defgroup FPSrun  Run function using Function Parameter Structure (FPS)
  *
  */
 
@@ -8673,6 +8675,10 @@ errno_t functionparameter_CTRLscreen(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
 
 
 
