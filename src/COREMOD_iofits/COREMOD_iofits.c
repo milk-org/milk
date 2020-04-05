@@ -7,6 +7,32 @@
  * 
  */
 
+
+
+
+/* ================================================================== */
+/* ================================================================== */
+/*            MODULE INFO                                             */
+/* ================================================================== */
+/* ================================================================== */
+
+#define MODULE_NAME              "COREMOD_iofits"
+
+// module default short name
+// all CLI calls to this module functions will be <shortname>.<funcname>
+// if set to "", then calls use <funcname>
+#define MODULE_SHORTNAME_DEFAULT ""
+
+// Module short description 
+#define MODULE_DESCRIPTION       ""
+
+// Application to which module belongs
+#define MODULE_APPLICATION       "milk"
+
+
+
+
+
 #include <stdint.h>
 #include <fitsio.h> /* required by every program that uses CFITSIO  */
 #include <string.h>
@@ -200,21 +226,7 @@ errno_t images_to_cube_cli()
 
 
 
-void __attribute__ ((constructor)) libinit_COREMOD_iofits()
-{
-    if ( INITSTATUS_COREMOD_iofits == 0 )
-    {
-        init_COREMOD_iofits();
-        RegisterModule(__FILE__, "milk", "FITS format input/output");
-        INITSTATUS_COREMOD_iofits = 1;
-    }
-}
-
-
-
-
-
-errno_t init_COREMOD_iofits() {
+static errno_t init_module_CLI() {
 
 
     /* =============================================================================================== */
@@ -308,8 +320,17 @@ errno_t init_COREMOD_iofits() {
 
 
 
+errno_t init_COREMOD_iofits()
+{
+    init_module_CLI();
+
+    return RETURN_SUCCESS;
+}
 
 
+// Module initialization macro in CLIcore.h
+//
+INIT_MODULE_LIB();
 
 
 
