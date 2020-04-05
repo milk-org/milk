@@ -12,6 +12,28 @@
 
 
 
+/* ================================================================== */
+/* ================================================================== */
+/*            MODULE INFO                                             */
+/* ================================================================== */
+/* ================================================================== */
+
+#define MODULE_NAME              "COREMOD_memory"
+
+// module default short name
+// all CLI calls to this module functions will be <shortname>.<funcname>
+// if set to "", then calls use <funcname>
+#define MODULE_SHORTNAME_DEFAULT ""
+
+// Module short description 
+#define MODULE_DESCRIPTION       "Memory management for images and variables"
+
+// Application to which module belongs
+#define MODULE_APPLICATION       "milk"
+
+
+
+
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -132,7 +154,7 @@ static int listim_scr_wcol;
 
 //extern struct DATA data;
 
-static int INITSTATUS_COREMOD_memory = 0;
+//static int INITSTATUS_COREMOD_memory = 0;
 
 static char errmsg_memory[SBUFFERSIZE];
 
@@ -1492,6 +1514,9 @@ errno_t COREMOD_MEMORY_sharedMem_2Dim_log_cli()
 
 
 
+
+
+/*
 void __attribute__ ((constructor)) libinit_COREMOD_memory()
 {
 	if ( INITSTATUS_COREMOD_memory == 0 )
@@ -1510,6 +1535,7 @@ void __attribute__ ((destructor)) libclose_COREMOD_memory()
 		// nothing to do
 	}
 }
+*/
 
 
 
@@ -1519,8 +1545,7 @@ void __attribute__ ((destructor)) libclose_COREMOD_memory()
 
 
 
-
-errno_t init_COREMOD_memory()
+static errno_t init_module_CLI()
 {
 
     RegisterCLIcommand(
@@ -2092,11 +2117,15 @@ errno_t init_COREMOD_memory()
 }
 
 
+errno_t init_COREMOD_memory(){
+	init_module_CLI();
+}
 
 
 
-
-
+// Module initialization macro in CLIcore.h
+//
+INIT_MODULE_LIB();
 
 
 
