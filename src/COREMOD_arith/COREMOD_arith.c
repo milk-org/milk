@@ -8,6 +8,30 @@
  */
 
 
+/* ================================================================== */
+/* ================================================================== */
+/*            MODULE INFO                                             */
+/* ================================================================== */
+/* ================================================================== */
+
+#define MODULE_NAME              "COREMOD_arith"
+
+// module default short name
+// all CLI calls to this module functions will be <shortname>.<funcname>
+// if set to "", then calls use <funcname>
+#define MODULE_SHORTNAME_DEFAULT ""
+
+// Module short description 
+#define MODULE_DESCRIPTION       "Image arithmetic operations"
+
+// Application to which module belongs
+#define MODULE_APPLICATION       "milk"
+
+
+
+
+
+
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -266,19 +290,7 @@ errno_t arith_image_merge3D_cli()
 
 
 
-void __attribute__ ((constructor)) libinit_COREMOD_arith()
-{
-	if ( INITSTATUS_COREMOD_arith == 0 )
-	{
-		init_COREMOD_arith();
-		RegisterModule(__FILE__, "milk", "Image arithmetic operations");
-		INITSTATUS_COREMOD_arith = 1;
-	}
-}
-
-
-
-errno_t init_COREMOD_arith()
+static errno_t init_module_CLI()
 {
 
     RegisterCLIcommand(
@@ -388,6 +400,18 @@ errno_t init_COREMOD_arith()
 }
 
 
+
+// Module initialization macro in CLIcore.h
+//
+INIT_MODULE_LIB();
+
+
+errno_t init_COREMOD_arith()
+{
+	init_module_CLI();
+	
+	return RETURN_SUCCESS;
+}
 
 
 
