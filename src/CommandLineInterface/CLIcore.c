@@ -236,9 +236,6 @@ static errno_t help_command(const char *restrict cmdkey);
 
 
 
-
-
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                    FUNCTIONS SOURCE CODE                                        */
@@ -845,12 +842,12 @@ static errno_t help_module()
     {
         long i;
         printf("\n");
-        printf("%6s  %36s  %10s  %s\n", "Index", "Module name", "Package",
+        printf("%6s  %8s %36s  %10s  %s\n", "Index", "short", "Module name", "Package",
                "Module description");
         printf("-------------------------------------------------------------------------------------------------------\n");
         for(i = 0; i < data.NBmodule; i++)
         {
-            printf("%6ld  %36s  %10s  %s\n", i, data.module[i].name, data.module[i].package,
+            printf("%6ld %8s %36s  %10s  %s\n", i, data.module[i].shortname, data.module[i].name, data.module[i].package,
                    data.module[i].info);
         }
         printf("-------------------------------------------------------------------------------------------------------\n");
@@ -865,7 +862,7 @@ static errno_t help_module()
 static errno_t load_so()
 {
     load_sharedobj(data.cmdargtoken[1].val.string);
-    return RETURN_SUCCESS;
+    return CLICMD_SUCCESS;
 }
 
 
@@ -877,13 +874,34 @@ static errno_t load_module()
     if(data.cmdargtoken[1].type == 3)
     {
         load_module_shared(data.cmdargtoken[1].val.string);
-        return RETURN_SUCCESS;
+        return CLICMD_SUCCESS;
     }
     else
     {
-        return RETURN_FAILURE;
+        return CLICMD_INVALID_ARG;
     }
 }
+
+
+
+static errno_t CLIcore__load_module_as__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_STR)
+            + CLI_checkarg(2, CLIARG_STR)
+            == 0)
+    {
+		strcpy(data.moduleshortname, data.cmdargtoken[2].val.string);
+        load_module_shared(data.cmdargtoken[1].val.string);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
 
 
 
@@ -1215,9 +1233,20 @@ errno_t RegisterModule(
 {
     int OKmsg = 0;
 
-    strcpy(data.module[data.NBmodule].name,    basename(FileName));
-    strcpy(data.module[data.NBmodule].package, PackageName);
-    strcpy(data.module[data.NBmodule].info,    InfoString);
+    if(strlen(data.modulename) == 0)
+    {
+		strcpy(data.module[data.NBmodule].name, "???");
+	}
+	else
+	{
+		strcpy(data.module[data.NBmodule].name,         data.modulename);
+	}
+    
+    
+    strcpy(data.module[data.NBmodule].package,      PackageName);
+    strcpy(data.module[data.NBmodule].info,         InfoString);
+	
+	strcpy(data.module[data.NBmodule].shortname,    data.moduleshortname);
 
     if(data.progStatus == 0)
     {
@@ -1257,7 +1286,7 @@ errno_t RegisterModule(
 
 uint_fast16_t RegisterCLIcommand(
     const char *restrict CLIkey,
-    const char *restrict CLImodule,
+    const char *restrict CLImodulesrc,
     errno_t (*CLIfptr)(),
     const char *restrict CLIinfo,
     const char *restrict CLIsyntax,
@@ -1267,8 +1296,39 @@ uint_fast16_t RegisterCLIcommand(
 {
     //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
 
-    strcpy(data.cmd[data.NBcmd].key, CLIkey);
-    strcpy(data.cmd[data.NBcmd].module, CLImodule);
+    if(strlen(data.moduleshortname) == 0)
+    {
+        // if no shortname provided, try to use deafult
+        if(strlen(data.moduleshortname_default) > 0)
+        {
+            // otherwise, construct call key as <shortname_default>.<CLIkey>
+            strcpy(data.moduleshortname, data.moduleshortname_default);
+        }
+    }
+
+
+    if(strlen(data.moduleshortname) == 0)
+    {
+        strcpy(data.cmd[data.NBcmd].key, CLIkey);
+    }
+    else
+    {
+        // otherwise, construct call key as <shortname>.<CLIkey>
+        sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.moduleshortname, CLIkey);
+    }
+
+
+    if(strlen(data.modulename) == 0)
+    {
+        strcpy(data.cmd[data.NBcmd].module, "unknown");
+    }
+    else
+    {
+        strcpy(data.cmd[data.NBcmd].module, data.modulename);
+    }
+
+
+    strcpy(data.cmd[data.NBcmd].modulesrc, CLImodulesrc);
     data.cmd[data.NBcmd].fp = CLIfptr;
     strcpy(data.cmd[data.NBcmd].info, CLIinfo);
     strcpy(data.cmd[data.NBcmd].syntax, CLIsyntax);
@@ -2211,7 +2271,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "exit");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = exitCLI;
     strcpy(data.cmd[data.NBcmd].info, "exit program (same as quit command)");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2220,7 +2280,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "quit");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = exitCLI;
     strcpy(data.cmd[data.NBcmd].info, "quit program (same as exit command)");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2229,7 +2289,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "exitCLI");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = exitCLI;
     strcpy(data.cmd[data.NBcmd].info, "quit program (same as exit command)");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2242,7 +2302,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "help");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = help;
     strcpy(data.cmd[data.NBcmd].info, "print help");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2251,7 +2311,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "?");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = help;
     strcpy(data.cmd[data.NBcmd].info, "print help");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2261,7 +2321,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "helprl");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = helpreadline;
     strcpy(data.cmd[data.NBcmd].info, "print readline help");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2270,7 +2330,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "cmd?");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = help_cmd;
     strcpy(data.cmd[data.NBcmd].info, "list commands");
     strcpy(data.cmd[data.NBcmd].syntax, "command name (optional)");
@@ -2279,7 +2339,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "m?");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = help_module;
     strcpy(data.cmd[data.NBcmd].info, "list commands in a module");
     strcpy(data.cmd[data.NBcmd].syntax, "module name");
@@ -2289,7 +2349,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "soload");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = load_so;
     strcpy(data.cmd[data.NBcmd].info, "load shared object");
     strcpy(data.cmd[data.NBcmd].syntax, "shared object name");
@@ -2299,7 +2359,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "mload");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = load_module;
     strcpy(data.cmd[data.NBcmd].info, "load module from shared object");
     strcpy(data.cmd[data.NBcmd].syntax, "module name");
@@ -2308,9 +2368,21 @@ void runCLI_data_init()
            "errno_t load_module_shared(char *modulename)");
     data.NBcmd++;
 
+    strcpy(data.cmd[data.NBcmd].key, "mloadas");
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
+    data.cmd[data.NBcmd].fp = CLIcore__load_module_as__cli;
+    strcpy(data.cmd[data.NBcmd].info, "load module from shared object, use short name binding");
+    strcpy(data.cmd[data.NBcmd].syntax, "<module name> <shortname>");
+    strcpy(data.cmd[data.NBcmd].example, "mload mymodule mymod");
+    strcpy(data.cmd[data.NBcmd].Ccall,
+           "errno_t load_module_shared(char *modulename)");
+    data.NBcmd++;
+
+
+
 
     strcpy(data.cmd[data.NBcmd].key, "ci");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = printInfo;
     strcpy(data.cmd[data.NBcmd].info, "Print version, settings, info and exit");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2319,7 +2391,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "dpsingle");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = set_default_precision_single;
     strcpy(data.cmd[data.NBcmd].info, "Set default precision to single");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2328,7 +2400,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "dpdouble");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = set_default_precision_double;
     strcpy(data.cmd[data.NBcmd].info, "Set default precision to doube");
     strcpy(data.cmd[data.NBcmd].syntax, "no argument");
@@ -2341,7 +2413,7 @@ void runCLI_data_init()
     // process info
 
     strcpy(data.cmd[data.NBcmd].key, "setprocinfoON");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = set_processinfoON;
     strcpy(data.cmd[data.NBcmd].info, "set processes info ON");
     strcpy(data.cmd[data.NBcmd].syntax, "no arg");
@@ -2351,7 +2423,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "setprocinfoOFF");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = set_processinfoOFF;
     strcpy(data.cmd[data.NBcmd].info, "set processes info OFF");
     strcpy(data.cmd[data.NBcmd].syntax, "no arg");
@@ -2362,7 +2434,7 @@ void runCLI_data_init()
 
 
     strcpy(data.cmd[data.NBcmd].key, "procCTRL");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = processinfo_CTRLscreen_cli;
     strcpy(data.cmd[data.NBcmd].info, "processes control screen");
     strcpy(data.cmd[data.NBcmd].syntax, "no arg");
@@ -2371,7 +2443,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "streamCTRL");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen_cli;
     strcpy(data.cmd[data.NBcmd].info, "stream control screen");
     strcpy(data.cmd[data.NBcmd].syntax, "no arg");
@@ -2380,7 +2452,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "fparamCTRL");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen_cli;
     strcpy(data.cmd[data.NBcmd].info, "function parameters control screen");
     strcpy(data.cmd[data.NBcmd].syntax, "function parameter structure name");
@@ -2390,7 +2462,7 @@ void runCLI_data_init()
     data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "usleep");
-    strcpy(data.cmd[data.NBcmd].module, __FILE__);
+    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = cfits_usleep_cli;
     strcpy(data.cmd[data.NBcmd].info, "usleep");
     strcpy(data.cmd[data.NBcmd].syntax, "<us>");
@@ -2813,7 +2885,8 @@ static errno_t list_commands_module(
         for(unsigned int i = 0; i < data.NBcmd; i++)
         {
             char cmpstring[200];
-            sprintf(cmpstring, "%s", basename(data.cmd[i].module));
+//            sprintf(cmpstring, "%s", basename(data.cmd[i].module));
+            sprintf(cmpstring, "%s", data.cmd[i].module);
 
             if(strcmp(modulename, cmpstring) == 0)
             {
@@ -2853,7 +2926,7 @@ static errno_t list_commands_module(
                 }
                 strncpy(cmdinfoshort, data.cmd[i].info, 38);
                 printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key,
-                       basename(data.cmd[i].module), cmdinfoshort, data.cmd[i].example);
+                       data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -3053,12 +3126,13 @@ static errno_t help_command(
         if(!strcmp(cmdkey, data.cmd[i].key))
         {
             printf("\n");
-            printf("key       :    %s\n", data.cmd[i].key);
-            printf("module    :    %s\n", data.cmd[i].module);
-            printf("info      :    %s\n", data.cmd[i].info);
-            printf("syntax    :    %s\n", data.cmd[i].syntax);
-            printf("example   :    %s\n", data.cmd[i].example);
-            printf("C call    :    %s\n", data.cmd[i].Ccall);
+            printf("key        :    %s\n", data.cmd[i].key);
+            printf("module     :    %s\n", data.cmd[i].module);
+            printf("module src :    %s\n", data.cmd[i].modulesrc);
+            printf("info       :    %s\n", data.cmd[i].info);
+            printf("syntax     :    %s\n", data.cmd[i].syntax);
+            printf("example    :    %s\n", data.cmd[i].example);
+            printf("C call     :    %s\n", data.cmd[i].Ccall);
             printf("\n");
             cOK = 1;
         }

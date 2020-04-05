@@ -142,7 +142,9 @@ Doygen comments are included in .c files (not in .h files).
  * Computes the <b>sum</b> of @p a and @p b, writes it as a string @p output.
  *
  * ### Why this function
- * To provide a documentation example
+ * To provide a documentation example.\n
+ * Refer to macros as #MACRONAME()
+ *
  *
  * #### subsection1
  * - item1

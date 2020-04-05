@@ -1,29 +1,59 @@
-# Install {#page_installation}
+# Installation {#page_installation}
 
 @note This file: ./src/CommandLineInterface/doc/DownloadCompile.md
 
 [TOC]
 
-To compile :
-
-	cd milk
-	mkdir _build
-	cd _build
-	cmake ..
-	make
-	sudo make install
-
-
-
 ---
+
+
+# 1. Download and install milk {#milkinstall}
 
 @warning This page describes installation of the core package milk. If you install application package (cacao or coffee), replace "milk" with "cacao" in these instructions.
 
 
-# Details {#page_installation_details}
+## 1.1. Download and compile {#milkinstall_downloadcompile}
+
+@verbatim
+git clone --recursive https://github.com/cacao-org/milk milk
+cd milk
+mkdir _build
+cd _build
+cmake ..
+# If you use NVIDIA GPUs, install cuda and magma libraries, and use "cmake .. -DUSE_MAGMA=ON"
+make
+sudo make install
+@endverbatim
 
 
-## Libraries {#page_installation_details_libraries}
+## 1.2. Post-installation {#milkinstall_postinstall}
+
+You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
+
+@verbatim
+echo "/usr/local/lib" > usrlocal.conf
+sudo mv usrlocal.conf /etc/ld.so.conf.d/
+sudo ldconfig -v
+@endverbatim
+
+
+## 1.3. tmpfs (optional) {#milkinstall_tmpfs}
+
+OPTIONAL: Create tmpfs disk for high performance I/O:
+
+@verbatim
+echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
+sudo mkdir -p /milk/shm
+sudo mount /milk/shm
+@endverbatim
+
+
+---
+
+# 2. Dependancies {#page_installation_details}
+
+
+## 2.1. Libraries {#page_installation_details_libraries}
 
 Libraries required :
 
@@ -48,7 +78,7 @@ Install above libraries (Ubuntu):
 		sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
 
 
-### FITSIO install {#page_installation_details_libraries_fitsio}
+## 2.2. FITSIO install {#page_installation_details_libraries_fitsio}
 
 For reading and writing FITS image files
 
@@ -61,10 +91,7 @@ There is the fitsio.h in it. Move it to usr :
 		sudo make install 
 
 
----
-
-
-## GPU acceleration (optional, but highly recommended) {#page_installation_details_gpuacceleration}
+## 2.3. GPU acceleration (optional, but highly recommended) {#page_installation_details_gpuacceleration}
 
 Required libraries:
 
@@ -72,74 +99,67 @@ Required libraries:
 - install **CUDA**
 - install **MAGMA**
 
-
----
-
-
-
-
-## Shared Memory Image Stream Viewer {#page_installation_details_sharedmemviewer}
-
-Two options:
-
-- shared memory image viewer (`shmimview` or similar)
-- qt-based `shmimviewqt`
-
-
-
----
-
-
-## Compilation  {#page_installation_details_compilation}
-
-### Installing cmake {#page_installation_details_compilation_installingcmake}
-
-Use cmake version 3.xx.
-
-To install cmake on centOS system (cmake executable will be cmake3):
-
-	sudo yum install cmake3
-	
-
-### Compile source code {#page_installation_details_compilation_compilesourcecode}
-
-To compile using cmake
-
-	cd milk
-	mkdir _build
-	cd _build
-	cmake ..
-	make
-	sudo make install
-
-
-
-### Post-installation configuration {#page_installation_details_compilation_postinstall}
-
-You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
-
-	echo "/usr/local/lib" > usrlocal.conf
-	sudo mv usrlocal.conf /etc/ld.so.conf.d/
-	sudo ldconfig -v
-
-
-Add milk executable scripts to PATH environment variable. Add this line to the .bashrc file (change source code location as needed):
-
-	export PATH=$PATH:/home/myname/src/milk/src/CommandLineInterface/scripts
-
-	
-
-
-
----
-
-## Troubleshooting and FAQs {#page_installation_details_troubleshooting}
-
-
 ### No package 'magma' found
 
 configure script uses pkg-config to find the package. You need to add in .bashrc :
 
 	export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
+
+---
+
+
+# 3. Running multiple versions {#milk_multipleversions}
+
+
+@warning Untested, may require tweaking
+
+To install independant versions on the same system, download source code in separate source directories:
+
+@verbatim
+cd $HOME/src
+git clone --recursive https://github.com/milk-org/milk milk-1
+git clone --recursive https://github.com/milk-org/milk milk-2
+@endverbatim
+
+
+
+Compile each copy with a different target directory :
+
+@verbatim
+cd $HOME/src/milk-1
+mkdir _build
+cd _build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
+sudo make install
+@endverbatim
+
+@verbatim
+cd $HOME/src/milk-2
+mkdir _build
+cd _build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-2 ..
+sudo make install
+@endverbatim
+
+
+To make version 1 the default on the system :
+
+@verbatim
+sudo ln -s /usr/local/milk-1 /usr/local/milk
+@endverbatim
+
+
+To run an instance of version 2 :
+
+@verbatim
+LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
+@endverbatim
+
+
+Additionally, each version may have its own independent shared memory space for streams :
+@verbatim
+MILK_SHM_DIR=/milk-2/shm LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
+@endverbatim
+
 
 

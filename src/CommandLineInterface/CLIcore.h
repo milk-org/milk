@@ -1,13 +1,13 @@
 /**
  * @file    CLIcore.h
- * @brief   Command line interface 
- * 
+ * @brief   Command line interface
+ *
  * Command line interface (CLI) definitions and function prototypes
- * 
+ *
  * @defgroup errcheckmacro     MACROS: Error checking
  * @defgroup debugmacro        MACROS: Debugging
  * @defgroup procinfomacro     MACROS: Process control
- * 
+ *
  */
 
 #ifndef _GNU_SOURCE
@@ -38,6 +38,7 @@
 #include <fftw3.h>
 #include <gsl/gsl_rng.h>	// for random numbers
 #include <signal.h>
+#include <string.h>
 
 
 
@@ -110,11 +111,45 @@ extern int C_ERRNO;			// C errno (from errno.h)
 
 
 
+
+//
+//  ************ lib module init **********************************
+//
+
+/** @brief Initialize module
+ */
+#define INIT_MODULE_LIB(...) \
+static int INITSTATUS_module = 0; \
+static void __attribute__ ((constructor)) libinit_module() \
+{ \
+if ( INITSTATUS_module == 0 ) \
+{ \
+strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT); \
+strcpy(data.modulename, MODULE_NAME); \
+init_module(); \
+RegisterModule(__FILE__, MODULE_APPLICATION, MODULE_DESCRIPTION); \
+INITSTATUS_module = 1; \
+strcpy(data.modulename, ""); \
+strcpy(data.moduleshortname_default, ""); \
+strcpy(data.moduleshortname, ""); \
+} \
+} \
+static void __attribute__ ((destructor)) libclose_module() \
+{ \
+if ( INITSTATUS_module == 1 ) \
+{ \
+} \
+}
+
+
+
+
+
 //
 // ************ ERROR HANDLING **********************************
-// 
+//
 
-/** @brief Print error (in red) and continue 
+/** @brief Print error (in red) and continue
  *  @ingroup errcheckmacro
  */
 #ifndef STANDALONE
@@ -132,8 +167,8 @@ clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
 
 
 
-/** 
- * @brief Print warning and continue 
+/**
+ * @brief Print warning and continue
  * @ingroup errcheckmacro
  */
 #define PRINT_WARNING(...) do { \
@@ -161,7 +196,7 @@ C_ERRNO = 0; \
 
 
 
-/** 
+/**
  * @ingroup debugmacro
  * @brief register trace point
  */
@@ -178,7 +213,7 @@ sprintf(data.testpoint_msg, __VA_ARGS__);             \
 #endif
 
 
-/** 
+/**
  * @ingroup debugmacro
  * @brief register and log trace point
  */
@@ -199,15 +234,15 @@ write_process_log();                                 \
 
 //
 // ************ ERROR-CHECKING FUNCTIONS **********************************
-// 
+//
 
 
 
 
-/** 
+/**
  * @ingroup errcheckmacro
  * @brief system call with error checking and handling
- *  
+ *
  */
 #define EXECUTE_SYSTEM_COMMAND(...) do {                                   \
 char syscommandstring[STRINGMAXLEN_COMMAND];                               \
@@ -227,10 +262,10 @@ if(system(syscommandstring) != 0) {                                        \
 
 
 
-/** 
+/**
  * @ingroup errcheckmacro
- * @brief snprintf with error checking and handling 
- * 
+ * @brief snprintf with error checking and handling
+ *
  */
 #define SNPRINTF_CHECK(string, maxlen, ...) do { \
 int slen = snprintf(string, maxlen, __VA_ARGS__); \
@@ -246,12 +281,12 @@ if(slen >= maxlen) {                              \
 
 
 
-/** 
+/**
  * @ingroup errcheckmacro
  * @brief Write image name to string
  *
  * Requires existing image string of len #STRINGMAXLEN_IMGNAME
- * 
+ *
  * Example use:
  * @code
  * char imname[STRINGMAXLEN_IMGNAME];
@@ -259,8 +294,8 @@ if(slen >= maxlen) {                              \
  * int imindex = 34;
  * WRITE_FULLFILENAME(imname, "%s_%04d", name, imindex);
  * @endcode
- * 
- * 
+ *
+ *
  */
 #define WRITE_IMAGENAME(imname, ...) do { \
 int slen = snprintf(imname, STRINGMAXLEN_IMGNAME, __VA_ARGS__); \
@@ -276,19 +311,19 @@ if(slen >= STRINGMAXLEN_IMGNAME) {                              \
 
 
 
-/** 
+/**
  * @ingroup errcheckmacro
  * @brief Write filename to string
  *
  * Requires existing image string of len #STRINGMAXLEN_FILENAME
- * 
+ *
  * Example use:
  * @code
  * char fname[STRINGMAXLEN_FILENAME];
  * char name[]="imlog";
  * WRITE_FULLFILENAME(fname, "%s.txt", name);
  * @endcode
- * 
+ *
  */
 #define WRITE_FILENAME(fname, ...) do { \
 int slen = snprintf(fname, STRINGMAXLEN_FILENAME, __VA_ARGS__); \
@@ -310,7 +345,7 @@ if(slen >= STRINGMAXLEN_FILENAME) {                              \
  * @brief Write full path filename to string
  *
  * Requires existing image string of len #STRINGMAXLEN_FULLFILENAME
- * 
+ *
  * Example use:
  * @code
  * char ffname[STRINGMAXLEN_FULLFILENAME];
@@ -335,18 +370,18 @@ if(slen >= STRINGMAXLEN_FULLFILENAME) {                              \
 
 
 
-/** 
+/**
  * @ingroup errcheckmacro
  * @brief Write a string to file
- * 
+ *
  * Creates file, writes string, and closes file.
- * 
+ *
  * Example use:
  * @code
  * float piapprox = 3.14;
  * WRITE_STRING_TO_FILE("logfile.txt", "pi is approximately %f\n", piapprox);
  * @endcode
- * 
+ *
  */
 #define WRITE_STRING_TO_FILE(fname, ...) do { \
 FILE *fptmp;                                                                \
@@ -372,11 +407,11 @@ fclose(fptmp);                                                              \
 
 
 // *************************** FUNCTION RETURN VALUE *********************************************
-// For function returning type errno_t (= int) 
+// For function returning type errno_t (= int)
 //
-#define RETURN_SUCCESS        0 
+#define RETURN_SUCCESS        0
 #define RETURN_FAILURE       1   // generic error code
-#define RETURN_MISSINGFILE   2  
+#define RETURN_MISSINGFILE   2
 
 
 #define MAX_NB_FRAMENAME_CHAR 500
@@ -387,18 +422,18 @@ fclose(fptmp);                                                              \
 
 
 // testing argument type for command line interface
-#define CLIARG_FLOAT            1
-#define CLIARG_LONG             2
+#define CLIARG_FLOAT            1  // floating point number
+#define CLIARG_LONG             2  // integer (int or long)
 #define CLIARG_STR_NOT_IMG      3  // string, not existing image
 #define CLIARG_IMG              4  // existing image
 #define CLIARG_STR              5  // string
 
 #define CLICMD_SUCCESS          0
 #define CLICMD_INVALID_ARG      1
-#define CLICMD_ERROR            2 
+#define CLICMD_ERROR            2
 
 
-// declare a boolean type "BOOL" 
+// declare a boolean type "BOOL"
 // TRUE and FALSE improve code readability
 //
 typedef uint_fast8_t BOOL;
@@ -438,10 +473,12 @@ extern uid_t suid;
 
 
 
-typedef struct {
+typedef struct
+{
     char     key[100];           // command keyword
     char     module[200];        // module name
-    errno_t  (* fp) ();          // command function pointer
+    char     modulesrc[200];     // module source filename
+    errno_t (* fp)();            // command function pointer
     char     info[1000];         // short description/help
     char     syntax[1000];       // command syntax
     char     example[1000];      // command example
@@ -450,10 +487,12 @@ typedef struct {
 
 
 
-typedef struct {
-    char name[50];    // module name
-    char package[50]; // package to which module belongs
-    char info[1000];  // short description
+typedef struct
+{
+    char name[50];       // module name
+    char shortname[80];  // short name. If non-empty, access functions as <shortname>.<functionname>
+    char package[50];    // package to which module belongs
+    char info[1000];     // short description
 } MODULE;
 
 
@@ -523,15 +562,15 @@ typedef struct
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
 {
-	char package_name[100];
-	char package_version[100];
-	char configdir[100];
-	char sourcedir[100];
-	
-	char shmdir[100];
-	char shmsemdirname[100]; // same ad above with .s instead of /s
-	
-    struct sigaction sigact; 
+    char package_name[100];
+    char package_version[100];
+    char configdir[100];
+    char sourcedir[100];
+
+    char shmdir[100];
+    char shmsemdirname[100]; // same ad above with .s instead of /s
+
+    struct sigaction sigact;
     // signals toggle flags
     int signal_USR1;
     int signal_USR2;
@@ -542,31 +581,31 @@ typedef struct
     int signal_BUS;
     int signal_HUP;
     int signal_PIPE;
-    
-    
-    
-    
+
+
+
+
     // can be used to trace program execution for runtime profiling and debugging
     int    testpoint_line;
     char   testpoint_file[STRINGMAXLEN_FILENAME];
     char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
     char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
     struct timespec testpoint_time;
-    
-    
+
+
     int progStatus;  // main program status
     // 0: before automatic loading of shared objects
     // 1: after automatic loading of shared objects
-    
+
     uid_t ruid; // Real UID (= user launching process at startup)
-	uid_t euid; // Effective UID (= owner of executable at startup)
-	uid_t suid; // Saved UID (= owner of executable at startup)
-	// system permissions are set by euid
-	// at startup, euid = owner of executable (meant to be root)
-	// -> we first drop privileges by setting euid to ruid
-	// when root privileges needed, we set euid <- suid
-	// when reverting to user privileges : euid <- ruid
-    
+    uid_t euid; // Effective UID (= owner of executable at startup)
+    uid_t suid; // Saved UID (= owner of executable at startup)
+    // system permissions are set by euid
+    // at startup, euid = owner of executable (meant to be root)
+    // -> we first drop privileges by setting euid to ruid
+    // when root privileges needed, we set euid <- suid
+    // when reverting to user privileges : euid <- ruid
+
     int            Debug;
     int            quiet;
     int            overwrite;		// automatically overwrite FITS files
@@ -578,7 +617,7 @@ typedef struct
     // logging, process monitoring
     int            CLIloopON;
     int            CLIlogON;
-    char           CLIlogname[200];  
+    char           CLIlogname[200];
     int            processinfo;       // 1 if processes info is to be logged
     int            processinfoActive; // 1 is the process is currently logged
     PROCESSINFO   *pinfo;             // pointer to process info structure
@@ -590,27 +629,34 @@ typedef struct
     int            processnameflag;
     char           fifoname[100];
     uint_fast16_t  NBcmd;
-    
+
     long           NB_MAX_COMMAND;
     CMD            cmd[1000];
-    
+
     int            parseerror;         // 1 if error, 0 otherwise
     long           cmdNBarg;           // number of arguments in last command line
     CMDARGTOKEN    cmdargtoken[NB_ARG_MAX];
-    long           cmdindex;           // when command is found in command line, holds index of command
+    long
+    cmdindex;           // when command is found in command line, holds index of command
     long           calctmp_imindex;    // used to create temporary images
-    int            CMDexecuted;        // 0 if command has not been executed, 1 otherwise
+    int
+    CMDexecuted;        // 0 if command has not been executed, 1 otherwise
+
+
+	// Modules
     long           NBmodule;
-    
     long           NB_MAX_MODULE;
     MODULE         module[100];
+    char           modulename[100];
+    char           moduleshortname[80];
+    char           moduleshortname_default[80];
 
-	// FPS instegration
-	// these entries are set when CLI process enters FPS function
-	char           FPS_name[FPS_NAME_STRMAXLEN]; // name of FPS if in use
-	uint32_t       FPS_CMDCODE;
-	errno_t        (*FPS_CONFfunc)();
-	errno_t        (*FPS_RUNfunc)();
+    // FPS instegration
+    // these entries are set when CLI process enters FPS function
+    char           FPS_name[FPS_NAME_STRMAXLEN]; // name of FPS if in use
+    uint32_t       FPS_CMDCODE;
+    errno_t (*FPS_CONFfunc)();
+    errno_t (*FPS_RUNfunc)();
 
 
     // shared memory default
@@ -621,19 +667,20 @@ typedef struct
 
     // images, variables
     long           NB_MAX_IMAGE;
-    #ifdef DATA_STATIC_ALLOC
+#ifdef DATA_STATIC_ALLOC
     IMAGE          image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
-	#else
-	IMAGE         *image;
-	#endif
-	
+#else
+    IMAGE         *image;
+#endif
+
     long           NB_MAX_VARIABLE;
-    #ifdef DATA_STATIC_ALLOC
-    VARIABLE       variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
-	#else
-	VARIABLE      *variable;
-	#endif
-	
+#ifdef DATA_STATIC_ALLOC
+    VARIABLE
+    variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
+#else
+    VARIABLE      *variable;
+#endif
+
 
 
     float          FLOATARRAY[1000];	// array to store temporary variables
@@ -657,19 +704,19 @@ errno_t set_signal_catch();
 void sig_handler(int signo);
 
 errno_t RegisterModule(
-    const char * restrict FileName,
-    const char * restrict PackageName,
-    const char * restrict InfoString
+    const char *restrict FileName,
+    const char *restrict PackageName,
+    const char *restrict InfoString
 );
 
 uint_fast16_t RegisterCLIcommand(
-    const char * restrict CLIkey,
-    const char * restrict CLImodule,
+    const char *restrict CLIkey,
+    const char *restrict CLImodulesrc,
     errno_t (*CLIfptr)(),
-    const char * restrict CLIinfo,
-    const char * restrict CLIsyntax,
-    const char * restrict CLIexample,
-    const char * restrict CLICcall
+    const char *restrict CLIinfo,
+    const char *restrict CLIsyntax,
+    const char *restrict CLIexample,
+    const char *restrict CLICcall
 );
 
 errno_t runCLItest(int argc, char *argv[], char *promptstring);
