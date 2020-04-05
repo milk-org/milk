@@ -572,14 +572,14 @@ typedef struct
 
 
 /** @defgroup fpsmacro          MACROS: Function parameter structure
- * 
+ *
  * Frequently used function parameter structure (FPS) operations :
  * - Create / initialize FPS
  * - Add parameters to existing FPS
- * 
+ *
  * @{
  */
-  
+
 /**
  * @brief Initialize function parameter structure (FPS)
  *
