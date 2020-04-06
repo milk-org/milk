@@ -118,28 +118,30 @@ extern int C_ERRNO;			// C errno (from errno.h)
 
 /** @brief Initialize module
  */
-#define INIT_MODULE_LIB(...) \
-static int INITSTATUS_module = 0; \
-static void __attribute__ ((constructor)) libinit_module() \
+#define INIT_MODULE_LIB(modname) \
+static errno_t init_module_CLI(); /* forward declaration */ \
+static int INITSTATUS_##modname = 0; \
+void __attribute__ ((constructor)) libinit_##modname() \
 { \
-if ( INITSTATUS_module == 0 ) \
+if ( INITSTATUS_##modname == 0 )      /* only run once */ \
 { \
 strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT); \
-strcpy(data.modulename, MODULE_NAME); \
-init_module(); \
+strcpy(data.modulename, (#modname)); \
+init_module_CLI(); \
 RegisterModule(__FILE__, MODULE_APPLICATION, MODULE_DESCRIPTION); \
-INITSTATUS_module = 1; \
-strcpy(data.modulename, ""); \
-strcpy(data.moduleshortname_default, ""); \
-strcpy(data.moduleshortname, ""); \
+INITSTATUS_##modname = 1; \
+strcpy(data.modulename, "");              /* reset after use */ \
+strcpy(data.moduleshortname_default, ""); /* reset after use */ \
+strcpy(data.moduleshortname, "");         /* reset after use */ \
 } \
 } \
-static void __attribute__ ((destructor)) libclose_module() \
+void __attribute__ ((destructor)) libclose_##modname() \
 { \
-if ( INITSTATUS_module == 1 ) \
+if ( INITSTATUS_##modname == 1 ) \
 { \
 } \
 }
+
 
 
 
@@ -643,7 +645,7 @@ typedef struct
     CMDexecuted;        // 0 if command has not been executed, 1 otherwise
 
 
-	// Modules
+    // Modules
     long           NBmodule;
     long           NB_MAX_MODULE;
     MODULE         module[100];
