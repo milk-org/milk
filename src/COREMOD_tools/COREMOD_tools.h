@@ -2,7 +2,7 @@
 #define _TOOLS_H
 
 
-void __attribute__ ((constructor)) libinit_COREMOD_tools();
+void __attribute__((constructor)) libinit_COREMOD_tools();
 
 
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
@@ -21,23 +21,31 @@ void quick_sort_long(long *array, unsigned long count);
 void quick_sort_double(double *array, unsigned long count);
 void quick_sort_ushort(unsigned short *array, unsigned long count);
 
-void qs3(double *array, double *array1, double *array2, unsigned long left, unsigned long right);
+void qs3(double *array, double *array1, double *array2, unsigned long left,
+         unsigned long right);
 
-void qs3_double(double *array, double *array1, double *array2, unsigned long left, unsigned long right);
+void qs3_double(double *array, double *array1, double *array2,
+                unsigned long left, unsigned long right);
 
-void quick_sort3(double *array, double *array1, double *array2, unsigned long count);
-void quick_sort3_float(float *array, float *array1, float *array2, unsigned long count);
-void quick_sort3_double(double *array, double *array1, double *array2, unsigned long count);
+void quick_sort3(double *array, double *array1, double *array2,
+                 unsigned long count);
+void quick_sort3_float(float *array, float *array1, float *array2,
+                       unsigned long count);
+void quick_sort3_double(double *array, double *array1, double *array2,
+                        unsigned long count);
 
 void qs2l(double *array, long *array1, unsigned long left, unsigned long right);
 
 void quick_sort2l(double *array, long *array1, unsigned long count);
 
 void quick_sort2l_double(double *array, long *array1, unsigned long count);
-void quick_sort2ul_double(double *array, unsigned long *array1, unsigned long count);
+void quick_sort2ul_double(double *array, unsigned long *array1,
+                          unsigned long count);
 
-void quick_sort3ll_double(double *array, long *array1, long *array2, unsigned long count);
-void quick_sort3ulul_double(double *array, unsigned long *array1, unsigned long *array2, unsigned long count);
+void quick_sort3ll_double(double *array, long *array1, long *array2,
+                          unsigned long count);
+void quick_sort3ulul_double(double *array, unsigned long *array1,
+                            unsigned long *array2, unsigned long count);
 
 
 errno_t lin_regress(
@@ -55,7 +63,8 @@ int replace_char(char *content, char cin, char cout);
 
 int read_config_parameter_exists(const char *config_file, const char *keyword);
 
-int read_config_parameter(const char *config_file, const char *keyword, char *content);
+int read_config_parameter(const char *config_file, const char *keyword,
+                          char *content);
 
 float read_config_parameter_float(const char *config_file, const char *keyword);
 
@@ -65,9 +74,9 @@ int read_config_parameter_int(const char *config_file, const char *keyword);
 
 long file_number_lines(const char *file_name);
 
-FILE* open_file_w(const char *filename);
+FILE *open_file_w(const char *filename);
 
-FILE* open_file_r(const char *filename);
+FILE *open_file_r(const char *filename);
 
 
 errno_t write_1D_array(

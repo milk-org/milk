@@ -19,7 +19,7 @@
 // if set to "", then calls use <funcname>
 #define MODULE_SHORTNAME_DEFAULT ""
 
-// Module short description 
+// Module short description
 #define MODULE_DESCRIPTION       "misc tools"
 
 // Application to which module belongs
@@ -45,13 +45,16 @@
 #include <mach/mach_time.h>long AOloopControl_ComputeOpenLoopModes(long loop)
 #define CLOCK_REALTIME 0
 #define CLOCK_MONOTONIC 0
-static int clock_gettime(int clk_id, struct mach_timespec *t){
+static int clock_gettime(int clk_id, struct mach_timespec *t)
+{
     mach_timebase_info_data_t timebase;
     mach_timebase_info(&timebase);
     uint64_t time;
     time = mach_absolute_time();
-    double nseconds = ((double)time * (double)timebase.numer)/((double)timebase.denom);
-    double seconds = ((double)time * (double)timebase.numer)/((double)timebase.denom * 1e9);
+    double nseconds = ((double)time * (double)timebase.numer) / ((
+                          double)timebase.denom);
+    double seconds = ((double)time * (double)timebase.numer) / ((
+                         double)timebase.denom * 1e9);
     t->tv_sec = seconds;
     t->tv_nsec = nseconds;
     return 0;
@@ -120,9 +123,9 @@ INIT_MODULE_LIB(COREMOD_tools)
 
 errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 {
-    if( 0
+    if(0
             + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
-            == 0 )
+            == 0)
     {
         COREMOD_TOOLS_mvProcCPUset(
             data.cmdargtoken[1].val.string);
@@ -130,16 +133,18 @@ errno_t COREMOD_TOOLS_mvProcCPUset_cli()
         return CLICMD_SUCCESS;
     }
     else
+    {
         return CLICMD_INVALID_ARG;
+    }
 }
 
 
 errno_t write_flot_file_cli()
 {
-    if( 0
+    if(0
             + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
             + CLI_checkarg(2, CLIARG_FLOAT)
-            == 0 )
+            == 0)
     {
         write_float_file(
             data.cmdargtoken[1].val.string,
@@ -148,16 +153,18 @@ errno_t write_flot_file_cli()
         return CLICMD_SUCCESS;
     }
     else
+    {
         return CLICMD_INVALID_ARG;
+    }
 }
 
 
 errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 {
-    if( 0
+    if(0
             + CLI_checkarg(1, CLIARG_IMG)
             + CLI_checkarg(2, CLIARG_LONG)
-            == 0 )
+            == 0)
     {
         COREMOD_TOOLS_imgdisplay3D(
             data.cmdargtoken[1].val.string,
@@ -166,16 +173,18 @@ errno_t COREMOD_TOOLS_imgdisplay3D_cli()
         return CLICMD_SUCCESS;
     }
     else
+    {
         return CLICMD_INVALID_ARG;
+    }
 }
 
 
 errno_t COREMOD_TOOLS_statusStat_cli()
 {
-    if( 0
+    if(0
             + CLI_checkarg(1, CLIARG_IMG)
             + CLI_checkarg(2, CLIARG_LONG)
-            == 0 )
+            == 0)
     {
         COREMOD_TOOLS_statusStat(
             data.cmdargtoken[1].val.string,
@@ -184,7 +193,9 @@ errno_t COREMOD_TOOLS_statusStat_cli()
         return CLICMD_SUCCESS;
     }
     else
+    {
         return CLICMD_INVALID_ARG;
+    }
 }
 
 
@@ -201,40 +212,45 @@ errno_t COREMOD_TOOLS_statusStat_cli()
 
 static errno_t init_module_CLI()
 {
-    strcpy(data.cmd[data.NBcmd].key,"csetpmove");
-    strcpy(data.cmd[data.NBcmd].module,__FILE__);
+    strcpy(data.cmd[data.NBcmd].key, "csetpmove");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
     data.cmd[data.NBcmd].fp = COREMOD_TOOLS_mvProcCPUset_cli;
-    strcpy(data.cmd[data.NBcmd].info,"move current process to CPU set");
-    strcpy(data.cmd[data.NBcmd].syntax,"<CPU set name>");
-    strcpy(data.cmd[data.NBcmd].example,"csetpmove realtime");
-    strcpy(data.cmd[data.NBcmd].Ccall,"int COREMOD_TOOLS_mvProcCPUset(const char *csetname)");
+    strcpy(data.cmd[data.NBcmd].info, "move current process to CPU set");
+    strcpy(data.cmd[data.NBcmd].syntax, "<CPU set name>");
+    strcpy(data.cmd[data.NBcmd].example, "csetpmove realtime");
+    strcpy(data.cmd[data.NBcmd].Ccall,
+           "int COREMOD_TOOLS_mvProcCPUset(const char *csetname)");
     data.NBcmd++;
 
-    strcpy(data.cmd[data.NBcmd].key,"writef2file");
-    strcpy(data.cmd[data.NBcmd].module,__FILE__);
+    strcpy(data.cmd[data.NBcmd].key, "writef2file");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
     data.cmd[data.NBcmd].fp = write_flot_file_cli;
-    strcpy(data.cmd[data.NBcmd].info,"write float to file");
-    strcpy(data.cmd[data.NBcmd].syntax,"<filename> <float variable>");
-    strcpy(data.cmd[data.NBcmd].example,"writef2file val.txt a");
-    strcpy(data.cmd[data.NBcmd].Ccall,"int write_float_file(const char *fname, float value)");
+    strcpy(data.cmd[data.NBcmd].info, "write float to file");
+    strcpy(data.cmd[data.NBcmd].syntax, "<filename> <float variable>");
+    strcpy(data.cmd[data.NBcmd].example, "writef2file val.txt a");
+    strcpy(data.cmd[data.NBcmd].Ccall,
+           "int write_float_file(const char *fname, float value)");
     data.NBcmd++;
 
-    strcpy(data.cmd[data.NBcmd].key,"dispim3d");
-    strcpy(data.cmd[data.NBcmd].module,__FILE__);
+    strcpy(data.cmd[data.NBcmd].key, "dispim3d");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
     data.cmd[data.NBcmd].fp = COREMOD_TOOLS_imgdisplay3D_cli;
-    strcpy(data.cmd[data.NBcmd].info,"display 2D image as 3D surface using gnuplot");
-    strcpy(data.cmd[data.NBcmd].syntax,"<imname> <step>");
-    strcpy(data.cmd[data.NBcmd].example,"dispim3d im1 5");
-    strcpy(data.cmd[data.NBcmd].Ccall,"int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)");
+    strcpy(data.cmd[data.NBcmd].info,
+           "display 2D image as 3D surface using gnuplot");
+    strcpy(data.cmd[data.NBcmd].syntax, "<imname> <step>");
+    strcpy(data.cmd[data.NBcmd].example, "dispim3d im1 5");
+    strcpy(data.cmd[data.NBcmd].Ccall,
+           "int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)");
     data.NBcmd++;
 
-	strcpy(data.cmd[data.NBcmd].key,"ctsmstats");
-    strcpy(data.cmd[data.NBcmd].module,__FILE__);
+    strcpy(data.cmd[data.NBcmd].key, "ctsmstats");
+    strcpy(data.cmd[data.NBcmd].module, __FILE__);
     data.cmd[data.NBcmd].fp = COREMOD_TOOLS_statusStat_cli;
-    strcpy(data.cmd[data.NBcmd].info,"monitors shared variable status");
-    strcpy(data.cmd[data.NBcmd].syntax,"<imname> <NBstep>");
-    strcpy(data.cmd[data.NBcmd].example,"ctsmstats imst 100000");
-    strcpy(data.cmd[data.NBcmd].Ccall,"long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)");
+    strcpy(data.cmd[data.NBcmd].info, "monitors shared variable status");
+    strcpy(data.cmd[data.NBcmd].syntax, "<imname> <NBstep>");
+    strcpy(data.cmd[data.NBcmd].example, "ctsmstats imst 100000");
+    strcpy(data.cmd[data.NBcmd].Ccall,
+           "long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)");
     data.NBcmd++;
 
 
@@ -263,23 +279,27 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
     char command[200];
 
     pid = getpid();
-    
-    #ifndef __MACH__
-    
-    if( seteuid(data.euid) != 0 ) { //This goes up to maximum privileges
-		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
-	}        
-    
+
+#ifndef __MACH__
+
+    if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
+    {
+        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+    }
+
     sprintf(command, "sudo -n cset proc -m -p %d -t %s\n", pid, csetname);
-	printf("Executing command: %s\n", command);
+    printf("Executing command: %s\n", command);
 
     if(system(command) != 0)
-        printERROR(__FILE__,__func__,__LINE__, "system() returns non-zero value");
-    
-    if( seteuid(data.ruid) != 0 ) { //Go back to normal privileges
-		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
-	}
-	#endif
+    {
+        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+    }
+
+    if(seteuid(data.ruid) != 0)     //Go back to normal privileges
+    {
+        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+    }
+#endif
 
     return(0);
 }
@@ -295,15 +315,17 @@ int create_counter_file(
     unsigned long i;
     FILE *fp;
 
-    if((fp=fopen(fname,"w"))==NULL)
+    if((fp = fopen(fname, "w")) == NULL)
     {
-        sprintf(errormessage,"cannot create file \"%s\"",fname);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot create file \"%s\"", fname);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
-    for(i=0; i<NBpts; i++)
-        fprintf(fp,"%ld %f\n",i,(double) (1.0*i/NBpts));
+    for(i = 0; i < NBpts; i++)
+    {
+        fprintf(fp, "%ld %f\n", i, (double)(1.0 * i / NBpts));
+    }
 
     fclose(fp);
 
@@ -318,15 +340,15 @@ int bubble_sort(
     unsigned long count
 )
 {
-    register unsigned long a,b;
+    register unsigned long a, b;
     register double t;
 
-    for(a=1; a<count; a++)
-        for(b=count-1; b>=a; b--)
-            if(array[b-1]>array[b])
+    for(a = 1; a < count; a++)
+        for(b = count - 1; b >= a; b--)
+            if(array[b - 1] > array[b])
             {
-                t = array[b-1];
-                array[b-1] = array[b];
+                t = array[b - 1];
+                array[b - 1] = array[b];
                 array[b] = t;
             }
 
@@ -341,29 +363,46 @@ void qs_float(
 )
 {
     unsigned long i, j;
-    float x,y;
+    float x, y;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j) qs_float(array,left,j);
-    if(i<right) qs_float(array,i,right);
+    if(left < j)
+    {
+        qs_float(array, left, j);
+    }
+    if(i < right)
+    {
+        qs_float(array, i, right);
+    }
 }
 
 
@@ -375,29 +414,46 @@ void qs_long(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    long x,y;
+    register unsigned long i, j;
+    long x, y;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j) qs_long(array,left,j);
-    if(i<right) qs_long(array,i,right);
+    if(left < j)
+    {
+        qs_long(array, left, j);
+    }
+    if(i < right)
+    {
+        qs_long(array, i, right);
+    }
 }
 
 
@@ -407,30 +463,47 @@ void qs_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
+    register unsigned long i, j;
+    double x, y;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
-            
-            if(j>0)
-				j--;
-        }
-    } while(i<=j);
 
-    if(left<j) qs_double(array, left, j);
-    if(i<right) qs_double(array, i, right);
+            if(j > 0)
+            {
+                j--;
+            }
+        }
+    }
+    while(i <= j);
+
+    if(left < j)
+    {
+        qs_double(array, left, j);
+    }
+    if(i < right)
+    {
+        qs_double(array, i, right);
+    }
 }
 
 
@@ -441,30 +514,47 @@ void qs_ushort(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    unsigned short x,y;
+    register unsigned long i, j;
+    unsigned short x, y;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
             i++;
 
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j) qs_ushort(array,left,j);
-    if(i<right) qs_ushort(array,i,right);
+    if(left < j)
+    {
+        qs_ushort(array, left, j);
+    }
+    if(i < right)
+    {
+        qs_ushort(array, i, right);
+    }
 }
 
 
@@ -477,19 +567,27 @@ void qs3(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
-    double y1,y2;
+    register unsigned long i, j;
+    double x, y;
+    double y1, y2;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -504,13 +602,22 @@ void qs3(
 
             i++;
 
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j) qs3(array,array1,array2,left,j);
-    if(i<right) qs3(array,array1,array2,i,right);
+    if(left < j)
+    {
+        qs3(array, array1, array2, left, j);
+    }
+    if(i < right)
+    {
+        qs3(array, array1, array2, i, right);
+    }
 }
 
 
@@ -523,19 +630,27 @@ void qs3_float(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    float x,y;
-    float y1,y2;
+    register unsigned long i, j;
+    float x, y;
+    float y1, y2;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -549,14 +664,23 @@ void qs3_float(
             array2[j] = y2;
 
             i++;
-            
-            if(j>0)
-				j--;
-        }
-    } while(i<=j);
 
-    if(left<j) qs3_float(array,array1,array2,left,j);
-    if(i<right) qs3_float(array,array1,array2,i,right);
+            if(j > 0)
+            {
+                j--;
+            }
+        }
+    }
+    while(i <= j);
+
+    if(left < j)
+    {
+        qs3_float(array, array1, array2, left, j);
+    }
+    if(i < right)
+    {
+        qs3_float(array, array1, array2, i, right);
+    }
 }
 
 
@@ -569,19 +693,27 @@ void qs3_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
-    double y1,y2;
+    register unsigned long i, j;
+    double x, y;
+    double y1, y2;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -595,14 +727,23 @@ void qs3_double(
             array2[j] = y2;
 
             i++;
-            
-            if(j>0)
-				j--;
-        }
-    } while(i<=j);
 
-    if(left<j) qs3_double(array,array1,array2,left,j);
-    if(i<right) qs3_double(array,array1,array2,i,right);
+            if(j > 0)
+            {
+                j--;
+            }
+        }
+    }
+    while(i <= j);
+
+    if(left < j)
+    {
+        qs3_double(array, array1, array2, left, j);
+    }
+    if(i < right)
+    {
+        qs3_double(array, array1, array2, i, right);
+    }
 }
 
 
@@ -614,19 +755,27 @@ void qs2l(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
+    register unsigned long i, j;
+    double x, y;
     long l1;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -636,14 +785,23 @@ void qs2l(
             array1[j] = l1;
 
             i++;
-            
-            if(j>0)
-				j--;
-        }
-    } while(i<=j);
 
-    if(left<j) qs2l(array, array1, left, j);
-    if(i<right) qs2l(array, array1, i, right);
+            if(j > 0)
+            {
+                j--;
+            }
+        }
+    }
+    while(i <= j);
+
+    if(left < j)
+    {
+        qs2l(array, array1, left, j);
+    }
+    if(i < right)
+    {
+        qs2l(array, array1, i, right);
+    }
 }
 
 
@@ -655,19 +813,27 @@ void qs2ul(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
+    register unsigned long i, j;
+    double x, y;
     unsigned long l1;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -677,13 +843,22 @@ void qs2ul(
             array1[j] = l1;
 
             i++;
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j) qs2ul(array, array1, left, j);
-    if(i<right) qs2ul(array, array1, i, right);
+    if(left < j)
+    {
+        qs2ul(array, array1, left, j);
+    }
+    if(i < right)
+    {
+        qs2ul(array, array1, i, right);
+    }
 }
 
 
@@ -694,19 +869,27 @@ void qs2l_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
+    register unsigned long i, j;
+    double x, y;
     long l1;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -716,14 +899,23 @@ void qs2l_double(
             array1[j] = l1;
 
             i++;
-            
-            if(j>0)
-				j--;
-        }
-    } while(i<=j);
 
-    if(left<j) qs2l_double(array,array1,left,j);
-    if(i<right) qs2l_double(array,array1,i,right);
+            if(j > 0)
+            {
+                j--;
+            }
+        }
+    }
+    while(i <= j);
+
+    if(left < j)
+    {
+        qs2l_double(array, array1, left, j);
+    }
+    if(i < right)
+    {
+        qs2l_double(array, array1, i, right);
+    }
 }
 
 
@@ -734,19 +926,27 @@ void qs2ul_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
+    register unsigned long i, j;
+    double x, y;
     unsigned long l1;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -756,14 +956,23 @@ void qs2ul_double(
             array1[j] = l1;
 
             i++;
-            
-            if(j>0)
-				j--;
-        }
-    } while(i<=j);
 
-    if(left<j) qs2ul_double(array,array1,left,j);
-    if(i<right) qs2ul_double(array,array1,i,right);
+            if(j > 0)
+            {
+                j--;
+            }
+        }
+    }
+    while(i <= j);
+
+    if(left < j)
+    {
+        qs2ul_double(array, array1, left, j);
+    }
+    if(i < right)
+    {
+        qs2ul_double(array, array1, i, right);
+    }
 }
 
 
@@ -776,19 +985,27 @@ void qs3ll_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
-    long l1,l2;
+    register unsigned long i, j;
+    double x, y;
+    long l1, l2;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -802,17 +1019,22 @@ void qs3ll_double(
             array2[j] = l2;
 
             i++;
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j){ 
-		qs3ll_double(array, array1, array2, left, j);
-	}
-    if(i<right){ 
-		qs3ll_double(array, array1, array2, i, right);
-	}
+    if(left < j)
+    {
+        qs3ll_double(array, array1, array2, left, j);
+    }
+    if(i < right)
+    {
+        qs3ll_double(array, array1, array2, i, right);
+    }
 }
 
 
@@ -825,19 +1047,27 @@ void qs3ulul_double(
     unsigned long right
 )
 {
-    register unsigned long i,j;
-    double x,y;
-    unsigned long l1,l2;
+    register unsigned long i, j;
+    double x, y;
+    unsigned long l1, l2;
 
     i = left;
     j = right;
-    x = array[(left+right)/2];
+    x = array[(left + right) / 2];
 
-    do {
-        while(array[i]<x && i<right) i++;
-        while(x<array[j] && j>left && j>0) j--;
+    do
+    {
+        while(array[i] < x && i < right)
+        {
+            i++;
+        }
+        while(x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-        if(i<=j) {
+        if(i <= j)
+        {
             y = array[i];
             array[i] = array[j];
             array[j] = y;
@@ -851,18 +1081,23 @@ void qs3ulul_double(
             array2[j] = l2;
 
             i++;
-            if(j>0)
-				j--;
+            if(j > 0)
+            {
+                j--;
+            }
         }
-    } while(i<=j);
+    }
+    while(i <= j);
 
-    if(left<j){
-		 qs3ulul_double(array, array1, array2, left, j);
-	 }
-	 
-    if(i<right){
-		qs3ulul_double(array, array1, array2, i, right);
-	}
+    if(left < j)
+    {
+        qs3ulul_double(array, array1, array2, left, j);
+    }
+
+    if(i < right)
+    {
+        qs3ulul_double(array, array1, array2, i, right);
+    }
 }
 
 
@@ -870,67 +1105,73 @@ void qs3ulul_double(
 
 void quick_sort_float(float *array, unsigned long count)
 {
-    qs_float(array, 0, count-1);
+    qs_float(array, 0, count - 1);
 }
 
 void quick_sort_long(long *array, unsigned long count)
 {
-    qs_long(array, 0, count-1);
+    qs_long(array, 0, count - 1);
 }
 
 void quick_sort_double(double *array, unsigned long count)
 {
-    qs_double(array, 0, count-1);
+    qs_double(array, 0, count - 1);
 }
 
 void quick_sort_ushort(unsigned short *array, unsigned long count)
 {
-    qs_ushort(array, 0, count-1);
+    qs_ushort(array, 0, count - 1);
 }
 
-void quick_sort3(double *array, double *array1, double *array2, unsigned long count)
+void quick_sort3(double *array, double *array1, double *array2,
+                 unsigned long count)
 {
-    qs3(array, array1, array2, 0, count-1);
+    qs3(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3_float(float *array, float *array1, float *array2, unsigned long count)
+void quick_sort3_float(float *array, float *array1, float *array2,
+                       unsigned long count)
 {
-    qs3_float(array, array1, array2, 0, count-1);
+    qs3_float(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3_double(double *array, double *array1, double *array2, unsigned long count)
+void quick_sort3_double(double *array, double *array1, double *array2,
+                        unsigned long count)
 {
-    qs3_double(array,array1,array2,0,count-1);
+    qs3_double(array, array1, array2, 0, count - 1);
 }
 
 void quick_sort2l(double *array, long *array1, unsigned long count)
 {
-    qs2l(array, array1, 0, count-1);
+    qs2l(array, array1, 0, count - 1);
 }
 
 void quick_sort2ul(double *array, unsigned long *array1, unsigned long count)
 {
-    qs2ul(array, array1, 0, count-1);
+    qs2ul(array, array1, 0, count - 1);
 }
 
 void quick_sort2l_double(double *array, long *array1, unsigned long count)
 {
-    qs2l_double(array, array1, 0, count-1);
+    qs2l_double(array, array1, 0, count - 1);
 }
 
-void quick_sort2ul_double(double *array, unsigned long *array1, unsigned long count)
+void quick_sort2ul_double(double *array, unsigned long *array1,
+                          unsigned long count)
 {
-    qs2ul_double(array, array1, 0, count-1);
+    qs2ul_double(array, array1, 0, count - 1);
 }
 
-void quick_sort3ll_double(double *array, long *array1, long *array2, unsigned long count)
+void quick_sort3ll_double(double *array, long *array1, long *array2,
+                          unsigned long count)
 {
-    qs3ll_double(array, array1, array2, 0, count-1);
+    qs3ll_double(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3ulul_double(double *array, unsigned long *array1, unsigned long *array2, unsigned long count)
+void quick_sort3ulul_double(double *array, unsigned long *array1,
+                            unsigned long *array2, unsigned long count)
 {
-    qs3ulul_double(array, array1, array2, 0, count-1);
+    qs3ulul_double(array, array1, array2, 0, count - 1);
 }
 
 
@@ -945,7 +1186,7 @@ errno_t lin_regress(
     unsigned int nb_points
 )
 {
-    double S,Sx,Sy,Sxx,Sxy,Syy;
+    double S, Sx, Sy, Sxx, Sxy, Syy;
     unsigned int i;
     double delta;
 
@@ -955,21 +1196,22 @@ errno_t lin_regress(
     Sxx = 0;
     Syy = 0;
     Sxy = 0;
-    
-    for(i=0; i<nb_points; i++)
+
+    for(i = 0; i < nb_points; i++)
     {
-        S += 1.0/sig[i]/sig[i];
-        Sx += x[i]/sig[i]/sig[i];
-        Sy += y[i]/sig[i]/sig[i];
-        Sxx += x[i]*x[i]/sig[i]/sig[i];
-        Syy += y[i]*y[i]/sig[i]/sig[i];
-        Sxy += x[i]*y[i]/sig[i]/sig[i];
+        S += 1.0 / sig[i] / sig[i];
+        Sx += x[i] / sig[i] / sig[i];
+        Sy += y[i] / sig[i] / sig[i];
+        Sxx += x[i] * x[i] / sig[i] / sig[i];
+        Syy += y[i] * y[i] / sig[i] / sig[i];
+        Sxy += x[i] * y[i] / sig[i] / sig[i];
     }
 
-    delta = S*Sxx-Sx*Sx;
-    *a = (Sxx*Sy-Sx*Sxy)/delta;
-    *b = (S*Sxy-Sx*Sy)/delta;
-    *Xi2 = Syy-2*(*a)*Sy-2*(*a)*(*b)*Sx+(*a)*(*a)*S+2*(*a)*(*b)*Sx-(*b)*(*b)*Sxx;
+    delta = S * Sxx - Sx * Sx;
+    *a = (Sxx * Sy - Sx * Sxy) / delta;
+    *b = (S * Sxy - Sx * Sy) / delta;
+    *Xi2 = Syy - 2 * (*a) * Sy - 2 * (*a) * (*b) * Sx + (*a) * (*a) * S + 2 *
+           (*a) * (*b) * Sx - (*b) * (*b) * Sxx;
 
     return RETURN_SUCCESS;
 }
@@ -984,9 +1226,11 @@ int replace_char(
 {
     unsigned long i;
 
-    for(i=0; i<strlen(content); i++)
-        if(content[i]==cin)
+    for(i = 0; i < strlen(content); i++)
+        if(content[i] == cin)
+        {
             content[i] = cout;
+        }
 
     return(0);
 }
@@ -1004,23 +1248,26 @@ int read_config_parameter_exists(
     int read;
 
     read = 0;
-    if((fp=fopen(config_file,"r"))==NULL)
+    if((fp = fopen(config_file, "r")) == NULL)
     {
-        sprintf(errormessage,"cannot open file \"%s\"",config_file);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot open file \"%s\"", config_file);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
-    while((fgets(line,1000,fp)!=NULL)&&(read==0))
+    while((fgets(line, 1000, fp) != NULL) && (read == 0))
     {
-        sscanf(line," %20s", keyw);
-        if(strcmp(keyw, keyword)==0)
+        sscanf(line, " %20s", keyw);
+        if(strcmp(keyw, keyword) == 0)
+        {
             read = 1;
+        }
     }
-    if(read==0)
+    if(read == 0)
     {
-        sprintf(errormessage,"parameter \"%s\" does not exist in file \"%s\"",keyword,config_file);
-        printWARNING(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "parameter \"%s\" does not exist in file \"%s\"", keyword,
+                config_file);
+        printWARNING(__FILE__, __func__, __LINE__, errormessage);
     }
 
     fclose(fp);
@@ -1044,29 +1291,30 @@ int read_config_parameter(
     int read;
 
     read = 0;
-    if((fp=fopen(config_file,"r"))==NULL)
+    if((fp = fopen(config_file, "r")) == NULL)
     {
-        sprintf(errormessage,"cannot open file \"%s\"",config_file);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot open file \"%s\"", config_file);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
-    strcpy(content,"---");
-    while(fgets(line,1000,fp)!=NULL)
+    strcpy(content, "---");
+    while(fgets(line, 1000, fp) != NULL)
     {
-        sscanf(line,"%100s %100s", keyw, cont);
-        if(strcmp(keyw,keyword)==0)
+        sscanf(line, "%100s %100s", keyw, cont);
+        if(strcmp(keyw, keyword) == 0)
         {
-            strcpy(content,cont);
+            strcpy(content, cont);
             read = 1;
         }
         /*      printf("KEYWORD : \"%s\"   CONTENT : \"%s\"\n",keyw,cont);*/
     }
-    if(read==0)
+    if(read == 0)
     {
-        sprintf(errormessage,"parameter \"%s\" does not exist in file \"%s\"",keyword,config_file);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
-        sprintf(content,"-");
+        sprintf(errormessage, "parameter \"%s\" does not exist in file \"%s\"", keyword,
+                config_file);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
+        sprintf(content, "-");
         //  exit(0);
     }
 
@@ -1083,7 +1331,7 @@ float read_config_parameter_float(const char *config_file, const char *keyword)
     float value;
     char content[SBUFFERSIZE];
 
-    read_config_parameter(config_file,keyword,content);
+    read_config_parameter(config_file, keyword, content);
     //printf("content = \"%s\"\n",content);
     value = atof(content);
     //printf("Value = %g\n",value);
@@ -1096,7 +1344,7 @@ long read_config_parameter_long(const char *config_file, const char *keyword)
     long value;
     char content[SBUFFERSIZE];
 
-    read_config_parameter(config_file,keyword,content);
+    read_config_parameter(config_file, keyword, content);
     value = atol(content);
 
     return(value);
@@ -1109,7 +1357,7 @@ int read_config_parameter_int(const char *config_file, const char *keyword)
     int value;
     char content[SBUFFERSIZE];
 
-    read_config_parameter(config_file,keyword,content);
+    read_config_parameter(config_file, keyword, content);
     value = atoi(content);
 
     return(value);
@@ -1125,31 +1373,33 @@ long file_number_lines(const char *file_name)
     int c;
     FILE *fp;
 
-    if((fp=fopen(file_name,"r"))==NULL)
+    if((fp = fopen(file_name, "r")) == NULL)
     {
-        sprintf(errormessage,"cannot open file \"%s\"",file_name);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot open file \"%s\"", file_name);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
     cnt = 0;
-    while((c=fgetc(fp))!=EOF)
-        if(c=='\n')
+    while((c = fgetc(fp)) != EOF)
+        if(c == '\n')
+        {
             cnt++;
+        }
     fclose(fp);
 
     return(cnt);
 }
 
 
-FILE* open_file_w(const char *filename)
+FILE *open_file_w(const char *filename)
 {
     FILE *fp;
 
-    if((fp=fopen(filename,"w"))==NULL)
+    if((fp = fopen(filename, "w")) == NULL)
     {
-        sprintf(errormessage,"cannot create file \"%s\"",filename);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot create file \"%s\"", filename);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
@@ -1157,14 +1407,14 @@ FILE* open_file_w(const char *filename)
 }
 
 
-FILE* open_file_r(const char *filename)
+FILE *open_file_r(const char *filename)
 {
     FILE *fp;
 
-    if((fp=fopen(filename,"r"))==NULL)
+    if((fp = fopen(filename, "r")) == NULL)
     {
-        sprintf(errormessage,"cannot read file \"%s\"",filename);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot read file \"%s\"", filename);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
@@ -1182,8 +1432,10 @@ errno_t write_1D_array(
     long ii;
 
     fp = open_file_w(filename);
-    for(ii=0; ii<nbpoints; ii++)
-        fprintf(fp,"%ld\t%f\n",ii,array[ii]);
+    for(ii = 0; ii < nbpoints; ii++)
+    {
+        fprintf(fp, "%ld\t%f\n", ii, array[ii]);
+    }
     fclose(fp);
 
     return RETURN_SUCCESS;
@@ -1202,11 +1454,11 @@ errno_t read_1D_array(
     long tmpl;
 
     fp = open_file_r(filename);
-    for(ii=0; ii<nbpoints; ii++)
+    for(ii = 0; ii < nbpoints; ii++)
     {
-        if(fscanf(fp,"%ld\t%lf\n",&tmpl,&array[ii])!=2)
+        if(fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
         {
-            printERROR(__FILE__,__func__,__LINE__,"fscanf error");
+            printERROR(__FILE__, __func__, __LINE__, "fscanf error");
             exit(0);
         }
     }
@@ -1222,7 +1474,7 @@ errno_t tp(
     const char *word
 )
 {
-    printf("---- Test point %s ----\n",word);
+    printf("---- Test point %s ----\n", word);
     fflush(stdout);
 
     return RETURN_SUCCESS;
@@ -1236,15 +1488,15 @@ int read_int_file(
     int value;
     FILE *fp;
 
-    if((fp = fopen(fname,"r"))==NULL)
+    if((fp = fopen(fname, "r")) == NULL)
     {
         value = 0;
     }
     else
     {
-        if(fscanf(fp,"%d",&value)!=1)
+        if(fscanf(fp, "%d", &value) != 1)
         {
-            printERROR(__FILE__,__func__,__LINE__,"fscanf error");
+            printERROR(__FILE__, __func__, __LINE__, "fscanf error");
             exit(0);
         }
         fclose(fp);
@@ -1262,14 +1514,14 @@ errno_t write_int_file(
 {
     FILE *fp;
 
-    if((fp = fopen(fname,"w"))==NULL)
+    if((fp = fopen(fname, "w")) == NULL)
     {
-        sprintf(errormessage,"cannot create file \"%s\"\n",fname);
-        printERROR(__FILE__,__func__,__LINE__,errormessage);
+        sprintf(errormessage, "cannot create file \"%s\"\n", fname);
+        printERROR(__FILE__, __func__, __LINE__, errormessage);
         exit(0);
     }
 
-    fprintf(fp,"%d\n",value);
+    fprintf(fp, "%d\n", value);
     fclose(fp);
 
     return RETURN_SUCCESS;
@@ -1285,30 +1537,32 @@ errno_t write_float_file(
     FILE *fp;
     int mode = 0; // default, create single file
 
-    if(variable_ID("WRITE2FILE_APPEND")!=-1)
+    if(variable_ID("WRITE2FILE_APPEND") != -1)
+    {
         mode = 1;
+    }
 
     if(mode == 0)
     {
-        if((fp = fopen(fname,"w"))==NULL)
+        if((fp = fopen(fname, "w")) == NULL)
         {
-            sprintf(errormessage,"cannot create file \"%s\"\n",fname);
-            printERROR(__FILE__,__func__,__LINE__,errormessage);
+            sprintf(errormessage, "cannot create file \"%s\"\n", fname);
+            printERROR(__FILE__, __func__, __LINE__, errormessage);
             exit(0);
         }
-        fprintf(fp,"%g\n",value);
+        fprintf(fp, "%g\n", value);
         fclose(fp);
     }
 
     if(mode == 1)
     {
-        if((fp = fopen(fname,"a"))==NULL)
+        if((fp = fopen(fname, "a")) == NULL)
         {
-            sprintf(errormessage,"cannot create file \"%s\"\n",fname);
-            printERROR(__FILE__,__func__,__LINE__,errormessage);
+            sprintf(errormessage, "cannot create file \"%s\"\n", fname);
+            printERROR(__FILE__, __func__, __LINE__, errormessage);
             exit(0);
         }
-        fprintf(fp," %g",value);
+        fprintf(fp, " %g", value);
         fclose(fp);
     }
 
@@ -1335,7 +1589,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(
 
     snprintf(cmd, 512, "gnuplot");
 
-    if ((fpgnuplot = popen(cmd,"w")) == NULL)
+    if((fpgnuplot = popen(cmd, "w")) == NULL)
     {
         fprintf(stderr, "could not connect to gnuplot\n");
         return -1;
@@ -1354,12 +1608,13 @@ errno_t COREMOD_TOOLS_imgdisplay3D(
 
     fp = fopen("pts.dat", "w");
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
-    for(ii=0; ii<xsize; ii+=step)
+    for(ii = 0; ii < xsize; ii += step)
     {
-        for(jj=0; jj<xsize; jj+=step)
+        for(jj = 0; jj < xsize; jj += step)
         {
-            fprintf(fpgnuplot, "%ld %ld %f\n", ii, jj, data.image[ID].array.F[jj*xsize+ii]);
-            fprintf(fp, "%ld %ld %f\n", ii, jj, data.image[ID].array.F[jj*xsize+ii]);
+            fprintf(fpgnuplot, "%ld %ld %f\n", ii, jj,
+                    data.image[ID].array.F[jj * xsize + ii]);
+            fprintf(fp, "%ld %ld %f\n", ii, jj, data.image[ID].array.F[jj * xsize + ii]);
         }
         fprintf(fpgnuplot, "\n");
         fprintf(fp, "\n");
@@ -1407,14 +1662,16 @@ imageID COREMOD_TOOLS_statusStat(
 
     IDstat = image_ID(IDstat_name);
 
-    sizearray = (uint32_t*) malloc(sizeof(uint32_t)*2);
+    sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     sizearray[0] = indexmax;
     sizearray[1] = 1;
     IDout = create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0);
     free(sizearray);
 
-    for(st=0; st<indexmax; st++)
+    for(st = 0; st < indexmax; st++)
+    {
         data.image[IDout].array.SI64[st] = 0;
+    }
 
     schedpar.sched_priority = RT_priority;
 #ifndef __MACH__
@@ -1426,39 +1683,48 @@ imageID COREMOD_TOOLS_statusStat(
     fflush(stdout);
 
     clock_gettime(CLOCK_REALTIME, &t1);
-    for(k=0; k<NBkiter; k++)
+    for(k = 0; k < NBkiter; k++)
     {
         double tdiffv;
 
-        usleep((long) (usec0+usec1*(1.0*k/NBkiter)));
+        usleep((long)(usec0 + usec1 * (1.0 * k / NBkiter)));
         st = data.image[IDstat].array.UI16[0];
-        if(st<indexmax)
+        if(st < indexmax)
+        {
             data.image[IDout].array.SI64[st]++;
+        }
 
 
         clock_gettime(CLOCK_REALTIME, &t2);
         tdiff = info_time_diff(t1, t2);
-        tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
+        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-        if(tdiffv>tdiffv1)
+        if(tdiffv > tdiffv1)
         {
             tdiffv1 += tdisplay;
             printf("\n");
             printf("============== %10lld  %d  ==================\n", k, st);
             printf("\n");
             cnttot = 0;
-            for(st=0; st<indexmax; st++)
+            for(st = 0; st < indexmax; st++)
+            {
                 cnttot += data.image[IDout].array.SI64[st];
+            }
 
-            for(st=0; st<indexmax; st++)
-                printf("STATUS  %5d    %20ld   %6.3f  \n", st, data.image[IDout].array.SI64[st], 100.0*data.image[IDout].array.SI64[st]/cnttot);
+            for(st = 0; st < indexmax; st++)
+            {
+                printf("STATUS  %5d    %20ld   %6.3f  \n", st, data.image[IDout].array.SI64[st],
+                       100.0 * data.image[IDout].array.SI64[st] / cnttot);
+            }
         }
     }
 
 
     printf("\n");
-    for(st=0; st<indexmax; st++)
+    for(st = 0; st < indexmax; st++)
+    {
         printf("STATUS  %5d    %10ld\n", st, data.image[IDout].array.SI64[st]);
+    }
 
     printf("\n");
 
