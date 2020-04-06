@@ -7,6 +7,27 @@
  *
  */
 
+
+/* ================================================================== */
+/* ================================================================== */
+/*            MODULE INFO                                             */
+/* ================================================================== */
+/* ================================================================== */
+
+// module default short name
+// all CLI calls to this module functions will be <shortname>.<funcname>
+// if set to "", then calls use <funcname>
+#define MODULE_SHORTNAME_DEFAULT ""
+
+// Module short description 
+#define MODULE_DESCRIPTION       "misc tools"
+
+// Application to which module belongs
+#define MODULE_APPLICATION       "milk"
+
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                        HEADER FILES                                             */
@@ -60,12 +81,6 @@ static int clock_gettime(int clk_id, struct mach_timespec *t){
 
 
 
-//extern DATA data;
-
-static int INITSTATUS_COREMOD_tools = 0;
-
-
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
@@ -80,21 +95,28 @@ static FILE *fpgnuplot;
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                           FUNCTIONS TIED TO COMMAND LINE INTERFACE (CLI)                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
+
+
+/* ================================================================== */
+/* ================================================================== */
+/*            INITIALIZE LIBRARY                                      */
+/* ================================================================== */
+/* ================================================================== */
+
+// Module initialization macro in CLIcore.h
+// macro argument defines module name for bindings
+//
+INIT_MODULE_LIB(COREMOD_tools)
+
+
+/* ================================================================== */
+/* ================================================================== */
+/*            COMMAND LINE INTERFACE (CLI) FUNCTIONS                  */
+/* ================================================================== */
+/* ================================================================== */
+
 /** @name CLI bindings */
 
-// CLI commands
-//
-// function CLI_checkarg used to check arguments
-// 1: float
-// 2: long
-// 3: string
-// 4: existing image
-// 5: string
 
 errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 {
@@ -176,20 +198,8 @@ errno_t COREMOD_TOOLS_statusStat_cli()
 /** @name Module initialization */
 
 
-void __attribute__ ((constructor)) libinit_COREMOD_tools()
-{
-	if ( INITSTATUS_COREMOD_tools == 0 )
-	{
-		init_COREMOD_tools();
-		RegisterModule(__FILE__, "milk", "Misc utils");
-		INITSTATUS_COREMOD_tools = 1;
-	}
-}
 
-
-
-
-int init_COREMOD_tools()
+static errno_t init_module_CLI()
 {
     strcpy(data.cmd[data.NBcmd].key,"csetpmove");
     strcpy(data.cmd[data.NBcmd].module,__FILE__);
@@ -228,7 +238,7 @@ int init_COREMOD_tools()
     data.NBcmd++;
 
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 

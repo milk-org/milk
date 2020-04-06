@@ -3,7 +3,6 @@
 
 
 void __attribute__ ((constructor)) libinit_COREMOD_tools();
-int init_COREMOD_tools();
 
 
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
