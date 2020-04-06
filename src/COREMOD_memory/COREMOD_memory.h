@@ -80,9 +80,6 @@ typedef struct
 
 
 void __attribute__ ((constructor)) libinit_COREMOD_memory();
-errno_t init_COREMOD_memory();
-
-
 
 
 
