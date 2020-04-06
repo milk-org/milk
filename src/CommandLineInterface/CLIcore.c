@@ -847,7 +847,8 @@ static errno_t help_module()
         printf("-------------------------------------------------------------------------------------------------------\n");
         for(i = 0; i < data.NBmodule; i++)
         {
-            printf("%6ld %8s %36s  %10s  %s\n", i, data.module[i].shortname, data.module[i].name, data.module[i].package,
+            printf("%6ld %8s %36s  %10s  %s\n", i, data.module[i].shortname,
+                   data.module[i].name, data.module[i].package,
                    data.module[i].info);
         }
         printf("-------------------------------------------------------------------------------------------------------\n");
@@ -891,7 +892,7 @@ static errno_t CLIcore__load_module_as__cli()
             + CLI_checkarg(2, CLIARG_STR)
             == 0)
     {
-		strcpy(data.moduleshortname, data.cmdargtoken[2].val.string);
+        strcpy(data.moduleshortname, data.cmdargtoken[2].val.string);
         load_module_shared(data.cmdargtoken[1].val.string);
         return CLICMD_SUCCESS;
     }
@@ -1235,18 +1236,18 @@ errno_t RegisterModule(
 
     if(strlen(data.modulename) == 0)
     {
-		strcpy(data.module[data.NBmodule].name, "???");
-	}
-	else
-	{
-		strcpy(data.module[data.NBmodule].name,         data.modulename);
-	}
-    
-    
+        strcpy(data.module[data.NBmodule].name, "???");
+    }
+    else
+    {
+        strcpy(data.module[data.NBmodule].name,         data.modulename);
+    }
+
+
     strcpy(data.module[data.NBmodule].package,      PackageName);
     strcpy(data.module[data.NBmodule].info,         InfoString);
-	
-	strcpy(data.module[data.NBmodule].shortname,    data.moduleshortname);
+
+    strcpy(data.module[data.NBmodule].shortname,    data.moduleshortname);
 
     if(data.progStatus == 0)
     {
@@ -2371,7 +2372,8 @@ void runCLI_data_init()
     strcpy(data.cmd[data.NBcmd].key, "mloadas");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
     data.cmd[data.NBcmd].fp = CLIcore__load_module_as__cli;
-    strcpy(data.cmd[data.NBcmd].info, "load module from shared object, use short name binding");
+    strcpy(data.cmd[data.NBcmd].info,
+           "load module from shared object, use short name binding");
     strcpy(data.cmd[data.NBcmd].syntax, "<module name> <shortname>");
     strcpy(data.cmd[data.NBcmd].example, "mload mymodule mymod");
     strcpy(data.cmd[data.NBcmd].Ccall,
