@@ -4,7 +4,6 @@
 
 
 void __attribute__ ((constructor)) libinit_COREMOD_iofits();
-int init_COREMOD_iofits();
 
 
 
