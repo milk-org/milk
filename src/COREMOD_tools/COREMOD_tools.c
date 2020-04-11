@@ -1420,9 +1420,8 @@ long file_number_lines(const char *file_name)
 
     if((fp = fopen(file_name, "r")) == NULL)
     {
-        sprintf(errormessage, "cannot open file \"%s\"", file_name);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot open file \"%s\"", file_name);
+        abort();
     }
 
     cnt = 0;
@@ -1443,9 +1442,8 @@ FILE *open_file_w(const char *filename)
 
     if((fp = fopen(filename, "w")) == NULL)
     {
-        sprintf(errormessage, "cannot create file \"%s\"", filename);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot create file \"%s\"", filename);
+        abort();
     }
 
     return(fp);
@@ -1458,9 +1456,8 @@ FILE *open_file_r(const char *filename)
 
     if((fp = fopen(filename, "r")) == NULL)
     {
-        sprintf(errormessage, "cannot read file \"%s\"", filename);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot read file \"%s\"", filename);
+        abort();
     }
 
     return(fp);
@@ -1503,7 +1500,7 @@ errno_t read_1D_array(
     {
         if(fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
         {
-            printERROR(__FILE__, __func__, __LINE__, "fscanf error");
+            PRINT_ERROR("fscanf error");
             exit(0);
         }
     }
@@ -1541,7 +1538,7 @@ int read_int_file(
     {
         if(fscanf(fp, "%d", &value) != 1)
         {
-            printERROR(__FILE__, __func__, __LINE__, "fscanf error");
+            PRINT_ERROR("fscanf error");
             exit(0);
         }
         fclose(fp);
@@ -1561,9 +1558,8 @@ errno_t write_int_file(
 
     if((fp = fopen(fname, "w")) == NULL)
     {
-        sprintf(errormessage, "cannot create file \"%s\"\n", fname);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot create file \"%s\"\n", fname);
+        abort();
     }
 
     fprintf(fp, "%d\n", value);
@@ -1591,9 +1587,8 @@ errno_t write_float_file(
     {
         if((fp = fopen(fname, "w")) == NULL)
         {
-            sprintf(errormessage, "cannot create file \"%s\"\n", fname);
-            printERROR(__FILE__, __func__, __LINE__, errormessage);
-            exit(0);
+            PRINT_ERROR("cannot create file \"%s\"\n", fname);
+            abort();
         }
         fprintf(fp, "%g\n", value);
         fclose(fp);
@@ -1603,9 +1598,8 @@ errno_t write_float_file(
     {
         if((fp = fopen(fname, "a")) == NULL)
         {
-            sprintf(errormessage, "cannot create file \"%s\"\n", fname);
-            printERROR(__FILE__, __func__, __LINE__, errormessage);
-            exit(0);
+            PRINT_ERROR("cannot create file \"%s\"\n", fname);
+            abort();
         }
         fprintf(fp, " %g", value);
         fclose(fp);
