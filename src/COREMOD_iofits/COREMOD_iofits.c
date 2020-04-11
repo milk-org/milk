@@ -587,7 +587,6 @@ imageID load_fits(
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
     int       nulval, anynul;
     long      bitpixl = 0;
-    //    char      errstr[SBUFFERSIZE];
     long      naxis = 0;
     uint32_t  naxes[3];
     imageID   ID;
