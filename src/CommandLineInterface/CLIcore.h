@@ -147,6 +147,8 @@ if ( INITSTATUS_##modname == 1 ) \
 
 
 
+
+
 //
 // ************ ERROR HANDLING **********************************
 //
@@ -300,6 +302,21 @@ if(slen >= maxlen) {                              \
  *
  */
 #define WRITE_IMAGENAME(imname, ...) do { \
+int slen = snprintf(imname, STRINGMAXLEN_IMGNAME, __VA_ARGS__); \
+if(slen<1) {                                                    \
+    PRINT_ERROR("snprintf wrote <1 char");                      \
+    abort();                                                    \
+}                                                               \
+if(slen >= STRINGMAXLEN_IMGNAME) {                              \
+    PRINT_ERROR("snprintf string truncation");                  \
+    abort();                                                    \
+}                                                               \
+} while(0)
+
+
+#define CREATE_IMAGENAME(imname, ...) \
+char imname[STRINGMAXLEN_IMGNAME]; \
+do { \
 int slen = snprintf(imname, STRINGMAXLEN_IMGNAME, __VA_ARGS__); \
 if(slen<1) {                                                    \
     PRINT_ERROR("snprintf wrote <1 char");                      \
