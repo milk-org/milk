@@ -273,7 +273,9 @@ static errno_t init_module_CLI()
 /** @name TEMPLATEMODULE functions */
 
 
-int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
+int COREMOD_TOOLS_mvProcCPUset(
+    const char *csetname
+)
 {
     int pid;
     char command[200];
@@ -284,7 +286,7 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 
     if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
 
     sprintf(command, "sudo -n cset proc -m -p %d -t %s\n", pid, csetname);
@@ -292,12 +294,12 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 
     if(system(command) != 0)
     {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
 
     if(seteuid(data.ruid) != 0)     //Go back to normal privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
 #endif
 
@@ -317,9 +319,8 @@ int create_counter_file(
 
     if((fp = fopen(fname, "w")) == NULL)
     {
-        sprintf(errormessage, "cannot create file \"%s\"", fname);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot create file \"%s\"", fname);
+        abort();
     }
 
     for(i = 0; i < NBpts; i++)
@@ -340,8 +341,8 @@ int bubble_sort(
     unsigned long count
 )
 {
-    register unsigned long a, b;
-    register double t;
+    unsigned long a, b;
+    double t;
 
     for(a = 1; a < count; a++)
         for(b = count - 1; b >= a; b--)
@@ -359,7 +360,8 @@ int bubble_sort(
 
 void qs_float(
     float *array,
-    unsigned long left, unsigned long right
+    unsigned long left, 
+    unsigned long right
 )
 {
     unsigned long i, j;
@@ -1103,73 +1105,120 @@ void qs3ulul_double(
 
 
 
-void quick_sort_float(float *array, unsigned long count)
+void quick_sort_float(
+    float *array,
+    unsigned long count
+)
 {
     qs_float(array, 0, count - 1);
 }
 
-void quick_sort_long(long *array, unsigned long count)
+void quick_sort_long(
+    long *array,
+    unsigned long count
+)
 {
     qs_long(array, 0, count - 1);
 }
 
-void quick_sort_double(double *array, unsigned long count)
+void quick_sort_double(
+    double *array,
+    unsigned long count
+)
 {
     qs_double(array, 0, count - 1);
 }
 
-void quick_sort_ushort(unsigned short *array, unsigned long count)
+void quick_sort_ushort(
+    unsigned short *array,
+    unsigned long count
+)
 {
     qs_ushort(array, 0, count - 1);
 }
 
-void quick_sort3(double *array, double *array1, double *array2,
-                 unsigned long count)
+void quick_sort3(
+    double *array,
+    double *array1,
+    double *array2,
+    unsigned long count
+)
 {
     qs3(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3_float(float *array, float *array1, float *array2,
-                       unsigned long count)
+void quick_sort3_float(
+    float *array,
+    float *array1,
+    float *array2,
+    unsigned long count
+)
 {
     qs3_float(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3_double(double *array, double *array1, double *array2,
-                        unsigned long count)
+void quick_sort3_double(
+    double *array,
+    double *array1,
+    double *array2,
+    unsigned long count
+)
 {
     qs3_double(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort2l(double *array, long *array1, unsigned long count)
+void quick_sort2l(
+    double *array,
+    long *array1,
+    unsigned long count
+)
 {
     qs2l(array, array1, 0, count - 1);
 }
 
-void quick_sort2ul(double *array, unsigned long *array1, unsigned long count)
+void quick_sort2ul(
+    double *array,
+    unsigned long *array1,
+    unsigned long count
+)
 {
     qs2ul(array, array1, 0, count - 1);
 }
 
-void quick_sort2l_double(double *array, long *array1, unsigned long count)
+void quick_sort2l_double(
+    double *array,
+    long *array1,
+    unsigned long count
+)
 {
     qs2l_double(array, array1, 0, count - 1);
 }
 
-void quick_sort2ul_double(double *array, unsigned long *array1,
-                          unsigned long count)
+void quick_sort2ul_double(
+    double *array,
+    unsigned long *array1,
+    unsigned long count
+)
 {
     qs2ul_double(array, array1, 0, count - 1);
 }
 
-void quick_sort3ll_double(double *array, long *array1, long *array2,
-                          unsigned long count)
+void quick_sort3ll_double(
+    double *array,
+    long *array1,
+    long *array2,
+    unsigned long count
+)
 {
     qs3ll_double(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3ulul_double(double *array, unsigned long *array1,
-                            unsigned long *array2, unsigned long count)
+void quick_sort3ulul_double(
+    double *array,
+    unsigned long *array1,
+    unsigned long *array2,
+    unsigned long count
+)
 {
     qs3ulul_double(array, array1, array2, 0, count - 1);
 }
@@ -1250,9 +1299,8 @@ int read_config_parameter_exists(
     read = 0;
     if((fp = fopen(config_file, "r")) == NULL)
     {
-        sprintf(errormessage, "cannot open file \"%s\"", config_file);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot open file \"%s\"", config_file);
+        abort();
     }
 
     while((fgets(line, 1000, fp) != NULL) && (read == 0))
@@ -1265,9 +1313,8 @@ int read_config_parameter_exists(
     }
     if(read == 0)
     {
-        sprintf(errormessage, "parameter \"%s\" does not exist in file \"%s\"", keyword,
-                config_file);
-        printWARNING(__FILE__, __func__, __LINE__, errormessage);
+        PRINT_WARNING("parameter \"%s\" does not exist in file \"%s\"", keyword,
+                      config_file);
     }
 
     fclose(fp);
@@ -1293,9 +1340,8 @@ int read_config_parameter(
     read = 0;
     if((fp = fopen(config_file, "r")) == NULL)
     {
-        sprintf(errormessage, "cannot open file \"%s\"", config_file);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
-        exit(0);
+        PRINT_ERROR("cannot open file \"%s\"", config_file);
+        abort();
     }
 
     strcpy(content, "---");
@@ -1311,9 +1357,8 @@ int read_config_parameter(
     }
     if(read == 0)
     {
-        sprintf(errormessage, "parameter \"%s\" does not exist in file \"%s\"", keyword,
+        PRINT_ERROR("parameter \"%s\" does not exist in file \"%s\"", keyword,
                 config_file);
-        printERROR(__FILE__, __func__, __LINE__, errormessage);
         sprintf(content, "-");
         //  exit(0);
     }
