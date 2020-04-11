@@ -2591,22 +2591,12 @@ errno_t delete_image_ID(
 
             if(data.rmSHMfile == 1)    // remove files from disk
             {
-                sprintf(command,
-                        "rm /dev/shm/sem.%s.%s_sem*",
+                EXECUTE_SYSTEM_COMMAND("rm /dev/shm/sem.%s.%s_sem*",
                         data.shmsemdirname, imname);
-
-                if(system(command) != 0)
-                {
-                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-                }
                 sprintf(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
                 remove(fname);
-
-                sprintf(command, "rm %s/%s.im.shm", data.shmdir, imname);
-                if(system(command) != 0)
-                {
-                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-                }
+								
+                EXECUTE_SYSTEM_COMMAND("rm %s/%s.im.shm", data.shmdir, imname);
             }
 
         }
@@ -2616,7 +2606,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.UI8 == NULL)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                    PRINT_ERROR("data array pointer is null\n");
                     exit(EXIT_FAILURE);
                 }
                 free(data.image[ID].array.UI8);
@@ -2626,7 +2616,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.SI32 == NULL)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                    PRINT_ERROR("data array pointer is null\n");
                     exit(EXIT_FAILURE);
                 }
                 free(data.image[ID].array.SI32);
@@ -2636,7 +2626,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.F == NULL)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                    PRINT_ERROR("data array pointer is null\n");
                     exit(EXIT_FAILURE);
                 }
                 free(data.image[ID].array.F);
@@ -2646,7 +2636,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.D == NULL)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                    PRINT_ERROR("data array pointer is null\n");
                     exit(EXIT_FAILURE);
                 }
                 free(data.image[ID].array.D);
@@ -2656,7 +2646,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.CF == NULL)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                    PRINT_ERROR("data array pointer is null\n");
                     exit(EXIT_FAILURE);
                 }
                 free(data.image[ID].array.CF);
@@ -2666,7 +2656,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.CD == NULL)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                    PRINT_ERROR("data array pointer is null\n");
                     exit(EXIT_FAILURE);
                 }
                 free(data.image[ID].array.CD);
@@ -2675,7 +2665,7 @@ errno_t delete_image_ID(
 
             if(data.image[ID].md == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "data array pointer is null\n");
+                PRINT_ERROR("data array pointer is null\n");
                 exit(0);
             }
             free(data.image[ID].md);
@@ -2817,13 +2807,13 @@ void *save_fits_function(
 #ifndef __MACH__
     if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0, SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
     if(seteuid(data.ruid) != 0)     //Go back to normal privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
 #endif
 
@@ -3943,8 +3933,7 @@ imageID copy_image_ID(
     ID = image_ID(name);
     if(ID == -1)
     {
-        sprintf(errstr, "image \"%s\" does not exist", name);
-        printERROR(__FILE__, __func__, __LINE__, errstr);
+        PRINT_ERROR("image \"%s\" does not exist", name);
         exit(0);
     }
     naxis = data.image[ID].md[0].naxis;
@@ -3952,7 +3941,7 @@ imageID copy_image_ID(
     size = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(size == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc error");
+        PRINT_ERROR("malloc error");
         exit(0);
     }
 
@@ -4478,9 +4467,9 @@ errno_t list_image_ID_ncurses()
 
             attroff(COLOR_PAIR(3));
 
-            if(n >= STYPESIZE)
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
+            if(n >= STYPESIZE) {
+                PRINT_ERROR("Attempted to write string buffer with too many characters");
+			}
 
             printw("%10ld Kb %6.2f   ", (long)(tmp_long / 1024),
                    (float)(100.0 * tmp_long / sizeb));
@@ -4698,8 +4687,7 @@ errno_t list_image_ID_ofp(
 
             if(n >= STYPESIZE)
             {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
+                PRINT_ERROR("Attempted to write string buffer with too many characters");
             }
 
             fprintf(fo, "%10ld Kb %6.2f   ", (long)(tmp_long / 1024),
@@ -4826,14 +4814,8 @@ errno_t list_image_ID_file(
     fp = fopen(fname, "w");
     if(fp == NULL)
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE, "Cannot create file %s", fname);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
-        exit(0);
+        PRINT_ERROR("Cannot create file %s", fname);
+        abort();
     }
 
     for(i = 0; i < data.NB_MAX_IMAGE; i++)
@@ -4901,8 +4883,7 @@ errno_t list_image_ID_file(
 
             if(n >= STYPESIZE)
             {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
+                PRINT_ERROR("Attempted to write string buffer with too many characters");
             }
 
             fprintf(fp, " %s\n", type);
@@ -4993,7 +4974,7 @@ errno_t mk_complex_from_reim(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc error");
+        PRINT_ERROR("malloc error");
         exit(0);
     }
 
@@ -5050,14 +5031,7 @@ errno_t mk_complex_from_reim(
     }
     else
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
     // Note: openMP doesn't help here
@@ -5204,14 +5178,7 @@ errno_t mk_complex_from_amph(
     }
     else
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
 
@@ -5314,14 +5281,7 @@ errno_t mk_reim_from_complex(
     }
     else
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
 
@@ -5437,13 +5397,7 @@ errno_t mk_amph_from_complex(
     }
     else
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
 
@@ -5702,13 +5656,7 @@ errno_t rotate_cube(
 
     if(data.image[ID].md[0].naxis != 3)
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE,
-                     "Wrong naxis : %d - should be 3\n", (int) data.image[ID].md[0].naxis);
-        if(n >= SBUFFERSIZE)
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
+        PRINT_ERROR("Wrong naxis : %d - should be 3\n", (int) data.image[ID].md[0].naxis);
         exit(0);
     }
     xsize = data.image[ID].md[0].size[0];
@@ -5779,12 +5727,7 @@ errno_t rotate_cube(
     }
     else
     {
-        n = snprintf(errmsg_memory, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-
-        printERROR(__FILE__, __func__, __LINE__, errmsg_memory);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
 
@@ -8202,7 +8145,6 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     char imnamecp[200];
     char fnamecp[500];
     long ID;
-    char command[500];
 
 
     for(i = 0; i < data.NB_MAX_IMAGE; i++)
@@ -8222,12 +8164,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
             imcnt++;
         }
 
-
-    sprintf(command, "mkdir -p %s", dirname);
-    if(system(command) != 0)
-    {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-    }
+	EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
 
     // create array for each image
     for(i = 0; i < imcnt; i++)
@@ -8307,13 +8244,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 
 
 
-    sprintf(command, "mkdir -p %s", dirname);
-
-    if(system(command) != 0)
-    {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-    }
-
+    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
 
     IDtrig = image_ID(IDtrig_name);
 
@@ -9076,13 +9007,13 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
 #ifndef __MACH__
     if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0, SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
     if(seteuid(data.ruid) != 0)     //Go back to normal privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
 #endif
 
@@ -10085,8 +10016,7 @@ LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
     if(result == -1)
     {
         close(SM_fd);
-        printERROR(__FILE__, __func__, __LINE__,
-                   "Error calling lseek() to 'stretch' the file");
+        PRINT_ERROR("Error calling lseek() to 'stretch' the file");
         exit(0);
     }
 
@@ -10400,13 +10330,13 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
 #ifndef __MACH__
     if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0, SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
     if(seteuid(data.ruid) != 0)     //Go back to normal privileges
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
 #endif
 
