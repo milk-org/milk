@@ -308,7 +308,7 @@ int arith_image_trunc_inplace_byID(long IDname, double f1, double f2);
 int arith_image_trunc(const char *ID_name, double f1, double f2, const char *ID_out);
 int arith_image_trunc_inplace(const char *ID_name, double f1, double f2);
 
-long arith_make_slopexy(const char *ID_name, long l1,long l2, double sx, double sy);
+imageID arith_make_slopexy(const char *ID_name, long l1,long l2, double sx, double sy);
 
 
 
