@@ -432,15 +432,7 @@ int is_fits_file(
     }
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) == 1)
     {
-        int n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                         "Error in function is_fits_file(%s)", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //      fprintf(stderr,"%c[%d;%dm Error in function is_fits_file for file \"%s\" %c[%d;m\n", (char) 27, 1, 31, file_name, (char) 27, 0);
+        PRINT_ERROR("Error in function is_fits_file(%s)", file_name);
     }
 
     return(value);
@@ -466,16 +458,7 @@ int read_keyword(
 
         if(fits_read_keyword(fptr, KEYWORD, str1, comment, &FITSIO_status))
         {
-            n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                         "Keyword \"%s\" does not exist in file \"%s\"", KEYWORD, file_name);
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
-            printERROR(__FILE__, __func__, __LINE__, errormessage_iofits);
-
-            //	  printf("%c[%d;%dm Keyword \"%s\" does not exist in file \"%s\" %c[%d;m\n", (char) 27, 1, 31, KEYWORD,file_name, (char) 27, 0);
+            PRINT_ERROR("Keyword \"%s\" does not exist in file \"%s\"", KEYWORD, file_name);
             exists = 1;
         }
         else
@@ -483,23 +466,14 @@ int read_keyword(
             n = snprintf(content, SBUFFERSIZE, "%s\n", str1);
             if(n >= SBUFFERSIZE)
             {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
+                PRINT_ERROR("Attempted to write string buffer with too many characters");
             }
         }
         fits_close_file(fptr, &FITSIO_status);
     }
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1)
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "Error reading keyword \"%s\" in file \"%s\"", KEYWORD, file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //      fprintf(stderr,"%c[%d;%dm Error reading keyword \"%s\" in file \"%s\" %c[%d;m\n", (char) 27, 1, 31, KEYWORD,file_name, (char) 27, 0);
+        PRINT_ERROR("Error reading keyword \"%s\" in file \"%s\"", KEYWORD, file_name);       
     }
 
     return(exists);
@@ -517,7 +491,7 @@ errno_t read_keyword_alone(
 
     if(content == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc error");
+        PRINT_ERROR("malloc error");
         exit(0);
     }
 
@@ -755,8 +729,7 @@ imageID load_fits(
             n = snprintf(keyword, SBUFFERSIZE, "NAXIS%ld", i + 1);
             if(n >= SBUFFERSIZE)
             {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
+                PRINT_ERROR("Attempted to write string buffer with too many characters");
             }
             fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &FITSIO_status);
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -1000,7 +973,7 @@ imageID load_fits(
             larray = (long *) malloc(sizeof(long) * nelements);
             if(larray == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -1060,7 +1033,7 @@ imageID load_fits(
             barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] * naxes[0]);
             if(barray == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -1141,15 +1114,13 @@ errno_t save_db_fits(
                      "automatic overwrite on file \"%s\"\n", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
         printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
         n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
     else
@@ -1157,8 +1128,7 @@ errno_t save_db_fits(
         n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
 
@@ -1199,7 +1169,7 @@ errno_t save_db_fits(
             array = (double *) malloc(SIZEOF_DATATYPE_DOUBLE * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -1270,7 +1240,7 @@ errno_t save_db_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     free(array);
                     exit(0);
@@ -1375,16 +1345,14 @@ errno_t save_fl_fits(
                      "automatic overwrite on file \"%s\"\n", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
         printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
         //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
         n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
     else
@@ -1392,8 +1360,7 @@ errno_t save_fl_fits(
         n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
 
@@ -1426,7 +1393,7 @@ errno_t save_fl_fits(
             array = (float *) malloc(SIZEOF_DATATYPE_FLOAT * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -1497,7 +1464,7 @@ errno_t save_fl_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     free(array);
                     exit(0);
@@ -1617,16 +1584,14 @@ errno_t save_sh16_fits(
                      "automatic overwrite on file \"%s\"\n", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR( "Attempted to write string buffer with too many characters");
         }
         printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
         //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
         n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
     else
@@ -1634,8 +1599,7 @@ errno_t save_sh16_fits(
         n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
 
@@ -1667,7 +1631,7 @@ errno_t save_sh16_fits(
             array = (int16_t *) malloc(SIZEOF_DATATYPE_INT16 * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -1738,7 +1702,7 @@ errno_t save_sh16_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     free(array);
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     exit(0);
@@ -1870,16 +1834,14 @@ errno_t save_ush16_fits(
                      "automatic overwrite on file \"%s\"\n", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
         printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
         //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
         n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
     else
@@ -1887,8 +1849,7 @@ errno_t save_ush16_fits(
         n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
         if(n >= SBUFFERSIZE)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
+            PRINT_ERROR("Attempted to write string buffer with too many characters");
         }
     }
 
@@ -1915,7 +1876,7 @@ errno_t save_ush16_fits(
             array = (uint16_t *) malloc(SIZEOF_DATATYPE_UINT16 * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -1986,7 +1947,7 @@ errno_t save_ush16_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     free(array);
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     exit(0);
@@ -2107,30 +2068,12 @@ errno_t save_int32_fits(
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+        WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -2161,7 +2104,7 @@ errno_t save_int32_fits(
             array = (int32_t *) malloc(SIZEOF_DATATYPE_INT32 * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -2232,7 +2175,7 @@ errno_t save_int32_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     free(array);
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     exit(0);
@@ -2360,30 +2303,12 @@ errno_t save_uint32_fits(
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+		WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+        WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -2409,7 +2334,7 @@ errno_t save_uint32_fits(
             array = (uint32_t *) malloc(SIZEOF_DATATYPE_UINT32 * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -2480,7 +2405,7 @@ errno_t save_uint32_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     free(array);
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     exit(0);
@@ -2597,30 +2522,12 @@ errno_t save_int64_fits(
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+        WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -2651,7 +2558,7 @@ errno_t save_int64_fits(
             array = (int64_t *) malloc(SIZEOF_DATATYPE_INT64 * nelements);
             if(array == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc error");
+                PRINT_ERROR("malloc error");
                 exit(0);
             }
 
@@ -2722,7 +2629,7 @@ errno_t save_int64_fits(
 
                 default :
                     list_image_ID();
-                    printERROR(__FILE__, __func__, __LINE__, "atype value not recognised");
+                    PRINT_ERROR("atype value not recognised");
                     free(array);
                     printf("ID %ld  datatype = %d\n", ID, datatype);
                     exit(0);
@@ -2973,26 +2880,19 @@ imageID break_cube(
 {
     imageID ID;
     uint32_t naxes[3];
-    long ii, jj, kk;
-    char framename[SBUFFERSIZE];
     long i;
-    int n;
 
     ID = image_ID(ID_name);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     naxes[2] = data.image[ID].md[0].size[2];
 
-    for(kk = 0; kk < naxes[2]; kk++)
+    for(uint32_t kk = 0; kk < naxes[2]; kk++)
     {
         long ID1;
 
-        n = snprintf(framename, SBUFFERSIZE, "%s_%5ld", ID_name, kk);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+		CREATE_IMAGENAME(framename, "%s_%5u", ID_name, kk);
+
         for(i = 0; i < (long) strlen(framename); i++)
         {
             if(framename[i] == ' ')
@@ -3001,8 +2901,8 @@ imageID break_cube(
             }
         }
         ID1 = create_2Dimage_ID(framename, naxes[0], naxes[1]);
-        for(ii = 0; ii < naxes[0]; ii++)
-            for(jj = 0; jj < naxes[1]; jj++)
+        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+            for(uint32_t jj = 0; jj < naxes[1]; jj++)
             {
                 data.image[ID1].array.F[jj * naxes[0] + ii] = data.image[ID].array.F[kk *
                         naxes[0] * naxes[1] + jj * naxes[0] + ii];
@@ -3024,31 +2924,19 @@ errno_t images_to_cube(
     imageID ID;
     imageID ID1;
     long frame;
-    char imname[SBUFFERSIZE];
     uint32_t naxes[2];
     long ii, jj;
     uint32_t xsize, ysize;
     int n;
 
     frame = 0;
-    n = snprintf(imname, SBUFFERSIZE, "%s%05ld", img_name, frame);
-    if(n >= SBUFFERSIZE)
-    {
-        printERROR(__FILE__, __func__, __LINE__,
-                   "Attempted to write string buffer with too many characters");
-    }
+    
+    CREATE_IMAGENAME(imname, "%s%05ld", img_name, frame);
 
     ID1 = image_ID(imname);
     if(ID1 == -1)
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE, "Image \"%s\" does not exist",
-                     imname);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errormessage_iofits);
+        PRINT_ERROR("Image \"%s\" does not exist", imname);
         exit(0);
     }
     naxes[0] = data.image[ID1].md[0].size[0];
@@ -3069,25 +2957,14 @@ errno_t images_to_cube(
 
     for(frame = 1; frame < nbframes; frame++)
     {
-        n = snprintf(imname, SBUFFERSIZE, "%s%05ld", img_name, frame);
+        WRITE_IMAGENAME(imname, "%s%05ld", img_name, frame);
         printf("Adding image %s -> %ld/%ld ... ", img_name, frame, nbframes);
         fflush(stdout);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
+
         ID1 = image_ID(imname);
         if(ID1 == -1)
         {
-            n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                         "Image \"%s\" does not exist - skipping", imname);
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
-            printERROR(__FILE__, __func__, __LINE__, errormessage_iofits);
+            PRINT_ERROR("Image \"%s\" does not exist - skipping", imname);
         }
         else
         {
@@ -3095,7 +2972,7 @@ errno_t images_to_cube(
             naxes[1] = data.image[ID1].md[0].size[1];
             if((xsize != naxes[0]) || (ysize != naxes[1]))
             {
-                printERROR(__FILE__, __func__, __LINE__, "Image has wrong size");
+                PRINT_ERROR("Image has wrong size");
                 exit(0);
             }
             for(ii = 0; ii < naxes[0]; ii++)
