@@ -506,20 +506,14 @@ imageID arith_set_pixel(
     }
     else
     {
-        nbchar = snprintf(errmsg_arith, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(nbchar >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(EXIT_FAILURE);
     }
     data.image[ID].md[0].write = 0;
     data.image[ID].md[0].cnt0++;
     COREMOD_MEMORY_image_set_sempost(ID_name, -1);
 
-    return(ID);
+    return ID;
 }
 
 
@@ -584,20 +578,14 @@ imageID arith_set_pixel_1Drange(
     }
     else
     {
-        n = snprintf(errmsg_arith, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
     data.image[ID].md[0].write = 0;
     data.image[ID].md[0].cnt0++;
     COREMOD_MEMORY_image_set_sempost(ID_name, -1);
 
-    return(ID);
+    return ID;
 }
 
 
@@ -613,7 +601,6 @@ imageID arith_set_row(
     uint32_t  naxes[2];
     long      ii;
     uint8_t   datatype;
-    int       nbchar;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
@@ -637,13 +624,7 @@ imageID arith_set_row(
     }
     else
     {
-        nbchar = snprintf(errmsg_arith, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(nbchar >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
 
@@ -651,7 +632,7 @@ imageID arith_set_row(
     data.image[ID].md[0].cnt0++;
     COREMOD_MEMORY_image_set_sempost(ID_name, -1);
 
-    return(ID);
+    return ID;
 }
 
 
@@ -667,7 +648,6 @@ imageID arith_set_col(
     uint32_t naxes[2];
     long     y;
     uint8_t  datatype;
-    int      nbchar;
 
     ID = image_ID(ID_name);
     naxes[0] = data.image[ID].md[0].size[0];
@@ -692,13 +672,7 @@ imageID arith_set_col(
     }
     else
     {
-        nbchar = snprintf(errmsg_arith, SBUFFERSIZE, "Wrong image type(s)\n");
-        if(nbchar >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+        PRINT_ERROR("Wrong image type(s)\n");
         exit(0);
     }
 
@@ -707,7 +681,7 @@ imageID arith_set_col(
     COREMOD_MEMORY_image_set_sempost(ID_name, -1);
 
 
-    return(ID);
+    return ID;
 }
 
 
@@ -779,14 +753,8 @@ imageID arith_image_zero(
         }
         else
         {
-            n = snprintf(errmsg_arith, SBUFFERSIZE, "cannot detect image type for image %s",
+            PRINT_ERROR("cannot detect image type for image %s",
                          ID_name);
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
-            printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
             exit(0);
         }
         data.image[ID].md[0].write = 0;
@@ -815,7 +783,6 @@ imageID arith_image_crop(
     long i;
     uint32_t *naxes = NULL;
     uint32_t *naxesout = NULL;
-    long ii, jj, kk;
     uint8_t datatype;
     int n;
 
@@ -831,13 +798,7 @@ imageID arith_image_crop(
     IDin = image_ID(ID_name);
     if(IDin == -1)
     {
-        n = snprintf(errmsg_arith, SBUFFERSIZE, "Missing input image = %s", ID_name);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+        PRINT_ERROR("Missing input image = %s", ID_name);
         list_image_ID();
         exit(0);
     }
@@ -845,26 +806,20 @@ imageID arith_image_crop(
     naxis = data.image[IDin].md[0].naxis;
     if(naxis < 1)
     {
-        printERROR(__FILE__, __func__, __LINE__, "naxis < 1");
+        PRINT_ERROR("naxis < 1");
         exit(0);
     }
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        n = snprintf(errmsg_arith, SBUFFERSIZE, "malloc() error, naxis = %ld", naxis);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+        PRINT_ERROR("malloc() error, naxis = %ld", naxis);
         exit(0);
     }
 
     naxesout  = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxesout == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -936,21 +891,21 @@ imageID arith_image_crop(
     {
         if(datatype == _DATATYPE_FLOAT)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.F[ii - start[0]] = data.image[IDin].array.F[ii];
             }
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.D[ii - start[0]] = data.image[IDin].array.D[ii];
             }
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.CF[ii - start[0]].re = data.image[IDin].array.CF[ii].re;
                 data.image[IDout].array.CF[ii - start[0]].im = data.image[IDin].array.CF[ii].im;
@@ -958,7 +913,7 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.CD[ii - start[0]].re = data.image[IDin].array.CD[ii].re;
                 data.image[IDout].array.CD[ii - start[0]].im = data.image[IDin].array.CD[ii].im;
@@ -966,69 +921,63 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_UINT8)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.UI8[ii - start[0]] = data.image[IDin].array.UI8[ii];
             }
         }
         else if(datatype == _DATATYPE_UINT16)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.UI16[ii - start[0]] = data.image[IDin].array.UI16[ii];
             }
         }
         else if(datatype == _DATATYPE_UINT32)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.UI32[ii - start[0]] = data.image[IDin].array.UI32[ii];
             }
         }
         else if(datatype == _DATATYPE_UINT64)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.UI64[ii - start[0]] = data.image[IDin].array.UI64[ii];
             }
         }
         else if(datatype == _DATATYPE_INT8)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.SI8[ii - start[0]] = data.image[IDin].array.SI8[ii];
             }
         }
         else if(datatype == _DATATYPE_INT16)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.SI16[ii - start[0]] = data.image[IDin].array.SI16[ii];
             }
         }
         else if(datatype == _DATATYPE_INT32)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.SI32[ii - start[0]] = data.image[IDin].array.SI32[ii];
             }
         }
         else if(datatype == _DATATYPE_INT64)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
                 data.image[IDout].array.SI64[ii - start[0]] = data.image[IDin].array.SI64[ii];
             }
         }
         else
         {
-            n = snprintf(errmsg_arith, SBUFFERSIZE, "invalid data type");
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
-            printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
+            PRINT_ERROR("invalid data type");
             exit(0);
         }
     }
@@ -1036,22 +985,22 @@ imageID arith_image_crop(
     {
         if(datatype == _DATATYPE_FLOAT)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.F[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.F[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.D[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.D[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                 {
                     data.image[IDout].array.CF[(jj - start[1])*naxesout[0] + (ii - start[0])].re
                         = data.image[IDin].array.CF[jj * naxes[0] + ii].re;
@@ -1061,8 +1010,8 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                 {
                     data.image[IDout].array.CD[(jj - start[1])*naxesout[0] + (ii - start[0])].re
                         = data.image[IDin].array.CD[jj * naxes[0] + ii].re;
@@ -1072,63 +1021,63 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_UINT8)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.UI8[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.UI8[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_UINT16)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.UI16[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.UI16[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_UINT32)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.UI32[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.UI32[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_UINT64)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.UI64[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.UI64[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT8)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.SI8[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.SI8[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT16)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.SI16[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.SI16[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT32)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.SI32[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.SI32[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT64)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     data.image[IDout].array.SI64[(jj - start[1])*naxesout[0] + (ii - start[0])]
                         = data.image[IDin].array.SI64[jj * naxes[0] + ii];
         }
         else
         {
-            printERROR(__FILE__, __func__, __LINE__, "invalid data type");
+            PRINT_ERROR("invalid data type");
             exit(0);
         }
     }
@@ -1137,9 +1086,9 @@ imageID arith_image_crop(
         //	printf("naxis = 3\n");
         if(datatype == _DATATYPE_FLOAT)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.F[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                   (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1148,9 +1097,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.D[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                   (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1159,9 +1108,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.CF[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                    (jj - start[1])*naxesout[0] + (ii - start[0])].re
@@ -1173,9 +1122,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.CD[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                    (jj - start[1])*naxesout[0] + (ii - start[0])].re
@@ -1187,9 +1136,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_UINT8)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.UI8[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                     (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1198,9 +1147,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_UINT16)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.UI16[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                      (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1209,9 +1158,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_UINT32)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.UI32[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                      (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1220,9 +1169,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_UINT64)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.UI64[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                      (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1231,9 +1180,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_INT8)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.SI8[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                     (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1242,9 +1191,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_INT16)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.SI16[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                      (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1253,9 +1202,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_INT32)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.SI32[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                      (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1264,9 +1213,9 @@ imageID arith_image_crop(
         }
         else if(datatype == _DATATYPE_INT64)
         {
-            for(ii = start_c[0]; ii < end_c[0]; ii++)
-                for(jj = start_c[1]; jj < end_c[1]; jj++)
-                    for(kk = start_c[2]; kk < end_c[2]; kk++)
+            for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
+                for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
+                    for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
                         data.image[IDout].array.SI64[(kk - start[2])*naxesout[0]*naxesout[1] +
                                                      (jj - start[1])*naxesout[0] + (ii - start[0])]
@@ -1275,7 +1224,7 @@ imageID arith_image_crop(
         }
         else
         {
-            printERROR(__FILE__, __func__, __LINE__, "invalid data type");
+            PRINT_ERROR("invalid data type");
             exit(0);
         }
     }
@@ -1313,14 +1262,14 @@ imageID arith_image_extract2D(
     start = (long *) malloc(sizeof(long) * naxis);
     if(start == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
     end = (long *) malloc(sizeof(long) * naxis);
     if(end == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -1365,7 +1314,7 @@ imageID arith_image_extract3D(
     start = (long *) malloc(sizeof(long) * 3);
     if(start == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         printf("params: %s %s %ld %ld %ld %ld %ld %ld \n", in_name, out_name, size_x,
                size_y, size_z, xstart, ystart, zstart);
         exit(0);
@@ -1374,7 +1323,7 @@ imageID arith_image_extract3D(
     end = (long *) malloc(sizeof(long) * 3);
     if(end == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         printf("params: %s %s %ld %ld %ld %ld %ld %ld \n", in_name, out_name, size_x,
                size_y, size_z, xstart, ystart, zstart);
         exit(0);
@@ -1566,7 +1515,7 @@ double arith_image_total(
     }
     else
     {
-        printERROR(__FILE__, __func__, __LINE__, "invalid data type");
+        PRINT_ERROR("invalid data type");
         exit(0);
     }
 
@@ -2015,7 +1964,7 @@ double arith_image_percentile(
             arrayF = (float *) malloc(sizeof(float) * nelement);
             if(arrayF == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             memcpy(arrayF, data.image[ID].array.F, sizeof(float)*nelement);
@@ -2028,7 +1977,7 @@ double arith_image_percentile(
             arrayD = (double *) malloc(sizeof(double) * nelement);
             if(arrayD == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             memcpy(arrayD, data.image[ID].array.D, sizeof(double)*nelement);
@@ -2043,7 +1992,7 @@ double arith_image_percentile(
             arrayU = (unsigned short *) malloc(sizeof(unsigned short) * nelement);
             if(arrayU == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2059,7 +2008,7 @@ double arith_image_percentile(
             arrayU = (unsigned short *) malloc(sizeof(unsigned short) * nelement);
             if(arrayU == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2075,7 +2024,7 @@ double arith_image_percentile(
             arrayL = (long *) malloc(sizeof(long) * nelement);
             if(arrayU == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2091,7 +2040,7 @@ double arith_image_percentile(
             arrayL = (long *) malloc(sizeof(long) * nelement);
             if(arrayU == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2108,7 +2057,7 @@ double arith_image_percentile(
             arrayL = (long *) malloc(sizeof(long) * nelement);
             if(arrayL == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2124,7 +2073,7 @@ double arith_image_percentile(
             arrayL = (long *) malloc(sizeof(long) * nelement);
             if(arrayL == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2140,7 +2089,7 @@ double arith_image_percentile(
             arrayL = (long *) malloc(sizeof(long) * nelement);
             if(arrayL == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2156,7 +2105,7 @@ double arith_image_percentile(
             arrayL = (long *) malloc(sizeof(long) * nelement);
             if(arrayL == NULL)
             {
-                printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+                PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
@@ -2169,7 +2118,7 @@ double arith_image_percentile(
             break;
 
         default:
-            printERROR(__FILE__, __func__, __LINE__, "Image type not supported");
+            PRINT_ERROR("Image type not supported");
             atypeOK = 0;
             break;
     }
@@ -2213,7 +2162,7 @@ long arith_image_dx(
     naxis = data.image[ID].md[0].naxis;
     if(naxis != 2)
     {
-        printERROR(__FILE__, __func__, __LINE__, "Function only supports 2-D images\n");
+        PRINT_ERROR("Function only supports 2-D images\n");
         exit(0);
     }
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
@@ -2259,7 +2208,7 @@ long arith_image_dy(
     naxis = data.image[ID].md[0].naxis;
     if(naxis != 2)
     {
-        printERROR(__FILE__, __func__, __LINE__, "Function only supports 2-D images\n");
+        PRINT_ERROR("Function only supports 2-D images\n");
         exit(0);
     }
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
@@ -2336,7 +2285,7 @@ errno_t arith_image_function_im_im__d_d(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -2520,7 +2469,7 @@ errno_t arith_image_function_imd_im__dd_d(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+       PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -2706,7 +2655,7 @@ errno_t arith_image_function_imdd_im__ddd_d(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -2902,7 +2851,7 @@ errno_t arith_image_function_1_1_byID(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -3081,7 +3030,7 @@ errno_t arith_image_function_1_1(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -4044,7 +3993,7 @@ errno_t arith_image_function_2_1(
     naxes2 = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -4112,15 +4061,9 @@ errno_t arith_image_function_2_1(
     if(op3D2Dto3D == 0)
         if(nelement1 != nelement2)
         {
-            n = snprintf(errmsg, SBUFFERSIZE,
+            PRINT_ERROR(
                          "images %s and %s have different number of elements ( %ld %ld )\n", ID_name1,
                          ID_name2, nelement1, nelement2);
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
-            printERROR(__FILE__, __func__, __LINE__, errmsg);
             exit(0);
         }
 
@@ -6728,14 +6671,8 @@ errno_t arith_image_function_2_1_inplace_byID(
     nelement = nelement1;
     if(nelement1 != nelement2)
     {
-        n = snprintf(errmsg_arith, SBUFFERSIZE,
+        PRINT_ERROR(
                      "images %ld and %ld have different number of elements\n", ID1, ID2);
-        if(n >= SBUFFERSIZE)
-        {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Attempted to write string buffer with too many characters");
-        }
-        printERROR(__FILE__, __func__, __LINE__, errmsg_arith);
         exit(0);
     }
 
@@ -7375,7 +7312,7 @@ errno_t arith_image_function_CF_CF__CF(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -7435,7 +7372,7 @@ errno_t arith_image_function_CD_CD__CD(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -7594,7 +7531,7 @@ errno_t arith_image_Cadd(
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPadd_CD_CD);
         return RETURN_SUCCESS;
     }
-    printERROR(__FILE__, __func__, __LINE__, "data types do not match");
+    PRINT_ERROR( "data types do not match");
 
     return RETURN_FAILURE;
 }
@@ -7629,7 +7566,7 @@ errno_t arith_image_Csub(
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPsub_CD_CD);
         return RETURN_SUCCESS;
     }
-    printERROR(__FILE__, __func__, __LINE__, "data types do not match");
+    PRINT_ERROR("data types do not match");
 
     return RETURN_FAILURE;
 }
@@ -7664,7 +7601,7 @@ errno_t arith_image_Cmult(
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPmult_CD_CD);
         return RETURN_SUCCESS;
     }
-    printERROR(__FILE__, __func__, __LINE__, "data types do not match");
+    PRINT_ERROR("data types do not match");
 
     return RETURN_FAILURE;
 }
@@ -7699,7 +7636,7 @@ int arith_image_Cdiv(
         arith_image_function_CD_CD__CD(ID1_name, ID2_name, ID_out, &CPdiv_CD_CD);
         return RETURN_SUCCESS;
     }
-    printERROR(__FILE__, __func__, __LINE__, "data types do not match");
+    PRINT_ERROR("data types do not match");
 
     return RETURN_FAILURE;
 }
@@ -7736,7 +7673,7 @@ int arith_image_function_1f_1(const char *ID_name, double f1,
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -8250,7 +8187,7 @@ int arith_image_function_1ff_1(const char *ID_name, double f1, double f2,
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__, "malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -8950,11 +8887,15 @@ int isanumber(const char *word)
 */
 
 
-long arith_make_slopexy(const char *ID_name, long l1, long l2, double sx,
-                        double sy)
+imageID arith_make_slopexy(
+    const char *ID_name,
+    long l1,
+    long l2,
+    double sx,
+    double sy
+)
 {
-    long ID;
-    long ii, jj;
+    imageID ID;
     uint32_t naxes[2];
     double coeff;
 
@@ -8965,13 +8906,13 @@ long arith_make_slopexy(const char *ID_name, long l1, long l2, double sx,
 
     coeff = sx * (naxes[0] / 2) + sy * (naxes[1] / 2);
 
-    for(jj = 0; jj < naxes[1]; jj++)
-        for(ii = 0; ii < naxes[0]; ii++)
+    for(uint32_t jj = 0; jj < naxes[1]; jj++)
+        for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
             data.image[ID].array.F[jj * naxes[0] + ii] = sx * ii + sy * jj - coeff;
         }
 
-    return(ID);
+    return ID;
 }
 
 
@@ -9257,46 +9198,23 @@ int execute_arith(const char *cmd1)
         {
             if(word_type[i] == 9)
             {
-                n = snprintf(errmsg_arith, SBUFFERSIZE, "line has multiple \"=\"");
-                if(n >= SBUFFERSIZE)
-                {
-                    printERROR(__FILE__, __func__, __LINE__,
-                               "Attempted to write string buffer with too many characters");
-                }
+                PRINT_WARNING("line has multiple \"=\"");
                 printWARNING(__FILE__, __func__, __LINE__, errmsg_arith);
                 OKea = 0;
             }
             if(word_type[i] == 4)
             {
-                n = snprintf(errmsg_arith, SBUFFERSIZE, "operand on left side of \"=\"");
-                if(n >= SBUFFERSIZE)
-                {
-                    printERROR(__FILE__, __func__, __LINE__,
-                               "Attempted to write string buffer with too many characters");
-                }
-                printWARNING(__FILE__, __func__, __LINE__, errmsg_arith);
+                PRINT_WARNING("operand on left side of \"=\"");
                 OKea = 0;
             }
             if(word_type[i] == 5)
             {
-                n = snprintf(errmsg_arith, SBUFFERSIZE, "\"(\" on left side of \"=\"");
-                if(n >= SBUFFERSIZE)
-                {
-                    printERROR(__FILE__, __func__, __LINE__,
-                               "Attempted to write string buffer with too many characters");
-                }
-                printWARNING(__FILE__, __func__, __LINE__, errmsg_arith);
+                PRINT_WARNING("\"(\" on left side of \"=\"");
                 OKea = 0;
             }
             if(word_type[i] == 6)
             {
-                n = snprintf(errmsg_arith, SBUFFERSIZE, "\")\" on left side of \"=\"");
-                if(n >= SBUFFERSIZE)
-                {
-                    printERROR(__FILE__, __func__, __LINE__,
-                               "Attempted to write string buffer with too many characters");
-                }
-                printWARNING(__FILE__, __func__, __LINE__, errmsg_arith);
+                PRINT_WARNING( "\")\" on left side of \"=\"");
                 OKea = 0;
             }
         }
@@ -9307,14 +9225,7 @@ int execute_arith(const char *cmd1)
         if((passedequ == 0)
                 && (word_type[i] == 1)) /* non-existing variable or image as input */
         {
-            n  = snprintf(errmsg_arith, SBUFFERSIZE,
-                          "%s is a non-existing variable or image", word[i]);
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
-            printWARNING(__FILE__, __func__, __LINE__, errmsg_arith);
+            PRINT_WARNING("%s is a non-existing variable or image", word[i]);
             OKea = 0;
         }
     }
@@ -9323,14 +9234,13 @@ int execute_arith(const char *cmd1)
     {
         if((word_type[i] == 4) && (word_type[i + 1] == 4))
         {
-            printWARNING(__FILE__, __func__, __LINE__, "consecutive operands");
+            PRINT_WARNING("consecutive operands");
             OKea = 0;
         }
         if((word_type[i + 1] == 5) && (!((word_type[i] == 5) || (word_type[i] == 8)
                                          || (word_type[i] == 11) || (word_type[i] == 9) || (word_type[i] == 4))))
         {
-            printWARNING(__FILE__, __func__, __LINE__,
-                         "\"(\" should be preceeded by \"=\", \"(\", operand or function");
+            PRINT_WARNING("\"(\" should be preceeded by \"=\", \"(\", operand or function");
             OKea = 0;
         }
     }
@@ -9348,13 +9258,13 @@ int execute_arith(const char *cmd1)
         }
         if(cntP < 0)
         {
-            printWARNING(__FILE__, __func__, __LINE__, "parentheses error");
+            PRINT_WARNING("parentheses error");
             OKea = 0;
         }
     }
     if(cntP != 0)
     {
-        printWARNING(__FILE__, __func__, __LINE__, "parentheses error");
+        PRINT_WARNING("parentheses error");
         OKea = 0;
     }
 
@@ -9375,21 +9285,10 @@ int execute_arith(const char *cmd1)
         {
             if(word_type[i] == 3)
             {
-                n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                if(n >= SBUFFERSIZE)
-                {
-                    printERROR(__FILE__, __func__, __LINE__,
-                               "Attempted to write string buffer with too many characters");
-                }
-                if(n >= SBUFFERSIZE)
-                {
-                    printERROR(__FILE__, __func__, __LINE__,
-                               "Attempted to write string buffer with too many characters");
-                }
-                /*	  if(sizeof(double)==sizeof(float))
-                else*/
-                create_variable_ID(name, 1.0 * strtod(word[i], NULL));
-                strcpy(word[i], name);
+                CREATE_IMAGENAME(imname, "_tmp%d_%d", tmp_name_index, (int) getpid());
+
+                create_variable_ID(imname, 1.0 * strtod(word[i], NULL));
+                strcpy(word[i], imname);
                 word_type[i] = 2;
                 tmp_name_index++;
             }
@@ -9533,51 +9432,31 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f +
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
-                        create_variable_ID(name, tmp_prec);
+                        CREATE_IMAGENAME(imname, "_tmp%d_%d", tmp_name_index, (int) getpid());                        
+                        create_variable_ID(imname, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(varname, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstadd(word[i + 1],
-                                           (double) data.variable[variable_ID(word[i - 1])].value.f, name);
+                                           (double) data.variable[variable_ID(word[i - 1])].value.f, varname);
                         tmp_name_index++;
                         type = 10;
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(varname, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstadd(word[i - 1],
-                                           (double) data.variable[variable_ID(word[i + 1])].value.f, name);
+                                           (double) data.variable[variable_ID(word[i + 1])].value.f, varname);
                         tmp_name_index++;
                         type = 10;
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
-                        arith_image_add(word[i - 1], word[i + 1], name);
+                        CREATE_IMAGENAME(imname, "_tmp%d_%d", tmp_name_index, (int) getpid());
+                        arith_image_add(word[i - 1], word[i + 1], imname);
                         tmp_name_index++;
                         type = 10;
                     }
@@ -9589,30 +9468,15 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f -
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
-                        create_variable_ID(name, tmp_prec);
+                        CREATE_IMAGENAME(varname, "_tmp%d_%d", tmp_name_index, (int) getpid());
+                        create_variable_ID(varname, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
-                        n = snprintf(name1, SBUFFERSIZE, "_tmp1%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
+                        CREATE_IMAGENAME(name1, "_tmp1%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstsub(word[i + 1],
                                            (double) data.variable[variable_ID(word[i - 1])].value.f, name1);
                         arith_image_cstmult(name1, (double) -1.0, name);
@@ -9622,12 +9486,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstsub(word[i - 1],
                                            (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9635,12 +9494,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sub(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9653,24 +9507,14 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f *
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmult(word[i + 1],
                                             (double) data.variable[variable_ID(word[i - 1])].value.f, name);
                         tmp_name_index++;
@@ -9678,12 +9522,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmult(word[i - 1],
                                             (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9691,12 +9530,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_mult(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9709,12 +9543,7 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f /
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
@@ -9722,12 +9551,7 @@ int execute_arith(const char *cmd1)
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
                         //    printf("CASE 1\n");
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstdiv1(word[i + 1],
                                             (double) data.variable[variable_ID(word[i - 1])].value.f, name);
                         tmp_name_index++;
@@ -9735,12 +9559,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstdiv(word[i - 1],
                                            (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9748,12 +9567,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_div(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9775,30 +9589,15 @@ int execute_arith(const char *cmd1)
                             tmp_prec = pow(data.variable[variable_ID(word[i - 1])].value.f,
                                            data.variable[variable_ID(word[i + 1])].value.f);
                         }
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
-                        n = snprintf(name1, SBUFFERSIZE, "_tmp1%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
+                        CREATE_IMAGENAME(name1, "_tmp1%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstadd(word[i + 1],
                                            (double) data.variable[variable_ID(word[i - 1])].value.f, name1);
                         arith_image_pow(name1, word[i + 1], name);
@@ -9808,12 +9607,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstpow(word[i - 1],
                                            (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9821,12 +9615,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_pow(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9850,24 +9639,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = acos(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_acos(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9879,24 +9658,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = asin(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_asin(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9908,24 +9677,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = atan(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_atan(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9937,24 +9696,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = (double) ceil(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_ceil(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9966,24 +9715,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = cos(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cos(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9995,24 +9734,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = cosh(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cosh(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10024,24 +9753,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = exp(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_exp(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10053,24 +9772,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = fabs(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_fabs(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10082,24 +9791,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = floor(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_floor(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10110,12 +9809,7 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_median(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -10127,12 +9821,7 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_total(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -10161,12 +9850,7 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_min(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -10178,12 +9862,7 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_max(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -10196,24 +9875,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = log(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_ln(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10225,24 +9894,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = log10(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_log(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10254,24 +9913,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = sqrt(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sqrt(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10283,24 +9932,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = sin(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sin(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10312,24 +9951,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = sinh(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sinh(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10342,24 +9971,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = tan(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_tan(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10371,24 +9990,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = tanh(data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_tanh(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10400,24 +10009,14 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = Ppositive((double) data.variable[variable_ID(word[i + 1])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_positive(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10428,18 +10027,12 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 2)
                     {
-                        printERROR(__FILE__, __func__, __LINE__,
-                                   "Function imdx only applicable on images");
+                        PRINT_ERROR("Function imdx only applicable on images");
                         exit(0);
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_dx(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10450,18 +10043,12 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 2)
                     {
-                        printERROR(__FILE__, __func__, __LINE__,
-                                   "Function imdy only applicable on images");
+                        PRINT_ERROR("Function imdy only applicable on images");
                         exit(0);
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_dy(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10489,12 +10076,7 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = fmod(data.variable[variable_ID(word[i + 2])].value.f,
                                         data.variable[variable_ID(word[i + 4])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
@@ -10505,12 +10087,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstfmod(word[i + 2],
                                             (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10518,12 +10095,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_fmod(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10544,24 +10116,14 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = data.variable[variable_ID(word[i + 4])].value.f;
                         }
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstminv(word[i + 4],
                                             (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10569,12 +10131,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstminv(word[i + 2],
                                             (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10582,12 +10139,7 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_minv(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10608,24 +10160,14 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = data.variable[variable_ID(word[i + 4])].value.f;
                         }
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     else if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmaxv(word[i + 4],
                                             (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10633,12 +10175,7 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmaxv(word[i + 2],
                                             (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10646,12 +10183,7 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_maxv(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10671,24 +10203,14 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = 1.0;
                         }
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     else if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestmt(word[i + 4],
                                               (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10696,12 +10218,7 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestlt(word[i + 2],
                                               (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10709,19 +10226,14 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_testlt(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
                     }
                     else
                     {
-                        printERROR(__FILE__, __func__, __LINE__, "Wrong input to function testlt");
+                        PRINT_ERROR("Wrong input to function testlt");
                     }
                 }
 
@@ -10738,24 +10250,14 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = 0.0;
                         }
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     else if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestlt(word[i + 4],
                                               (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10763,12 +10265,7 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestmt(word[i + 2],
                                               (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10776,19 +10273,14 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_testmt(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
                     }
                     else
                     {
-                        printERROR(__FILE__, __func__, __LINE__, "Wrong input to function testlt");
+                        PRINT_ERROR("Wrong input to function testlt");
                     }
                 }
 
@@ -10798,25 +10290,14 @@ int execute_arith(const char *cmd1)
                     //	      printf("%d %d\n",word_type[i+2],word_type[i+4]);
                     if((word_type[i + 2] != 10) || (word_type[i + 4] != 2))
                     {
-                        printERROR(__FILE__, __func__, __LINE__, "Wrong input to function perc\n");
+                        PRINT_ERROR("Wrong input to function perc\n");
                     }
                     else
                     {
                         //		  printf("Running percentile args = %s %f\n",word[i+2],data.variable[variable_ID(word[i+4])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
                         tmp_prec = arith_image_percentile(word[i + 2],
                                                           (double) data.variable[variable_ID(word[i + 4])].value.f);
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
@@ -10828,12 +10309,7 @@ int execute_arith(const char *cmd1)
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 2)
                             && (word_type[i + 6] == 2))
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
+                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_name_index++;
                         arith_image_trunc(word[i + 2],
                                           (double) data.variable[variable_ID(word[i + 4])].value.f,
@@ -10914,12 +10390,7 @@ int execute_arith(const char *cmd1)
 
         for(i = 0; i < tmp_name_index; i++)
         {
-            n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", i, (int) getpid());
-            if(n >= SBUFFERSIZE)
-            {
-                printERROR(__FILE__, __func__, __LINE__,
-                           "Attempted to write string buffer with too many characters");
-            }
+            CREATE_IMAGENAME(name, "_tmp%d_%d", i, (int) getpid());
             if(variable_ID(name) != -1)
             {
                 delete_variable_ID(name);
