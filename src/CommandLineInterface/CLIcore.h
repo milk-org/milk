@@ -126,6 +126,8 @@ void __attribute__ ((constructor)) libinit_##modname() \
 if ( INITSTATUS_##modname == 0 )      /* only run once */ \
 { \
 strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT); \
+strcpy(data.moduledatestring, __DATE__); \
+strcpy(data.moduletimestring, __TIME__); \
 strcpy(data.modulename, (#modname)); \
 init_module_CLI(); \
 RegisterModule(__FILE__, MODULE_APPLICATION, MODULE_DESCRIPTION); \
@@ -141,8 +143,6 @@ if ( INITSTATUS_##modname == 1 ) \
 { \
 } \
 }
-
-
 
 
 
@@ -508,10 +508,12 @@ typedef struct
 
 typedef struct
 {
-    char name[50];       // module name
-    char shortname[80];  // short name. If non-empty, access functions as <shortname>.<functionname>
-    char package[50];    // package to which module belongs
-    char info[1000];     // short description
+    char name[50];        // module name
+    char shortname[80];   // short name. If non-empty, access functions as <shortname>.<functionname>
+    char package[50];     // package to which module belongs
+    char info[1000];      // short description
+    char datestring[20]; // Compilation date
+    char timestring[20]; // Compilation time
 } MODULE;
 
 
@@ -669,6 +671,8 @@ typedef struct
     char           modulename[100];
     char           moduleshortname[80];
     char           moduleshortname_default[80];
+    char           moduledatestring[20];
+    char           moduletimestring[20];
 
     // FPS instegration
     // these entries are set when CLI process enters FPS function
