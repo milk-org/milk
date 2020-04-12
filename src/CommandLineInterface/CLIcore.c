@@ -1256,7 +1256,7 @@ errno_t RegisterModule(
         }
     }
 
-
+	data.moduleindex = data.NBmodule; // current module index
 
     strcpy(data.module[data.NBmodule].package,      PackageName);
     strcpy(data.module[data.NBmodule].info,         InfoString);
@@ -1313,15 +1313,21 @@ uint_fast16_t RegisterCLIcommand(
 )
 {
     //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
+	long moduleindex;
 
-    if(strlen(data.module[data.NBmodule-1].shortname) == 0)
+	
+	data.cmd[data.NBcmd].moduleindex = data.moduleindex;
+	
+	
+	
+   if(strlen(data.module[data.moduleindex].shortname) == 0)
     {
         strcpy(data.cmd[data.NBcmd].key, CLIkey);
     }
     else
     {
         // otherwise, construct call key as <shortname>.<CLIkey>
-        sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.NBmodule-1].shortname, CLIkey);
+        sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIkey);
     }
 
 
@@ -3130,7 +3136,7 @@ static errno_t help_command(
         {
             printf("\n");
             printf("key        :    %s\n", data.cmd[i].key);
-            printf("module     :    %s\n", data.cmd[i].module);
+            printf("module     :    %ld %s [ \"%s\" ]\n", data.cmd[i].moduleindex, data.cmd[i].module, data.module[data.cmd[i].moduleindex].shortname);
             printf("module src :    %s\n", data.cmd[i].modulesrc);
             printf("info       :    %s\n", data.cmd[i].info);
             printf("syntax     :    %s\n", data.cmd[i].syntax);
