@@ -129,8 +129,8 @@ strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT); \
 strcpy(data.moduledatestring, __DATE__); \
 strcpy(data.moduletimestring, __TIME__); \
 strcpy(data.modulename, (#modname)); \
-init_module_CLI(); \
 RegisterModule(__FILE__, MODULE_APPLICATION, MODULE_DESCRIPTION); \
+init_module_CLI(); \
 INITSTATUS_##modname = 1; \
 strcpy(data.modulename, "");              /* reset after use */ \
 strcpy(data.moduleshortname_default, ""); /* reset after use */ \
@@ -496,6 +496,7 @@ typedef struct
 {
     char     key[100];           // command keyword
     char     module[200];        // module name
+    long     moduleindex;        // index of module to which command belongs
     char     modulesrc[200];     // module source filename
     errno_t (* fp)();            // command function pointer
     char     info[1000];         // short description/help
@@ -668,6 +669,7 @@ typedef struct
     long           NBmodule;
     long           NB_MAX_MODULE;
     MODULE         module[100];
+    long           moduleindex;
     char           modulename[100];
     char           moduleshortname[80];
     char           moduleshortname_default[80];
