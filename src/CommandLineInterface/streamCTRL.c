@@ -1043,9 +1043,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         case 'F': // set stream name filter string
             endwin();
-            if(system("clear") != 0) { // clear screen
-                printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
-            }
+            EXECUTE_SYSTEM_COMMAND("clear");
             printf("Enter string: ");
             fflush(stdout);
             stringindex = 0;

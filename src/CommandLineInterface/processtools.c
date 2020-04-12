@@ -341,11 +341,11 @@ errno_t processinfo_loopstart(
         schedpar.sched_priority = processinfo->RT_priority;
 #ifndef __MACH__
     if( seteuid(data.euid) != 0 ) { //This goes up to maximum privileges
-		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+		PRINT_ERROR("seteuid error");
 	}        
     sched_setscheduler(0, SCHED_FIFO, &schedpar); //other option is SCHED_RR, might be faster
     if( seteuid(data.ruid) != 0 ) { //Go back to normal privileges
-		printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+		PRINT_ERROR("seteuid error");
 	}
 #endif
     }
@@ -1875,7 +1875,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
                     &stat_exit_code
                 );
         if(Nfields != 52) {
-            printERROR(__FILE__,__func__,__LINE__, "fscanf returns value != 1");
+            PRINT_ERROR("fscanf returns value != 1");
             pinfodisp->processorarray[spindex] = stat_processor;
             pinfodisp->rt_priority = stat_rt_priority; 
         }

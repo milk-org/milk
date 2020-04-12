@@ -4,11 +4,6 @@
  *
  * Command line interface (CLI) definitions and function prototypes
  *
- * @author  O. Guyon
- * @date    9 Jul 2017
- *
- * @bug No known bugs.
- *
  */
 
 #ifndef _CACAO_DEPENDENCY_H
@@ -57,7 +52,6 @@ int print_header(const char *str, char c);
 void quick_sort2l(double *array, long *array1, long count);
 void quick_sort2l_double(double *array, long *array1, long count);
 void quick_sort_long(long *array, long count);
-int printERROR(const char *file, const char *func, int line, char *errmessage);
 
 #ifdef __cplusplus
 }
