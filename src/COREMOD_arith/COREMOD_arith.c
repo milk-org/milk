@@ -3973,15 +3973,13 @@ errno_t arith_image_function_2_1(
 
     if(ID1 == -1)
     {
-        sprintf(errmsg, "Image %s does not exist: cannot proceed\n", ID_name1);
-        printRED(errmsg);
+        PRINT_WARNING("Image %s does not exist: cannot proceed\n", ID_name1);
         return 1;
     }
 
     if(ID2 == -1)
     {
-        sprintf(errmsg, "Image %s does not exist: cannot proceed\n", ID_name2);
-        printRED(errmsg);
+        PRINT_WARNING("Image %s does not exist: cannot proceed\n", ID_name2);
         return 1;
     }
 
@@ -8957,8 +8955,8 @@ int execute_arith(const char *cmd1)
     int highest_priority_index;
     int passedequ;
     int tmp_name_index;
-    char name[SBUFFERSIZE];
-    char name1[SBUFFERSIZE];
+//    char name[STRINGMAXLEN_IMGNAME];
+//    char name1[SBUFFERSIZE];
     double tmp_prec;
     int nb_tbp_word;
     int type = 0;
@@ -9199,7 +9197,6 @@ int execute_arith(const char *cmd1)
             if(word_type[i] == 9)
             {
                 PRINT_WARNING("line has multiple \"=\"");
-                printWARNING(__FILE__, __func__, __LINE__, errmsg_arith);
                 OKea = 0;
             }
             if(word_type[i] == 4)
@@ -9285,10 +9282,10 @@ int execute_arith(const char *cmd1)
         {
             if(word_type[i] == 3)
             {
-                CREATE_IMAGENAME(imname, "_tmp%d_%d", tmp_name_index, (int) getpid());
+                CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
 
-                create_variable_ID(imname, 1.0 * strtod(word[i], NULL));
-                strcpy(word[i], imname);
+                create_variable_ID(name, 1.0 * strtod(word[i], NULL));
+                strcpy(word[i], name);
                 word_type[i] = 2;
                 tmp_name_index++;
             }
@@ -9426,37 +9423,36 @@ int execute_arith(const char *cmd1)
             */
             if(word_type[i] == 4)
             {
+				// name of image/variable where output is written
+				CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
+				
                 if(strcmp(word[i], "+") == 0)
                 {
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 2))
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f +
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        CREATE_IMAGENAME(imname, "_tmp%d_%d", tmp_name_index, (int) getpid());                        
-                        create_variable_ID(imname, tmp_prec);
+                        create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(varname, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstadd(word[i + 1],
-                                           (double) data.variable[variable_ID(word[i - 1])].value.f, varname);
+                                           (double) data.variable[variable_ID(word[i - 1])].value.f, name);
                         tmp_name_index++;
                         type = 10;
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        CREATE_IMAGENAME(varname, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstadd(word[i - 1],
-                                           (double) data.variable[variable_ID(word[i + 1])].value.f, varname);
+                                           (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
                         type = 10;
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(imname, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        arith_image_add(word[i - 1], word[i + 1], imname);
+                        arith_image_add(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
                     }
@@ -9468,14 +9464,12 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f -
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        CREATE_IMAGENAME(varname, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        create_variable_ID(varname, tmp_prec);
+                        create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         CREATE_IMAGENAME(name1, "_tmp1%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstsub(word[i + 1],
                                            (double) data.variable[variable_ID(word[i - 1])].value.f, name1);
@@ -9486,7 +9480,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstsub(word[i - 1],
                                            (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9494,7 +9487,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sub(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9507,14 +9499,12 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f *
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmult(word[i + 1],
                                             (double) data.variable[variable_ID(word[i - 1])].value.f, name);
                         tmp_name_index++;
@@ -9522,7 +9512,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmult(word[i - 1],
                                             (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9530,7 +9519,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_mult(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9543,7 +9531,6 @@ int execute_arith(const char *cmd1)
                     {
                         tmp_prec = data.variable[variable_ID(word[i - 1])].value.f /
                                    data.variable[variable_ID(word[i + 1])].value.f;
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
@@ -9551,7 +9538,6 @@ int execute_arith(const char *cmd1)
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
                         //    printf("CASE 1\n");
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstdiv1(word[i + 1],
                                             (double) data.variable[variable_ID(word[i - 1])].value.f, name);
                         tmp_name_index++;
@@ -9559,7 +9545,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstdiv(word[i - 1],
                                            (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9567,7 +9552,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_div(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9589,14 +9573,12 @@ int execute_arith(const char *cmd1)
                             tmp_prec = pow(data.variable[variable_ID(word[i - 1])].value.f,
                                            data.variable[variable_ID(word[i + 1])].value.f);
                         }
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i - 1] == 2) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         CREATE_IMAGENAME(name1, "_tmp1%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstadd(word[i + 1],
                                            (double) data.variable[variable_ID(word[i - 1])].value.f, name1);
@@ -9607,7 +9589,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstpow(word[i - 1],
                                            (double) data.variable[variable_ID(word[i + 1])].value.f, name);
                         tmp_name_index++;
@@ -9615,7 +9596,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i - 1] == 10) && (word_type[i + 1] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_pow(word[i - 1], word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9632,21 +9612,23 @@ int execute_arith(const char *cmd1)
                 nbword = nbword - 2;
             }
 
+
+
             if(word_type[i] == 8)
             {
+				CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
+				
                 if(strcmp(word[i], "acos") == 0)
                 {
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = acos(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_acos(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9658,14 +9640,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = asin(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_asin(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9677,14 +9657,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = atan(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_atan(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9696,14 +9674,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = (double) ceil(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_ceil(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9715,14 +9691,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = cos(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cos(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9734,14 +9708,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = cosh(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cosh(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9753,14 +9725,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = exp(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_exp(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9772,14 +9742,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = fabs(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_fabs(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9791,14 +9759,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = floor(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_floor(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9809,7 +9775,6 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_median(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -9821,7 +9786,6 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_total(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -9833,12 +9797,6 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        n = snprintf(name, SBUFFERSIZE, "_tmp%d_%d", tmp_name_index, (int) getpid());
-                        if(n >= SBUFFERSIZE)
-                        {
-                            printERROR(__FILE__, __func__, __LINE__,
-                                       "Attempted to write string buffer with too many characters");
-                        }
                         tmp_prec = arith_image_mean(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -9850,7 +9808,6 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_min(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -9862,7 +9819,6 @@ int execute_arith(const char *cmd1)
                 {
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_prec = arith_image_max(word[i + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
@@ -9875,14 +9831,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = log(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_ln(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9894,14 +9848,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = log10(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_log(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9913,14 +9865,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = sqrt(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sqrt(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9932,14 +9882,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = sin(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sin(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9951,14 +9899,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = sinh(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_sinh(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9971,14 +9917,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = tan(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_tan(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -9990,14 +9934,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = tanh(data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_tanh(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10009,14 +9951,12 @@ int execute_arith(const char *cmd1)
                     if(word_type[i + 1] == 2)
                     {
                         tmp_prec = Ppositive((double) data.variable[variable_ID(word[i + 1])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_positive(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10032,7 +9972,6 @@ int execute_arith(const char *cmd1)
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_dx(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10048,7 +9987,6 @@ int execute_arith(const char *cmd1)
                     }
                     if(word_type[i + 1] == 10)
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_dy(word[i + 1], name);
                         tmp_name_index++;
                         type = 10;
@@ -10066,17 +10004,20 @@ int execute_arith(const char *cmd1)
                 nbword = nbword - 1;
             }
 
+
+
+
             if(word_type[i] == 11)
             {
                 nbvarinput = isfunction_sev_var(word[i]);
+                CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
 
                 if(strcmp(word[i], "fmod") == 0)
                 {
                     if((word_type[i + 2] == 2) && (word_type[i + 4] == 2))
                     {
                         tmp_prec = fmod(data.variable[variable_ID(word[i + 2])].value.f,
-                                        data.variable[variable_ID(word[i + 4])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
+                                        data.variable[variable_ID(word[i + 4])].value.f);                        
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
@@ -10087,7 +10028,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstfmod(word[i + 2],
                                             (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10095,7 +10035,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_fmod(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10116,14 +10055,12 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = data.variable[variable_ID(word[i + 4])].value.f;
                         }
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstminv(word[i + 4],
                                             (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10131,7 +10068,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstminv(word[i + 2],
                                             (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10139,7 +10075,6 @@ int execute_arith(const char *cmd1)
                     }
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_minv(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10160,14 +10095,12 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = data.variable[variable_ID(word[i + 4])].value.f;
                         }
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     else if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmaxv(word[i + 4],
                                             (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10175,7 +10108,6 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_cstmaxv(word[i + 2],
                                             (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10183,7 +10115,6 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_maxv(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10203,14 +10134,12 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = 1.0;
                         }
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     else if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestmt(word[i + 4],
                                               (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10218,7 +10147,6 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestlt(word[i + 2],
                                               (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10226,7 +10154,6 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_testlt(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10250,14 +10177,12 @@ int execute_arith(const char *cmd1)
                         {
                             tmp_prec = 0.0;
                         }
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
                     }
                     else if((word_type[i + 2] == 2) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestlt(word[i + 4],
                                               (double) data.variable[variable_ID(word[i + 2])].value.f, name);
                         tmp_name_index++;
@@ -10265,7 +10190,6 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_csttestmt(word[i + 2],
                                               (double) data.variable[variable_ID(word[i + 4])].value.f, name);
                         tmp_name_index++;
@@ -10273,7 +10197,6 @@ int execute_arith(const char *cmd1)
                     }
                     else if((word_type[i + 2] == 10) && (word_type[i + 4] == 10))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         arith_image_testmt(word[i + 2], word[i + 4], name);
                         tmp_name_index++;
                         type = 10;
@@ -10297,7 +10220,6 @@ int execute_arith(const char *cmd1)
                         //		  printf("Running percentile args = %s %f\n",word[i+2],data.variable[variable_ID(word[i+4])].value.f);
                         tmp_prec = arith_image_percentile(word[i + 2],
                                                           (double) data.variable[variable_ID(word[i + 4])].value.f);
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = 2;
@@ -10309,7 +10231,6 @@ int execute_arith(const char *cmd1)
                     if((word_type[i + 2] == 10) && (word_type[i + 4] == 2)
                             && (word_type[i + 6] == 2))
                     {
-                        CREATE_IMAGENAME(name, "_tmp%d_%d", tmp_name_index, (int) getpid());
                         tmp_name_index++;
                         arith_image_trunc(word[i + 2],
                                           (double) data.variable[variable_ID(word[i + 4])].value.f,
@@ -10331,6 +10252,9 @@ int execute_arith(const char *cmd1)
                 }
                 nbword = nbword - nbvarinput * 2 - 1;
             }
+
+
+
 
             /*      printf("after : ");
               for (i=0;i<nbword;i++)
