@@ -1103,32 +1103,18 @@ errno_t save_db_fits(
     fitsfile *fptr;
     long nelements;
     imageID ID;
-    char file_name1[SBUFFERSIZE];
+    char file_name1[STRINGMAXLEN_FULLFILENAME];
     int n;
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);               
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);       
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+		WRITE_FULLFILENAME(file_name1, "!%s", file_name);       
     }
 
     ID = image_ID(ID_name);
@@ -1334,33 +1320,18 @@ errno_t save_fl_fits(
     imageID   ID;
     long      ii;
     long      i;
-    char      file_name1[SBUFFERSIZE];
+    char      file_name1[STRINGMAXLEN_FULLFILENAME];
     int       n;
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
-    {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+    {		
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);      
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+		WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -1570,7 +1541,7 @@ errno_t save_sh16_fits(
     long ii;
     long i;
     uint8_t datatype;
-    char file_name1[SBUFFERSIZE];
+    char file_name1[STRINGMAXLEN_FULLFILENAME];
     int n;
 
 
@@ -1579,27 +1550,12 @@ errno_t save_sh16_fits(
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR( "Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);        
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+		WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -1822,34 +1778,19 @@ errno_t save_ush16_fits(
     long ii;
     long i;
     uint8_t datatype;
-    char file_name1[SBUFFERSIZE];
+    char file_name1[STRINGMAXLEN_FULLFILENAME];
     int n;
 
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        n = snprintf(errormessage_iofits, SBUFFERSIZE,
-                     "automatic overwrite on file \"%s\"\n", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
-        printWARNING(__FILE__, __func__, __LINE__, errormessage_iofits);
-        //	printf("WARNING: automatic overwrite on file \"%s\"\n",file_name);
-        n = snprintf(file_name1, SBUFFERSIZE, "!%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+		PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-        n = snprintf(file_name1, SBUFFERSIZE, "%s", file_name);
-        if(n >= SBUFFERSIZE)
-        {
-            PRINT_ERROR("Attempted to write string buffer with too many characters");
-        }
+		WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
