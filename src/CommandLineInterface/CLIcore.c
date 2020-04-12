@@ -842,13 +842,14 @@ static errno_t help_module()
     {
         long i;
         printf("\n");
-        printf("%6s  %8s %36s  %10s  %s\n", "Index", "short", "Module name", "Package",
-               "Module description");
+        printf("%2s  %10s %18s  %10s  %20s %s\n", "#", "shortname", "Module name", "Package", "last compiled", 
+               "description");
         printf("-------------------------------------------------------------------------------------------------------\n");
         for(i = 0; i < data.NBmodule; i++)
         {
-            printf("%6ld %8s %36s  %10s  %s\n", i, data.module[i].shortname,
+            printf("%2ld %10s %18s  %10s  %11s %8s  %s\n", i, data.module[i].shortname,
                    data.module[i].name, data.module[i].package,
+                   data.module[i].datestring, data.module[i].timestring,
                    data.module[i].info);
         }
         printf("-------------------------------------------------------------------------------------------------------\n");
@@ -1008,7 +1009,7 @@ static errno_t CLI_execute_line()
         line[0] = ' ';
         if(system(line) != 0)
         {
-            printERROR(__FILE__, __func__, __LINE__, "system call error");
+            PRINT_ERROR("system call error");
             exit(4);
         }
         data.CMDexecuted = 1;
@@ -1060,7 +1061,7 @@ static errno_t CLI_execute_line()
 
                 if(system(command) != 0)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                    PRINT_ERROR("system() returns non-zero value");
                 }
             }
             else
@@ -1244,10 +1245,26 @@ errno_t RegisterModule(
     }
 
 
+	int stringlen = strlen(data.moduleshortname);
+    if(stringlen == 0)
+    {
+        // if no shortname provided, try to use default
+        if(strlen(data.moduleshortname_default) > 0)
+        {
+            // otherwise, construct call key as <shortname_default>.<CLIkey>
+            strcpy(data.moduleshortname, data.moduleshortname_default);
+        }
+    }
+
+
+
     strcpy(data.module[data.NBmodule].package,      PackageName);
     strcpy(data.module[data.NBmodule].info,         InfoString);
 
     strcpy(data.module[data.NBmodule].shortname,    data.moduleshortname);
+
+	strcpy(data.module[data.NBmodule].datestring,   data.moduledatestring);
+	strcpy(data.module[data.NBmodule].timestring,   data.moduletimestring);
 
     if(data.progStatus == 0)
     {
@@ -1297,25 +1314,14 @@ uint_fast16_t RegisterCLIcommand(
 {
     //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
 
-    if(strlen(data.moduleshortname) == 0)
-    {
-        // if no shortname provided, try to use deafult
-        if(strlen(data.moduleshortname_default) > 0)
-        {
-            // otherwise, construct call key as <shortname_default>.<CLIkey>
-            strcpy(data.moduleshortname, data.moduleshortname_default);
-        }
-    }
-
-
-    if(strlen(data.moduleshortname) == 0)
+    if(strlen(data.module[data.NBmodule-1].shortname) == 0)
     {
         strcpy(data.cmd[data.NBcmd].key, CLIkey);
     }
     else
     {
         // otherwise, construct call key as <shortname>.<CLIkey>
-        sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.moduleshortname, CLIkey);
+        sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.NBmodule-1].shortname, CLIkey);
     }
 
 
@@ -1402,7 +1408,7 @@ static errno_t runCLI_initialize(
             "echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
     if(system(command) != 0)
     {
-        printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+        PRINT_ERROR("system() returns non-zero value");
     }
 
     //	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
@@ -1439,7 +1445,7 @@ static errno_t runCLI_initialize(
     //This sets it to the privileges of the normal user
     if(seteuid(data.ruid) != 0)
     {
-        printERROR(__FILE__, __func__, __LINE__, "seteuid error");
+        PRINT_ERROR("seteuid error");
     }
 #endif
 
@@ -2194,8 +2200,7 @@ void runCLI_data_init()
     data.image           = (IMAGE *) calloc(data.NB_MAX_IMAGE, sizeof(IMAGE));
     if(data.image == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__,
-                   "Allocation of data.image has failed - exiting program");
+        PRINT_ERROR("Allocation of data.image has failed - exiting program");
         exit(1);
     }
     if(data.Debug > 0)
@@ -2224,8 +2229,7 @@ void runCLI_data_init()
     data.variable = (VARIABLE *) calloc(data.NB_MAX_VARIABLE, sizeof(VARIABLE));
     if(data.variable == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__,
-                   "Allocation of data.variable has failed - exiting program");
+        PRINT_ERROR("Allocation of data.variable has failed - exiting program");
         exit(1);
     }
 
@@ -2245,8 +2249,7 @@ void runCLI_data_init()
 
     if(data.variable == NULL)
     {
-        printERROR(__FILE__, __func__, __LINE__,
-                   "Reallocation of data.variable has failed - exiting program");
+        PRINT_ERROR("Reallocation of data.variable has failed - exiting program");
         exit(1);
     }
 #endif
@@ -2586,8 +2589,7 @@ static errno_t memory_re_alloc()
         data.image = ptrtmp;
         if(data.image == NULL)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Reallocation of data.image has failed - exiting program");
+            PRINT_ERROR("Reallocation of data.image has failed - exiting program");
             return -1;      //  exit(0);
         }
         if(data.Debug > 0)
@@ -2632,8 +2634,7 @@ static errno_t memory_re_alloc()
                                              sizeof(VARIABLE) * data.NB_MAX_VARIABLE);
         if(data.variable == NULL)
         {
-            printERROR(__FILE__, __func__, __LINE__,
-                       "Reallocation of data.variable has failed - exiting program");
+            PRINT_ERROR("Reallocation of data.variable has failed - exiting program");
             return -1;   // exit(0);
         }
 
@@ -2768,7 +2769,7 @@ static int command_line_process_options(int argc, char **argv)
                 sprintf(command, "runidle %ld > /dev/null &\n", (long) getpid());
                 if(system(command) != 0)
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "system() returns non-zero value");
+                    PRINT_ERROR("system() returns non-zero value");
                 }
                 break;
 
@@ -2807,14 +2808,14 @@ static int command_line_process_options(int argc, char **argv)
 
                 if(seteuid(data.euid) != 0) //This goes up to maximum privileges
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
+                    PRINT_ERROR("seteuid() returns non-zero value");
                 }
                 sched_setscheduler(0, SCHED_FIFO,
                                    &schedpar); //other option is SCHED_RR, might be faster
 
                 if(seteuid(data.ruid) != 0) //Go back to normal privileges
                 {
-                    printERROR(__FILE__, __func__, __LINE__, "seteuid() returns non-zero value");
+                    PRINT_ERROR("seteuid() returns non-zero value");
                 }
 #endif
                 break;
@@ -3003,7 +3004,7 @@ static errno_t load_module_shared(
     //    sprintf(libname, "%s/lib/lib%s.so", data.sourcedir, modulenameLC);
     {
         int slen = snprintf(libname, STRINGMAXLEN_LIBRARYNAME,
-                            "/usr/local/lib/lib%s.so", modulenameLC);
+                            "%s/lib/lib%s.so", getenv("MILK_INSTALLDIR"), modulenameLC);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
