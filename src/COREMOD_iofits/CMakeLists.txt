@@ -1,5 +1,5 @@
 # library name
-set(LIBNAME "milkmiofits")
+set(LIBNAME "milkiofits")
 
 
 set(SOURCEFILES
