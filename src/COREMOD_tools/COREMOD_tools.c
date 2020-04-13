@@ -431,6 +431,8 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
 
 
 
+
+
 double timespec_diff_double(struct timespec start, struct timespec end)
 {
     struct timespec temp;
@@ -1937,7 +1939,7 @@ imageID COREMOD_TOOLS_statusStat(
 
 
         clock_gettime(CLOCK_REALTIME, &t2);
-        tdiff = info_time_diff(t1, t2);
+        tdiff = timespec_diff(t1, t2);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
         if(tdiffv > tdiffv1)
