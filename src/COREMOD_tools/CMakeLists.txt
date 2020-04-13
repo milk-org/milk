@@ -1,9 +1,29 @@
-project(lib_COREMOD_tools_project)
+# library name
+set(LIBNAME "milktools")
+
+
+set(SOURCEFILES
+	COREMOD_tools.c)
+
+set(INCLUDEFILES
+	COREMOD_tools.h)
+
+
+# DEFAULT SETTINGS 
+# Do not change unless needed
+# =====================================================================
+
+project(lib_${LIBNAME}_project)
 
 include_directories ("${PROJECT_SOURCE_DIR}/src")
 include_directories ("${PROJECT_SOURCE_DIR}/..")
-add_library(COREMOD_tools SHARED COREMOD_tools.c)
 
-install(TARGETS COREMOD_tools DESTINATION lib)
-install(FILES COREMOD_tools.h DESTINATION include)
+
+# Library can be compiled from multiple source files
+# Convention: the main souce file is named <libname>.c
+# 
+add_library(${LIBNAME} SHARED ${SOURCEFILES})
+
+install(TARGETS ${LIBNAME} DESTINATION lib)
+install(FILES ${INCLUDEFILES} DESTINATION include)
 
