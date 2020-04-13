@@ -4,6 +4,30 @@
 
 void __attribute__((constructor)) libinit_COREMOD_tools();
 
+/** @brief Log function call to file */
+void CORE_logFunctionCall(
+    const int funclevel,
+    const int loglevel,
+    const int logfuncMODE,
+    const char *FileName,
+    const char *FunctionName,
+    const long line,
+    char *comments
+);
+
+
+
+struct timespec timespec_diff(
+    struct timespec start,
+    struct timespec end
+);
+
+double timespec_diff_double(
+    struct timespec start,
+    struct timespec end
+);
+
+
 
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
 
