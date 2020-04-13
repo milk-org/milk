@@ -8515,28 +8515,28 @@ errno_t functionparameter_CTRLscreen(
 
 
                         // measure age since submission
-                        tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
+                        tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
                         double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                         printw("%6.2f s ", tdiffv);
 
                         if(fpsctrltasklist[fpscmdindex].status &
                                 FPSTASK_STATUS_RUNNING)   // run time (ongoing)
                         {
-                            tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
+                            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
                             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             printw(" %6.2f s ", tdiffv);
                         }
                         else if(!(fpsctrltasklist[fpscmdindex].status &
                                   FPSTASK_STATUS_ACTIVE))      // run time (past)
                         {
-                            tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].activationtime,
+                            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].activationtime,
                                                     fpsctrltasklist[fpscmdindex].completiontime);
                             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             attron(COLOR_PAIR(3));
                             printw(" %6.2f s ", tdiffv);
                             attroff(COLOR_PAIR(3));
                             // age since completion
-                            tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].completiontime, tnow);
+                            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].completiontime, tnow);
                             double tdiffv = tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             //printw("<%6.2f s>      ", tdiffv);
 

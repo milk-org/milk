@@ -165,7 +165,6 @@ static double scantime_CPUpcnt;
 
 
 
-
 errno_t processinfo_procdirname(char *procdname)
 {
     int procdirOK = 0;
@@ -1415,7 +1414,7 @@ static long getTopOutput()
         pclose(fpout);
     }
     clock_gettime(CLOCK_REALTIME, &t2);
-	tdiff = info_time_diff(t1, t2);
+	tdiff = timespec_diff(t1, t2);
 	scantime_top += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 	return NBtop;
@@ -1490,7 +1489,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
     free(line);
     fclose(fp);
     clock_gettime(CLOCK_REALTIME, &t2);
-    tdiff = info_time_diff(t1, t2);
+    tdiff = timespec_diff(t1, t2);
     scantime_CPUload += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
 
@@ -1556,7 +1555,7 @@ static int GetCPUloads(PROCINFOPROC *pinfop) {
 
 
     clock_gettime(CLOCK_REALTIME, &t2);
-    tdiff = info_time_diff(t1, t2);
+    tdiff = timespec_diff(t1, t2);
     scantime_CPUpcnt += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
     return(cpu);
@@ -1607,7 +1606,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 		PRINT_ERROR("fscanf returns value != 1");
     fclose(fp);
 	clock_gettime(CLOCK_REALTIME, &t2);
-	tdiff = info_time_diff(t1, t2);
+	tdiff = timespec_diff(t1, t2);
 	scantime_cpuset += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
@@ -1663,7 +1662,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         pinfodisp->threads = pinfodisp->NBsubprocesses;
 	}
 	clock_gettime(CLOCK_REALTIME, &t2);
-	tdiff = info_time_diff(t1, t2);
+	tdiff = timespec_diff(t1, t2);
 	scantime_pstree += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
@@ -1717,7 +1716,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         len = 0;
         
         clock_gettime(CLOCK_REALTIME, &t2);
-        tdiff = info_time_diff(t1, t2);
+        tdiff = timespec_diff(t1, t2);
         scantime_status += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
 
@@ -1891,7 +1890,7 @@ static int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         pinfodisp->memload = 0.0;
         
         clock_gettime(CLOCK_REALTIME, &t2);
-        tdiff = info_time_diff(t1, t2);
+        tdiff = timespec_diff(t1, t2);
         scantime_stat += 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
     }
     #endif
@@ -2085,7 +2084,7 @@ void *processinfo_scan(
             tdiffv = 0.1;
             firstIter = 0;
         } else {
-            tdiff = info_time_diff(t0, t1);
+            tdiff = timespec_diff(t0, t1);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         }
         clock_gettime(CLOCK_REALTIME, &t0);
@@ -4472,7 +4471,7 @@ errno_t processinfo_CTRLscreen()
 
             clock_gettime(CLOCK_REALTIME, &t2loop);
 
-            tdiff = info_time_diff(t1loop, t2loop);
+            tdiff = timespec_diff(t1loop, t2loop);
             double tdiffvloop = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
 
             printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop, 1.0/tdiffvloop);

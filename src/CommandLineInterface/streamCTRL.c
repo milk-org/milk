@@ -359,7 +359,7 @@ void *streamCTRL_scan(
         }
         else
         {
-            tdiff = info_time_diff(t0, t1);
+            tdiff = timespec_diff(t0, t1);
             tdiffv = 1.0*tdiff.tv_sec + 1.0e-9*tdiff.tv_nsec;
         }
         clock_gettime(CLOCK_REALTIME, &t0);
