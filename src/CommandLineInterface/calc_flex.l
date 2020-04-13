@@ -9,7 +9,6 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_arith/COREMOD_arith.h"
-#include "info/info.h"
 extern DATA data;
 
 long i;
@@ -177,7 +176,7 @@ return TKFUNC_im_d;
 
 "perc(" {
 if(data.Debug>0){printf("Found function %s\n", yytext);} 
-yylval.fnctptr = img_percentile;
+yylval.fnctptr = arith_image_percentile;
 return TKFUNC_imd_d; 
 }
 

@@ -51,7 +51,6 @@ typedef int errno_t;
 
 #ifndef STANDALONE
 #include <CommandLineInterface/CLIcore.h>
-#include "info/info.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -215,6 +214,30 @@ typedef struct
 /*                                    FUNCTIONS SOURCE CODE                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
+
+static errno_t function_parameter__print_header(const char *str, char c)
+{
+    long n;
+    long i;
+
+    attron(A_BOLD);
+    n = strlen(str);
+    for(i = 0; i < (wcol - n) / 2; i++)
+    {
+        printw("%c", c);
+    }
+    printw("%s", str);
+    for(i = 0; i < (wcol - n) / 2 - 1; i++)
+    {
+        printw("%c", c);
+    }
+    printw("\n");
+    attroff(A_BOLD);
+
+    return RETURN_SUCCESS;
+}
+
 
 
 
@@ -6532,7 +6555,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(
     {
         PRINT_ERROR("snprintf error");
     }
-    print_header(monstring, '-');
+    function_parameter__print_header(monstring, '-');
     attroff(A_BOLD);
     printw("\n");
 
@@ -8515,28 +8538,28 @@ errno_t functionparameter_CTRLscreen(
 
 
                         // measure age since submission
-                        tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
+                        tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
                         double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                         printw("%6.2f s ", tdiffv);
 
                         if(fpsctrltasklist[fpscmdindex].status &
                                 FPSTASK_STATUS_RUNNING)   // run time (ongoing)
                         {
-                            tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
+                            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
                             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             printw(" %6.2f s ", tdiffv);
                         }
                         else if(!(fpsctrltasklist[fpscmdindex].status &
                                   FPSTASK_STATUS_ACTIVE))      // run time (past)
                         {
-                            tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].activationtime,
+                            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].activationtime,
                                                     fpsctrltasklist[fpscmdindex].completiontime);
                             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             attron(COLOR_PAIR(3));
                             printw(" %6.2f s ", tdiffv);
                             attroff(COLOR_PAIR(3));
                             // age since completion
-                            tdiff =  info_time_diff(fpsctrltasklist[fpscmdindex].completiontime, tnow);
+                            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].completiontime, tnow);
                             double tdiffv = tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             //printw("<%6.2f s>      ", tdiffv);
 
