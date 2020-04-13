@@ -46,6 +46,8 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+#include <ncurses.h>
+
 #ifdef __MACH__
 #include <mach/mach_time.h>long AOloopControl_ComputeOpenLoopModes(long loop)
 #define CLOCK_REALTIME 0
@@ -72,7 +74,6 @@ static int clock_gettime(int clk_id, struct mach_timespec *t)
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
-#include "info/info.h"
 
 
 
@@ -404,8 +405,6 @@ void CORE_logFunctionCall(
 
 
 }
-
-
 
 
 

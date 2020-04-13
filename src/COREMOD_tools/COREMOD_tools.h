@@ -16,7 +16,6 @@ void CORE_logFunctionCall(
 );
 
 
-
 struct timespec timespec_diff(
     struct timespec start,
     struct timespec end
