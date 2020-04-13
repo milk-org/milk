@@ -177,7 +177,7 @@ return TKFUNC_im_d;
 
 "perc(" {
 if(data.Debug>0){printf("Found function %s\n", yytext);} 
-yylval.fnctptr = img_percentile;
+yylval.fnctptr = arith_image_percentile;
 return TKFUNC_imd_d; 
 }
 
