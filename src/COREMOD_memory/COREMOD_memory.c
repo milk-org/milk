@@ -6220,7 +6220,7 @@ imageID COREMOD_MEMORY_streamPoke(
         usleep(twait1);
 
         clock_gettime(CLOCK_REALTIME, &t1);
-        tdiff = info_time_diff(t0, t1);
+        tdiff = timespec_diff(t0, t1);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
         if(tdiffv < 1.0e-6 * usperiod)
@@ -7352,7 +7352,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(
             usleep(twait1);
 
             clock_gettime(CLOCK_REALTIME, &t1);
-            tdiff = info_time_diff(t0, t1);
+            tdiff = timespec_diff(t0, t1);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
             if(tdiffv < 1.0e-6 * usperiod)
@@ -7940,7 +7940,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
 
             cntskip = 0;
-            tdiff = info_time_diff(t0array[*kkout], tnow);
+            tdiff = timespec_diff(t0array[*kkout], tnow);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
             DEBUG_TRACEPOINT(" ");
@@ -7954,7 +7954,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
                 {
                     *kkout = 0;
                 }
-                tdiff = info_time_diff(t0array[*kkout], tnow);
+                tdiff = timespec_diff(t0array[*kkout], tnow);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             }
 
@@ -8005,7 +8005,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
                     for(kkinscan = 0; kkinscan < *zsize; kkinscan++)
                     {
-                        tdiff = info_time_diff(t0array[kkinscan], tnow);
+                        tdiff = timespec_diff(t0array[kkinscan], tnow);
                         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
                         if((tdiffv > 0) && (fabs(tdiffv - 1.0e-6 * delayus) < *avedt))
