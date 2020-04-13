@@ -9,7 +9,6 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
-#include "info/info.h"
 
 
 int yylex();
