@@ -102,7 +102,6 @@ static int clock_gettime(int clk_id, struct mach_timespec *t)
 //#include "initmodules.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"

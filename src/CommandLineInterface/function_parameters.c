@@ -50,7 +50,6 @@ typedef int errno_t;
 
 
 #ifndef STANDALONE
-#include <00CORE/00CORE.h>
 #include <CommandLineInterface/CLIcore.h>
 #include "info/info.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
