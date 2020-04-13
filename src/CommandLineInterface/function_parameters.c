@@ -51,7 +51,6 @@ typedef int errno_t;
 
 #ifndef STANDALONE
 #include <CommandLineInterface/CLIcore.h>
-#include "info/info.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -215,6 +214,30 @@ typedef struct
 /*                                    FUNCTIONS SOURCE CODE                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
+
+
+static errno_t function_parameter__print_header(const char *str, char c)
+{
+    long n;
+    long i;
+
+    attron(A_BOLD);
+    n = strlen(str);
+    for(i = 0; i < (wcol - n) / 2; i++)
+    {
+        printw("%c", c);
+    }
+    printw("%s", str);
+    for(i = 0; i < (wcol - n) / 2 - 1; i++)
+    {
+        printw("%c", c);
+    }
+    printw("\n");
+    attroff(A_BOLD);
+
+    return RETURN_SUCCESS;
+}
+
 
 
 
@@ -6532,7 +6555,7 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(
     {
         PRINT_ERROR("snprintf error");
     }
-    print_header(monstring, '-');
+    function_parameter__print_header(monstring, '-');
     attroff(A_BOLD);
     printw("\n");
 

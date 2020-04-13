@@ -65,7 +65,6 @@ typedef int errno_t;
 #include "CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "info/info.h"
 #define SHAREDSHMDIR    data.shmdir  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 #endif
 
@@ -145,6 +144,31 @@ static int initncurses()
     init_pair(9, COLOR_BLACK, COLOR_RED);
 
     return 0;
+}
+
+
+
+
+static errno_t streamCTRL__print_header(const char *str, char c)
+{
+    long n;
+    long i;
+
+    attron(A_BOLD);
+    n = strlen(str);
+    for(i = 0; i < (wcol - n) / 2; i++)
+    {
+        printw("%c", c);
+    }
+    printw("%s", str);
+    for(i = 0; i < (wcol - n) / 2 - 1; i++)
+    {
+        printw("%c", c);
+    }
+    printw("\n");
+    attroff(A_BOLD);
+
+    return RETURN_SUCCESS;
 }
 
 
@@ -1081,7 +1105,7 @@ errno_t streamCTRL_CTRLscreen() {
 
         attron(A_BOLD);
         sprintf(monstring, "[PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP", getpid());
-        print_header(monstring, '-');
+        streamCTRL__print_header(monstring, '-');
         attroff(A_BOLD);
 
 

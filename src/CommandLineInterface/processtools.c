@@ -70,7 +70,6 @@ static int CTRLscreenExitLine = 0; // for debugging
 #else
 #include "CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
-#include "info/info.h"
 #define SHAREDPROCDIR data.shmdir
 #endif
 
@@ -1188,8 +1187,8 @@ int processinfo_exec_end(PROCESSINFO *processinfo) {
 
 
 
-/*
-static int print_header(const char *str, char c)
+
+static int processtools__print_header(const char *str, char c)
 {
     long n;
     long i;
@@ -1207,7 +1206,7 @@ static int print_header(const char *str, char c)
 
     return(0);
 }
-*/
+
 
 
 /**
@@ -2810,7 +2809,7 @@ errno_t processinfo_CTRLscreen()
         {
             attron(A_BOLD);
             sprintf(monstring, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
-            print_header(monstring, '-');
+            processtools__print_header(monstring, '-');
             attroff(A_BOLD);
         }
 
