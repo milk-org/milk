@@ -69,7 +69,6 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include "standalone_dependencies.h"
 #else
 #include "CLIcore.h"
-#include <00CORE/00CORE.h>
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "info/info.h"
 #define SHAREDPROCDIR data.shmdir

@@ -6,7 +6,6 @@
   //#include "calc.h"  /* Contains definition of `symrec'        */
 
 #include "CLIcore.h"
-#include "00CORE/00CORE.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
