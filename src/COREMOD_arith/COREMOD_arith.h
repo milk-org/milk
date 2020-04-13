@@ -82,6 +82,7 @@ imageID arith_image_merge3D(
 
 
 double arith_image_total(const char *ID_name);
+double arith_image_sumsquare(const char *ID_name);
 double arith_image_mean(const char *ID_name);
 double arith_image_min(const char *ID_name);
 double arith_image_max(const char *ID_name);
