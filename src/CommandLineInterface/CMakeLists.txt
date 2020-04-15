@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 
+
+set(SRCNAME "CommandLineInterface")
+
+
 option(python_build "Compile Python Wrappers" OFF)
 option(use_hunter "Use hunter package manager" OFF)
 
@@ -130,4 +134,4 @@ install(FILES CLIcore.h
               streamCTRL.h  
               function_parameters.h 
               standalone_dependencies.h 
-        DESTINATION include)
+        DESTINATION include/${SRCNAME})
