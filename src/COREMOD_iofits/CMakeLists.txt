@@ -1,6 +1,6 @@
 # library name
 set(LIBNAME "milkiofits")
-set(SRCNAME "CORENAME_iofits")
+set(SRCNAME "COREMOD_iofits")
 
 
 set(SOURCEFILES
