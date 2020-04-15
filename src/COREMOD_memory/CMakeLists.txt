@@ -1,12 +1,12 @@
 # library name
 set(LIBNAME "milkmemory")
-
+set(SRCNAME "COREMOD_memory")
 
 set(SOURCEFILES
-	COREMOD_memory.c)
+	${SRCNAME}.c)
 
 set(INCLUDEFILES
-	COREMOD_memory.h)
+	${SRCNAME}.h)
 
 
 # DEFAULT SETTINGS 
@@ -25,5 +25,6 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
-install(FILES ${INCLUDEFILES} DESTINATION include)
+install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+
 
