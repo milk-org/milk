@@ -55,6 +55,7 @@ typedef long imageID;
 typedef long variableID;
 
 #ifndef STANDALONE
+#include "Config.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "processtools.h"
@@ -129,7 +130,7 @@ strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT); \
 strcpy(data.moduledatestring, __DATE__); \
 strcpy(data.moduletimestring, __TIME__); \
 strcpy(data.modulename, (#modname)); \
-RegisterModule(__FILE__, MODULE_APPLICATION, MODULE_DESCRIPTION); \
+RegisterModule(__FILE__, MODULE_APPLICATION, MODULE_DESCRIPTION, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH); \
 init_module_CLI(); \
 INITSTATUS_##modname = 1; \
 strcpy(data.modulename, "");              /* reset after use */ \
@@ -510,11 +511,19 @@ typedef struct
 typedef struct
 {
     char name[50];        // module name
+
     char shortname[80];   // short name. If non-empty, access functions as <shortname>.<functionname>
+
     char package[50];     // package to which module belongs
+    int versionmajor;	// package version
+    int versionminor;
+    int versionpatch;
+
     char info[1000];      // short description
+
     char datestring[20]; // Compilation date
     char timestring[20]; // Compilation time
+
 } MODULE;
 
 
@@ -731,7 +740,10 @@ void sig_handler(int signo);
 errno_t RegisterModule(
     const char *restrict FileName,
     const char *restrict PackageName,
-    const char *restrict InfoString
+    const char *restrict InfoString,
+    int versionmajor,
+    int versionminor,
+    int versionpatch    
 );
 
 uint_fast16_t RegisterCLIcommand(
