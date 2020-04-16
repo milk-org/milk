@@ -24,11 +24,11 @@
 #define CLIPID    getpid()
 
 // *************************** FUNCTION RETURN VALUE *********************************************
-// For function returning type errno_t (= int) 
+// For function returning type errno_t (= int)
 //
-#define RETURN_SUCCESS        0 
+#define RETURN_SUCCESS        0
 #define RETURN_FAILURE       1   // generic error code
-#define RETURN_MISSINGFILE   2  
+#define RETURN_MISSINGFILE   2
 
 #include <time.h>
 #include <errno.h>
@@ -47,7 +47,7 @@ typedef long variableID;
 extern "C" {
 #endif
 
-struct timespec info_time_diff(struct timespec start, struct timespec end);
+struct timespec timespec_diff(struct timespec start, struct timespec end);
 int print_header(const char *str, char c);
 void quick_sort2l(double *array, long *array1, long count);
 void quick_sort2l_double(double *array, long *array1, long count);
