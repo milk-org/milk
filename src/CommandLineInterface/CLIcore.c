@@ -841,12 +841,12 @@ static errno_t help_module()
     {
         long i;
         printf("\n");
-        printf("%2s  %10s %18s  %10s  %20s %s\n", "#", "shortname", "Module name", "Package", "last compiled", 
+        printf("%2s  %10s %28s  %10s  %20s %s\n", "#", "shortname", "Module name", "Package", "last compiled", 
                "description");
         printf("-------------------------------------------------------------------------------------------------------\n");
         for(i = 0; i < data.NBmodule; i++)
         {
-            printf("%2ld %10s %18s  %10s  %11s %8s  %s\n", i, data.module[i].shortname,
+            printf("%2ld %10s \033[1m%28s\033[0m  %10s  %11s %8s  %s\n", i, data.module[i].shortname,
                    data.module[i].name, data.module[i].package,
                    data.module[i].datestring, data.module[i].timestring,
                    data.module[i].info);

@@ -22,7 +22,10 @@ find_package(GSL QUIET REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3)
 pkg_check_modules(FFTWF REQUIRED fftw3f)
 pkg_check_modules(NCURSES REQUIRED ncurses)
+
 pkg_check_modules(HWLOC hwloc)
+
+
 
 if(${python_build})
   set(CORE_FILES standalone_dependencies.c)
