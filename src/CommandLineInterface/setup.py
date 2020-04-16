@@ -70,7 +70,7 @@ class CMakeBuildExt(build_ext):
                 ]
             cmake_args += ['-DUSE_CUDA=ON']
 
-        cmake_args += ['-Dpython_build=ON', '-Duse_hunter=ON']
+        cmake_args += ['-Dpython_build=ON']
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
