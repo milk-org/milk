@@ -6050,7 +6050,10 @@ errno_t functionparameter_outlog_namelink(
     WRITE_FULLFILENAME(linkfname, "%s/fpslog.%06d.%s.%s", shmdname, getpid(),
                        fpsname, cmdcodestring);
 
-    symlink(logfname, linkfname);
+    if(symlink(logfname, linkfname) == -1)
+    {
+		PRINT_ERROR("symlink error");
+	}
 
 
     return RETURN_SUCCESS;
