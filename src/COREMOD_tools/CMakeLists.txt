@@ -1,5 +1,5 @@
 # library name
-set(LIBNAME "milktools")
+set(LIBNAME "milkCOREMODtools")
 set(SRCNAME "COREMOD_tools")
 
 
