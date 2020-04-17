@@ -330,11 +330,11 @@ static void fprintf_stdout(FILE *f, char const *fmt, ...)
 errno_t write_process_log()
 {
     FILE *fplog;
-    char fname[200];
+    char fname[STRINGMAXLEN_FILENAME];
     pid_t thisPID;
 
     thisPID = getpid();
-    sprintf(fname, "logreport.%05d.log", thisPID);
+    WRITE_FILENAME(fname, "logreport.%05d.log", thisPID);
 
     struct tm *uttime;
     time_t tvsec0;
@@ -379,12 +379,13 @@ errno_t write_process_exit_report(
 )
 {
     FILE *fpexit;
-    char fname[200];
+    char fname[STRINGMAXLEN_FILENAME];
     pid_t thisPID;
     long fd_counter = 0;
 
     thisPID = getpid();
-    sprintf(fname, "exitreport-%s.%05d.log", errortypestring, thisPID);
+    
+    WRITE_FILENAME(fname, "exitreport-%s.%05d.log", errortypestring, thisPID);
 
     printf("EXIT CONDITION < %s >: See report in file %s\n", errortypestring,
            fname);
@@ -731,43 +732,61 @@ static errno_t printInfo()
            sizeof(IMAGE) * 8, sizeof(IMAGE));
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, name),                      offsetof(IMAGE, name));
+           
     printf("   used                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, used),                      offsetof(IMAGE, used));
+    
     printf("   shmfd                       offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, shmfd),                     offsetof(IMAGE, shmfd));
+    
     printf("   memsize                     offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, memsize),                   offsetof(IMAGE, memsize));
+    
     printf("   semlog                      offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, semlog),                    offsetof(IMAGE, semlog));
+    
     printf("   md                          offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, md),                        offsetof(IMAGE, md));
+    
     printf("   atimearray                  offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, atimearray),                offsetof(IMAGE, atimearray));
+    
     printf("   writetimearray              offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, writetimearray),            offsetof(IMAGE,
                    writetimearray));
+    
     printf("   flagarray                   offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, flagarray),                 offsetof(IMAGE, flagarray));
+    
     printf("   cntarray                    offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, cntarray),                  offsetof(IMAGE, cntarray));
+    
     printf("   array                       offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, array),                     offsetof(IMAGE, array));
+    
     printf("   semptr                      offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, semptr),                    offsetof(IMAGE, semptr));
+    
     printf("   kw                          offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, kw),                        offsetof(IMAGE, kw));
 
+    
     printf("sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte ------------------\n",
            sizeof(IMAGE_KEYWORD) * 8, sizeof(IMAGE_KEYWORD));
+    
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
+    
     printf("   type                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
+    
     printf("   value                       offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
+    
     printf("   comment                     offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
 
+    
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
     printf("READLINE : version %x\n", RL_READLINE_VERSION);
@@ -993,7 +1012,6 @@ errno_t streamCTRL_CTRLscreen_cli()
 
 static errno_t CLI_execute_line()
 {
-
     long    i;
     char   *cmdargstring;
     char    str[200];
@@ -1001,7 +1019,6 @@ static errno_t CLI_execute_line()
     time_t  t;
     struct  tm *uttime;
     struct  timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
-    char    command[200];
 
     //
     // If line starts with !, use system()
@@ -1054,17 +1071,12 @@ static errno_t CLI_execute_line()
             if(fp == NULL)
             {
                 printf("ERROR: cannot log into file %s\n", data.CLIlogname);
-                sprintf(command,
+                EXECUTE_SYSTEM_COMMAND(
                         "mkdir -p %s/logdir/%04d%02d%02d\n",
                         getenv("HOME"),
                         1900 + uttime->tm_year,
                         1 + uttime->tm_mon,
                         uttime->tm_mday);
-
-                if(system(command) != 0)
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
             }
             else
             {
@@ -1412,16 +1424,9 @@ static errno_t runCLI_initialize(
 
 
     // get PID and write it to shell env variable MILK_CLI_PID
-    char command[200];
-
     CLIPID = getpid();
     printf("    CLI PID = %d\n", (int) CLIPID);
-    sprintf(command,
-            "echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
+    EXECUTE_SYSTEM_COMMAND("echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
 
     //	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
 
@@ -2688,7 +2693,10 @@ static errno_t memory_re_alloc()
 |
 |   TO DO : allow option values. eg: debug=3
 +-----------------------------------------------------------------------------*/
-static int command_line_process_options(int argc, char **argv)
+static int command_line_process_options(
+    int argc,
+    char **argv
+)
 {
     int option_index = 0;
     struct sched_param schedpar;
