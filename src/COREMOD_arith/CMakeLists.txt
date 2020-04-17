@@ -1,5 +1,5 @@
 # library name
-set(LIBNAME "milkarith")
+set(LIBNAME "milkCOREMODarith")
 set(SRCNAME "COREMOD_arith")
 
 
