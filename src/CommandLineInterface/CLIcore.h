@@ -55,7 +55,7 @@ typedef long imageID;
 typedef long variableID;
 
 #ifndef STANDALONE
-#include "Config.h"
+#include "milk_config.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "processtools.h"
