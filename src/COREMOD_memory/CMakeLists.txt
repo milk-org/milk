@@ -1,5 +1,5 @@
 # library name
-set(LIBNAME "milkmemory")
+set(LIBNAME "milkCOREMODmemory")
 set(SRCNAME "COREMOD_memory")
 
 set(SOURCEFILES
