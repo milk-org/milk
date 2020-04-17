@@ -841,15 +841,16 @@ static errno_t help_module()
     {
         long i;
         printf("\n");
-        printf("%2s  %10s %32s %7s %10s  %20s %s\n", "#", "shortname", "Name", "Version", "Package", "last compiled", 
+        printf("%2s  %10s %32s %10s %7s    %20s %s\n", "#", "shortname", "Name", "Package", "Version", "last compiled", 
                "description");
         printf("--------------------------------------------------------------------------------------------------------------\n");
         for(i = 0; i < data.NBmodule; i++)
         {
-            printf("%2ld %10s \033[1m%32s\033[0m %2d.%02d.%02d %10s %11s %8s  %s\n", i, data.module[i].shortname,
-                   data.module[i].name, 
-                   data.module[i].versionmajor, data.module[i].versionminor, data.module[i].versionpatch,
+            printf("%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    %11s %8s  %s\n", 
+					i, data.module[i].shortname,
+                   data.module[i].name,
                    data.module[i].package,
+                   data.module[i].versionmajor, data.module[i].versionminor, data.module[i].versionpatch,
                    data.module[i].datestring, data.module[i].timestring,
                    data.module[i].info);
         }
@@ -1320,11 +1321,7 @@ uint_fast16_t RegisterCLIcommand(
     const char *restrict CLIexample,
     const char *restrict CLICcall
 )
-{
-    //	printf("Registering command    %20s   [%5ld]\n", CLIkey, data.NBcmd);
-	long moduleindex;
-
-	
+{	
 	data.cmd[data.NBcmd].moduleindex = data.moduleindex;
 	
 	
