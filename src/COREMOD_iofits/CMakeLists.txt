@@ -1,5 +1,5 @@
 # library name
-set(LIBNAME "milkiofits")
+set(LIBNAME "milkCOREMODiofits")
 set(SRCNAME "COREMOD_iofits")
 
 
