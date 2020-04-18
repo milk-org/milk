@@ -95,7 +95,6 @@ static int clock_gettime(int clk_id, struct mach_timespec *t)
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-static char errormessage[SBUFFERSIZE];
 
 static FILE *fpgnuplot;
 
