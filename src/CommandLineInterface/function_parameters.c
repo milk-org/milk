@@ -1057,7 +1057,7 @@ int functionparameter_GetFileName(
     char *tagname
 )
 {
-    int stringmaxlen = 500;
+    int stringmaxlen = STRINGMAXLEN_DIRNAME/2;
     char ffname[STRINGMAXLEN_FULLFILENAME]; // full filename
     char fname1[stringmaxlen];
     int l;
@@ -1078,7 +1078,7 @@ int functionparameter_GetFileName(
         {
             PRINT_ERROR("snprintf error");
         }
-        strncat(fpsconfdirname, fname1, STRINGMAXLEN_DIRNAME);
+        strncat(fpsconfdirname, fname1, STRINGMAXLEN_DIRNAME-1);
         
         EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
     }
