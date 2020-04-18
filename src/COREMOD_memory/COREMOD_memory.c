@@ -157,7 +157,6 @@ static int listim_scr_wcol;
 
 //static int INITSTATUS_COREMOD_memory = 0;
 
-static char errmsg_memory[SBUFFERSIZE];
 
 
 
@@ -2547,7 +2546,6 @@ errno_t delete_image_ID(
 )
 {
     imageID ID;
-    char    command[200];
     long    s;
     char    fname[200];
 
@@ -3927,7 +3925,6 @@ imageID copy_image_ID(
     long       nelement;
     long       i;
     int        newim = 0;
-    char       errstr[200];
 
 
     ID = image_ID(name);
@@ -4959,7 +4956,6 @@ errno_t mk_complex_from_reim(
     long        nelement;
     long        ii;
     long        i;
-    int         n;
     uint8_t     datatype_re;
     uint8_t     datatype_im;
     uint8_t     datatype_out;
@@ -5057,13 +5053,11 @@ errno_t mk_complex_from_amph(
     imageID    IDout;
     uint32_t   naxes[3];
     long       naxis;
-    long       nelement;
-    long       ii;
+    uint64_t   nelement;
     long       i;
     uint8_t    datatype_am;
     uint8_t    datatype_ph;
     uint8_t    datatype_out;
-    int        n;
 
     IDam = image_ID(am_name);
     IDph = image_ID(ph_name);
@@ -5089,7 +5083,7 @@ errno_t mk_complex_from_amph(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CF[ii].re = data.image[IDam].array.F[ii] * ((float) cos(
                                                         data.image[IDph].array.F[ii]));
@@ -5114,7 +5108,7 @@ errno_t mk_complex_from_amph(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CD[ii].re = data.image[IDam].array.F[ii] * cos(
                                                         data.image[IDph].array.D[ii]);
@@ -5138,7 +5132,7 @@ errno_t mk_complex_from_amph(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CD[ii].re = data.image[IDam].array.D[ii] * cos(
                                                         data.image[IDph].array.F[ii]);
@@ -5163,7 +5157,7 @@ errno_t mk_complex_from_amph(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CD[ii].re = data.image[IDam].array.D[ii] * cos(
                                                         data.image[IDph].array.D[ii]);
@@ -5200,11 +5194,9 @@ errno_t mk_reim_from_complex(
     imageID     IDin;
     uint32_t    naxes[3];
     long        naxis;
-    long        nelement;
-    long        ii;
+    uint64_t        nelement;
     long        i;
     uint8_t     datatype;
-    int         n;
 
     IDin = image_ID(in_name);
     datatype = data.image[IDin].md[0].datatype;
@@ -5229,7 +5221,7 @@ errno_t mk_reim_from_complex(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDre].array.F[ii] = data.image[IDin].array.CF[ii].re;
                 data.image[IDim].array.F[ii] = data.image[IDin].array.CF[ii].im;
@@ -5260,7 +5252,7 @@ errno_t mk_reim_from_complex(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDre].array.D[ii] = data.image[IDin].array.CD[ii].re;
                 data.image[IDim].array.D[ii] = data.image[IDin].array.CD[ii].im;
@@ -5304,15 +5296,14 @@ errno_t mk_amph_from_complex(
     imageID    IDin;
     uint32_t   naxes[3];
     long       naxis;
-    long       nelement;
-    long       ii;
+    uint64_t       nelement;
+    uint64_t   ii;
     long       i;
     float      amp_f;
     float      pha_f;
     double     amp_d;
     double     pha_d;
     uint8_t    datatype;
-    int        n;
 
     IDin = image_ID(in_name);
     datatype = data.image[IDin].md[0].datatype;
@@ -5649,7 +5640,6 @@ errno_t rotate_cube(
     uint32_t    xsize1, ysize1, zsize1;
     uint32_t    ii, jj, kk;
     uint8_t     datatype;
-    int         n;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
@@ -8212,8 +8202,6 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     char imnameout[200];
     char fnameout[500];
     imageID ID;
-    char command[500];
-//    int ret;
     imageID IDtrig;
 
     long frame = 0;
