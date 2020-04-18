@@ -59,7 +59,9 @@
 
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 100
-#define nameNBchar 100
+
+#define STRINGMAXLEN_STREAMINFO_NAME 100
+
 #define PIDnameStringLen 12
 
 
@@ -74,12 +76,12 @@
 
 typedef struct
 {
-	char sname[nameNBchar];      // stream name
+	char sname[STRINGMAXLEN_STREAMINFO_NAME];      // stream name
 
     long ID;
     
     int SymLink;
-    char linkname[nameNBchar];   // if stream is sym link, resolve link name
+    char linkname[STRINGMAXLEN_STREAMINFO_NAME];   // if stream is sym link, resolve link name
 
     pid_t streamOpenPID[streamOpenNBpid_MAX];
     int streamOpenPID_cnt;

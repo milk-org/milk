@@ -12,7 +12,6 @@
 
 #define _GNU_SOURCE
 
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                        HEADER FILES                                             */
@@ -6017,7 +6016,6 @@ errno_t functionparameter_outlog_namelink(
 
     switch(cmdcode)
     {
-
         case FPSCMDCODE_CONFSTART :
             strcpy(cmdcodestring, "CONFSTART");
             break;
@@ -6325,10 +6323,16 @@ static errno_t functionparameter_scan_fps(
                 //fps_symlink[fpsindex] = 0;
 
 
-                char fpsname[stringmaxlen];
+                char fpsname[STRINGMAXLEN_FPS_NAME];
                 long strcplen = strlen(dir->d_name) - strlen(".fps.shm");
-                strncpy(fpsname, dir->d_name, strcplen);
-                fpsname[strcplen] = '\0';
+                int strcplen1 = STRINGMAXLEN_FPS_NAME-1;
+                if(strcplen < strcplen1) {
+					strcplen1 =  strcplen;
+				}
+
+				strncpy(fpsname, dir->d_name, strcplen1);
+				fpsname[strcplen1] = '\0';
+				
 
                 if(verbose > 0)
                 {

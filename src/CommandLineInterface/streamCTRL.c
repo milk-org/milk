@@ -429,13 +429,13 @@ void *streamCTRL_scan(
                     // is file sym link ?
                     struct stat buf;
                     int retv;
-                    char fullname[stringmaxlen];
+                    char fullname[STRINGMAXLEN_FULLFILENAME];
 
 
                     if(streaminfoproc->WriteFlistToFile == 1)
                         fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
 
-                    snprintf(fullname, stringmaxlen, "%s/%s", SHAREDSHMDIR, dir->d_name);
+                    snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", SHAREDSHMDIR, dir->d_name);
                     retv = lstat (fullname, &buf);
                     if (retv == -1 ) {
                         endwin();
@@ -448,14 +448,14 @@ void *streamCTRL_scan(
 
                     if (S_ISLNK(buf.st_mode)) // resolve link name
                     {
-                        char fullname[stringmaxlen];
+                        char fullname[STRINGMAXLEN_FULLFILENAME];
                         char *linknamefull; //[200];
-                        char linkname[stringmaxlen];
+                        char linkname[STRINGMAXLEN_FULLFILENAME];
                         int pathOK = 1;
 
 
                         streaminfo[sindex].SymLink = 1;
-                        snprintf(fullname, stringmaxlen, "%s/%s", SHAREDSHMDIR, dir->d_name);
+                        snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", SHAREDSHMDIR, dir->d_name);
                         //                        readlink (fullname, linknamefull, 200-1);
                         linknamefull = realpath( fullname, NULL);
 
@@ -506,7 +506,12 @@ void *streamCTRL_scan(
                     // get stream name and ID
                     if(scanentryOK == 1)
                     {
-                        strncpy(streaminfo[sindex].sname, dir->d_name, strlen(dir->d_name)-strlen(".im.shm"));
+						int strlencp1 = STRINGMAXLEN_STREAMINFO_NAME;
+						int strlencp = strlen(dir->d_name)-strlen(".im.shm");
+						if(strlencp < strlencp1) {
+							strlencp1 = strlencp;
+						}
+                        strncpy(streaminfo[sindex].sname, dir->d_name, strlencp1);
                         streaminfo[sindex].sname[strlen(dir->d_name)-strlen(".im.shm")] = '\0';
 
                         if(streaminfoproc->WriteFlistToFile == 1)
