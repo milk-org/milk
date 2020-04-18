@@ -355,7 +355,7 @@ typedef struct
 
 
 
-
+#define STRINGMAXLEN_FPS_NAME      100
 
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  500
 
@@ -398,7 +398,7 @@ typedef struct
 #define FPS_MSG_FLAG_INFO                   0x0010
 
 
-#define FPS_NAME_STRMAXLEN 100
+
 #define FPS_CWD_STRLENMAX 200
 #define FPS_SRCDIR_STRLENMAX 200
 #define FPS_PNAME_STRMAXLEN 100
@@ -409,7 +409,7 @@ typedef struct
 {
     // process name
     // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
-    char                name[FPS_NAME_STRMAXLEN];         // example: pname-01-32
+    char                name[STRINGMAXLEN_FPS_NAME];         // example: pname-01-32
 
     char                description[FPS_DESCR_STRMAXLEN];
     char
