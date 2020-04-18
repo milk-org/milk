@@ -63,14 +63,6 @@
 
 
 
-//extern DATA data;
-
-static char errormessage_iofits[SBUFFERSIZE];
-
-
-
-
-
 
 /* ================================================================== */
 /* ================================================================== */
@@ -1104,7 +1096,6 @@ errno_t save_db_fits(
     long nelements;
     imageID ID;
     char file_name1[STRINGMAXLEN_FULLFILENAME];
-    int n;
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
@@ -1321,7 +1312,6 @@ errno_t save_fl_fits(
     long      ii;
     long      i;
     char      file_name1[STRINGMAXLEN_FULLFILENAME];
-    int       n;
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
@@ -1542,9 +1532,6 @@ errno_t save_sh16_fits(
     long i;
     uint8_t datatype;
     char file_name1[STRINGMAXLEN_FULLFILENAME];
-    int n;
-
-
 
 
     if((data.overwrite == 1) && (file_name[0] != '!')
@@ -1779,8 +1766,6 @@ errno_t save_ush16_fits(
     long i;
     uint8_t datatype;
     char file_name1[STRINGMAXLEN_FULLFILENAME];
-    int n;
-
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
@@ -2000,9 +1985,6 @@ errno_t save_int32_fits(
     long i;
     uint8_t datatype;
     char file_name1[SBUFFERSIZE];
-    int n;
-
-
 
 
     if((data.overwrite == 1) && (file_name[0] != '!')
@@ -2237,7 +2219,6 @@ errno_t save_uint32_fits(
     long i;
     uint8_t datatype;
     char file_name1[SBUFFERSIZE];
-    int n;
 
 
     if((data.overwrite == 1) && (file_name[0] != '!')
@@ -2454,8 +2435,6 @@ errno_t save_int64_fits(
     long i;
     uint8_t datatype;
     char file_name1[SBUFFERSIZE];
-    int n;
-
 
 
 
@@ -2867,7 +2846,6 @@ errno_t images_to_cube(
     uint32_t naxes[2];
     long ii, jj;
     uint32_t xsize, ysize;
-    int n;
 
     frame = 0;
     
