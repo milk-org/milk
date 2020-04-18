@@ -76,6 +76,7 @@ typedef long variableID;
 #define STRINGMAXLEN_STREAMNAME     100
 #define STRINGMAXLEN_IMGNAME        100
 #define STRINGMAXLEN_FILENAME       200  // without directory, includes extension
+#define STRINGMAXLEN_DIRNAME        800 
 #define STRINGMAXLEN_FULLFILENAME  1000  // includes directory name 
 #define STRINGMAXLEN_FUNCTIONNAME   200
 #define STRINGMAXLEN_FUNCTIONARGS  1000

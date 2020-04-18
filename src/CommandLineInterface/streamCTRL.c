@@ -337,8 +337,6 @@ void *streamCTRL_scan(
     void* argptr
 )
 {
-    int stringmaxlen = 500;
-
     long NBsindex = 0;
     long sindex = 0;
     long scancnt = 0;
