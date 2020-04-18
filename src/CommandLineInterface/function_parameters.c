@@ -1058,40 +1058,29 @@ int functionparameter_GetFileName(
 )
 {
     int stringmaxlen = 500;
-    char fname[stringmaxlen];
+    char ffname[STRINGMAXLEN_FULLFILENAME]; // full filename
     char fname1[stringmaxlen];
-    char command[stringmaxlen];
     int l;
-
-    if(snprintf(fname, stringmaxlen, "%s/fpsconf", fps->md->fpsdirectory) < 0)
+	char fpsconfdirname[STRINGMAXLEN_DIRNAME];
+	
+    if(snprintf(fpsconfdirname, stringmaxlen, "%s/fpsconf", fps->md->fpsdirectory) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
-    if(snprintf(command, stringmaxlen, "mkdir -p %s", fname) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
+    
+    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
+    
 
+	// build up directory name
     for(l = 0; l < fparam->keywordlevel - 1; l++)
     {
         if(snprintf(fname1, stringmaxlen, "/%s", fparam->keyword[l]) < 0)
         {
             PRINT_ERROR("snprintf error");
         }
-        strcat(fname, fname1);
-        if(snprintf(command, stringmaxlen, "mkdir -p %s", fname) < 0)
-        {
-            PRINT_ERROR("snprintf error");
-        }
-
-        if(system(command) != 0)
-        {
-            PRINT_ERROR("system() returns non-zero value");
-        }
+        strncat(fpsconfdirname, fname1, STRINGMAXLEN_DIRNAME);
+        
+        EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
     }
 
     if(snprintf(fname1, stringmaxlen, "/%s.%s.txt", fparam->keyword[l],
@@ -1099,8 +1088,10 @@ int functionparameter_GetFileName(
     {
         PRINT_ERROR("snprintf error");
     }
-    strcat(fname, fname1);
-    strcpy(outfname, fname);
+    
+    snprintf(ffname, STRINGMAXLEN_FULLFILENAME, "%s%s", fpsconfdirname, fname1);
+
+    strcpy(outfname, ffname);
 
     return 0;
 }
@@ -1812,8 +1803,6 @@ int function_parameter_add_entry(
 
     for(index = 0; index < 3; index++)
     {
-        char systemcmd[500];
-
         switch(index)
         {
 
