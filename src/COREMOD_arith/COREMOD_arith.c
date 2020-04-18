@@ -58,7 +58,6 @@
 
 //extern DATA data;
 
-static char errmsg_arith[SBUFFERSIZE];
 
 
 
@@ -451,7 +450,6 @@ imageID arith_set_pixel(
     imageID  ID;
     uint32_t naxes[2];
     uint8_t  datatype;
-    int      nbchar;
 
     ID = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
@@ -526,7 +524,6 @@ imageID arith_set_pixel_1Drange(
     imageID ID;
     uint32_t naxes[2];
     uint8_t datatype;
-    int n;
     long ii, iistart, iiend;
 
 
@@ -691,7 +688,6 @@ imageID arith_image_zero(
 {
     imageID ID;
     long nelem;
-    int n;
 
     ID = image_ID(ID_name);
 
@@ -782,7 +778,6 @@ imageID arith_image_crop(
     uint32_t *naxes = NULL;
     uint32_t *naxesout = NULL;
     uint8_t datatype;
-    int n;
 
     long start_c[3];
     long end_c[3];
@@ -4073,10 +4068,8 @@ errno_t arith_image_function_2_1(
     long naxis, naxis2;
     uint8_t datatype1, datatype2, datatypeout;
     long i;
-    int n;
     int op3D2Dto3D = 0; // 3D image, 2D image -> 3D image
     long xysize;
-    char errmsg[SBUFFERSIZE];
 
 
 
@@ -6774,7 +6767,6 @@ errno_t arith_image_function_2_1_inplace_byID(
     long ii;
     long nelement1, nelement2, nelement;
     uint8_t datatype1, datatype2;
-    int n;
 
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
@@ -9080,7 +9072,6 @@ int execute_arith(const char *cmd1)
     char cmd[SBUFFERSIZE];
     long cntP;
     int OKea = 1;
-    int n;
 
     int Debug = 0;
 
