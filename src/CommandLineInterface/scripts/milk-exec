@@ -1,0 +1,99 @@
+#!/bin/bash
+
+
+# number of arguments to script
+NBARGS=1
+
+# ======================= PROCESS NAME =================================
+pname=`echo "$0" | sed "s/\.\///g"`
+echo "pname = $pname"
+
+
+function printHELP {
+echo "------------------------------------------------------------------------"
+echo "$(tput bold) $pname : execute milk command  $(tput sgr0)"
+echo "------------------------------------------------------------------------"
+echo "  Execute command string within milk command line interface (CLI)"
+echo "   "
+echo " $(tput bold)USAGE:$(tput sgr0)"
+echo "     $0 <cmdstring>"
+echo ""
+echo ""
+echo "------------------------------------------------------------------------"
+}
+
+
+printHELP1 ()
+{
+	printf "%20s       Execute milk command\n" "$0" 
+}
+
+
+
+
+
+
+# Transform long options to short ones
+singlelinehelp=0
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--help") set -- "$@" "-h" ;;
+    "--help1") 
+set -- "$@" "-h" 
+singlelinehelp=1;
+;;
+    *)        set -- "$@" "$arg"
+  esac
+done
+
+
+
+
+while getopts :h FLAG; do
+  case $FLAG in
+    h)  #show help
+      if [ "$singlelinehelp" -eq "0" ]; then
+      printHELP
+      else
+      printHELP1
+      fi
+      exit
+      ;;
+    \?) 
+      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+      printHELP
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))  
+
+### End getopts code ###
+
+
+
+
+
+
+if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
+if [ "$#" -ne $NBARGS ]; then
+    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+fi
+printHELP
+        exit
+fi
+
+
+pname="milkexec"
+fifoname="milkCLIfifo.${pname}"
+SF="milkCLIstartup.${pname}"
+echo "$1" > $SF
+echo "exitCLI" >> $SF
+
+
+milk -n ${pname} -f ${fifoname} -s ${SF}
+
+rm ${SF}
+
+
