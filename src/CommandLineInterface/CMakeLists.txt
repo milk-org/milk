@@ -104,21 +104,23 @@ if(${python_build})
 endif()
 
 install(TARGETS CLIcore DESTINATION bin)
-install(PROGRAMS scripts/cr2tofits
-              scripts/Fits2shm
-              scripts/milk-fpsmkcmd
-              scripts/logshim
-              scripts/logshimkill
-              scripts/logshimoff
-              scripts/logshimon
-              scripts/logshimstat
-              scripts/merge3DfitsTelemetry
-              scripts/milkFits2shm
-              scripts/milkStreamLink
-              scripts/shmim2fits
-              scripts/tmuxkillall
-              scripts/tmuxsessionname
-              scripts/waitforfile
+install(PROGRAMS
+			scripts/milk-exec
+			scripts/cr2tofits
+			scripts/Fits2shm
+			scripts/milk-fpsmkcmd
+			scripts/logshim
+			scripts/logshimkill
+			scripts/logshimoff
+			scripts/logshimon
+			scripts/logshimstat
+			scripts/merge3DfitsTelemetry
+			scripts/milkFits2shm
+			scripts/milkStreamLink
+			scripts/shmim2fits
+			scripts/tmuxkillall
+			scripts/tmuxsessionname
+			scripts/waitforfile
         DESTINATION bin)
 
 install(TARGETS CLIcore DESTINATION lib)
