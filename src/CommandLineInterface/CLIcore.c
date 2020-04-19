@@ -1842,10 +1842,11 @@ errno_t runCLI(
 
     data.CLIloopON = 1; // start CLI loop
 
+
     while(data.CLIloopON == 1)
     {
         FILE *fp;
-
+			
         data.CMDexecuted = 0;
 
         if((fp = fopen("STOPCLI", "r")) != NULL)
@@ -1914,8 +1915,9 @@ errno_t runCLI(
 
 
 
-        while(CLIexecuteCMDready == 0)
+        while((CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
+		//printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
             if(n == 0)   // nothing received, need to re-init and go back to select call
@@ -1996,7 +1998,7 @@ errno_t runCLI(
         }
         CLIexecuteCMDready = 0;
 
-        if(data.CMDexecuted == 0)
+        if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
         {
             printf("Command not found, or command with no effect\n");
         }
@@ -2004,7 +2006,7 @@ errno_t runCLI(
         //TEST data.CLIloopON = 0;
     }
     DEBUG_TRACEPOINT("exit from CLI loop");
-
+	
     // clear all images and variables
     clearall();
 
@@ -2013,7 +2015,6 @@ errno_t runCLI(
 
     rl_clear_history();
     rl_callback_handler_remove();
-
 
     DEBUG_TRACEPOINT("exit from runCLI function");
 
