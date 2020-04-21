@@ -16,8 +16,10 @@ echo "------------------------------------------------------------------------"
 echo "  Execute command string within milk command line interface (CLI)"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 <cmdstring>"
+echo "     $0 [-hT] <cmdstring>"
 echo ""
+echo " $(tput bold)OPTIONS:$(tput sgr0)"
+echo "     $(tput bold)-T$(tput sgr0)          (T)est mode"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -50,7 +52,7 @@ done
 
 
 
-while getopts :h FLAG; do
+while getopts :hT FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -60,6 +62,9 @@ while getopts :h FLAG; do
       fi
       exit
       ;;
+    T) # run as a test
+	echo "CTEST_FULL_OUTPUT"
+    ;;
     \?) 
       echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
       printHELP
@@ -84,13 +89,18 @@ printHELP
         exit
 fi
 
+IFS=';' read -r -a array <<< "$1"
+
 
 pname="milkexec"
 fifoname="milkCLIfifo.${pname}"
 SF="milkCLIstartup.${pname}"
-echo "$1" > $SF
+echo "" > $SF
+for cmdstring in "${array[@]}"
+do
+    echo "${cmdstring}" >> $SF
+done
 echo "exitCLI" >> $SF
-
 
 milk -n ${pname} -f ${fifoname} -s ${SF}
 
