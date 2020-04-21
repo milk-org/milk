@@ -106,18 +106,20 @@ endif()
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
 			scripts/milk-exec
-			scripts/cr2tofits
-			scripts/Fits2shm
+			scripts/milk-streamCTRL
+			scripts/milk-procCTRL
+			scripts/milk-fpcCTRL
+			scripts/milk-cr2tofits
+			scripts/milk-FITS2shm
 			scripts/milk-fpsmkcmd
-			scripts/logshim
-			scripts/logshimkill
-			scripts/logshimoff
-			scripts/logshimon
-			scripts/logshimstat
+			scripts/milk-logshim
+			scripts/milk-logshimkill
+			scripts/milk-logshimoff
+			scripts/milk-logshimon
+			scripts/milk-logshimstat
 			scripts/merge3DfitsTelemetry
-			scripts/milkFits2shm
-			scripts/milkStreamLink
-			scripts/shmim2fits
+			scripts/milk-Streamlink
+			scripts/milk-shm2FITS
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
 			scripts/waitforfile
