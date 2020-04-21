@@ -108,7 +108,7 @@ install(PROGRAMS
 			scripts/milk-exec
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
-			scripts/milk-fpcCTRL
+			scripts/milk-fpsCTRL
 			scripts/milk-cr2tofits
 			scripts/milk-FITS2shm
 			scripts/milk-fpsmkcmd
@@ -118,7 +118,7 @@ install(PROGRAMS
 			scripts/milk-logshimon
 			scripts/milk-logshimstat
 			scripts/merge3DfitsTelemetry
-			scripts/milk-Streamlink
+			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
