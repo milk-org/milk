@@ -69,6 +69,7 @@ The example module is in directory 'src/milk_module_example' :
 	create_example_image.h
 	milk_module_example.c
 	milk_module_example.h
+	... additional .c and .h files
 
 Check the source code (well documented) to see how modules are written. To compile :
 
