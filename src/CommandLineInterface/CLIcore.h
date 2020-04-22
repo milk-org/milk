@@ -55,7 +55,7 @@ typedef long imageID;
 typedef long variableID;
 
 #ifndef STANDALONE
-#include "milk_config.h"
+#include "config.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "processtools.h"
@@ -595,6 +595,9 @@ typedef struct
 typedef struct
 {
     char package_name[100];
+    int  package_version_major;
+    int  package_version_minor;
+    int  package_version_patch;
     char package_version[100];
     char configdir[100];
     char sourcedir[100];
