@@ -24,9 +24,6 @@
 // Module short description
 #define MODULE_DESCRIPTION       "Read/Write FITS files"
 
-// Application to which module belongs
-#define MODULE_APPLICATION       "milk"
-
 
 
 
