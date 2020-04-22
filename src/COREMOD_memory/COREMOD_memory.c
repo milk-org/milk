@@ -26,10 +26,6 @@
 // Module short description
 #define MODULE_DESCRIPTION       "Memory management for images and variables"
 
-// Application to which module belongs
-#define MODULE_APPLICATION       "milk"
-
-
 
 
 
