@@ -22,8 +22,6 @@
 // Module short description
 #define MODULE_DESCRIPTION       "Image arithmetic operations"
 
-// Application to which module belongs
-#define MODULE_APPLICATION       "milk"
 
 
 
