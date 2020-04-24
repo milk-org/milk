@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.8)
 set(SRCNAME "CommandLineInterface")
 
 
-option(python_build "Compile Python Wrappers" OFF)
+option(python_module "Compile Python Wrappers" OFF)
 
 project(CLIcore C)
 
@@ -18,7 +18,7 @@ pkg_check_modules(HWLOC hwloc)
 
 
 
-if(${python_build})
+if(${python_module})
   set(CORE_FILES standalone_dependencies.c)
 else()
   include_directories("${PROJECT_SOURCE_DIR}/src")
@@ -47,7 +47,7 @@ add_library(CLIcore
             function_parameters.c
             ${CORE_FILES})
 
-if(${python_build})
+if(${python_module})
   set(USE_CUDA ON)
   if(NOT TARGET ImageStreamIO)
     if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/../ImageStreamIO)
@@ -99,7 +99,7 @@ target_link_libraries(CLIcore
                       PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${HWLOC_LIBRARIES}
                              ${NCURSES_LIBRARIES})
 
-if(${python_build})
+if(${python_module})
   add_subdirectory(python_module)
 endif()
 
