@@ -52,14 +52,6 @@
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_arith/COREMOD_arith.h"
 
-#define SBUFFERSIZE 1000
-
-//extern DATA data;
-
-
-
-
-
 
 
 
@@ -9060,14 +9052,13 @@ int execute_arith(const char *cmd1)
     int highest_priority_index;
     int passedequ;
     int tmp_name_index;
-//    char name[STRINGMAXLEN_IMGNAME];
-//    char name1[SBUFFERSIZE];
     double tmp_prec;
     int nb_tbp_word;
     int type = 0;
     int nbvarinput;
 
-    char cmd[SBUFFERSIZE];
+	int CMDBUFFSIZE = 1000;
+    char cmd[CMDBUFFSIZE];
     long cntP;
     int OKea = 1;
 
