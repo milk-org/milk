@@ -4,7 +4,9 @@ set(SRCNAME "COREMOD_arith")
 
 
 set(SOURCEFILES
-	${SRCNAME}.c)
+	${SRCNAME}.c
+	set_pixel.c
+)
 
 set(INCLUDEFILES
 	${SRCNAME}.h)
