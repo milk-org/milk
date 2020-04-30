@@ -6,6 +6,19 @@ set(SRCNAME "COREMOD_arith")
 set(SOURCEFILES
 	${SRCNAME}.c
 	set_pixel.c
+	image_crop.c
+	image_merge3D.c
+	image_total.c
+	image_stats.c
+	image_dxdy.c
+	imfunctions.c
+	mathfuncs.c
+	image_arith__im__im.c
+	image_arith__im_im__im.c
+	image_arith__Cim_Cim__Cim.c
+	image_arith__im_f__im.c
+	image_arith__im_f_f__im.c
+	execute_arith.c
 )
 
 set(INCLUDEFILES
