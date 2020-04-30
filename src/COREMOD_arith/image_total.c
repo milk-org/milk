@@ -16,9 +16,8 @@ double arith_image_total(
 )
 {
     long double lvalue; // uses long double internally
-    imageID ID;
-    long ii;
-    long nelement;
+    imageID ID;    
+    uint64_t nelement;
     uint8_t datatype;
 
     ID = image_ID(ID_name);
@@ -28,86 +27,72 @@ double arith_image_total(
 
     lvalue = 0.0;
 
-    if(datatype == _DATATYPE_UINT8)
+    if(datatype == _DATATYPE_FLOAT)
     {
-        for(ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) data.image[ID].array.UI8[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-        for(ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) data.image[ID].array.SI32[ii];
-        }
-    }
-    else if(datatype == _DATATYPE_FLOAT)
-    {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.F[ii];
         }
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.D[ii];
         }
     }
     else if(datatype == _DATATYPE_UINT8)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.UI8[ii];
         }
     }
     else if(datatype == _DATATYPE_UINT16)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.UI16[ii];
         }
     }
     else if(datatype == _DATATYPE_UINT32)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.UI32[ii];
         }
     }
     else if(datatype == _DATATYPE_UINT64)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.UI64[ii];
         }
     }
     else if(datatype == _DATATYPE_INT8)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.SI8[ii];
         }
     }
     else if(datatype == _DATATYPE_INT16)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.SI16[ii];
         }
     }
     else if(datatype == _DATATYPE_INT32)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.SI32[ii];
         }
     }
     else if(datatype == _DATATYPE_INT64)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) data.image[ID].array.SI64[ii];
         }
@@ -133,8 +118,7 @@ double arith_image_sumsquare(
 {
     long double lvalue; // uses long double internally
     imageID ID;
-    long ii;
-    long nelement;
+    uint64_t nelement;
     uint8_t datatype;
 
     ID = image_ID(ID_name);
@@ -144,86 +128,72 @@ double arith_image_sumsquare(
 
     lvalue = 0.0;
 
-    if(datatype == _DATATYPE_UINT8)
+	if(datatype == _DATATYPE_FLOAT)
     {
-        for(ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) (data.image[ID].array.UI8[ii]*data.image[ID].array.UI8[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-        for(ii = 0; ii < nelement; ii++)
-        {
-            lvalue += (long double) (data.image[ID].array.SI32[ii]*data.image[ID].array.SI32[ii]);
-        }
-    }
-    else if(datatype == _DATATYPE_FLOAT)
-    {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.F[ii]*data.image[ID].array.F[ii]);
         }
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.D[ii]*data.image[ID].array.D[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT8)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.UI8[ii]*data.image[ID].array.UI8[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT16)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.UI16[ii]*data.image[ID].array.UI16[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT32)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.UI32[ii]*data.image[ID].array.UI32[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT64)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.UI64[ii]*data.image[ID].array.UI64[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT8)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.SI8[ii]*data.image[ID].array.SI8[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT16)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.SI16[ii]*data.image[ID].array.SI16[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT32)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.SI32[ii]*data.image[ID].array.SI32[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT64)
     {
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             lvalue += (long double) (data.image[ID].array.SI64[ii]*data.image[ID].array.SI64[ii]);
         }
