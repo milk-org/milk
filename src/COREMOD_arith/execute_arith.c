@@ -6,7 +6,7 @@
  */
 
 #include <math.h>
-
+#include <ctype.h>
 
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -28,7 +28,7 @@
 #include "image_arith__im_im__im.h"
 #include "image_arith__Cim_Cim__Cim.h"
 #include "image_arith__im_f__im.h"
-
+#include "image_arith__im_f_f__im.h"
 
 
 
