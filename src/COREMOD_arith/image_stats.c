@@ -31,13 +31,13 @@ double arith_image_mean(
 
 
 
+
 double arith_image_min(
     const char *ID_name
 )
 {
     imageID ID;
-    long ii;
-    long nelement;
+    uint64_t nelement;
     uint8_t datatype;
     int OK = 0;
 
@@ -49,12 +49,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float value, value1;
+        float value;
 
         value = data.image[ID].array.F[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.F[ii];
+            float value1 = data.image[ID].array.F[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -66,12 +66,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_DOUBLE)
     {
-        double value, value1;
+        double value;
 
         value = data.image[ID].array.D[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.D[ii];
+            double value1 = data.image[ID].array.D[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -83,12 +83,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t value, value1;
+        uint8_t value;
 
         value = data.image[ID].array.UI8[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI8[ii];
+            uint8_t value1 = data.image[ID].array.UI8[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -100,12 +100,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t value, value1;
+        uint16_t value;
 
         value = data.image[ID].array.UI16[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI16[ii];
+            uint16_t value1 = data.image[ID].array.UI16[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -117,12 +117,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t value, value1;
+        uint32_t value;
 
         value = data.image[ID].array.UI32[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI32[ii];
+            uint32_t value1 = data.image[ID].array.UI32[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -134,12 +134,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t value, value1;
+        uint64_t value;
 
         value = data.image[ID].array.UI64[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI64[ii];
+            uint64_t value1 = data.image[ID].array.UI64[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -151,12 +151,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_INT8)
     {
-        int8_t value, value1;
+        int8_t value;
 
         value = data.image[ID].array.SI8[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI8[ii];
+            int8_t value1 = data.image[ID].array.SI8[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -168,12 +168,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_INT16)
     {
-        int16_t value, value1;
+        int16_t value;
 
         value = (double) data.image[ID].array.SI16[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI16[ii];
+            int16_t value1 = data.image[ID].array.SI16[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -185,12 +185,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_INT32)
     {
-        int32_t value, value1;
+        int32_t value;
 
         value = data.image[ID].array.SI32[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI32[ii];
+            int32_t value1 = data.image[ID].array.SI32[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -202,12 +202,12 @@ double arith_image_min(
 
     if(datatype == _DATATYPE_INT64)
     {
-        int64_t value, value1;
+        int64_t value;
 
         value = data.image[ID].array.SI64[0];
-        for(ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI64[ii];
+            int64_t value1 = data.image[ID].array.SI64[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -224,6 +224,8 @@ double arith_image_min(
 
     return(0);
 }
+
+
 
 
 

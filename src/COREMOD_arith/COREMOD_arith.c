@@ -59,7 +59,7 @@
 #include "COREMOD_tools/COREMOD_tools.h"
 
 
-#include "COREMOD_arith/COREMOD_arith.h"
+//#include "COREMOD_arith/COREMOD_arith.h"
 
 
 #include "set_pixel.h"
