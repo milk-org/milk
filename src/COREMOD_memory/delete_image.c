@@ -12,6 +12,46 @@
 #include "list_image.h"
 
 
+
+
+
+// forward decl
+errno_t delete_image_ID();
+
+
+
+errno_t delete_image_ID__cli()
+{
+    long i = 1;
+    printf("%ld : %d\n", i, data.cmdargtoken[i].type);
+    while(data.cmdargtoken[i].type != 0)
+    {
+        if(data.cmdargtoken[i].type == 4)
+        {
+            delete_image_ID(data.cmdargtoken[i].val.string);
+        }
+        else
+        {
+            printf("Image %s does not exist\n", data.cmdargtoken[i].val.string);
+        }
+        i++;
+    }
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* deletes an ID */
 errno_t delete_image_ID(
     const char *imname

@@ -148,36 +148,6 @@ INIT_MODULE_LIB(COREMOD_memory)
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                                                                                 */
-/* 1. MANAGE MEMORY AND IDENTIFIERS                                                                */
-/*                                                                                                 */
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-
-static errno_t delete_image_ID__cli()
-{
-    long i = 1;
-    printf("%ld : %d\n", i, data.cmdargtoken[i].type);
-    while(data.cmdargtoken[i].type != 0)
-    {
-        if(data.cmdargtoken[i].type == 4)
-        {
-            delete_image_ID(data.cmdargtoken[i].val.string);
-        }
-        else
-        {
-            printf("Image %s does not exist\n", data.cmdargtoken[i].val.string);
-        }
-        i++;
-    }
-
-    return CLICMD_SUCCESS;
-}
-
-
 
 
 
