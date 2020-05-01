@@ -27,6 +27,90 @@ static int listim_scr_wcol;
 
 
 
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+errno_t    memory_monitor(
+    const char *termttyname
+);
+
+
+errno_t init_list_image_ID_ncurses(
+    const char *termttyname
+);
+
+void close_list_image_ID_ncurses();
+
+errno_t list_image_ID_ncurses();
+
+errno_t list_image_ID_ofp(
+    FILE *fo
+);
+
+errno_t list_image_ID_ofp_simple(
+    FILE *fo
+);
+
+errno_t list_image_ID();
+
+errno_t list_image_ID_file(
+    const char *fname
+);
+
+errno_t list_variable_ID();
+
+errno_t list_variable_ID_file(
+    const char *fname
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t memory_monitor__cli()
+{
+    memory_monitor(data.cmdargtoken[1].val.string);
+    return CLICMD_SUCCESS;
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t list_image_addCLIcmd()
+{
+	 RegisterCLIcommand(
+        "mmon",
+        __FILE__,
+        memory_monitor__cli,
+        "Monitor memory content",
+        "terminal tty name",
+        "mmon /dev/pts/4",
+        "int memory_monitor(const char *ttyname)");
+
+    RegisterCLIcommand(
+        "listim",
+        __FILE__,
+        list_image_ID,
+        "list images in memory",
+        "no argument",
+        "listim", "int_fast8_t list_image_ID()");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
 
 
 errno_t init_list_image_ID_ncurses(
@@ -616,38 +700,6 @@ errno_t list_image_ID_file(
     return RETURN_SUCCESS;
 }
 
-
-errno_t list_variable_ID()
-{
-    variableID i;
-
-    for(i = 0; i < data.NB_MAX_VARIABLE; i++)
-        if(data.variable[i].used == 1)
-        {
-            printf("%4ld %16s %25.18g\n", i, data.variable[i].name,
-                   data.variable[i].value.f);
-        }
-
-    return RETURN_SUCCESS;
-}
-
-
-errno_t list_variable_ID_file(const char *fname)
-{
-    imageID i;
-    FILE *fp;
-
-    fp = fopen(fname, "w");
-    for(i = 0; i < data.NB_MAX_VARIABLE; i++)
-        if(data.variable[i].used == 1)
-        {
-            fprintf(fp, "%s=%.18g\n", data.variable[i].name, data.variable[i].value.f);
-        }
-
-    fclose(fp);
-
-    return RETURN_SUCCESS;
-}
 
 
 

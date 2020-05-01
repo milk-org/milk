@@ -8,6 +8,110 @@
 #include "image_ID.h"
 
 
+
+// ==========================================
+// forward declarations
+// ==========================================
+
+long image_write_keyword_L(
+    const char *IDname,
+    const char *kname,
+    long value, const
+    char       *comment
+);
+
+long image_list_keywords(
+    const char *IDname
+);
+
+
+
+// ==========================================
+// command line interface wrapper functions
+// ==========================================
+
+errno_t image_write_keyword_L__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+        image_write_keyword_L(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.string
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+errno_t image_list_keywords__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            == 0)
+    {
+        image_list_keywords(data.cmdargtoken[1].val.string);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+// ==========================================
+// Register CLI commands
+// ==========================================
+
+errno_t image_keyword_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "imwritekwL",
+        __FILE__,
+        image_write_keyword_L__cli,
+        "write long type keyword",
+        "<imname> <kname> <value [long]> <comment>",
+        "imwritekwL im1 kw2 34 my_keyword_comment",
+        "long image_write_keyword_L(const char *IDname, const char *kname, long value, const char *comment)");
+
+    RegisterCLIcommand(
+        "imlistkw",
+        __FILE__,
+        image_list_keywords__cli,
+        "list image keywords",
+        "<imname>",
+        "imlistkw im1",
+        "long image_list_keywords(const char *IDname)");	
+	
+	return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
 long image_write_keyword_L(
     const char *IDname,
     const char *kname,

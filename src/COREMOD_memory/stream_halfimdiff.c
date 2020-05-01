@@ -10,6 +10,74 @@
 #include "stream_sem.h"
 
 
+
+
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID COREMOD_MEMORY_stream_halfimDiff(
+    const char *IDstream_name,
+    const char *IDstreamout_name,
+    long        semtrig
+);
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+static errno_t COREMOD_MEMORY_stream_halfimDiff__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_stream_halfimDiff(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_halfimdiff_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "streamhalfdiff",
+        __FILE__,
+        COREMOD_MEMORY_stream_halfimDiff__cli,
+        "compute difference between two halves of an image stream",
+        "<in stream> <out stream> <sem trigger index>",
+        "streamhalfdiff stream outstream 3",
+        "long COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name, const char *IDstreamout_name, long semtrig)");
+	
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
 //
 // compute difference between two halves of an image stream
 // triggers on instream

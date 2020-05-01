@@ -14,13 +14,20 @@
 
 
 
+// ==========================================
+// Forward declaration(s)
+// ==========================================
 
-// forward decl
-errno_t delete_image_ID();
+errno_t delete_image_ID(
+    const char *imname
+);
 
 
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
 
-errno_t delete_image_ID__cli()
+static errno_t delete_image_ID__cli()
 {
     long i = 1;
     printf("%ld : %d\n", i, data.cmdargtoken[i].type);
@@ -43,7 +50,23 @@ errno_t delete_image_ID__cli()
 
 
 
+// ==========================================
+// Register CLI command(s)
+// ==========================================
 
+errno_t delete_image_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "rm",
+        __FILE__,
+        delete_image_ID__cli,
+        "remove image(s)",
+        "list of images",
+        "rm im1 im4",
+        "int delete_image_ID(char* imname)");
+
+    return RETURN_SUCCESS;
+}
 
 
 

@@ -3,6 +3,12 @@
  */
 
 
+
+errno_t image_set_counters_addCLIcmd();
+
+
+
+
 errno_t COREMOD_MEMORY_image_set_status(
     const char *IDname,
     int         status

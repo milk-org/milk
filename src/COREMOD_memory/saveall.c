@@ -13,6 +13,107 @@
 
 
 
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+errno_t COREMOD_MEMORY_SaveAll_snapshot(
+    const char *dirname
+);
+
+
+errno_t COREMOD_MEMORY_SaveAll_sequ(
+    const char *dirname,
+    const char *IDtrig_name,
+    long        semtrig,
+    long        NBframes
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_SaveAll_snapshot__cli()
+{
+    if(0
+            + CLI_checkarg(1, 5) == 0)
+    {
+        COREMOD_MEMORY_SaveAll_snapshot(data.cmdargtoken[1].val.string);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_SaveAll_sequ__cli()
+{
+    if(0
+            + CLI_checkarg(1, 5)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_SaveAll_sequ(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t saveall_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "imsaveallsnap",
+        __FILE__,
+        COREMOD_MEMORY_SaveAll_snapshot__cli, "save all images in directory",
+        "<directory>", "imsaveallsnap dir1",
+        "long COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)");
+
+    RegisterCLIcommand(
+        "imsaveallseq",
+        __FILE__,
+        COREMOD_MEMORY_SaveAll_sequ__cli,
+        "save all images in directory - sequence",
+        "<directory> <trigger image name> <trigger semaphore> <NB frames>",
+        "imsaveallsequ dir1 im1 3 20",
+        "long COREMOD_MEMORY_SaveAll_sequ(const char *dirname, const char *IDtrig_name, long semtrig, long NBframes)");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
 //
 // save all current images/stream onto file
 //

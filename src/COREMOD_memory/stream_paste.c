@@ -11,6 +11,83 @@
 #include "create_image.h"
 
 
+
+
+// ==========================================
+// Forward declarations
+// ==========================================
+
+imageID COREMOD_MEMORY_streamPaste(
+    const char *IDstream0_name,
+    const char *IDstream1_name,
+    const char *IDstreamout_name,
+    long        semtrig0,
+    long        semtrig1,
+    int         master
+);
+
+
+// ==========================================
+// Command line interface wrapper functions
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_streamPaste__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, 5)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            + CLI_checkarg(6, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_streamPaste(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.string,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl,
+            data.cmdargtoken[6].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_paste_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "streampaste",
+        __FILE__,
+        COREMOD_MEMORY_streamPaste__cli,
+        "paste two 2D image streams of same size",
+        "<in stream 0> <in stream 1> <out stream> <sem trigger0> <sem trigger1> <master>",
+        "streampaste stream0 stream1 outstream 3 3 0",
+        "long COREMOD_MEMORY_streamPaste(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreamout_name, long semtrig0, long semtrig1, int master)");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
 //
 // compute difference between two 2D streams
 // triggers alternatively on stream0 and stream1

@@ -40,6 +40,195 @@ static long tret; // thread return value
 
 
 
+
+
+
+
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+errno_t COREMOD_MEMORY_logshim_printstatus(
+    const char *IDname
+);
+
+errno_t COREMOD_MEMORY_logshim_set_on(
+    const char *IDname,
+    int         setv
+);
+
+errno_t COREMOD_MEMORY_logshim_set_logexit(
+    const char *IDname,
+    int setv
+);
+
+errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
+    const char  *IDname,
+    uint32_t     zsize,
+    const char  *logdir,
+    const char  *IDlogdata_name
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_logshim_printstatus__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+        COREMOD_MEMORY_logshim_printstatus(
+            data.cmdargtoken[1].val.string
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_logshim_set_on__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        printf("logshim_set_on ----------------------\n");
+        COREMOD_MEMORY_logshim_set_on(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_logshim_set_logexit__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_logshim_set_logexit(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
+{
+
+    if(CLI_checkarg_noerrmsg(4, CLIARG_STR_NOT_IMG) != 0)
+    {
+        sprintf(data.cmdargtoken[4].val.string, "null");
+    }
+
+    if(0
+            + CLI_checkarg(1, 3)
+            + CLI_checkarg(2, CLIARG_LONG)
+            + CLI_checkarg(3, 3)
+            == 0)
+    {
+        COREMOD_MEMORY_sharedMem_2Dim_log(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl,
+            data.cmdargtoken[3].val.string,
+            data.cmdargtoken[4].val.string
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t logshmim_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "shmimstreamlog",
+        __FILE__,
+        COREMOD_MEMORY_sharedMem_2Dim_log__cli,
+        "logs shared memory stream (run in current directory)",
+        "<shm image> <cubesize [long]> <logdir>",
+        "shmimstreamlog wfscamim 10000 /media/data",
+        "long COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name)");
+
+    RegisterCLIcommand(
+        "shmimslogstat",
+        __FILE__,
+        COREMOD_MEMORY_logshim_printstatus__cli,
+        "print log shared memory stream status",
+        "<shm image>", "shmimslogstat wfscamim",
+        "int COREMOD_MEMORY_logshim_printstatus(const char *IDname)");
+
+    RegisterCLIcommand(
+        "shmimslogonset", __FILE__,
+        COREMOD_MEMORY_logshim_set_on__cli,
+        "set on variable in log shared memory stream",
+        "<shm image> <setv [long]>",
+        "shmimslogonset imwfs 1",
+        "int COREMOD_MEMORY_logshim_set_on(const char *IDname, int setv)");
+
+    RegisterCLIcommand(
+        "shmimslogexitset",
+        __FILE__,
+        COREMOD_MEMORY_logshim_set_logexit__cli,
+        "set exit variable in log shared memory stream",
+        "<shm image> <setv [long]>",
+        "shmimslogexitset imwfs 1",
+        "int COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** data logging of shared memory image stream
  *
  */

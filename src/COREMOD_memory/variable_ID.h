@@ -10,3 +10,5 @@ variableID variable_ID(
 
 
 variableID next_avail_variable_ID();
+
+long       compute_variable_memory();

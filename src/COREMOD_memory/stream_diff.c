@@ -10,6 +10,83 @@
 
 
 
+
+// ==========================================
+// forward declarations
+// ==========================================
+
+imageID COREMOD_MEMORY_streamDiff(
+    const char *IDstream0_name,
+    const char *IDstream1_name,
+    const char *IDstreammask_name,
+    const char *IDstreamout_name,
+    long        semtrig
+);
+
+
+// ==========================================
+// command line interface wrapper functions
+// ==========================================
+
+
+
+static errno_t COREMOD_MEMORY_streamDiff__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, 5)
+            + CLI_checkarg(4, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_streamDiff(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.string,
+            data.cmdargtoken[4].val.string,
+            data.cmdargtoken[5].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_diff_addCLIcmd()
+{
+	RegisterCLIcommand(
+        "streamdiff",
+        __FILE__,
+        COREMOD_MEMORY_streamDiff__cli,
+        "compute difference between two image streams",
+        "<in stream 0> <in stream 1> <out stream> <optional mask> <sem trigger index>",
+        "streamdiff stream0 stream1 null outstream 3",
+        "long COREMOD_MEMORY_streamDiff(const char *IDstream0_name, const char *IDstream1_name, const char *IDstreamout_name, long semtrig)");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * ## Purpose
  *

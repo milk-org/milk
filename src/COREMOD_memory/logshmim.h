@@ -3,6 +3,14 @@
  */
 
 
+
+errno_t logshmim_addCLIcmd();
+
+
+
+
+
+
 void      *save_fits_function(
     void *ptr
 );

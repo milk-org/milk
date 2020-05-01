@@ -11,6 +11,86 @@
 #include "delete_image.h"
 
 
+
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID COREMOD_MEMORY_streamAve(
+    const char *IDstream_name,
+    int         NBave,
+    int         mode,
+    const char *IDout_name
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+static errno_t COREMOD_MEMORY_streamAve__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, 5)
+            == 0)
+    {
+        COREMOD_MEMORY_streamAve(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.string
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_ave_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "streamave",
+        __FILE__,
+        COREMOD_MEMORY_streamAve__cli,
+        "averages stream",
+        "<instream> <NBave> <mode, 1 for single local instance, 0 for loop> <outstream>",
+        "streamave instream 100 0 outstream",
+        "long COREMODE_MEMORY_streamAve(const char *IDstream_name, int NBave, int mode, const char *IDout_name)");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** @brief Averages frames in stream
  *
  * @param[in]  IDstream_name        Input stream

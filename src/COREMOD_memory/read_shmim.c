@@ -13,6 +13,109 @@
 #include "list_image.h"
 
 
+
+
+
+// ==========================================
+// forward declaration
+// ==========================================
+
+imageID read_sharedmem_image_size(
+    const char *name,
+    const char *fname
+);
+
+imageID read_sharedmem_image(
+    const char *name
+);
+
+
+// ==========================================
+// command line interface wrapper functions
+// ==========================================
+
+
+
+static errno_t read_sharedmem_image_size__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_STR)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+
+        read_sharedmem_image_size(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+static errno_t read_sharedmem_image__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+
+        read_sharedmem_image(
+            data.cmdargtoken[1].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t read_shmim_addCLIcmd()
+{
+   RegisterCLIcommand(
+        "readshmimsize",
+        __FILE__,
+        read_sharedmem_image_size__cli,
+        "read shared memory image size",
+        "<name> <output file>",
+        "readshmimsize im1 imsize.txt",
+        "read_sharedmem_image_size(const char *name, const char *fname)");
+
+    RegisterCLIcommand(
+        "readshmim",
+        __FILE__, read_sharedmem_image__cli,
+        "read shared memory image",
+        "<name>",
+        "readshmim im1",
+        "read_sharedmem_image(const char *name)");    
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
 /**
  *  ## Purpose
  *

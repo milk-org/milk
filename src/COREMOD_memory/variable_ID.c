@@ -71,3 +71,20 @@ variableID next_avail_variable_ID()
     return ID;
 }
 
+
+
+long compute_variable_memory()
+{
+    long totalvmem = 0;
+
+    for(variableID i = 0; i < data.NB_MAX_VARIABLE; i++)
+    {
+        totalvmem += sizeof(VARIABLE);
+        if(data.variable[i].used == 1)
+        {
+            totalvmem += 0;
+        }
+    }
+    return totalvmem;
+}
+

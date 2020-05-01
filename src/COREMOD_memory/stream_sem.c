@@ -18,6 +18,268 @@ static pthread_t *thrarray_semwait;
 static long NB_thrarray_semwait;
 
 
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+
+imageID COREMOD_MEMORY_image_set_createsem(
+    const char *IDname,
+    long        NBsem
+);
+
+
+imageID COREMOD_MEMORY_image_seminfo(
+    const char *IDname
+);
+
+imageID COREMOD_MEMORY_image_set_sempost(
+    const char *IDname,
+    long        index
+);
+
+imageID COREMOD_MEMORY_image_set_sempost_byID(
+    imageID ID,
+    long    index
+);
+
+imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
+    imageID ID,
+    long    index
+);
+
+imageID COREMOD_MEMORY_image_set_sempost_loop(
+    const char *IDname,
+    long index,
+    long dtus
+);
+
+imageID COREMOD_MEMORY_image_set_semwait(
+    const char *IDname,
+    long index
+);
+
+void *waitforsemID(
+    void *ID
+);
+
+errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
+    imageID *IDarray,
+    long     NB_ID
+);
+
+errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
+    imageID *IDarray,
+    long     NB_ID
+);
+
+imageID COREMOD_MEMORY_image_set_semflush(
+    const char *IDname,
+    long        index
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_image_set_createsem__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_set_createsem(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_image_seminfo__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG) == 0)
+    {
+        COREMOD_MEMORY_image_seminfo(data.cmdargtoken[1].val.string);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_image_set_sempost__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_set_sempost(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_image_set_sempost_loop__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_set_sempost_loop(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl,
+            data.cmdargtoken[3].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+static errno_t COREMOD_MEMORY_image_set_semwait__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_set_semwait(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_image_set_semflush__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_set_semflush(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_sem_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "imsetcreatesem",
+        __FILE__,
+        COREMOD_MEMORY_image_set_createsem__cli,
+        "create image semaphore",
+        "<image> <NBsem>",
+        "imsetcreatesem im1 5",
+        "long COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem)");
+
+    RegisterCLIcommand(
+        "imseminfo",
+        __FILE__,
+        COREMOD_MEMORY_image_seminfo__cli,
+        "display semaphore info",
+        "<image>",
+        "imseminfo im1",
+        "long COREMOD_MEMORY_image_seminfo(const char *IDname)");
+
+    RegisterCLIcommand(
+        "imsetsempost",
+        __FILE__,
+        COREMOD_MEMORY_image_set_sempost__cli,
+        "post image semaphore. If sem index = -1, post all semaphores",
+        "<image> <sem index>",
+        "imsetsempost im1 2",
+        "long COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)");
+
+    RegisterCLIcommand(
+        "imsetsempostl",
+        __FILE__,
+        COREMOD_MEMORY_image_set_sempost_loop__cli,
+        "post image semaphore loop. If sem index = -1, post all semaphores",
+        "<image> <sem index> <time interval [us]>",
+        "imsetsempostl im1 -1 1000",
+        "long COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus)");
+
+    RegisterCLIcommand(
+        "imsetsemwait",
+        __FILE__,
+        COREMOD_MEMORY_image_set_semwait__cli,
+        "wait image semaphore",
+        "<image>",
+        "imsetsemwait im1",
+        "long COREMOD_MEMORY_image_set_semwait(const char *IDname)");
+
+    RegisterCLIcommand(
+        "imsetsemflush",
+        __FILE__,
+        COREMOD_MEMORY_image_set_semflush__cli,
+        "flush image semaphore",
+        "<image> <sem index>",
+        "imsetsemflush im1 0",
+        "long COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)");   
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * @see ImageStreamIO_createsem
  */

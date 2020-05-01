@@ -12,6 +12,157 @@
 #include "COREMOD_tools/COREMOD_tools.h"
 
 
+
+
+
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+
+
+errno_t COREMOD_MEMORY_streamDelay_FPCONF(
+    char    *fpsname,
+    uint32_t CMDmode
+);
+
+imageID COREMOD_MEMORY_streamDelay_RUN(
+    char *fpsname
+);
+
+
+errno_t COREMOD_MEMORY_streamDelay(
+    const char *IDin_name,
+    const char *IDout_name,
+    long        delayus,
+    long        dtus
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_streamDelay__cli()
+{
+    char fpsname[200];
+
+    // First, we try to execute function through FPS interface
+    if(0
+            + CLI_checkarg(1, 5)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)   // check that first arg is string, second arg is int
+    {
+        unsigned int OptionalArg00 = data.cmdargtoken[2].val.numl;
+
+        // Set FPS interface name
+        // By convention, if there are optional arguments, they should be appended to the fps name
+        //
+        if(data.processnameflag ==
+                0)   // name fps to something different than the process name
+        {
+            sprintf(fpsname, "streamDelay-%06u", OptionalArg00);
+        }
+        else     // Automatically set fps name to be process name up to first instance of character '.'
+        {
+            strcpy(fpsname, data.processname0);
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string,
+                  "_FPSINIT_") == 0)    // Initialize FPS and conf process
+        {
+            printf("Function parameters configure\n");
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_FPSINIT);
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string,
+                  "_CONFSTART_") == 0)    // Start conf process
+        {
+            printf("Function parameters configure\n");
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_CONFSTART);
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string,
+                  "_CONFSTOP_") == 0)   // Stop conf process
+        {
+            printf("Function parameters configure\n");
+            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_CONFSTOP);
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") == 0)   // Run process
+        {
+            printf("Run function\n");
+            COREMOD_MEMORY_streamDelay_RUN(fpsname);
+            return RETURN_SUCCESS;
+        }
+        /*
+                if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") == 0) { // Cleanly stop process
+                    printf("Run function\n");
+                    COREMOD_MEMORY_streamDelay_STOP(OptionalArg00);
+                    return RETURN_SUCCESS;
+                }*/
+    }
+
+    // non FPS implementation - all parameters specified at function launch
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, 5)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_streamDelay(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+
+}
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_delay_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "streamdelay",
+        __FILE__,
+        COREMOD_MEMORY_streamDelay__cli,
+        "delay 2D image stream",
+        "<image2d in> <image2d out> <delay [us]> <resolution [us]>",
+        "streamdelay instream outstream 1000 10",
+        "long COREMOD_MEMORY_streamDelay(const char *IDin_name, const char *IDout_name, long delayus, long dtus)");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
 /**
  * @brief Manages configuration parameters for streamDelay
  *

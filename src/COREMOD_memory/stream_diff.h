@@ -3,8 +3,9 @@
  */
 
 
-/** @brief Difference between two streams
-*/
+errno_t stream_diff_addCLIcmd();
+
+
 imageID COREMOD_MEMORY_streamDiff(
     const char *IDstream0_name,
     const char *IDstream1_name,

@@ -12,6 +12,146 @@
 #include "COREMOD_tools/COREMOD_tools.h"
 
 
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID COREMOD_MEMORY_image_streamupdateloop(
+    const char *IDinname,
+    const char *IDoutname,
+    long        usperiod,
+    long        NBcubes,
+    long        period,
+    long        offsetus,
+    const char *IDsync_name,
+    int         semtrig,
+    int         timingmode
+);
+
+
+imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
+    const char *IDinname,
+    const char *IDoutname,
+    long        period,
+    long        offsetus,
+    const char *IDsync_name,
+    int         semtrig,
+    int         timingmode
+);
+
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, 5)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            + CLI_checkarg(6, CLIARG_LONG)
+            + CLI_checkarg(7, 5)
+            + CLI_checkarg(8, CLIARG_LONG)
+            + CLI_checkarg(9, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_streamupdateloop(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl,
+            data.cmdargtoken[6].val.numl,
+            data.cmdargtoken[7].val.string,
+            data.cmdargtoken[8].val.numl,
+            data.cmdargtoken[9].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, 5)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, 5)
+            + CLI_checkarg(6, CLIARG_LONG)
+            + CLI_checkarg(7, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_streamupdateloop_semtrig(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.string,
+            data.cmdargtoken[6].val.numl,
+            data.cmdargtoken[7].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_updateloop_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "creaimstream",
+        __FILE__,
+        COREMOD_MEMORY_image_streamupdateloop__cli,
+        "create 2D image stream from 3D cube",
+        "<image3d in> <image2d out> <interval [us]> <NBcubes> <period> <offsetus> <sync stream name> <semtrig> <timing mode>",
+        "creaimstream imcube imstream 1000 3 3 154 ircam1 3 0",
+        "long COREMOD_MEMORY_image_streamupdateloop(const char *IDinname, const char *IDoutname, long usperiod, long NBcubes, long period, long offsetus, const char *IDsync_name, int semtrig, int timingmode)");
+
+    RegisterCLIcommand(
+        "creaimstreamstrig",
+        __FILE__,
+        COREMOD_MEMORY_image_streamupdateloop_semtrig__cli,
+        "create 2D image stream from 3D cube, use other stream to synchronize",
+        "<image3d in> <image2d out> <period [int]> <delay [us]> <sync stream> <sync sem index> <timing mode>",
+        "creaimstreamstrig imcube outstream 3 152 streamsync 3 0",
+        "long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const char *IDoutname, long period, long offsetus, const char *IDsync_name, int semtrig, int timingmode)");    
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
 /** @brief takes a 3Dimage(s) (circular buffer(s)) and writes slices to a 2D image with time interval specified in us
  *
  *
