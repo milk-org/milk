@@ -12,17 +12,11 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "set_pixel.h"
-
 #include "image_crop.h"
-
 #include "image_merge3D.h"
-
 #include "image_total.h"
-
 #include "image_stats.h"
-
 #include "image_dxdy.h"
-
 #include "imfunctions.h"
 #include "image_arith__im__im.h"
 #include "image_arith__im_im__im.h"
