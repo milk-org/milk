@@ -8,7 +8,6 @@
  */
 
 
-
 #ifndef _COREMODMEMORY_H
 #define _COREMODMEMORY_H
 
@@ -23,33 +22,13 @@
 #define NB_VARIABLES_BUFFER_REALLOC 150
 
 
+
+
 /*void print_sys_mem_info();*/
 
 
 typedef long imageID;
 
-/** data logging of shared memory image stream
- *
- */
-typedef struct
-{
-    char iname[100];
-    char fname[200];
-    int partial; // 1 if partial cube
-    long cubesize; // size of the cube
-
-    int saveascii;
-    // 0 : Not saving ascii
-    // 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
-    // 2 : ???
-
-    char      fnameascii[200];  // name of frame to be saved
-    uint64_t *arrayindex;
-    uint64_t *arraycnt0;
-    uint64_t *arraycnt1;
-
-    double   *arraytime;
-} STREAMSAVE_THREAD_MESSAGE;
 
 
 
@@ -59,27 +38,8 @@ typedef struct
 
 
 
-typedef struct
-{
-    int       on;                   /**<  1 if logging, 0 otherwise */
-    long long cnt;
-    long long filecnt;
-    long      interval;             /**<  log every x frames (default = 1) */
-    int       logexit;              /**<  toggle to 1 when exiting */
-    char      fname[200];
-} LOGSHIM_CONF;
 
-
-
-typedef struct
-{
-    long cnt0;
-    long cnt1;
-} TCP_BUFFER_METADATA;
-
-
-
-void __attribute__((constructor)) libinit_COREMOD_memory();
+//void __attribute__((constructor)) libinit_COREMOD_memory();
 
 
 
@@ -88,7 +48,30 @@ void __attribute__((constructor)) libinit_COREMOD_memory();
 //int ImageCreate(IMAGE *image, const char *name, long naxis, uint32_t *size, uint8_t datatype, int shared, int NBkw);
 
 
+#include "COREMOD_memory/image_ID.h"
+#include "COREMOD_memory/image_keyword.h"
+#include "COREMOD_memory/compute_image_memory.h"
+#include "COREMOD_memory/list_image.h"
+
+#include "COREMOD_memory/variable_ID.h"
+
+#include "COREMOD_memory/create_image.h"
+#include "COREMOD_memory/delete_image.h"
+
+#include "COREMOD_memory/image_copy.h"
+#include "COREMOD_memory/image_complex.h"
+
+#include "COREMOD_memory/read_shmim.h"
+#include "COREMOD_memory/stream_sem.h"
+#include "COREMOD_memory/stream_TCP.h"
+#include "COREMOD_memory/logshmim.h"
+
+
 errno_t COREMOD_MEMORY_testfunc();
+
+
+
+
 
 
 /* =============================================================================================== */
@@ -109,33 +92,10 @@ long       compute_nb_image();
 
 long       compute_nb_variable();
 
-long long  compute_image_memory();
 
 long       compute_variable_memory();
 
-imageID    image_ID(
-    const char *name
-);
 
-imageID    image_ID_noaccessupdate(
-    const char *name
-);
-
-variableID variable_ID(
-    const char *name
-);
-
-imageID    next_avail_image_ID();
-
-variableID next_avail_variable_ID();
-
-errno_t    delete_image_ID(
-    const char *imname
-);
-
-errno_t    delete_image_ID_prefix(
-    const char *prefix
-);
 
 errno_t    delete_variable_ID(
     const char *varname
@@ -151,164 +111,16 @@ variableID create_variable_string_ID(
     const char *value
 );
 
-imageID    create_image_ID(
-    const char *name,
-    long        naxis,
-    uint32_t   *size,
-    uint8_t     datatype,
-    int         shared,
-    int         nbkw
-);
 
 errno_t    clearall();
 
-void      *save_fits_function(
-    void *ptr
-);
+
 
 ///@}
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 2. KEYWORDS
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
 
-long image_write_keyword_L(
-    const char *IDname,
-    const char *kname,
-    long value, const
-    char       *comment
-);
-
-long image_write_keyword_D(
-    const char *IDname,
-    const char *kname,
-    double      value,
-    const char *comment
-);
-
-long image_write_keyword_S(
-    const char *IDname,
-    const char *kname,
-    const char *value,
-    const char *comment
-);
-
-long image_list_keywords(
-    const char *IDname
-);
-
-long image_read_keyword_D(
-    const char *IDname,
-    const char *kname,
-    double     *val
-);
-
-long image_read_keyword_L(
-    const char *IDname,
-    const char *kname,
-    long       *val
-);
-
-///@}
-
-
-
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 3. READ SHARED MEM IMAGE AND SIZE
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-
-imageID    read_sharedmem_image_size(
-    const char *name,
-    const char *fname
-);
-
-imageID    read_sharedmem_image(
-    const char *name
-);
-
-///@}
-
-
-
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 4. CREATE IMAGE
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-
-imageID create_1Dimage_ID(
-    const char *ID_name,
-    uint32_t    xsize
-);
-
-imageID create_1DCimage_ID(
-    const char *ID_name,
-    uint32_t    xsize
-);
-
-imageID create_2Dimage_ID(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize
-);
-
-imageID create_2Dimage_ID_double(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize
-);
-
-imageID create_2DCimage_ID(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize
-);
-
-imageID create_2DCimage_ID_double(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize
-);
-
-imageID create_3Dimage_ID(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize
-);
-
-imageID create_3Dimage_ID_double(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize
-);
-
-imageID create_3DCimage_ID(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
-    uint32_t    zsize
-);
-
-///@}
 
 
 
@@ -333,133 +145,10 @@ variableID create_variable_ID(
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 6. COPY IMAGE
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-imageID copy_image_ID(
-    const char *name,
-    const char *newname,
-    int         shared
-);
-
-imageID chname_image_ID(
-    const char *ID_name,
-    const char *new_name
-);
-
-errno_t COREMOD_MEMORY_cp2shm(
-    const char *IDname,
-    const char *IDshmname
-);
-
-///@}
 
 
 
 
-
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 7. DISPLAY / LISTS
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-errno_t init_list_image_ID_ncurses(
-    const char *termttyname
-);
-
-void close_list_image_ID_ncurses();
-
-errno_t list_image_ID_ncurses();
-
-errno_t list_image_ID_ofp(
-    FILE *fo
-);
-
-errno_t list_image_ID_ofp_simple(
-    FILE *fo
-);
-
-errno_t list_image_ID();
-
-errno_t list_image_ID_file(
-    const char *fname
-);
-
-errno_t list_variable_ID();
-
-errno_t list_variable_ID_file(
-    const char *fname
-);
-
-
-///@}
-
-
-
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 8. TYPE CONVERSIONS TO AND FROM COMPLEX
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-errno_t mk_complex_from_reim(
-    const char *re_name,
-    const char *im_name,
-    const char *out_name,
-    int         sharedmem
-);
-
-errno_t mk_complex_from_amph(
-    const char *am_name,
-    const char *ph_name,
-    const char *out_name,
-    int         sharedmem
-);
-
-errno_t mk_reim_from_complex(
-    const char *in_name,
-    const char *re_name,
-    const char *im_name,
-    int         sharedmem
-);
-
-errno_t mk_amph_from_complex(
-    const char *in_name,
-    const char *am_name,
-    const char *ph_name,
-    int         sharedmem
-);
-
-errno_t mk_reim_from_amph(
-    const char *am_name,
-    const char *ph_name,
-    const char *re_out_name,
-    const char *im_out_name,
-    int         sharedmem
-);
-
-errno_t mk_amph_from_reim(
-    const char *re_name,
-    const char *im_name,
-    const char *am_out_name,
-    const char *ph_out_name,
-    int         sharedmem
-);
-
-///@}
 
 
 
@@ -552,71 +241,6 @@ errno_t COREMOD_MEMORY_image_set_cnt1(
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 12. MANAGE SEMAPHORES
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-imageID COREMOD_MEMORY_image_set_createsem(
-    const char *IDname,
-    long        NBsem
-);
-
-
-imageID COREMOD_MEMORY_image_seminfo(
-    const char *IDname
-);
-
-imageID COREMOD_MEMORY_image_set_sempost(
-    const char *IDname,
-    long        index
-);
-
-imageID COREMOD_MEMORY_image_set_sempost_byID(
-    imageID ID,
-    long    index
-);
-
-imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
-    imageID ID,
-    long    index
-);
-
-imageID COREMOD_MEMORY_image_set_sempost_loop(
-    const char *IDname,
-    long index,
-    long dtus
-);
-
-imageID COREMOD_MEMORY_image_set_semwait(
-    const char *IDname,
-    long index
-);
-
-void *waitforsemID(
-    void *ID
-);
-
-errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
-    imageID *IDarray,
-    long     NB_ID
-);
-
-errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
-    imageID *IDarray,
-    long     NB_ID
-);
-
-imageID COREMOD_MEMORY_image_set_semflush(
-    const char *IDname,
-    long        index
-);
-
-///@}
 
 
 
@@ -759,27 +383,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 );
 
 
-errno_t COREMOD_MEMORY_testfunction_semaphore(
-    const char *IDname,
-    int         semtrig,
-    int         testmode
-);
 
 
-
-imageID COREMOD_MEMORY_image_NETWORKtransmit(
-    const char *IDname,
-    const char *IPaddr,
-    int         port,
-    int         mode,
-    int         RT_priority
-);
-
-imageID COREMOD_MEMORY_image_NETWORKreceive(
-    int port,
-    int mode,
-    int RT_priority
-);
 
 
 imageID COREMOD_MEMORY_PixMapDecode_U(
@@ -807,27 +412,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
-errno_t COREMOD_MEMORY_logshim_printstatus(
-    const char *IDname
-);
-
-errno_t COREMOD_MEMORY_logshim_set_on(
-    const char *IDname,
-    int         setv
-);
-
-errno_t COREMOD_MEMORY_logshim_set_logexit(
-    const char *IDname,
-    int setv
-);
-
-errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
-    const char  *IDname,
-    uint32_t     zsize,
-    const char  *logdir,
-    const char  *IDlogdata_name
-);
 
 ///@}
 
