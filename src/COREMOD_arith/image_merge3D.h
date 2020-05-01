@@ -4,6 +4,9 @@
  */
 
 
+errno_t image_merge3D_addCLIcmd();
+
+
 imageID arith_image_merge3D(
     const char *ID_name1,
     const char *ID_name2,

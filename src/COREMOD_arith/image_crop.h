@@ -5,6 +5,10 @@
 
 
 
+errno_t image_crop_addCLIcmd();
+
+
+
 imageID arith_image_crop(
     const char *ID_name,
     const char *ID_out,
