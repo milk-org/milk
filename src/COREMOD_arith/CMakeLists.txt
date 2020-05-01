@@ -22,7 +22,22 @@ set(SOURCEFILES
 )
 
 set(INCLUDEFILES
-	${SRCNAME}.h)
+	${SRCNAME}.h
+	set_pixel.h
+	image_crop.h
+	image_merge3D.h
+	image_total.h
+	image_stats.h
+	image_dxdy.h
+	imfunctions.h
+	mathfuncs.h
+	image_arith__im__im.h
+	image_arith__im_im__im.h
+	image_arith__Cim_Cim__Cim.ch
+	image_arith__im_f__im.h
+	image_arith__im_f_f__im.h
+	execute_arith.h
+)
 
 
 # DEFAULT SETTINGS 
