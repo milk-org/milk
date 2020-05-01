@@ -12,6 +12,82 @@
 
 
 
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID arith_image_merge3D(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *IDout_name
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t arith_image_merge3D_cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+        arith_image_merge3D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t image_merge3D_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "merge3d",
+        __FILE__,
+        arith_image_merge3D_cli,
+        "merge two 3D cubes into one",
+        "<input cube 1> <input cube 2> <output cube>",
+        "merge3d imc1 imc2 imcout",
+        "long arith_image_merge3D(const char *ID_name1, const char *ID_name2, const char *IDout_name)");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // join two cubes
 imageID arith_image_merge3D(
     const char *ID_name1,

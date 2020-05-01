@@ -9,6 +9,260 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
+
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID arith_set_pixel(
+    const char *ID_name,
+    double      value,
+    long        x,
+    long        y
+);
+
+
+
+imageID arith_set_pixel_1Drange(
+    const char *ID_name,
+    double      value,
+    long        x,
+    long        y
+);
+
+
+
+imageID arith_set_row(
+    const char *ID_name,
+    double      value,
+    long        y
+);
+
+
+
+imageID arith_set_col(
+    const char *ID_name,
+    double      value,
+    long        x
+);
+
+
+imageID arith_image_zero(
+    const char *ID_name
+);
+
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+
+
+static errno_t arith_set_pixel_cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            == 0)
+    {
+        arith_set_pixel(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+static errno_t arith_set_pixel_1Drange_cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            == 0)
+    {
+        arith_set_pixel_1Drange(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+static errno_t arith_set_row_cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        arith_set_row(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+static errno_t arith_set_col_cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_FLOAT)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        arith_set_col(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf,
+            data.cmdargtoken[3].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+static errno_t arith_image_zero_cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            == 0)
+    {
+        arith_image_zero(data.cmdargtoken[1].val.string);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t set_pixel_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "setpix",
+        __FILE__,
+        arith_set_pixel_cli,
+        "set pixel value",
+        "<input image> <value> <x> <y>",
+        "setpix im 1.24 100 100",
+        "int arith_set_pixel(const char *ID_name, double value, long x, long y)");
+
+
+    RegisterCLIcommand(
+        "setpix1Drange",
+        __FILE__,
+        arith_set_pixel_1Drange_cli,
+        "set pixel value for 1D area",
+        "<input image> <value> <first pix> <last pix>",
+        "setpix im 1.24 10 200",
+        "int arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)");
+
+
+    RegisterCLIcommand(
+        "setrow",
+        __FILE__,
+        arith_set_row_cli,
+        "set pixel row value",
+        "<input image> <value> <row>",
+        "setrow im 1.24 100",
+        "int arith_set_row(const char *ID_name, double value, long y)");
+
+
+    RegisterCLIcommand(
+        "setcol",
+        __FILE__,
+        arith_set_col_cli,
+        "set pixel column value",
+        "<input image> <value> <col>",
+        "setcol im 1.24 100",
+        "int arith_set_col(const char *ID_name, double value, long x)");
+
+
+    RegisterCLIcommand(
+        "imzero",
+        __FILE__,
+        arith_image_zero_cli,
+        "set pixels to zero",
+        "<input image>",
+        "imzero im",
+        "int arith_image_zero(const char *ID_name)");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 imageID arith_set_pixel(
     const char *ID_name,
     double      value,

@@ -13,6 +13,153 @@
 
 
 
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID arith_image_crop(
+    const char *ID_name,
+    const char *ID_out,
+    long       *start,
+    long       *end,
+    long        cropdim
+);
+
+
+imageID arith_image_extract2D(
+    const char *in_name,
+    const char *out_name,
+    long        size_x,
+    long        size_y,
+    long        xstart,
+    long        ystart
+);
+
+
+
+imageID arith_image_extract3D(
+    const char *in_name,
+    const char *out_name,
+    long        size_x,
+    long        size_y,
+    long        size_z,
+    long        xstart,
+    long        ystart,
+    long        zstart
+);
+
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+static errno_t arith_image_extract2D__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            + CLI_checkarg(6, CLIARG_LONG)
+            == 0)
+    {
+        arith_image_extract2D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl,
+            data.cmdargtoken[6].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t arith_image_extract3D__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            + CLI_checkarg(6, CLIARG_LONG)
+            + CLI_checkarg(7, CLIARG_LONG)
+            + CLI_checkarg(8, CLIARG_LONG)
+            == 0)
+    {
+        arith_image_extract3D(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl,
+            data.cmdargtoken[6].val.numl,
+            data.cmdargtoken[7].val.numl,
+            data.cmdargtoken[8].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t image_crop_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "extractim",
+        __FILE__,
+        arith_image_extract2D__cli,
+        "crop 2D image",
+        "<input image> <output image> <sizex> <sizey> <xstart> <ystart>",
+        "extractim im ime 256 256 100 100",
+        "int arith_image_extract2D(const char *in_name, const char *out_name, long size_x, long size_y, long xstart, long ystart)");
+
+
+
+    RegisterCLIcommand(
+        "extract3Dim",
+        __FILE__,
+        arith_image_extract3D__cli,
+        "crop 3D image",
+        "<input image> <output image> <sizex> <sizey> <sizez> <xstart> <ystart> <zstart>",
+        "extractim im ime 256 256 5 100 100 0",
+        "int arith_image_extract3D(const char *in_name, const char *out_name, long size_x, long size_y, long size_z, long xstart, long ystart, long zstart)");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 imageID arith_image_crop(
     const char *ID_name,
     const char *ID_out,

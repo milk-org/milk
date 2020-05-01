@@ -3,6 +3,11 @@
  *
  */
 
+
+
+errno_t set_pixel_addCLIcmd();
+
+
 imageID arith_set_pixel(
     const char *ID_name,
     double      value,
