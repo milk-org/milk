@@ -33,7 +33,7 @@ set(INCLUDEFILES
 	mathfuncs.h
 	image_arith__im__im.h
 	image_arith__im_im__im.h
-	image_arith__Cim_Cim__Cim.ch
+	image_arith__Cim_Cim__Cim.h
 	image_arith__im_f__im.h
 	image_arith__im_f_f__im.h
 	execute_arith.h
