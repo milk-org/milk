@@ -710,6 +710,7 @@ typedef struct
 #else
     IMAGE         *image;
 #endif
+	int            MEM_MONITOR; // memory monitor enabled ?
 
     long           NB_MAX_VARIABLE;
 #ifdef DATA_STATIC_ALLOC
