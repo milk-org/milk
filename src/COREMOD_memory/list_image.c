@@ -28,6 +28,7 @@ static int listim_scr_wcol;
 
 
 
+
 errno_t init_list_image_ID_ncurses(
     const char *termttyname
 )
@@ -52,6 +53,10 @@ errno_t init_list_image_ID_ncurses(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
 
 
 
@@ -640,6 +645,26 @@ errno_t list_variable_ID_file(const char *fname)
         }
 
     fclose(fp);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+errno_t memory_monitor(
+    const char *termttyname
+)
+{
+    if(data.Debug > 0)
+    {
+        printf("starting memory_monitor on \"%s\"\n", termttyname);
+    }
+
+    data.MEM_MONITOR = 1;
+    init_list_image_ID_ncurses(termttyname);
+    list_image_ID_ncurses();
+    atexit(close_list_image_ID_ncurses);
 
     return RETURN_SUCCESS;
 }

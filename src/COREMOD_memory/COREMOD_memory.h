@@ -49,14 +49,17 @@ typedef long imageID;
 
 
 #include "COREMOD_memory/image_ID.h"
+#include "COREMOD_memory/compute_nb_image.h"
 #include "COREMOD_memory/image_keyword.h"
 #include "COREMOD_memory/compute_image_memory.h"
 #include "COREMOD_memory/list_image.h"
 
 #include "COREMOD_memory/variable_ID.h"
+#include "COREMOD_memory/compute_nb_variable.h"
 
 #include "COREMOD_memory/create_image.h"
 #include "COREMOD_memory/delete_image.h"
+#include "COREMOD_memory/delete_variable.h"
 
 #include "COREMOD_memory/image_copy.h"
 #include "COREMOD_memory/image_complex.h"
@@ -64,8 +67,19 @@ typedef long imageID;
 #include "COREMOD_memory/read_shmim.h"
 #include "COREMOD_memory/stream_sem.h"
 #include "COREMOD_memory/stream_TCP.h"
+#include "COREMOD_memory/stream_poke.h"
+#include "COREMOD_memory/stream_diff.h"
+#include "COREMOD_memory/stream_paste.h"
+#include "COREMOD_memory/stream_halfimdiff.h"
+#include "COREMOD_memory/stream_ave.h"
+#include "COREMOD_memory/stream_updateloop.h"
+#include "COREMOD_memory/stream_delay.h"
+#include "COREMOD_memory/stream_pixmapdecode.h"
+
 #include "COREMOD_memory/logshmim.h"
 
+#include "COREMOD_memory/saveall.h"
+#include "COREMOD_memory/clearall.h"
 
 errno_t COREMOD_MEMORY_testfunc();
 
@@ -84,22 +98,11 @@ errno_t COREMOD_MEMORY_testfunc();
 /* =============================================================================================== */
 
 
-errno_t    memory_monitor(
-    const char *termttyname
-);
-
-long       compute_nb_image();
-
-long       compute_nb_variable();
 
 
 long       compute_variable_memory();
 
 
-
-errno_t    delete_variable_ID(
-    const char *varname
-);
 
 variableID create_variable_long_ID(
     const char *name,
@@ -110,9 +113,6 @@ variableID create_variable_string_ID(
     const char *name,
     const char *value
 );
-
-
-errno_t    clearall();
 
 
 
@@ -212,31 +212,6 @@ errno_t rotate_cube(const char *ID_name, const char *ID_out_name,
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 11. SET IMAGE FLAGS / COUNTERS
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-errno_t COREMOD_MEMORY_image_set_status(
-    const char *IDname,
-    int         status
-);
-
-errno_t COREMOD_MEMORY_image_set_cnt0(
-    const char *IDname,
-    int         cnt0
-);
-
-errno_t COREMOD_MEMORY_image_set_cnt1(
-    const char *IDname,
-    int         cnt1
-);
-
-///@}
 
 
 
@@ -244,176 +219,6 @@ errno_t COREMOD_MEMORY_image_set_cnt1(
 
 
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 13. SIMPLE OPERATIONS ON STREAMS
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-
-/** @brief Poke stream at regular intervals
- */
-imageID COREMOD_MEMORY_streamPoke(
-    const char *IDstream_name,
-    long        usperiod
-);
-
-
-/** @brief Difference between two streams
-*/
-imageID COREMOD_MEMORY_streamDiff(
-    const char *IDstream0_name,
-    const char *IDstream1_name,
-    const char *IDstreammask_name,
-    const char *IDstreamout_name,
-    long        semtrig
-);
-
-
-/** @brief Paste two equal size 2D streams into an output 2D stream
-*/
-imageID COREMOD_MEMORY_streamPaste(
-    const char *IDstream0_name,
-    const char *IDstream1_name,
-    const char *IDstreamout_name,
-    long        semtrig0,
-    long        semtrig1,
-    int         master
-);
-
-
-/** difference between two halves of stream image
-*/
-imageID COREMOD_MEMORY_stream_halfimDiff(
-    const char *IDstream_name,
-    const char *IDstreamout_name,
-    long        semtrig
-);
-
-
-/** @brief Averages frames in stream
- *
- * @param[in]  IDstream_name        Input stream
- * @param[in]  NBave                Number of consecutive frames to be averaged together
- * @param[in]  mode                 1: Perform average once, exit when completed and write output to local image
- * 									2: Run forever, write output to shared mem stream
- * @param[out] IDout_name           output stream name
- *
- */
-imageID COREMOD_MEMORY_streamAve(
-    const char *IDstream_name,
-    int         NBave,
-    int         mode,
-    const char *IDout_name
-);
-
-
-
-
-/**
- * @brief takes a 3Dimage (circular buffer) and writes slices to a 2D image with time interval specified in us */
-imageID COREMOD_MEMORY_image_streamupdateloop(
-    const char *IDinname,
-    const char *IDoutname,
-    long        usperiod,
-    long        NBcubes,
-    long        period,
-    long        offsetus,
-    const char *IDsync_name,
-    int         semtrig,
-    int         timingmode
-);
-
-
-/**
- * @brief takes a 3Dimage (circular buffer) and writes slices to a 2D image synchronized with an image semaphore
- *
- *
- * @param[in]	IDinname  		3D circular buffer of frames to be written
- * @param[out]	IDoutname 		2D output stream
- * @param[in]	period	 		number of semaphore waits required to advance to next slice in the circular buffer
- * @param[in]	offsetus		fixed time offset between trigger stream and output write
- * @param[in]	IDsync_name		trigger stream
- * @param[in]	smmtrig			semaphore index for trigger
- * @param[in]	timingmode
- */
-imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
-    const char *IDinname,
-    const char *IDoutname,
-    long        period,
-    long        offsetus,
-    const char *IDsync_name,
-    int         semtrig,
-    int         timingmode
-);
-
-
-errno_t COREMOD_MEMORY_streamDelay_FPCONF(
-    char    *fpsname,
-    uint32_t CMDmode
-);
-
-imageID COREMOD_MEMORY_streamDelay_RUN(
-    char *fpsname
-);
-
-
-errno_t COREMOD_MEMORY_streamDelay(
-    const char *IDin_name,
-    const char *IDout_name,
-    long        delayus,
-    long        dtus
-);
-
-
-
-errno_t COREMOD_MEMORY_SaveAll_snapshot(
-    const char *dirname
-);
-
-
-errno_t COREMOD_MEMORY_SaveAll_sequ(
-    const char *dirname,
-    const char *IDtrig_name,
-    long        semtrig,
-    long        NBframes
-);
-
-
-
-
-
-
-imageID COREMOD_MEMORY_PixMapDecode_U(
-    const char *inputstream_name,
-    uint32_t    xsizeim,
-    uint32_t    ysizeim,
-    const char *NBpix_fname,
-    const char *IDmap_name,
-    const char *IDout_name,
-    const char *IDout_pixslice_fname
-);
-
-///@}
-
-
-
-
-
-/* =============================================================================================== */
-/* =============================================================================================== */
-/** @name 14. DATA LOGGING
- *
- */
-///@{
-/* =============================================================================================== */
-/* =============================================================================================== */
-
-
-///@}
 
 
 #endif

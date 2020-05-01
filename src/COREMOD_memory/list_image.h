@@ -4,6 +4,12 @@
 
 
 
+errno_t    memory_monitor(
+    const char *termttyname
+);
+
+
+
 errno_t init_list_image_ID_ncurses(
     const char *termttyname
 );
