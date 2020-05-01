@@ -12,6 +12,69 @@
 #include "COREMOD_tools/COREMOD_tools.h"
 
 
+
+
+
+// ==========================================
+// forward declarations
+// ==========================================
+
+imageID COREMOD_MEMORY_streamPoke(
+    const char *IDstream_name,
+    long        usperiod
+);
+
+
+// ==========================================
+// command line interface wrapper functions
+// ==========================================
+
+static errno_t COREMOD_MEMORY_streamPoke__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_streamPoke(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+
+errno_t stream_poke_addCLIcmd()
+{
+	    RegisterCLIcommand(
+        "streampoke",
+        __FILE__,
+        COREMOD_MEMORY_streamPoke__cli,
+        "Poke image stream at regular interval",
+        "<in stream> <poke period [us]>",
+        "streampoke stream 100",
+        "long COREMOD_MEMORY_streamPoke(const char *IDstream_name, long usperiod)");
+}
+
+
+
+
+
+
+
+
 /**
  * ## Purpose
  *

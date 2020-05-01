@@ -3,6 +3,11 @@
  */
 
 
+
+errno_t image_complex_addCLIcmd();
+
+
+
 errno_t mk_complex_from_reim(
     const char *re_name,
     const char *im_name,

@@ -8,6 +8,45 @@
 #include "delete_variable.h"
 
 
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+errno_t clearall();
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t clearall_addCLIcmd()
+{
+
+    RegisterCLIcommand(
+        "rmall",
+        __FILE__,
+        clearall,
+        "remove all images",
+        "no argument",
+        "rmall",
+        "int clearall()");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
 
 errno_t clearall()
 {

@@ -2,6 +2,12 @@
  * @file    image_copy.h
  */
 
+
+
+
+errno_t image_copy_addCLIcmd();
+
+
 imageID copy_image_ID(
     const char *name,
     const char *newname,

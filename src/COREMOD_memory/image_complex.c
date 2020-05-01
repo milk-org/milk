@@ -22,6 +22,213 @@
 
 
 
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+
+errno_t mk_complex_from_reim(
+    const char *re_name,
+    const char *im_name,
+    const char *out_name,
+    int         sharedmem
+);
+
+errno_t mk_complex_from_amph(
+    const char *am_name,
+    const char *ph_name,
+    const char *out_name,
+    int         sharedmem
+);
+
+errno_t mk_reim_from_complex(
+    const char *in_name,
+    const char *re_name,
+    const char *im_name,
+    int         sharedmem
+);
+
+errno_t mk_amph_from_complex(
+    const char *in_name,
+    const char *am_name,
+    const char *ph_name,
+    int         sharedmem
+);
+
+errno_t mk_reim_from_amph(
+    const char *am_name,
+    const char *ph_name,
+    const char *re_out_name,
+    const char *im_out_name,
+    int         sharedmem
+);
+
+errno_t mk_amph_from_reim(
+    const char *re_name,
+    const char *im_name,
+    const char *am_out_name,
+    const char *ph_out_name,
+    int         sharedmem
+);
+
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t mk_complex_from_reim__cli()
+{
+    if(data.cmdargtoken[1].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+    if(data.cmdargtoken[2].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[2].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    mk_complex_from_reim(
+        data.cmdargtoken[1].val.string,
+        data.cmdargtoken[2].val.string,
+        data.cmdargtoken[3].val.string,
+        0);
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+static errno_t mk_complex_from_amph__cli()
+{
+    if(data.cmdargtoken[1].type != 4)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+    if(data.cmdargtoken[2].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[2].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    mk_complex_from_amph(
+        data.cmdargtoken[1].val.string,
+        data.cmdargtoken[2].val.string,
+        data.cmdargtoken[3].val.string,
+        0);
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+static errno_t mk_reim_from_complex__cli()
+{
+    if(data.cmdargtoken[1].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    mk_reim_from_complex(
+        data.cmdargtoken[1].val.string,
+        data.cmdargtoken[2].val.string,
+        data.cmdargtoken[3].val.string,
+        0);
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+static errno_t mk_amph_from_complex__cli()
+{
+    if(data.cmdargtoken[1].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    mk_amph_from_complex(
+        data.cmdargtoken[1].val.string,
+        data.cmdargtoken[2].val.string,
+        data.cmdargtoken[3].val.string,
+        0);
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t image_complex_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "ri2c",
+        __FILE__,
+        mk_complex_from_reim__cli,
+        "real, imaginary -> complex",
+        "real imaginary complex",
+        "ri2c imr imi imc",
+        "int mk_complex_from_reim(const char *re_name, const char *im_name, const char *out_name)");
+
+    RegisterCLIcommand(
+        "ap2c",
+        __FILE__,
+        mk_complex_from_amph__cli,
+        "ampl, pha -> complex",
+        "ampl pha complex",
+        "ap2c ima imp imc",
+        "int mk_complex_from_amph(const char *re_name, const char *im_name, const char *out_name, int sharedmem)");
+
+    RegisterCLIcommand(
+        "c2ri",
+        __FILE__,
+        mk_reim_from_complex__cli,
+        "complex -> real, imaginary",
+        "complex real imaginary",
+        "c2ri imc imr imi",
+        "int mk_reim_from_complex(const char *re_name, const char *im_name, const char *out_name)");
+
+    RegisterCLIcommand(
+        "c2ap",
+        __FILE__,
+        mk_amph_from_complex__cli,
+        "complex -> ampl, pha",
+        "complex ampl pha",
+        "c2ap imc ima imp",
+        "int mk_amph_from_complex(const char *re_name, const char *im_name, const char *out_name, int sharedmem)");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 errno_t mk_complex_from_reim(
     const char *re_name,
     const char *im_name,

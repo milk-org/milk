@@ -1,6 +1,10 @@
 /** @file stream_pixmapdecode.h
  */
 
+
+errno_t stream_pixmapdecode_addCLIcmd();
+
+
 imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *inputstream_name,
     uint32_t    xsizeim,

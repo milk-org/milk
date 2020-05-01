@@ -32,6 +32,162 @@ typedef struct
 
 
 
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+
+errno_t COREMOD_MEMORY_testfunction_semaphore(
+    const char *IDname,
+    int         semtrig,
+    int         testmode
+);
+
+
+imageID COREMOD_MEMORY_image_NETWORKtransmit(
+    const char *IDname,
+    const char *IPaddr,
+    int         port,
+    int         mode,
+    int         RT_priority
+);
+
+imageID COREMOD_MEMORY_image_NETWORKreceive(
+    int port,
+    int mode,
+    int RT_priority
+);
+
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_testfunction_semaphore__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_testfunction_semaphore(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl,
+            data.cmdargtoken[3].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+static errno_t COREMOD_MEMORY_image_NETWORKtransmit__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_LONG)
+            + CLI_checkarg(5, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_NETWORKtransmit(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.numl,
+            data.cmdargtoken[5].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+static errno_t COREMOD_MEMORY_image_NETWORKreceive__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_LONG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_NETWORKreceive(
+            data.cmdargtoken[1].val.numl,
+            data.cmdargtoken[2].val.numl,
+            data.cmdargtoken[3].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream__TCP_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "testfuncsem",
+        __FILE__,
+        COREMOD_MEMORY_testfunction_semaphore__cli,
+        "test semaphore loop",
+        "<image> <semindex> <testmode>",
+        "testfuncsem im1 1 0",
+        "int COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig, int testmode)");
+
+    RegisterCLIcommand(
+        "imnetwtransmit",
+        __FILE__,
+        COREMOD_MEMORY_image_NETWORKtransmit__cli,
+        "transmit image over network",
+        "<image> <IP addr> <port [long]> <sync mode [int]>",
+        "imnetwtransmit im1 127.0.0.1 0 8888 0",
+        "long COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname, const char *IPaddr, int port, int mode)");
+
+    RegisterCLIcommand(
+        "imnetwreceive",
+        __FILE__,
+        COREMOD_MEMORY_image_NETWORKreceive__cli,
+        "receive image(s) over network. mode=1 uses counter instead of semaphore",
+        "<port [long]> <mode [int]> <RT priority>",
+        "imnetwreceive 8887 0 80",
+        "long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)");	
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

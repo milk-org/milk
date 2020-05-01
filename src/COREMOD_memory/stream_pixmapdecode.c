@@ -13,6 +13,93 @@
 
 
 
+
+
+
+
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID COREMOD_MEMORY_PixMapDecode_U(
+    const char *inputstream_name,
+    uint32_t    xsizeim,
+    uint32_t    ysizeim,
+    const char *NBpix_fname,
+    const char *IDmap_name,
+    const char *IDout_name,
+    const char *IDout_pixslice_fname
+);
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t COREMOD_MEMORY_PixMapDecode_U__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            + CLI_checkarg(4, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(5, CLIARG_IMG)
+            + CLI_checkarg(6, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(7, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+        COREMOD_MEMORY_PixMapDecode_U(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numl,
+            data.cmdargtoken[3].val.numl,
+            data.cmdargtoken[4].val.string,
+            data.cmdargtoken[5].val.string,
+            data.cmdargtoken[6].val.string,
+            data.cmdargtoken[7].val.string
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t stream_pixmapdecode_addCLIcmd()
+{
+    RegisterCLIcommand(
+        "impixdecodeU",
+        __FILE__,
+        COREMOD_MEMORY_PixMapDecode_U__cli,
+        "decode image stream",
+        "<in stream> <xsize [long]> <ysize [long]> <nbpix per slice [ASCII file]> <decode map> <out stream> <out image slice index [FITS]>",
+        "impixdecodeU streamin 120 120 pixsclienb.txt decmap outim outsliceindex.fits",
+        "COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name, uint32_t xsizeim, uint32_t ysizeim, const char* NBpix_fname, const char* IDmap_name, const char *IDout_name, const char *IDout_pixslice_fname)");
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame

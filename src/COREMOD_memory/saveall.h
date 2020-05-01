@@ -2,6 +2,12 @@
  */
 
 
+
+
+errno_t saveall_addCLIcmd();
+
+
+
 errno_t COREMOD_MEMORY_SaveAll_snapshot(
     const char *dirname
 );

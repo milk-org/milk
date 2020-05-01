@@ -14,6 +14,153 @@
 
 
 
+// ==========================================
+// Forward declaration(s)
+// ==========================================
+
+imageID copy_image_ID(
+    const char *name,
+    const char *newname,
+    int         shared
+);
+
+imageID chname_image_ID(
+    const char *ID_name,
+    const char *new_name
+);
+
+errno_t COREMOD_MEMORY_cp2shm(
+    const char *IDname,
+    const char *IDshmname
+);
+
+
+
+
+// ==========================================
+// Command line interface wrapper function(s)
+// ==========================================
+
+
+static errno_t copy_image_ID__cli()
+{
+    if(data.cmdargtoken[1].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    copy_image_ID(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
+                  0);
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+
+static errno_t copy_image_ID_sharedmem__cli()
+{
+    if(data.cmdargtoken[1].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    copy_image_ID(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string,
+                  1);
+
+    return CLICMD_SUCCESS;
+}
+
+
+static errno_t chname_image_ID__cli()
+{
+    if(data.cmdargtoken[1].type != CLIARG_IMG)
+    {
+        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
+        return CLICMD_INVALID_ARG;
+    }
+
+    chname_image_ID(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+static errno_t COREMOD_MEMORY_cp2shm__cli()
+{
+    if(CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_STR_NOT_IMG)
+            == 0)
+    {
+        COREMOD_MEMORY_cp2shm(data.cmdargtoken[1].val.string,
+                              data.cmdargtoken[2].val.string);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+// ==========================================
+// Register CLI command(s)
+// ==========================================
+
+errno_t image_copy_addCLIcmd()
+{
+	RegisterCLIcommand(
+        "cp",
+        __FILE__, copy_image_ID__cli,
+        "copy image",
+        "source, dest",
+        "cp im1 im4",
+        "long copy_image_ID(const char *name, const char *newname, 0)");
+
+    RegisterCLIcommand(
+        "cpsh",
+        __FILE__, copy_image_ID_sharedmem__cli,
+        "copy image - create in shared mem if does not exist",
+        "source, dest",
+        "cp im1 im4",
+        "long copy_image_ID(const char *name, const char *newname, 1)");
+
+    RegisterCLIcommand(
+        "mv",
+        __FILE__,
+        chname_image_ID__cli,
+        "change image name",
+        "source, dest",
+        "mv im1 im4",
+        "long chname_image_ID(const char *name, const char *newname)");
+
+    RegisterCLIcommand(
+        "imcp2shm",
+        __FILE__,
+        COREMOD_MEMORY_cp2shm__cli,
+        "copy image ot shared memory",
+        "<image> <shared mem image>",
+        "imcp2shm im1 ims1",
+        "long COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)");
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
 
 imageID copy_image_ID(
     const char *name,

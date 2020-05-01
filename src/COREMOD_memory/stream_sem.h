@@ -3,6 +3,10 @@
  */
 
 
+errno_t stream_sem_addCLIcmd();
+
+
+
 imageID COREMOD_MEMORY_image_set_createsem(
     const char *IDname,
     long        NBsem

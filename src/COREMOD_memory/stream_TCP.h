@@ -3,6 +3,9 @@
  */
 
 
+errno_t stream__TCP_addCLIcmd();
+
+
 errno_t COREMOD_MEMORY_testfunction_semaphore(
     const char *IDname,
     int         semtrig,

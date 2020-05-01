@@ -2,6 +2,8 @@
  */
  
 
+errno_t stream_updateloop_addCLIcmd();
+
 
 imageID COREMOD_MEMORY_image_streamupdateloop(
     const char *IDinname,

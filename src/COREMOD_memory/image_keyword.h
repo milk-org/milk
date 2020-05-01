@@ -3,6 +3,12 @@
  */
 
 
+
+
+errno_t image_keyword_addCLIcmd();
+
+
+
 long image_write_keyword_L(
     const char *IDname,
     const char *kname,
