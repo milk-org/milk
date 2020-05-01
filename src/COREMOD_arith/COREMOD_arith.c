@@ -352,15 +352,6 @@ static errno_t init_module_CLI()
 {
 
     RegisterCLIcommand(
-        "cmemtestf",
-        __FILE__,
-        COREMOD_MEMORY_testfunc,
-        "testfunc",
-        "no arg",
-        "cmemtestf",
-        "COREMOD_MEMORY_testfunc()");
-
-    RegisterCLIcommand(
         "extractim",
         __FILE__,
         arith_image_extract2D_cli,
