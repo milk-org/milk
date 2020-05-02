@@ -38,6 +38,7 @@ set(SOURCEFILES
 
 set(INCLUDEFILES
     ${SRCNAME}.h
+    logshmim_types.h
     clearall.h
     compute_image_memory.h
     compute_nb_image.h
