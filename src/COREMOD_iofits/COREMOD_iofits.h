@@ -1,6 +1,7 @@
 #ifndef _IOFITS_H
 #define _IOFITS_H
 
+#include "COREMOD_iofits/COREMOD_iofits_common.h"
 
 #include "COREMOD_iofits/check_fitsio_status.h"
 #include "COREMOD_iofits/data_type_code.h"
@@ -12,16 +13,5 @@
 #include "COREMOD_iofits/loadmemstream.h"
 #include "COREMOD_iofits/read_keyword.h"
 #include "COREMOD_iofits/savefits.h"
-
-
-
-
-imageID COREMOD_IOFITS_LoadMemStream(
-    const char *sname,
-    uint64_t   *streamflag,
-    uint32_t   *imLOC
-);
-
-
 
 #endif
