@@ -4,10 +4,28 @@ set(SRCNAME "COREMOD_tools")
 
 
 set(SOURCEFILES
-	${SRCNAME}.c)
+	${SRCNAME}.c
+	fileutils.c
+	imdisplay3d.c
+	logfunc.c
+	mvprocCPUset.c
+	quicksort.c
+	statusstat.c
+	stringutils.c
+	timeutils.c
+)
 
 set(INCLUDEFILES
-	${SRCNAME}.h)
+	${SRCNAME}.h
+	fileutils.h
+	imdisplay3d.h
+	logfunc.h
+	mvprocCPUset.h
+	quicksort.h
+	statusstat.h
+	stringutils.h
+	timeutils.h
+)
 
 
 # DEFAULT SETTINGS 
