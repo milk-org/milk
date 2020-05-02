@@ -4,10 +4,33 @@ set(SRCNAME "COREMOD_iofits")
 
 
 set(SOURCEFILES
-	${SRCNAME}.c)
+	${SRCNAME}.c
+	breakcube.c
+	check_fitsio_status.c
+	data_type_code.c
+	file_exists.c
+	images2cube.c
+	is_fits_file.c
+	loadfits.c
+	loadmemstream.c
+	read_keyword.c
+	savefits.c
+)
 
 set(INCLUDEFILES
-	${SRCNAME}.h)
+	${SRCNAME}.h
+	COREMOD_iofits_common.h
+	breakcube.h
+	check_fitsio_status.h
+	data_type_code.c
+	file_exists.h
+	images2cube.h
+	is_fits_file.h
+	loadfits.h
+	loadmemstream.h
+	read_keyword.h
+	savefits.h
+)
 
 
 # DEFAULT SETTINGS 
