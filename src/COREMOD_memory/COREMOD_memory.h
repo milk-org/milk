@@ -32,7 +32,7 @@
 
 
 
-
+#include "COREMOD_memory/logshmim_types.h"
 
 #include "COREMOD_memory/clearall.h"
 #include "COREMOD_memory/compute_image_memory.h"
