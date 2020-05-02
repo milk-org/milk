@@ -7,6 +7,7 @@ set(SOURCEFILES
 	${SRCNAME}.c
 	fileutils.c
 	imdisplay3d.c
+	linregress.c
 	logfunc.c
 	mvprocCPUset.c
 	quicksort.c
@@ -19,6 +20,7 @@ set(INCLUDEFILES
 	${SRCNAME}.h
 	fileutils.h
 	imdisplay3d.h
+	linregress.h
 	logfunc.h
 	mvprocCPUset.h
 	quicksort.h
