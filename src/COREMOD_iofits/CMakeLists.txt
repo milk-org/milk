@@ -22,7 +22,7 @@ set(INCLUDEFILES
 	COREMOD_iofits_common.h
 	breakcube.h
 	check_fitsio_status.h
-	data_type_code.c
+	data_type_code.h
 	file_exists.h
 	images2cube.h
 	is_fits_file.h
