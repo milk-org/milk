@@ -1811,7 +1811,7 @@ errno_t save_fits_atomic(
 
     WRITE_FILENAME(fnametmp, "_savefits_atomic_%s_%d_%ld.tmp.fits", ID_name,
                    (int) getpid(), (long) self_id);
-    WRITE_FILENAME(savename, "!%s", fnametmp);
+    WRITE_FILENAME(savename, "%s", fnametmp);
 
     if(ID != -1)
     {
@@ -1881,7 +1881,7 @@ errno_t saveall_fits(
         if(data.image[i].used == 1)
         {
 
-            WRITE_FULLFILENAME(fname, "!./%s/%s.fits", savedirname, data.image[i].name);
+            WRITE_FULLFILENAME(fname, "./%s/%s.fits", savedirname, data.image[i].name);
             save_fits(data.image[i].name, fname);
         }
 
