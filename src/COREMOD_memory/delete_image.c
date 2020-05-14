@@ -19,7 +19,7 @@
 // ==========================================
 
 errno_t delete_image_ID(
-    const char *imname
+    const char *__restrict__ imname
 );
 
 
@@ -63,7 +63,8 @@ errno_t delete_image_addCLIcmd()
         "remove image(s)",
         "list of images",
         "rm im1 im4",
-        "int delete_image_ID(char* imname)");
+        "int delete_image_ID(char* imname)"
+    );
 
     return RETURN_SUCCESS;
 }
@@ -77,7 +78,7 @@ errno_t delete_image_addCLIcmd()
 
 /* deletes an ID */
 errno_t delete_image_ID(
-    const char *imname
+    const char *__restrict__ imname
 )
 {
     imageID ID;
