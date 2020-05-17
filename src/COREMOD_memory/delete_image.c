@@ -22,6 +22,10 @@ errno_t delete_image_ID(
     const char *__restrict__ imname
 );
 
+errno_t destroy_shared_image_ID(
+    const char *__restrict__ imname
+);
+
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -48,6 +52,29 @@ static errno_t delete_image_ID__cli()
 }
 
 
+static errno_t destroy_shared_image_ID__cli()
+{
+    long i = 1;
+    printf("%ld : %d\n", i, data.cmdargtoken[i].type);
+    while(data.cmdargtoken[i].type != 0)
+    {
+        if(data.cmdargtoken[i].type == 4)
+        {
+            destroy_shared_image_ID(data.cmdargtoken[i].val.string);
+        }
+        else
+        {
+            printf("Image %s does not exist\n", data.cmdargtoken[i].val.string);
+        }
+        i++;
+    }
+
+    return CLICMD_SUCCESS;
+}
+
+
+
+
 
 
 // ==========================================
@@ -65,6 +92,17 @@ errno_t delete_image_addCLIcmd()
         "rm im1 im4",
         "int delete_image_ID(char* imname)"
     );
+
+    RegisterCLIcommand(
+        "rmshmim",
+        __FILE__,
+        destroy_shared_image_ID__cli,
+        "remove image(s) and files",
+        "image name",
+        "rmshmim im1",
+        "int destroy_image_ID(char* imname)"
+    );
+
 
     return RETURN_SUCCESS;
 }
@@ -250,5 +288,29 @@ errno_t delete_image_ID_prefix(
                 delete_image_ID(data.image[i].name);
             }
     }
+    return RETURN_SUCCESS;
+}
+
+
+
+
+errno_t destroy_shared_image_ID(
+    const char *__restrict__ imname
+)
+{
+    imageID ID;
+
+    ID = image_ID(imname);
+    if( (ID != -1) && (data.image[ID].md[0].shared == 1) )
+    {
+        ImageStreamIO_destroyIm(&data.image[ID]);
+    }
+    else
+    {
+        fprintf(stderr,
+                "%c[%d;%dm WARNING: shared image %s does not exist [ %s  %s  %d ] %c[%d;m\n",
+                (char) 27, 1, 31, imname, __FILE__, __func__, __LINE__, (char) 27, 0);
+    }
+    
     return RETURN_SUCCESS;
 }
