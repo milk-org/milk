@@ -1262,7 +1262,7 @@ errno_t RegisterModule(
     }
 
 
-	int stringlen = strlen(data.moduleshortname);
+    int stringlen = strlen(data.moduleshortname);
     if(stringlen == 0)
     {
         // if no shortname provided, try to use default
@@ -1273,25 +1273,28 @@ errno_t RegisterModule(
         }
     }
 
-	data.moduleindex = data.NBmodule; // current module index
+    data.moduleindex = data.NBmodule; // current module index
 
     strcpy(data.module[data.NBmodule].package,      PackageName);
     strcpy(data.module[data.NBmodule].info,         InfoString);
 
     strcpy(data.module[data.NBmodule].shortname,    data.moduleshortname);
 
-	strcpy(data.module[data.NBmodule].datestring,   data.moduledatestring);
-	strcpy(data.module[data.NBmodule].timestring,   data.moduletimestring);
+    strcpy(data.module[data.NBmodule].datestring,   data.moduledatestring);
+    strcpy(data.module[data.NBmodule].timestring,   data.moduletimestring);
 
-	data.module[data.NBmodule].versionmajor = versionmajor;
-	data.module[data.NBmodule].versionminor = versionminor;
-	data.module[data.NBmodule].versionpatch = versionpatch;
+    data.module[data.NBmodule].versionmajor = versionmajor;
+    data.module[data.NBmodule].versionminor = versionminor;
+    data.module[data.NBmodule].versionpatch = versionpatch;
 
 
     if(data.progStatus == 0)
     {
         OKmsg = 1;
-        printf(".");
+        if(!getenv("MILK_QUIET"))
+        {
+            printf(".");
+        }
         //	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
         //	fflush(stdout);
     }
@@ -1425,8 +1428,13 @@ static errno_t runCLI_initialize(
 
     // get PID and write it to shell env variable MILK_CLI_PID
     CLIPID = getpid();
-    printf("    CLI PID = %d\n", (int) CLIPID);
-    EXECUTE_SYSTEM_COMMAND("echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list", CLIPID);
+    if(data.quiet == 0)
+    {
+        printf("    CLI PID = %d\n", (int) CLIPID);
+
+        EXECUTE_SYSTEM_COMMAND("echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list",
+                               CLIPID);
+    }
 
     //	printf("    _SC_CLK_TCK = %d\n", sysconf(_SC_CLK_TCK));
 
@@ -1438,16 +1446,25 @@ static errno_t runCLI_initialize(
     }
 
 # ifdef _OPENMP
-    printf("    Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
-           omp_get_max_threads());
+    if(data.quiet == 0)
+    {
+        printf("    Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
+               omp_get_max_threads());
+    }
 # else
-    printf("    Compiled without openMP\n");
+    if(data.quiet == 0)
+    {
+        printf("    Compiled without openMP\n");
+    }
 # endif
 
 # ifdef _OPENACC
     int openACC_devtype = acc_get_device_type();
-    printf("    Running with openACC version %d.  %d device(s), type %d\n",
-           _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
+    if(data.quiet == 0)
+    {
+        printf("    Running with openACC version %d.  %d device(s), type %d\n",
+               _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
+    }
 # endif
 
 
@@ -1551,7 +1568,10 @@ static errno_t setSHMdir()
     char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");
     if(MILK_SHM_DIR != NULL)
     {
-        printf(" [ MILK_SHM_DIR ] '%s'\n", MILK_SHM_DIR);
+        if(data.quiet == 0)
+        {
+            printf(" [ MILK_SHM_DIR ] '%s'\n", MILK_SHM_DIR);
+        }
         sprintf(shmdirname, "%s", MILK_SHM_DIR);
 
         // does this direcory exist ?
@@ -1560,7 +1580,10 @@ static errno_t setSHMdir()
         {
             shmdirOK = 1;
             closedir(tmpdir);
-            printf("    Using SHM directory %s\n", shmdirname);
+            if(data.quiet == 0)
+            {
+                printf("    Using SHM directory %s\n", shmdirname);
+            }
         }
         else
         {
@@ -1572,14 +1595,17 @@ static errno_t setSHMdir()
     }
     else
     {
-        printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
-        printf("    WARNING: Environment variable MILK_SHM_DIR not specified -> falling back to default %s\n",
-               SHAREDMEMDIR);
-        printf("    BEWARE : Other milk users may be using the same SHM directory on this machine, and could see your milk session data and temporary files\n");
-        printf("    BEWARE : Some scripts may rely on MILK_SHM_DIR to find/access shared memory and temporary files, and WILL not run.\n");
-        printf("             Please set MILK_SHM_DIR and restart CLI to set up user-specific shared memory and temporary files\n");
-        printf("             Example: Add \"export MILK_SHM_DIR=/milk/shm\" to .bashrc\n");
-        printf("%c[%d;m", (char) 27, 0); // unset color red
+        if(data.quiet == 0)
+        {
+            printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
+            printf("    WARNING: Environment variable MILK_SHM_DIR not specified -> falling back to default %s\n",
+                   SHAREDMEMDIR);
+            printf("    BEWARE : Other milk users may be using the same SHM directory on this machine, and could see your milk session data and temporary files\n");
+            printf("    BEWARE : Some scripts may rely on MILK_SHM_DIR to find/access shared memory and temporary files, and WILL not run.\n");
+            printf("             Please set MILK_SHM_DIR and restart CLI to set up user-specific shared memory and temporary files\n");
+            printf("             Example: Add \"export MILK_SHM_DIR=/milk/shm\" to .bashrc\n");
+            printf("%c[%d;m", (char) 27, 0); // unset color red
+        }
     }
 
     // second, we try SHAREDMEMDIR default
@@ -1591,11 +1617,17 @@ static errno_t setSHMdir()
             sprintf(shmdirname, "%s", SHAREDMEMDIR);
             shmdirOK = 1;
             closedir(tmpdir);
-            printf("    Using SHM directory %s\n", shmdirname);
+            if(data.quiet == 0)
+            {
+                printf("    Using SHM directory %s\n", shmdirname);
+            }
         }
         else
         {
-            printf("    Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
+            if(data.quiet == 0)
+            {
+                printf("    Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
+            }
         }
     }
 
@@ -1612,13 +1644,16 @@ static errno_t setSHMdir()
         {
             sprintf(shmdirname, "/tmp");
             shmdirOK = 1;
-            printf("    Using SHM directory %s\n", shmdirname);
+            if(data.quiet == 0)
+            {
+                printf("    Using SHM directory %s\n", shmdirname);
 
-            printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
-            printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n",
-                   SHAREDMEMDIR);
-            printf("        $ sudo mkdir -p %s\n", SHAREDMEMDIR);
-            printf("        $ sudo mount %s\n", SHAREDMEMDIR);
+                printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
+                printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n",
+                       SHAREDMEMDIR);
+                printf("        $ sudo mkdir -p %s\n", SHAREDMEMDIR);
+                printf("        $ sudo mount %s\n", SHAREDMEMDIR);
+            }
         }
     }
 
@@ -1634,8 +1669,11 @@ static errno_t setSHMdir()
         }
 
     sprintf(data.shmsemdirname, "%s", shmdirname);
-    printf("    semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n",
-           data.shmsemdirname);
+    if(data.quiet == 0)
+    {
+        printf("    semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n",
+               data.shmsemdirname);
+    }
 
     return RETURN_SUCCESS;
 }
@@ -1771,7 +1809,10 @@ errno_t runCLI(
     char *CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
     if(CLI_ADD_LIBS != NULL)
     {
-        printf(" [ CLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
+        if(data.quiet == 0)
+        {
+            printf(" [ CLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
+        }
 
         char *libname;
         libname = strtok(CLI_ADD_LIBS, " ,;");
@@ -1786,7 +1827,10 @@ errno_t runCLI(
     }
     else
     {
-        printf(" [ CLI_ADD_LIBS ] not set\n");
+        if(data.quiet == 0)
+        {
+            printf(" [ CLI_ADD_LIBS ] not set\n");
+        }
     }
 
 
@@ -1846,7 +1890,7 @@ errno_t runCLI(
     while(data.CLIloopON == 1)
     {
         FILE *fp;
-			
+
         data.CMDexecuted = 0;
 
         if((fp = fopen("STOPCLI", "r")) != NULL)
@@ -1917,7 +1961,7 @@ errno_t runCLI(
 
         while((CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
-		//printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
+            //printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
             if(n == 0)   // nothing received, need to re-init and go back to select call
@@ -2006,7 +2050,7 @@ errno_t runCLI(
         //TEST data.CLIloopON = 0;
     }
     DEBUG_TRACEPOINT("exit from CLI loop");
-	
+
     // clear all images and variables
     clearall();
 
@@ -2180,7 +2224,6 @@ void runCLI_data_init()
 
     /* initialization of the data structure
      */
-    data.quiet           = 1;
     data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
     data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
     data.INVRANDMAX      = 1.0 / RAND_MAX;
@@ -2497,8 +2540,11 @@ void runCLI_data_init()
     //  init_modules();
     // printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
 
-    printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
-    printf("        \n");
+    if(data.quiet == 0)
+    {
+        printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
+        printf("        \n");
+    }
 }
 
 
@@ -3063,7 +3109,11 @@ static errno_t load_module_shared_ALL()
     int itermax;
 
     sprintf(dirname, "%s/lib", data.sourcedir);
-    printf("LOAD MODULES SHARED ALL: %s\n", dirname);
+
+    if(data.quiet == 0)
+    {
+        printf("LOAD MODULES SHARED ALL: %s\n", dirname);
+    }
 
     loopOK = 0;
     iter = 0;
