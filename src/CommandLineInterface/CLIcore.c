@@ -549,7 +549,9 @@ errno_t exitCLI()
         EXECUTE_SYSTEM_COMMAND("rm imlist.txt");
     }
 
-    printf("Closing PID %ld (prompt process)\n", (long) getpid());
+	if(data.quiet == 0) {
+		printf("Closing PID %ld (prompt process)\n", (long) getpid());
+	}
     //    exit(0);
     data.CLIloopON = 0; // stop CLI loop
 
