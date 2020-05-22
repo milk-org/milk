@@ -2059,7 +2059,11 @@ errno_t runCLI(
 
     runCLI_free();
 
-    rl_clear_history();
+
+	#if ( RL_READLINE_VERSION > 0x602 )
+	rl_clear_history();
+	#endif
+
     rl_callback_handler_remove();
 
     DEBUG_TRACEPOINT("exit from runCLI function");
