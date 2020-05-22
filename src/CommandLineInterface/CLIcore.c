@@ -2063,7 +2063,7 @@ errno_t runCLI(
 	printf("READLINE VERSION : %x\n", RL_READLINE_VERSION);
 	#if ( RL_READLINE_VERSION > 0x620 )
 	printf("WILL CLEAR\n");
-	//rl_clear_history();
+	rl_clear_history();
 	#endif
 
     rl_callback_handler_remove();
