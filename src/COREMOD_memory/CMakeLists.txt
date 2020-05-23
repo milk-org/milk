@@ -91,3 +91,6 @@ install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 
+install(PROGRAMS
+			scripts/milk-rmshmim
+		DESTINATION bin)
