@@ -179,7 +179,6 @@ int CLIexecuteCMDready = 0;
 //long CFITSVARRAY_LONG[SZ_CFITSVARRAY];
 //int ECHO;
 
-char calctmpimname[200];
 char CLIstartupfilename[200] = "CLIstartup.txt";
 
 
@@ -1185,8 +1184,9 @@ static errno_t CLI_execute_line()
             }
         }
         for(i = 0; i < data.calctmp_imindex; i++)
-        {
-            sprintf(calctmpimname, "_tmpcalc%ld", i);
+        {			
+			CREATE_IMAGENAME(calctmpimname, "_tmpcalc%ld", i);
+            //sprintf(calctmpimname, "_tmpcalc%ld", i);
             if(image_ID(calctmpimname) != -1)
             {
                 if(data.Debug == 1)
