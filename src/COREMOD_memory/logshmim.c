@@ -284,6 +284,11 @@ void *save_fits_function(
 
 
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+    if(imsizearray == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}
 
     //    tmsg = (struct savethreadmsg*) ptr;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
