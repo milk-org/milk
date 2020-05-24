@@ -123,7 +123,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     long      oldslice = 0;
     long      NBslice;
     long     *nbpixslice;
-    uint32_t  xsizein, ysizein;
+    uint32_t  xsizein;
+    uint32_t  ysizein;
     FILE     *fp;
     uint32_t *sizearray;
     imageID   IDout_pixslice;
@@ -179,6 +180,11 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     processinfo_WriteMessage(processinfo, "Allocating memory");
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+    if(sizearray == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}    
 
     int in_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], 0);
 
@@ -205,10 +211,27 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
 
     dtarray = (double *) malloc(sizeof(double) * NBslice);
+    if(dtarray == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}
+
     tarray = (struct timespec *) malloc(sizeof(struct timespec) * NBslice);
+    if(tarray == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}
 
 
     nbpixslice = (long *) malloc(sizeof(long) * NBslice);
+    if(nbpixslice == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}    
+    
     if((fp = fopen(NBpix_fname, "r")) == NULL)
     {
         printf("ERROR : cannot open file \"%s\"\n", NBpix_fname);
@@ -265,35 +288,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     save_fits("outpixsl", IDout_pixslice_fname);
     delete_image_ID("outpixsl");
 
-    /*
-        if(sigaction(SIGTERM, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGTERM\n");
-        }
-
-        if(sigaction(SIGINT, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGINT\n");
-        }
-
-        if(sigaction(SIGABRT, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGABRT\n");
-        }
-
-        if(sigaction(SIGBUS, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGBUS\n");
-        }
-
-        if(sigaction(SIGSEGV, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGSEGV\n");
-        }
-
-        if(sigaction(SIGHUP, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGHUP\n");
-        }
-
-        if(sigaction(SIGPIPE, &data.sigact, NULL) == -1) {
-            printf("\ncan't catch SIGPIPE\n");
-        }
-    */
 
 
 
@@ -440,68 +434,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
         processinfo_exec_end(processinfo);
 
-
-        // process signals
-        /*
-                if(data.signal_TERM == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGTERM);
-                    }
-                }
-
-                if(data.signal_INT == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGINT);
-                    }
-                }
-
-                if(data.signal_ABRT == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGABRT);
-                    }
-                }
-
-                if(data.signal_BUS == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGBUS);
-                    }
-                }
-
-                if(data.signal_SEGV == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGSEGV);
-                    }
-                }
-
-                if(data.signal_HUP == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGHUP);
-                    }
-                }
-
-                if(data.signal_PIPE == 1) {
-                    loopOK = 0;
-                    if(data.processinfo == 1) {
-                        processinfo_SIGexit(processinfo, SIGPIPE);
-                    }
-                }
-
-                loopcnt++;
-                if(data.processinfo == 1) {
-                    processinfo->loopcnt = loopcnt;
-                }
-
-                //    if((data.signal_INT == 1)||(data.signal_TERM == 1)||(data.signal_ABRT==1)||(data.signal_BUS==1)||(data.signal_SEGV==1)||(data.signal_HUP==1)||(data.signal_PIPE==1))
-                //        loopOK = 0;
-
-                //iter++;
-                */
     }
 
     // ==================================
