@@ -108,9 +108,6 @@ imageID COREMOD_MEMORY_streamPaste(
     long        Xoffset;
     uint32_t    xsize;
     uint32_t    ysize;
-//    uint32_t    xysize;
-    long        ii;
-    long        jj;
     uint32_t   *arraysize;
     unsigned long long   cnt;
     uint8_t     datatype;
@@ -121,10 +118,14 @@ imageID COREMOD_MEMORY_streamPaste(
 
     xsize = data.image[ID0].md[0].size[0];
     ysize = data.image[ID0].md[0].size[1];
-//    xysize = xsize*ysize;
     datatype = data.image[ID0].md[0].datatype;
 
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+    if(arraysize == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}    
     arraysize[0] = 2 * xsize;
     arraysize[1] = ysize;
 
@@ -184,8 +185,8 @@ imageID COREMOD_MEMORY_streamPaste(
         switch(datatype)
         {
             case _DATATYPE_UINT8 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.UI8[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.UI8[jj * xsize + ii];
@@ -193,8 +194,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_UINT16 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.UI16[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.UI16[jj * xsize + ii];
@@ -202,8 +203,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_UINT32 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.UI32[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.UI32[jj * xsize + ii];
@@ -211,8 +212,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_UINT64 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.UI64[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.UI64[jj * xsize + ii];
@@ -220,8 +221,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_INT8 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.SI8[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.SI8[jj * xsize + ii];
@@ -229,8 +230,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_INT16 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.SI16[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.SI16[jj * xsize + ii];
@@ -238,8 +239,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_INT32 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.SI32[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.SI32[jj * xsize + ii];
@@ -247,8 +248,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_INT64 :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.SI64[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.SI64[jj * xsize + ii];
@@ -256,8 +257,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_FLOAT :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.F[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.F[jj * xsize + ii];
@@ -265,8 +266,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_DOUBLE :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.D[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.D[jj * xsize + ii];
@@ -274,8 +275,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_COMPLEX_FLOAT :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.CF[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.CF[jj * xsize + ii];
@@ -283,8 +284,8 @@ imageID COREMOD_MEMORY_streamPaste(
                 break;
 
             case _DATATYPE_COMPLEX_DOUBLE :
-                for(ii = 0; ii < xsize; ii++)
-                    for(jj = 0; jj < ysize; jj++)
+                for(uint32_t ii = 0; ii < xsize; ii++)
+                    for(uint32_t jj = 0; jj < ysize; jj++)
                     {
                         data.image[IDout].array.CD[jj * 2 * xsize + ii + Xoffset] =
                             data.image[IDin].array.CD[jj * xsize + ii];

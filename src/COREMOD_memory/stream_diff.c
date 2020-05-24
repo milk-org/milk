@@ -107,8 +107,7 @@ imageID COREMOD_MEMORY_streamDiff(
     imageID    IDout;
     uint32_t   xsize;
     uint32_t   ysize;
-    uint32_t   xysize;
-    long       ii;
+    uint64_t   xysize;
     uint32_t  *arraysize;
     unsigned long long  cnt;
     imageID    IDmask; // optional
@@ -122,6 +121,11 @@ imageID COREMOD_MEMORY_streamDiff(
     xysize = xsize * ysize;
 
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+    if(arraysize == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}
     arraysize[0] = xsize;
     arraysize[1] = ysize;
 
@@ -157,7 +161,7 @@ imageID COREMOD_MEMORY_streamDiff(
         data.image[IDout].md[0].write = 1;
         if(IDmask == -1)
         {
-            for(ii = 0; ii < xysize; ii++)
+            for(uint64_t ii = 0; ii < xysize; ii++)
             {
                 data.image[IDout].array.F[ii] = data.image[ID0].array.F[ii] -
                                                 data.image[ID1].array.F[ii];
@@ -165,7 +169,7 @@ imageID COREMOD_MEMORY_streamDiff(
         }
         else
         {
-            for(ii = 0; ii < xysize; ii++)
+            for(uint64_t ii = 0; ii < xysize; ii++)
             {
                 data.image[IDout].array.F[ii] = (data.image[ID0].array.F[ii] -
                                                  data.image[ID1].array.F[ii]) * data.image[IDmask].array.F[ii];

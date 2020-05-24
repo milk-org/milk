@@ -92,11 +92,9 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
     imageID    IDout;
     uint32_t   xsizein;
     uint32_t   ysizein;
-//    uint32_t   xysizein;
     uint32_t   xsize;
     uint32_t   ysize;
-    uint32_t   xysize;
-    long       ii;
+    uint64_t   xysize;
     uint32_t  *arraysize;
     unsigned long long  cnt;
     uint8_t    datatype;
@@ -115,6 +113,11 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
 
 
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+    if(arraysize == NULL)
+    {
+		PRINT_ERROR("malloc error");
+		abort();
+	}    
     arraysize[0] = xsize;
     arraysize[1] = ysize;
 
@@ -194,7 +197,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
         {
 
             case _DATATYPE_UINT8:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI16[ii] = data.image[ID0].array.UI8[ii] -
                                                        data.image[ID0].array.UI8[xysize + ii];
@@ -202,7 +205,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_UINT16:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI32[ii] = data.image[ID0].array.UI16[ii] -
                                                        data.image[ID0].array.UI16[xysize + ii];
@@ -210,7 +213,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_UINT32:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI64[ii] = data.image[ID0].array.UI32[ii] -
                                                        data.image[ID0].array.UI32[xysize + ii];
@@ -218,7 +221,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_UINT64:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI64[ii] = data.image[ID0].array.UI64[ii] -
                                                        data.image[ID0].array.UI64[xysize + ii];
@@ -228,7 +231,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
 
 
             case _DATATYPE_INT8:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI16[ii] = data.image[ID0].array.SI8[ii] -
                                                        data.image[ID0].array.SI8[xysize + ii];
@@ -236,7 +239,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_INT16:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI32[ii] = data.image[ID0].array.SI16[ii] -
                                                        data.image[ID0].array.SI16[xysize + ii];
@@ -244,7 +247,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_INT32:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI64[ii] = data.image[ID0].array.SI32[ii] -
                                                        data.image[ID0].array.SI32[xysize + ii];
@@ -252,7 +255,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_INT64:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.SI64[ii] = data.image[ID0].array.SI64[ii] -
                                                        data.image[ID0].array.SI64[xysize + ii];
@@ -262,7 +265,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
 
 
             case _DATATYPE_FLOAT:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.F[ii] = data.image[ID0].array.F[ii] -
                                                     data.image[ID0].array.F[xysize + ii];
@@ -270,7 +273,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
                 break;
 
             case _DATATYPE_DOUBLE:
-                for(ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     data.image[IDout].array.D[ii] = data.image[ID0].array.D[ii] -
                                                     data.image[ID0].array.D[xysize + ii];
