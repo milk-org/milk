@@ -5,6 +5,7 @@
  *
  */
 
+#include <assert.h>
 
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -1293,9 +1294,9 @@ errno_t arith_image_function_2_1(
     uint32_t *naxes = NULL; // input, output
     uint32_t *naxes2 = NULL;
     long nelement1, nelement2, nelement;
-    long naxis, naxis2;
+    uint8_t naxis, naxis2;
     uint8_t datatype1, datatype2, datatypeout;
-    long i;
+   
     int op3D2Dto3D = 0; // 3D image, 2D image -> 3D image
     long xysize;
 
@@ -1323,19 +1324,27 @@ errno_t arith_image_function_2_1(
     datatype2 = data.image[ID2].md[0].datatype;
     naxis = data.image[ID1].md[0].naxis;
     naxis2 = data.image[ID2].md[0].naxis;
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    naxes2 = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    
+    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);    
     if(naxes == NULL)
     {
         PRINT_ERROR("malloc() error");
-        exit(0);
+        abort();
     }
 
-    for(i = 0; i < naxis; i++)
+	naxes2 = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    if(naxes2 == NULL)
+    {
+        PRINT_ERROR("malloc() error");
+        abort();
+    }	
+
+
+    for(uint8_t i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[ID1].md[0].size[i];
     }
-    for(i = 0; i < naxis2; i++)
+    for(uint8_t i = 0; i < naxis2; i++)
     {
         naxes2[i] = data.image[ID2].md[0].size[i];
     }
@@ -1367,11 +1376,8 @@ errno_t arith_image_function_2_1(
     nelement1 = data.image[ID1].md[0].nelement;
     nelement2 = data.image[ID2].md[0].nelement;
 
-    //list_image_ID();
 
     // test if 3D 2D -> 3D operation
-    //printf("naxis   %ld (%d)   %ld (%d)\n", naxis, atype1, naxis2, atype2);
-    //fflush(stdout);
 
     op3D2Dto3D = 0;
     xysize = 0;
@@ -1401,7 +1407,6 @@ errno_t arith_image_function_2_1(
             exit(0);
         }
 
-    //list_image_ID();
 
 
 
