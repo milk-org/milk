@@ -342,7 +342,7 @@ struct streamCTRLarg_struct {
 int find_streams(
     STREAMINFO *streaminfo,
     int filter,
-    char *namefilter
+    const char *namefilter
 )
 {
     int NBstream = 0;
