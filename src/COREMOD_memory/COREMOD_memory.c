@@ -45,7 +45,9 @@
 #include "list_variable.h"
 #include "logshmim.h"
 #include "read_shmim.h"
+#include "read_shmimall.h"
 #include "saveall.h"
+#include "shmim_purge.h"
 #include "stream_sem.h"
 #include "stream_TCP.h"
 #include "stream_poke.h"
@@ -116,6 +118,10 @@ static errno_t init_module_CLI()
     // MANAGE SEMAPHORES
 	stream_sem_addCLIcmd();
 
+	// STREAMS
+	read_shmimall_addCLIcmd();
+	shmim_purge_addCLIcmd();
+	
 	stream_updateloop_addCLIcmd();
 	stream_delay_addCLIcmd();
 	saveall_addCLIcmd();

@@ -22,7 +22,9 @@ set(SOURCEFILES
     list_variable.c
     logshmim.c
     read_shmim.c
+    read_shmimall.c
     saveall.c
+    shmim_purge.c
     stream_ave.c
     stream_delay.c
     stream_diff.c
@@ -57,7 +59,9 @@ set(INCLUDEFILES
     list_variable.h
     logshmim.h
     read_shmim.h
+    read_shmimall.h
     saveall.h
+    shmim_purge.h
     stream_ave.h
     stream_delay.h
     stream_diff.h
