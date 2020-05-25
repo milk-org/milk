@@ -120,7 +120,7 @@ static errno_t init_module_CLI()
 
 	// STREAMS
 	read_shmimall_addCLIcmd();
-	shmim_purge_addCLIcmd();
+	shmim_purge_addCLIcmd();	
 	
 	stream_updateloop_addCLIcmd();
 	stream_delay_addCLIcmd();
