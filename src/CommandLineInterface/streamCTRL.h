@@ -18,36 +18,9 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
-// #include <string.h>
-// #include <stdlib.h>
-// #include <stdio.h>
-// #include <sys/file.h>
-// #include <malloc.h>
-// #include <sys/mman.h> // mmap()
-
-// #include <time.h>
-// #include <signal.h>
-
-#include <stdint.h>    // int_fast8_t
+#include <stdint.h>    
 #include <unistd.h>    // getpid()
-// #include <sys/types.h>
 
-// #include <sys/stat.h>
-// #include <sys/types.h>
-
-
-// #include <ncurses.h>
-// #include <fcntl.h> 
-// #include <ctype.h>
-
-// #include <dirent.h>
-
-// #include <wchar.h>
-// #include <locale.h>
-// #include <errno.h>
-
-// #include <pthread.h>
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -77,11 +50,10 @@
 typedef struct
 {
 	char sname[STRINGMAXLEN_STREAMINFO_NAME];      // stream name
-
-    long ID;
-    
     int SymLink;
     char linkname[STRINGMAXLEN_STREAMINFO_NAME];   // if stream is sym link, resolve link name
+
+    imageID ID;
 
     pid_t streamOpenPID[streamOpenNBpid_MAX];
     int streamOpenPID_cnt;
@@ -150,6 +122,12 @@ extern "C" {
 int get_process_name_by_pid(const int pid, char *pname);
 
 int streamCTRL_CatchSignals();
+
+int find_streams(
+    STREAMINFO *streaminfo,
+    int filter,
+    char *namefilter
+);
 
 void *streamCTRL_scan(void* thptr);
 
