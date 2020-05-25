@@ -126,7 +126,7 @@ int streamCTRL_CatchSignals();
 int find_streams(
     STREAMINFO *streaminfo,
     int filter,
-    char *namefilter
+    const char *namefilter
 );
 
 void *streamCTRL_scan(void* thptr);
