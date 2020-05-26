@@ -25,6 +25,7 @@ set(SOURCEFILES
     read_shmimall.c
     saveall.c
     shmim_purge.c
+    shmim_setowner.c
     stream_ave.c
     stream_delay.c
     stream_diff.c
@@ -62,6 +63,7 @@ set(INCLUDEFILES
     read_shmimall.h
     saveall.h
     shmim_purge.h
+    shmim_setowner.h
     stream_ave.h
     stream_delay.h
     stream_diff.h

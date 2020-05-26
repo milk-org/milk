@@ -33,7 +33,7 @@ errno_t    shmim_purge(
 static errno_t shmim_purge__cli()
 {
     if(0
-            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(1, CLIARG_STR)
             == 0)
     {
 
@@ -101,18 +101,20 @@ errno_t    shmim_purge(
             ID = read_sharedmem_image(streaminfo[sindex].sname);
         }
 
-
         pid_t opid; // owner PID
-
         opid = data.image[ID].md[0].ownerPID;
-		
-		if(getpgid(opid) >= 0)
-		{
-			//printf("Keeping stream %s\n", streaminfo[sindex].sname);
-		}
-		else
-		{
-			printf("Purging stream %s\n", streaminfo[sindex].sname);
+
+        if(opid != 0)
+        {
+			if(getpgid(opid) >= 0)
+			{
+				//printf("Keeping stream %s\n", streaminfo[sindex].sname);
+			}
+			else
+			{
+				printf("Purging stream %s\n", streaminfo[sindex].sname);
+				ImageStreamIO_destroyIm(&data.image[ID]);
+			}
 		}
     }
 

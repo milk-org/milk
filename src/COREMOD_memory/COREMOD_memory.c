@@ -48,6 +48,7 @@
 #include "read_shmimall.h"
 #include "saveall.h"
 #include "shmim_purge.h"
+#include "shmim_setowner.h"
 #include "stream_sem.h"
 #include "stream_TCP.h"
 #include "stream_poke.h"
@@ -121,6 +122,7 @@ static errno_t init_module_CLI()
 	// STREAMS
 	read_shmimall_addCLIcmd();
 	shmim_purge_addCLIcmd();	
+	shmim_setowner_addCLIcmd();
 	
 	stream_updateloop_addCLIcmd();
 	stream_delay_addCLIcmd();
