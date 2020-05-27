@@ -99,4 +99,5 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 install(PROGRAMS
 			scripts/milk-rmshmim
+			scripts/milk-shmimpurge
 		DESTINATION bin)
