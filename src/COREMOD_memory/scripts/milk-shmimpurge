@@ -21,7 +21,7 @@ echo "     $0 [-hf:]"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
-echo "     $(tput bold)-f$(tput sgr0)          (h)elp"
+echo "     $(tput bold)-f$(tput sgr0)          only purge streams matching (f)ilter"
 echo ""
 echo "------------------------------------------------------------------------"
 }

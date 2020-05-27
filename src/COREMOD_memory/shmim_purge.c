@@ -77,7 +77,10 @@ errno_t shmim_purge_addCLIcmd()
 
 
 
-
+/** @brief purge orphan share memory streams
+ * 
+ * 
+ */
 errno_t    shmim_purge(
     const char *strfilter
 )
