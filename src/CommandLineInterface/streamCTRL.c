@@ -2051,23 +2051,31 @@ errno_t streamCTRL_CTRLscreen()
 
                         charcnt = sprintf(string, "%7d", opid);
                         linecharcnt += charcnt + 1;
-                        if(getpgid(opid) >= 0) // check if pid active
+
+                        if(opid == 0)
                         {
-                            attron(COLOR_PAIR(2));
                             printw(string);
-                            attroff(COLOR_PAIR(2));
                         }
                         else
                         {
-                            if(opid > 0)
+                            if(getpgid(opid) >= 0) // check if pid active
                             {
-                                attron(COLOR_PAIR(4));
+                                attron(COLOR_PAIR(2));
                                 printw(string);
-                                attroff(COLOR_PAIR(4));
+                                attroff(COLOR_PAIR(2));
                             }
                             else
                             {
-                                printw(string);
+                                if(opid > 0)
+                                {
+                                    attron(COLOR_PAIR(4));
+                                    printw(string);
+                                    attroff(COLOR_PAIR(4));
+                                }
+                                else
+                                {
+                                    printw(string);
+                                }
                             }
                         }
                     }
