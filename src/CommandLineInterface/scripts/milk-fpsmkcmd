@@ -100,7 +100,7 @@ cat "$FPSlistfilename" | while read LINE; do
 			
 			redirect=""
 			if [ "$CMDCODE" = "RUNSTOP" ]; then
-			redirect="> ./${FPScmdlogdir}/${pname}.runstop.log"
+			redirect="&>> ./${FPScmdlogdir}/${pname}.runstop.log"
 			fi
 			
 			# create fifo

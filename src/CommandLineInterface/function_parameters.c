@@ -390,7 +390,7 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
     data.FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
-    if(CLI_checkarg(1, 5) == 0)
+    if(CLI_checkarg(1, CLIARG_STR) == 0)
     {
         // check that first arg is a string
         // if it isn't, the non-FPS implementation should be called
@@ -504,31 +504,31 @@ errno_t function_parameter_execFPScmd()
 #ifndef STANDALONE
     if(data.FPS_CMDCODE == FPSCMDCODE_FPSINIT)   // Initialize FPS
     {
-        data.FPS_CONFfunc();
+        data.FPS_CONFfunc(); // call conf function
         return RETURN_SUCCESS;
     }
 
     if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTART)    // Start CONF process
     {
-        data.FPS_CONFfunc();
+        data.FPS_CONFfunc(); // call conf function
         return RETURN_SUCCESS;
     }
 
     if(data.FPS_CMDCODE == FPSCMDCODE_CONFSTOP)   // Stop CONF process
     {
-        data.FPS_CONFfunc();
+        data.FPS_CONFfunc(); // call conf function
         return RETURN_SUCCESS;
     }
 
     if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTART)   // Start RUN process
     {
-        data.FPS_RUNfunc();
+        data.FPS_RUNfunc(); // call run function
         return RETURN_SUCCESS;
     }
 
     if(data.FPS_CMDCODE == FPSCMDCODE_RUNSTOP)   // Stop RUN process
     {
-        data.FPS_CONFfunc();
+        data.FPS_CONFfunc(); // call conf function
         return RETURN_SUCCESS;
     }
 #endif
@@ -2085,7 +2085,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         }
     }
 
-    if(CMDmode & FPSCMDCODE_CONFSTOP)   // stop fps
+    if(CMDmode & FPSCMDCODE_CONFSTOP)   // stop conf
     {
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
         function_parameter_struct_disconnect(&fps);

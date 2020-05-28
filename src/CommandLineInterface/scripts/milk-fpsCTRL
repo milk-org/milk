@@ -157,7 +157,7 @@ rm ./milkdebugtest
 
 else
 
-milk -n ${pname} -f ${CLIfifoname} -s ${SF}
+milk -n ${pname} -f ${CLIfifoname} -s ${SF} 2> testout.txt
 
 fi
 
