@@ -82,6 +82,7 @@ typedef long variableID;
 #define STRINGMAXLEN_FUNCTIONARGS  1000
 #define STRINGMAXLEN_SHMDIRNAME     200
 
+#define STRINGMAXLEN_FPSPROCESSTYPE 64
 
 
 /// important directories and info
@@ -692,6 +693,10 @@ typedef struct
     // Function parameter structure (FPS) instegration
     // These entries are set when CLI process enters FPS function
     char           FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
+	// Which type of FPS process is the current process ?
+	// conf, run, ctrl
+	char           FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
+	long           FPS_TIMESTAMP;        // included in log file name
     uint32_t       FPS_CMDCODE; // current FPS mode
     errno_t        (*FPS_CONFfunc)(); // pointer to FPS conf function
     errno_t        (*FPS_RUNfunc)(); // pointer to FPS run function
