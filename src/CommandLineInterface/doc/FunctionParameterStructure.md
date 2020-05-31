@@ -53,10 +53,11 @@ Examples:
 
 name                                  | Type           | Description        | Origin
 --------------------------------------|----------------|--------------------|---------------------------------
-/tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
+/$\{MILK_SHM_DIR\}/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
 <fpsname>:ctrl                        | tmux session   | FPS control terminal    | Set up by milk-fpsinit
 <fpsname>:conf                        | tmux session   | where CONF runs    | Set up by milk-fpsinit
 <fpsname>:run                         | tmux session   | where RUN runs     | Set up by milk-fpsinit
+/$\{MILK_SHM_DIR\}/fpslog...                | ASCII file  | log files       | Created by FPS processes
 ./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | OPTIONAL
 
 
@@ -73,13 +74,13 @@ name                                  | Type           | Description        | Or
 
 Main steps to enable FPS-enabled function for fpsCTRL:
 
-- **Define which FPS to enable**: Add entry in ./fpslist.txt
+- **Define which FPSs to enable**: Add entry in ./fpslist.txt
 - **Set up FPSs entities**: Run milk-fpsinit 
 - **Control and monitor FPSs**: start milk-fpsCTRL
 
 These steps should ideally performed by a setup script.
 
-## 2.1. Building command scripts from a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
+## 2.1. Define which FPSs to enable with a `fpslist.txt` file {#page_FunctionParameterStructure_WritingFPSCMDscripts}
 
 
 The user-provided `fpslist.txt` file lists the functions and corresponding FPS names that will be in use:
@@ -94,15 +95,15 @@ fpsrootname0	CLIcommand0
 fpsrootname1	CLIcommand1		optarg0  optarg1
 ~~~
 
+## 2.2. Set up FPSs entities
+
 FPS are built by
 
 	$ milk-fpsinit
 	
-The command will create the FPS command scripts in directory `./fpscmd/`, which are then called by the @ref page_FunctionParameterStructure_fpsCTRL to control the CONF and RUN processes.
-
 	
 
-## 2.2. fpsCTRL tool {#page_FunctionParameterStructure_fpsCTRL}
+## 2.3. milk-fpsCTRL tool {#page_FunctionParameterStructure_fpsCTRL}
 
 The FPS control tool is started from the command line :
 
@@ -111,7 +112,7 @@ The FPS control tool is started from the command line :
 A fifo is set up by milk-fpsCTRL to receive commands to start/stop the conf and run processes. Commands can also be issued directly from the milk-fpsCTRL GUI.
 
 
-### 2.2.1. Stopping a run process
+### 2.3.1. Stopping a run process
 
 To stop a run process, the user issues a command to the fifo :
 
