@@ -112,6 +112,7 @@ install(PROGRAMS
 			scripts/milk-cr2tofits
 			scripts/milk-FITS2shm
 			scripts/milk-fpsmkcmd
+			scripts/milk-fpsinit
 			scripts/milk-logshim
 			scripts/milk-logshimkill
 			scripts/milk-logshimoff

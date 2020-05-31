@@ -551,7 +551,7 @@ typedef struct
 typedef struct
 {
     int type;
-    union
+    struct
     {
         double numf;
         long numl;
@@ -689,13 +689,13 @@ typedef struct
     char           moduledatestring[20];
     char           moduletimestring[20];
 
-    // FPS instegration
-    // these entries are set when CLI process enters FPS function
+    // Function parameter structure (FPS) instegration
+    // These entries are set when CLI process enters FPS function
     char           FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
     uint32_t       FPS_CMDCODE; // current FPS mode
-    errno_t (*FPS_CONFfunc)();
-    errno_t (*FPS_RUNfunc)();
-
+    errno_t        (*FPS_CONFfunc)(); // pointer to FPS conf function
+    errno_t        (*FPS_RUNfunc)(); // pointer to FPS run function
+	
 
     // shared memory default
     int            SHARED_DFT;

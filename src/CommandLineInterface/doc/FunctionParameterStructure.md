@@ -15,14 +15,9 @@
 
 Steps to run FPS-enabled processes:
 
-	$ vim fpslist.txt               # Edit file, listing functions and corresponding FPS names that will be used
-	$ fpsmkcmd                      # create FPS scripts in `./fpscmd/`
-	$ ./fpscmd/fpsinitscript        # create FPS shared memory structure(s)
-	$ ./fpscmd/fpsconfstartscript   # start FPS configuration process(es)
-	$ fpsCTRL -m _ALL               # FPS control tool, scan ALL FPSs (-m: force match with fpscmd/fpslist.txt)
-	Type 'P' to im(P)ort configuration
-
-
+	$ vim fpslist.txt                    # Edit file, listing functions and corresponding FPS names that will be used
+	$ milk-fpsinit -e cacao -C           # create all (-C) FPS shared memory structure(s) and tmux sessions. Use cacao (-e) to launch commands
+	$ milk-fpsCTRL                       # FPS control tool, scan ALL FPSs (-m option force match with fpscmd/fpslist.txt)
 ---
 
 
@@ -31,6 +26,7 @@ Steps to run FPS-enabled processes:
 ## 1.1. Main elements
 
 FPS-enabled functions have the following elements:
+
 - The shared memory FPS: /tmp/<fpsname>.fps.shm
 - A configuration process that manages the FPS entries
 - A run process (the function itself)
@@ -47,7 +43,7 @@ Examples:
 
 	myfps                        # simple name, no optional integers
 	myfps-000000                 # optional integer 000000
-	myfps-000043-000020-000002   # 3 optional integers
+	myfps-000000-white-000002    # 3 optional args
 	
 @warning The FPS name does not need to match the process or function name. FPS name is specified in the CLI function as described in @ref page_FunctionParameterStructure_WritingCLIfunc.
 
@@ -58,13 +54,10 @@ Examples:
 name                                  | Type           | Description        | Origin
 --------------------------------------|----------------|--------------------|---------------------------------
 /tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
-./fpscmd/<fpsnameroot>-confinit       | script         | Initialize FPS     | Built by fpsmkcmd, can be user-edited
-./fpscmd/<fpsnameroot>-confstart      | script         | Start CONF process | Built by fpsmkcmd, can be user-edited
-./fpscmd/<fpsnameroot>-runstart       | script         | Start RUN process  | Built by fpsmkcmd, can be user-edited
-./fpscmd/<fpsnameroot>-runstop        | script         | Stop RUN process   | Built by fpsmkcmd, can be user-edited
-<fpsname>-conf                        | tmux session   | where CONF runs    | Set up by fpsCTRL
-<fpsname>-run                         | tmux session   | where RUN runs     | Set up by fpsCTRL
-./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | <TBD>
+<fpsname>:ctrl                        | tmux session   | FPS control terminal    | Set up by milk-fpsinit
+<fpsname>:conf                        | tmux session   | where CONF runs    | Set up by milk-fpsinit
+<fpsname>:run                         | tmux session   | where RUN runs     | Set up by milk-fpsinit
+./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | OPTIONAL
 
 
 ---
@@ -80,9 +73,9 @@ name                                  | Type           | Description        | Or
 
 Main steps to enable FPS-enabled function for fpsCTRL:
 
-- Add entry in ./fpslist.txt
-- Run milk-fpsmkcmd 
-- Run ./fpscmd/<fpsname>-confinit
+- **Define which FPS to enable**: Add entry in ./fpslist.txt
+- **Set up FPSs entities**: Run milk-fpsinit 
+- **Control and monitor FPSs**: start milk-fpsCTRL
 
 These steps should ideally performed by a setup script.
 
@@ -95,15 +88,15 @@ The user-provided `fpslist.txt` file lists the functions and corresponding FPS n
 # List of FPS-enabled function
 # Column 1: root name used to name FPS
 # Column 2: CLI command
-# Column(s) 3+: optional arguments, integers, 6 digits
+# Column(s) 3: optional arguments, string
 
 fpsrootname0	CLIcommand0
-fpsrootname1	CLIcommand1		optarg00	optarg01
+fpsrootname1	CLIcommand1		optarg0  optarg1
 ~~~
 
-FPS command scripts are built by
+FPS are built by
 
-	$ fpsmkcmd
+	$ milk-fpsinit
 	
 The command will create the FPS command scripts in directory `./fpscmd/`, which are then called by the @ref page_FunctionParameterStructure_fpsCTRL to control the CONF and RUN processes.
 
@@ -113,10 +106,29 @@ The command will create the FPS command scripts in directory `./fpscmd/`, which 
 
 The FPS control tool is started from the command line :
 
-	$ fpsCTRL
+	$ milk-fpsCTRL
+
+A fifo is set up by milk-fpsCTRL to receive commands to start/stop the conf and run processes. Commands can also be issued directly from the milk-fpsCTRL GUI.
 
 
+### 2.2.1. Stopping a run process
 
+To stop a run process, the user issues a command to the fifo :
+
+	echo "runstop fpsname-01" >> ${MILK_SHM_DIR}/${LOOPNAME}_fpsCTRL.fifo
+
+The steps triggered by this command are :
+
+- Command is processed by fifo command interpreter functionparameter_FPSprocess_cmdline()
+- The fifo command interpreter resolves the fps entry, and runs functionparameter_RUNstop(fps, fpsindex)
+	- pre-configured command ./fpscmd/fpsname-runstop is executed to terminate run process :
+		- milk CLI is launched
+		- fps CLI command is launched with argument "_RUNSTOP_" :
+			- function_parameter_getFPSname_from_CLIfunc() called, sets data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP
+			- function_parameter_execFPScmd() called, calls conf process (function data.FPS_CONFfunc)
+			- function_parameter_FPCONFsetup, called within conf process, configures variables for run stop:
+				-  
+	- CTRL-c sent to run tmux session to ensure exit
 ---
 
 
@@ -124,11 +136,13 @@ The FPS control tool is started from the command line :
 
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
+
 - arg1: A command code
 - arg2+: Optional arguments 
 
 The command code is a string, and will determine the action to be executed:
-- `_FPSINIT_`  : Initialize FPS for the function
+
+- `_FPSINIT_`  : Initialize FPS for the function, look for parameter values on filesystem
 - `_CONFSTART_` : Start the FPS configuration process
 - `_CONFSTOP_`  : Stop the FPS configuration process
 - `_RUNSTART_`  : Start the run process
@@ -146,10 +160,12 @@ Example source code below.
 
 errno_t ExampleFunction_cli()
 {
-    // try FPS implementation
-    // set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value
-    // default FPS name will be used if CLI process has NOT been named
-    // see code in function_parameter.c for detailed rules
+    // Try FPS implementation
+    
+    // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+    // Default FPS name will be used if CLI process has NOT been named.
+    // See code in function_parameter.c for detailed rules.
+
     function_parameter_getFPSname_from_CLIfunc("measlinRM");
 	
 	if(data.FPS_CMDCODE != 0) {	// use FPS implementation	
@@ -163,8 +179,8 @@ errno_t ExampleFunction_cli()
 
     // call non FPS implementation - all parameters specified at function launch
     if(
-        CLI_checkarg(1, 1) +
-        CLI_checkarg(2, 2) 
+        CLI_checkarg(1, CLIARG_FLOAT) +
+        CLI_checkarg(2, CLIARG_LONG) 
         == 0) {
         ExampleFunction(
             data.cmdargtoken[1].val.numf,
@@ -214,7 +230,7 @@ errno_t ExampleFunction_FPCONF(
     // ===========================
     // SETUP FPS
     // ===========================
-    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDMODE); // macro in function_parameter.h
+    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE); // macro in function_parameter.h
 
 
     // ==============================================
