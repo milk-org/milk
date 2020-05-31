@@ -431,7 +431,7 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
         //     SET FPS INTERFACE NAME
         // ===============================
 
-        // if main CLI process has been named with -n option, than use the process name to construct fpsname
+        // if main CLI process has been named with -n option, then use the process name to construct fpsname
         if(data.processnameflag == 1)
         {
             // Automatically set fps name to be process name up to first instance of character '.'
@@ -439,7 +439,6 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
         }
         else   // otherwise, construct name as follows
         {
-
             // Adopt default name for fpsname
             int slen = snprintf(data.FPS_name, FUNCTION_PARAMETER_STRMAXLEN, "%s",
                                 fpsname_default);
@@ -468,7 +467,7 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
                 char fpsname1[FUNCTION_PARAMETER_STRMAXLEN];
 
                 int slen = snprintf(fpsname1, FUNCTION_PARAMETER_STRMAXLEN,
-                                    "%s-%s", data.FPS_name, data.cmdargtoken[2].val.string);
+                                    "%s-%s", data.FPS_name, data.cmdargtoken[argindex].val.string);
                 if(slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
@@ -489,7 +488,6 @@ errno_t function_parameter_getFPSname_from_CLIfunc(
                 argindex ++;
             }
         }
-
     }
 
 #endif
@@ -1439,11 +1437,6 @@ int function_parameter_add_entry(
     void                *valueptr
 )
 {
-    int RVAL = 0;
-    // 0: parameter initialized to default value
-    // 1: initialized using file value
-    // 2: initialized to function argument value
-
     long pindex = 0;
     char *pch;
     char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
@@ -1466,10 +1459,12 @@ int function_parameter_add_entry(
                                                              FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     if(keywordstring[0] == '.')
     {
+		//printf("--------------- keywstring \"%s\" starts with dot -> adding \"%s\"\n", keywordstring, fps->md->name);
         sprintf(keywordstringC, "%s%s", fps->md->name, keywordstring);
     }
     else
     {
+		//printf("--------------- keywstring \"%s\" unchanged\n", keywordstring);
         strcpy(keywordstringC, keywordstring);
     }
 
@@ -1782,19 +1777,31 @@ int function_parameter_add_entry(
                 break;
         }
 
-        RVAL = 2;  // default value entered
+       // RVAL = 2;  // default value entered
     }
 
+
+
+
+
+
+
+/*
+	
+	// READING PARAMETER FROM DISK
 
 
     // attempt to read value for filesystem
     char fname[200];
     FILE *fp;
     long tmpl;
-
-
-
-
+	
+    int RVAL = 0;
+    // 0: parameter initialized to default value
+    // 1: initialized using file value (read from disk)
+    // 2: initialized to function argument value	 
+	
+	
     int index;
     // index = 0  : setval
     // index = 1  : minval
@@ -1805,7 +1812,6 @@ int function_parameter_add_entry(
     {
         switch(index)
         {
-
             case 0 :
                 functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "setval");
                 break;
@@ -1823,9 +1829,6 @@ int function_parameter_add_entry(
 
         if((fp = fopen(fname, "r")) != NULL)
         {
-
-            EXECUTE_SYSTEM_COMMAND("echo  \"-------- FILE FOUND: %s \" >> tmplog.txt", fname);           
-
             switch(funcparamarray[pindex].type)
             {
 
@@ -1981,14 +1984,15 @@ int function_parameter_add_entry(
 
 
         }
-        else
-        {
-			EXECUTE_SYSTEM_COMMAND("echo  \"-------- FILE NOT FOUND: %s \" >> tmplog.txt", fname);
-        }
+
     }
 
 
 
+
+	// WRITING PARAMETER TO DISK
+	//
+	
     if(RVAL == 0)
     {
         functionparameter_WriteParameterToDisk(fps, pindex, "setval",
@@ -2027,6 +2031,7 @@ int function_parameter_add_entry(
         functionparameter_WriteParameterToDisk(fps, pindex, "fpsdir", "AddEntry");
         functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
     }
+*/
 
     return pindex;
 }
@@ -5557,72 +5562,59 @@ static errno_t function_parameter_process_fpsCMDarray(
 
 
 
-
+/**
+ * @brief FPS start RUN process
+ * 
+ * Requires setup performed by milk-fpsinit, which performs the following setup
+ * - creates the FPS shared memory
+ * - create up tmux sessions
+ * - create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
+ */ 
 errno_t functionparameter_RUNstart(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 )
 {
-    int  stringmaxlen = 500;
-    char command[stringmaxlen];
+//    int  stringmaxlen = 500;
+//    char command[stringmaxlen];
 
     if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
     {
-
-        if(snprintf(command, stringmaxlen,
-                    "tmux new-session -d -s %s-run > /dev/null 2>&1", fps[fpsindex].md->name) < 0)
-        {
-            PRINT_ERROR("snprintf error");
-        }
-
-        if(system(command) != 0)
-        {
-            // this is probably OK - duplicate session
-            //printf("command: \"%s\"\n", command);
-            //PRINT_ERROR("system() returns non-zero value");
-            //printf("This error message may be due to pre-existing session\n");
-        }
-
-
         // Move to correct launch directory
-        if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"cd %s\" C-m",
-                    fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory) < 0)
-        {
-            PRINT_ERROR("snprintf error");
-        }
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
+                               fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
 
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"fpsrunstart\" C-m",
+                               fps[fpsindex].md->name);
 
-        if(system(command) != 0)
-        {
-            PRINT_ERROR("system() returns non-zero value");
-        }
-
-        if(snprintf(command, stringmaxlen,
-                    "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name,
-                    fps[fpsindex].md->pname) < 0)
-        {
-            PRINT_ERROR("snprintf error");
-        }
-
-        for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex;
-                nameindexlevel++)
-        {
-            int tmpstrlen = 20;
-            char tmpstring[tmpstrlen];
-
-            if(snprintf(tmpstring, tmpstrlen, " %s",
-                        fps[fpsindex].md->nameindexW[nameindexlevel]) < 0)
+        /*    if(snprintf(command, stringmaxlen,
+                        "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name,
+                        fps[fpsindex].md->pname) < 0)
             {
                 PRINT_ERROR("snprintf error");
             }
 
-            strcat(command, tmpstring);
-        }
-        strcat(command, "\" C-m");
-        if(system(command) != 0)
-        {
-            PRINT_ERROR("system() returns non-zero value");
-        }
+            for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex;
+                    nameindexlevel++)
+            {
+                int tmpstrlen = 20;
+                char tmpstring[tmpstrlen];
+
+                if(snprintf(tmpstring, tmpstrlen, " %s",
+                            fps[fpsindex].md->nameindexW[nameindexlevel]) < 0)
+                {
+                    PRINT_ERROR("snprintf error");
+                }
+
+                strcat(command, tmpstring);
+            }
+            strcat(command, "\" C-m");
+            if(system(command) != 0)
+            {
+                PRINT_ERROR("system() returns non-zero value");
+            }*/
+
+
         fps[fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
         fps[fpsindex].md->signal |=
             FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -5634,23 +5626,35 @@ errno_t functionparameter_RUNstart(
 
 
 
-
+/** @brief FPS stop RUN process
+ * 
+ * Run pre-set function fpsrunstop in tmux ctrl window
+ */ 
 errno_t functionparameter_RUNstop(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 )
-{
+{	
+    // Move to correct launch directory
+    // 
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"cd %s\" C-m",
+                           fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+
+	EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"fpsrunstop\" C-m",
+                           fps[fpsindex].md->name);
+
+	// Send C-c in case runstop command is not implemented
+	EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c &> /dev/null",
+                fps[fpsindex].md->name);
+
+    /*
     int stringmaxlen = 500;
     char command[stringmaxlen];
-
-
-    // First, run the runstop command
     if(snprintf(command, stringmaxlen, "%s/fpscmd/%s-runstop",
                 fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
-
     for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex;
             nameindexlevel++)
     {
@@ -5665,23 +5669,12 @@ errno_t functionparameter_RUNstop(
     {
         //PRINT_ERROR("system() returns non-zero value");
     }
+    * 
+    */
+     
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps[fpsindex].md->signal |=
         FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-
-
-
-    // Send C-c in case runstop command is not implemented
-    if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run C-c &> /dev/null",
-                fps[fpsindex].md->name) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-
-    if(system(command) != 0)
-    {
-        //PRINT_ERROR("system() returns non-zero value");
-    }
 
     return RETURN_SUCCESS;
 }
@@ -5689,70 +5682,32 @@ errno_t functionparameter_RUNstop(
 
 
 
+/**
+ * @brief FPS start CONF process
+ * 
+ * Requires setup performed by milk-fpsinit, which performs the following setup
+ * - creates the FPS shared memory
+ * - create up tmux sessions
+ * - create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
+ */ 
 
 errno_t functionparameter_CONFstart(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 )
 {
-    int stringmaxlen = 500;
-    char command[stringmaxlen];
-
-
-    if(snprintf(command, stringmaxlen,
-                "tmux new-session -d -s %s-conf > /dev/null 2>&1", fps[fpsindex].md->name) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-
-    if(system(command) != 0)
-    {
-        // this is probably OK - duplicate session warning
-        //PRINT_ERROR("system() returns non-zero value");
-    }
-
     // Move to correct launch directory
-    if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"cd %s\" C-m",
-                fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
+    //
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"cd %s\" C-m",
+                           fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
 
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"fpsconfstart\" C-m",
+                           fps[fpsindex].md->name);
 
-
-    if(snprintf(command, stringmaxlen,
-                "tmux send-keys -t %s-conf \"./fpscmd/%s-confstart", fps[fpsindex].md->name,
-                fps[fpsindex].md->pname) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-
-    for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex;
-            nameindexlevel++)
-    {
-        int tmpstrlen = 20;
-        char tmpstring[tmpstrlen];
-
-        if(snprintf(tmpstring, tmpstrlen, " %s",
-                    fps[fpsindex].md->nameindexW[nameindexlevel]) < 0)
-        {
-            PRINT_ERROR("snprintf error");
-        }
-
-        strcat(command, tmpstring);
-    }
-    strcat(command, "\" C-m");
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
     fps[fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
-    fps[fpsindex].md->signal |=
-        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+
+    // notify GUI loop to update
+    fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
     return RETURN_SUCCESS;
 }
@@ -5760,31 +5715,25 @@ errno_t functionparameter_CONFstart(
 
 
 
-
+/**
+ * @brief FPS stop CONF process
+ * 
+ */
 errno_t functionparameter_CONFstop(
     FUNCTION_PARAMETER_STRUCT *fps,
     int fpsindex
 )
 {
-    int stringmaxlen = 500;
-    char command[stringmaxlen];
-
-    fps[fpsindex].md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
-    if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf C-c &> /dev/null",
-                fps[fpsindex].md->name) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
-    fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
-    fps[fpsindex].md->signal |=
-        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+	// send conf stop signal
+	fps[fpsindex].md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+
 
 
 
@@ -5800,52 +5749,26 @@ errno_t functionparameter_FPSremove(
     char command1[stringmaxlen];
     char command2[stringmaxlen];
 
-    functionparameter_RUNstop(fps, fpsindex);
-    functionparameter_CONFstop(fps, fpsindex);
+    //functionparameter_RUNstop(fps, fpsindex);
+    //functionparameter_CONFstop(fps, fpsindex);
 
 
+	// get directory name
     char shmdname[stringmaxlen];
     function_parameter_struct_shmdirname(shmdname);
+	
+	
+    // get conf log filename
+    char conflogfname[STRINGMAXLEN_FULLFILENAME];
+    WRITE_FULLFILENAME(conflogfname, "%s/fpslog.%06d", shmdname, fps[fpsindex].md->confpid);
 
-    // conf log
-    char conflogfname[stringmaxlen];
-    if(snprintf(conflogfname, stringmaxlen, "%s/fpslog.%06d", shmdname,
-                fps[fpsindex].md->confpid) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-
-    // FPS shm
-    char fpsfname[stringmaxlen];
-    if(snprintf(fpsfname, stringmaxlen, "%s/%s.fps.shm", shmdname,
-                fps[fpsindex].md->name) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-
+    // get FPS shm filename
+    char fpsfname[STRINGMAXLEN_FULLFILENAME];
+    WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
 
     // delete sym links
-    snprintf(command1, stringmaxlen,
-             "find %s -follow -type f -name \"fpslog.*.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
-             shmdname, fps[fpsindex].md->name);
-    if(system(command1) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
-
-
-
-
-    // TEST
-    /*
-    	FILE *fpcmd;
-    	char fnamecmd[200];
-    	sprintf(fnamecmd, "fpcmd.%s.bash", fps[fpsindex].md->name);
-    	fpcmd = fopen(fnamecmd, "w");
-    	fprintf(fpcmd, "%s\n", command1);
-    	fprintf(fpcmd, "%s\n", command2);
-    	fclose(fpcmd);
-    */
+    EXECUTE_SYSTEM_COMMAND("find %s -follow -type f -name \"fpslog.*.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
+                           shmdname, fps[fpsindex].md->name);
 
     fps[fpsindex].SMfd = -1;
     close(fps[fpsindex].SMfd);
@@ -5856,37 +5779,45 @@ errno_t functionparameter_FPSremove(
 
 
     // delete targets
-    snprintf(command2, stringmaxlen,
-             "find %s -type f -name \"fpslog.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
-             shmdname, fps[fpsindex].md->name);
-    if(system(command2) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
+    /*    snprintf(command2, stringmaxlen,
+                 "find %s -type f -name \"fpslog.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
+                 shmdname, fps[fpsindex].md->name);
+        if(system(command2) != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
+    */
+
+    // terminate tmux sessions
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
+                           fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
+                           fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
+                           fps[fpsindex].md->name);
+
+    /*
+        if(snprintf(command, stringmaxlen, "tmux send-keys -t %s:run \"exit\" C-m",
+                    fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        if(system(command) != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
 
 
-
-    if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"exit\" C-m",
-                fps[fpsindex].md->name) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
-
-
-    if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-conf \"exit\" C-m",
-                fps[fpsindex].md->name) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-    if(system(command) != 0)
-    {
-        PRINT_ERROR("system() returns non-zero value");
-    }
-
+        if(snprintf(command, stringmaxlen, "tmux send-keys -t %s:conf \"exit\" C-m",
+                    fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        if(system(command) != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
+    */
 
 
     return RETURN_SUCCESS;
@@ -6656,7 +6587,7 @@ inline static void fpsCTRLscreen_print_nodeinfo(
            fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
 
     DEBUG_TRACEPOINT(" ");
-    printw("tmux sessions     :  %s-conf  %s-run\n",
+    printw("tmux sessions     :  %s:conf  %s:run\n",
            fps[keywnode[nodeSelected].fpsindex].md->name,
            fps[keywnode[nodeSelected].fpsindex].md->name);
 
@@ -6874,8 +6805,8 @@ inline static int fpsCTRLscreen_process_user_key(
                 &fpsCTRLgui->NBindex, 0);
             clear();
             DEBUG_TRACEPOINT(" ");
-            fpsCTRLgui->fpsindexSelected =
-                0; // safeguard in case current selection disappears
+            // safeguard in case current selection disappears
+            fpsCTRLgui->fpsindexSelected = 0; 
             break;
 
         case KEY_UP:
@@ -7000,7 +6931,7 @@ inline static int fpsCTRLscreen_process_user_key(
 
             if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
             {
-                if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"cd %s\" C-m",
+                if(snprintf(command, stringmaxlen, "tmux send-keys -t %s:run \"cd %s\" C-m",
                             fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory) < 0)
                 {
                     PRINT_ERROR("snprintf error");
@@ -7009,7 +6940,7 @@ inline static int fpsCTRLscreen_process_user_key(
                 {
                     PRINT_ERROR("system() returns non-zero value");
                 }
-                if(snprintf(command, stringmaxlen, "tmux send-keys -t %s-run \"%s %s\" C-m",
+                if(snprintf(command, stringmaxlen, "tmux send-keys -t %s:run \"%s %s\" C-m",
                             fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0],
                             fps[fpsindex].md->name) < 0)
                 {

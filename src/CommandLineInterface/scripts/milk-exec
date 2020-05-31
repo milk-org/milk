@@ -14,13 +14,17 @@ echo "------------------------------------------------------------------------"
 echo "$(tput bold) $pname : execute milk command  $(tput sgr0)"
 echo "------------------------------------------------------------------------"
 echo "  Execute command string within milk command line interface (CLI)"
+echo "  Commands are separated by ;"
 echo "   "
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-hT] <cmdstring>"
+echo "     $0 [-hTn] <cmdstring>"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-T$(tput sgr0)          (T)est mode"
+echo "     $(tput bold)-T$(tput sgr0)             (T)est mode"
+echo "     $(tput bold)-n$(tput sgr0) <pname>     (n)ame process"
 echo ""
+echo " $(tput bold)EXAMPLE:$(tput sgr0)"
+echo "     $0 \"imgen.mkdisk d1 100 100 50 50 20;listim\""
 echo "------------------------------------------------------------------------"
 }
 
@@ -49,10 +53,10 @@ singlelinehelp=1;
   esac
 done
 
+pname="milkexec"
 
 
-
-while getopts :hT FLAG; do
+while getopts :hTn: FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -64,6 +68,9 @@ while getopts :hT FLAG; do
       ;;
     T) # run as a test
 	echo "CTEST_FULL_OUTPUT"
+    ;;
+    n) # name process
+    pname="${OPTARG}"
     ;;
     \?) 
       echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
@@ -92,7 +99,8 @@ fi
 IFS=';' read -r -a array <<< "$1"
 
 
-pname="milkexec"
+
+
 fifoname="milkCLIfifo.${pname}"
 SF="milkCLIstartup.${pname}"
 echo "" > $SF

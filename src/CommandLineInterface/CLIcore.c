@@ -472,29 +472,29 @@ void sig_handler(
     {
 
         case SIGINT:
-            printf("sig_handler received SIGINT\n");
+            printf("PID %d sig_handler received SIGINT\n", CLIPID);
             data.signal_INT = 1;
             break;
 
         case SIGTERM:
-            printf("sig_handler received SIGTERM\n");
+            printf("PID %d sig_handler received SIGTERM\n", CLIPID);
             data.signal_TERM = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
         case SIGUSR1:
-            printf("sig_handler received SIGUSR1\n");
+            printf("PID %d sig_handler received SIGUSR1\n", CLIPID);
             data.signal_USR1 = 1;
             break;
 
         case SIGUSR2:
-            printf("sig_handler received SIGUSR2\n");
+            printf("PID %d sig_handler received SIGUSR2\n", CLIPID);
             data.signal_USR2 = 1;
             break;
 
         case SIGBUS: // exit program after SIGSEGV
-            printf("sig_handler received SIGBUS \n");
+            printf("PID %d sig_handler received SIGBUS \n", CLIPID);
             write_process_exit_report("SIGBUS");
             data.signal_BUS = 1;
             set_terminal_echo_on();
@@ -502,7 +502,7 @@ void sig_handler(
             break;
 
         case SIGABRT:
-            printf("sig_handler received SIGABRT\n");
+            printf("PID %d sig_handler received SIGABRT\n", CLIPID);
             write_process_exit_report("SIGABRT");
             data.signal_ABRT = 1;
             set_terminal_echo_on();
@@ -510,7 +510,7 @@ void sig_handler(
             break;
 
         case SIGSEGV: // exit program after SIGSEGV
-            printf("sig_handler received SIGSEGV\n");
+            printf("PID %d sig_handler received SIGSEGV\n", CLIPID);
             write_process_exit_report("SIGSEGV");
             data.signal_SEGV = 1;
             set_terminal_echo_on();
@@ -518,12 +518,12 @@ void sig_handler(
             break;
 
         case SIGHUP:
-            printf("sig_handler received SIGHUP\n");
+            printf("PID %d sig_handler received SIGHUP\n", CLIPID);
             data.signal_HUP = 1;
             break;
 
         case SIGPIPE:
-            printf("sig_handler received SIGPIPE\n");
+            printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
             data.signal_PIPE = 1;
             break;
     }
@@ -1106,7 +1106,10 @@ static errno_t CLI_execute_line()
 
         while(cmdargstring != NULL)   // iterate on words
         {
-
+			// always copy word in string, so that arg can be processed as string if needed
+			sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
+            printf("PROCESSING WORD \"%s\"  -> \"%s\"\n", cmdargstring, data.cmdargtoken[data.cmdNBarg].val.string);
+            
             if((cmdargstring[0] == '\"')
                     && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
             {
@@ -1130,6 +1133,7 @@ static errno_t CLI_execute_line()
                 yyparse();
                 yylex_destroy();
             }
+            
             cmdargstring = strtok(NULL, " ");
             data.cmdNBarg++;
         }
@@ -1141,7 +1145,8 @@ static errno_t CLI_execute_line()
         {
             while(data.cmdargtoken[i].type != 0)
             {
-                printf("TOKEN %ld type : %d\n", i, data.cmdargtoken[i].type);
+               
+                printf("TOKEN %ld/%ld   \"%s\"  type : %d\n", i, data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
                 if(data.cmdargtoken[i].type == 1)   // double
                 {
                     printf("\t double : %g\n", data.cmdargtoken[i].val.numf);
@@ -1166,6 +1171,7 @@ static errno_t CLI_execute_line()
                 {
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
                 }
+                
                 i++;
             }
         }
@@ -1183,6 +1189,7 @@ static errno_t CLI_execute_line()
                 data.CMDexecuted = 1;
             }
         }
+        
         for(i = 0; i < data.calctmp_imindex; i++)
         {			
 			CREATE_IMAGENAME(calctmpimname, "_tmpcalc%ld", i);

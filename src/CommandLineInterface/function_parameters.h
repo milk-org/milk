@@ -422,36 +422,44 @@ typedef struct
     char                nameindexW[16][10];  // subnames
     int                 NBnameindex;         // example: 2
 
-    // configuration will run in tmux session pname-XX-conf
-    // process       will run in tmux session pname-XX-run
-    // expected commands to start and stop process :
-    //   ./cmdproc/<pname>-conf-start XX YY (in tmux session)
-    //   ./cmdproc/<pname>-run-start XX YY  (in tmux session)
-    //   ./cmdproc/<pname>-run-stop XX YY
-    //
-
-    pid_t
-    confpid;            // PID of process owning parameter structure configuration
-    pid_t               runpid;             // PID of process running on this fps
+    // configuration will run in tmux session pname-XX:conf
+    // process       will run in tmux session pname-XX:run
 
 
-    uint64_t
-    signal;       // Used to send signals to configuration process
-    uint64_t            confwaitus;   // configuration wait timer value [us]
+    // PID of process owning parameter structure configuration
+    pid_t               confpid;
+    struct timespec     confpidstarttime;
+    
+    // PID of process running on this fps
+    pid_t               runpid;
+	struct timespec     runpidstarttime;
+
+
+	// Used to send signals to configuration process
+    uint64_t            signal;
+    
+    // configuration wait timer value [us]
+    uint64_t            confwaitus;
 
     uint32_t            status;          // conf and process status
 
-    long
-    NBparamMAX;      // size of parameter array (= max number of parameter supported)
+
+
+	// size of parameter array (= max number of parameter supported)
+    long NBparamMAX;
 
 
     char
     message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
-    int
-    msgpindex[FPS_NB_MSG];                                       // to which entry does the message refer to ?
-    uint32_t
-    msgcode[FPS_NB_MSG];                                         // What is the nature of the message/error ?
+
+	// to which entry does the message refer to ?
+    int msgpindex[FPS_NB_MSG];
+
+	// What is the nature of the message/error ?
+    uint32_t msgcode[FPS_NB_MSG];
+
     long                          msgcnt;
+
     uint32_t                      conferrcnt;
 
 } FUNCTION_PARAMETER_STRUCT_MD;
@@ -618,6 +626,7 @@ struct timespec treq, trem; \
 treq.tv_sec = 0; \
 treq.tv_nsec = 50000; \
 nanosleep(&treq, &trem); \
+if(data.signal_INT == 1){fps.loopstatus = 0;} \
 } \
 if(function_parameter_FPCONFloopstep(&fps) == 1) {
 
