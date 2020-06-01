@@ -132,7 +132,6 @@ mkfifo $fifoname
 CLIfifoname="$MILK_SHM_DIR/fpsCLIfifo"
 
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
-
 echo "fparamCTRL ${MODE} \"$arg1\" \"$fifoname\"" > $SF
 echo "exitCLI" >> $SF
 
@@ -157,7 +156,8 @@ rm ./milkdebugtest
 
 else
 
-milk -n ${pname} -f ${CLIfifoname} -s ${SF} 2> testout.txt
+milk -n ${pname} -f ${CLIfifoname} -s ${SF} 
+#2> testout.txt
 
 fi
 
