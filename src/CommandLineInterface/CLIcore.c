@@ -1108,7 +1108,7 @@ static errno_t CLI_execute_line()
         {
 			// always copy word in string, so that arg can be processed as string if needed
 			sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
-            printf("PROCESSING WORD \"%s\"  -> \"%s\"\n", cmdargstring, data.cmdargtoken[data.cmdNBarg].val.string);
+            //printf("PROCESSING WORD \"%s\"  -> \"%s\"\n", cmdargstring, data.cmdargtoken[data.cmdNBarg].val.string);
             
             if((cmdargstring[0] == '\"')
                     && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
@@ -2870,15 +2870,7 @@ static int command_line_process_options(
                 char *firstword;
                 firstword = strtok(tmpstring, ".");
                 strcpy(data.processname0, firstword);
-
-                //            memcpy((void *)argv[0], optarg, strlen(optarg));
-                strcpy(argv[0], optarg);
-#ifdef __linux__
                 prctl(PR_SET_NAME, optarg, 0, 0, 0);
-#elif defined(HAVE_PTHREAD_SETNAME_NP) && defined(OS_IS_DARWIN)
-                pthread_setname_np(optarg);
-#endif
-                //            prctl(PR_SET_NAME, optarg, 0, 0, 0);
                 break;
 
             case 'p':

@@ -48,6 +48,8 @@ typedef int errno_t;
 #include <signal.h>
 #include <unistd.h> // usleep
 
+#include <sys/ioctl.h> // for terminal size
+
 
 #ifndef STANDALONE
 #include <CommandLineInterface/CLIcore.h>
@@ -74,6 +76,11 @@ typedef int errno_t;
 #define NB_KEYWNODE_MAX 10000
 
 #define MAXNBLEVELS 20
+
+
+#define SCREENPRINT_STDIO   0
+#define SCREENPRINT_NCURSES 1
+#define SCREENPRINT_NONE    2
 
 
 // ANSI ESCAPE CODES
@@ -143,16 +150,12 @@ static int wrow, wcol;
 /*
  * Defines printfw output
  * 
- * mode=0 : 
- * no ncurses output
- * printf (stdout)
- * 
- * mode=1 : printw
- * 
- * mode=2 : don't print (silent)
+ * SCREENPRINT_STDIO     printf to stdout
+ * SCREENPRINT_NCURSES   printw
+ * SCREENPRINT_NONE      don't print (silent)
  */
 
-static int screenprintmode = 0;
+static int screenprintmode = SCREENPRINT_STDIO;
 
 struct termios orig_termios;
 struct termios new_termios;
@@ -202,12 +205,12 @@ static void printfw(const char *fmt, ...)
     va_start(args, fmt);
 
 
-    if(screenprintmode == 0)
+    if(screenprintmode == SCREENPRINT_STDIO)
     {
         vfprintf(stdout, fmt, args);
     }
 
-    if(screenprintmode == 1)
+    if(screenprintmode == SCREENPRINT_NCURSES)
     {
         vw_printw(stdscr, fmt, args);
     }
@@ -220,7 +223,7 @@ static void printfw(const char *fmt, ...)
 
 static void screenprint_setcolor( int colorcode )
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attron(COLOR_PAIR(colorcode));
 	}
@@ -239,8 +242,8 @@ static void screenprint_setcolor( int colorcode )
 			break;
 
 			case 3:
-			printAECfgcolor = AEC_FGCOLOR_YELLOW;
-			printAECbgcolor = AEC_BGCOLOR_BLACK;			
+			printAECfgcolor = AEC_FGCOLOR_BLACK;
+			printAECbgcolor = AEC_BGCOLOR_YELLOW;			
 			break;
 
 			case 4:
@@ -286,7 +289,7 @@ static void screenprint_setcolor( int colorcode )
 
 static void screenprint_unsetcolor( int colorcode )
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attroff(COLOR_PAIR(colorcode));
 	}
@@ -295,7 +298,7 @@ static void screenprint_unsetcolor( int colorcode )
 		printAEC = AEC_NORMAL;
 		printAECfgcolor = AEC_FGCOLOR_WHITE;
 		printAECbgcolor = AEC_BGCOLOR_BLACK;	
-		printf( "\033[%d;%dm", printAEC, printAECfgcolor, printAECbgcolor);
+		printf( "\033[%dm", printAEC);//, printAECbgcolor);
 	}
 }
 
@@ -303,7 +306,7 @@ static void screenprint_unsetcolor( int colorcode )
 
 static void screenprint_setbold()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attron(A_BOLD);
 	}
@@ -316,7 +319,7 @@ static void screenprint_setbold()
 
 static void screenprint_unsetbold()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attroff(A_BOLD);
 	}
@@ -333,7 +336,7 @@ static void screenprint_unsetbold()
 
 static void screenprint_setblink()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attron(A_BLINK);
 	}
@@ -346,14 +349,14 @@ static void screenprint_setblink()
 
 static void screenprint_unsetblink()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attroff(A_BLINK);
 	}
 	else
 	{
 		printAEC = AEC_NORMAL; //AEC_BLINKOFF;
-		printf( "\033[%dm");
+		printf( "\033[%dm", AEC_NORMAL);
 	}
 }
 
@@ -361,7 +364,7 @@ static void screenprint_unsetblink()
 
 static void screenprint_setdim()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attron(A_DIM);
 	}
@@ -372,9 +375,10 @@ static void screenprint_setdim()
 	}
 }
 
+
 static void screenprint_unsetdim()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attroff(A_DIM);
 	}
@@ -390,7 +394,7 @@ static void screenprint_unsetdim()
 
 static void screenprint_setreverse()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attron(A_REVERSE);
 	}
@@ -403,7 +407,7 @@ static void screenprint_setreverse()
 
 static void screenprint_unsetreverse()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		attroff(A_REVERSE);
 	}
@@ -419,7 +423,7 @@ static void screenprint_unsetreverse()
 
 static void screenprint_setnormal()
 {
-	if(screenprintmode == 1)
+	if(screenprintmode == SCREENPRINT_NCURSES)
 	{
 		//attron(A_REVERSE);
 	}
@@ -2326,7 +2330,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     data.FPS_TIMESTAMP = tnow.tv_sec;
 
     strcpy(data.FPS_PROCESS_TYPE, "UNDEF");
-	char ptstring[STRINGMAXLEN_FPSPROCESSTYPE];
+//	char ptstring[STRINGMAXLEN_FPSPROCESSTYPE];
 	
     switch(CMDmode)
     {
@@ -2619,6 +2623,112 @@ static errno_t initncurses()
 
 
 
+static int get_singlechar_nonblock()
+{
+    int ch = -1;
+	int buffd[3];
+
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        ch = getch();  // ncurses function, non-blocking
+        //buffd[0] = ch;
+    }
+    else
+    {
+        char buff[3];
+
+        buffd[0] = -1;
+        buffd[1] = -1;
+        buffd[2] = -1;
+
+        int l = read(STDIN_FILENO, buff, 3);
+        for(int li=0; li<l; li++)
+        {
+            buffd[li] = (int) buff[li];
+        }
+        if(l>0) {
+            ch = buff[0];
+
+            if (buff[0] == 13) // enter
+            {
+                ch = 10; // new line
+            }
+
+
+            if (buff[0] == 27) { // if the first value is esc
+
+
+                if(buff[1] == 91) {
+                    switch (buff[2])
+                    {   // the real value
+                    case 'A':
+                        ch = KEY_UP; // code for arrow up
+                        break;
+                    case 'B':
+                        ch = KEY_DOWN; // code for arrow down
+                        break;
+                    case 'C':
+                        ch = KEY_RIGHT; // code for arrow right
+                        break;
+                    case 'D':
+                        ch = KEY_LEFT; // code for arrow left
+                        break;
+                    }
+                }
+
+
+                if(buff[1] == 79)
+                {
+                    switch (buff[2])
+                    {
+                    case 80:
+                        ch = KEY_F(1);
+                        break;
+                    case 81:
+                        ch = KEY_F(2);
+                        break;
+                    case 82:
+                        ch = KEY_F(3);
+                        break;
+                    }
+                }
+            }
+
+        }
+    }
+
+    return ch;
+}
+
+
+static int get_singlechar_block()
+{
+	int ch;
+	
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        ch = getchar();
+    }
+    else
+    {
+        int getchardt_us = 100000;
+
+        ch = -1;
+        while(ch == -1)
+        {
+            usleep(getchardt_us); // kHz
+            ch = get_singlechar_nonblock();
+        }
+    }
+    return ch;
+}
+
+
+
+
+
+
+
 
 /**
  * ## Purpose
@@ -2897,7 +3007,7 @@ int functionparameter_CheckParameter(
         char msg[STRINGMAXLEN_FPS_LOGMSG];
         SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG, "%s",
                        fpsentry->parray[pindex].keywordfull);
-        functionparameter_outlog("CHECKPARAM", msg);
+        functionparameter_outlog("CHECKPARAM", "%s", msg);
     }
 
     // if entry is not used, no error reported
@@ -3214,7 +3324,7 @@ int functionparameter_CheckParameter(
         {
             char msg[200];
             sprintf(msg, "Loading stream %s", fpsentry->parray[pindex].val.string[0]);
-            functionparameter_outlog("LOADMEMSTREAM", msg);
+            functionparameter_outlog("LOADMEMSTREAM", "%s", msg);
 
             if(imLOC == STREAM_LOAD_SOURCE_NOTFOUND)
             {
@@ -3266,7 +3376,7 @@ int functionparameter_CheckParametersAll(
 
     char msg[200];
     sprintf(msg, "%s", fpsentry->md->name);
-    functionparameter_outlog("CHECKPARAMALL", msg);
+    functionparameter_outlog("CHECKPARAMALL", "%s", msg);
 
 
 
@@ -4278,7 +4388,8 @@ int functionparameter_UserInputSetParamValue(
     int inputOK;
     int strlenmax = 20;
     char buff[100];
-    char c;
+    char c = -1;
+    int getchardt_us = 100000;
 
     functionparameter_PrintParameterInfo(fpsentry, pindex);
 
@@ -4294,7 +4405,9 @@ int functionparameter_UserInputSetParamValue(
             fflush(stdout);
 
             int stringindex = 0;
-            c = getchar();
+
+			c = get_singlechar_block();
+
             while((c != 27) && (c != 10) && (c != 13) && (stringindex < strlenmax - 1))
             {
                 buff[stringindex] = c;
@@ -4306,16 +4419,18 @@ int functionparameter_UserInputSetParamValue(
                     stringindex --;
                 }
                 else
-                {
+                {					
                     putchar(c);  // echo on screen
-                    // printf("[%d]", (int) c);
+                    fflush(stdout);
+                    //printf("[%d]", (int) c);
                     stringindex++;
                 }
                 if(stringindex < 0)
                 {
                     stringindex = 0;
                 }
-                c = getchar();
+                
+				c = get_singlechar_block();
             }
             buff[stringindex] = '\0';
             inputOK = 1;
@@ -4544,6 +4659,7 @@ int functionparameter_UserInputSetParamValue(
  * - runstart    : start RUN process associated with parameter
  * - runstop     : stop RUN process associated with parameter
  * - fpsrm       : remove fps
+ * - cntinc      : counter test to check fifo connection
  *
  * - queueprio   : change queue priority
  *
@@ -4567,7 +4683,7 @@ int functionparameter_FPSprocess_cmdline(
     //
     char *pch;
     int   nbword = 0;
-    char  FPScommand[50];
+    char  FPScommand[100];
 
     int   cmdOK = 2;    // 0 : failed, 1: OK
     int   cmdFOUND = 0; // toggles to 1 when command has been found
@@ -4576,6 +4692,8 @@ int functionparameter_FPSprocess_cmdline(
                                                             FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];  // first arg is always an FPS entry name
     char  FPScmdarg1[FUNCTION_PARAMETER_STRMAXLEN];
 
+    
+    
     char  FPSarg0[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
                                                        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char  FPSarg1[FUNCTION_PARAMETER_STRMAXLEN];
@@ -4590,6 +4708,9 @@ int functionparameter_FPSprocess_cmdline(
 
 
     int inputcmdOK = 0; // 1 if command should be processed
+
+
+	static int testcnt; // test counter to be incremented by cntinc command
 
 
     if(strlen(FPScmdline) > 0)   // only send command if non-empty
@@ -4614,9 +4735,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", inputcmd);
-
-    functionparameter_outlog("CMDRCV", msgstring);
+    functionparameter_outlog("CMDRCV", "[%s]", inputcmd);
 
 
     DEBUG_TRACEPOINT(" ");
@@ -4636,6 +4755,16 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
+	// Break command line into words
+	//
+	// output words are:
+	//
+	// FPScommand
+	// FPSarg0
+	// FPSarg1
+	// FPSarg2
+	// FPSarg3
+	
     while(pch != NULL)
     {
 
@@ -4714,18 +4843,43 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
+
+
     // Handle commands for which FPSarg0 is NOT an FPS entry
 
+
+    // cntinc
+    if((cmdFOUND == 0)
+            && (strcmp(FPScommand, "cntinc") == 0))
+    {
+        cmdFOUND = 1;
+        if(nbword != 2)
+        {
+            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 2");
+            cmdOK = 0;
+        }
+        else
+        {
+			testcnt ++;
+            functionparameter_outlog("INFO", "TEST [%d] counter = %d", atoi(FPSarg0), testcnt);
+        }
+    }
+
+
+
+
+
+
+
     // logsymlink
-    if((FPScommand[0] != '#') && (cmdFOUND == 0)
+    if((cmdFOUND == 0)
             && (strcmp(FPScommand, "logsymlink") == 0))
     {
         cmdFOUND = 1;
         if(nbword != 2)
         {
-            SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                           "COMMAND logsymlink NBARGS = 1");
-            functionparameter_outlog("ERROR", msgstring);
+
+            functionparameter_outlog("ERROR", "COMMAND logsymlink takes NBARGS = 1");
             cmdOK = 0;
         }
         else
@@ -4733,9 +4887,7 @@ int functionparameter_FPSprocess_cmdline(
             char logfname[STRINGMAXLEN_FULLFILENAME];                       
 			getFPSlogfname(logfname);           
 
-            SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "CREATE SYM LINK %s <- %s",
-                           FPSarg0, logfname);
-            functionparameter_outlog("INFO", msgstring);
+            functionparameter_outlog("INFO", "CREATE SYM LINK %s <- %s", FPSarg0, logfname);
 
             if(symlink(logfname, FPSarg0) != 0)
             {
@@ -4749,15 +4901,13 @@ int functionparameter_FPSprocess_cmdline(
 
 
     // queueprio
-    if((FPScommand[0] != '#') && (cmdFOUND == 0)
+    if((cmdFOUND == 0)
             && (strcmp(FPScommand, "queueprio") == 0))
     {
         cmdFOUND = 1;
         if(nbword != 3)
         {
-            SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                           "COMMAND queueprio NBARGS = 2");
-            functionparameter_outlog("ERROR", msgstring);
+            functionparameter_outlog("ERROR", "COMMAND queueprio takes NBARGS = 2");
             cmdOK = 0;
         }
         else
@@ -4765,13 +4915,10 @@ int functionparameter_FPSprocess_cmdline(
             int queue = atoi(FPSarg0);
             int prio = atoi(FPSarg1);
 
-            if((queue >= 0) && (queue < FPSTASK_MAX_NBQUEUE))
+            if((queue >= 0) && (queue < NB_FPSCTRL_TASKQUEUE_MAX))
             {
                 fpsctrlqueuelist[queue].priority = prio;
-
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "QUEUE %d PRIO = %d", queue,
-                               prio);
-                functionparameter_outlog("INFO", msgstring);
+                functionparameter_outlog("INFO", "%s", "QUEUE %d PRIO = %d", queue, prio);
             }
         }
     }
@@ -4794,7 +4941,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
         // look for entry, if found, kwnindex points to it
-        if((nbword > 1) && (FPScommand[0] != '#'))
+        if(nbword > 1)
         {
             //                printf("Looking for entry for %s\n", FPSentryname);
 
@@ -4810,29 +4957,21 @@ int functionparameter_FPSprocess_cmdline(
         }
 
         //            sprintf(msgstring, "nbword = %d  cmdOK = %d   kwnindex = %d",  nbword, cmdOK, kwnindex);
-        //            functionparameter_outlog("INFO", msgstring);
-    }
-
-
-
-
-
+        //            functionparameter_outlog("INFO", "%s", msgstring);
+    
 
     if(kwnindex != -1)
     {
         fpsindex = keywnode[kwnindex].fpsindex;
         pindex = keywnode[kwnindex].pindex;
-        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                       "FPS ENTRY FOUND : %-40s  %d %ld", FPSentryname, fpsindex, pindex);
-        functionparameter_outlog("INFO", msgstring);
+        functionparameter_outlog("INFO", "FPS ENTRY FOUND : %-40s  %d %ld", FPSentryname, fpsindex, pindex);
     }
     else
     {
-        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                       "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
-        functionparameter_outlog("ERROR", msgstring);
+        functionparameter_outlog("ERROR", "FPS ENTRY NOT FOUND : %-40s", FPSentryname);
         cmdOK = 0;
     }
+	}
 
 
 
@@ -4840,15 +4979,13 @@ int functionparameter_FPSprocess_cmdline(
     {
 
         // confstart
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "confstart") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND confstart NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "%s", "COMMAND confstart takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
@@ -4856,34 +4993,29 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_CONFstart(fps, fpsindex);
 
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "start CONF process %d %s",
+                functionparameter_outlog("CONFSTART", "start CONF process %d %s",
                                fpsindex, fps[fpsindex].md->name);
-                functionparameter_outlog("CONFSTART", msgstring);
                 cmdOK = 1;
             }
         }
 
 
         // confstop
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "confstop") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND confstop NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND confstop takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
             {
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_CONFstop(fps, fpsindex);
-
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "stop CONF process %d %s",
+                functionparameter_outlog("CONFSTOP", "stop CONF process %d %s",
                                fpsindex, fps[fpsindex].md->name);
-                functionparameter_outlog("CONFSTOP", msgstring);
                 cmdOK = 1;
             }
         }
@@ -4900,15 +5032,13 @@ int functionparameter_FPSprocess_cmdline(
         // confupdate
 
         DEBUG_TRACEPOINT(" ");
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "confupdate") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND confupdate NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND confupdate takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
@@ -4919,9 +5049,8 @@ int functionparameter_FPSprocess_cmdline(
                 fps[fpsindex].md->signal |=
                     FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // request an update
 
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "update CONF process %d %s",
+                functionparameter_outlog("CONFUPDATE", "update CONF process %d %s",
                                fpsindex, fps[fpsindex].md->name);
-                functionparameter_outlog("CONFUPDATE", msgstring);
                 cmdOK = 1;
             }
         }
@@ -4935,15 +5064,13 @@ int functionparameter_FPSprocess_cmdline(
         // if not successful, retry until time lapsed
 
         DEBUG_TRACEPOINT(" ");
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "confwupdate") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND confwupdate NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND confwupdate takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
@@ -4972,16 +5099,14 @@ int functionparameter_FPSprocess_cmdline(
                     usleep(dt);
                     timercnt++;
 
-                    SNPRINTF_CHECK(
-                        msgstring,
-                        STRINGMAXLEN_FPS_LOGMSG,
-                        "[%d] waited %d us on FPS %d %s. conferrcnt = %d",
+                    functionparameter_outlog("CONFWUPDATE", 
+                    "[%d] waited %d us on FPS %d %s. conferrcnt = %d",
                         looptrycnt,
                         dt * timercnt,
                         fpsindex,
                         fps[fpsindex].md->name,
                         fps[fpsindex].md->conferrcnt);
-                    functionparameter_outlog("CONFWUPDATE", msgstring);
+                        
                     looptrycnt++;
 
                     if(fps[fpsindex].md->conferrcnt == 0)   // no error ! we can proceed
@@ -5005,15 +5130,13 @@ int functionparameter_FPSprocess_cmdline(
 
 
         // runstart
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "runstart") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND runstart NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND runstart takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
@@ -5021,9 +5144,8 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_RUNstart(fps, fpsindex);
 
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "start RUN process %d %s",
+                functionparameter_outlog("RUNSTART", "start RUN process %d %s",
                                fpsindex, fps[fpsindex].md->name);
-                functionparameter_outlog("RUNSTART", msgstring);
                 cmdOK = 1;
 
             }
@@ -5034,15 +5156,13 @@ int functionparameter_FPSprocess_cmdline(
         // runwait
         // wait until run process is completed
 
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "runwait") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND runwait NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND runwait takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
@@ -5059,10 +5179,8 @@ int functionparameter_FPSprocess_cmdline(
                     usleep(dt);
                     timercnt++;
                 }
-
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "waited %d us on FPS %d %s",
+                functionparameter_outlog("RUNWAIT", "waited %d us on FPS %d %s",
                                dt * timercnt, fpsindex, fps[fpsindex].md->name);
-                functionparameter_outlog("RUNWAIT", msgstring);
                 cmdOK = 1;
             }
         }
@@ -5071,25 +5189,21 @@ int functionparameter_FPSprocess_cmdline(
 
         // runstop
 
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "runstop") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG,
-                               "COMMAND runstop NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND runstop takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
             {
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_RUNstop(fps, fpsindex);
-
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "stop RUN process %d %s",
+                functionparameter_outlog("RUNSTOP", "stop RUN process %d %s",
                                fpsindex, fps[fpsindex].md->name);
-                functionparameter_outlog("RUNSTOP", msgstring);
                 cmdOK = 1;
             }
         }
@@ -5099,14 +5213,13 @@ int functionparameter_FPSprocess_cmdline(
 
         // fpsrm
 
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "fpsrm") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 2)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND fpsrm NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND fpsrm takes NBARGS = 1");
                 cmdOK = 0;
             }
             else
@@ -5114,9 +5227,8 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
                 functionparameter_FPSremove(fps, fpsindex);
 
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "FPS remove %d %s", fpsindex,
+                functionparameter_outlog("FPSRM", "FPS remove %d %s", fpsindex,
                                fps[fpsindex].md->name);
-                functionparameter_outlog("FPSRM", msgstring);
                 cmdOK = 1;
             }
         }
@@ -5134,14 +5246,14 @@ int functionparameter_FPSprocess_cmdline(
 
 
         // setval
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && (strcmp(FPScommand, "setval") == 0))
         {
             cmdFOUND = 1;
             if(nbword != 3)
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND setval NBARGS = 2");
-                functionparameter_outlog("ERROR", msgstring);
+                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND setval takes NBARGS = 2");
+                functionparameter_outlog("ERROR", "%s", msgstring);
             }
             else
             {
@@ -5156,9 +5268,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s INT64      %ld",
+                        functionparameter_outlog("SETVAL", "%-40s INT64      %ld",
                                        FPSentryname, atol(FPScmdarg1));
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_FLOAT64:
@@ -5167,9 +5278,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FLOAT64    %f",
+                        functionparameter_outlog("SETVAL", "%-40s FLOAT64    %f",
                                        FPSentryname, atof(FPScmdarg1));
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_FLOAT32:
@@ -5178,9 +5288,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FLOAT32    %f",
+                        functionparameter_outlog("SETVAL", "%-40s FLOAT32    %f",
                                        FPSentryname, atof(FPScmdarg1));
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_PID:
@@ -5189,9 +5298,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s PID        %ld",
+                        functionparameter_outlog("SETVAL", "%-40s PID        %ld",
                                        FPSentryname, atol(FPScmdarg1));
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_TIMESPEC:
@@ -5204,9 +5312,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FILENAME   %s",
+                        functionparameter_outlog("SETVAL", "%-40s FILENAME   %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_FITSFILENAME:
@@ -5215,9 +5322,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FITSFILENAME   %s",
+                        functionparameter_outlog("SETVAL", "%-40s FITSFILENAME   %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_EXECFILENAME:
@@ -5226,9 +5332,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s EXECFILENAME   %s",
+                        functionparameter_outlog("SETVAL", "%-40s EXECFILENAME   %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_DIRNAME:
@@ -5237,9 +5342,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s DIRNAME    %s",
+                        functionparameter_outlog("SETVAL", "%-40s DIRNAME    %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_STREAMNAME:
@@ -5248,9 +5352,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s STREAMNAME %s",
+                        functionparameter_outlog("SETVAL", "%-40s STREAMNAME %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_STRING:
@@ -5259,9 +5362,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s STRING     %s",
+                        functionparameter_outlog("SETVAL", "%-40s STRING     %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                     case FPTYPE_ONOFF:
@@ -5272,9 +5374,8 @@ int functionparameter_FPSprocess_cmdline(
                             {
                                 updated = 1;
                             }
-                            SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s ONOFF      ON",
+                            functionparameter_outlog("SETVAL", "%-40s ONOFF      ON",
                                            FPSentryname);
-                            functionparameter_outlog("SETVAL", msgstring);
                         }
                         if(strncmp(FPScmdarg1, "OFF", 3) == 0)
                         {
@@ -5283,9 +5384,8 @@ int functionparameter_FPSprocess_cmdline(
                             {
                                 updated = 1;
                             }
-                            SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s ONOFF      OFF",
+                            functionparameter_outlog("SETVAL", "%-40s ONOFF      OFF",
                                            FPSentryname);
-                            functionparameter_outlog("SETVAL", msgstring);
                         }
                         break;
 
@@ -5296,9 +5396,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             updated = 1;
                         }
-                        SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "%-40s FPSNAME   %s",
+                        functionparameter_outlog("SETVAL", "%-40s FPSNAME   %s",
                                        FPSentryname, FPScmdarg1);
-                        functionparameter_outlog("SETVAL", msgstring);
                         break;
 
                 }
@@ -5324,7 +5423,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
         // getval or fwrval
-        if((FPScommand[0] != '#') && (cmdFOUND == 0)
+        if((cmdFOUND == 0)
                 && ((strcmp(FPScommand, "getval") == 0) || (strcmp(FPScommand, "fwrval") == 0)))
         {
             cmdFOUND = 1;
@@ -5332,13 +5431,11 @@ int functionparameter_FPSprocess_cmdline(
 
             if((strcmp(FPScommand, "getval") == 0) && (nbword != 2))
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND getval NBARGS = 1");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND getval NBARGS = 1");
             }
             else if((strcmp(FPScommand, "fwrval") == 0) && (nbword != 3))
             {
-                SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND fwrval NBARGS = 2");
-                functionparameter_outlog("ERROR", msgstring);
+                functionparameter_outlog("ERROR", "COMMAND fwrval NBARGS = 2");
             }
             else
             {
@@ -5485,7 +5582,7 @@ int functionparameter_FPSprocess_cmdline(
                 {
                     if(strcmp(FPScommand, "getval") == 0)
                     {
-                        functionparameter_outlog("GETVAL", msgstring);
+                        functionparameter_outlog("GETVAL", "%s", msgstring);
                     }
                     if(strcmp(FPScommand, "fwrval") == 0)
                     {
@@ -5494,11 +5591,11 @@ int functionparameter_FPSprocess_cmdline(
                         functionparameter_outlog_file("FWRVAL", msgstring, fpouttmp);
                         fclose(fpouttmp);
 
-                        functionparameter_outlog("FWRVAL", msgstring);
+                        functionparameter_outlog("FWRVAL", "%s", msgstring);
                         char msgstring1[STRINGMAXLEN_FPS_LOGMSG];
                         SNPRINTF_CHECK(msgstring1, STRINGMAXLEN_FPS_LOGMSG, "WROTE to file %s",
                                        FPScmdarg1);
-                        functionparameter_outlog("FWRVAL", msgstring1);
+                        functionparameter_outlog("FWRVAL", "%s", msgstring1);
                     }
                 }
 
@@ -5512,20 +5609,20 @@ int functionparameter_FPSprocess_cmdline(
     if(cmdOK == 0)
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
-        functionparameter_outlog("CMDFAIL", msgstring);
+        functionparameter_outlog("CMDFAIL", "%s", msgstring);
     }
 
     if(cmdOK == 1)
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
-        functionparameter_outlog("CMDOK", msgstring);
+        functionparameter_outlog("CMDOK", "%s", msgstring);
     }
 
     if(cmdFOUND == 0)
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND NOT FOUND: %s",
                        FPScommand);
-        functionparameter_outlog("ERROR", msgstring);
+        functionparameter_outlog("ERROR", "%s", msgstring);
     }
 
 
@@ -5660,7 +5757,7 @@ int functionparameter_read_fpsCMD_fifo(
                     int queue_index;
                     sscanf(FPScmdline, "%s %d", stringtmp, &queue_index);
 
-                    if((queue_index > -1) && (queue_index < FPSTASK_MAX_NBQUEUE))
+                    if((queue_index > -1) && (queue_index < NB_FPSCTRL_TASKQUEUE_MAX))
                     {
                         queue = queue_index;
                     }
@@ -5771,9 +5868,25 @@ int functionparameter_read_fpsCMD_fifo(
 
 
 
-// find next command to execute
-//
-static errno_t function_parameter_process_fpsCMDarray(
+
+
+/** @brief Find the next task to execute
+ *
+ * Tasks are arranged in execution queues.
+ * Each task belongs to a single queue.
+ *
+ * Each queue has a priority index.
+ *
+ * RULES:
+ * - If queue priority = 0, no task is executed in the queue: it is paused
+ * - Task order within a queue must be respected. Execution order is submission order
+ * - Tasks can overlap if they belong to separate queues and have the same priority
+ * - A running task waiting to be completed cannot block tasks in other queues
+ * - If two tasks are ready with the same priority, the one in the lower queue will be launched
+ *
+ */
+
+static int function_parameter_process_fpsCMDarray(
     FPSCTRL_TASK_ENTRY         *fpsctrltasklist,
     FPSCTRL_TASK_QUEUE         *fpsctrlqueuelist,
     KEYWORD_TREE_NODE          *keywnode,
@@ -5781,107 +5894,158 @@ static errno_t function_parameter_process_fpsCMDarray(
     FUNCTION_PARAMETER_STRUCT  *fps
 )
 {
+    // queue has no task
+    int QUEUE_NOTASK = -1;
+
+    // queue has a running task, must waiting for completion
+    int QUEUE_WAIT = -2;
+
+    // queue is ready for next scan
+    int QUEUE_SCANREADY = -3;
+
+
+
     // the scheduler handles multiple queues
     // in each queue, we look for a task to run, and run it if conditions are met
 
 
-    // sort priorities
-    long *queuepriolist = (long *) malloc(sizeof(long) * NB_FPSCTRL_TASKQUEUE_MAX);
-    for(int queue = 0; queue < NB_FPSCTRL_TASKQUEUE_MAX; queue++)
-    {
-        queuepriolist[queue] = fpsctrlqueuelist[queue].priority;
-    }
-    quick_sort_long(queuepriolist, NB_FPSCTRL_TASKQUEUE_MAX);
+    int NBtaskLaunched = 0;
 
-    for(int qi = NB_FPSCTRL_TASKQUEUE_MAX - 1; qi > 0; qi--)
+
+
+
+    // For each queue, lets find which task is ready
+    // results are written in array
+    // if no task ready in queue, value = QUEUE_NOTASK
+    int queue_nexttask[NB_FPSCTRL_TASKQUEUE_MAX];
+
+
+    for( uint32_t qi = 0; qi < NB_FPSCTRL_TASKQUEUE_MAX; qi ++)
     {
-        int priority = queuepriolist[qi];
-        if(priority > 0)
+        queue_nexttask[qi] = QUEUE_SCANREADY;
+
+
+        while ( queue_nexttask[qi] == QUEUE_SCANREADY )
         {
+            // find next command to execute
+            uint64_t inputindexmin = UINT_MAX;
+            int cmdindexExec;
+            int cmdOK = 0;
 
-            for(unsigned int queue = 0; queue < NB_FPSCTRL_TASKQUEUE_MAX; queue++)
+
+            queue_nexttask[qi] = QUEUE_NOTASK;
+            //
+            // Find task with smallest inputindex within this queue
+            // This is the one to be executed
+            //
+            for( int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++ )
             {
-                if(priority == fpsctrlqueuelist[queue].priority)
+                if((fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_ACTIVE)
+                        && (fpsctrltasklist[cmdindex].queue == qi))
                 {
-
-                    // find next command to execute
-                    uint64_t inputindexmin = UINT_MAX;
-                    int cmdindexExec;
-                    int cmdOK = 0;
-
-
-                    for(int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++)
+                    if(fpsctrltasklist[cmdindex].inputindex < inputindexmin)
                     {
-                        if((fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_ACTIVE)
-                                && (fpsctrltasklist[cmdindex].queue == queue))
+                        inputindexmin = fpsctrltasklist[cmdindex].inputindex;
+                        cmdindexExec = cmdindex;
+                        cmdOK = 1;
+                    }
+                }
+            }
+
+
+            if(cmdOK == 1) // A potential task to be executed has been found
+            {
+                if(!(fpsctrltasklist[cmdindexExec].status &
+                        FPSTASK_STATUS_RUNNING))     // if task not running, launch it
+                {
+                    queue_nexttask[qi] = cmdindexExec;
+
+                }
+                else
+                {
+                    // if it's already running, lets check if it is completed
+                    int task_completed = 1; // default
+
+                    if(fpsctrltasklist[cmdindexExec].flag &
+                            FPSTASK_FLAG_WAITONRUN)   // are we waiting for run to be completed ?
+                    {
+                        if((fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
+                                FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
                         {
-                            if(fpsctrltasklist[cmdindex].inputindex < inputindexmin)
-                            {
-                                inputindexmin = fpsctrltasklist[cmdindex].inputindex;
-                                cmdindexExec = cmdindex;
-                                cmdOK = 1;
-                            }
+                            task_completed = 0; // must wait
+                            queue_nexttask[qi] = QUEUE_WAIT;
                         }
                     }
 
-
-                    if(cmdOK == 1)
+                    if(fpsctrltasklist[cmdindexExec].flag &
+                            FPSTASK_FLAG_WAITONCONF)   // are we waiting for conf update to be completed ?
                     {
-                        if(!(fpsctrltasklist[cmdindexExec].status &
-                                FPSTASK_STATUS_RUNNING))     // if not running, launch it
+                        if(fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
+                                FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)
                         {
-                            fpsctrltasklist[cmdindexExec].fpsindex =
-                                functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring,
-                                        fpsctrlqueuelist, keywnode, NBkwn, fps);
-                            clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
-                            fpsctrltasklist[cmdindexExec].status |=
-                                FPSTASK_STATUS_RUNNING; // update status to running
+                            task_completed = 0; // must wait
+                            queue_nexttask[qi] = QUEUE_WAIT;
                         }
-                        else
-                        {
-                            // if it's already running, lets check if it is completed
-                            int task_completed = 1; // default
+                    }
 
-                            if(fpsctrltasklist[cmdindexExec].flag &
-                                    FPSTASK_FLAG_WAITONRUN)   // are we waiting for run to be completed ?
-                            {
-                                if((fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
-                                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
-                                {
-                                    task_completed = 0;
-                                }
-                            }
-                            if(fpsctrltasklist[cmdindexExec].flag &
-                                    FPSTASK_FLAG_WAITONCONF)   // are we waiting for conf update to be completed ?
-                            {
-                                if(fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
-                                        FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)
-                                {
-                                    task_completed = 0;
-                                }
-                            }
+                    if(task_completed == 1)
+                    {
+                        fpsctrltasklist[cmdindexExec].status &=
+                            ~FPSTASK_STATUS_RUNNING; // update status - no longer running
+                        fpsctrltasklist[cmdindexExec].status &=
+                            ~FPSTASK_STATUS_ACTIVE; //no longer active, remove it from list
+                        //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
 
-                            if(task_completed == 1)
-                            {
-                                fpsctrltasklist[cmdindexExec].status &=
-                                    ~FPSTASK_STATUS_RUNNING; // update status - no longer running
-                                fpsctrltasklist[cmdindexExec].status &=
-                                    ~FPSTASK_STATUS_ACTIVE; //no longer active, remove it from list
-                                //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
-
-                                clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].completiontime);
-                            }
-                        }
-                    } // end cmdOK
-
-
+                        clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].completiontime);
+                        queue_nexttask[qi] = QUEUE_SCANREADY;
+                    }
                 }
+            } // end if(cmdOK==1)
+        } // end while QUEUE_SCANREADY
+
+
+    }
+
+
+
+    // find out which task to run among the ones pre-selected above
+
+    int nexttask_priority = -1;
+    int nexttask_queue = -1;
+    int nexttask_cmdindex = -1;
+    for( uint32_t qi = 0; qi < NB_FPSCTRL_TASKQUEUE_MAX; qi ++)
+    {
+        if( (queue_nexttask[qi] != QUEUE_NOTASK ) && (queue_nexttask[qi] != QUEUE_WAIT ) )
+        {
+            if( fpsctrlqueuelist[qi].priority > nexttask_priority )
+            {
+                nexttask_priority = fpsctrlqueuelist[qi].priority;
+                nexttask_queue    = qi;
+                nexttask_cmdindex = queue_nexttask[qi];
             }
         }
     }
-    free(queuepriolist);
 
-    return RETURN_SUCCESS;
+
+
+    if( nexttask_cmdindex != -1 )
+    {
+        if(nexttask_priority > 0 )
+        {
+            int cmdindexExec = nexttask_cmdindex;
+
+            fpsctrltasklist[cmdindexExec].fpsindex =
+                functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring,
+                        fpsctrlqueuelist, keywnode, NBkwn, fps);
+            NBtaskLaunched++;
+            clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
+            fpsctrltasklist[cmdindexExec].status |=
+                FPSTASK_STATUS_RUNNING; // update status to running
+        }
+    }
+
+
+    return NBtaskLaunched;
 }
 
 
@@ -6075,17 +6239,17 @@ errno_t functionparameter_FPSremove(
     int fpsindex
 )
 {
-    int stringmaxlen = 500;
-    char command[stringmaxlen];
-    char command1[stringmaxlen];
-    char command2[stringmaxlen];
+//    int stringmaxlen = 500;
+//    char command[stringmaxlen];
+//    char command1[stringmaxlen];
+//    char command2[stringmaxlen];
 
     //functionparameter_RUNstop(fps, fpsindex);
     //functionparameter_CONFstop(fps, fpsindex);
 
 
 	// get directory name
-    char shmdname[stringmaxlen];
+    char shmdname[STRINGMAXLEN_DIRNAME];
     function_parameter_struct_shmdirname(shmdname);
 	
 	
@@ -6208,7 +6372,7 @@ errno_t functionparameter_outlog_file(
 
 
 
-
+/*
 errno_t functionparameter_outlog(
     char *keyw,
     char *msgstring
@@ -6242,6 +6406,86 @@ errno_t functionparameter_outlog(
 
     return RETURN_SUCCESS;
 }
+*/
+
+
+
+
+
+
+errno_t functionparameter_outlog(
+    char *keyw,
+    const char *fmt, ...
+)
+{
+	// identify logfile and open file
+
+    static int LogOutOpen = 0;
+    static FILE *fpout;
+
+    if(LogOutOpen == 0)   // file not open
+    {
+		char logfname[STRINGMAXLEN_FULLFILENAME];
+		getFPSlogfname(logfname);
+
+        fpout = fopen(logfname, "a");
+        if(fpout == NULL)
+        {
+            printf("ERROR: cannot open file\n");
+            exit(EXIT_FAILURE);
+        }
+        LogOutOpen = 1;
+    }
+
+
+    // Get GMT time and create timestring
+
+    struct timespec tnow;
+    time_t now;
+
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    now = tnow.tv_sec;
+    struct tm *uttime;
+    uttime = gmtime(&now);
+
+    char timestring[30];
+    sprintf(
+        timestring,
+        "%04d%02d%02dT%02d%02d%02d.%09ld",
+        1900 + uttime->tm_year,
+        1 + uttime->tm_mon,
+        uttime->tm_mday,
+        uttime->tm_hour,
+        uttime->tm_min,
+        uttime->tm_sec,
+        tnow.tv_nsec);
+
+
+
+    fprintf(fpout, "%s %-12s ", timestring, keyw);
+
+    va_list args;
+    va_start(args, fmt);
+
+    vfprintf(fpout, fmt, args);
+    
+    fprintf(fpout, "\n");
+    
+    fflush(fpout);
+
+	va_end(args);
+	
+
+    if(strcmp(keyw, "LOGFILECLOSE") == 0)
+    {
+        fclose(fpout);
+        LogOutOpen = 1;
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
 
 
 
@@ -6522,7 +6766,7 @@ static errno_t functionparameter_scan_fps(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
-					if( screenprintmode == 1) {
+					if( screenprintmode == SCREENPRINT_NCURSES) {
 						endwin();
 					}
                     printf("File \"%s\"", dir->d_name);
@@ -7218,17 +7462,21 @@ inline static int fpsCTRLscreen_process_user_key(
         case 10 : // enter key
             if(keywnode[fpsCTRLgui->nodeSelected].leaf == 1)   // this is a leaf
             {
-				if( screenprintmode == 1) {
+				if( screenprintmode == SCREENPRINT_NCURSES) {
 					endwin();
-				}
+				}				
                 if(system("clear") != 0)   // clear screen
                 {
                     PRINT_ERROR("system() returns non-zero value");
                 }
                 functionparameter_UserInputSetParamValue(&fps[fpsCTRLgui->fpsindexSelected],
                         fpsCTRLgui->pindexSelected);
-                if( screenprintmode == 1) {
+                if( screenprintmode == SCREENPRINT_NCURSES) {
 					initncurses();
+				}
+				if( screenprintmode == SCREENPRINT_STDIO ) 
+				{
+					printf("\e[1;1H\e[2J");
 				}
             }
             break;
@@ -7298,7 +7546,7 @@ inline static int fpsCTRLscreen_process_user_key(
             {
                 PRINT_ERROR("snprintf error");
             }
-            functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", "%s", msg);
             //functionparameter_CONFupdate(fps, fpsindex);
             break;
 
@@ -7344,7 +7592,7 @@ inline static int fpsCTRLscreen_process_user_key(
             break;
 
         case 'l': // list all parameters
-			if( screenprintmode == 1) {
+			if( screenprintmode == SCREENPRINT_NCURSES) {
 				endwin();
 			}
             if(system("clear") != 0)
@@ -7365,14 +7613,14 @@ inline static int fpsCTRLscreen_process_user_key(
             printf("\n");
             printf("Press Any Key to Continue\n");
             getchar();
-            if( screenprintmode == 1) {
+            if( screenprintmode == SCREENPRINT_NCURSES) {
 				initncurses();
 			}
             break;
 
 
         case 'F': // process FIFO
-			if( screenprintmode == 1) {
+			if( screenprintmode == SCREENPRINT_NCURSES) {
 				endwin();
             }
             if(system("clear") != 0)
@@ -7392,14 +7640,14 @@ inline static int fpsCTRLscreen_process_user_key(
             printf("\n");
             printf("Press Any Key to Continue\n");
             getchar();
-            if( screenprintmode == 1) {
+            if( screenprintmode == SCREENPRINT_NCURSES) {
 				initncurses();
 			}
             break;
 
 
         case 'P': // process input command file
-			if( screenprintmode == 1) {
+			if( screenprintmode == SCREENPRINT_NCURSES) {
 				endwin();
             }
             if(system("clear") != 0)
@@ -7426,7 +7674,7 @@ inline static int fpsCTRLscreen_process_user_key(
             printf("\n");
             printf("Press Any Key to Continue\n");
             getchar();
-            if( screenprintmode == 1) {
+            if( screenprintmode == SCREENPRINT_NCURSES) {
 				initncurses();
 			}
             break;
@@ -7455,7 +7703,7 @@ errno_t functionparameter_CTRLscreen(
     char *fpsCTRLfifoname
 )
 {
-    int stringmaxlen = 500;
+    //int stringmaxlen = 500;
 
     // function parameter structure(s)
     int fpsindex;
@@ -7477,6 +7725,7 @@ errno_t functionparameter_CTRLscreen(
     int loopOK = 1;
     long long loopcnt = 0;
 
+	long NBtaskLaunchedcnt = 0;
 
     int nodechain[MAXNBLEVELS];
 
@@ -7491,7 +7740,6 @@ errno_t functionparameter_CTRLscreen(
     clock_gettime(CLOCK_REALTIME, &tnow);
     data.FPS_TIMESTAMP = tnow.tv_sec;
     strcpy(data.FPS_PROCESS_TYPE, "ctrl");
-
 
     functionparameter_outlog("FPSCTRL", "START\n");
 
@@ -7575,8 +7823,8 @@ errno_t functionparameter_CTRLscreen(
     //
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist;
     fpsctrlqueuelist = (FPSCTRL_TASK_QUEUE *) malloc(sizeof(
-                           FPSCTRL_TASK_QUEUE) * FPSTASK_MAX_NBQUEUE);
-    for(int queueindex = 0; queueindex < FPSTASK_MAX_NBQUEUE; queueindex++)
+                           FPSCTRL_TASK_QUEUE) * NB_FPSCTRL_TASKQUEUE_MAX);
+    for(int queueindex = 0; queueindex < NB_FPSCTRL_TASKQUEUE_MAX; queueindex++)
     {
         fpsctrlqueuelist[queueindex].priority = 1; // 0 = not active
     }
@@ -7585,7 +7833,6 @@ errno_t functionparameter_CTRLscreen(
 #ifndef STANDALONE
     set_signal_catch();
 #endif
-
 
 
 
@@ -7601,7 +7848,7 @@ errno_t functionparameter_CTRLscreen(
     }
 
 
-
+	
 
     functionparameter_scan_fps(
         fpsCTRLgui.mode,
@@ -7611,9 +7858,12 @@ errno_t functionparameter_CTRLscreen(
         &fpsCTRLgui.NBkwn,
         &fpsCTRLgui.NBfps,
         &NBpindex, 1);
+        
     printf("%d function parameter structure(s) imported, %ld parameters\n",
            fpsCTRLgui.NBfps, NBpindex);
     fflush(stdout);
+
+
     DEBUG_TRACEPOINT(" ");
 
 
@@ -7635,7 +7885,19 @@ errno_t functionparameter_CTRLscreen(
 
 
 
+    // default: use ncurses
+    screenprintmode = SCREENPRINT_NCURSES;
 
+    if(getenv("MILK_FPSCTRL_PRINT_STDIO"))
+    {
+        // use stdio instead of ncurses
+        screenprintmode = SCREENPRINT_STDIO;
+    }
+
+    if(getenv("MILK_FPSCTRL_NOPRINT"))
+    {
+        screenprintmode = SCREENPRINT_NONE;
+    }
 
 
 
@@ -7645,7 +7907,7 @@ errno_t functionparameter_CTRLscreen(
 
     if(run_display == 1)
     {
-        if( screenprintmode == 1) // ncurses mode
+        if( screenprintmode == SCREENPRINT_NCURSES) // ncurses mode
         {
             initncurses();
             atexit(functionparameter_CTRLscreen_atexit);
@@ -7654,6 +7916,13 @@ errno_t functionparameter_CTRLscreen(
         else
         {
             inittermios();
+            
+            // get terminal size
+            struct winsize w;
+			ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+			wrow = w.ws_row;
+			wcol = w.ws_col;            
         }
 
     }
@@ -7672,119 +7941,117 @@ errno_t functionparameter_CTRLscreen(
         loopOK = 0;
     }
 
+
+
+	int resfresh_screen = 1; // 1 if screen should be refreshed
     while(loopOK == 1)
     {
-
+		int NBtaskLaunched = 0;
+		
         long icnt = 0;
-
-
-
-        if(screenprintmode==0)
-        {
-            usleep(100000); // 10 Hz display
-        }
-        else
-        {
-            usleep(10000); // 100 Hz display
-        }
-
-
-
-        // ==================
-        // = GET USER INPUT =
-        // ==================
         int ch = -1;
-        if(screenprintmode==1)
+        int buffd[3];
+
+        // 50 Hz input key probing
+        int getchardt_us = 20000;  // how long between getchar probes
+
+        // refresh every 1 sec without input
+        int timeoutcnt = 50;
+
+		if( screenprintmode == SCREENPRINT_NCURSES ) // ncurses mode
+		{
+			timeoutcnt = 5; // refresh at 10 Hz without input
+		}
+        
+        int tcnt = 0;
+        while ( resfresh_screen == 0 ) // wait for input
         {
-            ch = getch();
+
+
+
+			// put input commands into the task queue
+            int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLgui.fpsCTRLfifofd,
+                       fpsctrltasklist, fpsctrlqueuelist);
+
+            DEBUG_TRACEPOINT(" ");
+
+			// execute commands in the queue
+            NBtaskLaunched += function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist,
+                                                   keywnode, fpsCTRLgui.NBkwn, fps);                        
+            
+            NBtaskLaunchedcnt += NBtaskLaunched;
+            fifocmdcnt += fcnt;
+
+
+
+
+
+
+            if(screenprintmode == SCREENPRINT_STDIO) // stdio mode
+            {
+                usleep(getchardt_us);
+            }
+            else
+            {
+                usleep(getchardt_us); 
+            }
+
+
+            // ==================
+            // = GET USER INPUT =
+            // ==================
+			ch = get_singlechar_nonblock();
+
+            if(ch == -1)
+            {
+                resfresh_screen = 0;
+            }
+            else
+            {
+                resfresh_screen = 1;
+            }
+
+            tcnt ++;
+
+            if (tcnt > timeoutcnt)
+            {
+                resfresh_screen = 1;
+            }
         }
-        else
+
+		resfresh_screen = 0; // will wait next time we enter the loop
+
+
+        if(screenprintmode == SCREENPRINT_STDIO) // stdio mode
         {
-            char buff[3];
-            int buffd[3];
-
-            buffd[0] = -1;
-            buffd[1] = -1;
-            buffd[2] = -1;
-
-            int l = read(STDIN_FILENO, buff, 3);
-            for(int li=0; li<l; li++)
-            {
-                buffd[li] = (int) buff[li];
-            }
-            if(l>0) {
-                ch = buff[0];
+            printf("\e[1;1H\e[2J");
+            //printf("[%12lld  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
+        }
 
 
-                if (buff[0] == 27) { // if the first value is esc
 
 
-                    if(buff[1] == 91) {
-                        switch (buff[2])
-                        {   // the real value
-                        case 'A':
-                            ch = KEY_UP; // code for arrow up
-                            break;
-                        case 'B':
-                            ch = KEY_DOWN; // code for arrow down
-                            break;
-                        case 'C':
-                            ch = KEY_RIGHT; // code for arrow right
-                            break;
-                        case 'D':
-                            ch = KEY_LEFT; // code for arrow left
-                            break;
-                        }
-                    }
+
+        loopOK = fpsCTRLscreen_process_user_key(
+                     ch,
+                     fps,
+                     keywnode,
+                     fpsctrltasklist,
+                     fpsctrlqueuelist,
+                     &fpsCTRLgui
+                 );
 
 
-                    if(buff[1] == 79) 
-                        {
-                            switch (buff[2])
-                            {
-                            case 80:
-                                ch = KEY_F(1);
-                                break;
-                            case 81:
-                                ch = KEY_F(2);
-                                break;
-                            case 82:
-                                ch = KEY_F(3);
-                                break;
-                            }
-                        }
-                    }
-
-                }
-
-                clear();
-                printf("\e[1;1H\e[2J");
-                printf("[%12d  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
+        if(fpsCTRLgui.NBfps == 0)
+        {
+            if( screenprintmode == SCREENPRINT_NCURSES) {
+                endwin();
             }
 
-
-
-
-            loopOK = fpsCTRLscreen_process_user_key(
-                         ch,
-                         fps,
-                         keywnode,
-                         fpsctrltasklist,
-                         fpsctrlqueuelist,
-                         &fpsCTRLgui
-                     );
-
-
-            if(fpsCTRLgui.NBfps == 0)
-            {
-                if( screenprintmode == 1) {
-                    endwin();
-                }
-
-                printf("\n fpsCTRLgui.NBfps = %d ->  No FPS on system - nothing to display\n",
-                       fpsCTRLgui.NBfps);
-                return RETURN_FAILURE;
-            }
+            printf("\n fpsCTRLgui.NBfps = %d ->  No FPS on system - nothing to display\n",
+                   fpsCTRLgui.NBfps);
+            return RETURN_FAILURE;
+        }
 
 
 
@@ -7794,7 +8061,7 @@ errno_t functionparameter_CTRLscreen(
 
         if(fpsCTRLgui.run_display == 1)
         {
-            if( screenprintmode == 1)
+            if( screenprintmode == SCREENPRINT_NCURSES)
             {
                 erase();
             }
@@ -7805,19 +8072,13 @@ errno_t functionparameter_CTRLscreen(
 
 
             DEBUG_TRACEPOINT(" ");
+            
+            
+            printfw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d\n",
+                    fpsCTRLgui.fpsCTRLfifoname, fpsCTRLgui.fpsCTRLfifofd, fifocmdcnt, NBtaskLaunched, NBtaskLaunchedcnt);    
 
-            printfw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld\n",
-                    fpsCTRLgui.fpsCTRLfifoname, fpsCTRLgui.fpsCTRLfifofd, fifocmdcnt);
 
-            int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLgui.fpsCTRLfifofd,
-                       fpsctrltasklist, fpsctrlqueuelist);
 
-            DEBUG_TRACEPOINT(" ");
-
-            function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist,
-                                                   keywnode, fpsCTRLgui.NBkwn, fps);
-
-            fifocmdcnt += fcnt;
 
             DEBUG_TRACEPOINT(" ");
             char logfname[STRINGMAXLEN_FULLFILENAME];
@@ -7896,7 +8157,6 @@ errno_t functionparameter_CTRLscreen(
                         GUIlineMax = keywnode[nodechain[level]].NBchild;
                     }
                 }
-
 
                 printfw("[node %d] level = %d   [%d] NB child = %d",
                         fpsCTRLgui.nodeSelected,
@@ -8032,7 +8292,6 @@ errno_t functionparameter_CTRLscreen(
                             }
                             screenprint_unsetreverse();
                             screenprint_setnormal();
-                            
 
                         }
                         else     // blank space
@@ -8192,7 +8451,6 @@ errno_t functionparameter_CTRLscreen(
                                     {
                                         screenprint_unsetreverse();
                                     }
-                                    screenprint_setnormal();
                                 }
                                 else
                                 {
@@ -8220,7 +8478,6 @@ errno_t functionparameter_CTRLscreen(
                                     screenprint_setdim();
                                     screenprint_setblink();
                                 }
-
 
 
                                 //int kl;
@@ -8265,11 +8522,18 @@ errno_t functionparameter_CTRLscreen(
 
                                 DEBUG_TRACEPOINT(" ");
                                 level = keywnode[knodeindex].keywordlevel;
+
+								if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel])
+								{
+									screenprint_setreverse();
+								}
+
                                 printfw(" %-20s", fps[fpsindex].parray[pindex].keyword[level - 1]);
 
                                 if(GUIline == fpsCTRLgui.GUIlineSelected[fpsCTRLgui.currentlevel])
                                 {
                                     screenprint_unsetcolor(10);
+                                    screenprint_unsetreverse();
                                 }
                                 DEBUG_TRACEPOINT(" ");
                                 printfw("   ");
@@ -8751,7 +9015,8 @@ errno_t functionparameter_CTRLscreen(
 
                                 if(isVISIBLE == 0)
                                 {
-                                    attroff(A_DIM | A_BLINK);
+									screenprint_unsetblink();
+                                    screenprint_unsetdim();
                                 }
                                 // END LOOP
 
@@ -8831,9 +9096,7 @@ errno_t functionparameter_CTRLscreen(
                 struct timespec tdiff;
 
                 clock_gettime(CLOCK_REALTIME, &tnow);
-
-                printfw(" \n");
-
+               
                 //int dispcnt = 0;
 
 
@@ -8862,6 +9125,8 @@ errno_t functionparameter_CTRLscreen(
                 free(sort_evalarray);
 
                 DEBUG_TRACEPOINT(" ");
+                
+                //printfw(" ---------------- %d %d ----- \n", sortcnt, wrow); //TEST
 
                 for(int sortindex = 0; sortindex < sortcnt; sortindex++)
                 {
@@ -8962,7 +9227,7 @@ errno_t functionparameter_CTRLscreen(
                             printfw("   ");
                         }
 
-                        printfw("[Q %02d %02d] %4d  %s\n",
+                        printfw("[Q:%02d P:%02d] %4d  %s\n",
                                fpsctrltasklist[fpscmdindex].queue,
                                fpsctrlqueuelist[fpsctrltasklist[fpscmdindex].queue].priority,
                                fpscmdindex,
@@ -8989,7 +9254,7 @@ errno_t functionparameter_CTRLscreen(
 
             DEBUG_TRACEPOINT(" ");
             
-            if( screenprintmode == 1) 
+            if( screenprintmode == SCREENPRINT_NCURSES) 
             {
 				refresh();
 			}			
@@ -9022,7 +9287,7 @@ errno_t functionparameter_CTRLscreen(
 
     if(run_display == 1)
     {
-		if( screenprintmode == 1) 
+		if( screenprintmode == SCREENPRINT_NCURSES) 
 		{
 			endwin();
 		}
@@ -9049,6 +9314,7 @@ errno_t functionparameter_CTRLscreen(
 
     return RETURN_SUCCESS;
 }
+
 
 
 
