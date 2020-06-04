@@ -5,8 +5,9 @@
 NBARGS=1
 
 # ======================= PROCESS NAME =================================
-pname=`echo "$0" | sed "s/\.\///g"`
-echo "pname = $pname"
+#pname=`echo "$0" | sed "s/\.\///g"`
+pname=`basename "$0"`
+echo "pname = ${pname}"
 
 
 function printHELP {
@@ -28,6 +29,8 @@ echo "     $(tput bold)-h$(tput sgr0)          help"
 echo "     $(tput bold)-f$(tput sgr0) <fname>  input (f)ifo name"
 echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
 echo "     $(tput bold)-m$(tput sgr0)          must (m)atch fpscmd/fpslist.txt"
+echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
+echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
 echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
 echo ""
 echo "------------------------------------------------------------------------"
@@ -40,7 +43,10 @@ printHELP1 ()
 }
 
 
-
+# change process short name to append tty number
+ttystring=$( tty | sed 's/.*\///' )
+shortpname="fpsCTRL-${ttystring}"
+echo -n "sh-${shortpname}" > /proc/self/comm
 
 
 
@@ -71,7 +77,7 @@ pname="fpsCTRL"
 fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
 outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
 
-while getopts :hlmDf:o: FLAG; do
+while getopts :hlmDf:o:sq FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -92,6 +98,12 @@ while getopts :hlmDf:o: FLAG; do
     ;;
     m)
 		MODE="1"
+    ;;
+    s) # use stdio instead of ncurses
+		export MILK_FPSCTRL_PRINT_STDIO=1
+    ;;
+    q) # quiet mode - don't print status
+		export MILK_FPSCTRL_NOPRINT=1
     ;;
     D)
 		DEBUG="1"
@@ -127,7 +139,7 @@ printHELP
 fi
 
 
-mkfifo $fifoname
+mkfifo ${fifoname}
 
 CLIfifoname="$MILK_SHM_DIR/fpsCLIfifo"
 
@@ -156,7 +168,8 @@ rm ./milkdebugtest
 
 else
 
-milk -n ${pname} -f ${CLIfifoname} -s ${SF} 
+export MILK_QUIET=1
+milk -n ${shortpname} -f ${CLIfifoname} -s ${SF} 
 #2> testout.txt
 
 fi

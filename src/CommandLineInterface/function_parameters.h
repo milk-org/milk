@@ -492,23 +492,21 @@ typedef struct
 // The structure is meant to provide basic scheduling functionality
 //
 #define NB_FPSCTRL_TASK_MAX 1024
-//#define FPSCMD_MAXCHAR 1024
-#define NB_FPSCTRL_TASKQUEUE_MAX 10
 
-#define FPSTASK_STATUS_ACTIVE 0x0000000000000001   // is the task entry in the array used ?
+
+#define FPSTASK_STATUS_ACTIVE  0x0000000000000001   // is the task entry in the array used ?
 #define FPSTASK_STATUS_RUNNING 0x0000000000000002
 #define FPSTASK_STATUS_WAITING 0x0000000000000004
-#define FPSTASK_STATUS_SHOW 0x0000000000000008
+#define FPSTASK_STATUS_SHOW    0x0000000000000008
 
 // use WAITONRUN to ensure the queue is blocked until the current run process is done
-#define FPSTASK_FLAG_WAITONRUN 0x0000000000000001
+#define FPSTASK_FLAG_WAITONRUN  0x0000000000000001
 #define FPSTASK_FLAG_WAITONCONF 0x0000000000000002
 
 // If ON, the task is a wait point, and will only proceed if the FPS pointed to by fpsindex is NOT running
 #define FPSTASK_FLAG_WAIT_FOR_FPS_NORUN 0x0000000000000004
 
-
-#define FPSTASK_MAX_NBQUEUE 10
+#define NB_FPSCTRL_TASKQUEUE_MAX 100 // max number of queues
 
 typedef struct
 {
@@ -795,7 +793,10 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps,
 
 
 errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
-errno_t functionparameter_outlog(char *keyw, char *msgstring);
+//errno_t functionparameter_outlog(char *keyw, char *msgstring);
+errno_t functionparameter_outlog(char *keyw, const char *fmt, ...);
+
+
 errno_t functionparameter_outlog_namelink(const char *fpsname, int cmdcode);
 
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname,
