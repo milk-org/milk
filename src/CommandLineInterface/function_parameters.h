@@ -546,11 +546,13 @@ typedef struct
 
 
 
-
+// status of control / monitoring process
+//
 typedef struct
 {
+	int      exitloop;    // exit control loop if 1
     int      fpsCTRL_DisplayMode; // Display mode
-    uint32_t mode;           // GUI mode
+    uint32_t mode;                // GUI mode
     int      NBfps;               // Number of FPS entries
     int      NBkwn;               // Number of keyword nodes
     long     NBindex;
@@ -565,7 +567,7 @@ typedef struct
     char     fpsCTRLfifoname[200];
     int      fpsCTRLfifofd;
     int      direction;
-} FPSCTRL_GUIVARS;
+} FPSCTRL_PROCESS_VARS;
 
 
 
