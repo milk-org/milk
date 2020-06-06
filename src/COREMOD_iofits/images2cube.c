@@ -61,6 +61,7 @@ errno_t images2cube_addCLIcmd()
         "int images_to_cube(char *img_name, long nbframes, char *cube_name)"
     );
 
+	return RETURN_SUCCESS;
 }
 
 
@@ -79,7 +80,6 @@ errno_t images_to_cube(
     imageID ID1;
     long frame;
     uint32_t naxes[2];
-    long ii, jj;
     uint32_t xsize, ysize;
 
     frame = 0;
@@ -101,8 +101,8 @@ errno_t images_to_cube(
            (long) nbframes);
     fflush(stdout);
     ID = create_3Dimage_ID(cube_name, naxes[0], naxes[1], nbframes);
-    for(ii = 0; ii < naxes[0]; ii++)
-        for(jj = 0; jj < naxes[1]; jj++)
+    for(uint32_t ii = 0; ii < naxes[0]; ii++)
+        for(uint32_t jj = 0; jj < naxes[1]; jj++)
         {
             data.image[ID].array.F[frame * naxes[0]*naxes[1] + (jj * naxes[0] + ii)] =
                 data.image[ID1].array.F[jj * naxes[0] + ii];
@@ -128,8 +128,8 @@ errno_t images_to_cube(
                 PRINT_ERROR("Image has wrong size");
                 exit(0);
             }
-            for(ii = 0; ii < naxes[0]; ii++)
-                for(jj = 0; jj < naxes[1]; jj++)
+            for(uint32_t ii = 0; ii < naxes[0]; ii++)
+                for(uint32_t jj = 0; jj < naxes[1]; jj++)
                 {
                     data.image[ID].array.F[frame * naxes[0]*naxes[1] + (jj * naxes[0] + ii)] =
                         data.image[ID1].array.F[jj * naxes[0] + ii];
