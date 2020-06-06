@@ -246,27 +246,6 @@ static errno_t create_ushort_image_shared__cli() // default precision
 
 
 
-static errno_t create_2Dimage_float()
-{
-    uint32_t *imsize;
-
-    // CHECK ARGS
-    //  printf("CREATING IMAGE\n");
-    imsize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-
-    imsize[0] = data.cmdargtoken[2].val.numl;
-    imsize[1] = data.cmdargtoken[3].val.numl;
-
-    create_image_ID(data.cmdargtoken[1].val.string, 2, imsize, _DATATYPE_FLOAT,
-                    data.SHARED_DFT, data.NBKEWORD_DFT);
-
-    free(imsize);
-
-    return RETURN_SUCCESS;
-}
-
-
-
 static errno_t create_3Dimage_float()
 {
     uint32_t *imsize;

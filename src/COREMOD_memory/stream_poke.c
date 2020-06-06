@@ -58,7 +58,7 @@ static errno_t COREMOD_MEMORY_streamPoke__cli()
 
 errno_t stream_poke_addCLIcmd()
 {
-	    RegisterCLIcommand(
+    RegisterCLIcommand(
         "streampoke",
         __FILE__,
         COREMOD_MEMORY_streamPoke__cli,
@@ -66,6 +66,8 @@ errno_t stream_poke_addCLIcmd()
         "<in stream> <poke period [us]>",
         "streampoke stream 100",
         "long COREMOD_MEMORY_streamPoke(const char *IDstream_name, long usperiod)");
+
+    return RETURN_SUCCESS;
 }
 
 
