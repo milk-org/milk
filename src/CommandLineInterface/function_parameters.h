@@ -491,7 +491,9 @@ typedef struct
 // Typically these are read from command fifo
 // The structure is meant to provide basic scheduling functionality
 //
-#define NB_FPSCTRL_TASK_MAX 1024
+
+// max number of entries in queues (total among all queues)
+#define NB_FPSCTRL_TASK_MAX 5000
 
 
 #define FPSTASK_STATUS_ACTIVE  0x0000000000000001   // is the task entry in the array used ?
@@ -603,7 +605,7 @@ fps.md->sourceline = __LINE__; \
 char msgstring[STRINGMAXLEN_FPS_LOGMSG]; \
 SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "LOGSTART %s %d %s %d", (VARfpsname), (VARCMDmode), fps.md->sourcefname, fps.md->sourceline); \
 functionparameter_outlog("FPSINIT", msgstring); \
-functionparameter_outlog_namelink((VARfpsname), (VARCMDmode)); \
+functionparameter_outlog_namelink(); \
 } \
 } while(0)
 
@@ -799,7 +801,7 @@ errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
 errno_t functionparameter_outlog(char *keyw, const char *fmt, ...);
 
 
-errno_t functionparameter_outlog_namelink(const char *fpsname, int cmdcode);
+errno_t functionparameter_outlog_namelink();
 
 errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname,
                                      char *fpsCTRLfifoname);

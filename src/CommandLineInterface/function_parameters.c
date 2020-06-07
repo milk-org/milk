@@ -6255,14 +6255,48 @@ errno_t functionparameter_FPSremove(
     WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
 
     // delete sym links
-    EXECUTE_SYSTEM_COMMAND("find %s -follow -type f -name \"fpslog.*.*\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
-                           shmdname, fps[fpsindex].md->name);
+    //EXECUTE_SYSTEM_COMMAND("find %s -follow -type f -name \"fpslog.*%s\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
+    //                       shmdname, fps[fpsindex].md->name, fps[fpsindex].md->name);
 
     fps[fpsindex].SMfd = -1;
     close(fps[fpsindex].SMfd);
 
 //    remove(conflogfname);
-    remove(fpsfname);
+    int ret = remove(fpsfname);
+    int errcode = errno;
+    
+	// TEST
+	FILE *fp;
+	fp = fopen("rmlist.txt", "a");
+	fprintf(fp, "remove %s  %d\n", fpsfname, ret);	
+	if(ret == -1)
+	{
+		switch (errcode) {
+		
+		case EACCES:
+		fprintf(fp, "EACCES\n");
+		break;
+
+		case EBUSY:
+		fprintf(fp, "EBUSY\n");
+		break;
+
+		case ENOENT:
+		fprintf(fp, "ENOENT\n");
+		break;
+
+		case EPERM:
+		fprintf(fp, "EPERM\n");
+		break;
+
+		case EROFS:
+		fprintf(fp, "EROFS\n");
+		break;
+		
+		}
+	}
+	fclose(fp);
+
 
 
     // terminate tmux sessions
@@ -6276,9 +6310,6 @@ errno_t functionparameter_FPSremove(
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 
 
@@ -6450,55 +6481,18 @@ errno_t functionparameter_outlog(
  * This is a one-time function when running FPS init.\n
  * Creates a human-readable informative sym link to outlog\n
  */
-errno_t functionparameter_outlog_namelink(
-    const char *fpsname,
-    int cmdcode
-)
+errno_t functionparameter_outlog_namelink()
 {
-    char cmdcodestring[32];
-
-    switch(cmdcode)
-    {
-        case FPSCMDCODE_CONFSTART :
-            strcpy(cmdcodestring, "CONFSTART");
-            break;
-
-        case FPSCMDCODE_CONFSTOP :
-            strcpy(cmdcodestring, "CONFSTOP");
-            break;
-
-        case FPSCMDCODE_FPSINIT :
-            strcpy(cmdcodestring, "FPSINIT");
-            break;
-
-        case FPSCMDCODE_FPSINITCREATE :
-            strcpy(cmdcodestring, "FPSINITCREATE");
-            break;
-
-        case FPSCMDCODE_RUNSTART :
-            strcpy(cmdcodestring, "RUNSTART");
-            break;
-
-        case FPSCMDCODE_RUNSTOP :
-            strcpy(cmdcodestring, "RUNSTOP");
-            break;
-
-        default :
-            strcpy(cmdcodestring, "UNKNOWN");
-            break;
-    }   
- 
     char shmdname[STRINGMAXLEN_SHMDIRNAME];
     function_parameter_struct_shmdirname(shmdname);   
     
     char logfname[STRINGMAXLEN_FULLFILENAME];
-//    WRITE_FULLFILENAME(logfname, "%s/fpslog.%ld.%06d.%s", shmdname, data.FPS_TIMESTAMP, getpid(), data.FPS_PROCESS_TYPE);
     getFPSlogfname(logfname);
     
     
     char linkfname[STRINGMAXLEN_FULLFILENAME];
-    WRITE_FULLFILENAME(linkfname, "%s/fpslog.%s.%s", shmdname,
-                       fpsname, cmdcodestring);
+    WRITE_FULLFILENAME(linkfname, "%s/fpslog.%s", shmdname,
+                       data.FPS_PROCESS_TYPE);
 
     if(symlink(logfname, linkfname) == -1)
     {
@@ -7910,10 +7904,10 @@ errno_t functionparameter_CTRLscreen(
         int ch = -1;
 
         // 50 Hz input key probing
-        int getchardt_us = 20000;  // how long between getchar probes
+        int getchardt_us = 10000;  // how long between getchar probes
 
         // refresh every 1 sec without input
-        int timeoutcnt = 50;
+        int timeoutcnt = 100;
 
 		if( screenprintmode == SCREENPRINT_NCURSES ) // ncurses mode
 		{
@@ -7923,8 +7917,7 @@ errno_t functionparameter_CTRLscreen(
         int tcnt = 0;
         while ( resfresh_screen == 0 ) // wait for input
         {
-
-			// put input commands into the task queue
+			// put input commands from fifo into the task queue
             int fcnt = functionparameter_read_fpsCMD_fifo(fpsCTRLvar.fpsCTRLfifofd,
                        fpsctrltasklist, fpsctrlqueuelist);
 
@@ -7937,8 +7930,6 @@ errno_t functionparameter_CTRLscreen(
 			NBtaskLaunchedcnt += NBtaskLaunched;
 			
             fifocmdcnt += fcnt;
-
-
 
 
 

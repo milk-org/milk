@@ -1765,6 +1765,11 @@ errno_t runCLI(
     setSHMdir();
 
 
+
+    // initialize fifo to process name
+    // default fifo name
+    sprintf(data.fifoname, "%s.fifo.%07d", data.processname, getpid());
+
     // Get command-line options
     command_line_process_options(argc, argv);
 
@@ -1781,12 +1786,6 @@ errno_t runCLI(
     rl_initialize();
 
 
-    // initialize fifo to process name
-    if(data.fifoON == 1)
-    {
-        sprintf(data.fifoname, "%s.fifo", data.processname);
-        printf("fifo name : %s\n", data.fifoname);
-    }
 
 
 
@@ -1945,7 +1944,8 @@ errno_t runCLI(
             {
                 EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null", CLIstartupfilename,
                                        data.fifoname);
-                printf("IMPORTING FILE %s ... ", CLIstartupfilename);
+                printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
+                printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
             }
         initstartup = 1;
 
@@ -2775,11 +2775,12 @@ static int command_line_process_options(
         {"info",        no_argument,       0, 'i'},
         {"overwrite",   no_argument,       0, 'o'},
         {"idle",        no_argument,       0, 'e'},
+        {"fifoflag",    no_argument,       0, 'f'},
         {"debug",       required_argument, 0, 'd'},
         {"mmon",        required_argument, 0, 'm'},
         {"pname",       required_argument, 0, 'n'},
         {"priority",    required_argument, 0, 'p'},
-        {"fifo",        required_argument, 0, 'f'},
+        {"fifoname",    required_argument, 0, 'F'},
         {"startup",     required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
@@ -2793,7 +2794,7 @@ static int command_line_process_options(
     {
         int c;
 
-        c = getopt_long(argc, argv, "hvidoe:m:n:p:f:s:",
+        c = getopt_long(argc, argv, "hvidoe:m:n:p:fF:s:",
                         long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -2893,11 +2894,15 @@ static int command_line_process_options(
                 break;
 
             case 'f':
+                printf("fifo input ON\n");
+                data.fifoON = 1;
+                break;
+
+            case 'F':
                 printf("using input fifo '%s'\n", optarg);
                 data.fifoON = 1;
-                sprintf(data.fifoname, "%s.%05d", optarg, CLIPID);
-                //            strcpy(data.fifoname, optarg);
-                printf("FIFO NAME = %s\n", data.fifoname);
+                sprintf(data.fifoname, "%s", optarg);               
+                printf("FIFO NAME = %s\n", data.fifoname);                
                 break;
 
             case 's':

@@ -94,7 +94,8 @@ while getopts :hlmDf:o:sq FLAG; do
 	  exit
     ;;
     f) # fifo name
-	 fifoname=$OPTARG
+	 fifoname=${OPTARG}
+	 echo "using fifo name : ${fifoname}"
     ;;
     m)
 		MODE="1"
@@ -178,4 +179,14 @@ rm ${SF}
 
 rm ${fifoname}
 
+
+# execute optional user-provided script upon exit
+# script is in local directory
+
+exitscriptname="${pname}-exitscript"
+if [ -f ${exitscriptname} ]; then
+  echo "running script ${exitscriptname}"
+  source ${exitscriptname}
+  rm ${exitscriptname}
+fi
 
