@@ -101,7 +101,7 @@ IFS=';' read -r -a array <<< "$1"
 
 
 
-fifoname="milkCLIfifo.${pname}"
+#fifoname="milkCLIfifo.${pname}"
 SF="milkCLIstartup.${pname}"
 echo "" > $SF
 for cmdstring in "${array[@]}"
@@ -110,7 +110,7 @@ do
 done
 echo "exitCLI" >> $SF
 
-milk -n ${pname} -f ${fifoname} -s ${SF}
+milk -n ${pname} -f -s ${SF}
 
 rm ${SF}
 
