@@ -10,7 +10,7 @@
 ---
 
 
-**The function  parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /tmp/<fpsname>.fps.shm.**
+**The function  parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /tmp/fpsname.fps.shm.**
 
 
 Steps to run FPS-enabled processes:
@@ -27,7 +27,7 @@ Steps to run FPS-enabled processes:
 
 FPS-enabled functions have the following elements:
 
-- The shared memory FPS: /tmp/<fpsname>.fps.shm
+- The shared memory FPS: /tmp/fpsname.fps.shm
 - A configuration process that manages the FPS entries
 - A run process (the function itself)
 
@@ -51,14 +51,18 @@ Examples:
 
 ## 1.3. FPS-related entities
 
+
 name                                  | Type           | Description        | Origin
 --------------------------------------|----------------|--------------------|---------------------------------
-/$\{MILK_SHM_DIR\}/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
-<fpsname>:ctrl                        | tmux session   | FPS control terminal    | Set up by milk-fpsinit
-<fpsname>:conf                        | tmux session   | where CONF runs    | Set up by milk-fpsinit
-<fpsname>:run                         | tmux session   | where RUN runs     | Set up by milk-fpsinit
-/$\{MILK_SHM_DIR\}/fpslog...                | ASCII file  | log files       | Created by FPS processes
-./fpsconf/<fpsname>/...               | ASCII file     | parameter value    | OPTIONAL
+/MILK_SHM_DIR/fpsname.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
+fpsname:run                        | tmux session window 2  | FPS control terminal    | Set up by milk-fpsinit
+fpsname:conf                        | tmux session window 3  | where CONF runs    | Set up by milk-fpsinit
+fpsname:run                         | tmux session   | where RUN runs     | Set up by milk-fpsinit
+/MILK_SHM_DIR/fpslog.tstamp.pid.FPSTYPE-fpsname                | ASCII file  | log files       | Created by FPS processes
+/MILK_SHM_DIR/fpslog.FPSTYPE-fpsname                | sym link  | log file       | points to latest FPS log file
+./fpsconf/fpsname/...               | ASCII file     | parameter value    | OPTIONAL
+
+
 
 
 ---
@@ -112,7 +116,50 @@ The FPS control tool is started from the command line :
 A fifo is set up by milk-fpsCTRL to receive commands to start/stop the conf and run processes. Commands can also be issued directly from the milk-fpsCTRL GUI.
 
 
-### 2.3.1. Stopping a run process
+### 2.3.1. Starting a conf process
+
+To start a run process, the user issues a command to the fifo :
+
+	echo "confstart fpsname-01" >> ${MILK_SHM_DIR}/${LOOPNAME}_fpsCTRL.fifo
+
+The steps triggered by this command are :
+
+- Command is processed by fifo command interpreter functionparameter_FPSprocess_cmdline()
+- The fifo command interpreter resolves the fps entry, and runs functionparameter_CONFstart(fps, fpsindex)
+- Pre-configured function fpsconfstart is executed within the tmux session :run window :
+	- fps CLI command is launched with argument "_CONFSTART_" :
+		- function_parameter_getFPSname_from_CLIfunc() called, sets data.FPS_CMDCODE = FPSCMDCODE_CONFSTART
+
+
+### 2.2.2. Stopping a conf process
+
+To stop a conf process, the user issues a command to the fifo :
+
+	echo "confstop fpsname-01" >> ${MILK_SHM_DIR}/${LOOPNAME}_fpsCTRL.fifo
+
+The steps triggered by this command are :
+
+- Command is processed by fifo command interpreter functionparameter_FPSprocess_cmdline()
+- The fifo command interpreter resolves the fps entry, and runs functionparameter_CONFstop(fps, fpsindex)
+	- FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN flag is set to 0
+	
+
+### 2.2.3. Starting a run process
+
+To start a run process, the user issues a command to the fifo :
+
+	echo "confstart fpsname-01" >> ${MILK_SHM_DIR}/${LOOPNAME}_fpsCTRL.fifo
+
+The steps triggered by this command are :
+
+- Command is processed by fifo command interpreter functionparameter_FPSprocess_cmdline()
+- The fifo command interpreter resolves the fps entry, and runs functionparameter_RUNstart(fps, fpsindex)
+- Pre-configured function fpsrunstart is executed within the tmux session :run window :
+	- fps CLI command is launched with argument "_RUNSTART_" :
+		- function_parameter_getFPSname_from_CLIfunc() called, sets data.FPS_CMDCODE = FPSCMDCODE_RUNSTART
+
+
+### 2.3.4. Stopping a run process
 
 To stop a run process, the user issues a command to the fifo :
 
@@ -122,13 +169,11 @@ The steps triggered by this command are :
 
 - Command is processed by fifo command interpreter functionparameter_FPSprocess_cmdline()
 - The fifo command interpreter resolves the fps entry, and runs functionparameter_RUNstop(fps, fpsindex)
-	- pre-configured command ./fpscmd/fpsname-runstop is executed to terminate run process :
-		- milk CLI is launched
-		- fps CLI command is launched with argument "_RUNSTOP_" :
-			- function_parameter_getFPSname_from_CLIfunc() called, sets data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP
-			- function_parameter_execFPScmd() called, calls conf process (function data.FPS_CONFfunc)
-			- function_parameter_FPCONFsetup, called within conf process, configures variables for run stop:
-				-  
+- Pre-configured function fpsrunstop is executed within the tmux session :ctrl window :
+	- fps CLI command is launched with argument "_RUNSTOP_" :
+		- function_parameter_getFPSname_from_CLIfunc() called, sets data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP
+		- function_parameter_execFPScmd() called, calls conf process (function data.FPS_CONFfunc)
+		- function_parameter_FPCONFsetup, called within conf process, configures variables for run stop
 	- CTRL-c sent to run tmux session to ensure exit
 ---
 
@@ -488,7 +533,7 @@ The example also shows using FPS to set the process realtime priority.
 
 ~~~~{.c}
 
-/* \@brief Loop process code example
+/** @brief Loop process code example
  *
  * ## Purpose
  *

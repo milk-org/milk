@@ -102,7 +102,7 @@ IFS=';' read -r -a array <<< "$1"
 
 
 #fifoname="milkCLIfifo.${pname}"
-SF="milkCLIstartup.${pname}"
+SF="milkCLIstartup.${pname}.$$"
 echo "" > $SF
 for cmdstring in "${array[@]}"
 do

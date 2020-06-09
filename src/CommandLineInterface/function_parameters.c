@@ -1720,12 +1720,12 @@ int function_parameter_add_entry(
                                                              FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     if(keywordstring[0] == '.')
     {
-		//printf("--------------- keywstring \"%s\" starts with dot -> adding \"%s\"\n", keywordstring, fps->md->name);
+        //printf("--------------- keywstring \"%s\" starts with dot -> adding \"%s\"\n", keywordstring, fps->md->name);
         sprintf(keywordstringC, "%s%s", fps->md->name, keywordstring);
     }
     else
     {
-		//printf("--------------- keywstring \"%s\" unchanged\n", keywordstring);
+        //printf("--------------- keywstring \"%s\" unchanged\n", keywordstring);
         strcpy(keywordstringC, keywordstring);
     }
 
@@ -1761,47 +1761,48 @@ int function_parameter_add_entry(
             fflush(stdout);
             exit(0);
         }
-    }
-    else
-    {		
-        // printf("Found matching keyword: applying values to existing entry\n");
-    }
-
-    funcparamarray[pindex].fpflag = fpflag;
 
 
 
-    // break full keyword into keywords
-    strncpy(funcparamarray[pindex].keywordfull, keywordstringC,
-            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
-    strncpy(tmpstring, keywordstringC,
-            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
-    funcparamarray[pindex].keywordlevel = 0;
-    pch = strtok(tmpstring, ".");
-    while(pch != NULL)
-    {
-        strncpy(funcparamarray[pindex].keyword[funcparamarray[pindex].keywordlevel],
-                pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN);
-        funcparamarray[pindex].keywordlevel++;
-        pch = strtok(NULL, ".");
-    }
-
-
-    // Write description
-    strncpy(funcparamarray[pindex].description, descriptionstring,
-            FUNCTION_PARAMETER_DESCR_STRMAXLEN);
-
-    // type
-    funcparamarray[pindex].type = type;
 
 
 
-    // Allocate value
-    funcparamarray[pindex].cnt0 = 0; // not allocated
 
-    // Default values
-    switch(funcparamarray[pindex].type)
-    {
+        funcparamarray[pindex].fpflag = fpflag;
+
+
+
+        // break full keyword into keywords
+        strncpy(funcparamarray[pindex].keywordfull, keywordstringC,
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
+        strncpy(tmpstring, keywordstringC,
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
+        funcparamarray[pindex].keywordlevel = 0;
+        pch = strtok(tmpstring, ".");
+        while(pch != NULL)
+        {
+            strncpy(funcparamarray[pindex].keyword[funcparamarray[pindex].keywordlevel],
+                    pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN);
+            funcparamarray[pindex].keywordlevel++;
+            pch = strtok(NULL, ".");
+        }
+
+
+        // Write description
+        strncpy(funcparamarray[pindex].description, descriptionstring,
+                FUNCTION_PARAMETER_DESCR_STRMAXLEN);
+
+        // type
+        funcparamarray[pindex].type = type;
+
+
+
+        // Allocate value
+        funcparamarray[pindex].cnt0 = 0; // not allocated
+
+        // Default values
+        switch(funcparamarray[pindex].type)
+        {
         case FPTYPE_INT64 :
             funcparamarray[pindex].val.l[0] = 0;
             funcparamarray[pindex].val.l[1] = 0;
@@ -1939,19 +1940,19 @@ int function_parameter_add_entry(
                 PRINT_ERROR("snprintf error");
             }
             break;
-    }
+        }
 
 
 
-    if(valueptr != NULL)  // allocate value requested by function call
-    {
-        int64_t *valueptr_INT64;
-        double *valueptr_FLOAT64;
-        float *valueptr_FLOAT32;
-        struct timespec *valueptr_ts;
-
-        switch(funcparamarray[pindex].type)
+        if(valueptr != NULL)  // allocate value requested by function call
         {
+            int64_t *valueptr_INT64;
+            double *valueptr_FLOAT64;
+            float *valueptr_FLOAT32;
+            struct timespec *valueptr_ts;
+
+            switch(funcparamarray[pindex].type)
+            {
 
             case FPTYPE_INT64 :
                 valueptr_INT64 = (int64_t *) valueptr;
@@ -2036,263 +2037,263 @@ int function_parameter_add_entry(
                         FUNCTION_PARAMETER_STRMAXLEN);
                 funcparamarray[pindex].cnt0++;
                 break;
+            }
+
+            // RVAL = 2;  // default value entered
         }
 
-       // RVAL = 2;  // default value entered
     }
 
 
 
 
 
+    /*
+
+    	// READING PARAMETER FROM DISK
 
 
-/*
-	
-	// READING PARAMETER FROM DISK
+        // attempt to read value for filesystem
+        char fname[200];
+        FILE *fp;
+        long tmpl;
+
+        int RVAL = 0;
+        // 0: parameter initialized to default value
+        // 1: initialized using file value (read from disk)
+        // 2: initialized to function argument value
 
 
-    // attempt to read value for filesystem
-    char fname[200];
-    FILE *fp;
-    long tmpl;
-	
-    int RVAL = 0;
-    // 0: parameter initialized to default value
-    // 1: initialized using file value (read from disk)
-    // 2: initialized to function argument value	 
-	
-	
-    int index;
-    // index = 0  : setval
-    // index = 1  : minval
-    // index = 2  : maxval
+        int index;
+        // index = 0  : setval
+        // index = 1  : minval
+        // index = 2  : maxval
 
 
-    for(index = 0; index < 3; index++)
-    {
-        switch(index)
+        for(index = 0; index < 3; index++)
         {
-            case 0 :
-                functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "setval");
-                break;
-
-            case 1 :
-                functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "minval");
-                break;
-
-            case 2 :
-                functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "maxval");
-                break;
-
-        }
-
-
-        if((fp = fopen(fname, "r")) != NULL)
-        {
-            switch(funcparamarray[pindex].type)
+            switch(index)
             {
-
-                case FPTYPE_INT64 :
-                    if(fscanf(fp, "%ld", &funcparamarray[pindex].val.l[index]) == 1)
-                        if(index ==
-                                0)     // return value is set by setval, cnt0 tracks updates to setval, not to minval or maxval
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
+                case 0 :
+                    functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "setval");
                     break;
 
-                case FPTYPE_FLOAT64 :
-                    if(fscanf(fp, "%lf", &funcparamarray[pindex].val.f[index]) == 1)
-                        if(index == 0)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
+                case 1 :
+                    functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "minval");
                     break;
 
-                case FPTYPE_FLOAT32 :
-                    if(fscanf(fp, "%f", &funcparamarray[pindex].val.s[index]) == 1)
-                        if(index == 0)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    break;
-
-                case FPTYPE_PID :
-                    if(index == 0) // PID does not have min / max
-                    {
-                        if(fscanf(fp, "%d", &funcparamarray[pindex].val.pid[index]) == 1)
-                        {
-                            RVAL = 1;
-                        }
-                        funcparamarray[pindex].cnt0++;
-                    }
-                    break;
-
-                case FPTYPE_TIMESPEC :
-                    if(fscanf(fp, "%ld %ld", &funcparamarray[pindex].val.ts[index].tv_sec,
-                              &funcparamarray[pindex].val.ts[index].tv_nsec) == 2)
-                        if(index == 0)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    break;
-
-                case FPTYPE_FILENAME :
-                    if(index == 0)    // FILENAME does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-                case FPTYPE_FITSFILENAME :
-                    if(index == 0)    // FITSFILENAME does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-                case FPTYPE_EXECFILENAME :
-                    if(index == 0)    // EXECFILENAME does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-
-                case FPTYPE_DIRNAME :
-                    if(index == 0)    // DIRNAME does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-                case FPTYPE_STREAMNAME :
-                    if(index == 0)    // STREAMNAME does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-                case FPTYPE_STRING :
-                    if(index == 0)    // STRING does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-                case FPTYPE_ONOFF :
-                    if(index == 0)
-                    {
-                        if(fscanf(fp, "%ld", &tmpl) == 1)
-                        {
-                            if(tmpl == 1)
-                            {
-                                funcparamarray[pindex].fpflag |= FPFLAG_ONOFF;
-                            }
-                            else
-                            {
-                                funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF;
-                            }
-
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
-                    break;
-
-
-                case FPTYPE_FPSNAME :
-                    if(index == 0)    // FPSNAME does not have min / max
-                    {
-                        if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                        {
-                            RVAL = 1;
-                            funcparamarray[pindex].cnt0++;
-                        }
-                    }
+                case 2 :
+                    functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "maxval");
                     break;
 
             }
-            fclose(fp);
 
+
+            if((fp = fopen(fname, "r")) != NULL)
+            {
+                switch(funcparamarray[pindex].type)
+                {
+
+                    case FPTYPE_INT64 :
+                        if(fscanf(fp, "%ld", &funcparamarray[pindex].val.l[index]) == 1)
+                            if(index ==
+                                    0)     // return value is set by setval, cnt0 tracks updates to setval, not to minval or maxval
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        break;
+
+                    case FPTYPE_FLOAT64 :
+                        if(fscanf(fp, "%lf", &funcparamarray[pindex].val.f[index]) == 1)
+                            if(index == 0)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        break;
+
+                    case FPTYPE_FLOAT32 :
+                        if(fscanf(fp, "%f", &funcparamarray[pindex].val.s[index]) == 1)
+                            if(index == 0)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        break;
+
+                    case FPTYPE_PID :
+                        if(index == 0) // PID does not have min / max
+                        {
+                            if(fscanf(fp, "%d", &funcparamarray[pindex].val.pid[index]) == 1)
+                            {
+                                RVAL = 1;
+                            }
+                            funcparamarray[pindex].cnt0++;
+                        }
+                        break;
+
+                    case FPTYPE_TIMESPEC :
+                        if(fscanf(fp, "%ld %ld", &funcparamarray[pindex].val.ts[index].tv_sec,
+                                  &funcparamarray[pindex].val.ts[index].tv_nsec) == 2)
+                            if(index == 0)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        break;
+
+                    case FPTYPE_FILENAME :
+                        if(index == 0)    // FILENAME does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+                    case FPTYPE_FITSFILENAME :
+                        if(index == 0)    // FITSFILENAME does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+                    case FPTYPE_EXECFILENAME :
+                        if(index == 0)    // EXECFILENAME does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+
+                    case FPTYPE_DIRNAME :
+                        if(index == 0)    // DIRNAME does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+                    case FPTYPE_STREAMNAME :
+                        if(index == 0)    // STREAMNAME does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+                    case FPTYPE_STRING :
+                        if(index == 0)    // STRING does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+                    case FPTYPE_ONOFF :
+                        if(index == 0)
+                        {
+                            if(fscanf(fp, "%ld", &tmpl) == 1)
+                            {
+                                if(tmpl == 1)
+                                {
+                                    funcparamarray[pindex].fpflag |= FPFLAG_ONOFF;
+                                }
+                                else
+                                {
+                                    funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF;
+                                }
+
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+
+                    case FPTYPE_FPSNAME :
+                        if(index == 0)    // FPSNAME does not have min / max
+                        {
+                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
+                            {
+                                RVAL = 1;
+                                funcparamarray[pindex].cnt0++;
+                            }
+                        }
+                        break;
+
+                }
+                fclose(fp);
+
+
+            }
 
         }
 
-    }
 
 
 
+    	// WRITING PARAMETER TO DISK
+    	//
 
-	// WRITING PARAMETER TO DISK
-	//
-	
-    if(RVAL == 0)
-    {
-        functionparameter_WriteParameterToDisk(fps, pindex, "setval",
-                                               "AddEntry created");
-        if(funcparamarray[pindex].fpflag |= FPFLAG_MINLIMIT)
+        if(RVAL == 0)
         {
-            functionparameter_WriteParameterToDisk(fps, pindex, "minval",
+            functionparameter_WriteParameterToDisk(fps, pindex, "setval",
                                                    "AddEntry created");
+            if(funcparamarray[pindex].fpflag |= FPFLAG_MINLIMIT)
+            {
+                functionparameter_WriteParameterToDisk(fps, pindex, "minval",
+                                                       "AddEntry created");
+            }
+            if(funcparamarray[pindex].fpflag |= FPFLAG_MAXLIMIT)
+            {
+                functionparameter_WriteParameterToDisk(fps, pindex, "maxval",
+                                                       "AddEntry created");
+            }
         }
-        if(funcparamarray[pindex].fpflag |= FPFLAG_MAXLIMIT)
-        {
-            functionparameter_WriteParameterToDisk(fps, pindex, "maxval",
-                                                   "AddEntry created");
-        }
-    }
 
-    if(RVAL == 2)
-    {
-        functionparameter_WriteParameterToDisk(fps, pindex, "setval",
-                                               "AddEntry argument");
-        if(funcparamarray[pindex].fpflag |= FPFLAG_MINLIMIT)
+        if(RVAL == 2)
         {
-            functionparameter_WriteParameterToDisk(fps, pindex, "minval",
+            functionparameter_WriteParameterToDisk(fps, pindex, "setval",
                                                    "AddEntry argument");
+            if(funcparamarray[pindex].fpflag |= FPFLAG_MINLIMIT)
+            {
+                functionparameter_WriteParameterToDisk(fps, pindex, "minval",
+                                                       "AddEntry argument");
+            }
+            if(funcparamarray[pindex].fpflag |= FPFLAG_MAXLIMIT)
+            {
+                functionparameter_WriteParameterToDisk(fps, pindex, "maxval",
+                                                       "AddEntry argument");
+            }
         }
-        if(funcparamarray[pindex].fpflag |= FPFLAG_MAXLIMIT)
-        {
-            functionparameter_WriteParameterToDisk(fps, pindex, "maxval",
-                                                   "AddEntry argument");
-        }
-    }
 
-    if(RVAL != 0)
-    {
-        functionparameter_WriteParameterToDisk(fps, pindex, "fpsname", "AddEntry");
-        functionparameter_WriteParameterToDisk(fps, pindex, "fpsdir", "AddEntry");
-        functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
-    }
-*/
+        if(RVAL != 0)
+        {
+            functionparameter_WriteParameterToDisk(fps, pindex, "fpsname", "AddEntry");
+            functionparameter_WriteParameterToDisk(fps, pindex, "fpsdir", "AddEntry");
+            functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
+        }
+    */
 
     return pindex;
 }
@@ -2395,11 +2396,11 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     {
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
         function_parameter_struct_disconnect(&fps);
-        fps.loopstatus = 0; // stop loop
+        fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // stop loop
     }
     else
     {
-        fps.loopstatus = 1;
+        fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
 
 
@@ -2407,12 +2408,12 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     if((CMDmode & FPSCMDCODE_FPSINITCREATE) || (CMDmode & FPSCMDCODE_FPSINIT)
             || (CMDmode & FPSCMDCODE_CONFSTOP))
     {
-        fps.loopstatus = 0; // do not start conf
+        fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // do not start conf
     }
 
     if(CMDmode & FPSCMDCODE_CONFSTART)
     {
-        fps.loopstatus = 1;
+        fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
 
 
@@ -2443,11 +2444,11 @@ uint16_t function_parameter_FPCONFloopstep(
         {
             fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
             fps->md->confpid = getpid();
-            fps->loopstatus = 1;
+            fps->localstatus |= FPS_LOCALSTATUS_CONFLOOP;
         }
         else
         {
-            fps->loopstatus = 0;
+            fps->localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;
         }
     }
 
@@ -2493,7 +2494,7 @@ uint16_t function_parameter_FPCONFloopstep(
     }
     else
     {
-        fps->loopstatus = 0;
+        fps->localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;
     }
 
 
@@ -6084,34 +6085,6 @@ errno_t functionparameter_RUNstart(
         EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"fpsrunstart\" C-m",
                                fps[fpsindex].md->name);
 
-        /*    if(snprintf(command, stringmaxlen,
-                        "tmux send-keys -t %s-run \"./fpscmd/%s-runstart", fps[fpsindex].md->name,
-                        fps[fpsindex].md->pname) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-
-            for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex;
-                    nameindexlevel++)
-            {
-                int tmpstrlen = 20;
-                char tmpstring[tmpstrlen];
-
-                if(snprintf(tmpstring, tmpstrlen, " %s",
-                            fps[fpsindex].md->nameindexW[nameindexlevel]) < 0)
-                {
-                    PRINT_ERROR("snprintf error");
-                }
-
-                strcat(command, tmpstring);
-            }
-            strcat(command, "\" C-m");
-            if(system(command) != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }*/
-
-
         fps[fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
         fps[fpsindex].md->signal |=
             FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -6144,31 +6117,6 @@ errno_t functionparameter_RUNstop(
 	EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c &> /dev/null",
                 fps[fpsindex].md->name);
 
-    /*
-    int stringmaxlen = 500;
-    char command[stringmaxlen];
-    if(snprintf(command, stringmaxlen, "%s/fpscmd/%s-runstop",
-                fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->pname) < 0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-    for(int nameindexlevel = 0; nameindexlevel < fps[fpsindex].md->NBnameindex;
-            nameindexlevel++)
-    {
-        int tmpstrlen = 20;
-        char tmpstring[tmpstrlen];
-
-        snprintf(tmpstring, tmpstrlen, " %s",
-                 fps[fpsindex].md->nameindexW[nameindexlevel]);
-        strcat(command, tmpstring);
-    }
-    if(system(command) != 0)
-    {
-        //PRINT_ERROR("system() returns non-zero value");
-    }
-    * 
-    */
-     
     fps[fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
     fps[fpsindex].md->signal |=
         FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
@@ -7893,7 +7841,17 @@ errno_t functionparameter_CTRLscreen(
         loopOK = 0;
     }
 
+	int getchardt_us_ref = 100000;  // how long between getchar probes
+	// refresh every 1 sec without input
+	int refreshtimeoutus_ref = 1000000;
 
+    int getchardt_us = getchardt_us_ref;        
+    int refreshtimeoutus = refreshtimeoutus_ref;
+
+	if( screenprintmode == SCREENPRINT_NCURSES ) // ncurses mode
+	{
+		refreshtimeoutus_ref = 100000; // 10 Hz
+	}
 
 	int resfresh_screen = 1; // 1 if screen should be refreshed
     while(loopOK == 1)
@@ -7903,18 +7861,10 @@ errno_t functionparameter_CTRLscreen(
         long icnt = 0;
         int ch = -1;
 
-        // 50 Hz input key probing
-        int getchardt_us = 10000;  // how long between getchar probes
 
-        // refresh every 1 sec without input
-        int timeoutcnt = 100;
-
-		if( screenprintmode == SCREENPRINT_NCURSES ) // ncurses mode
-		{
-			timeoutcnt = 5; // refresh at 10 Hz without input
-		}
+        int timeoutuscnt = 0;
         
-        int tcnt = 0;
+        
         while ( resfresh_screen == 0 ) // wait for input
         {
 			// put input commands from fifo into the task queue
@@ -7924,8 +7874,22 @@ errno_t functionparameter_CTRLscreen(
             DEBUG_TRACEPOINT(" ");
 
 			// execute next command in the queue
-            NBtaskLaunched += function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist,
-                                                   keywnode, &fpsCTRLvar, fps);                        
+			int taskflag = function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist,
+                                                   keywnode, &fpsCTRLvar, fps); 
+            
+            if(taskflag > 0) // task has been performed
+            {
+				getchardt_us = 1000; // check often
+			}
+			else
+			{
+				getchardt_us = (int) (1.01*getchardt_us); // gradually slow down
+				if(getchardt_us > getchardt_us_ref) 
+				{
+					getchardt_us = getchardt_us_ref;
+				}
+			}
+            NBtaskLaunched += taskflag;
             
 			NBtaskLaunchedcnt += NBtaskLaunched;
 			
@@ -7958,11 +7922,11 @@ errno_t functionparameter_CTRLscreen(
                 resfresh_screen = 1;
             }
 
-            tcnt ++;
-
-            if (tcnt > timeoutcnt)
+            //tcnt ++;
+			timeoutuscnt += getchardt_us;
+            if (timeoutuscnt > refreshtimeoutus)
             {
-                resfresh_screen = 1;
+                resfresh_screen = 1;                
             }
         }
 
@@ -8028,7 +7992,8 @@ errno_t functionparameter_CTRLscreen(
             DEBUG_TRACEPOINT(" ");
             
             
-            printfw("INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d\n",
+            printfw("[%7ld %7ld us] INPUT FIFO:  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d\n",
+					loopcnt, getchardt_us,
                     fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt, NBtaskLaunched, NBtaskLaunchedcnt);    
 
 

@@ -1940,13 +1940,17 @@ errno_t runCLI(
 
         // If fifo is on and file CLIstatup.txt exists, load it
         if(initstartup == 0)
+        {
             if(data.fifoON == 1)
             {
+				EXECUTE_SYSTEM_COMMAND("file %s", CLIstartupfilename); //TEST
+                EXECUTE_SYSTEM_COMMAND("cat %s", CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null", CLIstartupfilename,
                                        data.fifoname);
                 printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
                 printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
             }
+		}
         initstartup = 1;
 
 
