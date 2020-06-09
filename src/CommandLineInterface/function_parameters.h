@@ -467,6 +467,14 @@ typedef struct
 
 
 
+// localstatus flags
+// 
+// run configuration loop
+#define FPS_LOCALSTATUS_CONFLOOP 0x0001
+// initialize variables
+#define FPS_LOCALSTATUS_INITVARS 0x0002
+
+
 typedef struct
 {
     // these two structures are shared
@@ -474,7 +482,7 @@ typedef struct
     FUNCTION_PARAMETER           *parray;   // array of function parameters
 
     // these variables are local to each process
-    uint16_t  loopstatus;
+    uint16_t  localstatus;   // 1 if conf loop should be active
     int       SMfd;
     uint32_t  CMDmode;
 
@@ -619,16 +627,16 @@ return RETURN_FAILURE; \
 
 
 
-#define FPS_CONFLOOP_START if(fps.loopstatus == 0) { \
+#define FPS_CONFLOOP_START if( ! fps.localstatus & FPS_LOCALSTATUS_CONFLOOP ) { \
 return RETURN_SUCCESS; \
 } \
-while(fps.loopstatus == 1) { \
+while(fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { \
 { \
 struct timespec treq, trem; \
 treq.tv_sec = 0; \
 treq.tv_nsec = 50000; \
 nanosleep(&treq, &trem); \
-if(data.signal_INT == 1){fps.loopstatus = 0;} \
+if(data.signal_INT == 1){fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;} \
 } \
 if(function_parameter_FPCONFloopstep(&fps) == 1) {
 
