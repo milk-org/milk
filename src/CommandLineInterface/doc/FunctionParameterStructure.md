@@ -283,7 +283,6 @@ errno_t ExampleFunction_FPCONF(
     // ========= ALLOCATE FPS ENTRIES ===============
     // ==============================================
 
-    void *pNull = NULL;
     uint64_t FPFLAG;
 
     // Entries are added one by one with function_parameter_add_entry()
@@ -299,7 +298,7 @@ errno_t ExampleFunction_FPCONF(
     // Check CommandLineInterface/function_parameters.h for full list of flags.
 
     long fpi_param01 = function_parameter_add_entry(&fps, ".param01", "First parameter",
-                       FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, pNull);
+                       FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, NULL;
 
     // This parameter will be intitialized to a value of 5, min-max range from 0 to 10, and current value 5
     int64_t param02default[4] = { 5, 0, 10, 5 };
@@ -319,18 +318,18 @@ errno_t ExampleFunction_FPCONF(
 
     // This parameter is a ON / OFF toggle
     long fpi_gainset = function_parameter_add_entry(&fps, ".option.gainwrite", "gain can be changed",
-                       FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, pNull);
+                       FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, NULL);
 
 
     // stream that needs to be loaded on startup
     FPFLAG = FPFLAG_DEFAULT_INPUT_STREAM;
     long fpi_streamname_wfs       = function_parameter_add_entry(&fps, ".sn_wfs",  "WFS stream name",
-                                    FPTYPE_STREAMNAME, FPFLAG, pNull);
+                                    FPTYPE_STREAMNAME, FPFLAG, NULL);
 
 
     // Output file name
     long fpi_filename_out1          = function_parameter_add_entry(&fps, ".out.fname_out1", "output file 1",
-                                      FPTYPE_FILENAME, FPFLAG_DEFAULT_OUTPUT, pNull);
+                                      FPTYPE_FILENAME, FPFLAG_DEFAULT_OUTPUT, NULL);
 
 
 
@@ -338,7 +337,7 @@ errno_t ExampleFunction_FPCONF(
     // Macros examples
     // see function_parameters.h
 
-    FPS_ADDPARAM_STREAM_IN  (stream_inname,        ".in_name",     "input stream");
+    FPS_ADDPARAM_STREAM_IN  (stream_inname,        ".in_name",     "input stream", NULL);
     FPS_ADDPARAM_STREAM_OUT (stream_outname,       ".out_name",    "output stream");
 
     long timeavemode_default[4] = { 0, 0, 3, 0 };
