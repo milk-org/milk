@@ -399,10 +399,10 @@ typedef struct
 
 
 
-#define FPS_CWD_STRLENMAX 200
+#define FPS_CWD_STRLENMAX    200
 #define FPS_SRCDIR_STRLENMAX 200
-#define FPS_PNAME_STRMAXLEN 100
-#define FPS_DESCR_STRMAXLEN 200
+#define FPS_PNAME_STRMAXLEN  100
+#define FPS_DESCR_STRMAXLEN  200
 
 // metadata
 typedef struct
@@ -412,10 +412,16 @@ typedef struct
     char                name[STRINGMAXLEN_FPS_NAME];         // example: pname-01-32
 
     char                description[FPS_DESCR_STRMAXLEN];
-    char
-    fpsdirectory[FPS_CWD_STRLENMAX]; // where should the parameter values be saved to disk ?
+    
+    
+    // where should the parameter values be saved to disk ?
+    char                fpsdirectory[FPS_CWD_STRLENMAX];
+    
     char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
+    
     int					sourceline;
+
+
 
     // the name and indices are automatically parsed in the following format
     char                pname[FPS_PNAME_STRMAXLEN];          // example: pname
@@ -471,8 +477,7 @@ typedef struct
 // 
 // run configuration loop
 #define FPS_LOCALSTATUS_CONFLOOP 0x0001
-// initialize variables
-#define FPS_LOCALSTATUS_INITVARS 0x0002
+
 
 
 typedef struct
@@ -598,6 +603,7 @@ typedef struct
  * @{
  */
 
+
 /**
  * @brief Initialize function parameter structure (FPS)
  *
@@ -605,73 +611,138 @@ typedef struct
  * @param[in] VARCMDmode command code
  */
 #define FPS_SETUP_INIT(VARfpsname,VARCMDmode) FUNCTION_PARAMETER_STRUCT fps; do { \
-fps.SMfd =  -1; \
-fps = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
-strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);\
-fps.md->sourceline = __LINE__; \
-{ \
-char msgstring[STRINGMAXLEN_FPS_LOGMSG]; \
-SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "LOGSTART %s %d %s %d", (VARfpsname), (VARCMDmode), fps.md->sourcefname, fps.md->sourceline); \
-functionparameter_outlog("FPSINIT", msgstring); \
-functionparameter_outlog_namelink(); \
-} \
+  fps.SMfd =  -1; \
+  fps = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
+  strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);\
+  fps.md->sourceline = __LINE__; \
+  { \
+    char msgstring[STRINGMAXLEN_FPS_LOGMSG]; \
+    SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "LOGSTART %s %d %s %d", (VARfpsname), (VARCMDmode), fps.md->sourcefname, fps.md->sourceline); \
+    functionparameter_outlog("FPSINIT", msgstring); \
+    functionparameter_outlog_namelink(); \
+  } \
 } while(0)
 
 
+
+/** @brief Connect to FPS
+ * 
+ * 
+ */
 #define FPS_CONNECT( VARfpsname, VARCMDmode ) FUNCTION_PARAMETER_STRUCT fps; do { \
-fps.SMfd = -1; \
-if(function_parameter_struct_connect( (VARfpsname) , &fps, (VARCMDmode) ) == -1) { \
-printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", VARfpsname); \
-return RETURN_FAILURE; \
-}} while(0)
+  fps.SMfd = -1; \
+  if(function_parameter_struct_connect( (VARfpsname) , &fps, (VARCMDmode) ) == -1) { \
+    printf("ERROR: fps \"%s\" does not exist -> running without FPS interface\n", VARfpsname); \
+    return RETURN_FAILURE; \
+  }\
+} while(0)
 
 
 
+/** @brief Start FPS configuration loop
+ */
 #define FPS_CONFLOOP_START if( ! fps.localstatus & FPS_LOCALSTATUS_CONFLOOP ) { \
-return RETURN_SUCCESS; \
+  return RETURN_SUCCESS; \
 } \
 while(fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { \
 { \
-struct timespec treq, trem; \
-treq.tv_sec = 0; \
-treq.tv_nsec = 50000; \
-nanosleep(&treq, &trem); \
-if(data.signal_INT == 1){fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;} \
+  struct timespec treq, trem; \
+  treq.tv_sec = 0; \
+  treq.tv_nsec = 50000; \
+  nanosleep(&treq, &trem); \
+  if(data.signal_INT == 1){fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;} \
 } \
 if(function_parameter_FPCONFloopstep(&fps) == 1) {
 
+/** @brief End FPS configuration loop
+ */
+#define FPS_CONFLOOP_END  functionparameter_CheckParametersAll(&fps);} \
+} \
+function_parameter_FPCONFexit(&fps);
 
-#define FPS_CONFLOOP_END  functionparameter_CheckParametersAll(&fps);}} function_parameter_FPCONFexit(&fps);
 
 
-#define FPS_ADDPARAM_FLT64_IN(key, pname, pdescr, dflt) long fp_##key = 0; do{ \
-fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, (dflt));\
-(void) fp_##key;\
+
+
+/** @brief Add 64-bit float parameter entry
+ * 
+ * Default setting for input parameter\n
+ * Also creates function parameter index (fp_##key), type long
+ * 
+ * (void) statement suppresses compiler unused parameter warning
+ */
+#define FPS_ADDPARAM_FLT64_IN(key, pname, pdescr, dflt) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, (dflt));\
+  (void) fp_##key;\
+} while(0)
+
+
+/** @brief Add INT64 input parameter entry
+ */
+#define FPS_ADDPARAM_INT64_IN(key, pname, pdescr, dflt) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, (dflt));\
+  (void) fp_##key;\
+} while(0)
+
+
+/** @brief Add stream input parameter entry
+ */
+#define FPS_ADDPARAM_STREAM_IN(key, pname, pdescr, dflt) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, (dflt));\
+  (void) fp_##key;\
+} while(0)
+
+
+/** @brief Add ON/OFF parameter entry
+ */
+#define FPS_ADDPARAM_ONOFF(key, pname, pdescr, dflt) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, (dflt));\
+  (void) fp_##key;\
 } while(0)
 
 
 
-#define FPS_ADDPARAM_INT64_IN(key, pname, pdescr, dflt) long fp_##key = 0; do{ \
-fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, (dflt));\
-(void) fp_##key;\
+
+
+/** @brief Add FLT64 output parameter entry
+ */
+#define FPS_ADDPARAM_FLT64_OUT(key, pname, pdescr) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, NULL);\
+  (void) fp_##key;\
 } while(0)
 
-#define FPS_ADDPARAM_INT64_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
-fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, pNull);\
-(void) fp_##key;\
+
+/** @brief Add INT64 output parameter entry
+ */
+#define FPS_ADDPARAM_INT64_OUT(key, pname, pdescr) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, NULL);\
+  (void) fp_##key;\
+} while(0)
+
+
+/** @brief Add stream output parameter entry
+ */
+#define FPS_ADDPARAM_STREAM_OUT(key, pname, pdescr) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, NULL);\
+  (void) fp_##key;\
 } while(0)
 
 
 
-#define FPS_ADDPARAM_STREAM_IN(key, pname, pdescr) long fp_##key = 0; do{ \
-fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, pNull);\
-(void) fp_##key;\
-} while(0)
-
-#define FPS_ADDPARAM_STREAM_OUT(key, pname, pdescr) long fp_##key = 0; do{ \
-fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, pNull);\
-(void) fp_##key;\
-} while(0)
 
 
 /** @} */ // end group fpsmacro
