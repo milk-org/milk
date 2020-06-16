@@ -6242,6 +6242,9 @@ static int function_parameter_process_fpsCMDarray(
                         fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
             NBtaskLaunched++;
             
+            // update status form cmdline interpreter
+            fpsctrltasklist[cmdindexExec].status |= taskstatus;
+            
             clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
             fpsctrltasklist[cmdindexExec].status |=
                 FPSTASK_STATUS_RUNNING; // update status to running
@@ -9415,11 +9418,51 @@ errno_t functionparameter_CTRLscreen(
                             printfw("   ");
                         }
 
-                        printfw("[Q:%02d P:%02d] %4d  %s\n",
+                        printfw("[Q:%02d P:%02d] %4d",
                                fpsctrltasklist[fpscmdindex].queue,
                                fpsctrlqueuelist[fpsctrltasklist[fpscmdindex].queue].priority,
-                               fpscmdindex,
-                               fpsctrltasklist[fpscmdindex].cmdstring);
+                               fpscmdindex
+                               );
+                        
+                        if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
+                        {
+							printfw(" R");
+						}
+						else
+						{
+							printfw(" -");
+						}
+                        
+                        if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDNOTFOUND)
+                        {
+							screenprint_setcolor(3);
+							printfw(" NOTCMD");
+							screenprint_unsetcolor(3);
+						}
+						else if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDFAIL)
+						{
+							screenprint_setcolor(4);
+							printfw(" FAILED");
+							screenprint_unsetcolor(4);
+						}
+						else if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDOK)
+						{
+							screenprint_setcolor(2);
+							printfw(" PROCOK");
+							screenprint_unsetcolor(2);
+						}
+						else
+						{
+							screenprint_setcolor(3);
+							printfw(" ????  ");
+							screenprint_unsetcolor(3);
+						}
+												
+
+						
+                        
+                        printfw("  %s\n", fpsctrltasklist[fpscmdindex].cmdstring);
+                        
 
                         if(attron2 == 1)
                         {
