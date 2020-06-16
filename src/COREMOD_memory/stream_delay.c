@@ -189,8 +189,6 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
 {
 
     FPS_SETUP_INIT(fpsname, CMDmode);
-
-    void *pNull = NULL;
     uint64_t FPFLAG;
 
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
@@ -207,8 +205,8 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
     (void) fp_dtus; // suppresses unused parameter compiler warning
 
 
-    FPS_ADDPARAM_STREAM_IN(stream_inname,        ".in_name",     "input stream");
-    FPS_ADDPARAM_STREAM_OUT(stream_outname,       ".out_name",    "output stream");
+    FPS_ADDPARAM_STREAM_IN(stream_inname,   ".in_name",  "input stream", NULL);
+    FPS_ADDPARAM_STREAM_OUT(stream_outname, ".out_name", "output stream");
 
     long timeavemode_default[4] = { 0, 0, 3, 0 };
     FPS_ADDPARAM_INT64_IN(
@@ -225,27 +223,20 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
         &avedt_default);
 
     // status
-    FPS_ADDPARAM_INT64_OUT(zsize,        ".status.zsize",     "cube size");
-    FPS_ADDPARAM_INT64_OUT(framelog,     ".status.framelag",  "lag in frame unit");
-    FPS_ADDPARAM_INT64_OUT(kkin,         ".status.kkin",
-                           "input cube slice index");
-    FPS_ADDPARAM_INT64_OUT(kkout,        ".status.kkout",
-                           "output cube slice index");
+    FPS_ADDPARAM_INT64_OUT(zsize, ".status.zsize",  "cube size");
+    FPS_ADDPARAM_INT64_OUT(framelog, ".status.framelag", "lag in frame unit");
+    FPS_ADDPARAM_INT64_OUT(kkin, ".status.kkin", "input cube slice index");
+    FPS_ADDPARAM_INT64_OUT(kkout, ".status.kkout", "output cube slice index");
 
 
 
 
-
-    // ==============================================
-    // start function parameter conf loop, defined in function_parameter.h
-    FPS_CONFLOOP_START
-    // ==============================================
+	// start function parameter conf loop, defined in function_parameter.h
+    FPS_CONFLOOP_START 
 
 
-    // here goes the logic
-    if(fps.parray[fp_option_timeavemode].val.l[0] !=
-            0)     // time averaging enabled
-    {
+    if(fps.parray[fp_option_timeavemode].val.l[0] != 0)
+    { // time averaging enabled
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_WRITERUN;
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_USED;
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_VISIBLE;
@@ -258,10 +249,8 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
     }
 
 
-    // ==============================================
     // stop function parameter conf loop, defined in function_parameter.h
     FPS_CONFLOOP_END
-    // ==============================================
 
 
     return RETURN_SUCCESS;
