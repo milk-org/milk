@@ -4833,7 +4833,8 @@ int functionparameter_FPSprocess_cmdline(
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
     KEYWORD_TREE_NODE *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT *fps
+    FUNCTION_PARAMETER_STRUCT *fps,
+    uint64_t *taskstatus
 )
 {
     int  fpsindex;
@@ -4896,7 +4897,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
     functionparameter_outlog("CMDRCV", "[%s]", inputcmd);
-
+	*taskstatus |= FPSTASK_STATUS_RECEIVED;
 
     DEBUG_TRACEPOINT(" ");
 
@@ -5801,12 +5802,14 @@ int functionparameter_FPSprocess_cmdline(
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
         functionparameter_outlog("CMDFAIL", "%s", msgstring);
+        *taskstatus |= FPSTASK_STATUS_CMDFAIL;
     }
 
     if(cmdOK == 1)
     {
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "\"%s\"", FPScmdline);
         functionparameter_outlog("CMDOK", "%s", msgstring);
+        *taskstatus |= FPSTASK_STATUS_CMDOK;
     }
 
     if(cmdFOUND == 0)
@@ -5814,13 +5817,14 @@ int functionparameter_FPSprocess_cmdline(
         SNPRINTF_CHECK(msgstring, STRINGMAXLEN_FPS_LOGMSG, "COMMAND NOT FOUND: %s",
                        FPScommand);
         functionparameter_outlog("ERROR", "%s", msgstring);
+        *taskstatus |= FPSTASK_STATUS_CMDNOTFOUND;
     }
 
 
     DEBUG_TRACEPOINT(" ");
 
 
-    return (fpsindex);
+    return fpsindex;
 }
 
 
@@ -5925,13 +5929,13 @@ int functionparameter_read_fpsCMD_fifo(
                 int cmdFOUND = 0;
 
 
-                if((FPScmdline[0] == '#') || (FPScmdline[0] == ' '))       // disregard line
+                if((FPScmdline[0] == '#') || (FPScmdline[0] == ' ') || (total_bytes<2))       // disregard line
                 {
                     cmdFOUND = 1;
                 }
 
                 // set wait on run ON
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "taskcntzero", strlen("taskcntzero")) == 0))
                 {
                     cmdFOUND = 1;
@@ -5940,7 +5944,7 @@ int functionparameter_read_fpsCMD_fifo(
 
                 // Set queue index
                 // entries will now be placed in queue specified by this command
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "setqindex", strlen("setqindex")) == 0))
                 {
                     cmdFOUND = 1;
@@ -5955,7 +5959,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
                 // Set queue priority
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "setqprio", strlen("setqprio")) == 0))
                 {
                     cmdFOUND = 1;
@@ -5974,7 +5978,7 @@ int functionparameter_read_fpsCMD_fifo(
 
 
                 // set wait on run ON
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "waitonrunON", strlen("waitonrunON")) == 0))
                 {
                     cmdFOUND = 1;
@@ -5982,7 +5986,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
                 // set wait on run OFF
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "waitonrunOFF", strlen("waitonrunOFF")) == 0))
                 {
                     cmdFOUND = 1;
@@ -5990,7 +5994,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
                 // set wait on conf ON
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "waitonconfON", strlen("waitonconfON")) == 0))
                 {
                     cmdFOUND = 1;
@@ -5998,7 +6002,7 @@ int functionparameter_read_fpsCMD_fifo(
                 }
 
                 // set wait on conf OFF
-                if((FPScmdline[0] != '#') && (cmdFOUND == 0)
+                if((cmdFOUND == 0)
                         && (strncmp(FPScmdline, "waitonconfOFF", strlen("waitonconfOFF")) == 0))
                 {
                     cmdFOUND = 1;
@@ -6013,7 +6017,6 @@ int functionparameter_read_fpsCMD_fifo(
                 // for all other commands, put in task list
                 if(cmdFOUND == 0)
                 {
-
                     strncpy(fpsctrltasklist[cmdindex].cmdstring, FPScmdline,
                             STRINGMAXLEN_FPS_CMDLINE);
 
@@ -6071,7 +6074,7 @@ int functionparameter_read_fpsCMD_fifo(
  * 
  * Each queue has a priority index.
  *
- * RULES:
+ * RULES :
  * - priorities are associated to queues, not individual tasks: changing a queue priority affects all tasks in the queue
  * - If queue priority = 0, no task is executed in the queue: it is paused
  * - Task order within a queue must be respected. Execution order is submission order (FIFO)
@@ -6079,7 +6082,11 @@ int functionparameter_read_fpsCMD_fifo(
  * - A running task waiting to be completed cannot block tasks in other queues
  * - If two tasks are ready with the same priority, the one in the lower queue will be launched
  *
- * 
+ * CONVENTIONS AND GUIDELINES :
+ * - queue #0 is the main queue
+ * - Keep queue 0 priority at 10
+ * - Do not pause queue 0
+ * - Return to queue 0 when done working in other queues
  */
 
 static int function_parameter_process_fpsCMDarray(
@@ -6228,9 +6235,11 @@ static int function_parameter_process_fpsCMDarray(
         { // execute task
             int cmdindexExec = nexttask_cmdindex;
 
+            uint64_t taskstatus = 0;
+
             fpsctrltasklist[cmdindexExec].fpsindex =
                 functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring,
-                        fpsctrlqueuelist, keywnode, fpsCTRLvar, fps);
+                        fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
             NBtaskLaunched++;
             
             clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
@@ -7749,10 +7758,10 @@ inline static int fpsCTRLscreen_process_user_key(
 
                 while((read = getline(&FPScmdline, &len, fpin)) != -1)
                 {   
-					
+					uint64_t taskstatus = 0;
 					printf("READING CMD: %s\n", FPScmdline);
                     functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode,
-                                                         fpsCTRLvar, fps);
+                                                         fpsCTRLvar, fps, &taskstatus);
                 }				
 				fclose(fpin);
 			}
@@ -7812,9 +7821,10 @@ inline static int fpsCTRLscreen_process_user_key(
 
                 while((read = getline(&FPScmdline, &len, fpinputcmd)) != -1)
                 {
+					uint64_t taskstatus = 0;
                     printf("Processing line : %s\n", FPScmdline);
                     functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode,
-                                                         fpsCTRLvar, fps);
+                                                         fpsCTRLvar, fps, &taskstatus);
                 }
                 fclose(fpinputcmd);
             }
@@ -8189,7 +8199,19 @@ errno_t functionparameter_CTRLscreen(
         {
             printf("\e[1;1H\e[2J");
             //printf("[%12lld  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
+            
+            // update terminal size
+            struct winsize w;
+			ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+			wrow = w.ws_row;
+			wcol = w.ws_col; 
         }
+
+
+
+
+
 
 
 
@@ -8245,15 +8267,14 @@ errno_t functionparameter_CTRLscreen(
             
             printfw("======== FPSCTRL info  ( screen refresh cnt %7ld  scan interval %7ld us)\n", loopcnt, getchardt_us);
             printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d\n",
-                    fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt, NBtaskLaunched, NBtaskLaunchedcnt);    
-
-
-
+                    fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt, NBtaskLaunched, NBtaskLaunchedcnt);
+                    
 
             DEBUG_TRACEPOINT(" ");
             char logfname[STRINGMAXLEN_FULLFILENAME];
             getFPSlogfname(logfname);
             printfw("    OUTPUT LOG       :  %s\n", logfname);
+
 
             DEBUG_TRACEPOINT(" ");
 
@@ -9298,6 +9319,8 @@ errno_t functionparameter_CTRLscreen(
                 
                 //printfw(" ---------------- %d %d ----- \n", sortcnt, wrow); //TEST
 
+				printfw(" showing   %d / %d  tasks\n", wrow-8, sortcnt);
+                
                 for(int sortindex = 0; sortindex < sortcnt; sortindex++)
                 {
 
@@ -9308,13 +9331,8 @@ errno_t functionparameter_CTRLscreen(
 
                     DEBUG_TRACEPOINT("fpscmdindex = %d", fpscmdindex);
 
-                    if(sortindex > wrow - 8) // remove oldest
+                    if(sortindex < wrow-8)     // display
                     {
-                        fpsctrltasklist[fpscmdindex].status &= ~FPSTASK_STATUS_SHOW;
-                    }
-                    else     // display
-                    {
-
                         int attron2 = 0;
                         int attrbold = 0;
 
