@@ -1,0 +1,407 @@
+#!/bin/bash
+
+# Attempt to use undefined variable outputs error message, and forces an exit
+set -o nounset
+
+
+# number of arguments to script
+NBARGS=0
+
+
+QUIET=0
+
+
+# ======================= PROCESS NAME =================================
+pnameFull=`echo "$0" | sed "s/\.\///g"`
+pname=$( basename $pnameFull )
+
+USAGESTRING="$(basename $0) [-hcCe]"
+
+
+
+FPSlistfilename="fpslist.txt"
+
+
+
+# colored strings
+STRING_STAT_MISSING="$(tput setaf 3)$(tput bold)MISSING$(tput sgr0)"
+STRING_STAT_FOUND="$(tput setaf 2)$(tput bold) FOUND $(tput sgr0)"
+
+STRING_INIT_ERROR="$(tput setaf 1)$(tput bold)ERROR$(tput sgr0)"
+STRING_INIT_DONE="$(tput setaf 4)$(tput bold) DONE$(tput sgr0)"
+STRING_INIT_READY="$(tput setaf 2)$(tput bold)READY$(tput sgr0)"
+
+
+function printHELP {
+echo "------------------------------------------------------------------------"
+echo "$(tput bold) $pname : initialize Function Parameter Structures (FPS) $(tput sgr0)"
+echo "source : $0"
+echo "------------------------------------------------------------------------"
+echo ""
+echo "Reads file fpslist.txt"
+echo "For each entry, initialize the FPS :"
+echo "  - Create and initialize FPS"
+echo "  - Create tmux session"
+echo "  - Create functions in tmux sessions"
+echo "Run without argument to print FPSs status" 
+echo ""
+echo ""
+echo " $(tput bold)USAGE:$(tput sgr0)"
+echo "     $USAGESTRING"
+echo ""
+echo " $(tput bold)OPTIONS:$(tput sgr0)"
+echo "     $(tput bold)-h$(tput sgr0)            (h)elp and exit"
+echo "     $(tput bold)-e$(tput sgr0) <exec>     (e)xecutable - default is milk"
+echo "     $(tput bold)-c$(tput sgr0) <index>    (c)reate single FPS"
+echo "     $(tput bold)-C$(tput sgr0)            (c)reate ALL FPSs"
+echo "     $(tput bold)-t$(tput sgr0)            (t)est mode: do not execute tasks"
+echo ""
+echo "------------------------------------------------------------------------"
+}
+
+
+printHELP1 ()
+{
+    printf "%20s       Initialize FPS from fpslist.txt file\n" "$0" 
+}
+
+
+EXITSTATUS=0
+
+
+
+
+function checkFile {
+if [ -f $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
+    EXITSTATUS=1
+fi
+}
+
+function checkTTY {
+if [ -c $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] TTY $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] TTY $(tput bold)$1$(tput sgr0) not found"
+    EXITSTATUS=1
+fi
+}
+
+
+function checkFileCreate {
+if [ -f $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 3)$(tput bold)  INFO  $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found: Creating"
+    touch $1
+fi
+}
+
+function checkFileInfoOptional {
+if [ -f $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 3)$(tput bold)  INFO  $(tput sgr0)] Optional file $(tput bold)$1$(tput sgr0) not found"
+fi
+}
+
+
+function checkDir {
+if [ -d $1 ]
+  then
+    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) found"
+   else
+    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) not found"
+    EXITSTATUS=1
+fi
+}
+
+
+function cmdexists()
+{
+  command -v "$1" >/dev/null 2>&1
+}
+
+
+function checkCommand {
+if cmdexists $1; then
+	if [ ${QUIET} = 0 ]; then
+		echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) found"
+    fi
+    COMMAND_FOUND=1
+else
+	if [ ${QUIET} = 0 ]; then
+		echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) not installed.  Aborting."
+    fi
+    COMMAND_FOUND=0
+    EXITSTATUS=1;
+fi
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ================= OPTIONS =============================
+# Transform long options to short ones
+singlelinehelp=0
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--help") set -- "$@" "-h" ;;
+    "--help1") 
+set -- "$@" "-h" 
+singlelinehelp=1;
+;;
+    *)        set -- "$@" "$arg"
+  esac
+done
+
+
+
+
+
+FPSINDEX="NULL"
+EXECNAME="milk"
+TESTMODE=0
+
+while getopts :hc:Ce:t FLAG; do
+  case $FLAG in
+    h)  #show help
+      if [ "$singlelinehelp" -eq "0" ]; then
+      printHELP
+      else
+      printHELP1
+      fi
+      exit
+      ;;
+    e) # set executable
+    EXECNAME="${OPTARG}"
+    ;;
+    c) # (re-)create single
+    FPSINDEX="${OPTARG}"
+    ;;
+    C) # (re-)create all
+    FPSINDEX="ALL"
+    ;;
+    t)
+    TESTMODE=1
+    ;;
+    \?) #unrecognized option - show help
+      echo -e \\n"Option $OPTARG not allowed."
+      printHELP
+      ;;
+  esac
+done
+shift $((OPTIND-1))  
+
+
+if [ "$#" -ne $NBARGS ]; then
+    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+	echo "Usage :"
+	echo "  $USAGESTRING"
+	echo ""
+    exit
+fi
+
+
+
+
+echo ""
+echo "Checking required commands :"
+checkCommand tmux
+checkCommand ${EXECNAME}
+checkCommand ${EXECNAME}-exec
+
+echo ""
+echo "Checking required files :"
+checkFile ${FPSlistfilename}
+
+
+
+
+echo ""
+
+
+CLINAMEARRAY=( )
+FPSNAMEARRAY=( )
+FPSSTATUSARRAY=( )
+TMUXSTATUSARRAY=( )
+ARGSTRINGARRAY=( )
+
+INITREADYARRAY=( )
+
+# SCAN FILE
+
+while IFS= read -r line
+do
+  nw=$( echo "${line}" | wc -w )
+  if [ "$nw" -gt 1 ] && [[ ${line} != \#* ]]; then
+    declare -a OPTARG
+    stringarr=(${line})
+    nbarg=$(( $nw - 2 ))
+    
+    FPSrootname=${stringarr[0]}
+    CLIname=${stringarr[1]}
+    
+    argstring=""
+    FPSname="${FPSrootname}"
+    for arg in `seq 1 ${nbarg}`; do
+      i=$(( $arg + 1 ))
+      OPTARG[$arg]=${stringarr[$i]}
+      FPSname+="-"${OPTARG[$arg]}
+      argstring="${argstring} ${OPTARG[$arg]}"
+	done
+	
+	CLINAMEARRAY+=( "${CLIname}" )
+	FPSNAMEARRAY+=( "${FPSname}" )
+	ARGSTRINGARRAY+=( "${argstring}" )
+
+    fname="${MILK_SHM_DIR}/${FPSname}.fps.shm"
+    if [ -f ${fname} ]; then
+      FPSSTATUS="FOUND"
+      FPSSTATUSARRAY+=( "FOUND" )
+    else
+      FPSSTATUS="MISSING"
+      FPSSTATUSARRAY+=( "MISSING" )
+    fi
+
+    tmux has-session -t ${FPSname} 2>/dev/null
+    if [ $? = 0 ]; then
+      TMUXSTATUS="FOUND"
+      TMUXSTATUSARRAY+=( "FOUND" )
+    else
+      TMUXSTATUS="MISSING"
+      TMUXSTATUSARRAY+=( "MISSING" )
+    fi
+    
+    
+    INITREADY="error"
+    if [ ${FPSSTATUS} = "MISSING" ] && [ ${TMUXSTATUS} = "MISSING" ]; then
+      INITREADY=( "ready" )
+    fi
+    if [ ${FPSSTATUS} = "FOUND" ] && [ ${TMUXSTATUS} = "FOUND" ]; then
+      INITREADY=( "done" )
+    fi
+    INITREADYARRAY+=( ${INITREADY} )
+    
+    
+  fi
+done < "${FPSlistfilename}"
+
+
+
+
+# PRINT STATUS
+
+printf " #    %-25s    %-30s    %s    %s     %s\n" "FPS name" "CLI command" "FPS" "tmux" "Init"
+for i in "${!FPSNAMEARRAY[@]}"; do  
+
+  if [ "${FPSSTATUSARRAY[$i]}" = "FOUND" ]; then
+    statusstring="${STRING_STAT_FOUND}"
+  else
+    statusstring="${STRING_STAT_MISSING}"
+  fi
+
+  if [ "${TMUXSTATUSARRAY[$i]}" = "FOUND" ]; then
+    tmuxstatusstring="${STRING_STAT_FOUND}"
+  else
+    tmuxstatusstring="${STRING_STAT_MISSING}"
+  fi
+
+  if [ "${INITREADYARRAY[$i]}" = "error" ]; then
+    initreadystring="${STRING_INIT_ERROR}"
+  fi
+  if [ "${INITREADYARRAY[$i]}" = "done" ]; then
+    initreadystring="${STRING_INIT_DONE}"
+  fi
+  if [ "${INITREADYARRAY[$i]}" = "ready" ]; then
+    initreadystring="${STRING_INIT_READY}"
+  fi
+
+  printf "%3d   %-25s    %-30s  %s %s  %s\n"  "$i" "${FPSNAMEARRAY[$i]}" "${CLINAMEARRAY[$i]}" "${statusstring}" "${tmuxstatusstring}" "${initreadystring}"
+done
+
+
+
+
+
+echo ""
+echo "TASKS TO BE PERFORMED :"
+for i in "${!FPSNAMEARRAY[@]}"; do
+  if [ "$i" = "${FPSINDEX}" ] || [ "ALL" = "${FPSINDEX}" ]; then
+  
+    if [ "${INITREADYARRAY[$i]}" = "ready" ]; then
+      printf "  (re-)CREATING %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
+    
+      if [ ${TESTMODE} == 0 ]; then
+        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    
+		printf "    command: %s\n" "${cmdstring}"
+		
+        # initialize FPS
+
+        eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+    	
+	    # Write functions for tmux windows
+	    
+	    setFPStmux=1
+	    if [ ${setFPStmux} = 1 ]; then
+	
+          confstartfunc="
+          function fpsconfstart {
+          echo \"STARTING CONF PROCESS\"
+          MILK_QUIET=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _CONFSTART_ ${ARGSTRINGARRAY[$i]}\" 
+          }"    
+
+          runstartfunc="
+          function fpsrunstart { 
+          echo \"STARTING RUN PROCESS\"
+          MILK_QUIET=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _RUNSTART_ ${ARGSTRINGARRAY[$i]}\" 
+          }"   
+
+          runstopfunc="
+          function fpsrunstop { 
+          echo \"STOPPING RUN PROCESS\"          
+          MILK_QUIET=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _RUNSTOP_ ${ARGSTRINGARRAY[$i]}\" 
+          }"   
+    
+    
+          if [ "${TMUXSTATUSARRAY[$i]}" = "MISSING" ]; then
+            tmux new-session -s ${FPSNAMEARRAY[$i]} -d
+            
+            tmux rename-window -t ${FPSNAMEARRAY[$i]}:0 ctrl
+            tmux send-keys -t ${FPSNAMEARRAY[$i]}:ctrl "${runstopfunc}" C-m
+            
+            tmux new-window -t ${FPSNAMEARRAY[$i]} -n conf
+            tmux send-keys -t ${FPSNAMEARRAY[$i]}:conf "${confstartfunc}" C-m
+            
+            tmux new-window -t ${FPSNAMEARRAY[$i]} -n run
+            tmux send-keys -t ${FPSNAMEARRAY[$i]}:run "${runstartfunc}" C-m
+          fi
+          
+        fi # end of setFPStmux clause
+        
+      fi
+    fi
+  
+  
+  fi
+  
+  
+done
+
+
