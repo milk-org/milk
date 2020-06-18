@@ -315,7 +315,7 @@ fi
 if [ "$LOADfile" = "1" ]; then
 
 
-cacao -n $pname << EOF
+milk -n $pname << EOF
 loadfits "${FITSfname}" im
 readshmim "${STREAMname}"
 cpsh im "${STREAMname}"
