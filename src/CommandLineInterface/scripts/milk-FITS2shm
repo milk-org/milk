@@ -315,7 +315,7 @@ fi
 if [ "$LOADfile" = "1" ]; then
 
 
-./AOloopControl -n $pname << EOF
+cacao -n $pname << EOF
 loadfits "${FITSfname}" im
 readshmim "${STREAMname}"
 cpsh im "${STREAMname}"
