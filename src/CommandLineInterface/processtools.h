@@ -71,6 +71,11 @@ typedef int errno_t;
 #define PROCESSINFO_TRIGGERMODE_DELAY          4
 
 
+// trigger is currently waiting for input
+#define PROCESSINFO_TRIGGERSTATUS_WAITING      1
+
+#define PROCESSINFO_TRIGGERSTATUS_RECEIVED     2
+#define PROCESSINFO_TRIGGERSTATUS_TIMEDOUT     3
 
 
 /**
@@ -139,6 +144,7 @@ typedef struct {
 	//  1  : no missed frame, but semaphore was already posted and at 1 when triggering
 	//  2+ : frame(s) missed
 	uint64_t  triggermissedframe_cumul;      // cumulative missed frames
+	int triggerstatus;   // see TRIGGERSTATUS codes
 
 
 

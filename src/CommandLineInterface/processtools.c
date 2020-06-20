@@ -1093,7 +1093,8 @@ errno_t processinfo_waitoninputstream_init(
 	processinfo->triggerstreaminode = data.image[trigID].md[0].inode;
 	processinfo->triggermissedframe_cumul = 0;
 	processinfo->trigggertimeoutcnt = 0;
-	
+	processinfo->triggerstatus = 0;
+
 	// default
 	processinfo->triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
 	
@@ -1159,6 +1160,7 @@ errno_t processinfo_waitoninputstream(
 	
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE )
     {
+		processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
         // return immediately
         return RETURN_SUCCESS;
     }
@@ -1167,6 +1169,9 @@ errno_t processinfo_waitoninputstream(
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT0 )
     {
         // use cnt0
+        
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
+        
         while(data.image[processinfo->triggerstreamID].md[0].cnt0 == processinfo->triggerstreamcnt)
         {
             // test if new frame exists
@@ -1178,6 +1183,8 @@ errno_t processinfo_waitoninputstream(
         
         processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
         
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
+        
         return RETURN_SUCCESS;
     }
 
@@ -1185,6 +1192,9 @@ errno_t processinfo_waitoninputstream(
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT1 )
     {
         // use cnt1
+        
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
+        
         while(data.image[processinfo->triggerstreamID].md[0].cnt1 == processinfo->triggerstreamcnt)
         {
             // test if new frame exists
@@ -1196,6 +1206,8 @@ errno_t processinfo_waitoninputstream(
         
         processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
         
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
+        
         return RETURN_SUCCESS;
     }
 
@@ -1203,11 +1215,16 @@ errno_t processinfo_waitoninputstream(
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_DELAY )
     {
         // return after fixed delay
+        
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
+        
         nanosleep(&processinfo->triggerdelay, NULL);
         processinfo->triggermissedframe = data.image[processinfo->triggerstreamID].md[0].cnt0 - processinfo->triggerstreamcnt - 1;
         processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
         
         processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
+        
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
         
         return RETURN_SUCCESS;
     }
@@ -1216,6 +1233,9 @@ errno_t processinfo_waitoninputstream(
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE )
     {
         int semr;
+        int tmpstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
+        
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
         // get current time
         struct timespec ts;
@@ -1259,6 +1279,7 @@ errno_t processinfo_waitoninputstream(
 				{
 					// timeout condition
 					processinfo->trigggertimeoutcnt ++;
+					tmpstatus = PROCESSINFO_TRIGGERSTATUS_TIMEDOUT;
 				}
 			}
             
@@ -1273,7 +1294,9 @@ errno_t processinfo_waitoninputstream(
 		}            
             
         processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
-            
+        
+        processinfo->triggerstatus = tmpstatus;
+        
         return RETURN_SUCCESS;        
     }
 
