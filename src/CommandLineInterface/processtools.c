@@ -98,6 +98,18 @@ static int CTRLscreenExitLine = 0; // for debugging
 #define CMDPROC_PROCSTAT 1
 
 
+
+#define PROCCTRL_DISPLAYMODE_HELP      1
+#define PROCCTRL_DISPLAYMODE_CTRL      2
+#define PROCCTRL_DISPLAYMODE_RESOURCES 3
+#define PROCCTRL_DISPLAYMODE_TRIGGER   4
+#define PROCCTRL_DISPLAYMODE_TIMING    5
+#define PROCCTRL_DISPLAYMODE_HTOP      6
+#define PROCCTRL_DISPLAYMODE_IOTOP     7
+#define PROCCTRL_DISPLAYMODE_ATOP      8
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
@@ -361,7 +373,8 @@ errno_t processinfo_loopstart(
 
 int processinfo_loopstep(
     PROCESSINFO *processinfo
-) {
+)
+{
     int loopstatus = 1;
 
 #ifdef PROCESSINFO_ENABLED
@@ -1051,6 +1064,221 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo) {
 #endif
 
     return loopOK;
+}
+
+
+
+
+
+/** @brief Set up input wait stream
+ * 
+ * Specify stream on which the loop process will be triggering, and
+ * what is the trigger mode.
+ * 
+ * The actual trigger mode may be different from the requested trigger mode.
+ * 
+ * The standard option should be tiggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE
+ * and semindex = -1, which will automatically find a suitable semaphore
+ * 
+ */
+errno_t processinfo_waitoninputstream_init(
+	PROCESSINFO *processinfo,
+	imageID      trigID,
+	int          triggermode,
+	int          semindexrequested
+)
+{
+
+	processinfo->triggerstreamID = trigID;
+	processinfo->triggerstreaminode = data.image[trigID].md[0].inode;
+	processinfo->triggermissedframe_cumul = 0;
+	processinfo->trigggertimeoutcnt = 0;
+	
+	// default
+	processinfo->triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+	
+	
+	// valid modes
+	if(triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
+	{
+		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
+	}
+	if(triggermode == PROCESSINFO_TRIGGERMODE_CNT1)
+	{
+		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
+	}
+	if(triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
+	{
+		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
+	}
+	if(triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
+	{
+		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_DELAY;
+	}	
+	
+	
+	
+	// checking if semaphore trigger mode OK
+	if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)
+	{
+		processinfo->triggersem = ImageStreamIO_getsemwaitindex(&data.image[trigID], semindexrequested);		
+		if(processinfo->triggersem == -1) 
+		{
+			// could not find available semaphore
+			// fall back to CNT0 trigger mode
+			processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;			
+		}
+		else
+		{
+			// register PID to stream
+			data.image[trigID].semReadPID[processinfo->triggersem] = getpid();
+		}
+	}
+
+
+
+	// set default timeout to 2 sec
+	processinfo->triggertimeout.tv_sec = 2;
+	processinfo->triggertimeout.tv_nsec = 0;
+
+	return RETURN_SUCCESS;
+}
+	
+	
+
+
+/** @brief Wait on a stream
+ *
+ */
+
+errno_t processinfo_waitoninputstream(
+    PROCESSINFO *processinfo
+)
+{
+	processinfo->triggermissedframe = 0;
+	
+    if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE )
+    {
+        // return immediately
+        return RETURN_SUCCESS;
+    }
+
+
+    if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT0 )
+    {
+        // use cnt0
+        while(data.image[processinfo->triggerstreamID].md[0].cnt0 == processinfo->triggerstreamcnt)
+        {
+            // test if new frame exists
+            usleep(5);
+        }
+        processinfo->triggermissedframe = data.image[processinfo->triggerstreamID].md[0].cnt0 - processinfo->triggerstreamcnt - 1;
+        // update trigger counter
+        processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
+        
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
+        
+        return RETURN_SUCCESS;
+    }
+
+
+    if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT1 )
+    {
+        // use cnt1
+        while(data.image[processinfo->triggerstreamID].md[0].cnt1 == processinfo->triggerstreamcnt)
+        {
+            // test if new frame exists
+            usleep(5);
+        }
+        processinfo->triggermissedframe = data.image[processinfo->triggerstreamID].md[0].cnt1 - processinfo->triggerstreamcnt - 1;
+        // update trigger counter
+        processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt1;
+        
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
+        
+        return RETURN_SUCCESS;
+    }
+
+
+    if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_DELAY )
+    {
+        // return after fixed delay
+        nanosleep(&processinfo->triggerdelay, NULL);
+        processinfo->triggermissedframe = data.image[processinfo->triggerstreamID].md[0].cnt0 - processinfo->triggerstreamcnt - 1;
+        processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
+        
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
+        
+        return RETURN_SUCCESS;
+    }
+
+
+    if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE )
+    {
+        int semr;
+
+        // get current time
+        struct timespec ts;
+        if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+        {
+            perror("clock_gettime");
+            exit(EXIT_FAILURE);
+        }
+
+        // is semaphore at zero ?
+        semr = 0;
+        while ( semr == 0 )
+        {
+            // this should only run once, returning semr = -1 with errno = EAGAIN
+            // otherwise, we're potentially missing frames
+            semr = sem_trywait(data.image[processinfo->triggerstreamID].semptr[processinfo->triggersem]);
+            if ( semr == 0 )
+            {
+                processinfo->triggermissedframe ++;
+            }
+        }
+
+        // expected state: NBmissedframe = 0, semr = -1, errno = EAGAIN
+        // missed frame state: NBmissedframe>0, semr = -1, errno = EAGAIN
+
+        if (processinfo->triggermissedframe == 0)
+        {
+            // add timeout
+            ts.tv_sec += processinfo->triggertimeout.tv_sec;
+            ts.tv_nsec += processinfo->triggertimeout.tv_nsec;
+            while(ts.tv_nsec > 1000000000)
+            {
+                ts.tv_nsec -= 1000000000;
+                ts.tv_sec ++;
+            }
+
+            semr = sem_timedwait(data.image[processinfo->triggerstreamID].semptr[processinfo->triggersem], &ts);
+            if(semr == -1)
+            {
+				if (errno == ETIMEDOUT)
+				{
+					// timeout condition
+					processinfo->trigggertimeoutcnt ++;
+				}
+			}
+            
+            // measure time spent waiting for input
+			// get current time
+			struct timespec ts1;
+			if(clock_gettime(CLOCK_REALTIME, &ts1) == -1)
+			{
+				perror("clock_gettime");
+				exit(EXIT_FAILURE);
+			}
+		}            
+            
+        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
+            
+        return RETURN_SUCCESS;        
+    }
+
+
+	return RETURN_FAILURE;
 }
 
 
@@ -2405,12 +2633,12 @@ void *processinfo_scan(
                     DEBUG_TRACEPOINT(" ");
                     int line = __LINE__;
                     pthread_exit(&line);
-                }
-            } // end of if(pinfop->DisplayMode == 3)
+                } 
+            } // end of if(pinfop->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
 
             pinfop->scandebugline = __LINE__;
 
-        } // end of DisplayMode 3
+        } // end of DisplayMode PROCCTRL_DISPLAYMODE_RESOURCES
 
 
         DEBUG_TRACEPOINT(" ");
@@ -2627,7 +2855,7 @@ errno_t processinfo_CTRLscreen()
     int pstrlen_total_max;
 
     int pstrlen_status  = 10;
-    int pstrlen_pid     =  5;
+    int pstrlen_pid     =  7;
     int pstrlen_pname   = 25;
     int pstrlen_state   =  5;
     // Clevel :  2
@@ -2641,6 +2869,11 @@ errno_t processinfo_CTRLscreen()
     int pstrlen_msg_max = 50;
 
     int pstrlen_cset    = 10;
+    
+    int pstrlen_inode     = 10;
+    int pstrlen_missedfr  = 4;
+    int pstrlen_missedfrc = 12;
+    int pstrlen_tocnt     = 10; 
 
 
     //	int pstrlen_total = 28 + pstrlen_status + pstrlen_pid + pstrlen_pname + pstrlen_state + pstrlen_tmux + pstrlen_loopcnt + pstrlen_descr + pstrlen_msg;
@@ -2721,7 +2954,7 @@ errno_t processinfo_CTRLscreen()
     }
 
     pindexActiveSelected = 0;
-    procinfoproc.DisplayMode = 2; // default upon startup
+    procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL; // default upon startup
     // display modes:
     // 2: overview
     // 3: CPU affinity
@@ -3229,36 +3462,40 @@ errno_t processinfo_CTRLscreen()
         // ============ SCREENS
 
         case 'h': // help
-            procinfoproc.DisplayMode = 1;
+            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_HELP;
             break;
 
         case KEY_F(2): // control
-            procinfoproc.DisplayMode = 2;
+            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
             break;
 
         case KEY_F(3): // resources
-            procinfoproc.DisplayMode = 3;
+            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
             break;
 
-        case KEY_F(4): // timing
-            procinfoproc.DisplayMode = 4;
+        case KEY_F(4): // triggering
+            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
             break;
 
-        case KEY_F(5): // htop
+        case KEY_F(5): // timing
+            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
+            break;
+
+        case KEY_F(6): // htop
             endwin();
             if(system("htop") != 0)
                 PRINT_ERROR("system() returns non-zero value");
             initncurses();
             break;
 
-        case KEY_F(6): // iotop
+        case KEY_F(7): // iotop
             endwin();
             if(system("sudo iotop -o") != 0)
                 PRINT_ERROR("system() returns non-zero value");
             initncurses();
             break;
 
-        case KEY_F(7): // atop
+        case KEY_F(8): // atop
             endwin();            
             if(system("sudo atop") != 0)
                 PRINT_ERROR("system() returns non-zero value");
@@ -3311,7 +3548,7 @@ errno_t processinfo_CTRLscreen()
         {
             erase();
 
-            if(procinfoproc.DisplayMode == 1)
+            if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
             {
                 int attrval = A_BOLD;
 
@@ -3342,20 +3579,24 @@ errno_t processinfo_CTRLscreen()
 
                 printw("    F4");
                 attroff(attrval);
-                printw("   Process timing screen\n");
+                printw("   Process syncing\n");
 
-                attron(attrval);
                 printw("    F5");
                 attroff(attrval);
-                printw("   htop        Type F10 to exit\n");
+                printw("   Process timing screen\n");
 
                 attron(attrval);
                 printw("    F6");
                 attroff(attrval);
-                printw("   iotop       Type q to exit\n");
+                printw("   htop        Type F10 to exit\n");
 
                 attron(attrval);
                 printw("    F7");
+                attroff(attrval);
+                printw("   iotop       Type q to exit\n");
+
+                attron(attrval);
+                printw("    F8");
                 attroff(attrval);
                 printw("   atop        Type q to exit\n");
 
@@ -3535,7 +3776,7 @@ errno_t processinfo_CTRLscreen()
                 printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n", 
                 CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus, procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
 
-                if(procinfoproc.DisplayMode==1)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
                 {
                     attron(A_REVERSE);
                     printw("[h] Help");
@@ -3545,7 +3786,7 @@ errno_t processinfo_CTRLscreen()
                     printw("[h] Help");
                 printw("   ");
 
-                if(procinfoproc.DisplayMode==2)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                 {
                     attron(A_REVERSE);
                     printw("[F2] CTRL");
@@ -3555,7 +3796,7 @@ errno_t processinfo_CTRLscreen()
                     printw("[F2] CTRL");
                 printw("   ");
 
-                if(procinfoproc.DisplayMode==3)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                 {
                     attron(A_REVERSE);
                     printw("[F3] Resources");
@@ -3565,44 +3806,56 @@ errno_t processinfo_CTRLscreen()
                     printw("[F3] Resources");
                 printw("   ");
 
-                if(procinfoproc.DisplayMode==4)
+
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                 {
                     attron(A_REVERSE);
-                    printw("[F4] Timing");
+                    printw("[F4] Triggering");
                     attroff(A_REVERSE);
                 }
                 else
-                    printw("[F4] Timing");
+                    printw("[F4] Triggering");
                 printw("   ");
 
-                if(procinfoproc.DisplayMode==5)
+
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                 {
                     attron(A_REVERSE);
-                    printw("[F5] htop (F10 to exit)");
+                    printw("[F5] Timing");
                     attroff(A_REVERSE);
                 }
                 else
-                    printw("[F5] htop (F10 to exit)");
+                    printw("[F5] Timing");
                 printw("   ");
 
-                if(procinfoproc.DisplayMode==6)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HTOP)
                 {
                     attron(A_REVERSE);
-                    printw("[F6] iotop (q to exit)");
+                    printw("[F6] htop (F10 to exit)");
                     attroff(A_REVERSE);
                 }
                 else
-                    printw("[F6] iotop (q to exit)");
+                    printw("[F6] htop (F10 to exit)");
                 printw("   ");
 
-                if(procinfoproc.DisplayMode==6)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_IOTOP)
                 {
                     attron(A_REVERSE);
-                    printw("[F7] atop (q to exit)");
+                    printw("[F7] iotop (q to exit)");
                     attroff(A_REVERSE);
                 }
                 else
-                    printw("[F7] atop (q to exit)");
+                    printw("[F7] iotop (q to exit)");
+                printw("   ");
+
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_ATOP)
+                {
+                    attron(A_REVERSE);
+                    printw("[F8] atop (q to exit)");
+                    attroff(A_REVERSE);
+                }
+                else
+                    printw("[F8] atop (q to exit)");
                 printw("   ");
 
 
@@ -3672,7 +3925,7 @@ errno_t processinfo_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
-                if(procinfoproc.DisplayMode == 3)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                 {
                     int cpu;
                     DEBUG_TRACEPOINT(" ");
@@ -3810,8 +4063,8 @@ errno_t processinfo_CTRLscreen()
 
 
 
-                // print header for display mode 2
-                if(procinfoproc.DisplayMode == 2)
+                // print header for display mode PROCCTRL_DISPLAYMODE_CTRL
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                 {
                     DEBUG_TRACEPOINT(" ");
                     printw("\n");
@@ -3830,8 +4083,29 @@ errno_t processinfo_CTRLscreen()
                     DEBUG_TRACEPOINT(" ");
                 }
 
-                // print header for display mode 4
-                if(procinfoproc.DisplayMode == 4)
+
+                // print header for display mode PROCCTRL_DISPLAYMODE_TRIGGER
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
+                {
+                    DEBUG_TRACEPOINT(" ");
+                    printw("\n");
+                    printw("\n");
+                    printw(" %*.*s %*.*s %-*.*s %*.*s mode sem %*.*s  %*.*s  %*.*s\n",
+                           pstrlen_status,   pstrlen_status,   "STATUS",
+                           pstrlen_pid,      pstrlen_pid,      "PID",
+                           pstrlen_pname,    pstrlen_pname,    "pname",
+                           pstrlen_inode,    pstrlen_inode,    "inode",
+                           pstrlen_missedfr, pstrlen_missedfr, "miss",
+                           pstrlen_missedfrc, pstrlen_missedfrc, "misscumul",
+                           pstrlen_tocnt,    pstrlen_tocnt,     "timeouts"
+                          );
+                    printw("\n");
+                    DEBUG_TRACEPOINT(" ");
+                }
+
+
+                // print header for display mode PROCCTRL_DISPLAYMODE_TIMING
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                 {
                     DEBUG_TRACEPOINT(" ");
                     printw("\n");
@@ -3940,8 +4214,8 @@ errno_t processinfo_CTRLscreen()
                             attroff(A_BOLD);
 
 
-                            // ================ DISPLAY MODE 2 ==================
-                            if( procinfoproc.DisplayMode == 2)
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_CTRL ==================
+                            if( procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                             {
                                 switch (procinfoproc.pinfoarray[pindex]->loopstat)
                                 {
@@ -4046,8 +4320,8 @@ errno_t processinfo_CTRLscreen()
 
 
 
-                            // ================ DISPLAY MODE 3 ==================
-                            if( procinfoproc.DisplayMode == 3)
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_RESOURCES ==================
+                            if( procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                             {
                                 int cpu;
 
@@ -4287,12 +4561,58 @@ errno_t processinfo_CTRLscreen()
 
 
 
-
-                            // ================ DISPLAY MODE 4 ==================
-                            if( procinfoproc.DisplayMode == 4)
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TRIGGER ==================
+                            if( procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                             {
+								printw("%*d ", pstrlen_inode, procinfoproc.pinfoarray[pindex]->triggerstreaminode);
+								
+								switch (procinfoproc.pinfoarray[pindex]->triggermode) {
+									
+									case PROCESSINFO_TRIGGERMODE_IMMEDIATE :
+									printw(" IMME   ");
+									break;
+									
+									case PROCESSINFO_TRIGGERMODE_CNT0 :
+									printw(" CNT0   ");
+									break;
 
-                                printw(" %d", procinfoproc.pinfoarray[pindex]->MeasureTiming);
+									case PROCESSINFO_TRIGGERMODE_CNT1 :
+									printw(" CNT1   ");
+									break;
+
+									case PROCESSINFO_TRIGGERMODE_SEMAPHORE :
+									printw(" SEMA %2d",
+										procinfoproc.pinfoarray[pindex]->triggersem
+										);
+									
+									break;
+
+									case PROCESSINFO_TRIGGERMODE_DELAY :
+									printw(" DELA   ");
+									break;
+									
+									default :
+									printw(" %04d   ",  procinfoproc.pinfoarray[pindex]->triggermode);							
+								}
+								
+								printw("  %*d ", pstrlen_missedfr, procinfoproc.pinfoarray[pindex]->triggermissedframe);
+								printw("  %*llu ", pstrlen_missedfrc, procinfoproc.pinfoarray[pindex]->triggermissedframe_cumul);
+								printw("  %*llu ", pstrlen_tocnt, procinfoproc.pinfoarray[pindex]->trigggertimeoutcnt);
+							}
+
+
+                            // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TIMING ==================
+                            if( procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
+                            {
+								if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
+								{
+									printw(" ON");
+								}
+								else
+								{
+									printw("OFF");
+								}
+
                                 if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
                                 {
                                     long *dtiter_array;
@@ -4429,7 +4749,7 @@ errno_t processinfo_CTRLscreen()
 
                     }
 
-                    if(procinfoproc.DisplayMode == 2)
+                    if( (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL) || (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER) || (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING))
                     {
                         printw("\n");
                         // end of line
@@ -4439,14 +4759,6 @@ errno_t processinfo_CTRLscreen()
                         pstrlen_total = 0;
                     }
 
-                    if(procinfoproc.DisplayMode == 4) {
-                        printw("\n");
-                        // end of line
-                        if(pstrlen_total > pstrlen_total_max)
-                            pstrlen_total_max = pstrlen_total;
-                        // printw("len = %d %d / %d / %d\n", pstrlen_total, pstrlen_total_max, wcol, pstrlen_msg);
-                        pstrlen_total = 0;
-                    }
 
 
 

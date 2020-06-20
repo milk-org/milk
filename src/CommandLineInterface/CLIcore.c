@@ -1114,7 +1114,6 @@ static errno_t CLI_execute_line()
                     && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
             {
                 // if within quotes, store as string
-                printf("Unprocessed string : ");
                 unsigned int stri;
                 for(stri = 0; stri < strlen(cmdargstring) - 2; stri++)
                 {
