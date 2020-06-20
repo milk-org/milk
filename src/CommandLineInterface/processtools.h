@@ -144,7 +144,7 @@ typedef struct {
 	//  1  : no missed frame, but semaphore was already posted and at 1 when triggering
 	//  2+ : frame(s) missed
 	uint64_t  triggermissedframe_cumul;      // cumulative missed frames
-	int triggerstatus;   // see TRIGGERSTATUS codes
+	int       triggerstatus;   // see TRIGGERSTATUS codes
 
 
 
@@ -388,6 +388,10 @@ errno_t processinfo_waitoninputstream(
     PROCESSINFO *processinfo
 );
 
+errno_t processinfo_update_output_stream(
+    PROCESSINFO *processinfo,
+    imageID outstreamID
+);
 
 
 
