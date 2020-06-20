@@ -7727,6 +7727,29 @@ inline static int fpsCTRLscreen_process_user_key(
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
 			sprintf(fname, "%s/fps.%s.outlog", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->name);
 			fpoutval = fopen(fname, "w");
+			
+			pid_t tid;
+			tid = syscall(SYS_gettid);
+			
+			// Get GMT time
+			char timestring[200];
+			struct timespec tnow;
+			time_t now;
+			
+			clock_gettime(CLOCK_REALTIME, &tnow);
+			now = tnow.tv_sec;
+			struct tm *uttime;
+			uttime = gmtime(&now);
+			
+			sprintf(timestring, "%04d%02d%02dT%02d%02d%02d.%09ld",
+				1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
+				uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+			
+			fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
+			fprintf(fpoutval, "# PID        %d\n", getpid());
+			fprintf(fpoutval, "# TID        %d\n", (int) tid);
+			fprintf(fpoutval, "#\n");
+			
 			for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
 			{
 				if( (keywnode[kwnindex].leaf == 1) && (keywnode[kwnindex].fpsindex==fpsindex) )

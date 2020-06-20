@@ -87,6 +87,12 @@ typedef int errno_t;
 #define PIDnameStringLen 12
 
 
+#define DISPLAY_MODE_HELP   1
+#define DISPLAY_MODE_SEMVAL 2
+#define DISPLAY_MODE_WRITE  3
+#define DISPLAY_MODE_READ   4
+#define DISPLAY_MODE_FUSER  5
+
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -1063,8 +1069,9 @@ errno_t streamCTRL_CTRLscreen()
     // display
     int DispName_NBchar = 36;
     int DispSize_NBchar = 20;
-
-
+	int Dispcnt0_NBchar = 10;
+	int DispPID_NBchar = 8;
+	int Dispfreq_NBchar = 8;
 
     // create PID name table
     char **PIDname_array;
@@ -1126,7 +1133,7 @@ errno_t streamCTRL_CTRLscreen()
 
     int dindexSelected = 0;
 
-    int DisplayMode = 2;
+    int DisplayMode = DISPLAY_MODE_SEMVAL;
 
 
     struct tm *uttime_lastScan;
@@ -1251,23 +1258,23 @@ errno_t streamCTRL_CTRLscreen()
             // ============ SCREENS
 
             case 'h': // help
-                DisplayMode = 1;
+                DisplayMode = DISPLAY_MODE_HELP;
                 break;
 
             case KEY_F(2): // semvals
-                DisplayMode = 2;
+                DisplayMode = DISPLAY_MODE_SEMVAL;
                 break;
 
             case KEY_F(3): // write PIDs
-                DisplayMode = 3;
+                DisplayMode = DISPLAY_MODE_WRITE;
                 break;
 
             case KEY_F(4): // read PIDs
-                DisplayMode = 4;
+                DisplayMode = DISPLAY_MODE_READ;
                 break;
 
-            case KEY_F(5): // read PIDs
-                if((DisplayMode == 5) || (streaminfoproc.fuserUpdate0 == 1))
+            case KEY_F(5): // open files
+                if((DisplayMode == DISPLAY_MODE_FUSER) || (streaminfoproc.fuserUpdate0 == 1))
                 {
                     streaminfoproc.fuserUpdate = 1;
                     time(&rawtime);
@@ -1276,7 +1283,7 @@ errno_t streamCTRL_CTRLscreen()
                     streaminfoproc.sindexscan = 0;
                 }
 
-                DisplayMode = 5;
+                DisplayMode = DISPLAY_MODE_FUSER;
                 //erase();
                 //printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
                 //refresh();
@@ -1427,7 +1434,7 @@ errno_t streamCTRL_CTRLscreen()
 
 
 
-        if(DisplayMode == 1)   // help
+        if(DisplayMode == DISPLAY_MODE_HELP)   // help
         {
             int attrval = A_BOLD;
 
@@ -1538,7 +1545,7 @@ errno_t streamCTRL_CTRLscreen()
         else
         {
             DEBUG_TRACEPOINT(" ");
-            if(DisplayMode == 1)
+            if(DisplayMode == DISPLAY_MODE_HELP)
             {
                 attron(A_REVERSE);
                 printw("[h] Help");
@@ -1550,7 +1557,7 @@ errno_t streamCTRL_CTRLscreen()
             }
             printw("   ");
 
-            if(DisplayMode == 2)
+            if(DisplayMode == DISPLAY_MODE_SEMVAL)
             {
                 attron(A_REVERSE);
                 printw("[F2] sem values");
@@ -1562,7 +1569,7 @@ errno_t streamCTRL_CTRLscreen()
             }
             printw("   ");
 
-            if(DisplayMode == 3)
+            if(DisplayMode == DISPLAY_MODE_WRITE)
             {
                 attron(A_REVERSE);
                 printw("[F3] write PIDs");
@@ -1574,7 +1581,7 @@ errno_t streamCTRL_CTRLscreen()
             }
             printw("   ");
 
-            if(DisplayMode == 4)
+            if(DisplayMode == DISPLAY_MODE_READ)
             {
                 attron(A_REVERSE);
                 printw("[F4] read PIDs");
@@ -1586,7 +1593,7 @@ errno_t streamCTRL_CTRLscreen()
             }
             printw("   ");
 
-            if(DisplayMode == 5)
+            if(DisplayMode == DISPLAY_MODE_FUSER)
             {
                 attron(A_REVERSE);
                 printw("[F5] processes access");
@@ -1616,7 +1623,7 @@ errno_t streamCTRL_CTRLscreen()
                        NBsindex);
                 attroff(COLOR_PAIR(9));
             }
-            if(DisplayMode == 5)
+            if(DisplayMode == DISPLAY_MODE_FUSER)
             {
                 if(fuserScan == 1)
                 {
@@ -1655,7 +1662,48 @@ errno_t streamCTRL_CTRLscreen()
                 attroff(COLOR_PAIR(9));
             }
 
-            printw("\n\n");
+            printw("\n");
+            
+            
+            
+            attron(A_BOLD);            
+ 
+			printw("%8s  %-*s  %-*s  %*s   %*s %*s %*s %8s", 
+				"inode",
+				DispName_NBchar, "name", 
+				DispSize_NBchar, "type", 
+				Dispcnt0_NBchar, "cnt0", 
+				DispPID_NBchar, "creaPID",
+				DispPID_NBchar, "ownPID",
+				Dispfreq_NBchar, "   frequ ",
+				"#sem"
+				);
+            
+            switch (DisplayMode) {
+				case DISPLAY_MODE_SEMVAL:
+				printw(" Semaphore values ....\n");
+				break;
+				
+				case DISPLAY_MODE_WRITE:
+				printw(" write PIDs ....\n");
+				break;
+
+				case DISPLAY_MODE_READ:
+				printw(" read PIDs ....\n");
+				break;
+			
+				case DISPLAY_MODE_FUSER:
+				printw(" connected processes\n");
+				break;			
+			
+				default:
+				printw("\n");
+				break;
+			}
+            
+
+ 
+			attroff(A_BOLD);
 
 
 
@@ -1820,6 +1868,10 @@ errno_t streamCTRL_CTRLscreen()
 
                 if(DisplayFlag == 1)
                 {
+					// file inode
+					printw("%8d  ", (int) streamCTRLimages[ID].md[0].inode);
+					
+					
                     if(streaminfo[sindex].SymLink == 1)
                     {
                         char namestring[stringmaxlen];
@@ -1995,7 +2047,7 @@ errno_t streamCTRL_CTRLscreen()
                     else
                     {
 
-                        charcnt = sprintf(string, " %10ld ", streamCTRLimages[ID].md[0].cnt0);
+                        charcnt = sprintf(string, " %*ld ", Dispcnt0_NBchar, streamCTRLimages[ID].md[0].cnt0);
                     }
                     linecharcnt += charcnt;
                     if(linecharcnt < wcol)
@@ -2027,7 +2079,7 @@ errno_t streamCTRL_CTRLscreen()
                         cpid = streamCTRLimages[ID].md[0].creatorPID;
                         opid = streamCTRLimages[ID].md[0].ownerPID;
 
-                        charcnt = sprintf(string, "%7d", cpid);
+                        charcnt = sprintf(string, "%*d", DispPID_NBchar, cpid);
                         linecharcnt += charcnt + 1;
                         if(getpgid(cpid) >= 0)   // check if pid active
                         {
@@ -2049,7 +2101,7 @@ errno_t streamCTRL_CTRLscreen()
                             }
                         }
 
-                        charcnt = sprintf(string, "%7d", opid);
+                        charcnt = sprintf(string, "%*d", DispPID_NBchar, opid);
                         linecharcnt += charcnt + 1;
 
                         if(opid == 0)
@@ -2090,7 +2142,7 @@ errno_t streamCTRL_CTRLscreen()
                     }
                     else
                     {
-                        charcnt = sprintf(string, " %8.2f Hz", streaminfo[sindex].updatevalue);
+                        charcnt = sprintf(string, " %*.2f Hz", Dispfreq_NBchar, streaminfo[sindex].updatevalue);
                     }
                     linecharcnt += charcnt;
                     if(linecharcnt < wcol)

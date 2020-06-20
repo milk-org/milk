@@ -612,25 +612,24 @@ errno_t MyFunction_RUN(
     }
 
 
-
+    // Specify input stream trigger
+    IDin = image_ID("inputstream");
+    processinfo_waitoninputstream_init(processinfo, IDin,
+		PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
 
 	// ===========================
 	// ### Start loop
 	// ===========================
 
+    // Notify processinfo that we are entering loop
+    processinfo_loopstart(processinfo);
     
-    processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
+    
 
     while(loopOK==1)
     {
 	    loopOK = processinfo_loopstep(processinfo);
-     
-     
-        //
-        // Semaphore wait goes here  
-        // computation starts here
-       
-        
+        processinfo_waitoninputstream(processinfo);
         
         processinfo_exec_start(processinfo);    
         if(processinfo_compute_status(processinfo)==1)

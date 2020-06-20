@@ -52,6 +52,27 @@ typedef int errno_t;
 #define STRINGMAXLEN_PROCESSINFO_LOGFILENAME  250
 #define STRINGMAXLEN_PROCESSINFO_DESCRIPTION  200
 
+
+// input stream triggering mode
+
+// trigger immediately
+#define PROCESSINFO_TRIGGERMODE_IMMEDIATE      0
+
+// trigger when cnt0 increments
+#define PROCESSINFO_TRIGGERMODE_CNT0           1
+
+// trigger when cnt1 increments
+#define PROCESSINFO_TRIGGERMODE_CNT1           2
+
+// trigger when semaphore is posted
+#define PROCESSINFO_TRIGGERMODE_SEMAPHORE      3
+
+// trigger after a time delay
+#define PROCESSINFO_TRIGGERMODE_DELAY          4
+
+
+
+
 /**
  *
  * This structure hold process information and hooks required for basic
@@ -97,6 +118,31 @@ typedef struct {
 
     FILE *logFile;
     char  logfilename[STRINGMAXLEN_PROCESSINFO_LOGFILENAME];
+    
+    
+    
+    // OPTIONAL INPUT STREAM SETUP
+    // Used to specify which stream will trigger the computation and track trigger state
+    // Enables use of function processinfo_waitoninputstream()
+    // Enables streamproctrace entry
+    // Must be inialized by processinfo_waitoninputstream_init()
+    int      triggermode;                    // see TRIGGERMODE codes
+    imageID  triggerstreamID;                // -1 if not initialized
+    ino_t    triggerstreaminode;
+    int      triggersem;                     // semaphore index
+    uint64_t triggerstreamcnt;               // previous value of trigger counter, updates on trigger
+	struct timespec triggerdelay;            // for PROCESSINFO_TRIGGERMODE_DELAY
+	struct timespec triggertimeout;          // how long to wait until trigger ?
+	uint64_t trigggertimeoutcnt;
+	int    triggermissedframe;               // have we missed any frame, if yes how many ?
+	//  0  : no missed frame, loop has been waiting for semaphore to be posted
+	//  1  : no missed frame, but semaphore was already posted and at 1 when triggering
+	//  2+ : frame(s) missed
+	uint64_t  triggermissedframe_cumul;      // cumulative missed frames
+
+
+
+
 
     // OPTIONAL TIMING MEASUREMENT
     // Used to measure how long loop process takes to complete task
@@ -108,8 +154,8 @@ typedef struct {
 
     // the last PROCESSINFO_NBtimer times are stored in a circular buffer, from
     // which timing stats are derived
-    int timerindex;       // last written index in circular buffer
-    int timingbuffercnt;  // increments every cycle of the circular buffer
+    int    timerindex;       // last written index in circular buffer
+    int    timingbuffercnt;  // increments every cycle of the circular buffer
     struct timespec texecstart[PROCESSINFO_NBtimer];  // task starts
     struct timespec texecend[PROCESSINFO_NBtimer];    // task ends
 
@@ -125,6 +171,7 @@ typedef struct {
     int dtexec_limit_enable;
     long dtexec_limit_value;
     long dtexec_limit_cnt;
+
 
     char description[STRINGMAXLEN_PROCESSINFO_DESCRIPTION];
 
@@ -323,6 +370,19 @@ int processinfo_exec_end(PROCESSINFO *processinfo);
 
 int processinfo_CatchSignals();
 int processinfo_ProcessSignals(PROCESSINFO *processinfo);
+
+errno_t processinfo_waitoninputstream_init(
+	PROCESSINFO *processinfo,
+	imageID      trigID,
+	int          triggermode,
+	int          semindexrequested
+);
+
+errno_t processinfo_waitoninputstream(
+    PROCESSINFO *processinfo
+);
+
+
 
 
 errno_t processinfo_CTRLscreen();
