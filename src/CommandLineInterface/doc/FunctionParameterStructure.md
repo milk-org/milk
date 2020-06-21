@@ -617,38 +617,43 @@ errno_t MyFunction_RUN(
     processinfo_waitoninputstream_init(processinfo, IDin,
 		PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
 
+    // Identifiers for output streams
+    imageID IDout0 = image_ID("output0");
+    imageID IDout1 = image_ID("output1");
+
 	// ===========================
 	// ### Start loop
 	// ===========================
 
     // Notify processinfo that we are entering loop
     processinfo_loopstart(processinfo);
-    
-    
 
     while(loopOK==1)
     {
 	    loopOK = processinfo_loopstep(processinfo);
         processinfo_waitoninputstream(processinfo);
-        
-        processinfo_exec_start(processinfo);    
+
+        processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo)==1)
         {
             //
 		    // computation ....
 		    //
+
+            data.image[IDout0].md[0].write = 1;
+            data.image[IDout1].md[0].write = 1;
+            // write into output images
+
+            // Post semaphore(s) and counter(s), notify system that outputs have been written
+            processinfo_update_output_stream(processinfo, IDout0);
+            processinfo_update_output_stream(processinfo, IDout1);
         }
-  
-  
-        // Post semaphore(s) and counter(s) 
-        // computation done
-        
+
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
-    
-    
+
         // OPTIONAL: MESSAGE WHILE LOOP RUNNING
-        processinfo_WriteMessage(processinfo, "loop running fine");		
+        processinfo_WriteMessage(processinfo, "loop running fine");
 	}
 
 
@@ -656,9 +661,9 @@ errno_t MyFunction_RUN(
 	// ### ENDING LOOP
 	// ==================================
 
-     processinfo_cleanExit(processinfo);
+    processinfo_cleanExit(processinfo);
 	function_parameter_RUNexit( &fps  );
-    
+
 	return RETURN_SUCCESS;
 }
 ~~~~
