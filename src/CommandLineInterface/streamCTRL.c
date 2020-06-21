@@ -1907,7 +1907,7 @@ errno_t streamCTRL_CTRLscreen()
 
 
 
-                if((DisplayMode < 5) && (DisplayFlag == 1))
+                if((DisplayMode < DISPLAY_MODE_FUSER) && (DisplayFlag == 1))
                 {
                     char str[STRINGMAXLEN_DEFAULT];
                     char str1[STRINGMAXLEN_DEFAULT];
@@ -2156,7 +2156,7 @@ errno_t streamCTRL_CTRLscreen()
 
                 if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                 {
-                    if((DisplayMode == 2) && (DisplayFlag == 1))   // sem vals
+                    if((DisplayMode == DISPLAY_MODE_SEMVAL) && (DisplayFlag == 1))   // sem vals
                     {
 
                         charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
@@ -2184,7 +2184,7 @@ errno_t streamCTRL_CTRLscreen()
                 DEBUG_TRACEPOINT(" ");
                 if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                 {
-                    if((DisplayMode == 3) && (DisplayFlag == 1))   // sem write PIDs
+                    if((DisplayMode == DISPLAY_MODE_WRITE) && (DisplayFlag == 1))   // sem write PIDs
                     {
                         charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
                         linecharcnt += charcnt;
@@ -2231,7 +2231,7 @@ errno_t streamCTRL_CTRLscreen()
 
                 if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                 {
-                    if((DisplayMode == 4) && (DisplayFlag == 1))   // sem read PIDs
+                    if((DisplayMode == DISPLAY_MODE_READ) && (DisplayFlag == 1))   // sem read PIDs
                     {
                         charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
                         linecharcnt += charcnt;
@@ -2274,7 +2274,7 @@ errno_t streamCTRL_CTRLscreen()
                 }
 
 
-                if((DisplayMode == 5)
+                if((DisplayMode == DISPLAY_MODE_FUSER)
                         && (DisplayFlag == 1))   // list processes that are accessing streams
                 {
                     if(streaminfoproc.fuserUpdate == 2)
