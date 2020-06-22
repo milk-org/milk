@@ -131,15 +131,15 @@ typedef struct {
     // Enables use of function processinfo_waitoninputstream()
     // Enables streamproctrace entry
     // Must be inialized by processinfo_waitoninputstream_init()
-    int      triggermode;                    // see TRIGGERMODE codes
-    imageID  triggerstreamID;                // -1 if not initialized
-    ino_t    triggerstreaminode;
-    int      triggersem;                     // semaphore index
-    uint64_t triggerstreamcnt;               // previous value of trigger counter, updates on trigger
+    int       triggermode;                    // see TRIGGERMODE codes
+    imageID   triggerstreamID;                // -1 if not initialized
+    ino_t     triggerstreaminode;
+    int       triggersem;                     // semaphore index
+    uint64_t  triggerstreamcnt;               // previous value of trigger counter, updates on trigger
 	struct timespec triggerdelay;            // for PROCESSINFO_TRIGGERMODE_DELAY
 	struct timespec triggertimeout;          // how long to wait until trigger ?
-	uint64_t trigggertimeoutcnt;
-	int    triggermissedframe;               // have we missed any frame, if yes how many ?
+	uint64_t  trigggertimeoutcnt;
+	int       triggermissedframe;               // have we missed any frame, if yes how many ?
 	//  0  : no missed frame, loop has been waiting for semaphore to be posted
 	//  1  : no missed frame, but semaphore was already posted and at 1 when triggering
 	//  2+ : frame(s) missed

@@ -1340,6 +1340,7 @@ errno_t processinfo_update_output_stream(
     data.image[outstreamID].streamproctrace[0].ts_procstart     = processinfo->texecstart[processinfo->timerindex];
     data.image[outstreamID].streamproctrace[0].ts_streamupdate  = ts;
     data.image[outstreamID].streamproctrace[0].trigsemindex     = processinfo->triggersem;
+    data.image[outstreamID].streamproctrace[0].triggerstatus    = processinfo->triggerstatus;
     data.image[outstreamID].streamproctrace[0].cnt0             = data.image[IDin].md[0].cnt0;
 
 

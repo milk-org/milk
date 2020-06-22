@@ -1235,6 +1235,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
     int Disp_cnt0_NBchar = 12;
     int Disp_PID_NBchar = 8;
     int Disp_type_NBchar = 8;
+    int Disp_trigstat_NBchar = 12;
 
     printw("\n");
     printw("   %*s %*s %*s\n",
@@ -1287,7 +1288,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
 
 
 
-        switch( streamCTRLimages[ID].streamproctrace[spti].triggermode)
+        switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
         case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
             printw(" %*s", Disp_type_NBchar, "IMMEDIATE");
@@ -1314,10 +1315,37 @@ static errno_t streamCTRL_print_SPTRACE_details(
             printw(" %*s", Disp_type_NBchar, "UNKNOWN");
             break;
         }
+        
+        
+        switch (streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
+        {
+			case PROCESSINFO_TRIGGERSTATUS_WAITING:
+			printw(" %*s", Disp_trigstat_NBchar, "WAITING");
+			break;
+			
+			case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
+			printw(" %*s", Disp_trigstat_NBchar, "RECEIVED");
+			break;
+			
+			case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
+			attron(COLOR_PAIR(2));
+			printw(" %*s", Disp_trigstat_NBchar, "TIMEOUT");
+			attroff(COLOR_PAIR(2));
+			break;
+		}
+		
+		// trigger time
+		printw(" at %ld.%09ld s", streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec, streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_nsec);
+		
+		struct timespec tnow;
+		clock_gettime(CLOCK_REALTIME, &tnow);
+		struct timespec tdiff;
+		
+		tdiff = timespec_diff(streamCTRLimages[ID].streamproctrace[spti].ts_procstart, tnow);
+        double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
+		printw("  %12.3f us ago", tdiffv*1.0e6);
 
-        //streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
-        //printw(")> ");
 
         printw("\n");
     }
