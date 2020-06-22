@@ -2610,7 +2610,7 @@ void *processinfo_scan(
 
 
 
-        if(pinfop->DisplayMode == 3) { // only compute of displayed processes
+        if(pinfop->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES) { // only compute of displayed processes
             DEBUG_TRACEPOINT(" ");
             pinfop->scandebugline = __LINE__;
             GetCPUloads(pinfop);
@@ -3151,6 +3151,8 @@ errno_t processinfo_CTRLscreen()
             break;
 
 
+
+
         case KEY_UP:
             pindexActiveSelected --;
             if(pindexActiveSelected<0)
@@ -3170,6 +3172,17 @@ errno_t processinfo_CTRLscreen()
             else
                 pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
             break;
+            
+            
+        case KEY_RIGHT:
+			procinfoproc.DisplayDetailedMode = 1;
+			break;
+		
+		
+		case KEY_LEFT:
+			procinfoproc.DisplayDetailedMode = 0;
+			break;
+
 
         case KEY_PPAGE:
             pindexActiveSelected -= 10;
@@ -4198,6 +4211,9 @@ errno_t processinfo_CTRLscreen()
                 // ===========================================================================
                 pstrlen_total_max = 0;
 				pindexSelectedOK = 0;
+				
+				
+				
                 for(dispindex=0; dispindex < dispindexMax; dispindex++)
                 {
                     if(TimeSorted == 0)

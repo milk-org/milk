@@ -274,7 +274,7 @@ typedef struct
 	PROCESSINFODISP *pinfodisp;
 	
 	int DisplayMode;
-	
+	int DisplayDetailedMode;
 	
     //
     // these arrays are indexed together

@@ -97,7 +97,7 @@ typedef int errno_t;
 #define PRINT_PID_DEFAULT          0
 #define PRINT_PID_FORCE_NOUPSTREAM 1
 
-
+#define NO_DOWNSTREAM_INDEX    100
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -144,6 +144,7 @@ static int initncurses()
     start_color();
 
     //  colored background
+    
     init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
     init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
     init_pair(  3, COLOR_BLACK,  COLOR_YELLOW );  // parameter out of sync
@@ -155,6 +156,7 @@ static int initncurses()
     init_pair(  9, COLOR_BLACK,  COLOR_RED    );
     init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
     init_pair( 12, COLOR_GREEN,  COLOR_WHITE  ); // highlighted version of #2
+    
 
     return 0;
 }
@@ -1027,14 +1029,16 @@ void *streamCTRL_scan(
 
 
 
-int streamCTRL_print_inode(
+static int streamCTRL_print_inode(
     ino_t inode,
     ino_t *upstreaminode,
-    int NBupstreaminode
+    int NBupstreaminode,
+    int downstreamindex
 )
 {
-	int Dispinode_NBchar = 8;
+    int Dispinode_NBchar = 8;
     int is_upstream = 0;
+    int is_downstream = 0;
     int upstreamindex = 0;
 
     for(int i=0; i<NBupstreaminode; i++)
@@ -1046,31 +1050,59 @@ int streamCTRL_print_inode(
         }
     }
 
-    if(is_upstream == 1)
+
+    if (downstreamindex < NO_DOWNSTREAM_INDEX)
     {
-        attron(A_REVERSE);
+        is_downstream = 1;
     }
 
 
-    if(is_upstream)
+    if( is_upstream || is_downstream )
     {
-		char upstreamstring[Dispinode_NBchar+1];
-		sprintf(upstreamstring, "%2d >>", upstreamindex);
-		printw("%*s", Dispinode_NBchar, upstreamstring);
-	}
-	else
-	{
-		printw("%*d", Dispinode_NBchar, (int) inode);
-    }
-    
+        int colorcode = 3;
+        if(upstreamindex > 0)
+        {
+            colorcode = 7;
+        }
 
-    if(is_upstream == 1)
-    {
-        attroff(A_REVERSE);
+        if(is_upstream)
+        {
+            attron(COLOR_PAIR(colorcode));
+            printw("%02d >", upstreamindex);
+            attroff(COLOR_PAIR(colorcode));
+        }
+        else
+        {
+            printw("    ");
+        }
+
+        if(is_downstream)
+        {
+            int colorcode = 3;
+            if(downstreamindex > 0)
+            {
+                colorcode = 7;
+            }
+
+            attron(COLOR_PAIR(colorcode));
+            printw("> %02d", downstreamindex);
+            attroff(COLOR_PAIR(colorcode));
+        }
+        else
+        {
+            printw("    ");
+        }
     }
-    
+    else
+    {
+        printw("%*d", Dispinode_NBchar, (int) inode);
+    }
+
     return Dispinode_NBchar;
 }
+
+
+
 
 
 
@@ -1175,6 +1207,128 @@ static int streamCTRL_print_procpid(
 
 
 
+static errno_t streamCTRL_print_SPTRACE_details(
+    IMAGE *streamCTRLimages,
+    imageID ID,
+    pid_t *upstreamproc,
+    int NBupstreamproc,
+    uint32_t print_pid_mode
+)
+{
+    /*
+       	int             triggermode;
+    	pid_t           procwrite_PID;
+    	ino_t           trigger_inode;
+    	struct timespec ts_procstart;
+    	struct timespec ts_streamupdate;
+    	int             trigsemindex;
+    	uint64_t        cnt0;
+
+    */
+
+    char string[100];
+
+    int Disp_inode_NBchar = 8;
+
+    int Disp_sname_NBchar = 16;
+
+    int Disp_cnt0_NBchar = 12;
+    int Disp_PID_NBchar = 8;
+    int Disp_type_NBchar = 8;
+
+    printw("\n");
+    printw("   %*s %*s %*s\n",
+           Disp_inode_NBchar, "inode",
+           Disp_cnt0_NBchar, "cnt0",
+           Disp_PID_NBchar, "PID",
+           Disp_type_NBchar, "type"
+          );
+
+
+    for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
+    {
+        ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
+        int   sem   = streamCTRLimages[ID].streamproctrace[spti].trigsemindex;
+        pid_t pid   = streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
+
+        uint64_t cnt0 = streamCTRLimages[ID].streamproctrace[spti].cnt0;
+
+        printw("%02d", spti);
+
+        printw(" %*lu", Disp_inode_NBchar, inode);
+
+
+        // look for ID corresponding to inode
+        int IDscan = 0;
+        int IDfound = -1;
+        while ((IDfound == -1) && (IDscan < streamNBID_MAX))
+        {
+            if(streamCTRLimages[IDscan].used == 1)
+            {
+                if(streamCTRLimages[IDscan].md[0].inode == inode)
+                {
+                    IDfound = IDscan;
+                }
+            }
+            IDscan++;
+        }
+        if(IDfound == -1)
+        {
+            printw(" %*s", Disp_sname_NBchar, "???");
+        }
+        else
+        {
+            printw(" %*s", Disp_sname_NBchar, streamCTRLimages[IDfound].name);
+        }
+
+        printw(" %*llu", Disp_cnt0_NBchar, cnt0);
+
+        Disp_PID_NBchar = streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
+
+
+
+        switch( streamCTRLimages[ID].streamproctrace[spti].triggermode)
+        {
+        case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+            printw(" %*s", Disp_type_NBchar, "IMMEDIATE");
+            break;
+
+        case PROCESSINFO_TRIGGERMODE_CNT0:
+            printw(" %*s", Disp_type_NBchar, "CNT0");
+            break;
+
+        case PROCESSINFO_TRIGGERMODE_CNT1:
+            printw(" %*s", Disp_type_NBchar, "CNT1");
+            break;
+
+        case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+            printw(" %*s", Disp_type_NBchar, "SEMAPHORE");
+            printw(" %2d", sem);
+            break;
+
+        case PROCESSINFO_TRIGGERMODE_DELAY:
+            printw(" %*s", Disp_type_NBchar, "DELAY");
+            break;
+
+        default:
+            printw(" %*s", Disp_type_NBchar, "UNKNOWN");
+            break;
+        }
+
+
+        //streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
+        //printw(")> ");
+
+        printw("\n");
+    }
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
 /**
  * ## Purpose
  *
@@ -1221,11 +1375,11 @@ errno_t streamCTRL_CTRLscreen()
     // display
     int DispName_NBchar = 36;
     int DispSize_NBchar = 20;
-	int Dispcnt0_NBchar = 10;
-	int Dispfreq_NBchar = 8;
+    int Dispcnt0_NBchar = 10;
+    int Dispfreq_NBchar = 8;
 
-	int DispPID_NBchar = 8;
-	
+    int DispPID_NBchar = 8;
+
     // create PID name table
     char **PIDname_array;
     int PIDmax;
@@ -1298,18 +1452,18 @@ errno_t streamCTRL_CTRLscreen()
     streaminfoproc.twaitus = 50000; // 20 Hz
     streaminfoproc.fuserUpdate0 = 1; //update on first instance
 
-	// inodes that are upstream of current selection
-	int NBupstreaminodeMAX = 100;
-	ino_t *upstreaminode;
-	int NBupstreaminode = 0;
-	upstreaminode = (ino_t*) malloc(sizeof(ino_t)*NBupstreaminodeMAX);
-	
+    // inodes that are upstream of current selection
+    int NBupstreaminodeMAX = 100;
+    ino_t *upstreaminode;
+    int NBupstreaminode = 0;
+    upstreaminode = (ino_t*) malloc(sizeof(ino_t)*NBupstreaminodeMAX);
 
-	// processes that are upstream of current selection
-	int NBupstreamprocMAX = 100;
-	pid_t *upstreamproc;
-	int NBupstreamproc = 0;
-	upstreamproc = (pid_t*) malloc(sizeof(pid_t)*NBupstreamprocMAX);
+
+    // processes that are upstream of current selection
+    int NBupstreamprocMAX = 100;
+    pid_t *upstreamproc;
+    int NBupstreamproc = 0;
+    upstreamproc = (pid_t*) malloc(sizeof(pid_t)*NBupstreamprocMAX);
 
 
     clear();
@@ -1352,8 +1506,8 @@ errno_t streamCTRL_CTRLscreen()
     loopcnt = 0;
 
 
-
-
+	ino_t inodeselected = 0;
+    int DisplayDetailLevel = 0;
     while(loopOK == 1)
     {
         //int pid;
@@ -1381,199 +1535,208 @@ errno_t streamCTRL_CTRLscreen()
         //int selectedOK = 0; // goes to 1 if at least one process is selected
         switch(ch)
         {
-            case 'x':     // Exit control screen
-                loopOK = 0;
-                break;
+        case 'x':     // Exit control screen
+            loopOK = 0;
+            break;
 
 
-            case KEY_UP:
-                dindexSelected --;
-                if(dindexSelected < 0)
+        case KEY_UP:
+            dindexSelected --;
+            if(dindexSelected < 0)
+            {
+                dindexSelected = 0;
+            }
+            break;
+
+        case KEY_DOWN:
+            dindexSelected ++;
+            if(dindexSelected > NBsindex - 1)
+            {
+                dindexSelected = NBsindex - 1;
+            }
+            break;
+
+        case KEY_PPAGE:
+            dindexSelected -= 10;
+            if(dindexSelected < 0)
+            {
+                dindexSelected = 0;
+            }
+            break;
+
+        case KEY_LEFT:
+            DisplayDetailLevel = 0;
+            break;
+
+        case KEY_RIGHT:
+            DisplayDetailLevel = 1;
+            break;
+
+
+        case KEY_NPAGE:
+            dindexSelected += 10;
+            if(dindexSelected > NBsindex - 1)
+            {
+                dindexSelected = NBsindex - 1;
+            }
+            break;
+
+
+
+        // ============ SCREENS
+
+        case 'h': // help
+            DisplayMode = DISPLAY_MODE_HELP;
+            break;
+
+        case KEY_F(2): // semvals
+            DisplayMode = DISPLAY_MODE_SEMVAL;
+            break;
+
+        case KEY_F(3): // write PIDs
+            DisplayMode = DISPLAY_MODE_WRITE;
+            break;
+
+        case KEY_F(4): // read PIDs
+            DisplayMode = DISPLAY_MODE_READ;
+            break;
+
+        case KEY_F(5): // read PIDs
+            DisplayMode = DISPLAY_MODE_SPTRACE;
+            break;
+
+        case KEY_F(6): // open files
+            if((DisplayMode == DISPLAY_MODE_FUSER) || (streaminfoproc.fuserUpdate0 == 1))
+            {
+                streaminfoproc.fuserUpdate = 1;
+                time(&rawtime);
+                uttime_lastScan = gmtime(&rawtime);
+                fuserScan = 1;
+                streaminfoproc.sindexscan = 0;
+            }
+
+            DisplayMode = DISPLAY_MODE_FUSER;
+            //erase();
+            //printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
+            //refresh();
+            break;
+
+
+
+        // ============ ACTIONS
+
+        case 'R': // remove stream
+            DEBUG_TRACEPOINT(" ");
+            sindex = ssindex[dindexSelected];
+
+            ImageStreamIO_destroyIm(&streamCTRLimages[streaminfo[sindex].ID]);
+
+
+            DEBUG_TRACEPOINT("%d", dindexSelected);
+            break;
+
+
+
+        // ============ SCANNING
+
+        case '{': // slower scan update
+            streaminfoproc.twaitus = (int)(1.2 * streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus > 1000000)
+            {
+                streaminfoproc.twaitus = 1000000;
+            }
+            break;
+
+        case '}': // faster scan update
+            streaminfoproc.twaitus = (int)(0.83333333333333333333 * streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus < 1000)
+            {
+                streaminfoproc.twaitus = 1000;
+            }
+            break;
+
+        case 'o': // output next scan to file
+            streaminfoproc.WriteFlistToFile = 1;
+            break;
+
+        // ============ DISPLAY
+
+        case '-': // slower display update
+            frequ *= 0.5;
+            if(frequ < 1.0)
+            {
+                frequ = 1.0;
+            }
+            if(frequ > 64.0)
+            {
+                frequ = 64.0;
+            }
+            break;
+
+
+        case '+': // faster display update
+            frequ *= 2.0;
+            if(frequ < 1.0)
+            {
+                frequ = 1.0;
+            }
+            if(frequ > 64.0)
+            {
+                frequ = 64.0;
+            }
+            break;
+
+        case '1': // sorting by stream name
+            SORTING = 1;
+            break;
+
+        case '2': // sorting by update freq (default)
+            SORTING = 2;
+            SORT_TOGGLE = 1;
+            break;
+
+        case '3': // sort by number of processes accessing
+            SORTING = 3;
+            SORT_TOGGLE = 1;
+            break;
+
+
+        case 'f': // stream name filter toggle
+            if(streaminfoproc.filter == 0)
+            {
+                streaminfoproc.filter = 1;
+            }
+            else
+            {
+                streaminfoproc.filter = 0;
+            }
+            break;
+
+        case 'F': // set stream name filter string
+            endwin();
+            EXECUTE_SYSTEM_COMMAND("clear");
+            printf("Enter string: ");
+            fflush(stdout);
+            stringindex = 0;
+            while(((c = getchar()) != 13) && (stringindex < STRINGLENMAX - 2))
+            {
+                streaminfoproc.namefilter[stringindex] = c;
+                if(c == 127)   // delete key
                 {
-                    dindexSelected = 0;
-                }
-                break;
-
-            case KEY_DOWN:
-                dindexSelected ++;
-                if(dindexSelected > NBsindex - 1)
-                {
-                    dindexSelected = NBsindex - 1;
-                }
-                break;
-
-            case KEY_PPAGE:
-                dindexSelected -= 10;
-                if(dindexSelected < 0)
-                {
-                    dindexSelected = 0;
-                }
-                break;
-
-            case KEY_NPAGE:
-                dindexSelected += 10;
-                if(dindexSelected > NBsindex - 1)
-                {
-                    dindexSelected = NBsindex - 1;
-                }
-                break;
-
-
-
-            // ============ SCREENS
-
-            case 'h': // help
-                DisplayMode = DISPLAY_MODE_HELP;
-                break;
-
-            case KEY_F(2): // semvals
-                DisplayMode = DISPLAY_MODE_SEMVAL;
-                break;
-
-            case KEY_F(3): // write PIDs
-                DisplayMode = DISPLAY_MODE_WRITE;
-                break;
-
-            case KEY_F(4): // read PIDs
-                DisplayMode = DISPLAY_MODE_READ;
-                break;
-
-            case KEY_F(5): // read PIDs
-                DisplayMode = DISPLAY_MODE_SPTRACE;
-                break;
-
-            case KEY_F(6): // open files
-                if((DisplayMode == DISPLAY_MODE_FUSER) || (streaminfoproc.fuserUpdate0 == 1))
-                {
-                    streaminfoproc.fuserUpdate = 1;
-                    time(&rawtime);
-                    uttime_lastScan = gmtime(&rawtime);
-                    fuserScan = 1;
-                    streaminfoproc.sindexscan = 0;
-                }
-
-                DisplayMode = DISPLAY_MODE_FUSER;
-                //erase();
-                //printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
-                //refresh();
-                break;
-
-
-
-            // ============ ACTIONS
-
-            case 'R': // remove stream
-                DEBUG_TRACEPOINT(" ");
-                sindex = ssindex[dindexSelected];
-
-                ImageStreamIO_destroyIm(&streamCTRLimages[streaminfo[sindex].ID]);
-
-
-                DEBUG_TRACEPOINT("%d", dindexSelected);
-                break;
-
-
-
-            // ============ SCANNING
-
-            case '{': // slower scan update
-                streaminfoproc.twaitus = (int)(1.2 * streaminfoproc.twaitus);
-                if(streaminfoproc.twaitus > 1000000)
-                {
-                    streaminfoproc.twaitus = 1000000;
-                }
-                break;
-
-            case '}': // faster scan update
-                streaminfoproc.twaitus = (int)(0.83333333333333333333 * streaminfoproc.twaitus);
-                if(streaminfoproc.twaitus < 1000)
-                {
-                    streaminfoproc.twaitus = 1000;
-                }
-                break;
-
-            case 'o': // output next scan to file
-                streaminfoproc.WriteFlistToFile = 1;
-                break;
-
-            // ============ DISPLAY
-
-            case '-': // slower display update
-                frequ *= 0.5;
-                if(frequ < 1.0)
-                {
-                    frequ = 1.0;
-                }
-                if(frequ > 64.0)
-                {
-                    frequ = 64.0;
-                }
-                break;
-
-
-            case '+': // faster display update
-                frequ *= 2.0;
-                if(frequ < 1.0)
-                {
-                    frequ = 1.0;
-                }
-                if(frequ > 64.0)
-                {
-                    frequ = 64.0;
-                }
-                break;
-
-            case '1': // sorting by stream name
-                SORTING = 1;
-                break;
-
-            case '2': // sorting by update freq (default)
-                SORTING = 2;
-                SORT_TOGGLE = 1;
-                break;
-
-            case '3': // sort by number of processes accessing
-                SORTING = 3;
-                SORT_TOGGLE = 1;
-                break;
-
-
-            case 'f': // stream name filter toggle
-                if(streaminfoproc.filter == 0)
-                {
-                    streaminfoproc.filter = 1;
+                    putchar(0x8);
+                    putchar(' ');
+                    putchar(0x8);
+                    stringindex --;
                 }
                 else
                 {
-                    streaminfoproc.filter = 0;
+                    putchar(c);  // echo on screen
+                    stringindex++;
                 }
-                break;
-
-            case 'F': // set stream name filter string
-                endwin();
-                EXECUTE_SYSTEM_COMMAND("clear");
-                printf("Enter string: ");
-                fflush(stdout);
-                stringindex = 0;
-                while(((c = getchar()) != 13) && (stringindex < STRINGLENMAX - 2))
-                {
-                    streaminfoproc.namefilter[stringindex] = c;
-                    if(c == 127)   // delete key
-                    {
-                        putchar(0x8);
-                        putchar(' ');
-                        putchar(0x8);
-                        stringindex --;
-                    }
-                    else
-                    {
-                        putchar(c);  // echo on screen
-                        stringindex++;
-                    }
-                }
-                streaminfoproc.namefilter[stringindex] = '\0';
-                initncurses();
-                break;
+            }
+            streaminfoproc.namefilter[stringindex] = '\0';
+            initncurses();
+            break;
 
 
 
@@ -1838,8 +2001,8 @@ errno_t streamCTRL_CTRLscreen()
                 lastindex = 0;
             }
 
-            printw("%4d streams    Currently displaying %4d-%4d   Selected %d ", NBsindex,
-                   doffsetindex, lastindex, dindexSelected);
+            printw("%4d streams    Currently displaying %4d-%4d   Selected %d  ID = %d  inode = %d", NBsindex,
+                   doffsetindex, lastindex, dindexSelected, ssindex[dindexSelected], (int) inodeselected);
 
             if(streaminfoproc.filter == 1)
             {
@@ -1849,51 +2012,51 @@ errno_t streamCTRL_CTRLscreen()
             }
 
             printw("\n");
-            
-            
-            
-            attron(A_BOLD);            
- 
-			printw("%8s  %-*s  %-*s  %*s   %*s %*s %*s %8s", 
-				"inode",
-				DispName_NBchar, "name", 
-				DispSize_NBchar, "type", 
-				Dispcnt0_NBchar, "cnt0", 
-				DispPID_NBchar,  "creaPID",
-				DispPID_NBchar,  "ownPID",
-				Dispfreq_NBchar, "   frequ ",
-				"#sem"
-				);
-            
+
+
+
+            attron(A_BOLD);
+
+            printw("%8s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
+                   "inode",
+                   DispName_NBchar, "name",
+                   DispSize_NBchar, "type",
+                   Dispcnt0_NBchar, "cnt0",
+                   DispPID_NBchar,  "creaPID",
+                   DispPID_NBchar,  "ownPID",
+                   Dispfreq_NBchar, "   frequ ",
+                   "#sem"
+                  );
+
             switch (DisplayMode) {
-				case DISPLAY_MODE_SEMVAL:
-				printw("     Semaphore values ....\n");
-				break;
-				
-				case DISPLAY_MODE_WRITE:
-				printw("     write PIDs ....\n");
-				break;
+            case DISPLAY_MODE_SEMVAL:
+                printw("     Semaphore values ....\n");
+                break;
 
-				case DISPLAY_MODE_READ:
-				printw("     read PIDs ....\n");
-				break;
+            case DISPLAY_MODE_WRITE:
+                printw("     write PIDs ....\n");
+                break;
 
-				case DISPLAY_MODE_SPTRACE:
-				printw("     stream process traces:   \"(INODE TYPE/SEM PID)>\"\n");
-				break;
-			
-				case DISPLAY_MODE_FUSER:
-				printw("     connected processes\n");
-				break;			
-			
-				default:
-				printw("\n");
-				break;
-			}
-            
+            case DISPLAY_MODE_READ:
+                printw("     read PIDs ....\n");
+                break;
 
- 
-			attroff(A_BOLD);
+            case DISPLAY_MODE_SPTRACE:
+                printw("     stream process traces:   \"(INODE TYPE/SEM PID)>\"\n");
+                break;
+
+            case DISPLAY_MODE_FUSER:
+                printw("     connected processes\n");
+                break;
+
+            default:
+                printw("\n");
+                break;
+            }
+
+
+
+            attroff(A_BOLD);
 
 
 
@@ -2018,17 +2181,25 @@ errno_t streamCTRL_CTRLscreen()
             }
 
 
+
+
+
             // DISPLAY
 
             int DisplayFlag = 0;
 
-			int print_pid_mode = PRINT_PID_DEFAULT;
+            int print_pid_mode = PRINT_PID_DEFAULT;
             for(dindex = 0; dindex < NBsindex; dindex++)
             {
                 long ID;
                 sindex = ssindex[dindex];
                 ID = streaminfo[sindex].ID;
-
+	
+				int downstreammin = NO_DOWNSTREAM_INDEX; // minumum downstream index
+				// looks for inodeselected in the list of upstream inodes
+				// picks the smallest corresponding index
+				// for example, if equal to 3, the current inode is a 3-rd gen children of selected inode
+				// default initial value 100 is a placeholder indicating it is not a child
 
                 if((dindex > doffsetindex - 1) && (dindex < NBsinfodisp - 1 + doffsetindex))
                 {
@@ -2039,51 +2210,74 @@ errno_t streamCTRL_CTRLscreen()
                     DisplayFlag = 0;
                 }
 
+				if( DisplayDetailLevel == 1 )
+				{
+					if ( dindex == dindexSelected )
+					{
+						DisplayFlag = 1;
+					}
+					else
+					{
+						DisplayFlag = 0;
+					}
+				}
 
 
-                        if(dindex == dindexSelected)
-                        { 
-							
-							// identify upstream inodes
-							
-							// reset upstream inodes
-							NBupstreaminode = 0;
-							for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
-							{
-								if(NBupstreaminode < NBupstreaminodeMAX)
+
+                if(dindex == dindexSelected)
+                {
+					// currently selected inode
+					inodeselected = streamCTRLimages[streaminfo[sindex].ID].md[0].inode;
+					
+                    // identify upstream inodes
+                    NBupstreaminode = 0;
+                    for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
+                    {
+                        if(NBupstreaminode < NBupstreaminodeMAX)
+                        {
+                            ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
+                            if( inode != 0 )
+                            {
+                                upstreaminode[NBupstreaminode] = inode;
+                                NBupstreaminode ++;
+                            }
+                        }
+                    }
+
+                    // identify upstream processes
+                    print_pid_mode = PRINT_PID_FORCE_NOUPSTREAM;                    
+                    NBupstreamproc = 0;
+                    for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
+                    {
+                        if(NBupstreamproc < NBupstreamprocMAX)
+                        {
+                            ino_t procpid = streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
+                            if( procpid > 0 )
+                            {
+                                upstreamproc[NBupstreamproc] = procpid;
+                                NBupstreamproc ++;
+                            }
+                        }
+                    }                   
+                    
+                }
+                else
+                {
+                    print_pid_mode = PRINT_PID_DEFAULT;
+                                       
+                    for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
+                      {
+                            ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
+                            if(inode == inodeselected)
+                            {
+								if(spti < downstreammin)
 								{
-									ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
-									if( inode != 0 )
-									{
-										upstreaminode[NBupstreaminode] = inode;
-										NBupstreaminode ++;
-									}
-								}
-							}
-							
-							// identify upstream processes
-							
-							print_pid_mode = PRINT_PID_FORCE_NOUPSTREAM;
-							
-							// reset upstream processes
-							NBupstreamproc = 0;
-							for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
-							{
-								if(NBupstreamproc < NBupstreamprocMAX)
-								{
-									ino_t procpid = streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
-									if( procpid > 0 )
-									{
-										upstreamproc[NBupstreamproc] = procpid;
-										NBupstreamproc ++;
-									}
+									downstreammin = spti;
 								}
 							}
 						}
-						else
-						{
-							print_pid_mode = PRINT_PID_DEFAULT;
-						}
+                    
+                }
 
 
 
@@ -2094,17 +2288,17 @@ errno_t streamCTRL_CTRLscreen()
                 int charcnt = 0;        // how many chars are about to be printed
                 int linecharcnt = 0;    // keeping track of number of characters in line
 
-				
-				if(DisplayFlag == 1)
-				{
-					// print file inode
-					linecharcnt += 1+streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode, upstreaminode, NBupstreaminode);
-					printw(" ");
-				}
-				
+
+                if(DisplayFlag == 1)
+                {
+                    // print file inode
+                    linecharcnt += 1+streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode, upstreaminode, NBupstreaminode, downstreammin);
+                    printw(" ");
+                }
+
 
                 charcnt = DispName_NBchar + 1;
-                if(dindex == dindexSelected)
+                if((dindex == dindexSelected) && ( DisplayDetailLevel == 0 ))
                 {
                     attron(A_REVERSE);
                 }
@@ -2112,7 +2306,7 @@ errno_t streamCTRL_CTRLscreen()
 
 
                 if(DisplayFlag == 1)
-                {					
+                {
                     if(streaminfo[sindex].SymLink == 1)
                     {
                         char namestring[stringmaxlen];
@@ -2320,11 +2514,11 @@ errno_t streamCTRL_CTRLscreen()
                         cpid = streamCTRLimages[ID].md[0].creatorPID;
                         opid = streamCTRLimages[ID].md[0].ownerPID;
 
-						linecharcnt += streamCTRL_print_procpid(cpid, upstreamproc, NBupstreamproc, print_pid_mode);
-						printw(" ");
-						linecharcnt += streamCTRL_print_procpid(opid, upstreamproc, NBupstreamproc, print_pid_mode);
-						printw(" ");
-						linecharcnt += 2;                      
+                        linecharcnt += streamCTRL_print_procpid(cpid, upstreamproc, NBupstreamproc, print_pid_mode);
+                        printw(" ");
+                        linecharcnt += streamCTRL_print_procpid(opid, upstreamproc, NBupstreamproc, print_pid_mode);
+                        printw(" ");
+                        linecharcnt += 2;
                     }
 
 
@@ -2394,7 +2588,7 @@ errno_t streamCTRL_CTRLscreen()
                             pid_t pid = streamCTRLimages[ID].semWritePID[s];
                             linecharcnt += 1 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
                             printw(" ");
- 
+
                         }
                     }
                 }
@@ -2428,14 +2622,14 @@ errno_t streamCTRL_CTRLscreen()
                 if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                 {
                     if((DisplayMode == DISPLAY_MODE_SPTRACE) && (DisplayFlag == 1))   // sem read PIDs
-                    {						
+                    {
                         charcnt = sprintf(string, " %2d ", streamCTRLimages[ID].md[0].NBproctrace);
                         linecharcnt += charcnt;
                         if(linecharcnt < wcol)
                         {
                             printw(string);
-                        }                        
-                        
+                        }
+
                         for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
                         {
                             ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
@@ -2443,41 +2637,49 @@ errno_t streamCTRL_CTRLscreen()
                             pid_t pid   = streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
                             
                             
+
+
                             switch( streamCTRLimages[ID].streamproctrace[spti].triggermode)
                             {
-								case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-								charcnt = sprintf(string, "(%7lu IM ", inode);
-								break;
-								
-								case PROCESSINFO_TRIGGERMODE_CNT0:
-								charcnt = sprintf(string, "(%7lu C0 ", inode);
-								break;
-								
-								case PROCESSINFO_TRIGGERMODE_CNT1:
-								charcnt = sprintf(string, "(%7lu C1 ", inode);
-								break;
+                            case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                                charcnt = sprintf(string, "(%7lu IM ", inode);
+                                break;
 
-								case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-								charcnt = sprintf(string, "(%7lu %02d ", inode, sem);
-								break;
+                            case PROCESSINFO_TRIGGERMODE_CNT0:
+                                charcnt = sprintf(string, "(%7lu C0 ", inode);
+                                break;
 
-								case PROCESSINFO_TRIGGERMODE_DELAY:
-								charcnt = sprintf(string, "(%7lu DL ", inode);
-								break;
-								
-								default:
-								charcnt = sprintf(string, "(%7lu ?? ", inode);
-								break;
-							} 
+                            case PROCESSINFO_TRIGGERMODE_CNT1:
+                                charcnt = sprintf(string, "(%7lu C1 ", inode);
+                                break;
+
+                            case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                                charcnt = sprintf(string, "(%7lu %02d ", inode, sem);
+                                break;
+
+                            case PROCESSINFO_TRIGGERMODE_DELAY:
+                                charcnt = sprintf(string, "(%7lu DL ", inode);
+                                break;
+
+                            default:
+                                charcnt = sprintf(string, "(%7lu ?? ", inode);
+                                break;
+                            }
                             linecharcnt += charcnt + 2;
                             if(linecharcnt < wcol)
                             {
-								printw(string);
-							}
-                            
-                            linecharcnt += 2 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                            printw(")>");                            
+                                printw(string);
+                            }
+
+                            linecharcnt += 3 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                            printw(")> ");
                         }
+                    
+						if(DisplayDetailLevel == 1)
+						{
+							printw("\n");
+							streamCTRL_print_SPTRACE_details(streamCTRLimages, ID, upstreamproc, NBupstreamproc, PRINT_PID_DEFAULT);
+						}                    
                     }
                 }
 
@@ -2499,50 +2701,50 @@ errno_t streamCTRL_CTRLscreen()
                     switch(streaminfo[sindex].streamOpenPID_status)
                     {
 
-                        case 1:
-                            streaminfo[sindex].streamOpenPID_cnt1 = 0;
-                            for(pidIndex = 0; pidIndex < streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
+                    case 1:
+                        streaminfo[sindex].streamOpenPID_cnt1 = 0;
+                        for(pidIndex = 0; pidIndex < streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
+                        {
+                            pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
+                            linecharcnt += streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
+
+                            if((getpgid(pid) >= 0) && (pid != getpid()))
                             {
-                                pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
-                                linecharcnt += streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                                
-                                if((getpgid(pid) >= 0) && (pid != getpid()))
+
+                                charcnt = sprintf(string, ":%-*.*s",
+                                                  PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                linecharcnt += charcnt;
+                                if(linecharcnt < wcol)
                                 {
-
-                                    charcnt = sprintf(string, ":%-*.*s",
-                                                      PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
-                                    linecharcnt += charcnt;
-                                    if(linecharcnt < wcol)
-                                    {
-                                        printw(string);
-                                    }
-
-                                    streaminfo[sindex].streamOpenPID_cnt1 ++;
+                                    printw(string);
                                 }
+
+                                streaminfo[sindex].streamOpenPID_cnt1 ++;
                             }
+                        }
 
-                            //const chtype * lstring1 = "This is a test";
-                            //addchstr(lstring1);
+                        //const chtype * lstring1 = "This is a test";
+                        //addchstr(lstring1);
 
-                            break;
+                        break;
 
-                        case 2:
-                            charcnt = sprintf(string, "FAILED");
-                            linecharcnt += charcnt;
-                            if(linecharcnt < wcol)
-                            {
-                                printw(string);
-                            }
-                            break;
+                    case 2:
+                        charcnt = sprintf(string, "FAILED");
+                        linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+                        {
+                            printw(string);
+                        }
+                        break;
 
-                        default:
-                            charcnt = sprintf(string, "NOT SCANNED");
-                            linecharcnt += charcnt;
-                            if(linecharcnt < wcol)
-                            {
-                                printw(string);
-                            }
-                            break;
+                    default:
+                        charcnt = sprintf(string, "NOT SCANNED");
+                        linecharcnt += charcnt;
+                        if(linecharcnt < wcol)
+                        {
+                            printw(string);
+                        }
+                        break;
 
                     }
 
@@ -2631,8 +2833,8 @@ errno_t streamCTRL_CTRLscreen()
 
     free(streamCTRLimages);
     free(streaminfo);
-	free(upstreaminode);
-	free(upstreamproc);
+    free(upstreaminode);
+    free(upstreamproc);
 
 
     fflush(stderr);
