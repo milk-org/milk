@@ -283,7 +283,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     imageID             IDimc;
     imageID             IDin, IDout;
     uint32_t            xsize, ysize, xysize;
-//    long                cnt0old;
+    //    long                cnt0old;
     long                ii;
     struct timespec    *t0array;
     struct timespec     tnow;
@@ -344,9 +344,11 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
                   );
 
     // OPTIONAL SETTINGS
-    processinfo->MeasureTiming = 1; // Measure timing
-    processinfo->RT_priority =
-        20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
+    // Measure timing
+    processinfo->MeasureTiming = 1; 
+    // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
+    processinfo->RT_priority = 20;  
+        
 
 
 
@@ -432,6 +434,20 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
     DEBUG_TRACEPOINT(" ");
 
+
+    // Specify input stream trigger
+
+    processinfo_waitoninputstream_init(processinfo, IDin,
+		PROCESSINFO_TRIGGERMODE_DELAY, -1);
+	processinfo->triggerdelay.tv_sec = 0;
+	processinfo->triggerdelay.tv_nsec = (long) (dtus*1000);
+	while(processinfo->triggerdelay.tv_nsec > 1000000000)
+	{
+		processinfo->triggerdelay.tv_nsec -= 1000000000;
+		processinfo->triggerdelay.tv_sec += 1;
+	}
+
+
     // ===========================
     /// ### START LOOP
     // ===========================
@@ -449,7 +465,9 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
         DEBUG_TRACEPOINT(" ");
         loopOK = processinfo_loopstep(processinfo);
 
-        usleep(dtus); // main loop wait
+        
+        processinfo_waitoninputstream(processinfo);
+        //usleep(dtus); // main loop wait
 
         processinfo_exec_start(processinfo);
 
@@ -475,8 +493,6 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
             {
                 (*kkin) = 0;
             }
-            //              cnt0old = cnt0;
-            //          }
 
 
 
@@ -517,7 +533,6 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
 
             switch(timeavemode)
             {
-
 
                 case 0: // no time averaging - pick more recent frame that matches requirement
                     DEBUG_TRACEPOINT(" ");
@@ -573,10 +588,13 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
                     {
                         data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
                     }
+                    
+                    processinfo_update_output_stream(processinfo, IDout);
+                    /*
                     COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
                     data.image[IDout].md[0].cnt0++;
                     data.image[IDout].md[0].write = 0;
-
+*/
                     break;
             }
             DEBUG_TRACEPOINT(" ");
