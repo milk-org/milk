@@ -957,10 +957,10 @@ long function_parameter_struct_connect(
     int fpsconnectmode
 )
 {
-    int stringmaxlen = 500;
-    char SM_fname[stringmaxlen];
-    int SM_fd; // shared memory file descriptor
-    long NBparamMAX;
+    int   stringmaxlen = 500;
+    char  SM_fname[stringmaxlen];
+    int   SM_fd; // shared memory file descriptor
+    long  NBparamMAX;
     //    long NBparamActive;
     char *mapv;
 
@@ -1093,20 +1093,24 @@ long function_parameter_struct_connect(
 
 
 
-int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT
-        *funcparamstruct)
+int function_parameter_struct_disconnect(
+    FUNCTION_PARAMETER_STRUCT *funcparamstruct
+)
 {
     int NBparamMAX;
 
     NBparamMAX = funcparamstruct->md->NBparamMAX;
     //funcparamstruct->md->NBparam = 0;
     funcparamstruct->parray = NULL;
+    
     munmap(funcparamstruct->md,
            sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER)*NBparamMAX);
+    
     close(funcparamstruct->SMfd);
+    
     funcparamstruct->SMfd = -1;
 
-    return(0);
+    return RETURN_SUCCESS;
 }
 
 
@@ -1117,7 +1121,10 @@ int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT
 //
 // stand-alone function to set parameter value
 //
-int function_parameter_SetValue_int64(char *keywordfull, long val)
+int function_parameter_SetValue_int64(
+    char *keywordfull,
+    long val
+)
 {
     FUNCTION_PARAMETER_STRUCT fps;
     char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
@@ -1148,7 +1155,7 @@ int function_parameter_SetValue_int64(char *keywordfull, long val)
 
     function_parameter_struct_disconnect(&fps);
 
-    return EXIT_SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 
@@ -5893,8 +5900,12 @@ int functionparameter_read_fpsCMD_fifo(
             DEBUG_TRACEPOINT(" ");
 
 
-            if(buf0[0] == '\n')    // reached end of line
+            if(buf0[0] == '\n')    
             {
+				// reached end of line
+				// -> process command
+				//
+				
                 buff[total_bytes - 1] = '\0';
                 FPScmdline = buff;
 
@@ -6024,6 +6035,10 @@ int functionparameter_read_fpsCMD_fifo(
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
                     fpsctrltasklist[cmdindex].queue = queue;
                     clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindex].creationtime);
+                    
+                    // waiting to be processed
+                    fpsctrltasklist[cmdindex].status |= FPSTASK_STATUS_WAITING;
+                    
 
                     if(waitonrun == 1)
                     {
@@ -6246,8 +6261,10 @@ static int function_parameter_process_fpsCMDarray(
             fpsctrltasklist[cmdindexExec].status |= taskstatus;
             
             clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
-            fpsctrltasklist[cmdindexExec].status |=
-                FPSTASK_STATUS_RUNNING; // update status to running
+            
+            // update status to running
+            fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_RUNNING;
+            fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_WAITING; 
         }
     }
 
@@ -9447,6 +9464,9 @@ errno_t functionparameter_CTRLscreen(
                                fpscmdindex
                                );
                         
+                        
+                        
+                        
                         if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
                         {
 							printfw(" R");
@@ -9455,6 +9475,8 @@ errno_t functionparameter_CTRLscreen(
 						{
 							printfw(" -");
 						}
+                        
+                        
                         
                         if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDNOTFOUND)
                         {
@@ -9473,6 +9495,18 @@ errno_t functionparameter_CTRLscreen(
 							screenprint_setcolor(2);
 							printfw(" PROCOK");
 							screenprint_unsetcolor(2);
+						}
+						else if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
+						{
+							screenprint_setcolor(2);
+							printfw(" RECVD ");
+							screenprint_unsetcolor(2);
+						}						
+						else if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_WAITING)
+						{
+							screenprint_setcolor(5);
+							printfw("WAITING");
+							screenprint_unsetcolor(5);
 						}
 						else
 						{

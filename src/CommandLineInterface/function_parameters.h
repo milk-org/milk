@@ -506,18 +506,19 @@ typedef struct
 //
 
 // max number of entries in queues (total among all queues)
-#define NB_FPSCTRL_TASK_MAX 5000
+#define NB_FPSCTRL_TASK_MAX 500000   // TBD: flush old tasks
 
-
+// flags
 #define FPSTASK_STATUS_ACTIVE    0x0000000000000001   // is the task entry in the array used ?
-#define FPSTASK_STATUS_RUNNING   0x0000000000000002
-#define FPSTASK_STATUS_WAITING   0x0000000000000004
-#define FPSTASK_STATUS_SHOW      0x0000000000000008
+#define FPSTASK_STATUS_SHOW      0x0000000000000002
+#define FPSTASK_STATUS_RUNNING   0x0000000000000004
 
-#define FPSTASK_STATUS_RECEIVED    0x0000000000000010
-#define FPSTASK_STATUS_CMDNOTFOUND 0x0000000000000020
-#define FPSTASK_STATUS_CMDFAIL     0x0000000000000040
-#define FPSTASK_STATUS_CMDOK       0x0000000000000080
+// status (cumulative)
+#define FPSTASK_STATUS_WAITING     0x0000000000000010
+#define FPSTASK_STATUS_RECEIVED    0x0000000000000020
+#define FPSTASK_STATUS_CMDNOTFOUND 0x0000000000000040
+#define FPSTASK_STATUS_CMDFAIL     0x0000000000000080
+#define FPSTASK_STATUS_CMDOK       0x0000000000000100
 
 // use WAITONRUN to ensure the queue is blocked until the current run process is done
 #define FPSTASK_FLAG_WAITONRUN  0x0000000000000001
@@ -812,26 +813,33 @@ double *functionparameter_GetParamPtr_FLOAT64(FUNCTION_PARAMETER_STRUCT *fps,
 float functionparameter_GetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
         const char *paramname);
 
-int   functionparameter_SetParamValue_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname, float value);
+int   functionparameter_SetParamValue_FLOAT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname, float value);
 
-float *functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+float *functionparameter_GetParamPtr_FLOAT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname);
 
-char *functionparameter_GetParamPtr_STRING(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+char *functionparameter_GetParamPtr_STRING(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname);
 
-int    functionparameter_SetParamValue_STRING(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname, const char *stringvalue);
+int    functionparameter_SetParamValue_STRING(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname, const char *stringvalue);
 
-int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+int functionparameter_GetParamValue_ONOFF(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname);
 
-int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname, int ONOFFvalue);
+int functionparameter_SetParamValue_ONOFF(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname, int ONOFFvalue);
 
-uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps,
-        const char *paramname);
+uint64_t *functionparameter_GetParamPtr_fpflag(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname);
 
 
 
