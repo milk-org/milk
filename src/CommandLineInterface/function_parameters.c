@@ -6086,7 +6086,7 @@ int functionparameter_read_fpsCMD_fifo(
  *
  * This function is run by functionparameter_CTRLscreen() at regular intervals to probe queues and run pending tasks.
  * If a task is found, it is executed by calling functionparameter_FPSprocess_cmdline()
- * 
+ *
  * Each queue has a priority index.
  *
  * RULES :
@@ -6135,6 +6135,7 @@ static int function_parameter_process_fpsCMDarray(
     // For each queue, lets find which task is ready
     // results are written in array
     // if no task ready in queue, value = QUEUE_NOTASK
+    //
     int queue_nexttask[NB_FPSCTRL_TASKQUEUE_MAX];
 
 
@@ -6208,10 +6209,13 @@ static int function_parameter_process_fpsCMDarray(
 
                     if(task_completed == 1)
                     {
-                        fpsctrltasklist[cmdindexExec].status &=
-                            ~FPSTASK_STATUS_RUNNING; // update status - no longer running
-                        fpsctrltasklist[cmdindexExec].status &=
-                            ~FPSTASK_STATUS_ACTIVE; //no longer active, remove it from list
+                        // update status - no longer running
+                        fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_RUNNING;
+                        fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_COMPLETED;
+
+                        //no longer active, remove it from list
+                        fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_ACTIVE;
+
                         //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
 
                         clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].completiontime);
@@ -6223,6 +6227,52 @@ static int function_parameter_process_fpsCMDarray(
 
 
     }
+
+
+    // Remove old tasks
+    //
+    double *completion_age; // completion time    
+    long    oldest_index = 0;
+    struct  timespec tnow;
+    double  tnowd;
+
+    completion_age = (double*) malloc(sizeof(double)*NB_FPSCTRL_TASK_MAX);
+
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    tnowd = 1.0*tnow.tv_sec + 1.0e-9*tnow.tv_nsec;
+
+    long taskcnt = NB_FPSCTRL_TASK_MAX;
+
+    while( taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE )
+    {
+        taskcnt = 0;
+        double  oldest_age = 0.0;
+        for( int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++ )
+        {
+            // how many tasks are candidates for removal (completed) ?
+            if( fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_COMPLETED )
+            {
+
+                completion_age[taskcnt] = tnowd-(1.0*fpsctrltasklist[cmdindex].completiontime.tv_sec + 1.0e-9*fpsctrltasklist[cmdindex].completiontime.tv_nsec);
+
+                if(completion_age[taskcnt] > oldest_age)
+                {
+                    oldest_age   = completion_age[taskcnt];
+                    oldest_index = cmdindex;
+                }
+                taskcnt ++;
+            }
+        }
+        if(taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE)
+        {
+			fpsctrltasklist[oldest_index].status = 0;
+		}
+    }
+
+    free(completion_age);
+
+
+	
 
 
 

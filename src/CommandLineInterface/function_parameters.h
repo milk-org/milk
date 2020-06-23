@@ -506,12 +506,14 @@ typedef struct
 //
 
 // max number of entries in queues (total among all queues)
-#define NB_FPSCTRL_TASK_MAX 500000   // TBD: flush old tasks
+#define NB_FPSCTRL_TASK_MAX             500    
+#define NB_FPSCTRL_TASK_PURGESIZE        50  
 
 // flags
 #define FPSTASK_STATUS_ACTIVE    0x0000000000000001   // is the task entry in the array used ?
 #define FPSTASK_STATUS_SHOW      0x0000000000000002
 #define FPSTASK_STATUS_RUNNING   0x0000000000000004
+#define FPSTASK_STATUS_COMPLETED 0x0000000000000008
 
 // status (cumulative)
 #define FPSTASK_STATUS_WAITING     0x0000000000000010
