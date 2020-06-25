@@ -1324,13 +1324,19 @@ static errno_t streamCTRL_print_SPTRACE_details(
 			break;
 			
 			case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
+			attron(COLOR_PAIR(2));
 			printw(" %*s", Disp_trigstat_NBchar, "RECEIVED");
+			attroff(COLOR_PAIR(2));
 			break;
 			
 			case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
-			attron(COLOR_PAIR(2));
+			attron(COLOR_PAIR(3));
 			printw(" %*s", Disp_trigstat_NBchar, "TIMEOUT");
-			attroff(COLOR_PAIR(2));
+			attroff(COLOR_PAIR(3));
+			break;
+			
+			default :
+			printw("%*s", Disp_trigstat_NBchar, "unknown");
 			break;
 		}
 		
