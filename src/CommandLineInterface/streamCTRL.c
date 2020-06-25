@@ -1240,6 +1240,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
     printw("\n");
     printw("   %*s %*s %*s\n",
            Disp_inode_NBchar, "inode",
+           Disp_sname_NBchar, "stream",
            Disp_cnt0_NBchar, "cnt0",
            Disp_PID_NBchar, "PID",
            Disp_type_NBchar, "type"
@@ -1283,75 +1284,82 @@ static errno_t streamCTRL_print_SPTRACE_details(
         }
 
         printw(" %*llu", Disp_cnt0_NBchar, cnt0);
+        printw(" ");
 
         Disp_PID_NBchar = streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
 
 
+		printw(" ");
 
         switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
         case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-            printw(" %*s", Disp_type_NBchar, "IMMEDIATE");
+            printw("%*s", Disp_type_NBchar, "IMMED");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT0:
-            printw(" %*s", Disp_type_NBchar, "CNT0");
+            printw("%*s", Disp_type_NBchar, "CNT0");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT1:
-            printw(" %*s", Disp_type_NBchar, "CNT1");
+            printw("%*s", Disp_type_NBchar, "CNT1");
             break;
 
         case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-            printw(" %*s", Disp_type_NBchar, "SEMAPHORE");
+            printw("%*s", Disp_type_NBchar-3, "SEM");
             printw(" %2d", sem);
             break;
 
         case PROCESSINFO_TRIGGERMODE_DELAY:
-            printw(" %*s", Disp_type_NBchar, "DELAY");
+            printw("%*s", Disp_type_NBchar, "DELAY");
             break;
 
         default:
-            printw(" %*s", Disp_type_NBchar, "UNKNOWN");
+            printw("%*s", Disp_type_NBchar, "UNKNOWN");
             break;
         }
-        
-        
+		printw(" ");
+
+        int print_timing = 0;
         switch (streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
         {
-			case PROCESSINFO_TRIGGERSTATUS_WAITING:
-			printw(" %*s", Disp_trigstat_NBchar, "WAITING");
-			break;
-			
-			case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
-			attron(COLOR_PAIR(2));
-			printw(" %*s", Disp_trigstat_NBchar, "RECEIVED");
-			attroff(COLOR_PAIR(2));
-			break;
-			
-			case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
-			attron(COLOR_PAIR(3));
-			printw(" %*s", Disp_trigstat_NBchar, "TIMEOUT");
-			attroff(COLOR_PAIR(3));
-			break;
-			
-			default :
-			printw("%*s", Disp_trigstat_NBchar, "unknown");
-			break;
-		}
-		
-		// trigger time
-		printw(" at %ld.%09ld s", streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec, streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_nsec);
-		
-		struct timespec tnow;
-		clock_gettime(CLOCK_REALTIME, &tnow);
-		struct timespec tdiff;
-		
-		tdiff = timespec_diff(streamCTRLimages[ID].streamproctrace[spti].ts_procstart, tnow);
-        double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+        case PROCESSINFO_TRIGGERSTATUS_WAITING:
+            printw("%*s", Disp_trigstat_NBchar, "WAITING");
+            break;
 
-		printw("  %12.3f us ago", tdiffv*1.0e6);
+        case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
+            attron(COLOR_PAIR(2));
+            printw("%*s", Disp_trigstat_NBchar, "RECEIVED");
+            attroff(COLOR_PAIR(2));
+            print_timing = 1;
+            break;
 
+        case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
+            attron(COLOR_PAIR(3));
+            printw("%*s", Disp_trigstat_NBchar, "TIMEOUT");
+            attroff(COLOR_PAIR(3));
+            print_timing = 1;
+            break;
+
+        default :
+            printw("%*s", Disp_trigstat_NBchar, "unknown");
+            break;
+        }
+
+        // trigger time
+        if(print_timing == 1)
+        {
+            printw(" at %ld.%09ld s", streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec, streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_nsec);
+
+            struct timespec tnow;
+            clock_gettime(CLOCK_REALTIME, &tnow);
+            struct timespec tdiff;
+
+            tdiff = timespec_diff(streamCTRLimages[ID].streamproctrace[spti].ts_procstart, tnow);
+            double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
+            printw("  %12.3f us ago", tdiffv*1.0e6);
+        }
 
         printw("\n");
     }
