@@ -5595,7 +5595,7 @@ int functionparameter_FPSprocess_cmdline(
                 {
                     cmdOK = 1;
                     functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval",
-                                                           "input command file");
+                                                           "InputCommandFile");
                     fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
                 }
                 else
@@ -7215,9 +7215,27 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(
     char  monstring[stringmaxlen];
 
     screenprint_setbold();
+    
+    char screenmodestring[8];
+
+    switch ( screenprintmode )
+    {
+		case SCREENPRINT_NCURSES :
+		sprintf(screenmodestring, "ncurses");
+		break;
+		
+		case SCREENPRINT_STDIO :
+		sprintf(screenmodestring, "stdio");
+		break;
+		
+		default :
+		sprintf(screenmodestring, "undef");
+		break;
+	} 
+    
     if(snprintf(monstring, stringmaxlen,
-                "[%d %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP   PID %d  [%d FPS]",
-                wrow, wcol, (int) getpid(), NBfps) < 0)
+                "[%s %d %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP   PID %d  [%d FPS]",                
+                screenmodestring, wrow, wcol, (int) getpid(), NBfps) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
@@ -8174,7 +8192,7 @@ errno_t functionparameter_CTRLscreen(
 			ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
 			wrow = w.ws_row;
-			wcol = w.ws_col;            
+			wcol = w.ws_col;
         }
 
     }

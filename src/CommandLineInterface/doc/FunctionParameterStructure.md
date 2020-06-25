@@ -549,17 +549,17 @@ The example also shows using FPS to set the process realtime priority.
 errno_t MyFunction_RUN(
 )
 {
-	// ===========================
-	// ### Connect to FPS 
-	// ===========================
+	// ==================================================
+	// ### Connect to FUNCTION PARAMETER STRUCTURE (FPS)
+	// ==================================================
 	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
-	
-	
-	// ===================================	
-	// ### GET FUNCTION PARAMETER VALUES
+
+
+	// ===================================
+	// ### GET VALUES FROM FPS
 	// ===================================
 	// parameters are addressed by their tag name
-	
+
 	// These parameters are read once, before running the loop
 	//
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
@@ -585,15 +585,21 @@ errno_t MyFunction_RUN(
 
     processinfo = processinfo_setup(
         data.FPS_name,	             // re-use fpsname as processinfo name
-        "computes something",    // description
-        "add image1 to image2",  // message on startup
+        "computes something",        // description
+        "add image1 to image2",      // message on startup
         __FUNCTION__, __FILE__, __LINE__
         );
 
 	// OPTIONAL SETTINGS
-    processinfo->MeasureTiming = 1; // Measure timing 
-    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
-    processinfo->loopcntMax = 1000; // max number of iterations. -1 if infinite
+
+    // Measure timing
+    processinfo->MeasureTiming = 1;
+
+    // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
+    processinfo->RT_priority = 20;
+
+    // max number of iterations. -1 if infinite
+    processinfo->loopcntMax = 1000;
 
 
     int loopOK = 1;
