@@ -1036,7 +1036,7 @@ static int streamCTRL_print_inode(
     int downstreamindex
 )
 {
-    int Dispinode_NBchar = 8;
+    int Dispinode_NBchar = 9;
     int is_upstream = 0;
     int is_downstream = 0;
     int upstreamindex = 0;
@@ -1075,6 +1075,8 @@ static int streamCTRL_print_inode(
         {
             printw("    ");
         }
+
+		printw("-");
 
         if(is_downstream)
         {
@@ -1419,7 +1421,6 @@ errno_t streamCTRL_CTRLscreen()
     int DispSize_NBchar = 20;
     int Dispcnt0_NBchar = 10;
     int Dispfreq_NBchar = 8;
-
     int DispPID_NBchar = 8;
 
     // create PID name table
@@ -2059,8 +2060,8 @@ errno_t streamCTRL_CTRLscreen()
 
             attron(A_BOLD);
 
-            printw("%8s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
-                   "inode",
+            printw("%*s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
+                   9, "inode",
                    DispName_NBchar, "name",
                    DispSize_NBchar, "type",
                    Dispcnt0_NBchar, "cnt0",

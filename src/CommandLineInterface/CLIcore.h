@@ -664,7 +664,7 @@ typedef struct
     char           processname0[100];
     int            processnameflag;
     char           fifoname[100];
-    uint_fast16_t  NBcmd;
+    uint32_t       NBcmd;
 
     long           NB_MAX_COMMAND;
     CMD            cmd[1000];
@@ -708,24 +708,35 @@ typedef struct
     // Number of keyword per iamge default
     int            NBKEWORD_DFT;
 
-    // images, variables
+
+    // ======== IMAGES =============
     long           NB_MAX_IMAGE;
 #ifdef DATA_STATIC_ALLOC
-    IMAGE          image[STATIC_NB_MAX_IMAGE]; // image static allocation mode
+	// image static allocation mode
+    IMAGE          image[STATIC_NB_MAX_IMAGE];
 #else
     IMAGE         *image;
 #endif
 	int            MEM_MONITOR; // memory monitor enabled ?
 
+
+
+    // ======== VARIABLES =============
     long           NB_MAX_VARIABLE;
 #ifdef DATA_STATIC_ALLOC
-    VARIABLE
-    variable[STATIC_NB_MAX_VARIABLE]; // variable static allocation mode
+	// variable static allocation mode
+    VARIABLE variable[STATIC_NB_MAX_VARIABLE];
 #else
     VARIABLE      *variable;
 #endif
 
 
+    // ======== FUNCTION PARAMETER STRUCTURES =============
+	long           NB_MAX_FPS;
+	FUNCTION_PARAMETER_STRUCT *fps;
+	
+	
+	
 
     float          FLOATARRAY[1000];	// array to store temporary variables
     double         DOUBLEARRAY[1000];    // for convenience
@@ -756,7 +767,7 @@ errno_t RegisterModule(
     int versionpatch    
 );
 
-uint_fast16_t RegisterCLIcommand(
+uint32_t RegisterCLIcommand(
     const char *restrict CLIkey,
     const char *restrict CLImodulesrc,
     errno_t (*CLIfptr)(),
