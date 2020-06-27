@@ -1103,18 +1103,22 @@ errno_t processinfo_waitoninputstream_init(
 	if(triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
 	{
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
+		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
 	}
 	if(triggermode == PROCESSINFO_TRIGGERMODE_CNT1)
 	{
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
+		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt1;
 	}
 	if(triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
 	{
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
+		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
 	}
 	if(triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
 	{
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_DELAY;
+		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
 	}	
 	
 	
@@ -1212,6 +1216,8 @@ errno_t processinfo_waitoninputstream(
     }
 
 
+
+
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_DELAY )
     {
         // return after fixed delay
@@ -1228,6 +1234,8 @@ errno_t processinfo_waitoninputstream(
         
         return RETURN_SUCCESS;
     }
+
+
 
 
     if ( processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE )

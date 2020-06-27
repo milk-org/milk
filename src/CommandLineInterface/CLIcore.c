@@ -965,7 +965,7 @@ errno_t set_default_precision_double()
 
 
 
-errno_t cfits_usleep_cli()
+errno_t cfits_usleep__cli()
 {
     if(data.cmdargtoken[1].type == 2)
     {
@@ -979,10 +979,13 @@ errno_t cfits_usleep_cli()
 }
 
 
-errno_t functionparameter_CTRLscreen_cli()
+errno_t functionparameter_CTRLscreen__cli()
 {
-    if((CLI_checkarg(1, 2) == 0) && (CLI_checkarg(2, 5) == 0)
-            && (CLI_checkarg(3, 5) == 0))
+    if(
+        (CLI_checkarg(1, CLIARG_LONG) == 0) &&
+        (CLI_checkarg(2, CLIARG_STR ) == 0) &&
+        (CLI_checkarg(3, CLIARG_STR ) == 0)
+    )
     {
         functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl,
                                      data.cmdargtoken[2].val.string, data.cmdargtoken[3].val.string);
@@ -991,18 +994,38 @@ errno_t functionparameter_CTRLscreen_cli()
     else
     {
         printf("Wrong args (%d)\n", data.cmdargtoken[1].type);
+        return RETURN_FAILURE;
     }
     return RETURN_SUCCESS;
 }
 
 
 
-errno_t processinfo_CTRLscreen_cli()
+errno_t function_parameter_structure_load__cli()
+{
+    if(CLI_checkarg(1, CLIARG_STR) == 0)
+    {
+        function_parameter_structure_load(
+            data.cmdargtoken[1].val.string
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
+
+
+errno_t processinfo_CTRLscreen__cli()
 {
     return(processinfo_CTRLscreen());
 }
 
-errno_t streamCTRL_CTRLscreen_cli()
+errno_t streamCTRL_CTRLscreen__cli()
 {
     return(streamCTRL_CTRLscreen());
 }
@@ -1335,7 +1358,7 @@ errno_t RegisterModule(
 
 
 
-uint_fast16_t RegisterCLIcommand(
+uint32_t RegisterCLIcommand(
     const char *restrict CLIkey,
     const char *restrict CLImodulesrc,
     errno_t (*CLIfptr)(),
@@ -1694,23 +1717,31 @@ static errno_t runCLI_prompt(
     char *prompt
 )
 {
+    if(data.quiet == 0) {
 
-    if(strlen(promptstring) > 0)
-    {
-        if(data.processnameflag == 0)
+        if(strlen(promptstring) > 0)
         {
-            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, promptstring, 0x1B, 0);
+            if(data.processnameflag == 0)
+            {
+                sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, promptstring, 0x1B, 0);
+            }
+            else
+            {
+                sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, 36, promptstring,
+                        data.processname, 0x1B, 0);
+            }
         }
         else
         {
-            sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, 36, promptstring,
-                    data.processname, 0x1B, 0);
+            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, data.processname, 0x1B, 0);
         }
     }
     else
     {
-        sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, data.processname, 0x1B, 0);
+		sprintf(prompt," ");
     }
+
+
 
     return RETURN_SUCCESS;
 }
@@ -1861,7 +1892,9 @@ errno_t runCLI(
     fdmax = fileno(stdin);
     if(data.fifoON == 1)
     {
+		if(data.quiet == 0) {
         printf("Creating fifo %s\n", data.fifoname);
+	}
         mkfifo(data.fifoname, 0666);
         fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
         if(fifofd == -1)
@@ -1946,8 +1979,11 @@ errno_t runCLI(
                 EXECUTE_SYSTEM_COMMAND("cat %s", CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null", CLIstartupfilename,
                                        data.fifoname);
+                                       
+                if(data.quiet == 0) { 
                 printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
                 printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
+				}
             }
 		}
         initstartup = 1;
@@ -2242,6 +2278,7 @@ void runCLI_data_init()
      */
     data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
     data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;
+    data.NB_MAX_FPS      = 100;
     data.INVRANDMAX      = 1.0 / RAND_MAX;
 
     // do not remove files when delete command on SHM
@@ -2265,6 +2302,8 @@ void runCLI_data_init()
     //  data.NBcmd = 0;
 
     data.cmdNBarg = 0;
+
+
 
     // Allocate data.image
 
@@ -2333,6 +2372,20 @@ void runCLI_data_init()
 
 
 
+
+
+	// Allocate data.fps
+	data.fps = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
+    // Initialize file descriptors to -1
+    //
+    for(int fpsindex = 0; fpsindex < data.NB_MAX_FPS; fpsindex++)
+    {
+        data.fps[fpsindex].SMfd = -1;
+    }
+
+
+
+
     create_variable_ID("_PI", 3.14159265358979323846264338328);
     create_variable_ID("_e", exp(1));
     create_variable_ID("_gamma", 0.5772156649);
@@ -2348,6 +2401,9 @@ void runCLI_data_init()
     srand(t1.tv_usec * t1.tv_sec);
     //	printf("RAND: %ld\n", t1.tv_usec * t1.tv_sec);
     //  srand(time(NULL));
+
+
+
 
 
 
@@ -2379,36 +2435,34 @@ void runCLI_data_init()
     data.NBcmd++;
 
 
+	 RegisterCLIcommand(
+        "help",
+        __FILE__,
+        help,
+        "show help",
+        "no argument",
+        "help",
+        "int help()");
+
+	 RegisterCLIcommand(
+        "?",
+        __FILE__,
+        help,
+        "show help",
+        "no argument",
+        "?",
+        "int help()");
+
+	 RegisterCLIcommand(
+        "helprl",
+        __FILE__,
+        help,
+        "show readline help",
+        "no argument",
+        "helprl",
+        "int help()");
 
 
-
-    strcpy(data.cmd[data.NBcmd].key, "help");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = help;
-    strcpy(data.cmd[data.NBcmd].info, "print help");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "help");
-    strcpy(data.cmd[data.NBcmd].Ccall, "int help()");
-    data.NBcmd++;
-
-    strcpy(data.cmd[data.NBcmd].key, "?");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = help;
-    strcpy(data.cmd[data.NBcmd].info, "print help");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "help");
-    strcpy(data.cmd[data.NBcmd].Ccall, "int help()");
-    data.NBcmd++;
-
-
-    strcpy(data.cmd[data.NBcmd].key, "helprl");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = helpreadline;
-    strcpy(data.cmd[data.NBcmd].info, "print readline help");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "helprl");
-    strcpy(data.cmd[data.NBcmd].Ccall, "int helpreadline()");
-    data.NBcmd++;
 
     strcpy(data.cmd[data.NBcmd].key, "cmd?");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
@@ -2514,28 +2568,46 @@ void runCLI_data_init()
     data.NBcmd++;
 
 
-
     strcpy(data.cmd[data.NBcmd].key, "procCTRL");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = processinfo_CTRLscreen_cli;
+    data.cmd[data.NBcmd].fp = processinfo_CTRLscreen__cli;
     strcpy(data.cmd[data.NBcmd].info, "processes control screen");
     strcpy(data.cmd[data.NBcmd].syntax, "no arg");
     strcpy(data.cmd[data.NBcmd].example, "procCTRL");
     strcpy(data.cmd[data.NBcmd].Ccall, "processinfo_CTRLscreen()");
     data.NBcmd++;
 
+
+
+	// stream ctrl
+
     strcpy(data.cmd[data.NBcmd].key, "streamCTRL");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen_cli;
+    data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen__cli;
     strcpy(data.cmd[data.NBcmd].info, "stream control screen");
     strcpy(data.cmd[data.NBcmd].syntax, "no arg");
     strcpy(data.cmd[data.NBcmd].example, "streamCTRL");
     strcpy(data.cmd[data.NBcmd].Ccall, "streamCTRL_CTRLscreen()");
     data.NBcmd++;
 
+
+	// FPS
+	printf("Registering command readfps\n");
+	 RegisterCLIcommand(
+        "readfps",
+        __FILE__,
+        function_parameter_structure_load__cli,
+        "Read function parameter struct",
+        "<fpsname>",
+        "readfps imanalyze",
+        "long function_parameter_structure_load(char *fpsname)");
+
+
+
+
     strcpy(data.cmd[data.NBcmd].key, "fparamCTRL");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen_cli;
+    data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen__cli;
     strcpy(data.cmd[data.NBcmd].info, "function parameters control screen");
     strcpy(data.cmd[data.NBcmd].syntax, "function parameter structure name");
     strcpy(data.cmd[data.NBcmd].example, "fparamCTRL fpsname");
@@ -2545,7 +2617,7 @@ void runCLI_data_init()
 
     strcpy(data.cmd[data.NBcmd].key, "usleep");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = cfits_usleep_cli;
+    data.cmd[data.NBcmd].fp = cfits_usleep__cli;
     strcpy(data.cmd[data.NBcmd].info, "usleep");
     strcpy(data.cmd[data.NBcmd].syntax, "<us>");
     strcpy(data.cmd[data.NBcmd].example, "usleep 1000");
@@ -2558,7 +2630,7 @@ void runCLI_data_init()
 
     if(data.quiet == 0)
     {
-        printf("        %ld modules, %ld commands\n", data.NBmodule, data.NBcmd);
+        printf("        Loaded %ld modules, %u commands\n", data.NBmodule, data.NBcmd);
         printf("        \n");
     }
 }
@@ -2572,6 +2644,7 @@ static void runCLI_free()
     // Free
     free(data.image);
     free(data.variable);
+    free(data.fps);
 #endif
     //  free(data.cmd);
     gsl_rng_free(data.rndgen);
@@ -2863,7 +2936,9 @@ static int command_line_process_options(
                 break;
 
             case 'n':
-                printf("process name '%s'\n", optarg);
+				if(data.quiet == 0) {
+					printf("process name '%s'\n", optarg);
+                }
                 strcpy(data.processname, optarg);
                 data.processnameflag = 1; // this process has been named
 
@@ -2897,7 +2972,9 @@ static int command_line_process_options(
                 break;
 
             case 'f':
-                printf("fifo input ON\n");
+				if(data.quiet == 0) {
+					printf("fifo input ON\n");
+				}
                 data.fifoON = 1;
                 break;
 
@@ -2910,7 +2987,9 @@ static int command_line_process_options(
 
             case 's':
                 strcpy(CLIstartupfilename, optarg);
-                printf("Startup file : %s\n", CLIstartupfilename);
+                if(data.quiet == 0) {
+					printf("Startup file : %s\n", CLIstartupfilename);
+				}
                 break;
 
             case '?':

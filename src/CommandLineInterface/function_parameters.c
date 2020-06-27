@@ -1068,7 +1068,22 @@ long function_parameter_struct_connect(
 
 
     fps->md->NBnameindex = NBi;
-    function_parameter_printlist(fps->parray, NBparamMAX);
+
+
+	// count active parameters
+	int pactivecnt = 0;
+	for(int pindex = 0; pindex < NBparamMAX; pindex++)
+    {
+        if(fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
+        {
+			pactivecnt ++;
+		}
+	}
+	fps->NBparamActive = pactivecnt;
+	
+        
+	
+    //function_parameter_printlist(fps->parray, NBparamMAX);
 
 
     if((fpsconnectmode == FPSCONNECT_CONF) || (fpsconnectmode == FPSCONNECT_RUN))
@@ -1112,6 +1127,63 @@ int function_parameter_struct_disconnect(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+
+
+long function_parameter_structure_load(
+	char *fpsname
+)
+{
+	long fpsID;
+	
+	printf("Loading fps %s\n", fpsname);
+	
+	// next fpsID available	
+	fpsID = 0;
+	
+	int foundflag = 0;
+	
+	while ( (foundflag == 0) && (fpsID < data.NB_MAX_FPS))
+	{
+		if ( data.fps[fpsID].SMfd < 0 )
+		{			
+			foundflag = 1;
+		}
+		else
+		{
+			fpsID++;
+		}
+	}
+	
+	if(foundflag == 1)
+	{
+		data.fps[fpsID].NBparam = function_parameter_struct_connect(fpsname, &data.fps[fpsID], FPSCONNECT_SIMPLE);
+		if (data.fps[fpsID].NBparam < 1 )
+		{
+			printf("--- cannot load FPS %s\n", fpsname);
+			fpsID = -1;
+		}
+		else
+		{			
+			printf("--- loaded FPS %s to ID %ld\n", fpsname, fpsID);
+		}
+	}
+	else
+	{
+		fpsID = -1;
+	}
+
+		
+	return fpsID;
+}
+
+
+
+
+
 
 
 
@@ -1306,6 +1378,7 @@ int function_parameter_printlist(
     }
     printf("\n");
     printf("%ld/%ld active parameters\n", pcnt, NBparamMAX);
+    
     printf("\n");
 
     return 0;
@@ -6725,7 +6798,9 @@ errno_t functionparameter_outlog_namelink()
 
 
 
-
+/** @brief scan and load FPSs
+ * 
+ */ 
 
 
 static errno_t functionparameter_scan_fps(
@@ -7174,6 +7249,10 @@ static errno_t functionparameter_scan_fps(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
 
 
 
@@ -7979,7 +8058,7 @@ errno_t functionparameter_CTRLscreen(
 
     FPSCTRL_PROCESS_VARS fpsCTRLvar;
 
-    FUNCTION_PARAMETER_STRUCT *fps;
+    //FUNCTION_PARAMETER_STRUCT *fps;
 
 
     // function parameters
@@ -8044,16 +8123,16 @@ errno_t functionparameter_CTRLscreen(
 
     // Array holding fps structures
     //
-    fps = (FUNCTION_PARAMETER_STRUCT *) malloc(sizeof(FUNCTION_PARAMETER_STRUCT) *
-            NB_FPS_MAX);
+    //fps = (FUNCTION_PARAMETER_STRUCT *) malloc(sizeof(FUNCTION_PARAMETER_STRUCT) *
+    //        NB_FPS_MAX);
 
 
     // Initialize file descriptors to -1
     //
-    for(fpsindex = 0; fpsindex < NB_FPS_MAX; fpsindex++)
-    {
-        fps[fpsindex].SMfd = -1;
-    }
+//    for(fpsindex = 0; fpsindex < NB_FPS_MAX; fpsindex++)
+//    {
+//        data.fps[fpsindex].SMfd = -1;
+//    }
 
     // All parameters held in this array
     //
@@ -8123,7 +8202,7 @@ errno_t functionparameter_CTRLscreen(
     functionparameter_scan_fps(
         fpsCTRLvar.mode,
         fpsCTRLvar.fpsnamemask,
-        fps,
+        data.fps,
         keywnode,
         &fpsCTRLvar.NBkwn,
         &fpsCTRLvar.NBfps,
@@ -8245,7 +8324,7 @@ errno_t functionparameter_CTRLscreen(
 
 			// execute next command in the queue
 			int taskflag = function_parameter_process_fpsCMDarray(fpsctrltasklist, fpsctrlqueuelist,
-                                                   keywnode, &fpsCTRLvar, fps); 
+                                                   keywnode, &fpsCTRLvar, data.fps); 
             
             if(taskflag > 0) // task has been performed
             {
@@ -8330,7 +8409,7 @@ errno_t functionparameter_CTRLscreen(
 
         loopOK = fpsCTRLscreen_process_user_key(
                      ch,
-                     fps,
+                     data.fps,
                      keywnode,
                      fpsctrltasklist,
                      fpsctrlqueuelist,
@@ -8418,7 +8497,7 @@ errno_t functionparameter_CTRLscreen(
                 fpsCTRLvar.fpsindexSelected = keywnode[fpsCTRLvar.nodeSelected].fpsindex;
                 fpsCTRLvar.pindexSelected = keywnode[fpsCTRLvar.nodeSelected].pindex;
                 fpsCTRLscreen_print_nodeinfo(
-                    fps,
+                    data.fps,
                     keywnode,
                     fpsCTRLvar.nodeSelected,
                     fpsCTRLvar.fpsindexSelected,
@@ -8496,7 +8575,7 @@ errno_t functionparameter_CTRLscreen(
 
                 //              if( !(  fps[keywnode[fpsCTRLvar.nodeSelected].fpsindex].parray[keywnode[fpsCTRLvar.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
                 //				if( !(  fps[fpsCTRLvar.fpsindexSelected].parray[fpsCTRLvar.pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
-                if(!(fps[fpsCTRLvar.fpsindexSelected].parray[0].fpflag &
+                if(!(data.fps[fpsCTRLvar.fpsindexSelected].parray[0].fpflag &
                         FPFLAG_VISIBLE))      // if invisible
                 {
                     if(fpsCTRLvar.direction > 0)
@@ -8552,7 +8631,7 @@ errno_t functionparameter_CTRLscreen(
                             {
                                 DEBUG_TRACEPOINT("provide a fps status summary if at root");
                                 fpsindex = keywnode[knodeindex].fpsindex;
-                                fpsCTRLscreen_level0node_summary(fps, fpsindex);
+                                fpsCTRLscreen_level0node_summary(data.fps, fpsindex);
                             }
 
                             // toggle highlight if node is in the chain
@@ -8664,7 +8743,7 @@ errno_t functionparameter_CTRLscreen(
                                     fpsindex = keywnode[knodeindex].fpsindex;
                                     pid_t pid;
 
-                                    pid = fps[fpsindex].md->confpid;
+                                    pid = data.fps[fpsindex].md->confpid;
                                     if((getpgid(pid) >= 0) && (pid > 0))
                                     {
                                         screenprint_setcolor(2);
@@ -8673,7 +8752,7 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                     else     // PID not active
                                     {
-                                        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+                                        if(data.fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
                                         {
                                             // not clean exit
                                             screenprint_setcolor(4);
@@ -8687,26 +8766,26 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    if(fps[fpsindex].md->conferrcnt > 99)
+                                    if(data.fps[fpsindex].md->conferrcnt > 99)
                                     {
                                         screenprint_setcolor(4);
                                         printfw("[XX]");
                                         screenprint_unsetcolor(4);
                                     }
-                                    if(fps[fpsindex].md->conferrcnt > 0)
+                                    if(data.fps[fpsindex].md->conferrcnt > 0)
                                     {
                                         screenprint_setcolor(4);
-                                        printfw("[%02d]", fps[fpsindex].md->conferrcnt);
+                                        printfw("[%02d]", data.fps[fpsindex].md->conferrcnt);
                                         screenprint_unsetcolor(4);
                                     }
-                                    if(fps[fpsindex].md->conferrcnt == 0)
+                                    if(data.fps[fpsindex].md->conferrcnt == 0)
                                     {
                                         screenprint_setcolor(2);
-                                        printfw("[%02d]", fps[fpsindex].md->conferrcnt);
+                                        printfw("[%02d]", data.fps[fpsindex].md->conferrcnt);
                                         screenprint_unsetcolor(2);
                                     }
 
-                                    pid = fps[fpsindex].md->runpid;
+                                    pid = data.fps[fpsindex].md->runpid;
                                     if((getpgid(pid) >= 0) && (pid > 0))
                                     {
                                         screenprint_setcolor(2);
@@ -8715,7 +8794,7 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                     else
                                     {
-                                        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+                                        if(data.fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
                                         {
                                             // not clean exit
                                             screenprint_setcolor(4);
@@ -8774,7 +8853,7 @@ errno_t functionparameter_CTRLscreen(
 
                                 DEBUG_TRACEPOINT(" ");
                                 int isVISIBLE = 1;
-                                if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE))   // if invisible
+                                if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE))   // if invisible
                                 {
                                     isVISIBLE = 0;                              
                                     screenprint_setdim();
@@ -8800,7 +8879,7 @@ errno_t functionparameter_CTRLscreen(
 
                                 if(isVISIBLE == 1)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS)
+                                    if(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS)
                                     {
                                         screenprint_setcolor(10);
                                         screenprint_setblink();
@@ -8830,7 +8909,7 @@ errno_t functionparameter_CTRLscreen(
 									screenprint_setreverse();
 								}
 
-                                printfw(" %-20s", fps[fpsindex].parray[pindex].keyword[level - 1]);
+                                printfw(" %-20s", data.fps[fpsindex].parray[pindex].keyword[level - 1]);
 
                                 if(GUIline == fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel])
                                 {
@@ -8844,7 +8923,7 @@ errno_t functionparameter_CTRLscreen(
 
                                 int paramsync = 1; // parameter is synchronized
 
-                                if(fps[fpsindex].parray[pindex].fpflag &
+                                if(data.fps[fpsindex].parray[pindex].fpflag &
                                         FPFLAG_ERROR)   // parameter setting error
                                 {
                                     if(isVISIBLE == 1)
@@ -8853,20 +8932,20 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                 }
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_UNDEF)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_UNDEF)
                                 {
                                     printfw("  %s", "-undef-");
                                 }
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_INT64)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_INT64)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(fps[fpsindex].parray[pindex].val.l[0] !=
-                                                    fps[fpsindex].parray[pindex].val.l[3])
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(data.fps[fpsindex].parray[pindex].val.l[0] !=
+                                                    data.fps[fpsindex].parray[pindex].val.l[3])
                                             {
                                                 paramsync = 0;
                                             }
@@ -8879,7 +8958,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (int) fps[fpsindex].parray[pindex].val.l[0]);
+                                    printfw("  %10d", (int) data.fps[fpsindex].parray[pindex].val.l[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -8892,21 +8971,21 @@ errno_t functionparameter_CTRLscreen(
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT64)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT64)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
                                         {
                                             double absdiff;
                                             double abssum;
                                             double epsrel = 1.0e-6;
                                             double epsabs = 1.0e-10;
 
-                                            absdiff = fabs(fps[fpsindex].parray[pindex].val.f[0] -
-                                                           fps[fpsindex].parray[pindex].val.f[3]);
-                                            abssum = fabs(fps[fpsindex].parray[pindex].val.f[0]) + fabs(
-                                                         fps[fpsindex].parray[pindex].val.f[3]);
+                                            absdiff = fabs(data.fps[fpsindex].parray[pindex].val.f[0] -
+                                                           data.fps[fpsindex].parray[pindex].val.f[3]);
+                                            abssum = fabs(data.fps[fpsindex].parray[pindex].val.f[0]) + fabs(
+                                                         data.fps[fpsindex].parray[pindex].val.f[3]);
 
 
                                             if((absdiff < epsrel * abssum) || (absdiff < epsabs))
@@ -8927,7 +9006,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10f", (float) fps[fpsindex].parray[pindex].val.f[0]);
+                                    printfw("  %10f", (float) data.fps[fpsindex].parray[pindex].val.f[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -8940,21 +9019,21 @@ errno_t functionparameter_CTRLscreen(
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT32)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_FLOAT32)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
                                         {
                                             double absdiff;
                                             double abssum;
                                             double epsrel = 1.0e-6;
                                             double epsabs = 1.0e-10;
 
-                                            absdiff = fabs(fps[fpsindex].parray[pindex].val.s[0] -
-                                                           fps[fpsindex].parray[pindex].val.s[3]);
-                                            abssum = fabs(fps[fpsindex].parray[pindex].val.s[0]) + fabs(
-                                                         fps[fpsindex].parray[pindex].val.s[3]);
+                                            absdiff = fabs(data.fps[fpsindex].parray[pindex].val.s[0] -
+                                                           data.fps[fpsindex].parray[pindex].val.s[3]);
+                                            abssum = fabs(data.fps[fpsindex].parray[pindex].val.s[0]) + fabs(
+                                                         data.fps[fpsindex].parray[pindex].val.s[3]);
 
 
                                             if((absdiff < epsrel * abssum) || (absdiff < epsabs))
@@ -8975,7 +9054,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10f", (float) fps[fpsindex].parray[pindex].val.s[0]);
+                                    printfw("  %10f", (float) data.fps[fpsindex].parray[pindex].val.s[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -8985,13 +9064,13 @@ errno_t functionparameter_CTRLscreen(
 
 
                                 DEBUG_TRACEPOINT(" ");
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_PID)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_PID)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(fps[fpsindex].parray[pindex].val.pid[0] !=
-                                                    fps[fpsindex].parray[pindex].val.pid[1])
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(data.fps[fpsindex].parray[pindex].val.pid[0] !=
+                                                    data.fps[fpsindex].parray[pindex].val.pid[1])
                                             {
                                                 paramsync = 0;
                                             }
@@ -9004,7 +9083,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (float) fps[fpsindex].parray[pindex].val.pid[0]);
+                                    printfw("  %10d", (float) data.fps[fpsindex].parray[pindex].val.pid[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -9014,25 +9093,25 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (int) fps[fpsindex].parray[pindex].val.pid[0]);
+                                    printfw("  %10d", (int) data.fps[fpsindex].parray[pindex].val.pid[0]);
                                 }
 
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
                                 {
                                     printfw("  %10s", "-timespec-");
                                 }
 
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FILENAME)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_FILENAME)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                      fps[fpsindex].parray[pindex].val.string[1]))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(data.fps[fpsindex].parray[pindex].val.string[0],
+                                                      data.fps[fpsindex].parray[pindex].val.string[1]))
                                             {
                                                 paramsync = 0;
                                             }
@@ -9045,7 +9124,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+                                    printfw("  %10s", data.fps[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -9057,13 +9136,13 @@ errno_t functionparameter_CTRLscreen(
                                 }
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                      fps[fpsindex].parray[pindex].val.string[1]))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(data.fps[fpsindex].parray[pindex].val.string[0],
+                                                      data.fps[fpsindex].parray[pindex].val.string[1]))
                                             {
                                                 paramsync = 0;
                                             }
@@ -9076,7 +9155,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+                                    printfw("  %10s", data.fps[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -9087,13 +9166,13 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                 }
                                 DEBUG_TRACEPOINT(" ");
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                      fps[fpsindex].parray[pindex].val.string[1]))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(data.fps[fpsindex].parray[pindex].val.string[0],
+                                                      data.fps[fpsindex].parray[pindex].val.string[1]))
                                             {
                                                 paramsync = 0;
                                             }
@@ -9106,7 +9185,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+                                    printfw("  %10s", data.fps[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -9117,13 +9196,13 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                 }
                                 DEBUG_TRACEPOINT(" ");
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_DIRNAME)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                      fps[fpsindex].parray[pindex].val.string[1]))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(data.fps[fpsindex].parray[pindex].val.string[0],
+                                                      data.fps[fpsindex].parray[pindex].val.string[1]))
                                             {
                                                 paramsync = 0;
                                             }
@@ -9136,7 +9215,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+                                    printfw("  %10s", data.fps[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -9148,16 +9227,16 @@ errno_t functionparameter_CTRLscreen(
                                 }
 
                                 DEBUG_TRACEPOINT(" ");
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
                                             //  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
                                             //      paramsync = 0;
                                             //  }
 
-                                            if(fps[fpsindex].parray[pindex].info.stream.streamID > -1)
+                                            if(data.fps[fpsindex].parray[pindex].info.stream.streamID > -1)
                                             {
                                                 if(isVISIBLE == 1)
                                                 {
@@ -9166,20 +9245,20 @@ errno_t functionparameter_CTRLscreen(
                                             }
 
                                     printfw("[%d]  %10s",
-                                           fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
-                                           fps[fpsindex].parray[pindex].val.string[0]);
+                                           data.fps[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
+                                           data.fps[fpsindex].parray[pindex].val.string[0]);
 
-                                    if(fps[fpsindex].parray[pindex].info.stream.streamID > -1)
+                                    if(data.fps[fpsindex].parray[pindex].info.stream.streamID > -1)
                                     {
 
-                                        printfw(" [ %d", fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
-                                        if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 1)
+                                        printfw(" [ %d", data.fps[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+                                        if(data.fps[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 1)
                                         {
-                                            printfw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+                                            printfw("x%d", data.fps[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
                                         }
-                                        if(fps[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 2)
+                                        if(data.fps[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 2)
                                         {
-                                            printfw("x%d", fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
+                                            printfw("x%d", data.fps[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
                                         }
 
                                         printfw(" ]");
@@ -9192,13 +9271,13 @@ errno_t functionparameter_CTRLscreen(
                                 }
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_STRING)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_STRING)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                      fps[fpsindex].parray[pindex].val.string[1]))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(data.fps[fpsindex].parray[pindex].val.string[0],
+                                                      data.fps[fpsindex].parray[pindex].val.string[1]))
                                             {
                                                 paramsync = 0;
                                             }
@@ -9211,7 +9290,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", fps[fpsindex].parray[pindex].val.string[0]);
+                                    printfw("  %10s", data.fps[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -9223,32 +9302,32 @@ errno_t functionparameter_CTRLscreen(
                                 }
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)
+                                    if(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)
                                     {
                                         screenprint_setcolor(2);
                                         printfw("  ON ");
                                         screenprint_unsetcolor(2);
-                                        printfw(" [%15s]", fps[fpsindex].parray[pindex].val.string[0]);
+                                        printfw(" [%15s]", data.fps[fpsindex].parray[pindex].val.string[0]);
                                     }
                                     else
                                     {
                                         screenprint_setcolor(1);
                                         printfw(" OFF ");
                                         screenprint_unsetcolor(1);
-                                        printfw(" [%15s]", fps[fpsindex].parray[pindex].val.string[0]);
+                                        printfw(" [%15s]", data.fps[fpsindex].parray[pindex].val.string[0]);
                                     }
                                 }
 
 
-                                if(fps[fpsindex].parray[pindex].type == FPTYPE_FPSNAME)
+                                if(data.fps[fpsindex].parray[pindex].type == FPTYPE_FPSNAME)
                                 {
-                                    if(fps[fpsindex].parray[pindex].fpflag &
+                                    if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(strcmp(fps[fpsindex].parray[pindex].val.string[0],
-                                                      fps[fpsindex].parray[pindex].val.string[1]))
+                                        if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                            if(strcmp(data.fps[fpsindex].parray[pindex].val.string[0],
+                                                      data.fps[fpsindex].parray[pindex].val.string[1]))
                                             {
                                                 paramsync = 0;
                                             }
@@ -9269,10 +9348,10 @@ errno_t functionparameter_CTRLscreen(
                                     }
 
                                     printfw(" %10s [%ld %ld %ld]",
-                                           fps[fpsindex].parray[pindex].val.string[0],
-                                           fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
-                                           fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
-                                           fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
+                                           data.fps[fpsindex].parray[pindex].val.string[0],
+                                           data.fps[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
+                                           data.fps[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
+                                           data.fps[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
                                     if(paramsync == 0)
                                     {
@@ -9293,7 +9372,7 @@ errno_t functionparameter_CTRLscreen(
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(fps[fpsindex].parray[pindex].fpflag &
+                                if(data.fps[fpsindex].parray[pindex].fpflag &
                                         FPFLAG_ERROR)   // parameter setting error
                                 {
                                     if(isVISIBLE == 1)
@@ -9302,7 +9381,7 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                 }
 
-                                printfw("    %s", fps[fpsindex].parray[pindex].description);
+                                printfw("    %s", data.fps[fpsindex].parray[pindex].description);
 
 
 
@@ -9354,12 +9433,12 @@ errno_t functionparameter_CTRLscreen(
 
                 printfw("\n");
 
-                if(fps[fpsCTRLvar.fpsindexSelected].md->status &
+                if(data.fps[fpsCTRLvar.fpsindexSelected].md->status &
                         FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
                 {
                     screenprint_setcolor(2);
                     printfw("[%ld] PARAMETERS OK - RUN function good to go\n",
-                           fps[fpsCTRLvar.fpsindexSelected].md->msgcnt);
+                           data.fps[fpsCTRLvar.fpsindexSelected].md->msgcnt);
                     screenprint_unsetcolor(2);
                 }
                 else
@@ -9368,18 +9447,18 @@ errno_t functionparameter_CTRLscreen(
 
                     screenprint_setcolor(4);
                     printfw("[%ld] %d PARAMETER SETTINGS ERROR(s) :\n",
-                           fps[fpsCTRLvar.fpsindexSelected].md->msgcnt,
-                           fps[fpsCTRLvar.fpsindexSelected].md->conferrcnt);
+                           data.fps[fpsCTRLvar.fpsindexSelected].md->msgcnt,
+                           data.fps[fpsCTRLvar.fpsindexSelected].md->conferrcnt);
                     screenprint_unsetcolor(4);
 
                     screenprint_setbold();
 
-                    for(msgi = 0; msgi < fps[fpsCTRLvar.fpsindexSelected].md->msgcnt; msgi++)
+                    for(msgi = 0; msgi < data.fps[fpsCTRLvar.fpsindexSelected].md->msgcnt; msgi++)
                     {
-                        pindex = fps[fpsCTRLvar.fpsindexSelected].md->msgpindex[msgi];
+                        pindex = data.fps[fpsCTRLvar.fpsindexSelected].md->msgpindex[msgi];
                         printfw("%-40s %s\n",
-                               fps[fpsCTRLvar.fpsindexSelected].parray[pindex].keywordfull,
-                               fps[fpsCTRLvar.fpsindexSelected].md->message[msgi]);
+                               data.fps[fpsCTRLvar.fpsindexSelected].parray[pindex].keywordfull,
+                               data.fps[fpsCTRLvar.fpsindexSelected].md->message[msgi]);
                     }
 
                     screenprint_unsetbold();
@@ -9654,10 +9733,10 @@ errno_t functionparameter_CTRLscreen(
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for(fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)
     {
-        function_parameter_struct_disconnect(&fps[fpsindex]);
+        function_parameter_struct_disconnect(&data.fps[fpsindex]);
     }
 
-    free(fps);
+   // free(fps);
     free(keywnode);
 
 

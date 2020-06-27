@@ -245,7 +245,11 @@ ARGSTRINGARRAY=( )
 
 INITREADYARRAY=( )
 
+
+
+
 # SCAN FILE
+# 
 
 while IFS= read -r line
 do
@@ -345,8 +349,35 @@ echo "TASKS TO BE PERFORMED :"
 for i in "${!FPSNAMEARRAY[@]}"; do
   if [ "$i" = "${FPSINDEX}" ] || [ "ALL" = "${FPSINDEX}" ]; then
   
+	
+	if [ "${INITREADYARRAY[$i]}" = "error" ]; then
+	
+	  printf "  Clearing error %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
+	  
+	  if [ "${FPSSTATUSARRAY[$i]}" = "FOUND" ]; then
+	    fpsfile="${MILK_SHM_DIR}/${FPSNAMEARRAY[$i]}.fps.shm"
+	    printf "        Remove fps file ${fpsfile}\n"
+	  fi
+	
+	  if [ "${TMUXSTATUSARRAY[$i]}" = "FOUND" ]; then
+	    tmuxname="${FPSNAMEARRAY[$i]}"
+	    printf "        Remove for tmux session ${tmuxname}\n"
+	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:ctrl C-c
+	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:ctrl "exit" C-m
+	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:conf C-c
+	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:conf "exit" C-m
+	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:run C-c
+	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:run "exit" C-m
+	    sleep 0.5
+	    tmux kill-session -t ${FPSNAMEARRAY[$i]}
+	  fi
+	
+	fi
+	
+	
+  
     if [ "${INITREADYARRAY[$i]}" = "ready" ]; then
-      printf "  (re-)CREATING %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
+      printf "  (re-)CREATING  %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
     
       if [ ${TESTMODE} == 0 ]; then
         cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    

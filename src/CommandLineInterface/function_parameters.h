@@ -265,7 +265,7 @@
 // PRE-ASSEMBLED DEFAULT FLAGS
 
 // input parameter (used as default when adding entry)
-#define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_CHECKINIT
+#define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK
 #define FPFLAG_DEFAULT_OUTPUT           FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
 #define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DEFAULT_INPUT|FPFLAG_STREAM_RUN_REQUIRED|FPFLAG_CHECKSTREAM
 #define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DEFAULT_INPUT|FPFLAG_CHECKSTREAM
@@ -490,6 +490,9 @@ typedef struct
     uint16_t  localstatus;   // 1 if conf loop should be active
     int       SMfd;
     uint32_t  CMDmode;
+    
+    long      NBparam;        // number of parameters in array
+    long      NBparamActive;  // number of active parameters
 
 } FUNCTION_PARAMETER_STRUCT;
 
@@ -786,6 +789,12 @@ long    function_parameter_struct_connect(
 
 int     function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT
         *funcparamstruct);
+
+
+long function_parameter_structure_load(
+	char *fpsname
+);
+
 
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray,
