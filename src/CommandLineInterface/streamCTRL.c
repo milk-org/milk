@@ -1137,6 +1137,7 @@ static int streamCTRL_print_procpid(
             {
                 is_upstream = 1;
                 upstreamindex = i;
+                break;
             }
         }
 
