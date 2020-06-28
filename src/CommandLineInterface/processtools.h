@@ -134,6 +134,7 @@ typedef struct {
     int       triggermode;                    // see TRIGGERMODE codes
     imageID   triggerstreamID;                // -1 if not initialized
     ino_t     triggerstreaminode;
+    char      triggerstreamname[STRINGMAXLEN_IMAGE_NAME];  
     int       triggersem;                     // semaphore index
     uint64_t  triggerstreamcnt;               // previous value of trigger counter, updates on trigger
 	struct timespec triggerdelay;            // for PROCESSINFO_TRIGGERMODE_DELAY

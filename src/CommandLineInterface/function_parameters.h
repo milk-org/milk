@@ -886,6 +886,9 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                      const char *paramname);
 
+int functionparameter_SaveFPS2disk(
+    FUNCTION_PARAMETER_STRUCT *fpsentry);
+
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
         int pindex, char *tagname, char *commentstr);
 
