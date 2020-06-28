@@ -1041,15 +1041,16 @@ static int streamCTRL_print_inode(
     int is_downstream = 0;
     int upstreamindex = 0;
 
+
     for(int i=0; i<NBupstreaminode; i++)
     {
         if(inode == upstreaminode[i])
         {
             is_upstream = 1;
             upstreamindex = i;
+            break;
         }
     }
-
 
     if (downstreamindex < NO_DOWNSTREAM_INDEX)
     {
@@ -1136,6 +1137,7 @@ static int streamCTRL_print_procpid(
             {
                 is_upstream = 1;
                 upstreamindex = i;
+                break;
             }
         }
 
