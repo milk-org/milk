@@ -2409,40 +2409,39 @@ void runCLI_data_init()
     //  srand(time(NULL));
 
 
-
+	// ensure that commands below belong to root/MAIN module
 	data.moduleindex = -1;
-	strcpy(data.modulename, "");              
-	strcpy(data.moduleshortname_default, ""); 
-	strcpy(data.moduleshortname, "");
 
-    strcpy(data.cmd[data.NBcmd].key, "exit");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = exitCLI;
-    strcpy(data.cmd[data.NBcmd].info, "exit program (same as quit command)");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "exit");
-    strcpy(data.cmd[data.NBcmd].Ccall, "exitCLT");
-    data.NBcmd++;
 
-    strcpy(data.cmd[data.NBcmd].key, "quit");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = exitCLI;
-    strcpy(data.cmd[data.NBcmd].info, "quit program (same as exit command)");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "quit");
-    strcpy(data.cmd[data.NBcmd].Ccall, "exitCLI");
-    data.NBcmd++;
 
-    strcpy(data.cmd[data.NBcmd].key, "exitCLI");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = exitCLI;
-    strcpy(data.cmd[data.NBcmd].info, "quit program (same as exit command)");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "quit");
-    strcpy(data.cmd[data.NBcmd].Ccall, "exitCLI");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "exit",
+        __FILE__,
+        exitCLI,
+        "exit program (same as quit command)",
+        "no argument",
+        "exit",
+        "exitCLI");
 
-	printf("--------- Registering command : help\n");
+	 RegisterCLIcommand(
+        "quit",
+        __FILE__,
+        exitCLI,
+        "exit program (same as quit command)",
+        "no argument",
+        "quit",
+        "exitCLI");
+
+	 RegisterCLIcommand(
+        "exitCLI",
+        __FILE__,
+        exitCLI,
+        "exit program (same as quit command)",
+        "no argument",
+        "exitCLI",
+        "exitCLI");
+
+
 	 RegisterCLIcommand(
         "help",
         __FILE__,
@@ -2471,136 +2470,131 @@ void runCLI_data_init()
         "int help()");
 
 
-
-    strcpy(data.cmd[data.NBcmd].key, "cmd?");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = help_cmd;
-    strcpy(data.cmd[data.NBcmd].info, "list commands");
-    strcpy(data.cmd[data.NBcmd].syntax, "command name (optional)");
-    strcpy(data.cmd[data.NBcmd].example, "cmd?");
-    strcpy(data.cmd[data.NBcmd].Ccall, "int help_cmd()");
-    data.NBcmd++;
-
-    strcpy(data.cmd[data.NBcmd].key, "m?");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = help_module;
-    strcpy(data.cmd[data.NBcmd].info, "list commands in a module");
-    strcpy(data.cmd[data.NBcmd].syntax, "module name");
-    strcpy(data.cmd[data.NBcmd].example, "m? COREMOD_memory.c");
-    strcpy(data.cmd[data.NBcmd].Ccall, "errno_t list_commands_module()");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "cmd?",
+        __FILE__,
+        help_cmd,
+        "list/help command(s)",
+        "<command name>(optional)",
+        "cmd?",
+        "int help_cmd()");
 
 
-    strcpy(data.cmd[data.NBcmd].key, "soload");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = load_so;
-    strcpy(data.cmd[data.NBcmd].info, "load shared object");
-    strcpy(data.cmd[data.NBcmd].syntax, "shared object name");
-    strcpy(data.cmd[data.NBcmd].example, "soload mysharedobj.so");
-    strcpy(data.cmd[data.NBcmd].Ccall, "int load_sharedobj(char *libname)");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "m?",
+        __FILE__,
+        help_module,
+        "list/help module(s)",
+        "<module name>(optional)",
+        "m? COREMOD_memory",
+        "errno_t list_commands_module()");
+
+	 RegisterCLIcommand(
+        "soload",
+        __FILE__,
+        load_so,
+        "load shared object",
+        "<shared object name>",
+        "soload mysharedobj.so",
+        "int load_sharedobj(char *libname)");
+
+	 RegisterCLIcommand(
+        "mload",
+        __FILE__,
+        load_module,
+        "load module from shared object",
+        "<module name>",
+        "mload mymodule",
+        "errno_t load_module_shared(char *modulename)");
+
+	 RegisterCLIcommand(
+        "mloadas",
+        __FILE__,
+        CLIcore__load_module_as__cli,
+        "load module from shared object, use short name binding",
+        "<module name> <shortname>",
+        "mloadas mymodule mymod",
+        "errno_t load_module_shared(char *modulename)");
+
+	 RegisterCLIcommand(
+        "ci",
+        __FILE__,
+        printInfo,
+        "Print version, settings, info and exit",
+        "no argument",
+        "ci",
+        "int printInfo()");
 
 
-    strcpy(data.cmd[data.NBcmd].key, "mload");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = load_module;
-    strcpy(data.cmd[data.NBcmd].info, "load module from shared object");
-    strcpy(data.cmd[data.NBcmd].syntax, "module name");
-    strcpy(data.cmd[data.NBcmd].example, "mload mymodule");
-    strcpy(data.cmd[data.NBcmd].Ccall,
-           "errno_t load_module_shared(char *modulename)");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "dpsingle",
+        __FILE__,
+        set_default_precision_single,
+        "Set default precision to single",
+        "no argument",
+        "dpsingle",
+        "data.precision = 0");
 
-    strcpy(data.cmd[data.NBcmd].key, "mloadas");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = CLIcore__load_module_as__cli;
-    strcpy(data.cmd[data.NBcmd].info,
-           "load module from shared object, use short name binding");
-    strcpy(data.cmd[data.NBcmd].syntax, "<module name> <shortname>");
-    strcpy(data.cmd[data.NBcmd].example, "mload mymodule mymod");
-    strcpy(data.cmd[data.NBcmd].Ccall,
-           "errno_t load_module_shared(char *modulename)");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "dpdouble",
+        __FILE__,
+        set_default_precision_double,
+        "Set default precision to double",
+        "no argument",
+        "dpdouple",
+        "data.precision = 1");
 
-
-
-
-    strcpy(data.cmd[data.NBcmd].key, "ci");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = printInfo;
-    strcpy(data.cmd[data.NBcmd].info, "Print version, settings, info and exit");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "ci");
-    strcpy(data.cmd[data.NBcmd].Ccall, "int printInfo()");
-    data.NBcmd++;
-
-    strcpy(data.cmd[data.NBcmd].key, "dpsingle");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = set_default_precision_single;
-    strcpy(data.cmd[data.NBcmd].info, "Set default precision to single");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "dpsingle");
-    strcpy(data.cmd[data.NBcmd].Ccall, "data.precision = 0");
-    data.NBcmd++;
-
-    strcpy(data.cmd[data.NBcmd].key, "dpdouble");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = set_default_precision_double;
-    strcpy(data.cmd[data.NBcmd].info, "Set default precision to doube");
-    strcpy(data.cmd[data.NBcmd].syntax, "no argument");
-    strcpy(data.cmd[data.NBcmd].example, "dpdouble");
-    strcpy(data.cmd[data.NBcmd].Ccall, "data.precision = 1");
-    data.NBcmd++;
 
 
 
     // process info
 
-    strcpy(data.cmd[data.NBcmd].key, "setprocinfoON");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = set_processinfoON;
-    strcpy(data.cmd[data.NBcmd].info, "set processes info ON");
-    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
-    strcpy(data.cmd[data.NBcmd].example, "setprocinfoON");
-    strcpy(data.cmd[data.NBcmd].Ccall, "set_processinfoON()");
-    data.NBcmd++;
+
+	 RegisterCLIcommand(
+        "setprocinfoON",
+        __FILE__,
+        set_processinfoON,
+        "Set processes info ON",
+        "no argument",
+        "setprocinfoON",
+        "set_processinfoON()");
+
+	 RegisterCLIcommand(
+        "setprocinfoOFF",
+        __FILE__,
+        set_processinfoOFF,
+        "Set processes info OFF",
+        "no argument",
+        "setprocinfoOFF",
+        "set_processinfoOFF()");
 
 
-    strcpy(data.cmd[data.NBcmd].key, "setprocinfoOFF");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = set_processinfoOFF;
-    strcpy(data.cmd[data.NBcmd].info, "set processes info OFF");
-    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
-    strcpy(data.cmd[data.NBcmd].example, "setprocinfoOFF");
-    strcpy(data.cmd[data.NBcmd].Ccall, "set_processinfoOFF()");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "procCTRL",
+        __FILE__,
+        processinfo_CTRLscreen__cli,
+        "processes control screen",
+        "no argument",
+        "procCTRL",
+        "processinfo_CTRLscreen()");
 
-
-    strcpy(data.cmd[data.NBcmd].key, "procCTRL");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = processinfo_CTRLscreen__cli;
-    strcpy(data.cmd[data.NBcmd].info, "processes control screen");
-    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
-    strcpy(data.cmd[data.NBcmd].example, "procCTRL");
-    strcpy(data.cmd[data.NBcmd].Ccall, "processinfo_CTRLscreen()");
-    data.NBcmd++;
 
 
 
 	// stream ctrl
 
-    strcpy(data.cmd[data.NBcmd].key, "streamCTRL");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = streamCTRL_CTRLscreen__cli;
-    strcpy(data.cmd[data.NBcmd].info, "stream control screen");
-    strcpy(data.cmd[data.NBcmd].syntax, "no arg");
-    strcpy(data.cmd[data.NBcmd].example, "streamCTRL");
-    strcpy(data.cmd[data.NBcmd].Ccall, "streamCTRL_CTRLscreen()");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "streamCTRL",
+        __FILE__,
+        streamCTRL_CTRLscreen__cli,
+        "stream control screen",
+        "no argument",
+        "streamCTRL",
+        "streamCTRL_CTRLscreen()");
+
 
 
 	// FPS
-	printf("Registering command readfps\n");
 	 RegisterCLIcommand(
         "readfps",
         __FILE__,
