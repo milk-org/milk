@@ -4611,6 +4611,67 @@ int functionparameter_SaveParam2disk(
 
 
 
+int functionparameter_SaveFPS2disk(
+    FUNCTION_PARAMETER_STRUCT *fpsentry
+)
+{
+    char fname[STRINGMAXLEN_FULLFILENAME];
+    FILE *fpoutval;
+    int stringmaxlen = 500;
+    char outfpstring[stringmaxlen];
+
+
+    struct stat st = {0};
+	char dirname[STRINGMAXLEN_DIRNAME];
+	snprintf(dirname, STRINGMAXLEN_DIRNAME, "%s/fpslog", fpsentry->md->fpsdirectory);
+    if (stat(dirname, &st) == -1) {
+        mkdir(dirname, 0700);
+    }
+
+
+    sprintf(fname, "%s/fps.%s.dat", dirname, fpsentry->md->name);
+    fpoutval = fopen(fname, "w");
+
+    pid_t tid;
+    tid = syscall(SYS_gettid);
+
+    // Get GMT time
+    char timestring[200];
+    struct timespec tnow;
+    time_t now;
+
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    now = tnow.tv_sec;
+    struct tm *uttime;
+    uttime = gmtime(&now);
+
+    sprintf(timestring, "%04d%02d%02dT%02d%02d%02d.%09ld",
+            1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
+            uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+
+    fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
+    fprintf(fpoutval, "# PID        %d\n", getpid());
+    fprintf(fpoutval, "# TID        %d\n", (int) tid);
+    fprintf(fpoutval, "#\n");
+
+    for ( int pindex = 0; pindex < fpsentry->md->NBparamMAX; pindex++)
+    {
+        errno_t ret = functionparameter_PrintParameter_ValueString(&fpsentry->parray[pindex], outfpstring, stringmaxlen);
+        if(ret == RETURN_SUCCESS)
+            fprintf(fpoutval, "%s\n", outfpstring);
+
+    }
+    fclose(fpoutval);
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
 
 /**
  *
@@ -7381,8 +7442,8 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("C/c", "start/stop CONF process");
     print_help_entry("R/r", "start/stop RUN process");
     print_help_entry("l",   "list all entries");
-    print_help_entry(">",   "export values to disk");
-    print_help_entry("<",   "import values from disk");
+    print_help_entry(">",   "export values to ./fpslog/fps.<fpsname>.dat");
+    print_help_entry("<",   "import commands from ./fpscmd/fps.<fpsname>.cmd");
     print_help_entry("P",   "(P)rocess input file \"confscript\"");
     printfw("        format: setval <paramfulname> <value>\n");
 }
@@ -7573,9 +7634,6 @@ inline static int fpsCTRLscreen_process_user_key(
     char command[stringmaxlen];
     char msg[stringmaxlen];
 
-	FILE *fpoutval;
-	errno_t ret;
-	char outfpstring[stringmaxlen];
 	char fname[STRINGMAXLEN_FULLFILENAME];
 
 	FILE *fpin;
@@ -7887,48 +7945,14 @@ inline static int fpsCTRLscreen_process_user_key(
             break;
         
         
-        case '>': // export values to disk
+        case '>': // export values to filesystem
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			sprintf(fname, "%s/fps.%s.outlog", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->name);
-			fpoutval = fopen(fname, "w");
 			
-			pid_t tid;
-			tid = syscall(SYS_gettid);
-			
-			// Get GMT time
-			char timestring[200];
-			struct timespec tnow;
-			time_t now;
-			
-			clock_gettime(CLOCK_REALTIME, &tnow);
-			now = tnow.tv_sec;
-			struct tm *uttime;
-			uttime = gmtime(&now);
-			
-			sprintf(timestring, "%04d%02d%02dT%02d%02d%02d.%09ld",
-				1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
-				uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
-			
-			fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
-			fprintf(fpoutval, "# PID        %d\n", getpid());
-			fprintf(fpoutval, "# TID        %d\n", (int) tid);
-			fprintf(fpoutval, "#\n");
-			
-			for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
-			{
-				if( (keywnode[kwnindex].leaf == 1) && (keywnode[kwnindex].fpsindex==fpsindex) )
-				{
-					pindex = keywnode[kwnindex].pindex;
-					ret = functionparameter_PrintParameter_ValueString(&fps[fpsindex].parray[pindex], outfpstring, stringmaxlen);
-					if(ret == RETURN_SUCCESS)
-						fprintf(fpoutval, "%s\n", outfpstring);
-				}
-			}
-			fclose(fpoutval);
+			functionparameter_SaveFPS2disk(&fps[fpsindex]);
 			break;
 
 
-        case '<': // import settings
+        case '<': // import settings from filesystem
 			if( screenprintmode == SCREENPRINT_NCURSES) {
 				endwin();
             }
@@ -7937,7 +7961,7 @@ inline static int fpsCTRLscreen_process_user_key(
                 PRINT_ERROR("system() returns non-zero value");
             }
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			sprintf(fname, "%s/fps.%s.setup", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->name);		
+			sprintf(fname, "%s/fpscmd/fps.%s.cmd", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->name);		
 			printf("READING FILE %s\n", fname);	
 			fpin = fopen(fname, "r");
 			if(fpin != NULL)

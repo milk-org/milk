@@ -1091,6 +1091,7 @@ errno_t processinfo_waitoninputstream_init(
 
 	processinfo->triggerstreamID = trigID;
 	processinfo->triggerstreaminode = data.image[trigID].md[0].inode;
+	strncpy(processinfo->triggerstreamname, data.image[trigID].md[0].name, STRINGMAXLEN_IMAGE_NAME);
 	processinfo->triggermissedframe_cumul = 0;
 	processinfo->trigggertimeoutcnt = 0;
 	processinfo->triggerstatus = 0;
@@ -1228,7 +1229,7 @@ errno_t processinfo_waitoninputstream(
         processinfo->triggermissedframe = data.image[processinfo->triggerstreamID].md[0].cnt0 - processinfo->triggerstreamcnt - 1;
         processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
         
-        processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
+        //processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
         
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
         
@@ -2953,6 +2954,7 @@ errno_t processinfo_CTRLscreen()
     int pstrlen_cset    = 10;
     
     int pstrlen_inode     = 10;
+    int pstrlen_trigstreamname = 16;
     int pstrlen_missedfr  = 4;
     int pstrlen_missedfrc = 12;
     int pstrlen_tocnt     = 10; 
@@ -4185,11 +4187,12 @@ errno_t processinfo_CTRLscreen()
                     DEBUG_TRACEPOINT(" ");
                     printw("\n");
                     printw("\n");
-                    printw(" %*.*s %*.*s %-*.*s %*.*s mode sem %*.*s  %*.*s  %*.*s\n",
+                    printw(" %*.*s %*.*s %-*.*s %*.*s %*.*s mode sem %*.*s  %*.*s  %*.*s\n",
                            pstrlen_status,   pstrlen_status,   "STATUS",
                            pstrlen_pid,      pstrlen_pid,      "PID",
                            pstrlen_pname,    pstrlen_pname,    "pname",
                            pstrlen_inode,    pstrlen_inode,    "inode",
+                           pstrlen_trigstreamname,    pstrlen_trigstreamname,    "stream",
                            pstrlen_missedfr, pstrlen_missedfr, "miss",
                            pstrlen_missedfrc, pstrlen_missedfrc, "misscumul",
                            pstrlen_tocnt,    pstrlen_tocnt,     "timeouts"
@@ -4663,6 +4666,7 @@ errno_t processinfo_CTRLscreen()
                             if( procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                             {
 								printw("%*d ", pstrlen_inode, procinfoproc.pinfoarray[pindex]->triggerstreaminode);
+								printw("%*s ", pstrlen_trigstreamname, procinfoproc.pinfoarray[pindex]->triggerstreamname);
 								
 								switch (procinfoproc.pinfoarray[pindex]->triggermode) {
 									

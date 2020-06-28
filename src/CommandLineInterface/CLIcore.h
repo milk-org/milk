@@ -549,6 +549,15 @@ typedef struct
 // 3 : string
 // 4 : existing image
 // 5 : command
+
+#define CMDARG_TYPE_UNSOLVED       0
+#define CMDARG_TYPE_FLOAT          1
+#define CMDARG_TYPE_LONG           2
+#define CMDARG_TYPE_STRING         3
+#define CMDARG_TYPE_EXISTINGIMAGE  4
+#define CMDARG_TYPE_COMMAND        5
+#define CMDARG_TYPE_RAWSTRING      6
+
 typedef struct
 {
     int type;

@@ -1069,7 +1069,7 @@ static errno_t CLI_execute_line()
         data.calctmp_imindex = 0;
         for(i = 0; i < NB_ARG_MAX; i++)
         {
-            data.cmdargtoken[0].type = 0;
+            data.cmdargtoken[0].type = CMDARG_TYPE_UNSOLVED;
         }
 
 
@@ -1144,7 +1144,7 @@ static errno_t CLI_execute_line()
                 }
                 cmdargstring[stri] = '\0';
                 printf("%s\n", cmdargstring);
-                data.cmdargtoken[data.cmdNBarg].type = 6;
+                data.cmdargtoken[data.cmdNBarg].type = CMDARG_TYPE_RAWSTRING;
                 sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
             }
             else     // otherwise, process it
@@ -1159,7 +1159,7 @@ static errno_t CLI_execute_line()
             cmdargstring = strtok(NULL, " ");
             data.cmdNBarg++;
         }
-        data.cmdargtoken[data.cmdNBarg].type = 0;
+        data.cmdargtoken[data.cmdNBarg].type = CMDARG_TYPE_UNSOLVED;
 
 
         i = 0;
@@ -1169,27 +1169,27 @@ static errno_t CLI_execute_line()
             {
                
                 printf("TOKEN %ld/%ld   \"%s\"  type : %d\n", i, data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
-                if(data.cmdargtoken[i].type == 1)   // double
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_FLOAT)   // double
                 {
                     printf("\t double : %g\n", data.cmdargtoken[i].val.numf);
                 }
-                if(data.cmdargtoken[i].type == 2)   // long
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_LONG)   // long
                 {
                     printf("\t long   : %ld\n", data.cmdargtoken[i].val.numl);
                 }
-                if(data.cmdargtoken[i].type == 3)   // new variable/image
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_STRING)   // new variable/image
                 {
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type == 4)   // existing image
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_EXISTINGIMAGE)   // existing image
                 {
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type == 5)   // command
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_COMMAND)   // command
                 {
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type == 6)   // unprocessed string
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_RAWSTRING)   // unprocessed string
                 {
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
                 }
@@ -1200,7 +1200,7 @@ static errno_t CLI_execute_line()
 
         if(data.parseerror == 0)
         {
-            if(data.cmdargtoken[0].type == 5)
+            if(data.cmdargtoken[0].type == CMDARG_TYPE_COMMAND)
             {
                 if(data.Debug == 1)
                 {
@@ -1227,7 +1227,7 @@ static errno_t CLI_execute_line()
         }
 
 
-        if(!((data.cmdargtoken[0].type == 3) || (data.cmdargtoken[0].type == 6)))
+        if(!((data.cmdargtoken[0].type == CMDARG_TYPE_STRING) || (data.cmdargtoken[0].type == CMDARG_TYPE_RAWSTRING)))
         {
             data.CMDexecuted = 1;
         }
@@ -1392,13 +1392,14 @@ uint32_t RegisterCLIcommand(
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
 
+	printf(" --> %ld\n", data.NBcmd);
 
     strcpy(data.cmd[data.NBcmd].modulesrc, CLImodulesrc);
     data.cmd[data.NBcmd].fp = CLIfptr;
-    strcpy(data.cmd[data.NBcmd].info, CLIinfo);
-    strcpy(data.cmd[data.NBcmd].syntax, CLIsyntax);
+    strcpy(data.cmd[data.NBcmd].info,    CLIinfo);
+    strcpy(data.cmd[data.NBcmd].syntax,  CLIsyntax);
     strcpy(data.cmd[data.NBcmd].example, CLIexample);
-    strcpy(data.cmd[data.NBcmd].Ccall, CLICcall);
+    strcpy(data.cmd[data.NBcmd].Ccall,   CLICcall);
     data.NBcmd++;
 
     return(data.NBcmd);
@@ -2434,7 +2435,7 @@ void runCLI_data_init()
     strcpy(data.cmd[data.NBcmd].Ccall, "exitCLI");
     data.NBcmd++;
 
-
+	printf("--------- Registering command : help\n");
 	 RegisterCLIcommand(
         "help",
         __FILE__,

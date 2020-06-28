@@ -668,6 +668,9 @@ errno_t MyFunction_RUN(
 	// ==================================
 
     processinfo_cleanExit(processinfo);
+
+	functionparameter_SaveFPS2disk(&fps);
+
 	function_parameter_RUNexit( &fps  );
 
 	return RETURN_SUCCESS;
