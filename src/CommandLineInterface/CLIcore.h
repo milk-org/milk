@@ -499,7 +499,9 @@ typedef struct
 {
     char     key[100];           // command keyword
     char     module[200];        // module name
-    long     moduleindex;        // index of module to which command belongs
+	// index of module to which command belongs
+	// set to -1 if does not belong to any module
+    long     moduleindex;        
     char     modulesrc[200];     // module source filename
     errno_t (* fp)();            // command function pointer
     char     info[1000];         // short description/help

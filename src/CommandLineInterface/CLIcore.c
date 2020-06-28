@@ -1136,7 +1136,7 @@ static errno_t CLI_execute_line()
             if((cmdargstring[0] == '\"')
                     && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
             {
-                // if within quotes, store as string
+                // if within quotes, store as raw string
                 unsigned int stri;
                 for(stri = 0; stri < strlen(cmdargstring) - 2; stri++)
                 {
@@ -1367,19 +1367,26 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLIexample,
     const char *restrict CLICcall
 )
-{	
-	data.cmd[data.NBcmd].moduleindex = data.moduleindex;
-	
-	
-	
-   if(strlen(data.module[data.moduleindex].shortname) == 0)
+{
+    data.cmd[data.NBcmd].moduleindex = data.moduleindex;
+
+    if(data.cmd[data.NBcmd].moduleindex == -1)
     {
-        strcpy(data.cmd[data.NBcmd].key, CLIkey);
+		strcpy(data.cmd[data.NBcmd].module, "MAIN");
+		strcpy(data.cmd[data.NBcmd].key, CLIkey);
     }
     else
     {
-        // otherwise, construct call key as <shortname>.<CLIkey>
-        sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIkey);
+
+        if(strlen(data.module[data.moduleindex].shortname) == 0)
+        {
+            strcpy(data.cmd[data.NBcmd].key, CLIkey);
+        }
+        else
+        {
+            // otherwise, construct call key as <shortname>.<CLIkey>
+            sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIkey);
+        }
     }
 
 
@@ -1391,8 +1398,6 @@ uint32_t RegisterCLIcommand(
     {
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
-
-	printf(" --> %ld\n", data.NBcmd);
 
     strcpy(data.cmd[data.NBcmd].modulesrc, CLImodulesrc);
     data.cmd[data.NBcmd].fp = CLIfptr;
@@ -2405,8 +2410,10 @@ void runCLI_data_init()
 
 
 
-
-
+	data.moduleindex = -1;
+	strcpy(data.modulename, "");              
+	strcpy(data.moduleshortname_default, ""); 
+	strcpy(data.moduleshortname, "");
 
     strcpy(data.cmd[data.NBcmd].key, "exit");
     strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
