@@ -195,7 +195,7 @@ data.cmdindex = -1;
    if(!strcmp(yytext, data.cmd[i].key))
     {
      data.cmdindex = i;
-     if(data.Debug>0){printf("THIS IS A COMMAND (%ld)\n",i);}
+     if(data.Debug>0){printf("THIS IS A COMMAND (%ld)\n",i);}     
      return TKCOMMAND;
     }
    }
