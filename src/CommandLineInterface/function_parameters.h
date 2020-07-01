@@ -312,31 +312,36 @@ typedef struct
     uint64_t fpflag;// 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
 
     // Parameter name
-    char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel; // number of levels in keyword
 
     // if this parameter value imported from another parameter, source is:
-    char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN*FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
 
     char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
-    uint32_t type;        // one of FUNCTION_PARAMETER_TYPE_XXXX
+	// one of FUNCTION_PARAMETER_TYPE_XXXX
+    uint32_t type;        
 
     union
     {
-        int64_t
-        l[4];  // value, min (inclusive), max (inclusive), current state (if different from request)
-        double
-        f[4];  // value, min, max, current state (if different from request)
-        float           s[4];
-        pid_t           pid[2]; // first value is set point, second is current state
-        struct timespec ts[2]; // first value is set point, second is current state
+		// value, min (inclusive), max (inclusive), current state (if different from request)
+        int64_t l[4];
 
-        char
-        string[2][FUNCTION_PARAMETER_STRMAXLEN]; // first value is set point, second is current state
+		// value, min, max, current state (if different from request)
+        double f[4];          
+        float  s[4];
+        
+        // first value is set point, second is current state
+        pid_t pid[2];
+        
+        // first value is set point, second is current state
+        struct timespec ts[2];
+
+		// first value is set point, second is current state
+        char string[2][FUNCTION_PARAMETER_STRMAXLEN]; 
+        
         // if TYPE = PROCESS, string[0] is tmux session, string[1] is launch command
     } val;
 
@@ -886,8 +891,18 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                      const char *paramname);
 
+
+
+int functionparameter_SaveFPS2disk_dir(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    char *dirname);
+
 int functionparameter_SaveFPS2disk(
     FUNCTION_PARAMETER_STRUCT *fpsentry);
+    
+    
+    
+    
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
         int pindex, char *tagname, char *commentstr);

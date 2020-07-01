@@ -4611,8 +4611,9 @@ int functionparameter_SaveParam2disk(
 
 
 
-int functionparameter_SaveFPS2disk(
-    FUNCTION_PARAMETER_STRUCT *fpsentry
+int functionparameter_SaveFPS2disk_dir(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    char *dirname
 )
 {
     char fname[STRINGMAXLEN_FULLFILENAME];
@@ -4622,8 +4623,6 @@ int functionparameter_SaveFPS2disk(
 
 
     struct stat st = {0};
-	char dirname[STRINGMAXLEN_DIRNAME];
-	snprintf(dirname, STRINGMAXLEN_DIRNAME, "%s/fpslog", fpsentry->md->fpsdirectory);
     if (stat(dirname, &st) == -1) {
         mkdir(dirname, 0700);
     }
@@ -4645,6 +4644,7 @@ int functionparameter_SaveFPS2disk(
     struct tm *uttime;
     uttime = gmtime(&now);
 
+	
     sprintf(timestring, "%04d%02d%02dT%02d%02d%02d.%09ld",
             1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
             uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
@@ -4668,7 +4668,15 @@ int functionparameter_SaveFPS2disk(
 }
 
 
-
+int functionparameter_SaveFPS2disk(
+    FUNCTION_PARAMETER_STRUCT *fpsentry
+)
+{
+	char outdir[STRINGMAXLEN_DIRNAME];
+	WRITE_DIRNAME(outdir, "%s/fpslog", fpsentry->md->fpsdirectory);
+	functionparameter_SaveFPS2disk_dir(fpsentry, outdir);
+	return RETURN_SUCCESS;
+}
 
 
 
@@ -4955,6 +4963,7 @@ int functionparameter_UserInputSetParamValue(
  * - setval      : set parameter value
  * - getval      : get value, write to output log
  * - fwrval      : get value, write to file or fifo
+ * - exec        : execute scripte (parameter must be FPTYPE_EXECFILENAME type)
  * - confupdate  : update configuration
  * - confwupdate : update configuration, wait for completion to proceed
  * - runstart    : start RUN process associated with parameter
@@ -5533,6 +5542,7 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
+
         // fpsrm
 
         if((cmdFOUND == 0)
@@ -5564,6 +5574,34 @@ int functionparameter_FPSprocess_cmdline(
         DEBUG_TRACEPOINT(" ");
 
 
+
+
+		// exec
+		if((cmdFOUND == 0)
+                && (strcmp(FPScommand, "exec") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2)
+            {
+                functionparameter_outlog("ERROR", "COMMAND exec takes NBARGS = 1");
+                cmdOK = 0;
+            }
+            else
+            {
+                DEBUG_TRACEPOINT(" ");
+				if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
+				{
+					EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+					EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
+					cmdOK = 1;
+				}
+				else
+				{
+					functionparameter_outlog("ERROR", "COMMAND exec requires EXECFILENAME type parameter");
+					cmdOK = 0;
+				}
+            }
+        }		
 
 
 
@@ -7631,7 +7669,6 @@ inline static int fpsCTRLscreen_process_user_key(
     int pindex;
     FILE *fpinputcmd;
 
-    char command[stringmaxlen];
     char msg[stringmaxlen];
 
 	char fname[STRINGMAXLEN_FULLFILENAME];
@@ -7840,25 +7877,8 @@ inline static int fpsCTRLscreen_process_user_key(
 
             if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
             {
-                if(snprintf(command, stringmaxlen, "tmux send-keys -t %s:run \"cd %s\" C-m",
-                            fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory) < 0)
-                {
-                    PRINT_ERROR("snprintf error");
-                }
-                if(system(command) != 0)
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
-                if(snprintf(command, stringmaxlen, "tmux send-keys -t %s:run \"%s %s\" C-m",
-                            fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0],
-                            fps[fpsindex].md->name) < 0)
-                {
-                    PRINT_ERROR("snprintf error");
-                }
-                if(system(command) != 0)
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
+				EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
             }
 
             break;

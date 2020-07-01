@@ -333,6 +333,36 @@ if(slen >= STRINGMAXLEN_IMGNAME) {                              \
 
 
 
+
+/**
+ * @ingroup errcheckmacro
+ * @brief Write directory name to string
+ *
+ * Requires existing image string of len #STRINGMAXLEN_DIRNAME
+ *
+ * Example use:
+ * @code
+ * char fname[STRINGMAXLEN_FILENAME];
+ * char name[]="imlog";
+ * WRITE_FULLFILENAME(fname, "%s.txt", name);
+ * @endcode
+ *
+ */
+#define WRITE_DIRNAME(dirname, ...) do { \
+int slen = snprintf(dirname, STRINGMAXLEN_DIRNAME, __VA_ARGS__); \
+if(slen<1) {                                                    \
+    PRINT_ERROR("snprintf wrote <1 char");                      \
+    abort();                                                    \
+}                                                               \
+if(slen >= STRINGMAXLEN_DIRNAME) {                              \
+    PRINT_ERROR("snprintf string truncation");                  \
+    abort();                                                    \
+}                                                               \
+} while(0)
+
+
+
+
 /**
  * @ingroup errcheckmacro
  * @brief Write filename to string
