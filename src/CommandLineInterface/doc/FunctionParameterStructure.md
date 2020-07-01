@@ -554,6 +554,13 @@ errno_t MyFunction_RUN(
 	// ==================================================
 	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
 
+    // Write time string (optional, requires .out.timestring entry)
+    char timestring[100];
+    mkUTtimestring_millisec(timestring);
+    functionparameter_SetParamValue_STRING(
+        &fps,
+        ".out.timestring",
+        timestring);
 
 	// ===================================
 	// ### GET VALUES FROM FPS
@@ -670,6 +677,8 @@ errno_t MyFunction_RUN(
     processinfo_cleanExit(processinfo);
 
 	functionparameter_SaveFPS2disk(&fps);
+
+    // optional: run exec scripts that take FPSname as argument
 
 	function_parameter_RUNexit( &fps  );
 
