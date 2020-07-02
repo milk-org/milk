@@ -8,6 +8,7 @@ set(SOURCEFILES
     compute_image_memory.c
     compute_nb_image.c
     compute_nb_variable.c
+    create_fps.c
     create_image.c
     create_variable.c
     delete_image.c
@@ -18,6 +19,7 @@ set(SOURCEFILES
     image_ID.c
     image_keyword.c
     image_set_counters.c
+    list_fps.c
     list_image.c
     list_variable.c
     logshmim.c
@@ -46,6 +48,7 @@ set(INCLUDEFILES
     compute_image_memory.h
     compute_nb_image.h
     compute_nb_variable.h
+    create_fps.h
     create_image.h
     create_variable.h
     delete_image.h
@@ -56,6 +59,7 @@ set(INCLUDEFILES
     image_ID.h
     image_keyword.h
     image_set_counters.h
+    list_fps.h
     list_image.h
     list_variable.h
     logshmim.h

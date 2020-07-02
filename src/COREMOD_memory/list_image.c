@@ -101,7 +101,7 @@ errno_t list_image_addCLIcmd()
         list_image_ID,
         "list images in memory",
         "no argument",
-        "listim", "int_fast8_t list_image_ID()");
+        "listim", "errno_t list_image_ID()");
 
     return RETURN_SUCCESS;
 }

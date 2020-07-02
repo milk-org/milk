@@ -41,6 +41,7 @@
 #include "image_copy.h"
 #include "image_keyword.h"
 #include "image_set_counters.h"
+#include "list_fps.h"
 #include "list_image.h"
 #include "list_variable.h"
 #include "logshmim.h"
@@ -109,6 +110,8 @@ static errno_t init_module_CLI()
 	list_variable_addCLIcmd();
 	
 	
+	list_fps_addCLIcmd();
+	create_fps_addCLIcmd();
 	
     // TYPE CONVERSIONS TO AND FROM COMPLEX
 	image_complex_addCLIcmd();

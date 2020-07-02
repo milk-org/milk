@@ -17,6 +17,15 @@
 // Forward declaration(s)
 // ==========================================
 
+
+
+errno_t COREMOD_MEMORY_image_streamburst(
+    const char *IDin_name,
+    const char *IDout_name,
+    long        periodus
+);
+
+
 imageID COREMOD_MEMORY_image_streamupdateloop(
     const char *IDinname,
     const char *IDoutname,
@@ -48,16 +57,39 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 // ==========================================
 
 
+static errno_t COREMOD_MEMORY_image_streamburst__cli()
+{
+    if(0
+            + CLI_checkarg(1, CLIARG_IMG)
+            + CLI_checkarg(2, CLIARG_IMG)
+            + CLI_checkarg(3, CLIARG_LONG)
+            == 0)
+    {
+        COREMOD_MEMORY_image_streamburst(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.string,
+            data.cmdargtoken[3].val.numl
+        );
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
+
+
 static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
 {
     if(0
             + CLI_checkarg(1, CLIARG_IMG)
-            + CLI_checkarg(2, 5)
+            + CLI_checkarg(2, CLIARG_STR)
             + CLI_checkarg(3, CLIARG_LONG)
             + CLI_checkarg(4, CLIARG_LONG)
             + CLI_checkarg(5, CLIARG_LONG)
             + CLI_checkarg(6, CLIARG_LONG)
-            + CLI_checkarg(7, 5)
+            + CLI_checkarg(7, CLIARG_STR)
             + CLI_checkarg(8, CLIARG_LONG)
             + CLI_checkarg(9, CLIARG_LONG)
             == 0)
@@ -87,10 +119,10 @@ static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
 {
     if(0
             + CLI_checkarg(1, CLIARG_IMG)
-            + CLI_checkarg(2, 5)
+            + CLI_checkarg(2, CLIARG_STR)
             + CLI_checkarg(3, CLIARG_LONG)
             + CLI_checkarg(4, CLIARG_LONG)
-            + CLI_checkarg(5, 5)
+            + CLI_checkarg(5, CLIARG_STR)
             + CLI_checkarg(6, CLIARG_LONG)
             + CLI_checkarg(7, CLIARG_LONG)
             == 0)
@@ -121,6 +153,15 @@ static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
 
 errno_t stream_updateloop_addCLIcmd()
 {
+	RegisterCLIcommand(
+		"streamburst",
+		__FILE__,
+		COREMOD_MEMORY_image_streamburst__cli,
+		"send burst of frames to stream",
+		"<input cube> <output stream> <period[us]>",
+		"streamburst inC outstream 1000",
+		"errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name, const char *IDout_name, long periodus)");
+	
     RegisterCLIcommand(
         "creaimstream",
         __FILE__,
@@ -146,6 +187,170 @@ errno_t stream_updateloop_addCLIcmd()
 
 
 
+/** @brief Send single burst of frames to stream
+ *
+ */
+
+errno_t COREMOD_MEMORY_image_streamburst(
+    const char *IDin_name,
+    const char *IDout_name,
+    long        periodus
+)
+{
+    imageID IDin;
+    imageID IDout;
+    
+    int        RT_priority = 80; //any number from 0-99
+    struct     sched_param schedpar;
+    
+    char      *ptr0s; // source start 3D array ptr
+    char      *ptr0; // source
+    char      *ptr1; // dest
+    long       framesize;
+
+	struct timespec tim;
+    
+    schedpar.sched_priority = RT_priority;
+    sched_setscheduler(0, SCHED_FIFO, &schedpar);
+
+
+	IDin = image_ID(IDin_name);
+	long naxis = data.image[IDin].md[0].naxis;
+    uint32_t *arraysize;
+    arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+    if(naxis != 3)
+    {
+        printf("ERROR: input image %s should be 3D\n", IDin_name);
+        exit(0);
+    }
+    arraysize[0] = data.image[IDin].md[0].size[0];
+    arraysize[1] = data.image[IDin].md[0].size[1];
+    arraysize[2] = data.image[IDin].md[0].size[2];
+	uint8_t datatype = data.image[IDin].md[0].datatype;
+	int NBslice = arraysize[2];
+
+	// check that IDout has same format
+	IDout = image_ID(IDout_name);
+	if(data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
+	{
+		printf("ERROR: in and out have different size\n");
+		return RETURN_FAILURE;
+	}
+	if(data.image[IDout].md[0].size[1] != data.image[IDin].md[0].size[1])
+	{
+		printf("ERROR: in and out have different size\n");
+		return RETURN_FAILURE;
+	}
+	if(data.image[IDout].md[0].datatype != data.image[IDin].md[0].datatype)
+	{
+		printf("ERROR: in and out have different datatype\n");
+		return RETURN_FAILURE;
+	}	
+	
+	
+    switch(datatype)
+    {
+    case _DATATYPE_INT8:
+        ptr0s = (char *) data.image[IDin].array.SI8;
+        ptr1 = (char *) data.image[IDout].array.SI8;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
+        break;
+
+    case _DATATYPE_UINT8:
+        ptr0s = (char *) data.image[IDin].array.UI8;
+        ptr1 = (char *) data.image[IDout].array.UI8;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
+        break;
+
+    case _DATATYPE_INT16:
+        ptr0s = (char *) data.image[IDin].array.SI16;
+        ptr1 = (char *) data.image[IDout].array.SI16;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
+        break;
+
+    case _DATATYPE_UINT16:
+        ptr0s = (char *) data.image[IDin].array.UI16;
+        ptr1 = (char *) data.image[IDout].array.UI16;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
+        break;
+
+    case _DATATYPE_INT32:
+        ptr0s = (char *) data.image[IDin].array.SI32;
+        ptr1 = (char *) data.image[IDout].array.SI32;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
+        break;
+
+    case _DATATYPE_UINT32:
+        ptr0s = (char *) data.image[IDin].array.UI32;
+        ptr1 = (char *) data.image[IDout].array.UI32;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
+        break;
+
+    case _DATATYPE_INT64:
+        ptr0s = (char *) data.image[IDin].array.SI64;
+        ptr1 = (char *) data.image[IDout].array.SI64;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
+        break;
+
+    case _DATATYPE_UINT64:
+        ptr0s = (char *) data.image[IDin].array.UI64;
+        ptr1 = (char *) data.image[IDout].array.UI64;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
+        break;
+
+
+    case _DATATYPE_FLOAT:
+        ptr0s = (char *) data.image[IDin].array.F;
+        ptr1 = (char *) data.image[IDout].array.F;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * sizeof(float);
+        break;
+
+    case _DATATYPE_DOUBLE:
+        ptr0s = (char *) data.image[IDin].array.D;
+        ptr1 = (char *) data.image[IDout].array.D;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * sizeof(double);
+        break;
+
+    }
+
+	
+   tim.tv_sec = 0;
+   tim.tv_nsec = (long) (1000*periodus);
+	
+
+	for(int slice = 0; slice < NBslice; slice++)
+	{
+		if(nanosleep(&tim , NULL) < 0 )   
+		{
+			printf("Nano sleep system call failed \n");
+		}
+
+		
+        ptr0 = ptr0s + slice * framesize;
+        
+        ptr0 = ptr0s + slice * framesize;
+        data.image[IDout].md[0].write = 1;
+        memcpy((void *) ptr1, (void *) ptr0, framesize);
+        data.image[IDout].md[0].cnt1 = slice;
+        data.image[IDout].md[0].cnt0++;
+        data.image[IDout].md[0].write = 0;
+        COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+	}
+
+    free(arraysize);
+
+    return RETURN_SUCCESS;
+}
 
 
 
@@ -159,9 +364,9 @@ errno_t stream_updateloop_addCLIcmd()
  * If NBcubes>1, several circular buffers are used, named ("%S_%03ld", IDinname, cubeindex). Semaphore semtrig of image IDsync_name triggers switch between circular buffers, with a delay of offsetus. The number of consecutive sem posts required to advance to the next circular buffer is period
  *
  * @param IDinname      Name of DM circular buffer (appended by _000, _001 etc... if NBcubes>1)
- * @param IDoutname     Output DM channel stream
+ * @param IDoutname     Output channel stream
  * @param usperiod      Interval between consecutive frames [us]
- * @param NBcubes       Number of input DM circular buffers
+ * @param NBcubes       Number of input circular buffers
  * @param period        If NBcubes>1: number of input triggers required to advance to next input buffer
  * @param offsetus      If NBcubes>1: time offset [us] between input trigger and input buffer switch
  * @param IDsync_name   If NBcubes>1: Stream used for synchronization
