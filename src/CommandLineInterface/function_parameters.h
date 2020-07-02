@@ -901,7 +901,9 @@ int functionparameter_SaveFPS2disk(
     FUNCTION_PARAMETER_STRUCT *fpsentry);
     
     
-    
+errno_t	functionparameter_write_archivescript(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    char *archdirname);  
     
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,

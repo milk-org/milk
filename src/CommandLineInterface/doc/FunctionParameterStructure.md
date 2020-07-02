@@ -675,10 +675,28 @@ errno_t MyFunction_RUN(
 	// ==================================
 
     processinfo_cleanExit(processinfo);
-
+    // save to fpslog directory
 	functionparameter_SaveFPS2disk(&fps);
 
     // optional: run exec scripts that take FPSname as argument
+
+
+    // create archive script (optional)
+	// Write archive script
+	// to be executed to archive most recent calibration data
+	// takes fpsname as input 
+	//
+	// REQUIRES :
+	// .out.timestring
+	// .out.dirname
+	// .log2fps
+    //
+    functionparameter_SaveFPS2disk_dir(&fps, outdirname);
+    EXECUTE_SYSTEM_COMMAND("echo \"somedata.txt\" > %s/loglist.dat", outdirname);
+    EXECUTE_SYSTEM_COMMAND("echo \"someimage.fits\" >> %s/loglist.dat", outdirname);
+    EXECUTE_SYSTEM_COMMAND("echo \"anotherimage.fits\" >> %s/loglist.dat", outdirname);
+    functionparameter_write_archivescript(&fps, "../mydatadir");
+
 
 	function_parameter_RUNexit( &fps  );
 

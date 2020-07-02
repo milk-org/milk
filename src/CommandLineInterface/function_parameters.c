@@ -4668,6 +4668,8 @@ int functionparameter_SaveFPS2disk_dir(
 }
 
 
+
+
 int functionparameter_SaveFPS2disk(
     FUNCTION_PARAMETER_STRUCT *fpsentry
 )
@@ -4677,6 +4679,108 @@ int functionparameter_SaveFPS2disk(
 	functionparameter_SaveFPS2disk_dir(fpsentry, outdir);
 	return RETURN_SUCCESS;
 }
+
+
+
+
+
+
+/** @brief Write archive script to .log2fps entry
+ *
+ * To be executed to archive most recent data
+ *
+ * takes fps as input
+ *
+ * REQUIRES :
+ * - .out.timestring
+ * - .out.dirname
+ * - .log2fps
+ * 
+ * Optional input:
+ * 
+ * File loglist.dat in directory .out.dirname
+ * 
+ */
+errno_t	functionparameter_write_archivescript(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    char *archdirname
+)
+{
+    // Write archive script
+    // to be executed to archive most recent calibration data
+    // takes fpsname as input
+    //
+    FILE *fplogscript;
+    char ffname[STRINGMAXLEN_FULLFILENAME];
+    char datadirname[STRINGMAXLEN_DIRNAME];
+
+	char outdirname[STRINGMAXLEN_DIRNAME];
+	strncpy(outdirname, functionparameter_GetParamPtr_STRING(fps, ".out.dirname"), FUNCTION_PARAMETER_STRMAXLEN);
+
+	char timestring[FUNCTION_PARAMETER_STRMAXLEN];
+	strncpy(timestring, functionparameter_GetParamPtr_STRING(fps, ".out.timestring"), FUNCTION_PARAMETER_STRMAXLEN);    
+            
+	
+
+    WRITE_FULLFILENAME(ffname, "%s/logscript.bash", outdirname);
+
+    fplogscript = fopen(ffname, "w");
+    fprintf(fplogscript, "#!/bin/bash\n");
+    fprintf(fplogscript, "\n");
+    fprintf(fplogscript, "cd %s\n", outdirname);
+    fprintf(fplogscript, "\n");
+    fprintf(fplogscript, "# %s fps.%s.dat\n", timestring, fps->md->name);
+
+    char datestring[9];
+    strncpy(datestring, timestring, 8);
+    datestring[8] = '\0';
+
+    // save FPS
+    WRITE_DIRNAME(datadirname, "../aoldatadir/%s/%s/fps.%s", datestring, fps->md->name, fps->md->name);
+    fprintf(fplogscript, "mkdir -p %s\n", datadirname);
+    fprintf(fplogscript, "cp fps.%s.dat %s/fps.%s.%s.dat\n", fps->md->name, datadirname, fps->md->name, timestring);
+
+    // save files listed in loglist.dat
+    FILE *fploglist;
+    char loglistfname[STRINGMAXLEN_FULLFILENAME];
+    WRITE_FULLFILENAME(loglistfname, "%s/loglist.dat", outdirname);
+    fploglist = fopen(loglistfname, "r");
+    if (fploglist != NULL)
+    {
+        char *line = NULL;
+        size_t llen = 0;
+        char logfname[STRINGMAXLEN_FILENAME];
+
+        while(getline(&line, &llen, fploglist) != -1) {
+            sscanf(line, "%s", logfname);
+            WRITE_DIRNAME(datadirname, "../aoldatadir/%s/%s/%s", datestring, fps->md->name, logfname);
+            fprintf(fplogscript, "mkdir -p %s\n", datadirname);
+            fprintf(fplogscript, "cp -r %s %s/%s.%s\n", logfname, datadirname, logfname, timestring);
+        }
+        fclose(fploglist);
+    }
+
+    fclose(fplogscript);
+    chmod(ffname, S_IRWXU | S_IRWXG  | S_IROTH );
+
+    functionparameter_SetParamValue_STRING(fps, ".log2fs", ffname);
+    
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
