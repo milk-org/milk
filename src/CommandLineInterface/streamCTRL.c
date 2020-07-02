@@ -1230,8 +1230,6 @@ static errno_t streamCTRL_print_SPTRACE_details(
 
     */
 
-    char string[100];
-
     int Disp_inode_NBchar = 8;
 
     int Disp_sname_NBchar = 16;
@@ -1240,6 +1238,8 @@ static errno_t streamCTRL_print_SPTRACE_details(
     int Disp_PID_NBchar = 8;
     int Disp_type_NBchar = 8;
     int Disp_trigstat_NBchar = 12;
+
+
 
     printw("\n");
     printw("   %*s %*s %*s\n",
