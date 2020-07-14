@@ -121,6 +121,7 @@ install(PROGRAMS
 			scripts/merge3DfitsTelemetry
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
+			scripts/milk-shm2FITSloop
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
 			scripts/waitforfile

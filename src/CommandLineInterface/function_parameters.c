@@ -138,6 +138,13 @@ static int printAECbgcolor = 40;
 #define AECNORMAL "\033[37;40;0m"
 
 
+#define COLOR_NONE    1
+#define COLOR_OK      2
+#define COLOR_WARNING 3
+#define COLOR_ERROR   4
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
@@ -217,8 +224,6 @@ static void printfw(const char *fmt, ...)
 
     va_end(args);
 }
-
-
 
 
 static void screenprint_setcolor( int colorcode )
@@ -303,7 +308,6 @@ static void screenprint_unsetcolor( int colorcode )
 }
 
 
-
 static void screenprint_setbold()
 {
 	if(screenprintmode == SCREENPRINT_NCURSES)
@@ -316,6 +320,7 @@ static void screenprint_setbold()
 		printf( "\033[%dm",  printAEC);
 	}
 }
+
 
 static void screenprint_unsetbold()
 {
@@ -331,9 +336,6 @@ static void screenprint_unsetbold()
 }
 
 
-
-
-
 static void screenprint_setblink()
 {
 	if(screenprintmode == SCREENPRINT_NCURSES)
@@ -347,6 +349,7 @@ static void screenprint_setblink()
 	}
 }
 
+
 static void screenprint_unsetblink()
 {
 	if(screenprintmode == SCREENPRINT_NCURSES)
@@ -359,7 +362,6 @@ static void screenprint_unsetblink()
 		printf( "\033[%dm", AEC_NORMAL);
 	}
 }
-
 
 
 static void screenprint_setdim()
@@ -390,8 +392,6 @@ static void screenprint_unsetdim()
 }
 
 
-
-
 static void screenprint_setreverse()
 {
 	if(screenprintmode == SCREENPRINT_NCURSES)
@@ -405,6 +405,7 @@ static void screenprint_setreverse()
 	}
 }
 
+
 static void screenprint_unsetreverse()
 {
 	if(screenprintmode == SCREENPRINT_NCURSES)
@@ -417,8 +418,6 @@ static void screenprint_unsetreverse()
 		printf( "\033[%dm",  printAEC);
 	}
 }
-
-
 
 
 static void screenprint_setnormal()
@@ -435,16 +434,6 @@ static void screenprint_setnormal()
 		printf( "\033[%d;%d;%dm", printAEC, printAECfgcolor, printAECbgcolor );
 	}
 }
-
-
-
-
-
-
-
-
-
-
 
 
 static errno_t function_parameter__print_header(const char *str, char c)
@@ -468,6 +457,9 @@ static errno_t function_parameter__print_header(const char *str, char c)
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 
 
@@ -598,8 +590,6 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
 
 
 
-
-
 /** @brief Get FPS log filename
  * 
  * logfname should be char [STRINGMAXLEN_FULLFILENAME]
@@ -631,16 +621,12 @@ static errno_t getFPSlogfname(char *logfname)
 
 
 
-/**
+/** @brief get FPS arguments from command line function call
  *
- * ## Purpose
- *
- * Construct FPS name and set FPSCMDCODE from command line function call
- *
+ * write data.FPS_name and data.FPS_CMDCODE
  *
  */
-
-errno_t function_parameter_getFPSname_from_CLIfunc(
+errno_t function_parameter_getFPSargs_from_CLIfunc(
     char     *fpsname_default
 )
 {
@@ -899,9 +885,9 @@ errno_t function_parameter_struct_create(
     }
 
 
-    strcpy(fps.md->name, name);
-
-
+    strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME);
+	strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN);
+	strncpy(fps.md->callfuncname, data.cmdargtoken[0].val.string, FPS_CALLFUNCNAME_STRMAXLEN);
 
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
@@ -933,11 +919,7 @@ errno_t function_parameter_struct_create(
 
 
 
-/**
- *
- * ## Purpose
- *
- * Connect to function parameter structure
+/** @brief Connect to function parameter structure
  *
  *
  * ## Arguments
@@ -949,8 +931,6 @@ errno_t function_parameter_struct_create(
  * FPSCONNECT_RUN    : connect as RUN process
  *
  */
-
-
 long function_parameter_struct_connect(
     const char *name,
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -1105,9 +1085,6 @@ long function_parameter_struct_connect(
 }
 
 
-
-
-
 int function_parameter_struct_disconnect(
     FUNCTION_PARAMETER_STRUCT *funcparamstruct
 )
@@ -1127,9 +1104,6 @@ int function_parameter_struct_disconnect(
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 
 
@@ -1760,10 +1734,7 @@ imageID functionparameter_LoadStream(
 
 
 
-/**
- * ## Purpose
- *
- * Add parameter to database with default settings
+/** @brief Add parameter to database with default settings
  *
  * If entry already exists, do not modify it
  *
@@ -2404,7 +2375,6 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     fps.CMDmode = CMDmode;
     fps.SMfd = -1;
 
-
     // record timestamp
     struct timespec tnow;
     clock_gettime(CLOCK_REALTIME, &tnow);
@@ -2581,7 +2551,7 @@ uint16_t function_parameter_FPCONFloopstep(
 
     prev_status = fps->md->status;
 
-
+		
     return updateFLAG;
 }
 
@@ -2650,8 +2620,7 @@ static errno_t inittermios()
 }
 
 
-/**
- * @brief INITIALIZE ncurses
+/** @brief INITIALIZE ncurses
  *
  */
 static errno_t initncurses()
@@ -2802,10 +2771,7 @@ static int get_singlechar_block()
 
 
 
-/**
- * ## Purpose
- *
- * Write parameter to disk
+/** @brief Write parameter to disk
  *
  * ## TAG names
  *
@@ -4785,16 +4751,10 @@ errno_t	functionparameter_write_archivescript(
 
 
 
-/**
- *
- * ## PURPOSE
- *
- * Enter new value for parameter
+/** @brief Enter new value for parameter
  *
  *
  */
-
-
 int functionparameter_UserInputSetParamValue(
     FUNCTION_PARAMETER_STRUCT *fpsentry,
     int pindex
@@ -5056,7 +5016,8 @@ int functionparameter_UserInputSetParamValue(
 
 
 
-/**
+/** @brief process command line
+ * 
  * ## Purpose
  *
  * Process command line.
@@ -6603,8 +6564,7 @@ static int function_parameter_process_fpsCMDarray(
 
 
 
-/**
- * @brief FPS start RUN process
+/** @brief FPS start RUN process
  * 
  * Requires setup performed by milk-fpsinit, which performs the following setup
  * - creates the FPS shared memory
@@ -6668,8 +6628,7 @@ errno_t functionparameter_RUNstop(
 
 
 
-/**
- * @brief FPS start CONF process
+/** @brief FPS start CONF process
  * 
  * Requires setup performed by milk-fpsinit, which performs the following setup
  * - creates the FPS shared memory
@@ -6701,8 +6660,7 @@ errno_t functionparameter_CONFstart(
 
 
 
-/**
- * @brief FPS stop CONF process
+/** @brief FPS stop CONF process
  * 
  */
 errno_t functionparameter_CONFstop(
@@ -6720,6 +6678,137 @@ errno_t functionparameter_CONFstop(
 
 
 
+
+
+errno_t functionparameter_FPS_tmux_kill(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int fpsindex
+)
+{
+    // terminate tmux sessions
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl C-c 2> /dev/null",
+                           fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m 2> /dev/null",
+                           fps[fpsindex].md->name);
+                           
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf C-c 2> /dev/null",
+                           fps[fpsindex].md->name);                           
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m 2> /dev/null",
+                           fps[fpsindex].md->name);
+
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c 2> /dev/null",
+                           fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m 2> /dev/null",
+                           fps[fpsindex].md->name);
+
+
+	EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null", fps[fpsindex].md->name);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+/** @brief Initialize FPS tmux sesssions
+ *
+ */
+errno_t functionparameter_FPS_tmux_init(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int fpsindex
+)
+{
+	int funcstring_maxlen = 2000;
+	int argstring_maxlen = 1000;
+	
+    // terminate tmux sessions
+    functionparameter_FPS_tmux_kill(fps, fpsindex);
+
+    EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null", fps[fpsindex].md->name);
+
+    EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d", fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps[fpsindex].md->name);
+
+
+    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n conf", fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps[fpsindex].md->name);
+
+
+    // Write functions to tmux windows
+    char functionstring[funcstring_maxlen];
+    char argstring[argstring_maxlen];
+    char argstringcp[argstring_maxlen];
+
+	if(fps[fpsindex].md->NBnameindex > 0)
+	{		
+		snprintf(argstring, argstring_maxlen, "%s", fps[fpsindex].md->nameindexW[0]);
+	}
+	else
+	{
+		sprintf(argstring, " ");
+	}
+	
+	for(int i=1; i<fps[fpsindex].md->NBnameindex; i++)
+	{
+		snprintf(argstringcp, argstring_maxlen, "%s %s", argstring, fps[fpsindex].md->nameindexW[i]);
+		strcpy(argstring, argstringcp);
+	}
+
+
+	// confstart
+    sprintf(functionstring,
+            "function fpsconfstart {\n"
+            "echo \"STARTING CONF PROCESS\"\n"
+            "%s-exec -n %s \\\"%s _CONFSTART_ %s\\\"\n"
+            "}\n",
+            fps[fpsindex].md->callprogname,
+            fps[fpsindex].md->name,
+            fps[fpsindex].md->callfuncname,
+            argstring
+           );
+
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"%s\" C-m", 
+		fps[fpsindex].md->name,
+		functionstring);
+
+    
+    // runstart
+    sprintf(functionstring,
+            "function fpsrunstart {\n"
+            "echo \"STARTING RUN PROCESS\"\n"
+            "%s-exec -n %s \\\"%s _RUNSTART_ %s\\\"\n"
+            "}\n",
+            fps[fpsindex].md->callprogname,
+            fps[fpsindex].md->name,
+            fps[fpsindex].md->callfuncname,
+            argstring
+           );
+
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s\" C-m", 
+		fps[fpsindex].md->name,
+		functionstring);    
+
+    
+    // runstop
+    sprintf(functionstring,
+            "function fpsrunstop {\n"
+            "echo \"STOPPING RUN PROCESS\"\n"
+            "%s-exec -n %s \\\"%s _RUNSTOP_ %s\\\"\n"
+            "}\n",
+            fps[fpsindex].md->callprogname,
+            fps[fpsindex].md->name,
+            fps[fpsindex].md->callfuncname,
+            argstring
+           );
+
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s\" C-m", 
+		fps[fpsindex].md->name,
+		functionstring);    
+    
+
+
+    return RETURN_SUCCESS;
+}
 
 
 
@@ -6799,6 +6888,7 @@ errno_t functionparameter_FPSremove(
 
     return RETURN_SUCCESS;
 }
+
 
 
 
@@ -6964,8 +7054,7 @@ errno_t functionparameter_outlog(
 
 
 
-/**
- * @brief Establish sym link for convenience
+/** @brief Establish sym link for convenience
  *
  * This is a one-time function when running FPS init.\n
  * Creates a human-readable informative sym link to outlog\n
@@ -6999,12 +7088,9 @@ errno_t functionparameter_outlog_namelink()
 
 
 
-
-
 /** @brief scan and load FPSs
  * 
  */ 
-
 
 static errno_t functionparameter_scan_fps(
     uint32_t mode,
@@ -7141,11 +7227,6 @@ static errno_t functionparameter_scan_fps(
     keywnode[0].leaf = 0;
     keywnode[0].NBchild = 0;
     NBkwn = 1;
-
-
-
-
-
 
 
 
@@ -7572,21 +7653,18 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("x", "Exit");
 
     printfw("\n============ SCREENS \n");
-    print_help_entry("h", "Help screen");
-    print_help_entry("F2", "FPS control screen");
-    print_help_entry("F3", "FPS command list (Sequencer)");
+    print_help_entry("h/F2/F3", "Help/Control/Sequencer screen");
 
     printfw("\n============ OTHER \n");
-    print_help_entry("s",   "rescan");
-    print_help_entry("e",   "erase FPS");
-    print_help_entry("E",   "erase FPS and tmux sessions");
-    print_help_entry("u",   "update CONF process");
-    print_help_entry("C/c", "start/stop CONF process");
-    print_help_entry("R/r", "start/stop RUN process");
-    print_help_entry("l",   "list all entries");
-    print_help_entry(">",   "export values to ./fpslog/fps.<fpsname>.dat");
-    print_help_entry("<",   "import commands from ./fpscmd/fps.<fpsname>.cmd");
-    print_help_entry("P",   "(P)rocess input file \"confscript\"");
+    print_help_entry("s",     "rescan");
+    print_help_entry("T/t",   "initialize (T)mux session / kill (t)mux session");
+    print_help_entry("E/e",   "(E)rase FPS and tmux sessions / (e)rase FPS only");
+    print_help_entry("C/c/u", "start/stop/update CONF process");
+    print_help_entry("R/r",   "start/stop RUN process");
+    print_help_entry("l",     "list all entries");
+    print_help_entry(">",     "export values to ./fpslog/fps.<fpsname>.dat");
+    print_help_entry("<",     "import commands from ./fpscmd/fps.<fpsname>.cmd");
+    print_help_entry("P",     "(P)rocess input file \"confscript\"");
     printfw("        format: setval <paramfulname> <value>\n");
 }
 
@@ -7618,6 +7696,16 @@ inline static void fpsCTRLscreen_print_nodeinfo(
     DEBUG_TRACEPOINT("TEST LINE : %d",
                      fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
+	printfw("    FPS call              : %s -> %s [", 
+		fps[keywnode[nodeSelected].fpsindex].md->callprogname,
+		fps[keywnode[nodeSelected].fpsindex].md->callfuncname);
+		
+	for(int i=0; i<fps[keywnode[nodeSelected].fpsindex].md->NBnameindex; i++)
+	{
+		printfw(" %s", fps[keywnode[nodeSelected].fpsindex].md->nameindexW[i]);
+	}
+	printfw(" ]\n");
+
     printfw("    FPS source            : %s %d\n",
            fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
            fps[keywnode[nodeSelected].fpsindex].md->sourceline);
@@ -7627,9 +7715,82 @@ inline static void fpsCTRLscreen_print_nodeinfo(
            fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
 
     DEBUG_TRACEPOINT(" ");
-    printfw("    FPS tmux sessions     :  %s:conf  %s:run\n",
-           fps[keywnode[nodeSelected].fpsindex].md->name,
-           fps[keywnode[nodeSelected].fpsindex].md->name);
+    printfw("    FPS tmux sessions     :  "); 
+    
+
+    EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:ctrl 2> /dev/null", fps[keywnode[nodeSelected].fpsindex].md->name);
+    if(data.retvalue == 0)
+    {
+		fps[keywnode[nodeSelected].fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL;
+	}
+	else
+	{
+		fps[keywnode[nodeSelected].fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL;
+	}
+    
+    
+    EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:conf 2> /dev/null", fps[keywnode[nodeSelected].fpsindex].md->name);
+    if(data.retvalue == 0)
+    {
+		fps[keywnode[nodeSelected].fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF;
+	}
+	else
+	{
+		fps[keywnode[nodeSelected].fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF;
+	}
+
+    EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:run 2> /dev/null", fps[keywnode[nodeSelected].fpsindex].md->name);
+    if(data.retvalue == 0)
+    {
+		fps[keywnode[nodeSelected].fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN;
+	}
+	else
+	{
+		fps[keywnode[nodeSelected].fpsindex].md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN;
+	}
+
+       
+	if( fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL )
+	{
+		screenprint_setcolor(COLOR_OK);
+		printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
+		screenprint_unsetcolor(COLOR_OK);
+	}
+	else
+	{
+		screenprint_setcolor(COLOR_ERROR);
+		printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
+		screenprint_unsetcolor(COLOR_ERROR);
+	}
+	printfw(" ");
+	if( fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF )
+	{
+		screenprint_setcolor(COLOR_OK);
+		printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
+		screenprint_unsetcolor(COLOR_OK);
+	}
+	else
+	{
+		screenprint_setcolor(COLOR_ERROR);
+		printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
+		screenprint_unsetcolor(COLOR_ERROR);
+	}
+	printfw(" ");
+	if( fps[keywnode[nodeSelected].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN )
+	{
+		screenprint_setcolor(COLOR_OK);
+		printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
+		screenprint_unsetcolor(COLOR_OK);
+	}
+	else
+	{
+		screenprint_setcolor(COLOR_ERROR);
+		printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
+		screenprint_unsetcolor(COLOR_ERROR);
+	}
+	printfw("\n");
+	
+
 
     DEBUG_TRACEPOINT(" ");
     printfw("======== NODE info ( # %5ld)\n", nodeSelected);
@@ -7668,7 +7829,6 @@ inline static void fpsCTRLscreen_print_nodeinfo(
     }
     printfw("\n\n");
 }
-
 
 
 
@@ -7832,6 +7992,18 @@ inline static int fpsCTRLscreen_process_user_key(
             fpsCTRLvar->fpsindexSelected =
                 0; // safeguard in case current selection disappears
             break;
+
+
+		case 'T' : // initialize tmux session
+			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+			functionparameter_FPS_tmux_init(fps, fpsindex);		
+		break;
+
+		case 't' : // kill tmux session
+			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+			functionparameter_FPS_tmux_kill(fps, fpsindex);		
+		break;
+		
 
         case 'E' : // Erase FPS and close tmux sessions
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
@@ -8185,7 +8357,8 @@ inline static int fpsCTRLscreen_process_user_key(
 
 
 
-/**
+/** @brief runs fpsCTRL GUI
+ * 
  * ## Purpose
  *
  * Automatically build simple ASCII GUI from function parameter structure (fps) name mask
@@ -8236,6 +8409,8 @@ errno_t functionparameter_CTRLscreen(
     clock_gettime(CLOCK_REALTIME, &tnow);
     data.FPS_TIMESTAMP = tnow.tv_sec;
     strcpy(data.FPS_PROCESS_TYPE, "ctrl");
+
+
 
     functionparameter_outlog("FPSCTRL", "START\n");
 

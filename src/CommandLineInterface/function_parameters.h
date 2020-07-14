@@ -364,6 +364,8 @@ typedef struct
 
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE  500
 
+
+
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CONF       0x0001   // is configuration running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUN        0x0002   // is process running ?
 
@@ -372,6 +374,12 @@ typedef struct
 
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP    0x0100   // is process loop running ?
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK    0x0200   // Are parameter values OK to run loop process ? (1=OK, 0=not OK)
+
+// are tmux sessions online ?
+#define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF   0x1000
+#define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN    0x2000
+#define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL   0x4000
+
 
 
 
@@ -404,10 +412,13 @@ typedef struct
 
 
 
-#define FPS_CWD_STRLENMAX    200
-#define FPS_SRCDIR_STRLENMAX 200
-#define FPS_PNAME_STRMAXLEN  100
-#define FPS_DESCR_STRMAXLEN  200
+#define FPS_CWD_STRLENMAX      200
+#define FPS_SRCDIR_STRLENMAX   200
+#define FPS_PNAME_STRMAXLEN    100
+#define FPS_CALLPROGNAME_STRMAXLEN 80
+#define FPS_CALLFUNCNAME_STRMAXLEN 100
+#define FPS_DESCR_STRMAXLEN    200
+
 
 // metadata
 typedef struct
@@ -422,20 +433,22 @@ typedef struct
     // where should the parameter values be saved to disk ?
     char                fpsdirectory[FPS_CWD_STRLENMAX];
     
-    char				sourcefname[FPS_SRCDIR_STRLENMAX]; // source code location
-    
+    // source code file name
+    char				sourcefname[FPS_SRCDIR_STRLENMAX];
+    // souce code line
     int					sourceline;
 
 
 
     // the name and indices are automatically parsed in the following format
     char                pname[FPS_PNAME_STRMAXLEN];          // example: pname
+    char                callprogname[FPS_CALLPROGNAME_STRMAXLEN];
+    char                callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
     char                nameindexW[16][10];  // subnames
     int                 NBnameindex;         // example: 2
 
     // configuration will run in tmux session pname-XX:conf
     // process       will run in tmux session pname-XX:run
-
 
     // PID of process owning parameter structure configuration
     pid_t               confpid;
@@ -777,7 +790,7 @@ extern "C" {
 #endif
 
 
-errno_t function_parameter_getFPSname_from_CLIfunc(char *fpsname_default);
+errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default);
 
 errno_t function_parameter_execFPScmd();
 

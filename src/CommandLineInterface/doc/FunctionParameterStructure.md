@@ -10,7 +10,7 @@
 ---
 
 
-**The function  parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /tmp/fpsname.fps.shm.**
+**The function  parameter structure (FPS) exposes a function's internal variables for read and/or write. It is stored in shared memory, in /MILK_SHM_DIR/fpsname.fps.shm.**
 
 
 Steps to run FPS-enabled processes:
@@ -44,7 +44,7 @@ Examples:
 	myfps                        # simple name, no optional integers
 	myfps-000000                 # optional integer 000000
 	myfps-000000-white-000002    # 3 optional args
-	
+
 @warning The FPS name does not need to match the process or function name. FPS name is specified in the CLI function as described in @ref page_FunctionParameterStructure_WritingCLIfunc.
 
 
@@ -67,9 +67,6 @@ fpsname:run                         | tmux session   | where RUN runs     | Set 
 
 ---
 
-
-
-	
 
 
 
@@ -204,17 +201,17 @@ Example source code below.
 
 ~~~~{.c}
 
-errno_t ExampleFunction_cli()
+errno_t ExampleFunction__cli()
 {
     // Try FPS implementation
-    
+
     // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
     // Default FPS name will be used if CLI process has NOT been named.
     // See code in function_parameter.c for detailed rules.
 
     function_parameter_getFPSname_from_CLIfunc("measlinRM");
-	
-	if(data.FPS_CMDCODE != 0) {	// use FPS implementation	
+
+	if(data.FPS_CMDCODE != 0) {	// use FPS implementation
 		// set pointers to CONF and RUN functions
 		data.FPS_CONFfunc = ExampleFunction_FPCONF;
 		data.FPS_RUNfunc  = ExampleFunction_RUN;
@@ -226,7 +223,7 @@ errno_t ExampleFunction_cli()
     // call non FPS implementation - all parameters specified at function launch
     if(
         CLI_checkarg(1, CLIARG_FLOAT) +
-        CLI_checkarg(2, CLIARG_LONG) 
+        CLI_checkarg(2, CLIARG_LONG)
         == 0) {
         ExampleFunction(
             data.cmdargtoken[1].val.numf,
@@ -270,8 +267,7 @@ Check function_parameters.h for full list of flags.
 // manages configuration parameters
 // initializes configuration parameters structure
 //
-errno_t ExampleFunction_FPCONF(
-)
+errno_t ExampleFunction_FPCONF()
 {
     // ===========================
     // SETUP FPS
@@ -397,7 +393,7 @@ errno_t ExampleFunction_FPCONF(
 
 
 
-~~~~	
+~~~~
 
 
 
@@ -419,22 +415,20 @@ The RUN function will connect to the FPS and execute the run loop.
 //
 // run loop process
 //
-errno_t ExampleFunction_RUN(
-)
+errno_t ExampleFunction_RUN()
 {
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
 	FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN );
 
-	
-	
+
 	// ===============================
 	// GET FUNCTION PARAMETER VALUES
 	// ===============================
 
 	// parameters are addressed by their tag name
-		
+
 	// These parameters are read once, before running the loop
 	//
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
@@ -451,12 +445,10 @@ errno_t ExampleFunction_RUN(
 
 	char imsname[FUNCTION_PARAMETER_STRMAXLEN];
 	strncpy(imsname, functionparameter_GetParamPtr_STRING(&fps, ".option.imname"), FUNCTION_PARAMETER_STRMAXLEN);
-	
 
 	// connect to WFS image
     	long IDim = read_sharedmem_image(imsname);
-	
-	
+
 	// ===============================
 	// RUN LOOP
 	// ===============================
@@ -466,12 +458,11 @@ errno_t ExampleFunction_RUN(
 	{
 		// here we compute what we need...
 		//
-		
-		
+
 		// Note that some mechanism is required to set loopOK to 0 when MyFunction_Stop() is called
 		// This can use a separate shared memory path
 	}
-	
+
 	function_parameter_RUNexit( &fps );
 	return RETURN_SUCCESS;
 }
@@ -482,16 +473,14 @@ errno_t ExampleFunction_RUN(
 
 ~~~{.c}
 errno_t ExampleFunction(
-    long arg0num, 
-    long arg1num, 
-    long arg2num, 
+    long arg0num,
+    long arg1num,
+    long arg2num,
     long arg3num
 ) {
-    char fpsname[200];
-    
     long pindex = (long) getpid();  // index used to differentiate multiple calls to function
     // if we don't have anything more informative, we use PID
-    
+
     FUNCTION_PARAMETER_STRUCT fps;
 
     // create FPS
@@ -546,8 +535,7 @@ The example also shows using FPS to set the process realtime priority.
  *
  */
 
-errno_t MyFunction_RUN(
-)
+errno_t MyFunction_RUN()
 {
 	// ==================================================
 	// ### Connect to FUNCTION PARAMETER STRUCTURE (FPS)
@@ -684,7 +672,7 @@ errno_t MyFunction_RUN(
     // create archive script (optional)
 	// Write archive script
 	// to be executed to archive most recent calibration data
-	// takes fpsname as input 
+	// takes fpsname as input
 	//
 	// REQUIRES :
 	// .out.timestring

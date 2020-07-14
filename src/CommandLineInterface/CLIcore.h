@@ -262,9 +262,7 @@ if(slen >= STRINGMAXLEN_COMMAND) {                                         \
     PRINT_ERROR("snprintf string truncation");                             \
     abort();                                                               \
 }                                                                          \
-if(system(syscommandstring) != 0) {                                        \
-    PRINT_ERROR("system() returns non-zero value\ncommand \"%s\" failed", syscommandstring); \
-}                                                                          \
+data.retvalue = system(syscommandstring);                                  \
 } while(0)
 
 
@@ -647,8 +645,12 @@ typedef struct
     char shmdir[100];
     char shmsemdirname[100]; // same ad above with .s instead of /s
 
+
+	// SIGNALS
+	// =================================================
+
     struct sigaction sigact;
-    // signals toggle flags
+  
     int signal_USR1;
     int signal_USR2;
     int signal_TERM;
@@ -661,8 +663,10 @@ typedef struct
 
 
 
-
+	// TEST POINTS
+	// =================================================
     // can be used to trace program execution for runtime profiling and debugging
+    
     int    testpoint_line;
     char   testpoint_file[STRINGMAXLEN_FILENAME];
     char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
@@ -670,10 +674,16 @@ typedef struct
     struct timespec testpoint_time;
 
 
+    
+    
     int progStatus;  // main program status
     // 0: before automatic loading of shared objects
     // 1: after automatic loading of shared objects
 
+
+	// REAL-TIME PRIO
+	// =================================================
+	
     uid_t ruid; // Real UID (= user launching process at startup)
     uid_t euid; // Effective UID (= owner of executable at startup)
     uid_t suid; // Saved UID (= owner of executable at startup)
@@ -683,6 +693,10 @@ typedef struct
     // when root privileges needed, we set euid <- suid
     // when reverting to user privileges : euid <- ruid
 
+
+	// OPERATION MODE
+	// =================================================
+	
     int            Debug;
     int            quiet;
     int            overwrite;		// automatically overwrite FITS files
@@ -691,7 +705,10 @@ typedef struct
     gsl_rng       *rndgen;		// random number generator
     int            precision;		// default precision: 0 for float, 1 for double
 
-    // logging, process monitoring
+
+    // LOGGING, PROCESS MONITORING
+    // =================================================
+
     int            CLIloopON;
     int            CLIlogON;
     char           CLIlogname[200];
@@ -699,7 +716,11 @@ typedef struct
     int            processinfoActive; // 1 is the process is currently logged
     PROCESSINFO   *pinfo;             // pointer to process info structure
 
-    // Command Line Interface (CLI) INPUT
+
+
+    // COMMAND LINE INTERFACE (CLI)
+	// =================================================
+
     int            fifoON;
     char           processname[100];
     char           processname0[100];
@@ -710,17 +731,24 @@ typedef struct
     long           NB_MAX_COMMAND;
     CMD            cmd[1000];
 
-    int            parseerror;         // 1 if error, 0 otherwise
-    long           cmdNBarg;           // number of arguments in last command line
+	// 1 if error, 0 otherwise
+    int            parseerror;
+	// number of arguments in last command line
+    long           cmdNBarg;
     CMDARGTOKEN    cmdargtoken[NB_ARG_MAX];
-    long
-    cmdindex;           // when command is found in command line, holds index of command
-    long           calctmp_imindex;    // used to create temporary images
-    int
-    CMDexecuted;        // 0 if command has not been executed, 1 otherwise
+
+	// when command is found in command line, holds index of command
+    long           cmdindex;
+    // used to create temporary images
+    long           calctmp_imindex;
+	// 0 if command has not been executed, 1 otherwise
+    int            CMDexecuted;
 
 
-    // Modules
+
+    // MODUES
+    // =================================================
+
     long           NBmodule;
     long           NB_MAX_MODULE;
     MODULE         module[100];
@@ -730,6 +758,13 @@ typedef struct
     char           moduleshortname_default[80];
     char           moduledatestring[20];
     char           moduletimestring[20];
+
+
+	// FUNCTION PARAMETER STRUCTURES (FPSs)
+	// =================================================
+
+	long           NB_MAX_FPS;
+	FUNCTION_PARAMETER_STRUCT *fps;
 
     // Function parameter structure (FPS) instegration
     // These entries are set when CLI process enters FPS function
@@ -750,7 +785,9 @@ typedef struct
     int            NBKEWORD_DFT;
 
 
-    // ======== IMAGES =============
+
+    // IMAGES
+    // =================================================
     long           NB_MAX_IMAGE;
 #ifdef DATA_STATIC_ALLOC
 	// image static allocation mode
@@ -762,7 +799,10 @@ typedef struct
 
 
 
-    // ======== VARIABLES =============
+
+    // VARIABLES 
+    // =================================================
+
     long           NB_MAX_VARIABLE;
 #ifdef DATA_STATIC_ALLOC
 	// variable static allocation mode
@@ -772,16 +812,18 @@ typedef struct
 #endif
 
 
-    // ======== FUNCTION PARAMETER STRUCTURES =============
-	long           NB_MAX_FPS;
-	FUNCTION_PARAMETER_STRUCT *fps;
-	
-	
-	
 
+	
+	
+	// CONVENIENCE STORAGE
+	// =================================================
     float          FLOATARRAY[1000];	// array to store temporary variables
     double         DOUBLEARRAY[1000];    // for convenience
     char           SAVEDIR[500];
+
+	// gen purpose return value
+	// used for system commands
+	int            retvalue; 
 
     // status counter (used for profiling)
     int            status0;
