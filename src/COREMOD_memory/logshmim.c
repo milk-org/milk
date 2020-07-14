@@ -449,7 +449,9 @@ void *save_fits_function(
 
 
 
-/// creates logshimconf shared memory and loads it
+/** @brief creates logshimconf shared memory and loads it
+ * 
+ */ 
 LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
     const char *logshimname
 )
@@ -673,7 +675,8 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(
 
 
 
-/** logs a shared memory stream onto disk
+/** @brief Logs a shared memory stream onto disk
+ * 
  * uses semlog semaphore
  *
  * uses data cube buffer to store frames

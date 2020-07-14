@@ -50,16 +50,19 @@
 #include "saveall.h"
 #include "shmim_purge.h"
 #include "shmim_setowner.h"
+#include "stream_ave.h"
+#include "stream_delay.h"
+#include "stream_diff.h"
+#include "stream_halfimdiff.h"
+#include "stream_monitorlimits.h"
+#include "stream_paste.h"
+#include "stream_pixmapdecode.h"
+#include "stream_poke.h"
 #include "stream_sem.h"
 #include "stream_TCP.h"
-#include "stream_poke.h"
-#include "stream_diff.h"
-#include "stream_paste.h"
-#include "stream_halfimdiff.h"
-#include "stream_ave.h"
 #include "stream_updateloop.h"
-#include "stream_delay.h"
-#include "stream_pixmapdecode.h"
+
+
 #include "variable_ID.h"
 
 
@@ -137,6 +140,7 @@ static errno_t init_module_CLI()
 	stream_paste_addCLIcmd();
 	stream_halfimdiff_addCLIcmd();
 	stream_ave_addCLIcmd();
+	stream_monitorlimits_addCLIcmd();
 
     // DATA LOGGING
 	logshmim_addCLIcmd();
