@@ -32,6 +32,7 @@ set(SOURCEFILES
     stream_delay.c
     stream_diff.c
     stream_halfimdiff.c
+    stream_monitorlimits.c
     stream_paste.c
     stream_pixmapdecode.c
     stream_poke.c
@@ -72,6 +73,7 @@ set(INCLUDEFILES
     stream_delay.h
     stream_diff.h
     stream_halfimdiff.h
+    stream_monitorlimits.h
     stream_paste.h
     stream_pixmapdecode.h
     stream_poke.h
