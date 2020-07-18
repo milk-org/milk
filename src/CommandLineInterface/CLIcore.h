@@ -58,9 +58,9 @@ typedef long variableID;
 #include "config.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
-#include "processtools.h"
-#include "streamCTRL.h"
-#include "function_parameters.h"
+#include "CommandLineInterface/processtools.h"
+#include "CommandLineInterface/streamCTRL.h"
+#include "CommandLineInterface/function_parameters.h"
 #endif
 
 
@@ -459,13 +459,13 @@ fclose(fptmp);                                                              \
 // *************************** FUNCTION RETURN VALUE *********************************************
 // For function returning type errno_t (= int)
 //
-#define RETURN_SUCCESS        0
+#define RETURN_SUCCESS       0
 #define RETURN_FAILURE       1   // generic error code
 #define RETURN_MISSINGFILE   2
 
 
 #define MAX_NB_FRAMENAME_CHAR 500
-#define MAX_NB_EXCLUSIONS 40
+#define MAX_NB_EXCLUSIONS      40
 
 #ifndef STANDALONE
 
@@ -746,7 +746,7 @@ typedef struct
 
 
 
-    // MODUES
+    // MODULES
     // =================================================
 
     long           NBmodule;
