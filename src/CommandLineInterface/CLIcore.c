@@ -1044,6 +1044,10 @@ static errno_t CLI_execute_line()
     struct  tm *uttime;
     struct  timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
 
+
+	
+	add_history(line);
+	
     //
     // If line starts with !, use system()
     //
@@ -1231,10 +1235,7 @@ static errno_t CLI_execute_line()
         {
             data.CMDexecuted = 1;
         }
-
-
-        add_history(line);
-
+		        
     }
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
