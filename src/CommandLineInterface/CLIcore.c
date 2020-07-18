@@ -460,7 +460,7 @@ errno_t write_process_exit_report(
 
 
 /**
- * Signal handler
+ * @brief Signal handler
  *
  *
  */
@@ -965,7 +965,7 @@ errno_t set_default_precision_double()
 
 
 
-errno_t cfits_usleep__cli()
+errno_t milk_usleep__cli()
 {
     if(data.cmdargtoken[1].type == 2)
     {
@@ -1096,11 +1096,11 @@ static errno_t CLI_execute_line()
             {
                 printf("ERROR: cannot log into file %s\n", data.CLIlogname);
                 EXECUTE_SYSTEM_COMMAND(
-                        "mkdir -p %s/logdir/%04d%02d%02d\n",
-                        getenv("HOME"),
-                        1900 + uttime->tm_year,
-                        1 + uttime->tm_mon,
-                        uttime->tm_mday);
+                    "mkdir -p %s/logdir/%04d%02d%02d\n",
+                    getenv("HOME"),
+                    1900 + uttime->tm_year,
+                    1 + uttime->tm_mon,
+                    uttime->tm_mday);
             }
             else
             {
@@ -1129,10 +1129,10 @@ static errno_t CLI_execute_line()
 
         while(cmdargstring != NULL)   // iterate on words
         {
-			// always copy word in string, so that arg can be processed as string if needed
-			sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
+            // always copy word in string, so that arg can be processed as string if needed
+            sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
             //printf("PROCESSING WORD \"%s\"  -> \"%s\"\n", cmdargstring, data.cmdargtoken[data.cmdNBarg].val.string);
-            
+
             if((cmdargstring[0] == '\"')
                     && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
             {
@@ -1155,7 +1155,7 @@ static errno_t CLI_execute_line()
                 yyparse();
                 yylex_destroy();
             }
-            
+
             cmdargstring = strtok(NULL, " ");
             data.cmdNBarg++;
         }
@@ -1167,7 +1167,7 @@ static errno_t CLI_execute_line()
         {
             while(data.cmdargtoken[i].type != 0)
             {
-               
+
                 printf("TOKEN %ld/%ld   \"%s\"  type : %d\n", i, data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
                 if(data.cmdargtoken[i].type == CMDARG_TYPE_FLOAT)   // double
                 {
@@ -1193,7 +1193,7 @@ static errno_t CLI_execute_line()
                 {
                     printf("\t string : %s\n", data.cmdargtoken[i].val.string);
                 }
-                
+
                 i++;
             }
         }
@@ -1211,10 +1211,10 @@ static errno_t CLI_execute_line()
                 data.CMDexecuted = 1;
             }
         }
-        
+
         for(i = 0; i < data.calctmp_imindex; i++)
-        {			
-			CREATE_IMAGENAME(calctmpimname, "_tmpcalc%ld", i);
+        {
+            CREATE_IMAGENAME(calctmpimname, "_tmpcalc%ld", i);
             //sprintf(calctmpimname, "_tmpcalc%ld", i);
             if(image_ID(calctmpimname) != -1)
             {
@@ -1236,6 +1236,12 @@ static errno_t CLI_execute_line()
         add_history(line);
 
     }
+
+    if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
+    {
+        printf("Command not found, or command with no effect\n");
+    }
+
 
     free(thetime);
 
@@ -1723,23 +1729,26 @@ static errno_t runCLI_prompt(
     char *prompt
 )
 {
+	int color_cyan = 36;
+	
+	
     if(data.quiet == 0) {
 
         if(strlen(promptstring) > 0)
         {
             if(data.processnameflag == 0)
             {
-                sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, promptstring, 0x1B, 0);
+                sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, color_cyan, promptstring, 0x1B, 0);
             }
             else
             {
-                sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, 36, promptstring,
+                sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, color_cyan, promptstring,
                         data.processname, 0x1B, 0);
             }
         }
         else
         {
-            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, 36, data.processname, 0x1B, 0);
+            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, color_cyan, data.processname, 0x1B, 0);
         }
     }
     else
@@ -2096,10 +2105,6 @@ errno_t runCLI(
         }
         CLIexecuteCMDready = 0;
 
-        if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
-        {
-            printf("Command not found, or command with no effect\n");
-        }
 
         //TEST data.CLIloopON = 0;
     }
@@ -2606,25 +2611,25 @@ void runCLI_data_init()
 
 
 
+	 RegisterCLIcommand(
+        "fparamCTRL",
+        __FILE__,
+        functionparameter_CTRLscreen__cli,
+        "function parameters control screen",
+        "no arg",
+        "fparamCTRL fpsname",
+        "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
 
-    strcpy(data.cmd[data.NBcmd].key, "fparamCTRL");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = functionparameter_CTRLscreen__cli;
-    strcpy(data.cmd[data.NBcmd].info, "function parameters control screen");
-    strcpy(data.cmd[data.NBcmd].syntax, "function parameter structure name");
-    strcpy(data.cmd[data.NBcmd].example, "fparamCTRL fpsname");
-    strcpy(data.cmd[data.NBcmd].Ccall,
-           "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
-    data.NBcmd++;
 
-    strcpy(data.cmd[data.NBcmd].key, "usleep");
-    strcpy(data.cmd[data.NBcmd].modulesrc, __FILE__);
-    data.cmd[data.NBcmd].fp = cfits_usleep__cli;
-    strcpy(data.cmd[data.NBcmd].info, "usleep");
-    strcpy(data.cmd[data.NBcmd].syntax, "<us>");
-    strcpy(data.cmd[data.NBcmd].example, "usleep 1000");
-    strcpy(data.cmd[data.NBcmd].Ccall, "usleep(long tus)");
-    data.NBcmd++;
+	 RegisterCLIcommand(
+        "usleep",
+        __FILE__,
+        milk_usleep__cli,
+        "usleep",
+        "<us>",
+        "usleep 1000",
+        "usleep(long tus)");
+
 
 
     //  init_modules();
