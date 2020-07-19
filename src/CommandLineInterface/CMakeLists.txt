@@ -33,6 +33,7 @@ else()
   add_flex_bison_dependency(MilkFlex MilkBison)
   set(CORE_FILES
       CLIcore.c
+      CLIcore_UI.c
       ${BISON_MilkBison_OUTPUTS}
       ${FLEX_MilkFlex_OUTPUTS})
 endif()
@@ -129,7 +130,8 @@ install(PROGRAMS
 
 install(TARGETS CLIcore DESTINATION lib)
 
-install(FILES CLIcore.h 
+install(FILES CLIcore.h
+              CLIcore_UI.h
               processtools.h  
               streamCTRL.h  
               function_parameters.h 
