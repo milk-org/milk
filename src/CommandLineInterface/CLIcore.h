@@ -71,7 +71,7 @@ typedef long variableID;
 
 #define STRINGMAXLEN_DEFAULT       1000
 #define STRINGMAXLEN_ERRORMSG      1000
-#define STRINGMAXLEN_CLICMD        1000
+#define STRINGMAXLEN_CLICMDLINE    1000  // CPU input command line
 #define STRINGMAXLEN_COMMAND       1000
 #define STRINGMAXLEN_STREAMNAME     100
 #define STRINGMAXLEN_IMGNAME        100
@@ -631,6 +631,8 @@ typedef struct
 
 
 
+
+
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
 {
@@ -731,7 +733,10 @@ typedef struct
     long           NB_MAX_COMMAND;
     CMD            cmd[1000];
 
-	// 1 if error, 0 otherwise
+	char           CLIcmdline[STRINGMAXLEN_CLICMDLINE];
+    int            CLIexecuteCMDready;
+    int            CLImatchMode;
+    // 1 if error, 0 otherwise
     int            parseerror;
 	// number of arguments in last command line
     long           cmdNBarg;
@@ -837,6 +842,8 @@ extern DATA data;
 
 
 
+
+
 errno_t set_signal_catch();
 
 void sig_handler(int signo);
@@ -860,8 +867,15 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLICcall
 );
 
+
 errno_t runCLItest(int argc, char *argv[], char *promptstring);
+
 errno_t runCLI(int argc, char *argv[], char *promptstring);
+
+errno_t CLI_execute_line();
+
+
+
 
 #endif // ifndef STANDALONE
 

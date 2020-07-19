@@ -41,29 +41,10 @@
 #include <sys/resource.h> // getrlimit
 #include <termios.h>
 
-//#include <pthread_np.h>
 
-#ifdef __MACH__
-#include <mach/mach_time.h>
-#define CLOCK_REALTIME 0
-#define CLOCK_MONOTONIC 0
-static int clock_gettime(int clk_id, struct mach_timespec *t)
-{
-    mach_timebase_info_data_t timebase;
-    mach_timebase_info(&timebase);
-    uint64_t time;
-    time = mach_absolute_time();
-    double nseconds = ((double)time * (double)timebase.numer) / ((
-                          double)timebase.denom);
-    double seconds = ((double)time * (double)timebase.numer) / ((
-                         double)timebase.denom * 1e9);
-    t->tv_sec = seconds;
-    t->tv_nsec = nseconds;
-    return 0;
-}
-#else
+
 #include <sys/time.h>
-#endif
+
 
 
 #include <math.h>
@@ -107,7 +88,7 @@ static int clock_gettime(int clk_id, struct mach_timespec *t)
 #include "COREMOD_arith/COREMOD_arith.h"
 
 
-
+#include "CommandLineInterface/CLIcore_UI.h"
 #include "CommandLineInterface/calc.h"
 #include "CommandLineInterface/calc_bison.h"
 
@@ -171,9 +152,6 @@ int Verbose = 0;
 int Listimfile = 0;
 
 
-char line[500];
-int rlquit = false;
-int CLIexecuteCMDready = 0;
 
 //double CFITSVARRAY[SZ_CFITSVARRAY];
 //long CFITSVARRAY_LONG[SZ_CFITSVARRAY];
@@ -199,14 +177,8 @@ static void runCLI_data_init();
 static void runCLI_free();
 
 
-// readline auto-complete
 
-int CLImatchMode = 0;
 
-static char **CLI_completion(const char *, int, int);
-char *CLI_generator(const char *, int);
-char *dupstr(char *);
-void *xmalloc(int);
 
 
 
@@ -1034,7 +1006,7 @@ errno_t streamCTRL_CTRLscreen__cli()
 
 
 
-static errno_t CLI_execute_line()
+errno_t CLI_execute_line()
 {
     long    i;
     char   *cmdargstring;
@@ -1046,22 +1018,22 @@ static errno_t CLI_execute_line()
 
 
 	
-	add_history(line);
+	add_history(data.CLIcmdline);
 	
     //
     // If line starts with !, use system()
     //
-    if(line[0] == '!')
+    if(data.CLIcmdline[0] == '!')
     {
-        line[0] = ' ';
-        if(system(line) != 0)
+        data.CLIcmdline[0] = ' ';
+        if(system(data.CLIcmdline) != 0)
         {
             PRINT_ERROR("system call error");
             exit(4);
         }
         data.CMDexecuted = 1;
     }
-    else if(line[0] == '#')
+    else if(data.CLIcmdline[0] == '#')
     {
         // do nothing... this is a comment
         data.CMDexecuted = 1;
@@ -1119,7 +1091,7 @@ static errno_t CLI_execute_line()
                         thetime->tv_nsec,
                         data.processname,
                         (long) getpid(),
-                        line);
+                        data.CLIcmdline);
                 fclose(fp);
             }
         }
@@ -1129,7 +1101,7 @@ static errno_t CLI_execute_line()
         //
         data.cmdNBarg = 0;
         // extract first word
-        cmdargstring = strtok(line, " ");
+        cmdargstring = strtok(data.CLIcmdline, " ");
 
         while(cmdargstring != NULL)   // iterate on words
         {
@@ -1253,28 +1225,6 @@ static errno_t CLI_execute_line()
 
 
 
-
-
-
-
-/**
- * @brief Readline callback
- *
- **/
-void rl_cb_linehandler(char *linein)
-{
-
-    if(NULL == linein)
-    {
-        rlquit = true;
-        return;
-    }
-
-    CLIexecuteCMDready = 1;
-    strcpy(line, linein);
-    CLI_execute_line();
-    free(linein);
-}
 
 
 
@@ -1725,51 +1675,12 @@ static errno_t setSHMdir()
 
 
 
-static errno_t runCLI_prompt(
-    char *promptstring,
-    char *prompt
-)
-{
-	int color_cyan = 36;
-	
-	
-    if(data.quiet == 0) {
-
-        if(strlen(promptstring) > 0)
-        {
-            if(data.processnameflag == 0)
-            {
-                sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, color_cyan, promptstring, 0x1B, 0);
-            }
-            else
-            {
-                sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, color_cyan, promptstring,
-                        data.processname, 0x1B, 0);
-            }
-        }
-        else
-        {
-            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, color_cyan, data.processname, 0x1B, 0);
-        }
-    }
-    else
-    {
-		sprintf(prompt," ");
-    }
-
-
-
-    return RETURN_SUCCESS;
-}
-
-
-
 
 
 /**
  * @brief Command Line Interface (CLI) main\n
  *
- * uses readline to read user input\n
+ * Uses readline to read user input\n
  * parsing done with bison and flex
  */
 
@@ -1825,25 +1736,10 @@ errno_t runCLI(
 
 
 
-
     // initialize readline
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
     rl_initialize();
-
-
-
-
-
-
-
-
-    //    sprintf(DocDir,"%s", DOCDIR);
-    //   sprintf(SrcDir,"%s", SOURCEDIR);
-    //  sprintf(BuildFile,"%s", __FILE__);
-    //  sprintf(BuildDate,"%s", __DATE__);
-    //  sprintf(BuildTime,"%s", __TIME__);
-
 
 
 
@@ -1926,17 +1822,6 @@ errno_t runCLI(
 
 
     C_ERRNO = 0; // initialize C error variable to 0 (no error)
-
-
-
-    //    int atexitfifoclose = 0;
-    //		if( atexitfifoclose == 0)
-    //			{
-    //				printf("Registering exit function fnExit_fifoclose\n");
-    //				atexit( fnExit_fifoclose );
-    //				atexitfifoclose = 1;
-    //			}
-
 
 
 
@@ -2023,7 +1908,7 @@ errno_t runCLI(
 
 
 
-        while((CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
+        while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
             //printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
@@ -2087,7 +1972,7 @@ errno_t runCLI(
                         if(buf0[0] == '\n')
                         {
                             buf1[total_bytes - 1] = '\0';
-                            strcpy(line, buf1);
+                            strcpy(data.CLIcmdline, buf1);
                             CLI_execute_line();
                             printf("%s", prompt);
                             fflush(stdout);
@@ -2104,7 +1989,7 @@ errno_t runCLI(
                     rl_callback_read_char();
                 }
         }
-        CLIexecuteCMDready = 0;
+        data.CLIexecuteCMDready = 0;
 
 
         //TEST data.CLIloopON = 0;
@@ -2131,122 +2016,6 @@ errno_t runCLI(
 
 
 
-
-
-
-
-
-
-// READLINE CUSTOM COMPLETION
-
-
-
-static char **CLI_completion(
-    const char *text,
-    int start,
-    int __attribute__((unused)) end
-)
-{
-    char **matches;
-
-    matches = (char **)NULL;
-
-    if(start == 0)
-    {
-        CLImatchMode = 0;    // try to match with command first
-    }
-    else
-    {
-        CLImatchMode = 1;    // do not try to match with command
-    }
-
-    matches = rl_completion_matches((char *)text, &CLI_generator);
-
-    //    else
-    //  rl_bind_key('\t',rl_abort);
-
-    return (matches);
-
-}
-
-
-
-char *CLI_generator(
-    const char *text,
-    int         state
-)
-{
-    static unsigned int list_index;
-    static unsigned int list_index1;
-    static unsigned int len;
-    char      *name;
-
-    if(!state)
-    {
-        list_index = 0;
-        list_index1 = 0;
-        len = strlen(text);
-    }
-
-    if(CLImatchMode == 0)
-        while(list_index < data.NBcmd)
-        {
-            name = data.cmd[list_index].key;
-            list_index++;
-            if(strncmp(name, text, len) == 0)
-            {
-                return (dupstr(name));
-            }
-        }
-
-    while(list_index1 < data.NB_MAX_IMAGE)
-    {
-        int iok;
-        iok = data.image[list_index1].used;
-        if(iok == 1)
-        {
-            name = data.image[list_index1].name;
-            //	  printf("  name %d = %s %s\n", list_index1, data.image[list_index1].name, name);
-        }
-        list_index1++;
-        if(iok == 1)
-        {
-            if(strncmp(name, text, len) == 0)
-            {
-                return (dupstr(name));
-            }
-        }
-    }
-    return ((char *)NULL);
-
-}
-
-
-
-char *dupstr(char *s)
-{
-    char *r;
-
-    r = (char *) xmalloc((strlen(s) + 1));
-    strcpy(r, s);
-    return (r);
-}
-
-
-
-void *xmalloc(int size)
-{
-    void *buf;
-
-    buf = malloc(size);
-    if(!buf)
-    {
-        fprintf(stderr, "Error: Out of memory. Exiting.'n");
-        exit(1);
-    }
-
-    return buf;
-}
 
 
 
