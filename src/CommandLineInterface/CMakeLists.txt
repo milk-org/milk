@@ -35,6 +35,7 @@ else()
       CLIcore.c
       CLIcore_UI.c
       CLIcore_modules.c
+      CLIcore_setSHMdir.c
       ${BISON_MilkBison_OUTPUTS}
       ${FLEX_MilkFlex_OUTPUTS})
 endif()
@@ -134,6 +135,7 @@ install(TARGETS CLIcore DESTINATION lib)
 install(FILES CLIcore.h
               CLIcore_UI.h
               CLIcore_modules.h
+              CLIcore_setSHMdir.h
               processtools.h  
               streamCTRL.h  
               function_parameters.h 
