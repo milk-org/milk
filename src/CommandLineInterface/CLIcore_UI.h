@@ -26,4 +26,4 @@ char **CLI_completion(const char *, int, int);
 
 
 
-#endif  // FUNCTION_PARAMETERS_H
+#endif
