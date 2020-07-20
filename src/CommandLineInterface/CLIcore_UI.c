@@ -12,7 +12,18 @@
 
 
 #include "CommandLineInterface/CLIcore.h"
+#include "CommandLineInterface/calc.h"
+#include "CommandLineInterface/calc_bison.h"
 
+
+#include "COREMOD_memory/COREMOD_memory.h"
+
+
+
+
+
+extern void yy_scan_string(const char *);
+extern int yylex_destroy(void);
 
 
 
@@ -209,6 +220,226 @@ char **CLI_completion(
 
 }
 
+
+
+
+
+
+
+errno_t CLI_execute_line()
+{
+    long    i;
+    char   *cmdargstring;
+    char    str[200];
+    FILE   *fp;
+    time_t  t;
+    struct  tm *uttime;
+    struct  timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
+
+
+	
+	add_history(data.CLIcmdline);
+	
+    //
+    // If line starts with !, use system()
+    //
+    if(data.CLIcmdline[0] == '!')
+    {
+        data.CLIcmdline[0] = ' ';
+        if(system(data.CLIcmdline) != 0)
+        {
+            PRINT_ERROR("system call error");
+            exit(4);
+        }
+        data.CMDexecuted = 1;
+    }
+    else if(data.CLIcmdline[0] == '#')
+    {
+        // do nothing... this is a comment
+        data.CMDexecuted = 1;
+    }
+    else
+    {
+        // some initialization
+        data.parseerror = 0;
+        data.calctmp_imindex = 0;
+        for(i = 0; i < NB_ARG_MAX; i++)
+        {
+            data.cmdargtoken[0].type = CMDARG_TYPE_UNSOLVED;
+        }
+
+
+        // log command if CLIlogON active
+        if(data.CLIlogON == 1)
+        {
+            t = time(NULL);
+            uttime = gmtime(&t);
+            clock_gettime(CLOCK_REALTIME, thetime);
+
+            sprintf(data.CLIlogname,
+                    "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log",
+                    getenv("HOME"),
+                    1900 + uttime->tm_year,
+                    1 + uttime->tm_mon,
+                    uttime->tm_mday,
+                    1900 + uttime->tm_year,
+                    1 + uttime->tm_mon,
+                    uttime->tm_mday,
+                    data.processname);
+
+            fp = fopen(data.CLIlogname, "a");
+            if(fp == NULL)
+            {
+                printf("ERROR: cannot log into file %s\n", data.CLIlogname);
+                EXECUTE_SYSTEM_COMMAND(
+                    "mkdir -p %s/logdir/%04d%02d%02d\n",
+                    getenv("HOME"),
+                    1900 + uttime->tm_year,
+                    1 + uttime->tm_mon,
+                    uttime->tm_mday);
+            }
+            else
+            {
+                fprintf(fp,
+                        "%04d/%02d/%02d %02d:%02d:%02d.%09ld %10s %6ld %s\n",
+                        1900 + uttime->tm_year,
+                        1 + uttime->tm_mon,
+                        uttime->tm_mday,
+                        uttime->tm_hour,
+                        uttime->tm_min,
+                        uttime->tm_sec,
+                        thetime->tv_nsec,
+                        data.processname,
+                        (long) getpid(),
+                        data.CLIcmdline);
+                fclose(fp);
+            }
+        }
+
+
+
+        //
+        data.cmdNBarg = 0;
+        // extract first word
+        cmdargstring = strtok(data.CLIcmdline, " ");
+
+        while(cmdargstring != NULL)   // iterate on words
+        {
+            // always copy word in string, so that arg can be processed as string if needed
+            sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
+            //printf("PROCESSING WORD \"%s\"  -> \"%s\"\n", cmdargstring, data.cmdargtoken[data.cmdNBarg].val.string);
+
+            if((cmdargstring[0] == '\"')
+                    && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
+            {
+                // if within quotes, store as raw string
+                unsigned int stri;
+                for(stri = 0; stri < strlen(cmdargstring) - 2; stri++)
+                {
+                    cmdargstring[stri] = cmdargstring[stri + 1];
+                }
+                cmdargstring[stri] = '\0';
+                printf("%s\n", cmdargstring);
+                data.cmdargtoken[data.cmdNBarg].type = CMDARG_TYPE_RAWSTRING;
+                sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
+            }
+            else     // otherwise, process it
+            {
+                sprintf(str, "%s\n", cmdargstring);
+                yy_scan_string(str);
+                data.calctmp_imindex = 0;
+                yyparse();
+                yylex_destroy();
+            }
+
+            cmdargstring = strtok(NULL, " ");
+            data.cmdNBarg++;
+        }
+        data.cmdargtoken[data.cmdNBarg].type = CMDARG_TYPE_UNSOLVED;
+
+
+        i = 0;
+        if(data.Debug == 1)
+        {
+            while(data.cmdargtoken[i].type != 0)
+            {
+
+                printf("TOKEN %ld/%ld   \"%s\"  type : %d\n", i, data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_FLOAT)   // double
+                {
+                    printf("\t double : %g\n", data.cmdargtoken[i].val.numf);
+                }
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_LONG)   // long
+                {
+                    printf("\t long   : %ld\n", data.cmdargtoken[i].val.numl);
+                }
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_STRING)   // new variable/image
+                {
+                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                }
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_EXISTINGIMAGE)   // existing image
+                {
+                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                }
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_COMMAND)   // command
+                {
+                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                }
+                if(data.cmdargtoken[i].type == CMDARG_TYPE_RAWSTRING)   // unprocessed string
+                {
+                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                }
+
+                i++;
+            }
+        }
+
+        if(data.parseerror == 0)
+        {
+            if(data.cmdargtoken[0].type == CMDARG_TYPE_COMMAND)
+            {
+                if(data.Debug == 1)
+                {
+                    printf("EXECUTING COMMAND %ld (%s)\n", data.cmdindex,
+                           data.cmd[data.cmdindex].key);
+                }
+                data.cmd[data.cmdindex].fp();
+                data.CMDexecuted = 1;
+            }
+        }
+
+        for(i = 0; i < data.calctmp_imindex; i++)
+        {
+            CREATE_IMAGENAME(calctmpimname, "_tmpcalc%ld", i);
+            //sprintf(calctmpimname, "_tmpcalc%ld", i);
+            if(image_ID(calctmpimname) != -1)
+            {
+                if(data.Debug == 1)
+                {
+                    printf("Deleting %s\n", calctmpimname);
+                }
+                delete_image_ID(calctmpimname);
+            }
+        }
+
+
+        if(!((data.cmdargtoken[0].type == CMDARG_TYPE_STRING) || (data.cmdargtoken[0].type == CMDARG_TYPE_RAWSTRING)))
+        {
+            data.CMDexecuted = 1;
+        }
+		        
+    }
+
+    if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
+    {
+        printf("Command not found, or command with no effect\n");
+    }
+
+
+    free(thetime);
+
+    return RETURN_SUCCESS;
+}
 
 
 

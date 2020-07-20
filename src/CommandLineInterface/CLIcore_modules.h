@@ -17,5 +17,14 @@ errno_t load_module_shared(const char *restrict modulename);
 
 errno_t load_module_shared_ALL();
 
+errno_t RegisterModule(
+    const char *restrict FileName,
+    const char *restrict PackageName,
+    const char *restrict InfoString,
+    int versionmajor,
+    int versionminor,
+    int versionpatch
+);
+
 
 #endif

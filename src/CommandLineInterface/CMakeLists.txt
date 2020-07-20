@@ -34,6 +34,8 @@ else()
   set(CORE_FILES
       CLIcore.c
       CLIcore_UI.c
+      CLIcore_help.c
+      CLIcore_memory.c
       CLIcore_modules.c
       CLIcore_setSHMdir.c
       ${BISON_MilkBison_OUTPUTS}
@@ -134,6 +136,8 @@ install(TARGETS CLIcore DESTINATION lib)
 
 install(FILES CLIcore.h
               CLIcore_UI.h
+              CLIcore_help.h
+              CLIcore_memory.h
               CLIcore_modules.h
               CLIcore_setSHMdir.h
               processtools.h  
