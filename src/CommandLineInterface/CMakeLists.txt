@@ -35,6 +35,7 @@ else()
       CLIcore.c
       CLIcore_UI.c
       CLIcore_checkargs.c
+      CLIcore_datainit.c
       CLIcore_help.c
       CLIcore_memory.c
       CLIcore_modules.c
@@ -139,6 +140,7 @@ install(TARGETS CLIcore DESTINATION lib)
 install(FILES CLIcore.h
               CLIcore_UI.h
               CLIcore_checkargs.h
+              CLIcore_datainit.h
               CLIcore_help.h
               CLIcore_memory.h
               CLIcore_modules.h
