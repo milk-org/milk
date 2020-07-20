@@ -24,6 +24,7 @@ errno_t runCLI_prompt(
 char **CLI_completion(const char *, int, int);
 
 
+errno_t CLI_execute_line();
 
 
 #endif

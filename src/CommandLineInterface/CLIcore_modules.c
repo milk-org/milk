@@ -199,3 +199,149 @@ errno_t load_module_shared_ALL()
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+
+errno_t RegisterModule(
+    const char *restrict FileName,
+    const char *restrict PackageName,
+    const char *restrict InfoString,
+    int versionmajor,
+    int versionminor,
+    int versionpatch
+)
+{
+    int OKmsg = 0;
+
+    if(strlen(data.modulename) == 0)
+    {
+        strcpy(data.module[data.NBmodule].name, "???");
+    }
+    else
+    {
+        strcpy(data.module[data.NBmodule].name,         data.modulename);
+    }
+
+
+    int stringlen = strlen(data.moduleshortname);
+    if(stringlen == 0)
+    {
+        // if no shortname provided, try to use default
+        if(strlen(data.moduleshortname_default) > 0)
+        {
+            // otherwise, construct call key as <shortname_default>.<CLIkey>
+            strcpy(data.moduleshortname, data.moduleshortname_default);
+        }
+    }
+
+    data.moduleindex = data.NBmodule; // current module index
+
+    strcpy(data.module[data.NBmodule].package,      PackageName);
+    strcpy(data.module[data.NBmodule].info,         InfoString);
+
+    strcpy(data.module[data.NBmodule].shortname,    data.moduleshortname);
+
+    strcpy(data.module[data.NBmodule].datestring,   data.moduledatestring);
+    strcpy(data.module[data.NBmodule].timestring,   data.moduletimestring);
+
+    data.module[data.NBmodule].versionmajor = versionmajor;
+    data.module[data.NBmodule].versionminor = versionminor;
+    data.module[data.NBmodule].versionpatch = versionpatch;
+
+
+    if(data.progStatus == 0)
+    {
+        OKmsg = 1;
+        if(!getenv("MILK_QUIET"))
+        {
+            printf(".");
+        }
+        //	printf("  %02ld  LOADING %10s  module %40s\n", data.NBmodule, PackageName, FileName);
+        //	fflush(stdout);
+    }
+
+    if(data.progStatus == 1)
+    {
+        OKmsg = 1;
+        printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n",
+               data.NBmodule,
+               PackageName,
+               FileName);
+        fflush(stdout);
+    }
+
+    if(OKmsg == 0)
+    {
+        printf("  %02ld  ERROR: module load requested outside of normal step -> LOADING %10s  module %40s\n",
+               data.NBmodule,
+               PackageName,
+               FileName);
+        fflush(stdout);
+    }
+
+    data.NBmodule++;
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+uint32_t RegisterCLIcommand(
+    const char *restrict CLIkey,
+    const char *restrict CLImodulesrc,
+    errno_t (*CLIfptr)(),
+    const char *restrict CLIinfo,
+    const char *restrict CLIsyntax,
+    const char *restrict CLIexample,
+    const char *restrict CLICcall
+)
+{
+    data.cmd[data.NBcmd].moduleindex = data.moduleindex;
+
+    if(data.cmd[data.NBcmd].moduleindex == -1)
+    {
+		strcpy(data.cmd[data.NBcmd].module, "MAIN");
+		strcpy(data.cmd[data.NBcmd].key, CLIkey);
+    }
+    else
+    {
+
+        if(strlen(data.module[data.moduleindex].shortname) == 0)
+        {
+            strcpy(data.cmd[data.NBcmd].key, CLIkey);
+        }
+        else
+        {
+            // otherwise, construct call key as <shortname>.<CLIkey>
+            sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIkey);
+        }
+    }
+
+
+    if(strlen(data.modulename) == 0)
+    {
+        strcpy(data.cmd[data.NBcmd].module, "unknown");
+    }
+    else
+    {
+        strcpy(data.cmd[data.NBcmd].module, data.modulename);
+    }
+
+    strcpy(data.cmd[data.NBcmd].modulesrc, CLImodulesrc);
+    data.cmd[data.NBcmd].fp = CLIfptr;
+    strcpy(data.cmd[data.NBcmd].info,    CLIinfo);
+    strcpy(data.cmd[data.NBcmd].syntax,  CLIsyntax);
+    strcpy(data.cmd[data.NBcmd].example, CLIexample);
+    strcpy(data.cmd[data.NBcmd].Ccall,   CLICcall);
+    data.NBcmd++;
+
+    return(data.NBcmd);
+}
+
+
+
