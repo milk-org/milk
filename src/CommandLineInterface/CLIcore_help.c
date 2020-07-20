@@ -8,6 +8,9 @@
 
 
 
+
+
+
 errno_t printInfo()
 {
     float f1;
@@ -383,4 +386,77 @@ errno_t help_command(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+errno_t help()
+{
+
+    EXECUTE_SYSTEM_COMMAND("more %s/src/CommandLineInterface/doc/help.txt",
+                           data.sourcedir);
+
+    return RETURN_SUCCESS;
+}
+
+
+errno_t helpreadline()
+{
+
+    EXECUTE_SYSTEM_COMMAND("more %s/src/CommandLineInterface/doc/helpreadline.md",
+                           data.sourcedir);
+
+    return RETURN_SUCCESS;
+}
+
+
+errno_t help_cmd()
+{
+
+    if((data.cmdargtoken[1].type == 3) || (data.cmdargtoken[1].type == 4)
+            || (data.cmdargtoken[1].type == 5))
+    {
+        help_command(data.cmdargtoken[1].val.string);
+    }
+    else
+    {
+        list_commands();
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+
+errno_t help_module()
+{
+
+    if(data.cmdargtoken[1].type == 3)
+    {
+        list_commands_module(data.cmdargtoken[1].val.string);
+    }
+    else
+    {
+        long i;
+        printf("\n");
+        printf("%2s  %10s %32s %10s %7s    %20s %s\n", "#", "shortname", "Name", "Package", "Version", "last compiled", 
+               "description");
+        printf("--------------------------------------------------------------------------------------------------------------\n");
+        for(i = 0; i < data.NBmodule; i++)
+        {
+            printf("%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    %11s %8s  %s\n", 
+					i, data.module[i].shortname,
+                   data.module[i].name,
+                   data.module[i].package,
+                   data.module[i].versionmajor, data.module[i].versionminor, data.module[i].versionpatch,
+                   data.module[i].datestring, data.module[i].timestring,
+                   data.module[i].info);
+        }
+        printf("-------------------------------------------------------------------------------------------------------\n");
+        printf("\n");
+    }
+
+    return RETURN_SUCCESS;
+}
+
 
