@@ -23,7 +23,7 @@ uint64_t compute_image_memory()
         if(data.image[i].used == 1)
         {
             totalmem += data.image[i].md[0].nelement *
-                        TYPESIZE[data.image[i].md[0].datatype];
+                        ImageStreamIO_typesize(data.image[i].md[0].datatype);
         }
     }
 
