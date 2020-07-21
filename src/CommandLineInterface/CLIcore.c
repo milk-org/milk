@@ -105,7 +105,7 @@
 pid_t CLIPID;
 
 
-uint8_t TYPESIZE[32];
+//uint8_t TYPESIZE[32];
 
 int C_ERRNO;
 
@@ -404,7 +404,7 @@ static errno_t runCLI_initialize(
 )
 {
     // NOTE: change to function call to ImageStreamIO_typename
-    TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
+   /* TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
     TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
     TYPESIZE[_DATATYPE_UINT16]                 = SIZEOF_DATATYPE_UINT16;
     TYPESIZE[_DATATYPE_INT16]                  = SIZEOF_DATATYPE_INT16;
@@ -415,7 +415,7 @@ static errno_t runCLI_initialize(
     TYPESIZE[_DATATYPE_FLOAT]                  = SIZEOF_DATATYPE_FLOAT;
     TYPESIZE[_DATATYPE_DOUBLE]                 = SIZEOF_DATATYPE_DOUBLE;
     TYPESIZE[_DATATYPE_COMPLEX_FLOAT]          = SIZEOF_DATATYPE_COMPLEX_FLOAT;
-    TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;
+    TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;*/
     //    TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
 
@@ -891,13 +891,7 @@ errno_t runCLI(
 
 
 
-/*^-----------------------------------------------------------------------------
-|  Initialization the "data" structure
-|
-|
-|
-|
-+-----------------------------------------------------------------------------*/
+
 void runCLI_cmd_init()
 {
 	// ensure that commands below belong to root/MAIN module
@@ -1175,15 +1169,7 @@ void fnExit1(void)
 
 
 
-/*^-----------------------------------------------------------------------------
-| static PF
-| command_line  : parse unix command line options.
-|
-|   int argc    :
-|   char **argv :
-|
-|   TO DO : allow option values. eg: debug=3
-+-----------------------------------------------------------------------------*/
+
 static int command_line_process_options(
     int argc,
     char **argv
