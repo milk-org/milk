@@ -177,7 +177,7 @@ errno_t list_image_ID_ncurses()
         if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long)(data.image[i].md[0].nelement)) * TYPESIZE[datatype];
+            tmp_long = ((long long)(data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             if(data.image[i].md[0].shared == 1)
             {
@@ -412,7 +412,7 @@ errno_t list_image_ID_ofp(
         if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long)(data.image[i].md[0].nelement)) * TYPESIZE[datatype];
+            tmp_long = ((long long)(data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             if(data.image[i].md[0].shared == 1)
             {
@@ -570,7 +570,7 @@ errno_t list_image_ID_ofp_simple(
         if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            //tmp_long = ((long long) (data.image[i].md[0].nelement)) * TYPESIZE[datatype];
+            //tmp_long = ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo, "%20s %d %ld %d %4ld", data.image[i].name, datatype,
                     (long) data.image[i].md[0].naxis, data.image[i].md[0].shared,
