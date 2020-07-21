@@ -3,17 +3,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
-/*^-----------------------------------------------------------------------------
-|
-|  memory_re_alloc    : keep the number of images addresses available
-| 		 NB_IMAGES_BUFFER above the number of used images
-|
-|                keep the number of variables addresses available
-|                NB_VARIABLES_BUFFER above the number of used variables
-|
-| NOTE:  this should probably be renamed and put in the module/memory/memory.c
-|
-+-----------------------------------------------------------------------------*/
+
 errno_t memory_re_alloc()
 {
     /* keeps the number of images addresses available
