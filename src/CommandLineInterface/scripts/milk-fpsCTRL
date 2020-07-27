@@ -145,7 +145,7 @@ mkfifo ${fifoname}
 CLIfifoname="$MILK_SHM_DIR/fpsCLIfifo"
 
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
-echo "fparamCTRL ${MODE} \"$arg1\" \"$fifoname\"" > $SF
+echo "fpsCTRL ${MODE} \"$arg1\" \"$fifoname\"" > $SF
 echo "exitCLI" >> $SF
 
 echo "fifoname = ${fifoname}"
