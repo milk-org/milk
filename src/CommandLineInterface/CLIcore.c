@@ -1080,7 +1080,7 @@ void runCLI_cmd_init()
 
 	// FPS
 	 RegisterCLIcommand(
-        "readfps",
+        "fpsread",
         __FILE__,
         function_parameter_structure_load__cli,
         "Read function parameter struct",

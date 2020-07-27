@@ -771,23 +771,18 @@ typedef struct
 	long           NB_MAX_FPS;
 	FUNCTION_PARAMETER_STRUCT *fps;
 
-    // Function parameter structure (FPS) instegration
+    // Function parameter structure (FPS) integration
     // These entries are set when CLI process enters FPS function
     char           FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
 	// Which type of FPS process is the current process ?
 	// conf, run, ctrl
 	char           FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
-	long           FPS_TIMESTAMP;        // included in log file name
-    uint32_t       FPS_CMDCODE; // current FPS mode
+	long           FPS_TIMESTAMP;     // included in log file name
+    uint32_t       FPS_CMDCODE;       // current FPS mode
     errno_t        (*FPS_CONFfunc)(); // pointer to FPS conf function
-    errno_t        (*FPS_RUNfunc)(); // pointer to FPS run function
+    errno_t        (*FPS_RUNfunc)();  // pointer to FPS run function
 	
 
-    // shared memory default
-    int            SHARED_DFT;
-
-    // Number of keyword per iamge default
-    int            NBKEWORD_DFT;
 
 
 
@@ -802,6 +797,11 @@ typedef struct
 #endif
 	int            MEM_MONITOR; // memory monitor enabled ?
 
+    // shared memory default
+    int            SHARED_DFT;
+
+    // Number of keyword per image default
+    int            NBKEWORD_DFT;
 
 
 
