@@ -29,7 +29,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "CommandLineInterface/CLIcore.h"
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,9 +77,14 @@
 #include <gsl/gsl_rng.h> // for random numbers
 #include <fitsio.h>
 
+
+
+#include "CommandLineInterface/CLIcore.h"
+
 //#include "initmodules.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
+
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
@@ -135,6 +139,7 @@ static fd_set cli_fdin_set;
 */
 int user_function();
 void fnExit1(void);
+void runCLI_cmd_init();
 static void runCLI_free();
 
 
@@ -1088,8 +1093,6 @@ void runCLI_cmd_init()
         "readfps imanalyze",
         "long function_parameter_structure_load(char *fpsname)");
 
-
-
 	 RegisterCLIcommand(
         "fpsCTRL",
         __FILE__,
@@ -1098,6 +1101,13 @@ void runCLI_cmd_init()
         "no arg",
         "fpsCTRL fpsname",
         "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
+
+
+
+
+
+
+
 
 
 	 RegisterCLIcommand(

@@ -56,8 +56,10 @@ typedef long variableID;
 
 #ifndef STANDALONE
 #include "config.h"
+
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
+
 #include "CommandLineInterface/processtools.h"
 #include "CommandLineInterface/streamCTRL.h"
 #include "CommandLineInterface/function_parameters.h"
