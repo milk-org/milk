@@ -668,6 +668,16 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
         {
             data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP;
         }
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_TMUXSTART_") == 0)   // Start tmux session
+        {
+            data.FPS_CMDCODE = FPSCMDCODE_TMUXSTART;
+        }
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_TMUXSTOP_") == 0)   // Stop tmux session
+        {
+            data.FPS_CMDCODE = FPSCMDCODE_TMUXSTOP;
+        }
     }
 
 
@@ -776,6 +786,19 @@ errno_t function_parameter_execFPScmd()
         data.FPS_CONFfunc(); // call conf function
         return RETURN_SUCCESS;
     }
+
+    if(data.FPS_CMDCODE == FPSCMDCODE_TMUXSTART)   // Start tmux session
+    {
+
+        return RETURN_SUCCESS;
+    }
+
+    if(data.FPS_CMDCODE == FPSCMDCODE_TMUXSTOP)   // Stop tmux session
+    {
+        
+        return RETURN_SUCCESS;
+    }
+
 #endif
 
     return RETURN_SUCCESS;
@@ -1114,6 +1137,9 @@ long function_parameter_structure_load(
 	long fpsID;
 	
 	printf("Loading fps %s\n", fpsname);
+	fflush(stdout);
+	
+	DEBUG_TRACEPOINT("loading FPS %s", fpsname);
 	
 	// next fpsID available	
 	fpsID = 0;
@@ -2361,6 +2387,8 @@ int function_parameter_add_entry(
 
 /** @brief FPS config setup
  *
+ * called by conf and run functions
+ * 
  */
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     const char *fpsname,
@@ -6735,6 +6763,7 @@ errno_t functionparameter_FPS_tmux_init(
 
 
     // Write functions to tmux windows
+    //
     char functionstring[funcstring_maxlen];
     char argstring[argstring_maxlen];
     char argstringcp[argstring_maxlen];
@@ -6756,6 +6785,7 @@ errno_t functionparameter_FPS_tmux_init(
 
 
 	// confstart
+	//
     sprintf(functionstring,
             "function fpsconfstart {\n"
             "echo \"STARTING CONF PROCESS\"\n"
@@ -6773,6 +6803,7 @@ errno_t functionparameter_FPS_tmux_init(
 
     
     // runstart
+    //
     sprintf(functionstring,
             "function fpsrunstart {\n"
             "echo \"STARTING RUN PROCESS\"\n"
@@ -6790,6 +6821,7 @@ errno_t functionparameter_FPS_tmux_init(
 
     
     // runstop
+    //
     sprintf(functionstring,
             "function fpsrunstop {\n"
             "echo \"STOPPING RUN PROCESS\"\n"

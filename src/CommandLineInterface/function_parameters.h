@@ -15,16 +15,6 @@
 
 
 
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-/*                                      DEFINES, MACROS */
-/* ===============================================================================================
- */
-/* ===============================================================================================
- */
-
 
 #define STRINGMAXLEN_FPS_LOGMSG       1000
 #define STRINGMAXLEN_FPS_CMDLINE      1000
@@ -47,6 +37,8 @@
 #define FPSCMDCODE_FPSINITCREATE      0x00000008  // (re-)create FPS even if it exists
 #define FPSCMDCODE_RUNSTART           0x00000010  // start run process
 #define FPSCMDCODE_RUNSTOP            0x00000020  // stop run process
+#define FPSCMDCODE_TMUXSTART          0x00000100  // start tmux sessions
+#define FPSCMDCODE_TMUXSTOP           0x00000200  // stop tmux sessions
 
 
 // function can use this structure to expose parameters for external control or monitoring
