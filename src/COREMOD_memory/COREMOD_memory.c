@@ -115,7 +115,7 @@ static errno_t init_module_CLI()
 
 	list_variable_addCLIcmd();
 	
-	
+	// FPS
 	fps_list_addCLIcmd();
 	fps_create_addCLIcmd();
 	
