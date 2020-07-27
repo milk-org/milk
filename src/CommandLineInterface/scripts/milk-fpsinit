@@ -50,11 +50,12 @@ echo " $(tput bold)USAGE:$(tput sgr0)"
 echo "     $USAGESTRING"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-h$(tput sgr0)            (h)elp and exit"
-echo "     $(tput bold)-e$(tput sgr0) <exec>     (e)xecutable - default is milk"
-echo "     $(tput bold)-c$(tput sgr0) <index>    (c)reate/setup single FPS"
-echo "     $(tput bold)-C$(tput sgr0)            (c)reate/setup ALL FPSs"
-echo "     $(tput bold)-t$(tput sgr0)            (t)est mode: do not execute tasks"
+echo "     $(tput bold)-h$(tput sgr0)             (h)elp and exit"
+echo "     $(tput bold)-f$(tput sgr0) <filename>  use (f)ilename for FPS list"
+echo "     $(tput bold)-e$(tput sgr0) <exec>      (e)xecutable - default is milk"
+echo "     $(tput bold)-c$(tput sgr0) <index>     (c)reate/setup single FPS"
+echo "     $(tput bold)-C$(tput sgr0)             (c)reate/setup ALL FPSs"
+echo "     $(tput bold)-t$(tput sgr0)             (t)est mode: do not execute tasks"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -179,7 +180,7 @@ FPSINDEX="NULL"
 EXECNAME="milk"
 TESTMODE=0
 
-while getopts :hc:Ce:t FLAG; do
+while getopts :hf:c:Ce:t FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -189,6 +190,9 @@ while getopts :hc:Ce:t FLAG; do
       fi
       exit
       ;;
+    f) # use filename for FPS list
+    FPSlistfilename="${OPTARG}"
+    ;;
     e) # set executable
     EXECNAME="${OPTARG}"
     ;;
@@ -248,8 +252,12 @@ INITREADYARRAY=( )
 
 
 
-# SCAN FILE
-# 
+# scan FPS list file
+# for each FPS in list:
+# - construct full FPS name
+# - scan for fps struct in shared memory
+# - scan for tmux session
+#
 
 while IFS= read -r line
 do
@@ -262,6 +270,8 @@ do
     FPSrootname=${stringarr[0]}
     CLIname=${stringarr[1]}
     
+    # construct full FPS name
+    #
     argstring=""
     FPSname="${FPSrootname}"
     for arg in `seq 1 ${nbarg}`; do
@@ -275,6 +285,9 @@ do
 	FPSNAMEARRAY+=( "${FPSname}" )
 	ARGSTRINGARRAY+=( "${argstring}" )
 
+
+	# check if shared memory struct exists
+	#
     fname="${MILK_SHM_DIR}/${FPSname}.fps.shm"
     if [ -f ${fname} ]; then
       FPSSTATUS="FOUND"
@@ -284,6 +297,8 @@ do
       FPSSTATUSARRAY+=( "MISSING" )
     fi
 
+	# check if tmux session exists
+	#
     tmux has-session -t ${FPSname} 2>/dev/null
     if [ $? = 0 ]; then
       TMUXSTATUS="FOUND"
@@ -293,7 +308,8 @@ do
       TMUXSTATUSARRAY+=( "MISSING" )
     fi
     
-    
+    # update status
+    #
     INITREADY="error"
     if [ ${FPSSTATUS} = "MISSING" ] && [ ${TMUXSTATUS} = "MISSING" ]; then
       INITREADY=( "ready" )
@@ -346,10 +362,12 @@ done
 
 echo ""
 echo "TASKS TO BE PERFORMED :"
+
 for i in "${!FPSNAMEARRAY[@]}"; do
   if [ "$i" = "${FPSINDEX}" ] || [ "ALL" = "${FPSINDEX}" ]; then
   
-	
+	# if status is error, cleanup
+	#
 	if [ "${INITREADYARRAY[$i]}" = "error" ]; then
 	
 	  printf "  Clearing error %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
