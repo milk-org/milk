@@ -42,13 +42,15 @@
 #include "COREMOD_memory/create_variable.h"
 #include "COREMOD_memory/delete_image.h"
 #include "COREMOD_memory/delete_variable.h"
+
+#include "COREMOD_memory/fps_list.h"
+
 #include "COREMOD_memory/image_checksize.h"
 #include "COREMOD_memory/image_complex.h"
 #include "COREMOD_memory/image_copy.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/image_keyword.h"
 #include "COREMOD_memory/image_set_counters.h"
-#include "COREMOD_memory/list_fps.h"
 #include "COREMOD_memory/list_image.h"
 #include "COREMOD_memory/list_variable.h"
 #include "COREMOD_memory/logshmim.h"

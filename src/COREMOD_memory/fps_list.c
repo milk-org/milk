@@ -1,5 +1,5 @@
 /**
- * @file    list_fps.c
+ * @file    fps_list.c
  * @brief   list function parameter structure
  */
 
@@ -14,7 +14,7 @@
 // Forward declaration(s)
 // ==========================================
 
-errno_t list_fps();
+errno_t fps_list();
 
 
 
@@ -30,17 +30,17 @@ errno_t list_fps();
 // Register CLI command(s)
 // ==========================================
 
-errno_t list_fps_addCLIcmd()
+errno_t fps_list_addCLIcmd()
 {
 
     RegisterCLIcommand(
-        "listfps",
+        "fpslist",
         __FILE__,
-        list_fps,
+        fps_list,
         "list function parameter structures (FPSs)",
         "no argument",
-        "listfps",
-        "errno_t list_fps()");
+        "fpslist",
+        "errno_t fps_list()");
 
     return RETURN_SUCCESS;
 }
@@ -50,7 +50,7 @@ errno_t list_fps_addCLIcmd()
 
 
 
-errno_t list_fps()
+errno_t fps_list()
 {
     long fpsID;
     long fpscnt = 0;
