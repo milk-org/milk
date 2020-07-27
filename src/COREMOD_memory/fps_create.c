@@ -1,5 +1,5 @@
 /**
- * @file    create_fps.c
+ * @file    fps_create.c
  * @brief   create function parameter structure
  */
 
@@ -14,7 +14,7 @@
 // Forward declaration(s)
 // ==========================================
 
-errno_t list_fps();
+errno_t fps_create();
 
 
 
@@ -22,7 +22,7 @@ errno_t list_fps();
 // Command line interface wrapper function(s)
 // ==========================================
 
-static errno_t create_fps__cli()
+static errno_t fps_create__cli()
 {
     if(0
             + CLI_checkarg(1, CLIARG_LONG)
@@ -48,16 +48,16 @@ static errno_t create_fps__cli()
 // Register CLI command(s)
 // ==========================================
 
-errno_t create_fps_addCLIcmd()
+errno_t fps_create_addCLIcmd()
 {
 
     RegisterCLIcommand(
-        "createfps",
+        "fpscreate",
         __FILE__,
-        create_fps__cli,
+        fps_create__cli,
         "create function parameter structure (FPS)",
         "<NBparam> <name>",
-        "createfps 100 newfps",
+        "fpscreate 100 newfps",
         "errno_t function_parameter_struct_create(int NBparamMAX, const char *name");
 
     return RETURN_SUCCESS;
