@@ -782,6 +782,8 @@ extern "C" {
 #endif
 
 
+errno_t function_parameter_struct_shmdirname(char *shmdname);
+
 errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default);
 
 errno_t function_parameter_execFPScmd();
