@@ -1091,12 +1091,12 @@ void runCLI_cmd_init()
 
 
 	 RegisterCLIcommand(
-        "fparamCTRL",
+        "fpsCTRL",
         __FILE__,
         functionparameter_CTRLscreen__cli,
         "function parameters control screen",
         "no arg",
-        "fparamCTRL fpsname",
+        "fpsCTRL fpsname",
         "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
 
 
