@@ -53,6 +53,7 @@ add_library(CLIcore
             processtools.c
             streamCTRL.c
             function_parameters.c
+            fps_connect.c
             fps_PrintParameterInfo.c
             TUItools.c
             ${CORE_FILES})

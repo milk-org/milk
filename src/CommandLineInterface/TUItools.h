@@ -113,7 +113,7 @@ void screenprint_setnormal();
 
 errno_t TUI_print_header(const char *str, char c);
 
-void reset_terminal_mode();
+void TUI_reset_terminal_mode();
 
 errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol);
 
@@ -125,7 +125,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolp
 
 errno_t TUI_exit();
 
-void functionparameter_CTRLscreen_atexit();
+void TUI_atexit();
 
 errno_t TUI_ncurses_refresh();
 

@@ -327,7 +327,7 @@ errno_t TUI_print_header(const char *str, char c)
 
 /** @brief restore terminal settings
  */
-void reset_terminal_mode()
+void TUI_reset_terminal_mode()
 {
     tcsetattr(0, TCSANOW, &orig_termios);
     tcsetattr(0, TCSANOW, &new_termios);
@@ -357,7 +357,7 @@ errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol)
     *wcol = w.ws_col;
 
 
-    atexit(reset_terminal_mode);
+    atexit(TUI_reset_terminal_mode);
 
     return RETURN_SUCCESS;
 }
@@ -459,7 +459,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolp
     if( screenprintmode == SCREENPRINT_NCURSES) // ncurses mode
     {
         TUI_initncurses(wrowptr, wcolptr);
-        atexit(functionparameter_CTRLscreen_atexit);
+        atexit(TUI_atexit);
         clear();
     }
     else
@@ -483,7 +483,7 @@ errno_t TUI_exit()
 
 
 
-void functionparameter_CTRLscreen_atexit()
+void TUI_atexit()
 {
     //printf("exiting CTRLscreen\n");
 
