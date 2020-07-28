@@ -32,7 +32,7 @@ typedef int errno_t;
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
 #include <errno.h>
 #include <stdarg.h>
-#include <termios.h>
+//#include <termios.h>
 #include <time.h>
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ typedef int errno_t;
 #include <signal.h>
 #include <unistd.h> // usleep
 
-#include <sys/ioctl.h> // for terminal size
+//#include <sys/ioctl.h> // for terminal size
 
 
 #ifndef STANDALONE
@@ -62,6 +62,8 @@ typedef int errno_t;
 #endif
 
 #include "function_parameters.h"
+#include "TUItools.h"
+
 
 
 /* =============================================================================================== */
@@ -78,70 +80,6 @@ typedef int errno_t;
 #define MAXNBLEVELS 20
 
 
-#define SCREENPRINT_STDIO   0
-#define SCREENPRINT_NCURSES 1
-#define SCREENPRINT_NONE    2
-
-
-// ANSI ESCAPE CODES
-
-static int printAEC = 0;
-
-#define AEC_NORMAL    0
-#define AEC_BOLD      1
-#define AEC_FAINT     2
-#define AEC_ITALIC    3
-#define AEC_UNDERLINE 4
-#define AEC_SLOWBLINK 5
-#define AEC_FASTBLINK 6
-#define AEC_REVERSE   7
-
-#define AEC_BOLDOFF      22
-#define AEC_FAINTOFF     22
-#define AEC_ITALICOFF     3
-#define AEC_UNDERLINEOFF 24
-#define AEC_BLINKOFF     25
-#define AEC_REVERSEOFF   27
-
-// Foreground color
-
-static int printAECfgcolor = 37;
-
-#define AEC_FGCOLOR_BLACK   30
-#define AEC_FGCOLOR_RED     31
-#define AEC_FGCOLOR_GREEN   32
-#define AEC_FGCOLOR_YELLOW  33
-#define AEC_FGCOLOR_BLUE    34
-#define AEC_FGCOLOR_MAGENTA 35
-#define AEC_FGCOLOR_CYAN    36
-#define AEC_FGCOLOR_WHITE   37
-// note : +60 for high intensity
-
-
-// Background color
-
-static int printAECbgcolor = 40;
-
-#define AEC_BGCOLOR_BLACK   40
-#define AEC_BGCOLOR_RED     41
-#define AEC_BGCOLOR_GREEN   42
-#define AEC_BGCOLOR_YELLOW  43
-#define AEC_BGCOLOR_BLUE    44
-#define AEC_BGCOLOR_MAGENTA 45
-#define AEC_BGCOLOR_CYAN    46
-#define AEC_BGCOLOR_WHITE   47
-// note : +60 for high intensity
-
-
-#define AECBOLDHIGREEN "\033[1;92;40m"
-#define AECBOLDHIRED "\033[1;91;40m"
-#define AECNORMAL "\033[37;40;0m"
-
-
-#define COLOR_NONE    1
-#define COLOR_OK      2
-#define COLOR_WARNING 3
-#define COLOR_ERROR   4
 
 
 
@@ -151,21 +89,6 @@ static int printAECbgcolor = 40;
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
-static int wrow, wcol;
-
-/*
- * Defines printfw output
- * 
- * SCREENPRINT_STDIO     printf to stdout
- * SCREENPRINT_NCURSES   printw
- * SCREENPRINT_NONE      don't print (silent)
- */
-
-static int screenprintmode = SCREENPRINT_STDIO;
-
-struct termios orig_termios;
-struct termios new_termios;
 
 
 #define MAX_NB_CHILD 500
@@ -198,265 +121,7 @@ typedef struct
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-/** @brief print to screen, or not
- *
- * mode=0 : printf (stdout)
- * mode=1 : printw
- * mode=3 : don't print (silent)
- */
 
-static void printfw(const char *fmt, ...)
-{
-    va_list args;
-
-    va_start(args, fmt);
-
-
-    if(screenprintmode == SCREENPRINT_STDIO)
-    {
-        vfprintf(stdout, fmt, args);
-    }
-
-    if(screenprintmode == SCREENPRINT_NCURSES)
-    {
-        vw_printw(stdscr, fmt, args);
-    }
-
-    va_end(args);
-}
-
-
-static void screenprint_setcolor( int colorcode )
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(COLOR_PAIR(colorcode));
-	}
-	else
-	{
-		switch (colorcode) 
-		{
-			case 1:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_BLACK;			
-			break;
-
-			case 2:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_GREEN;			
-			break;
-
-			case 3:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_YELLOW;			
-			break;
-
-			case 4:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_RED;			
-			break;
-
-			case 5:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_BLUE;			
-			break;
-
-			case 6:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_GREEN;			
-			break;
-
-			case 7:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_YELLOW;			
-			break;
-
-			case 8:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_RED;			
-			break;
-
-			case 9:
-			printAECfgcolor = AEC_FGCOLOR_RED;
-			printAECbgcolor = AEC_BGCOLOR_BLACK;			
-			break;
-			
-			case 10:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_BLUE + 60;			
-			break;									
-		}
-		
-		printf( "\033[%d;%dm",  printAECfgcolor, printAECbgcolor);
-	}
-}
-
-
-static void screenprint_unsetcolor( int colorcode )
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(COLOR_PAIR(colorcode));
-	}
-	else
-	{
-		printAEC = AEC_NORMAL;
-		printAECfgcolor = AEC_FGCOLOR_WHITE;
-		printAECbgcolor = AEC_BGCOLOR_BLACK;	
-		printf( "\033[%dm", printAEC);//, printAECbgcolor);
-	}
-}
-
-
-static void screenprint_setbold()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_BOLD);
-	}
-	else
-	{
-		printAEC = AEC_BOLD;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_unsetbold()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_BOLD);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_BOLDOFF;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_setblink()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_BLINK);
-	}
-	else
-	{
-		printAEC = AEC_FASTBLINK;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_unsetblink()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_BLINK);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_BLINKOFF;
-		printf( "\033[%dm", AEC_NORMAL);
-	}
-}
-
-
-static void screenprint_setdim()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_DIM);
-	}
-	else
-	{
-		printAEC = AEC_FAINT;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_unsetdim()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_DIM);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_FAINTOFF;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_setreverse()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_REVERSE);
-	}
-	else
-	{
-		printAEC = AEC_REVERSE;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_unsetreverse()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_REVERSE);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_REVERSEOFF;
-		printf( "\033[%dm",  printAEC);
-	}
-}
-
-
-static void screenprint_setnormal()
-{
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		//attron(A_REVERSE);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL;
-		printAECfgcolor = AEC_FGCOLOR_WHITE;
-		printAECbgcolor = AEC_BGCOLOR_BLACK;
-		printf( "\033[%d;%d;%dm", printAEC, printAECfgcolor, printAECbgcolor );
-	}
-}
-
-
-static errno_t function_parameter__print_header(const char *str, char c)
-{
-    long n;
-    long i;
-
-    screenprint_setbold();
-    n = strlen(str);
-    for(i = 0; i < (wcol - n) / 2; i++)
-    {
-        printfw("%c", c);
-    }
-    printfw("%s", str);
-    for(i = 0; i < (wcol - n) / 2 - 1; i++)
-    {
-        printfw("%c", c);
-    }
-    printfw("\n");
-    screenprint_unsetbold();
-
-    return RETURN_SUCCESS;
-}
 
 
 
@@ -2490,186 +2155,6 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps)
 
 
 
-// ======================================== GUI FUNCTIONS =======================================
-
-/** @brief restore terminal settings
- */
-static void reset_terminal_mode()
-{
-    tcsetattr(0, TCSANOW, &orig_termios);
-    tcsetattr(0, TCSANOW, &new_termios);
-}
-
-
-static errno_t inittermios()
-{
-	tcgetattr(0, &orig_termios);
-
-    memcpy(&new_termios, &orig_termios, sizeof(new_termios));
-
-    //cfmakeraw(&new_termios);
-    new_termios.c_lflag &= ~ICANON;
-    new_termios.c_lflag &= ~ECHO;
-    new_termios.c_lflag &= ~ISIG;
-    new_termios.c_cc[VMIN] = 0;
-    new_termios.c_cc[VTIME] = 0;
-
-    tcsetattr(0, TCSANOW, &new_termios);
-
-    atexit(reset_terminal_mode);
-
-    return RETURN_SUCCESS;
-}
-
-
-/** @brief INITIALIZE ncurses
- *
- */
-static errno_t initncurses()
-{
-    if(initscr() == NULL)
-    {
-        fprintf(stderr, "Error initialising ncurses.\n");
-        exit(EXIT_FAILURE);
-    }
-    getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-
-    cbreak();
-    // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
-    // making characters typed by the user immediately available to the program
-
-    keypad(stdscr, TRUE);
-    // enable F1, F2 etc..
-
-    nodelay(stdscr, TRUE);
-    curs_set(0);
-
-    noecho();
-    // Don't echo() while we do getch
-
-
-
-    //nonl();
-    // Do not translates newline into return and line-feed on output
-
-
-    init_color(COLOR_GREEN, 400, 1000, 400);
-    start_color();
-
-    //  colored background
-    init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
-    init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
-    init_pair(  3, COLOR_BLACK,  COLOR_YELLOW ); // parameter out of sync
-    init_pair(  4, COLOR_WHITE,  COLOR_RED    );
-    init_pair(  5, COLOR_WHITE,  COLOR_BLUE   ); // DIRECTORY
-    init_pair(  6, COLOR_GREEN,  COLOR_BLACK  );
-    init_pair(  7, COLOR_YELLOW, COLOR_BLACK  );
-    init_pair(  8, COLOR_RED,    COLOR_BLACK  );
-    init_pair(  9, COLOR_BLACK,  COLOR_RED    );
-    init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
-
-
-    return RETURN_SUCCESS;
-}
-
-
-
-
-static int get_singlechar_nonblock()
-{
-    int ch = -1;
-
-    if(screenprintmode == SCREENPRINT_NCURSES)
-    {
-        ch = getch();  // ncurses function, non-blocking
-    }
-    else
-    {
-        char buff[3];
-
-        int l = read(STDIN_FILENO, buff, 3);
-
-        if(l>0) {
-            ch = buff[0];
-
-            if (buff[0] == 13) // enter
-            {
-                ch = 10; // new line
-            }
-
-
-            if (buff[0] == 27) { // if the first value is esc
-
-
-                if(buff[1] == 91) {
-                    switch (buff[2])
-                    {   // the real value
-                    case 'A':
-                        ch = KEY_UP; // code for arrow up
-                        break;
-                    case 'B':
-                        ch = KEY_DOWN; // code for arrow down
-                        break;
-                    case 'C':
-                        ch = KEY_RIGHT; // code for arrow right
-                        break;
-                    case 'D':
-                        ch = KEY_LEFT; // code for arrow left
-                        break;
-                    }
-                }
-
-
-                if(buff[1] == 79)
-                {
-                    switch (buff[2])
-                    {
-                    case 80:
-                        ch = KEY_F(1);
-                        break;
-                    case 81:
-                        ch = KEY_F(2);
-                        break;
-                    case 82:
-                        ch = KEY_F(3);
-                        break;
-                    }
-                }
-            }
-
-        }
-    }
-
-    return ch;
-}
-
-
-static int get_singlechar_block()
-{
-	int ch;
-	
-    if(screenprintmode == SCREENPRINT_NCURSES)
-    {
-        ch = getchar();
-    }
-    else
-    {
-        int getchardt_us = 100000;
-
-        ch = -1;
-        while(ch == -1)
-        {
-            usleep(getchardt_us); // kHz
-            ch = get_singlechar_nonblock();
-        }
-    }
-    return ch;
-}
-
-
-
-
-
 
 
 
@@ -3516,770 +3001,6 @@ errno_t functionparameter_GetTypeString(
 
 
 
-
-
-errno_t functionparameter_PrintParameterInfo(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
-    int pindex
-)
-{
-    printf("%s\n", fpsentry->parray[pindex].description);
-    printf("\n");
-
-
-    printf("------------- FUNCTION PARAMETER STRUCTURE\n");
-    printf("FPS name       : %s\n", fpsentry->md->name);
-    printf("   %s ", fpsentry->md->pname);
-    int i;
-    for(i = 0; i < fpsentry->md->NBnameindex; i++)
-    {
-        printf(" [%s]", fpsentry->md->nameindexW[i]);
-    }
-    printf("\n\n");
-
-    if(fpsentry->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
-    {
-        printf("[%ld] Scan OK\n", fpsentry->md->msgcnt);
-    }
-    else
-    {
-        int msgi;
-
-        printf("%s [%ld] %d ERROR(s)\n", fpsentry->md->name, fpsentry->md->msgcnt,
-               fpsentry->md->conferrcnt);
-        for(msgi = 0; msgi < fpsentry->md->msgcnt; msgi++)
-        {
-            printf("%s [%3d] %s\n", fpsentry->md->name, fpsentry->md->msgpindex[msgi],
-                   fpsentry->md->message[msgi]);
-        }
-    }
-
-
-    //snprintf(fpsentry->md->message[fpsentry->md->msgcnt], FUNCTION_PARAMETER_STRUCT_MSG_SIZE, "cannot load stream");
-    //			fpsentry->md->msgcnt++;
-
-    printf("\n");
-
-
-
-    printf("------------- FUNCTION PARAMETER \n");
-    printf("[%d] Parameter name : %s\n", pindex,
-           fpsentry->parray[pindex].keywordfull);
-
-    char typestring[100];
-    functionparameter_GetTypeString(fpsentry->parray[pindex].type, typestring);
-    printf("type: %s\n", typestring);
-
-
-    printf("\n");
-    printf("-- FLAG: ");
-
-
-
-    // print binary flag
-    printfw("FLAG : ");
-    uint64_t mask = (uint64_t) 1 << (sizeof(uint64_t) * CHAR_BIT - 1);
-    while(mask)
-    {
-        int digit = fpsentry->parray[pindex].fpflag & mask ? 1 : 0;
-        if(digit == 1)
-        {
-            printf( AECBOLDHIGREEN );
-            printf("%d", digit);
-            printf( AECNORMAL );
-        }
-        else
-        {
-            printf("%d", digit);
-        }
-        mask >>= 1;
-    }
-    printf("\n");
-
-
-    int flagstringlen = 32;
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "ACTIVE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "ACTIVE");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_USED)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "USED");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "USED");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "VISIBLE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "VISIBLE");
-    }
-
-    printf("%*s", flagstringlen, "---");
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "WRITE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "WRITE");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "WRITECONF");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "WRITECONF");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "WRITERUN");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "WRITERUN");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "WRITESTATUS");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "WRITESTATUS");
-    }
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_LOG)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "LOG");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "LOG");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "SAVEONCHANGE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "SAVEONCHANGE");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCLOSE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "SAVEONCLOSE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "SAVEONCLOSE");
-    }
-
-
-    printf("%*s", flagstringlen, "---");
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "IMPORTED");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "IMPORTED");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "FEEDBACK");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "FEEDBACK");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "ONOFF");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "ONOFF");
-    }
-
-
-    printf("%*s", flagstringlen, "---");
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "CHECKINIT");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "CHECKINIT");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "MINLIMIT");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "MINLIMIT");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "MAXLIMIT");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "MAXLIMIT");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_ERROR)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "ERROR");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "ERROR");
-    }
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_LOCALMEM)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_LOCALMEM");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_LOCALMEM");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_SHAREMEM)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_SHAREMEM");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_SHAREMEM");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFFITS)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFFITS");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFFITS");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFNAME)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFNAME");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFNAME");
-    }
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_LOCALMEM");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_LOCALMEM");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_SHAREMEM");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_SHAREMEM");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFFITS");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFFITS");
-    }
-
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFNAME");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFNAME");
-    }
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_SHAREMEM");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_SHAREMEM");
-    }
-
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_CONFFITS)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_CONFFITS");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_CONFFITS");
-    }
-
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_CONF_REQUIRED)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "FILE/FPS/STREAM_CONF_REQUIRED");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "FILE/FPS/STREAM_CONF_REQUIRED");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "FILE/FPS/STREAM_RUN_REQUIRED");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "FILE/FPS/STREAM_RUN_REQUIRED");
-    }
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_DATATYPE)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_DATATYPE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_DATATYPE");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT8)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT8");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT8");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT8)
-    {
-		printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT8");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT8");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT16)
-    {
-       printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT16");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT16");
-    }
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT16)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT16");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT16");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT32)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT32");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT32");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT32)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT32");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT32");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT64)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT64");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT64");
-    }
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT64)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT64");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT64");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_HALF)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_HALF");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_HALF");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_FLOAT)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_FLOAT");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_FLOAT");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_DOUBLE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_DOUBLE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_DOUBLE");
-    }
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_1D)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_1D");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_1D");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_2D)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_2D");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_2D");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_3D)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_3D");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_3D");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_XSIZE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_XSIZE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_XSIZE");
-    }
-
-
-    printf("\n");
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_YSIZE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_YSIZE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_YSIZE");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_ZSIZE)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_ZSIZE");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_ENFORCE_ZSIZE");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKSTREAM)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "CHECKSTREAM");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "CHECKSTREAM");
-    }
-
-    if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_MEMLOADREPORT)
-    {
-        printf( AECBOLDHIGREEN );
-        printf("%*s", flagstringlen, "STREAM_MEMLOADREPORT");
-        printf( AECNORMAL );
-    }
-    else
-    {
-        printf("%*s", flagstringlen, "STREAM_MEMLOADREPORT");
-    }
-
-
-
-
-
-
-
-
-
-    printf("\n");
-    printf("\n");
-    printf("cnt0 = %ld\n", fpsentry->parray[pindex].cnt0);
-
-    printf("\n");
-
-    printf("Current value : ");
-
-    if(fpsentry->parray[pindex].type == FPTYPE_UNDEF)
-    {
-        printf("  %s", "-undef-");
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_INT64)
-    {
-        printf("  %10d", (int) fpsentry->parray[pindex].val.l[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
-    {
-        printf("  %10f", (float) fpsentry->parray[pindex].val.f[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
-    {
-        printf("  %10f", (float) fpsentry->parray[pindex].val.s[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_PID)
-    {
-        printf("  %10d", (int) fpsentry->parray[pindex].val.pid[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_TIMESPEC)
-    {
-        printf("  %10s", "-timespec-");
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_FILENAME)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_FITSFILENAME)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_DIRNAME)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_STREAMNAME)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_STRING)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_ONOFF)
-    {
-        if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
-        {
-            printf("    ON  [ %s ]\n", fpsentry->parray[pindex].val.string[1]);
-        }
-        else
-        {
-            printf("   OFF  [ %s ]\n", fpsentry->parray[pindex].val.string[0]);
-        }
-    }
-
-    if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
-    {
-        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
-    }
-
-    printf("\n");
-    printf("\n");
-
-    return RETURN_SUCCESS;
-
-}
 
 
 
@@ -7197,9 +5918,7 @@ static errno_t functionparameter_scan_fps(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
-					if( screenprintmode == SCREENPRINT_NCURSES) {
-						endwin();
-					}
+					TUI_exit();
                     printf("File \"%s\"", dir->d_name);
                     perror("Error running lstat on file ");
                     printf("File %s line %d\n", __FILE__, __LINE__);
@@ -7455,16 +6174,6 @@ static errno_t functionparameter_scan_fps(
 
 
 
-void functionparameter_CTRLscreen_atexit()
-{
-    //printf("exiting CTRLscreen\n");
-
-    // endwin();
-}
-
-
-
-
 
 inline static void print_help_entry(char *key, char *descr)
 {
@@ -7487,30 +6196,13 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(
 
     screenprint_setbold();
     
-    char screenmodestring[8];
-
-    switch ( screenprintmode )
-    {
-		case SCREENPRINT_NCURSES :
-		sprintf(screenmodestring, "ncurses");
-		break;
-		
-		case SCREENPRINT_STDIO :
-		sprintf(screenmodestring, "stdio");
-		break;
-		
-		default :
-		sprintf(screenmodestring, "undef");
-		break;
-	} 
-    
     if(snprintf(monstring, stringmaxlen,
-                "[%s %d %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP   PID %d  [%d FPS]",                
-                screenmodestring, wrow, wcol, (int) getpid(), NBfps) < 0)
+                "FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP   PID %d  [%d FPS]",                
+                (int) getpid(), NBfps) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
-    function_parameter__print_header(monstring, '-');
+    TUI_print_header(monstring, '-');
     screenprint_unsetbold();
     printfw("\n");
 
@@ -8009,22 +6701,18 @@ inline static int fpsCTRLscreen_process_user_key(
         case 10 : // enter key
             if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)   // this is a leaf
             {
-				if( screenprintmode == SCREENPRINT_NCURSES) {
-					endwin();
-				}				
+				TUI_exit();
+		
                 if(system("clear") != 0)   // clear screen
                 {
                     PRINT_ERROR("system() returns non-zero value");
                 }
                 functionparameter_UserInputSetParamValue(&fps[fpsCTRLvar->fpsindexSelected],
                         fpsCTRLvar->pindexSelected);
-                if( screenprintmode == SCREENPRINT_NCURSES) {
-					initncurses();
-				}
-				if( screenprintmode == SCREENPRINT_STDIO ) 
-				{
-					printf("\e[1;1H\e[2J");
-				}
+                
+
+				TUI_initncurses();
+				TUI_stdio_clear();
             }
             break;
 
@@ -8122,9 +6810,7 @@ inline static int fpsCTRLscreen_process_user_key(
             break;
 
         case 'l': // list all parameters
-			if( screenprintmode == SCREENPRINT_NCURSES) {
-				endwin();
-			}
+			TUI_exit();
             if(system("clear") != 0)
             {
                 PRINT_ERROR("system() returns non-zero value");
@@ -8143,9 +6829,9 @@ inline static int fpsCTRLscreen_process_user_key(
             printf("\n");
             printf("Press Any Key to Continue\n");
             getchar();
-            if( screenprintmode == SCREENPRINT_NCURSES) {
-				initncurses();
-			}
+            
+			TUI_initncurses();
+			
             break;
         
         
@@ -8157,9 +6843,7 @@ inline static int fpsCTRLscreen_process_user_key(
 
 
         case '<': // import settings from filesystem
-			if( screenprintmode == SCREENPRINT_NCURSES) {
-				endwin();
-            }
+			TUI_exit();
             if(system("clear") != 0)
             {
                 PRINT_ERROR("system() returns non-zero value");
@@ -8188,16 +6872,12 @@ inline static int fpsCTRLscreen_process_user_key(
 				printf("File not found\n");
 			}
 			sleep(5);
-            if( screenprintmode == SCREENPRINT_NCURSES) {
-				initncurses();
-			}
+			TUI_initncurses();
 			break;
 			
 
         case 'F': // process FIFO
-			if( screenprintmode == SCREENPRINT_NCURSES) {
-				endwin();
-            }
+			TUI_exit();
             if(system("clear") != 0)
             {
                 PRINT_ERROR("system() returns non-zero value");
@@ -8215,16 +6895,12 @@ inline static int fpsCTRLscreen_process_user_key(
             printf("\n");
             printf("Press Any Key to Continue\n");
             getchar();
-            if( screenprintmode == SCREENPRINT_NCURSES) {
-				initncurses();
-			}
+			TUI_initncurses();
             break;
 
 
         case 'P': // process input command file
-			if( screenprintmode == SCREENPRINT_NCURSES) {
-				endwin();
-            }
+			TUI_exit();
             if(system("clear") != 0)
             {
                 PRINT_ERROR("system() returns non-zero value");
@@ -8250,9 +6926,7 @@ inline static int fpsCTRLscreen_process_user_key(
             printf("\n");
             printf("Press Any Key to Continue\n");
             getchar();
-            if( screenprintmode == SCREENPRINT_NCURSES) {
-				initncurses();
-			}
+			TUI_initncurses();
             break;
     }
 
@@ -8280,6 +6954,8 @@ errno_t functionparameter_CTRLscreen(
     char *fpsCTRLfifoname
 )
 {
+	short unsigned int wrow, wcol;
+	
     //int stringmaxlen = 500;
 
     // function parameter structure(s)
@@ -8466,45 +7142,28 @@ errno_t functionparameter_CTRLscreen(
 
 
     // default: use ncurses
-    screenprintmode = SCREENPRINT_NCURSES;
+    TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
     if(getenv("MILK_FPSCTRL_PRINT_STDIO"))
     {
         // use stdio instead of ncurses
-        screenprintmode = SCREENPRINT_STDIO;
+        TUI_set_screenprintmode(SCREENPRINT_STDIO);
     }
 
     if(getenv("MILK_FPSCTRL_NOPRINT"))
     {
-        screenprintmode = SCREENPRINT_NONE;
+        TUI_set_screenprintmode(SCREENPRINT_NONE);
     }
 
 
 
 
 
-    // INITIALIZE ncurses
+    // INITIALIZE terminal
 
     if(run_display == 1)
     {
-        if( screenprintmode == SCREENPRINT_NCURSES) // ncurses mode
-        {
-            initncurses();
-            atexit(functionparameter_CTRLscreen_atexit);
-            clear();
-        }
-        else
-        {
-            inittermios();
-            
-            // get terminal size
-            struct winsize w;
-			ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-
-			wrow = w.ws_row;
-			wcol = w.ws_col;
-        }
-
+		TUI_init_terminal(&wrow, &wcol);
     }
 
 
@@ -8528,7 +7187,8 @@ errno_t functionparameter_CTRLscreen(
     int getchardt_us = getchardt_us_ref;        
     int refreshtimeoutus = refreshtimeoutus_ref;
 
-	if( screenprintmode == SCREENPRINT_NCURSES ) // ncurses mode
+	
+	if( TUI_get_screenprintmode() == SCREENPRINT_NCURSES ) // ncurses mode
 	{
 		refreshtimeoutus_ref = 100000; // 10 Hz
 	}
@@ -8578,14 +7238,7 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-            if(screenprintmode == SCREENPRINT_STDIO) // stdio mode
-            {
-                usleep(getchardt_us);
-            }
-            else
-            {
-                usleep(getchardt_us); 
-            }
+            usleep(getchardt_us); 
 
 
             // ==================
@@ -8615,28 +7268,7 @@ errno_t functionparameter_CTRLscreen(
 			refresh_screen --; // will wait next time we enter the loop
 		}
 
-
-        if(screenprintmode == SCREENPRINT_STDIO) // stdio mode
-        {
-            printf("\e[1;1H\e[2J");
-            //printf("[%12lld  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
-            
-            // update terminal size
-            struct winsize w;
-			ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-
-			wrow = w.ws_row;
-			wcol = w.ws_col; 
-        }
-
-
-
-
-
-
-
-
-
+		TUI_clearscreen(&wrow, &wcol);
 
         loopOK = fpsCTRLscreen_process_user_key(
                      ch,
@@ -8657,9 +7289,7 @@ errno_t functionparameter_CTRLscreen(
 
         if(fpsCTRLvar.NBfps == 0)
         {
-            if( screenprintmode == SCREENPRINT_NCURSES) {
-                endwin();
-            }
+			TUI_exit();
 
             printf("\n fpsCTRLvar.NBfps = %d ->  No FPS on system - nothing to display\n",
                    fpsCTRLvar.NBfps);
@@ -8674,10 +7304,7 @@ errno_t functionparameter_CTRLscreen(
 
         if(fpsCTRLvar.run_display == 1)
         {
-            if( screenprintmode == SCREENPRINT_NCURSES)
-            {
-                erase();
-            }
+			TUI_ncurses_erase();
 
             fpsCTRLscreen_print_DisplayMode_status(fpsCTRLvar.fpsCTRL_DisplayMode,
                                                    fpsCTRLvar.NBfps);
@@ -9738,7 +8365,6 @@ errno_t functionparameter_CTRLscreen(
 
                 DEBUG_TRACEPOINT(" ");
                 
-                //printfw(" ---------------- %d %d ----- \n", sortcnt, wrow); //TEST
 
 				printfw(" showing   %d / %d  tasks\n", wrow-8, sortcnt);
                 
@@ -9920,10 +8546,8 @@ errno_t functionparameter_CTRLscreen(
 
             DEBUG_TRACEPOINT(" ");
             
-            if( screenprintmode == SCREENPRINT_NCURSES) 
-            {
-				refresh();
-			}			
+            TUI_ncurses_refresh();
+
 
             DEBUG_TRACEPOINT(" ");
 
@@ -9953,10 +8577,7 @@ errno_t functionparameter_CTRLscreen(
 
     if(run_display == 1)
     {
-		if( screenprintmode == SCREENPRINT_NCURSES) 
-		{
-			endwin();
-		}
+		TUI_exit();
     }
 
     functionparameter_outlog("FPSCTRL", "STOP");

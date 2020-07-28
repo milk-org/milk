@@ -53,6 +53,8 @@ add_library(CLIcore
             processtools.c
             streamCTRL.c
             function_parameters.c
+            fps_PrintParameterInfo.c
+            TUItools.c
             ${CORE_FILES})
 
 if(${python_module})
@@ -147,7 +149,7 @@ install(FILES CLIcore.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
               processtools.h  
-              streamCTRL.h  
-              function_parameters.h 
+              streamCTRL.h
+              function_parameters.h
               standalone_dependencies.h 
         DESTINATION include/${SRCNAME})

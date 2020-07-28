@@ -1240,6 +1240,8 @@ static errno_t streamCTRL_print_SPTRACE_details(
     int Disp_trigstat_NBchar = 12;
 
 
+	// suppress unused parameter warning
+	(void) print_pid_mode;
 
     printw("\n");
     printw("   %*s %*s %*s\n",
