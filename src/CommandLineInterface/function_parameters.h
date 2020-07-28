@@ -611,6 +611,47 @@ typedef struct
 
 
 
+
+
+
+
+
+
+
+
+#define MAX_NB_CHILD 500
+
+typedef struct
+{
+    char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+    int  keywordlevel;
+
+    int parent_index;
+
+    int NBchild;
+    int child[MAX_NB_CHILD];
+
+    int leaf; // 1 if this is a leaf (no child)
+    int fpsindex;
+    int pindex;
+
+
+} KEYWORD_TREE_NODE;
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ===========================
 // CONVENIENT MACROS FOR FPS
 // ===========================
@@ -782,6 +823,9 @@ extern "C" {
 #endif
 
 
+
+errno_t getFPSlogfname(char *logfname);
+
 errno_t function_parameter_struct_shmdirname(char *shmdname);
 
 errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default);
@@ -865,6 +909,13 @@ uint64_t *functionparameter_GetParamPtr_fpflag(
     const char *paramname);
 
 
+errno_t functionparameter_PrintParameter_ValueString(
+    FUNCTION_PARAMETER *fpsentry,
+    char *outstring,
+    int stringmaxlen
+);
+
+
 
 imageID functionparameter_LoadStream(
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -915,6 +966,23 @@ errno_t	functionparameter_write_archivescript(
 
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
         int pindex, char *tagname, char *commentstr);
+
+
+
+int functionparameter_UserInputSetParamValue(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int pindex
+);
+
+int functionparameter_FPSprocess_cmdline(
+    char *FPScmdline,
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    uint64_t *taskstatus
+);
+
 
 errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps,
                                     int fpsindex);
