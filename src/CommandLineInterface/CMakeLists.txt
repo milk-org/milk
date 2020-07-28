@@ -56,6 +56,7 @@ add_library(CLIcore
             fps_add_entry.c
             fps_checkparameter.c
             fps_connect.c
+            fps_paramvalue.c
             fps_printlist.c
             fps_PrintParameterInfo.c
             fps_shmdirname.c
