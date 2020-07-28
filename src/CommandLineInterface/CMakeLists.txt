@@ -61,6 +61,7 @@ add_library(CLIcore
             fps_printlist.c
             fps_PrintParameterInfo.c
             fps_shmdirname.c
+            fps_userinputsetparamvalue.c
             TUItools.c
             ${CORE_FILES})
 
