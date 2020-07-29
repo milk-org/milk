@@ -19,8 +19,10 @@
 // Forward declaration(s)
 // ==========================================
 
-errno_t fps_create();
-
+errno_t function_parameter_struct_create(
+    int NBparamMAX,
+    const char *name
+);
 
 
 // ==========================================

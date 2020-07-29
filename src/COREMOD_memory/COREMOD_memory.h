@@ -43,6 +43,7 @@
 #include "COREMOD_memory/delete_image.h"
 #include "COREMOD_memory/delete_variable.h"
 
+#include "COREMOD_memory/fps_create.h"
 #include "COREMOD_memory/fps_list.h"
 
 #include "COREMOD_memory/image_checksize.h"
