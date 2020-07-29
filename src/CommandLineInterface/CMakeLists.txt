@@ -186,5 +186,22 @@ install(FILES CLIcore.h
               processtools.h  
               streamCTRL.h
               function_parameters.h
+              fps_add_entry.h
+              fps_checkparameter.h
+              fps_connect.h
+              fps_connectExternalFPS.h
+              fps_CTRLscreen.h
+              fps_disconnect.h
+              fps_execFPScmd.h
+              fps_FPCONFexit.h
+              fps_FPCONFloopstep.h
+              fps_FPCONFsetup.h
+              fps_getFPSargs.h
+              fps_load.h
+              fps_outlog.h
+              fps_paramvalue.h
+              fps_RUNexit.h
+              fps_save2disk.h
+              fps_shmdirname.h
               standalone_dependencies.h 
         DESTINATION include/${SRCNAME})
