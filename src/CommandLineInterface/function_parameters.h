@@ -15,7 +15,6 @@
 
 
 
-
 #define STRINGMAXLEN_FPS_LOGMSG       1000
 #define STRINGMAXLEN_FPS_CMDLINE      1000
 
@@ -618,7 +617,7 @@ typedef struct
 
 
 
-
+#define NB_KEYWNODE_MAX 10000
 #define MAX_NB_CHILD 500
 
 typedef struct
@@ -646,6 +645,23 @@ typedef struct
 
 
 
+
+
+#include "fps_add_entry.h"
+#include "fps_checkparameter.h"
+#include "fps_connect.h"
+#include "fps_CTRLscreen.h"
+#include "fps_disconnect.h"
+#include "fps_execFPScmd.h"
+#include "fps_FPCONFexit.h"
+#include "fps_FPCONFloopstep.h"
+#include "fps_FPCONFsetup.h"
+#include "fps_getFPSargs.h"
+#include "fps_load.h"
+#include "fps_outlog.h"
+#include "fps_paramvalue.h"
+#include "fps_RUNexit.h"
+#include "fps_shmdirname.h"
 
 
 
@@ -824,6 +840,8 @@ extern "C" {
 
 
 
+
+/*
 errno_t getFPSlogfname(char *logfname);
 
 errno_t function_parameter_struct_shmdirname(char *shmdname);
@@ -834,6 +852,18 @@ errno_t function_parameter_execFPScmd();
 
 
 errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
+
+
+errno_t functionparameter_scan_fps(
+    uint32_t mode,
+    char *fpsnamemask,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    KEYWORD_TREE_NODE *keywnode,
+    int *ptr_NBkwn,
+    int *ptr_fpsindex,
+    long *ptr_pindex,
+    int verbose
+);
 
 
 long    function_parameter_struct_connect(
@@ -949,6 +979,12 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                      const char *paramname);
 
+int functionparameter_GetFileName(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    FUNCTION_PARAMETER *fparam,
+    char *outfname,
+    char *tagname
+);
 
 
 int functionparameter_SaveFPS2disk_dir(
@@ -983,28 +1019,7 @@ int functionparameter_FPSprocess_cmdline(
     uint64_t *taskstatus
 );
 
-
-errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps,
-                                    int fpsindex);
-errno_t functionparameter_CONFstop(FUNCTION_PARAMETER_STRUCT *fps,
-                                   int fpsindex);
-errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps,
-                                   int fpsindex);
-errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex);
-errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps,
-                                    int fpsindex);
-
-
-errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout);
-//errno_t functionparameter_outlog(char *keyw, char *msgstring);
-errno_t functionparameter_outlog(char *keyw, const char *fmt, ...);
-
-
-errno_t functionparameter_outlog_namelink();
-
-errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsname,
-                                     char *fpsCTRLfifoname);
-
+*/
 
 #ifdef __cplusplus
 }
