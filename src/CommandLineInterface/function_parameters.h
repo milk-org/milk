@@ -650,6 +650,7 @@ typedef struct
 #include "fps_add_entry.h"
 #include "fps_checkparameter.h"
 #include "fps_connect.h"
+#include "fps_connectExternalFPS.h"
 #include "fps_CTRLscreen.h"
 #include "fps_disconnect.h"
 #include "fps_execFPScmd.h"
@@ -661,6 +662,7 @@ typedef struct
 #include "fps_outlog.h"
 #include "fps_paramvalue.h"
 #include "fps_RUNexit.h"
+#include "fps_save2disk.h"
 #include "fps_shmdirname.h"
 
 
