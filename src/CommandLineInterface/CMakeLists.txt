@@ -52,7 +52,6 @@ add_library(CLIcore
             SHARED
             processtools.c
             streamCTRL.c
-            function_parameters.c
             fps_add_entry.c
             fps_checkparameter.c
             fps_connect.c
