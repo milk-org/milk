@@ -9,6 +9,10 @@
 
 
 #include "CommandLineInterface/CLIcore.h"
+
+#include "fps_PrintParameterInfo.h"
+#include "fps_WriteParameterToDisk.h"
+
 #include "TUItools.h"
 
 

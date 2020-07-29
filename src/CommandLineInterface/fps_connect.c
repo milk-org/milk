@@ -12,6 +12,9 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+#include "fps_shmdirname.h"
+#include "fps_loadstream.h"
+
 
 
 /** @brief Connect to function parameter structure

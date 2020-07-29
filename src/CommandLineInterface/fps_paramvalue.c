@@ -8,6 +8,15 @@
 #include "CommandLineInterface/CLIcore.h"
 
 
+#include "fps_connect.h"
+#include "fps_disconnect.h"
+#include "fps_GetParamIndex.h"
+
+
+
+
+
+
 long functionparameter_GetParamValue_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
@@ -35,6 +44,58 @@ int functionparameter_SetParamValue_INT64(
 
     return EXIT_SUCCESS;
 }
+
+
+
+
+
+//
+// stand-alone function to set parameter value
+//
+int function_parameter_SetValue_int64(
+    char *keywordfull,
+    long val
+)
+{
+    FUNCTION_PARAMETER_STRUCT fps;
+    char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
+                                                        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+    int keywordlevel = 0;
+    char *pch;
+
+
+    // break full keyword into keywords
+    strncpy(tmpstring, keywordfull,
+            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
+    keywordlevel = 0;
+    pch = strtok(tmpstring, ".");
+    while(pch != NULL)
+    {
+        strncpy(keyword[keywordlevel], pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN);
+        keywordlevel++;
+        pch = strtok(NULL, ".");
+    }
+
+    function_parameter_struct_connect(keyword[9], &fps, FPSCONNECT_SIMPLE);
+
+    int pindex = functionparameter_GetParamIndex(&fps, keywordfull);
+
+
+    fps.parray[pindex].val.l[0] = val;
+
+    function_parameter_struct_disconnect(&fps);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
 
 
 long *functionparameter_GetParamPtr_INT64(
@@ -80,6 +141,18 @@ int functionparameter_SetParamValue_FLOAT64(
 
     return EXIT_SUCCESS;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 double *functionparameter_GetParamPtr_FLOAT64(
     FUNCTION_PARAMETER_STRUCT *fps,
