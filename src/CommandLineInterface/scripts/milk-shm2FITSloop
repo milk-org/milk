@@ -1,0 +1,48 @@
+#! /bin/bash
+
+trap cleanup EXIT
+
+
+EXPECTED_ARGS=2
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo
+  echo " ---------- write shared memory to FITS file ----------- "
+  echo "runs as a simple loop"
+  echo ""
+  echo " Usage:  $0 <shm stream> <delay[sec]>"
+  echo 
+fi
+
+progname=`basename "$0"`
+tmuxname="${progname}-$1"
+pname=${tmuxname}
+
+
+function cleanup {
+	echo "clean exit"
+	tmux send-keys -t ${tmuxname} "exitCLI" C-m
+}
+
+
+echo "Saving stream $1 to disk every $2 sec"
+echo "Running inside tmux session ${tmuxname}"
+echo "Press [CTRL+C] to stop.."
+
+tmux new-session -d -s ${tmuxname}
+
+
+tmux send-keys -t ${tmuxname} "milk -n ${pname}" C-m
+tmux send-keys -t ${tmuxname} "readshmim $1" C-m
+
+IMCNT=0
+
+while :
+do
+	echo "saving count ${IMCNT}"
+	tmux send-keys -t ${tmuxname} "savefits $1 \"!$1.fits\"" C-m
+	let IMCNT=IMCNT+1
+	sleep $2
+done
+
+

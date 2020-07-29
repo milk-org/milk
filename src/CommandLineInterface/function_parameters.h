@@ -645,8 +645,6 @@ typedef struct
 
 
 
-
-
 #include "fps_add_entry.h"
 #include "fps_checkparameter.h"
 #include "fps_connect.h"
