@@ -79,6 +79,7 @@ add_library(CLIcore
             fps_processcmdline.c
             fps_process_fpsCMDarray.c
             fps_process_user_key.c
+            fps_processinfo_entries.c
             fps_read_fpsCMD_fifo.c
             fps_RUNexit.c
             fps_RUNstart.c
@@ -186,7 +187,7 @@ install(FILES CLIcore.h
               processtools.h  
               streamCTRL.h
               function_parameters.h
-              fps_add_entry.h
+              fps_add_entry.h              
               fps_checkparameter.h
               fps_connect.h
               fps_connectExternalFPS.h
@@ -200,6 +201,7 @@ install(FILES CLIcore.h
               fps_load.h
               fps_outlog.h
               fps_paramvalue.h
+              fps_processinfo_entries.h
               fps_RUNexit.h
               fps_save2disk.h
               fps_shmdirname.h

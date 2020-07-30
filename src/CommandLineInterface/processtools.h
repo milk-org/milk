@@ -148,17 +148,16 @@ typedef struct {
 	int       triggerstatus;   // see TRIGGERSTATUS codes
 
 
-
+	
+    int RT_priority;    // -1 if unused. 0-99 for higher priority
 
 
     // OPTIONAL TIMING MEASUREMENT
     // Used to measure how long loop process takes to complete task
     // Provides means to stop/pause loop process if timing constraints exceeded
     //
-
     int MeasureTiming;  // 1 if timing is measured, 0 otherwise
-    int RT_priority;    // -1 if unused. 0-99 for higher priority
-
+    
     // the last PROCESSINFO_NBtimer times are stored in a circular buffer, from
     // which timing stats are derived
     int    timerindex;       // last written index in circular buffer

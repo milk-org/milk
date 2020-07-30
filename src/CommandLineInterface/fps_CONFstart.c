@@ -19,22 +19,21 @@
  */ 
 
 errno_t functionparameter_CONFstart(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
+    FUNCTION_PARAMETER_STRUCT *fps
 )
 {
     // Move to correct launch directory
     //
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"cd %s\" C-m",
-                           fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+                           fps->md->name, fps->md->fpsdirectory);
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"fpsconfstart\" C-m",
-                           fps[fpsindex].md->name);
+                           fps->md->name);
 
-    fps[fpsindex].md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
+    fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
 
     // notify GUI loop to update
-    fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+    fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
 
     return RETURN_SUCCESS;
 }

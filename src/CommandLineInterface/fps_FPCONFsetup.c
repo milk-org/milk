@@ -62,6 +62,16 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         case FPSCMDCODE_RUNSTOP:
             snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "runstop-%s", fpsname);
             break;
+
+
+        case FPSCMDCODE_TMUXSTART:
+            snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "tmuxstart-%s", fpsname);
+            break;
+
+        case FPSCMDCODE_TMUXSTOP:
+            snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "tmuxstop-%s", fpsname);
+            break;
+
     }
 
 

@@ -659,6 +659,7 @@ typedef struct
 #include "fps_load.h"
 #include "fps_outlog.h"
 #include "fps_paramvalue.h"
+#include "fps_processinfo_entries.h"
 #include "fps_RUNexit.h"
 #include "fps_save2disk.h"
 #include "fps_shmdirname.h"
@@ -819,6 +820,8 @@ do{ \
   fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_STREAMNAME, FPFLAG_DEFAULT_OUTPUT_STREAM, NULL);\
   (void) fp_##key;\
 } while(0)
+
+
 
 
 

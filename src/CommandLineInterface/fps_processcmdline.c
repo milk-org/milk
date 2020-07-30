@@ -295,7 +295,7 @@ int functionparameter_FPSprocess_cmdline(
 
             if(symlink(logfname, FPSarg0) != 0)
             {
-                PRINT_ERROR("symlink error");
+                PRINT_ERROR("symlink error %s %s", logfname, FPSarg0);                
             }
 
         }
@@ -395,7 +395,7 @@ int functionparameter_FPSprocess_cmdline(
             else
             {
                 DEBUG_TRACEPOINT(" ");
-                functionparameter_CONFstart(fps, fpsindex);
+                functionparameter_CONFstart(&fps[fpsindex]);
 
                 functionparameter_outlog("CONFSTART", "start CONF process %d %s",
                                fpsindex, fps[fpsindex].md->name);
@@ -417,7 +417,7 @@ int functionparameter_FPSprocess_cmdline(
             else
             {
                 DEBUG_TRACEPOINT(" ");
-                functionparameter_CONFstop(fps, fpsindex);
+                functionparameter_CONFstop(&fps[fpsindex]);
                 functionparameter_outlog("CONFSTOP", "stop CONF process %d %s",
                                fpsindex, fps[fpsindex].md->name);
                 cmdOK = 1;
@@ -546,7 +546,7 @@ int functionparameter_FPSprocess_cmdline(
             else
             {
                 DEBUG_TRACEPOINT(" ");
-                functionparameter_RUNstart(fps, fpsindex);
+                functionparameter_RUNstart(&fps[fpsindex]);
 
                 functionparameter_outlog("RUNSTART", "start RUN process %d %s",
                                fpsindex, fps[fpsindex].md->name);
@@ -605,7 +605,7 @@ int functionparameter_FPSprocess_cmdline(
             else
             {
                 DEBUG_TRACEPOINT(" ");
-                functionparameter_RUNstop(fps, fpsindex);
+                functionparameter_RUNstop(&fps[fpsindex]);
                 functionparameter_outlog("RUNSTOP", "stop RUN process %d %s",
                                fpsindex, fps[fpsindex].md->name);
                 cmdOK = 1;

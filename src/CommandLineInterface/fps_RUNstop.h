@@ -6,6 +6,5 @@
 
 
 errno_t functionparameter_RUNstop(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
+    FUNCTION_PARAMETER_STRUCT *fps
 );

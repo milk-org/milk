@@ -210,6 +210,7 @@ int fpsCTRLscreen_process_user_key(
         case 10 : // enter key
             if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)   // this is a leaf
             {
+				DEBUG_TRACEPOINT(" ");
 				TUI_exit();
 		
                 if(system("clear") != 0)   // clear screen
@@ -219,9 +220,11 @@ int fpsCTRLscreen_process_user_key(
                 functionparameter_UserInputSetParamValue(&fps[fpsCTRLvar->fpsindexSelected],
                         fpsCTRLvar->pindexSelected);
                 
-
+                DEBUG_TRACEPOINT(" ");
 				TUI_initncurses();
+				DEBUG_TRACEPOINT(" ");
 				TUI_stdio_clear();
+				DEBUG_TRACEPOINT(" ");
             }
             break;
 
@@ -284,7 +287,7 @@ int fpsCTRLscreen_process_user_key(
                 PRINT_ERROR("snprintf error");
             }
             functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_RUNstart(fps, fpsindex);
+            functionparameter_RUNstart(&fps[fpsindex]);
             break;
 
         case 'r' : // stop run process
@@ -294,7 +297,7 @@ int fpsCTRLscreen_process_user_key(
                 PRINT_ERROR("snprintf error");
             }
             functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_RUNstop(fps, fpsindex);
+            functionparameter_RUNstop(&fps[fpsindex]);
             break;
 
 
@@ -305,7 +308,7 @@ int fpsCTRLscreen_process_user_key(
                 PRINT_ERROR("snprintf error");
             }
             functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_CONFstart(fps, fpsindex);
+            functionparameter_CONFstart(&fps[fpsindex]);
             break;
 
         case 'c': // kill conf process
@@ -315,7 +318,7 @@ int fpsCTRLscreen_process_user_key(
                 PRINT_ERROR("snprintf error");
             }
             functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_CONFstop(fps, fpsindex);
+            functionparameter_CONFstop(&fps[fpsindex]);
             break;
 
         case 'l': // list all parameters
