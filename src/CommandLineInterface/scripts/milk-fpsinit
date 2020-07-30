@@ -41,8 +41,7 @@ echo ""
 echo "Reads file fpslist.txt"
 echo "For each entry, initialize the FPS :"
 echo "  - Create and initialize FPS"
-echo "  - Create tmux session"
-echo "  - Create functions in tmux sessions"
+echo "  - Create tmux session and functions in tmux sessions"
 echo "Run without argument to print FPSs status" 
 echo ""
 echo ""
@@ -363,94 +362,63 @@ done
 echo ""
 echo "TASKS TO BE PERFORMED :"
 
+
+
 for i in "${!FPSNAMEARRAY[@]}"; do
   if [ "$i" = "${FPSINDEX}" ] || [ "ALL" = "${FPSINDEX}" ]; then
-  
+
 	# if status is error, cleanup
 	#
-	if [ "${INITREADYARRAY[$i]}" = "error" ]; then
-	
+	if [ "${INITREADYARRAY[$i]}" = "error" ]; then	
 	  printf "  Clearing error %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
 	  
 	  if [ "${FPSSTATUSARRAY[$i]}" = "FOUND" ]; then
 	    fpsfile="${MILK_SHM_DIR}/${FPSNAMEARRAY[$i]}.fps.shm"
 	    printf "        Remove fps file ${fpsfile}\n"
+	    rm ${fpsfile}
 	  fi
 	
 	  if [ "${TMUXSTATUSARRAY[$i]}" = "FOUND" ]; then
 	    tmuxname="${FPSNAMEARRAY[$i]}"
 	    printf "        Remove for tmux session ${tmuxname}\n"
-	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:ctrl C-c
-	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:ctrl "exit" C-m
-	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:conf C-c
-	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:conf "exit" C-m
-	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:run C-c
-	    tmux send-keys -t ${FPSNAMEARRAY[$i]}:run "exit" C-m
-	    sleep 0.5
-	    tmux kill-session -t ${FPSNAMEARRAY[$i]}
-	  fi
+	    # kill tmux sessions
+        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _TMUXSTOP_ ${ARGSTRINGARRAY[$i]}\""
+        printf "    command: %s\n" "${cmdstring}"	
+	    eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"	
+	  fi	
+	
+	  INITREADYARRAY[$i]="ready"
 	
 	fi
 	
+	 
 	
   
     if [ "${INITREADYARRAY[$i]}" = "ready" ]; then
       printf "  (re-)CREATING  %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
     
       if [ ${TESTMODE} == 0 ]; then
+      
+        # initialize FPS
         cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    
 		printf "    command: %s\n" "${cmdstring}"
-		
-        # initialize FPS
-
         eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
     	
-	    # Write functions for tmux windows
-	    
-	    setFPStmux=1
-	    if [ ${setFPStmux} = 1 ]; then
-	
-          confstartfunc="
-          function fpsconfstart {
-          echo \"STARTING CONF PROCESS\"
-          MILK_QUIET=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _CONFSTART_ ${ARGSTRINGARRAY[$i]}\" 
-          }"    
-
-          runstartfunc="
-          function fpsrunstart { 
-          echo \"STARTING RUN PROCESS\"
-          MILK_QUIET=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _RUNSTART_ ${ARGSTRINGARRAY[$i]}\" 
-          }"   
-
-          runstopfunc="
-          function fpsrunstop { 
-          echo \"STOPPING RUN PROCESS\"          
-          MILK_QUIET=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _RUNSTOP_ ${ARGSTRINGARRAY[$i]}\" 
-          }"   
-    
-    
-          if [ "${TMUXSTATUSARRAY[$i]}" = "MISSING" ]; then
-            tmux new-session -s ${FPSNAMEARRAY[$i]} -d
-            
-            tmux rename-window -t ${FPSNAMEARRAY[$i]}:0 ctrl
-            tmux send-keys -t ${FPSNAMEARRAY[$i]}:ctrl "${runstopfunc}" C-m
-            
-            tmux new-window -t ${FPSNAMEARRAY[$i]} -n conf
-            tmux send-keys -t ${FPSNAMEARRAY[$i]}:conf "${confstartfunc}" C-m
-            
-            tmux new-window -t ${FPSNAMEARRAY[$i]} -n run
-            tmux send-keys -t ${FPSNAMEARRAY[$i]}:run "${runstartfunc}" C-m
-          fi
-          
-        fi # end of setFPStmux clause
+        # initialize tmux session
+        if [ "${TMUXSTATUSARRAY[$i]}" = "MISSING" ]; then
+          cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _TMUXSTART_ ${ARGSTRINGARRAY[$i]}\""    
+		  printf "    command: %s\n" "${cmdstring}"
+          eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+        fi	    
         
       fi
-    fi
-  
+    fi 
   
   fi
-  
-  
 done
+    
+
+
+
 
 

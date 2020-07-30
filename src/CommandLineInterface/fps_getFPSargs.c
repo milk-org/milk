@@ -10,7 +10,11 @@
 
 /** @brief get FPS arguments from command line function call
  *
- * write data.FPS_name and data.FPS_CMDCODE
+ * Write data.FPS_name and data.FPS_CMDCODE
+ * 
+ * Reads FPS_CMDCODE from CLI argument 1
+ * 
+ * Construct FPS_name from subsequent arguments
  *
  */
 errno_t function_parameter_getFPSargs_from_CLIfunc(

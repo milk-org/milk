@@ -15,8 +15,7 @@
  * 
  */ 
 errno_t functionparameter_FPSremove(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
+    FUNCTION_PARAMETER_STRUCT *fps
 )
 {
 
@@ -26,14 +25,14 @@ errno_t functionparameter_FPSremove(
 
     // get FPS shm filename
     char fpsfname[STRINGMAXLEN_FULLFILENAME];
-    WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps[fpsindex].md->name);
+    WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps->md->name);
 
     // delete sym links
     //EXECUTE_SYSTEM_COMMAND("find %s -follow -type f -name \"fpslog.*%s\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
     //                       shmdname, fps[fpsindex].md->name, fps[fpsindex].md->name);
 
-    fps[fpsindex].SMfd = -1;
-    close(fps[fpsindex].SMfd);
+    fps->SMfd = -1;
+    close(fps->SMfd);
 
 //    remove(conflogfname);
     int ret = remove(fpsfname);
@@ -75,11 +74,11 @@ errno_t functionparameter_FPSremove(
 
     // terminate tmux sessions
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
-                           fps[fpsindex].md->name);
+                           fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
-                           fps[fpsindex].md->name);
+                           fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
-                           fps[fpsindex].md->name);
+                           fps->md->name);
 
 
     return RETURN_SUCCESS;

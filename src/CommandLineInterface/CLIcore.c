@@ -332,7 +332,7 @@ errno_t functionparameter_CTRLscreen__cli()
 
 
 errno_t function_parameter_structure_load__cli()
-{
+{	
     if(CLI_checkarg(1, CLIARG_STR) == 0)
     {
         function_parameter_structure_load(
@@ -1140,7 +1140,9 @@ static void runCLI_free()
     // Free
     free(data.image);
     free(data.variable);
+    
     free(data.fps);
+    
 #endif
     //  free(data.cmd);
     gsl_rng_free(data.rndgen);

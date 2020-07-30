@@ -60,6 +60,8 @@ typedef long variableID;
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 
+
+
 #include "CommandLineInterface/processtools.h"
 #include "CommandLineInterface/streamCTRL.h"
 #include "CommandLineInterface/function_parameters.h"
@@ -770,11 +772,13 @@ typedef struct
 	// FUNCTION PARAMETER STRUCTURES (FPSs)
 	// =================================================
 
+	// array of FPSs
 	long           NB_MAX_FPS;
 	FUNCTION_PARAMETER_STRUCT *fps;
+	
 
-    // Function parameter structure (FPS) integration
-    // These entries are set when CLI process enters FPS function
+    // Function parameter structure (FPS) CLI integration
+    // These entries are set when CLI process links to FPS
     char           FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
 	// Which type of FPS process is the current process ?
 	// conf, run, ctrl

@@ -630,7 +630,7 @@ int functionparameter_FPSprocess_cmdline(
             else
             {
                 DEBUG_TRACEPOINT(" ");
-                functionparameter_FPSremove(fps, fpsindex);
+                functionparameter_FPSremove(&fps[fpsindex]);
 
                 functionparameter_outlog("FPSRM", "FPS remove %d %s", fpsindex,
                                fps[fpsindex].md->name);

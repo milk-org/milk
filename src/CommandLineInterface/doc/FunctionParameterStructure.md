@@ -209,7 +209,7 @@ errno_t ExampleFunction__cli()
     // Default FPS name will be used if CLI process has NOT been named.
     // See code in function_parameter.c for detailed rules.
 
-    function_parameter_getFPSname_from_CLIfunc("measlinRM");
+    function_parameter_getFPSargs_from_CLIfunc("measlinRM");
 
 	if(data.FPS_CMDCODE != 0) {	// use FPS implementation
 		// set pointers to CONF and RUN functions
@@ -420,7 +420,7 @@ errno_t ExampleFunction_RUN()
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
-	FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN );
+	FPS_CONNECT(data.FPS_name, data.FPS_CMDCODE );
 
 
 	// ===============================
@@ -515,9 +515,50 @@ errno_t ExampleFunction(
 In this example, the loop process supports both FPS and processinfo.
 This is the preferred way to code a loop process.
 
+
+### 6.3.1. Simple example making extensive use of macros (concept - to be implemented)
+
+~~~~{.c}
+errno_t MyFunction_RUN()
+{
+    // ========= INITIALIZATION
+    FPSPROCINFOLOOP_INIT("computes something", "add image1 to image2");
+
+    // ========= GET VALUES FROM FPS
+    int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
+
+    // ========= Specify input stream trigger by name
+    PROCESSINFO_SET_SEMSTREAMWAIT("inputstreamname");
+
+    // ========= Identifiers for output streams
+    imageID IDout = image_ID("output");
+
+
+
+
+    PROCINFOLOOP_START;
+
+
+    //
+    // computation ....
+    //
+
+    data.image[IDout].md[0].write = 1;
+    // write into output image
+
+    // Post semaphore(s) and counter(s), notify system that outputs have been written
+    processinfo_update_output_stream(processinfo, IDout);
+
+
+
+    PROCINFOLOOP_END;
+
+}
+~~~~
+
+### 6.3.2. Verbose example with customization
+
 The example also shows using FPS to set the process realtime priority.
-
-
 
 ~~~~{.c}
 
@@ -540,7 +581,7 @@ errno_t MyFunction_RUN()
 	// ==================================================
 	// ### Connect to FUNCTION PARAMETER STRUCTURE (FPS)
 	// ==================================================
-	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
+	FPS_CONNECT( data.FPS_name, data.FPS_CMDCODE );
 
     // Write time string (optional, requires .out.timestring entry)
     char timestring[100];
