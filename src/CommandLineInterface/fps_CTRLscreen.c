@@ -392,15 +392,10 @@ errno_t functionparameter_CTRLscreen(
 {
 	short unsigned int wrow, wcol;
 	
-    //int stringmaxlen = 500;
 
-    // function parameter structure(s)
     int fpsindex;
 
     FPSCTRL_PROCESS_VARS fpsCTRLvar;
-
-    //FUNCTION_PARAMETER_STRUCT *fps;
-
 
     // function parameters
     long NBpindex = 0;

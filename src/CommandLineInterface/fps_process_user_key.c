@@ -83,7 +83,7 @@ int fpsCTRLscreen_process_user_key(
 
         case 'e' : // erase FPS
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_FPSremove(fps, fpsindex);
+            functionparameter_FPSremove(&fps[fpsindex]);
 
             functionparameter_scan_fps(
                 fpsCTRLvar->mode,
@@ -105,19 +105,19 @@ int fpsCTRLscreen_process_user_key(
 
 		case 'T' : // initialize tmux session
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			functionparameter_FPS_tmux_init(fps, fpsindex);		
+			functionparameter_FPS_tmux_init(&fps[fpsindex]);		
 		break;
 
 		case 't' : // kill tmux session
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			functionparameter_FPS_tmux_kill(fps, fpsindex);		
+			functionparameter_FPS_tmux_kill(&fps[fpsindex]);		
 		break;
 		
 
         case 'E' : // Erase FPS and close tmux sessions
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
 
-            functionparameter_FPSremove(fps, fpsindex);
+            functionparameter_FPSremove(&fps[fpsindex]);
             functionparameter_scan_fps(
                 fpsCTRLvar->mode,
                 fpsCTRLvar->fpsnamemask,

@@ -6,6 +6,5 @@
 
 
 errno_t functionparameter_FPSremove(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
+    FUNCTION_PARAMETER_STRUCT *fps
 );

@@ -4,12 +4,21 @@
  */
 
 #include "CommandLineInterface/CLIcore.h"
+#include "fps_tmux.h"
 
-
-
+/** @brief Execute FPS command
+ * 
+ * This dispatch function is called by CLI 
+ * with the proper code to perform FPS-related operation.
+ *  
+ * 
+ * 
+ */
 errno_t function_parameter_execFPScmd()
 {
 #ifndef STANDALONE
+	long fpsID;
+
     if(data.FPS_CMDCODE == FPSCMDCODE_FPSINIT)   // Initialize FPS
     {
         data.FPS_CONFfunc(); // call conf function
@@ -42,13 +51,23 @@ errno_t function_parameter_execFPScmd()
 
     if(data.FPS_CMDCODE == FPSCMDCODE_TMUXSTART)   // Start tmux session
     {
-
+		// load if not already in memory
+		fpsID = function_parameter_structure_load(data.FPS_name);
+		if(fpsID != -1)
+		{
+			functionparameter_FPS_tmux_init(&data.fps[fpsID]);
+		}
         return RETURN_SUCCESS;
     }
 
     if(data.FPS_CMDCODE == FPSCMDCODE_TMUXSTOP)   // Stop tmux session
     {
-        
+		// load if not already in memory
+		fpsID = function_parameter_structure_load(data.FPS_name);
+		if(fpsID != -1)
+		{
+			functionparameter_FPS_tmux_kill(&data.fps[fpsID]);
+		}
         return RETURN_SUCCESS;
     }
 
