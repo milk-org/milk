@@ -13,12 +13,11 @@
  * 
  */
 errno_t functionparameter_CONFstop(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
+    FUNCTION_PARAMETER_STRUCT *fps
 )
 {
 	// send conf stop signal
-	fps[fpsindex].md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
+	fps->md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
 
     return RETURN_SUCCESS;
 }

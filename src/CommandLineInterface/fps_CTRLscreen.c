@@ -692,6 +692,8 @@ errno_t functionparameter_CTRLscreen(
             {
                 refresh_screen = 1;                
             }
+            
+            DEBUG_TRACEPOINT(" ");
         }
 
 		if ( refresh_screen > 0 )
@@ -701,6 +703,8 @@ errno_t functionparameter_CTRLscreen(
 
 		TUI_clearscreen(&wrow, &wcol);
 
+		DEBUG_TRACEPOINT(" ");
+
         loopOK = fpsCTRLscreen_process_user_key(
                      ch,
                      data.fps,
@@ -709,6 +713,8 @@ errno_t functionparameter_CTRLscreen(
                      fpsctrlqueuelist,
                      &fpsCTRLvar
                  );
+
+		DEBUG_TRACEPOINT(" ");
 
         if(fpsCTRLvar.exitloop == 1) 
         {

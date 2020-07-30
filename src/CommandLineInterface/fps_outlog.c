@@ -171,7 +171,9 @@ errno_t functionparameter_outlog_namelink()
 
     if(symlink(logfname, linkfname) == -1)
     {
-		PRINT_ERROR("symlink error");
+		int errnum = errno;
+		fprintf(stderr, "Error symlink: %s\n", strerror( errnum ));	
+		PRINT_ERROR("symlink error %s %s", logfname, linkfname);
 	}
 
 

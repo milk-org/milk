@@ -273,7 +273,7 @@ errno_t ExampleFunction_FPCONF()
     // SETUP FPS
     // ===========================
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE); // macro in function_parameter.h
-
+    fps_add_processinfo_entries(&fps); // include real-time settings
 
     // ==============================================
     // ========= ALLOCATE FPS ENTRIES ===============
@@ -636,6 +636,11 @@ errno_t MyFunction_RUN()
 
     // max number of iterations. -1 if infinite
     processinfo->loopcntMax = 1000;
+
+
+    // apply relevant FPS entries to PROCINFO
+    // see macro code for details
+    fps_to_processinfo(&fps, processinfo);
 
 
     int loopOK = 1;

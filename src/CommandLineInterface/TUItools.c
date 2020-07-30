@@ -393,30 +393,35 @@ void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
 /** @brief INITIALIZE ncurses
  *
  */
-errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr)
+errno_t TUI_initncurses()
 {
+	DEBUG_TRACEPOINT(" ");
     if( screenprintmode == SCREENPRINT_NCURSES)
     {
+		DEBUG_TRACEPOINT(" test abort ");
+   
+        
         if(initscr() == NULL)
         {
             fprintf(stderr, "Error initialising ncurses.\n");
             exit(EXIT_FAILURE);
         }
         getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-
-        *wrowptr = wrow;
-        *wcolptr = wcol;
-
+		
         cbreak();
         // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
         // making characters typed by the user immediately available to the program
 
+		DEBUG_TRACEPOINT(" ");
+		
         keypad(stdscr, TRUE);
         // enable F1, F2 etc..
 
+		DEBUG_TRACEPOINT(" ");
         nodelay(stdscr, TRUE);
         curs_set(0);
 
+		DEBUG_TRACEPOINT(" ");
         noecho();
         // Don't echo() while we do getch
 
@@ -425,10 +430,10 @@ errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr
         //nonl();
         // Do not translates newline into return and line-feed on output
 
-
+		DEBUG_TRACEPOINT(" ");
         init_color(COLOR_GREEN, 400, 1000, 400);
         start_color();
-
+		DEBUG_TRACEPOINT(" ");
         //  colored background
         init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
         init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
@@ -441,11 +446,8 @@ errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr
         init_pair(  9, COLOR_BLACK,  COLOR_RED    );
         init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
     }
-    else
-    {
-		(void) *wrowptr;
-		(void) *wcolptr;
-	}
+
+	DEBUG_TRACEPOINT(" ");
 
     return RETURN_SUCCESS;
 }

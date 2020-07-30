@@ -35,6 +35,7 @@ int functionparameter_GetParamIndex(
         }
     }
 
+    /*
     if(index == -1)
     {
         printf("ERROR: cannot find parameter \"%s\" in structure\n", paramname);
@@ -42,6 +43,7 @@ int functionparameter_GetParamIndex(
         fflush(stdout);
         exit(0);
     }
+    */
 
     return index;
 }

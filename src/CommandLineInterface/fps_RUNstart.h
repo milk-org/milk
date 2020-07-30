@@ -5,6 +5,5 @@
 
 
 errno_t functionparameter_RUNstart(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
+    FUNCTION_PARAMETER_STRUCT *fps
 );
