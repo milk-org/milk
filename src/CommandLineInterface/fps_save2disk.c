@@ -96,7 +96,10 @@ int functionparameter_SaveFPS2disk_dir(
 
 
 
-
+/** @brief save entire FPS to disk
+ * 
+ * Writes in subdirectory fpslog
+ */
 int functionparameter_SaveFPS2disk(
     FUNCTION_PARAMETER_STRUCT *fpsentry
 )
@@ -104,6 +107,7 @@ int functionparameter_SaveFPS2disk(
 	char outdir[STRINGMAXLEN_DIRNAME];
 	WRITE_DIRNAME(outdir, "%s/fpslog", fpsentry->md->fpsdirectory);
 	functionparameter_SaveFPS2disk_dir(fpsentry, outdir);
+	
 	return RETURN_SUCCESS;
 }
 

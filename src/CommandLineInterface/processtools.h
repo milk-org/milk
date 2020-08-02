@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sched.h>
 
 #define PROCESSINFOLISTSIZE 10000
 
@@ -150,6 +151,7 @@ typedef struct {
 
 	
     int RT_priority;    // -1 if unused. 0-99 for higher priority
+    cpu_set_t CPUmask;
 
 
     // OPTIONAL TIMING MEASUREMENT
