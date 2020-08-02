@@ -409,7 +409,7 @@ typedef struct
 #define FPS_CALLPROGNAME_STRMAXLEN 80
 #define FPS_CALLFUNCNAME_STRMAXLEN 100
 #define FPS_DESCR_STRMAXLEN    200
-
+#define STRINGMAXLEN_FPS_DIRNAME 200
 
 // metadata
 typedef struct
@@ -448,6 +448,10 @@ typedef struct
     // PID of process running on this fps
     pid_t               runpid;
 	struct timespec     runpidstarttime;
+	
+
+
+
 
 
 	// Used to send signals to configuration process

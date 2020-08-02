@@ -90,12 +90,16 @@ long function_parameter_struct_connect(
     if(fpsconnectmode == FPSCONNECT_CONF)
     {
         fps->md->confpid = getpid();    // write process PID into FPS
+        clock_gettime(CLOCK_REALTIME, &fps->md->confpidstarttime);
     }
 
     if(fpsconnectmode == FPSCONNECT_RUN)
     {
         fps->md->runpid = getpid();    // write process PID into FPS
+        clock_gettime(CLOCK_REALTIME, &fps->md->runpidstarttime);
     }
+
+
 
     mapv = (char *) fps->md;
     mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);

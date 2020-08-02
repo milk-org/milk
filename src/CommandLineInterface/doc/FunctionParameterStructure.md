@@ -420,7 +420,7 @@ errno_t ExampleFunction_RUN()
 	// ===========================
 	// CONNECT TO FPS
 	// ===========================
-	FPS_CONNECT(data.FPS_name, data.FPS_CMDCODE );
+	FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN );
 
 
 	// ===============================
@@ -581,7 +581,7 @@ errno_t MyFunction_RUN()
 	// ==================================================
 	// ### Connect to FUNCTION PARAMETER STRUCTURE (FPS)
 	// ==================================================
-	FPS_CONNECT( data.FPS_name, data.FPS_CMDCODE );
+	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
 
     // Write time string (optional, requires .out.timestring entry)
     char timestring[100];
