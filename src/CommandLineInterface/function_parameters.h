@@ -404,6 +404,7 @@ typedef struct
 
 
 #define FPS_CWD_STRLENMAX      200
+#define FPS_DIR_STRLENMAX      200
 #define FPS_SRCDIR_STRLENMAX   200
 #define FPS_PNAME_STRMAXLEN    100
 #define FPS_CALLPROGNAME_STRMAXLEN 80
@@ -421,8 +422,11 @@ typedef struct
     char                description[FPS_DESCR_STRMAXLEN];
     
     
-    // where should the parameter values be saved to disk ?
-    char                fpsdirectory[FPS_CWD_STRLENMAX];
+    // where should processes run from ?
+    char                workdir[FPS_CWD_STRLENMAX];
+    
+    // where should configurations and results be written to ?
+    char                datadir[FPS_DIR_STRLENMAX];
     
     // source code file name
     char				sourcefname[FPS_SRCDIR_STRLENMAX];

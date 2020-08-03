@@ -22,6 +22,18 @@ int functionparameter_SaveFPS2disk(
 
 
 errno_t	functionparameter_write_archivescript(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    char *archdirname
+    FUNCTION_PARAMETER_STRUCT *fps
+);
+
+
+errno_t fps_write_RUNoutput_image(
+	FUNCTION_PARAMETER_STRUCT *fps,
+	const char *imagename,
+	const char *outname
+);
+
+FILE *fps_write_RUNoutput_file(
+	FUNCTION_PARAMETER_STRUCT *fps,
+	const char *filename,
+	const char *extension
 );

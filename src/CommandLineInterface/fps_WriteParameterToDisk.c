@@ -240,7 +240,7 @@ int functionparameter_WriteParameterToDisk(
         functionparameter_GetFileName(fpsentry, &(fpsentry->parray[pindex]), fname,
                                       tagname);
         fp = fopen(fname, "w");
-        fprintf(fp, "%10s    # %s\n", fpsentry->md->fpsdirectory, timestring);
+        fprintf(fp, "%10s    # %s\n", fpsentry->md->workdir, timestring);
         fclose(fp);
     }
 

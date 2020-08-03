@@ -261,7 +261,7 @@ int fpsCTRLscreen_process_user_key(
 
             if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
             {
-				EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+				EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->workdir);
                 EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
             }
 
@@ -361,7 +361,7 @@ int fpsCTRLscreen_process_user_key(
                 PRINT_ERROR("system() returns non-zero value");
             }
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			sprintf(fname, "%s/fpscmd/fps.%s.cmd", fps[fpsindex].md->fpsdirectory, fps[fpsindex].md->name);		
+			sprintf(fname, "%s/fpscmd/fps.%s.cmd", fps[fpsindex].md->workdir, fps[fpsindex].md->name);		
 			printf("READING FILE %s\n", fname);	
 			fpin = fopen(fname, "r");
 			if(fpin != NULL)
