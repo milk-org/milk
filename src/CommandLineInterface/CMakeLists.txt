@@ -128,7 +128,7 @@ else()
                                ${FFTW_LIBRARIES}
                                ${FFTWF_LIBRARIES}
                                ${CMAKE_THREAD_LIBS_INIT}
-                               ${CURSES_LIBRARIES})
+                               ${NCURSES_LIBRARIES})
 endif()
 
 if(${HWLOC_FOUND})
@@ -137,9 +137,13 @@ endif()
 
 target_include_directories(CLIcore
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                                  ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}
                                   ${HWLOC_INCLUDE_DIR} ${NCURSES_INCLUDE_DIR})
 
 target_compile_options(CLIcore PUBLIC)
+
+target_link_directories(CLIcore
+                        PUBLIC ${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
 
 target_link_libraries(CLIcore
                       PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${HWLOC_LIBRARIES}
