@@ -23,14 +23,9 @@
 
 
 
-errno_t COREMOD_MEMORY_streamDelay_FPCONF(
-    char    *fpsname,
-    uint32_t CMDmode
-);
+errno_t COREMOD_MEMORY_streamDelay_FPCONF();
 
-imageID COREMOD_MEMORY_streamDelay_RUN(
-    char *fpsname
-);
+errno_t COREMOD_MEMORY_streamDelay_RUN();
 
 
 errno_t COREMOD_MEMORY_streamDelay(
@@ -49,66 +44,22 @@ errno_t COREMOD_MEMORY_streamDelay(
 
 static errno_t COREMOD_MEMORY_streamDelay__cli()
 {
-    char fpsname[200];
+    // Try FPS implementation
 
-    // First, we try to execute function through FPS interface
-    if(0
-            + CLI_checkarg(1, 5)
-            + CLI_checkarg(2, CLIARG_LONG)
-            == 0)   // check that first arg is string, second arg is int
-    {
-        unsigned int OptionalArg00 = data.cmdargtoken[2].val.numl;
+    // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+    // Default FPS name will be used if CLI process has NOT been named.
+    // See code in function_parameter.c for detailed rules.
 
-        // Set FPS interface name
-        // By convention, if there are optional arguments, they should be appended to the fps name
-        //
-        if(data.processnameflag ==
-                0)   // name fps to something different than the process name
-        {
-            sprintf(fpsname, "streamDelay-%06u", OptionalArg00);
-        }
-        else     // Automatically set fps name to be process name up to first instance of character '.'
-        {
-            strcpy(fpsname, data.processname0);
-        }
+    function_parameter_getFPSargs_from_CLIfunc("streamDelay");
 
-        if(strcmp(data.cmdargtoken[1].val.string,
-                  "_FPSINIT_") == 0)    // Initialize FPS and conf process
-        {
-            printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_FPSINIT);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string,
-                  "_CONFSTART_") == 0)    // Start conf process
-        {
-            printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_CONFSTART);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string,
-                  "_CONFSTOP_") == 0)   // Stop conf process
-        {
-            printf("Function parameters configure\n");
-            COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_CONFSTOP);
-            return RETURN_SUCCESS;
-        }
-
-        if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") == 0)   // Run process
-        {
-            printf("Run function\n");
-            COREMOD_MEMORY_streamDelay_RUN(fpsname);
-            return RETURN_SUCCESS;
-        }
-        /*
-                if(strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") == 0) { // Cleanly stop process
-                    printf("Run function\n");
-                    COREMOD_MEMORY_streamDelay_STOP(OptionalArg00);
-                    return RETURN_SUCCESS;
-                }*/
+    if(data.FPS_CMDCODE != 0) { // use FPS implementation
+        // set pointers to CONF and RUN functions
+        data.FPS_CONFfunc = COREMOD_MEMORY_streamDelay_FPCONF;
+        data.FPS_RUNfunc  = COREMOD_MEMORY_streamDelay_RUN;
+        function_parameter_execFPScmd();
+        return RETURN_SUCCESS;
     }
+
 
     // non FPS implementation - all parameters specified at function launch
     if(0
@@ -182,13 +133,12 @@ errno_t stream_delay_addCLIcmd()
  *
  *
  */
-errno_t COREMOD_MEMORY_streamDelay_FPCONF(
-    char    *fpsname,
-    uint32_t CMDmode
-)
+errno_t COREMOD_MEMORY_streamDelay_FPCONF()
 {
 
-    FPS_SETUP_INIT(fpsname, CMDmode);
+    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);    
+    fps_add_processinfo_entries(&fps);
+    
     uint64_t FPFLAG;
 
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
@@ -276,9 +226,7 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF(
  *
  */
 
-imageID COREMOD_MEMORY_streamDelay_RUN(
-    char *fpsname
-)
+errno_t COREMOD_MEMORY_streamDelay_RUN()
 {
     imageID             IDimc;
     imageID             IDin, IDout;
@@ -297,7 +245,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     // ===========================
     /// ### CONNECT TO FPS
     // ===========================
-    FPS_CONNECT(fpsname, FPSCONNECT_RUN);
+    FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);
 
 
     // ===============================
@@ -337,7 +285,7 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     char pinfodescr[200];
     sprintf(pinfodescr, "streamdelay %.10s %.10s", IDin_name, IDout_name);
     processinfo = processinfo_setup(
-                      fpsname,                 // re-use fpsname as processinfo name
+                      data.FPS_name,                 // re-use fpsname as processinfo name
                       pinfodescr,    // description
                       "startup",  // message on startup
                       __FUNCTION__, __FILE__, __LINE__
@@ -348,8 +296,9 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     processinfo->MeasureTiming = 1; 
     // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
     processinfo->RT_priority = 20;  
+    
         
-
+	fps_to_processinfo(&fps, processinfo);
 
 
 
@@ -611,6 +560,9 @@ imageID COREMOD_MEMORY_streamDelay_RUN(
     /// ### ENDING LOOP
     // ==================================
     processinfo_cleanExit(processinfo);
+    
+    functionparameter_SaveFPS2disk(&fps);
+    
     function_parameter_RUNexit(&fps);
 
     DEBUG_TRACEPOINT(" ");
@@ -646,8 +598,10 @@ errno_t COREMOD_MEMORY_streamDelay(
     FUNCTION_PARAMETER_STRUCT fps;
 
     // create FPS
-    sprintf(fpsname, "%s-%06u", __FUNCTION__, pindex);
-    COREMOD_MEMORY_streamDelay_FPCONF(fpsname, FPSCMDCODE_FPSINIT);
+    sprintf(data.FPS_name, "%s-%06u", __FUNCTION__, pindex);
+    data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
+
+    COREMOD_MEMORY_streamDelay_FPCONF();
 
     function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_RUN);
 
@@ -659,7 +613,7 @@ errno_t COREMOD_MEMORY_streamDelay(
 
     function_parameter_struct_disconnect(&fps);
 
-    COREMOD_MEMORY_streamDelay_RUN(fpsname);
+    COREMOD_MEMORY_streamDelay_RUN();
 
     return RETURN_SUCCESS;
 }

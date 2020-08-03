@@ -176,7 +176,7 @@ errno_t function_parameter_struct_create(
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
     {
-        strncpy(fps.md->fpsdirectory, cwd, FPS_CWD_STRLENMAX);
+        strncpy(fps.md->workdir, cwd, FPS_CWD_STRLENMAX);
     }
     else
     {
@@ -187,7 +187,9 @@ errno_t function_parameter_struct_create(
     strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX);
     fps.md->sourceline = 0;
 
-
+	// set default outdir
+	sprintf(fps.md->datadir, "datadir-%s", fps.md->name);
+	
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default
