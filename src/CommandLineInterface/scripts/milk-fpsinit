@@ -55,6 +55,7 @@ echo "     $(tput bold)-e$(tput sgr0) <exec>      (e)xecutable - default is milk
 echo "     $(tput bold)-c$(tput sgr0) <index>     (c)reate/setup single FPS"
 echo "     $(tput bold)-C$(tput sgr0)             (c)reate/setup ALL FPSs"
 echo "     $(tput bold)-t$(tput sgr0)             (t)est mode: do not execute tasks"
+echo "     $(tput bold)-L$(tput sgr0)             (L)og commands"
 echo ""
 echo "------------------------------------------------------------------------"
 }
