@@ -178,8 +178,9 @@ done
 FPSINDEX="NULL"
 EXECNAME="milk"
 TESTMODE=0
+LOGMODE=0
 
-while getopts :hf:c:Ce:t FLAG; do
+while getopts :hf:c:Ce:Lt FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -203,6 +204,9 @@ while getopts :hf:c:Ce:t FLAG; do
     ;;
     t)
     TESTMODE=1
+    ;;
+    L)
+    LOGMODE=1
     ;;
     \?) #unrecognized option - show help
       echo -e \\n"Option $OPTARG not allowed."
@@ -384,7 +388,13 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 	    # kill tmux sessions
         cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _TMUXSTOP_ ${ARGSTRINGARRAY[$i]}\""
         printf "    command: %s\n" "${cmdstring}"	
-	    eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"	
+	    
+	    if [ ${LOGMODE} == 1 ]; then
+	      eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+	    else
+	      eval "${cmdstring}"
+	    fi	
+	  
 	  fi	
 	
 	  INITREADYARRAY[$i]="ready"
@@ -402,13 +412,22 @@ for i in "${!FPSNAMEARRAY[@]}"; do
         # initialize FPS
         cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    
 		printf "    command: %s\n" "${cmdstring}"
-        eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+        if [ ${LOGMODE} == 1 ]; then
+          eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+    	else
+    	  eval "${cmdstring}"
+    	fi
     	
         # initialize tmux session
         if [ "${TMUXSTATUSARRAY[$i]}" = "MISSING" ]; then
           cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _TMUXSTART_ ${ARGSTRINGARRAY[$i]}\""    
 		  printf "    command: %s\n" "${cmdstring}"
-          eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+		  if [ ${LOGMODE} == 1 ]; then
+			eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
+		  else
+		    eval "${cmdstring}"
+		  fi
+        
         fi	    
         
       fi
