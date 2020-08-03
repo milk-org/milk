@@ -13,6 +13,7 @@ set(SOURCEFILES
     delete_image.c
     delete_variable.c
     fps_create.c
+    fps_ID.c
     fps_list.c
     image_checksize.c
     image_complex.c
@@ -54,6 +55,7 @@ set(INCLUDEFILES
     delete_image.h
     delete_variable.h
     fps_create.h
+    fps_ID.h
     fps_list.h
     image_checksize.h
     image_complex.h
