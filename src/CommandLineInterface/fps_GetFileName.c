@@ -20,7 +20,7 @@ int functionparameter_GetFileName(
     int l;
 	char fpsconfdirname[STRINGMAXLEN_DIRNAME];
 	
-    if(snprintf(fpsconfdirname, stringmaxlen, "%s/fpsconf", fps->md->fpsdirectory) < 0)
+    if(snprintf(fpsconfdirname, stringmaxlen, "%s/fpsconf", fps->md->workdir) < 0)
     {
         PRINT_ERROR("snprintf error");
     }

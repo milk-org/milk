@@ -664,7 +664,7 @@ int functionparameter_FPSprocess_cmdline(
                 DEBUG_TRACEPOINT(" ");
 				if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
 				{
-					EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->fpsdirectory);
+					EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->workdir);
 					EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
 					cmdOK = 1;
 				}

@@ -25,15 +25,28 @@ errno_t functionparameter_RUNstart(
 
     if(fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
     {
-		long pindex;
-		
-		
+        long pindex;
+
+
         // Move to correct launch directory
         EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
-                               fps->md->name, fps->md->fpsdirectory);
+                               fps->md->name, fps->md->workdir);
 
+
+        // set taskset if applicable
+        //
+        pindex = functionparameter_GetParamIndex(fps, ".conf.taskset");
+        if(pindex > -1) {
+            //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TASKSETCMDPREFIX=\\\"taskset --cpu-list %s\\\"\" C-m", fps->md->name, fps->parray[pindex].val.string[0]);
+        }
+        else
+        {
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TASKSETCMDPREFIX=\"\"\" C-m", fps->md->name);
+        }
 
         // set OMP_NUM_THREADS if applicable
+        //
         pindex = functionparameter_GetParamIndex(fps, ".conf.procinfo.NBthread");
         if(pindex > -1) {
             long NBthread = functionparameter_GetParamValue_INT64(fps, ".conf.procinfo.NBthread");
@@ -41,6 +54,7 @@ errno_t functionparameter_RUNstart(
         }
 
         // set timestring if applicable
+        //
         pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
         if(pindex > -1) {
             char timestring[100];
@@ -53,7 +67,27 @@ errno_t functionparameter_RUNstart(
         }
 
 
+        // override output directory if applicable
+        //
+        pindex = functionparameter_GetParamIndex(fps, ".conf.datadir");
+        if(pindex > -1) {
+            if(snprintf(fps->md->datadir,
+                        FUNCTION_PARAMETER_STRMAXLEN, "%s", fps->parray[pindex].val.string[0]) < 0)
+            {
+                PRINT_ERROR("snprintf error");
+            }
+        }
+
+        // create output directory if it does not already exit
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"mkdir %s\" C-m",
+                               fps->md->name, fps->md->datadir);
+
+
+
+
+
         // Send run command
+        //
         EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"fpsrunstart\" C-m",
                                fps->md->name);
 

@@ -168,8 +168,11 @@ inline static void fpsCTRLscreen_print_nodeinfo(
            fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
     DEBUG_TRACEPOINT(" ");
-    printfw("    FPS root directory    : %s\n",
-           fps[keywnode[nodeSelected].fpsindex].md->fpsdirectory);
+    printfw("    FPS work     directory    : %s\n",
+           fps[keywnode[nodeSelected].fpsindex].md->workdir);
+
+    printfw("    FPS data     directory    : %s\n",
+           fps[keywnode[nodeSelected].fpsindex].md->datadir);
 
     DEBUG_TRACEPOINT(" ");
     printfw("    FPS tmux sessions     :  "); 

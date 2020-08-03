@@ -109,7 +109,7 @@ errno_t functionparameter_FPS_tmux_init(
     sprintf(functionstring,
             "function fpsrunstart {\n"
             "echo \"STARTING RUN PROCESS\"\n"
-            "%s-exec -n %s \\\"%s _RUNSTART_ %s\\\"\n"
+            "\\${TASKSETCMDPREFIX} %s-exec -n %s \\\"%s _RUNSTART_ %s\\\"\n"
             "}\n",
             fps->md->callprogname,
             fps->md->name,

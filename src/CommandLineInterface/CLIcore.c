@@ -601,21 +601,20 @@ errno_t runCLI(
     setSHMdir();
 
 
+    DEBUG_TRACEPOINT("CLI start");
 
     // initialize fifo to process name
-    // default fifo name
+    DEBUG_TRACEPOINT("set default fifo name");
     sprintf(data.fifoname, "%s.fifo.%07d", data.processname, getpid());
 
-    // Get command-line options
+    DEBUG_TRACEPOINT("Get command-line options");
     command_line_process_options(argc, argv);
 
 
-    DEBUG_TRACEPOINT("CLI start");
 
 
 
-
-    // initialize readline
+    DEBUG_TRACEPOINT("initialize readline");
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
     rl_initialize();
@@ -626,7 +625,7 @@ errno_t runCLI(
     printf("\n");
 
 
-    // LOAD MODULES (shared objects)
+    DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
     load_module_shared_ALL();
 
     // load other libs specified by environment variable CLI_ADD_LIBS
@@ -661,7 +660,7 @@ errno_t runCLI(
 
 
 
-    // Initialize data control block
+    DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
     
     runCLI_cmd_init();
@@ -698,7 +697,8 @@ errno_t runCLI(
 
     data.CLIloopON = 1; // start CLI loop
 
-
+	
+	DEBUG_TRACEPOINT("Start CLI loop");
     while(data.CLIloopON == 1)
     {
         FILE *fp;
@@ -761,9 +761,8 @@ errno_t runCLI(
         initstartup = 1;
 
 
-        // -------------------------------------------------------------
-        //                 get user input
-        // -------------------------------------------------------------
+ 
+        DEBUG_TRACEPOINT("Get user input"); //===============================
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
 
@@ -844,7 +843,9 @@ errno_t runCLI(
                         {
                             buf1[total_bytes - 1] = '\0';
                             strcpy(data.CLIcmdline, buf1);
+                            DEBUG_TRACEPOINT("CLI executing line: %s", data.CLIcmdline); //===============================
                             CLI_execute_line();
+                            DEBUG_TRACEPOINT("CLI line executed");
                             printf("%s", prompt);
                             fflush(stdout);
                             break;

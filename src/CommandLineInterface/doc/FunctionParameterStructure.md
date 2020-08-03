@@ -709,27 +709,51 @@ errno_t MyFunction_RUN()
 	// ==================================
 
     processinfo_cleanExit(processinfo);
-    // save to fpslog directory
-	functionparameter_SaveFPS2disk(&fps);
+
+
+	// ==================================
+	// ### SAVING RESULTS (OPTIONAL)
+	// ==================================
+
+    // Conventions
+    //
+    // Everything saved in directory fps.md->outdir, which by default is
+    // fp.md->fpsdirectory/out-fpsname, but can also be set by user parameter conf.outdir.
+    // conf.outdir is relative to fps.md->workdir
+    //
+
+    // save FPS content
+    //
+    functionparameter_SaveFPS2disk(&fps);
+
+    EXECUTE_SYSTEM_COMMAND("cd %s", fps.md->outdir);
+
+
+    // Add files to loglist for archieval into file loglist.dat
+    // Example loglist.dat entry / line :
+    // YYYYMMDDTHHMMSSssssss rawfilename logname extension
+    // Will log the file as ${MILKDATALOGDIR}/logname.YYYYMMDDTHHMMSSssssss.extension
+
+    EXECUTE_SYSTEM_COMMAND("touch loglist.dat");
+
+    save_fits(output0, "output0.fits");
+    EXECUTE_SYSTEM_COMMAND("echo \"%s output0.fits output0 fits\" >> loglist.dat", fps.md->runpidstarttime);
+
+    save_fits(output1, "output1.fits");
+    EXECUTE_SYSTEM_COMMAND("echo \"%s output1.fits output1 fits\" >> loglist.dat", fps.md->runpidstarttime);
+
+    EXECUTE_SYSTEM_COMMAND("echo \"%s somedata.dat somedata dat\" >> loglist.dat", fps.md->runpidstarttime);
+
+
+    // Create archiving script that will copy files to directory datadir (usually a sym link)
+    functionparameter_write_archivescript(&fps);
+
+    EXECUTE_SYSTEM_COMMAND("cd %s", fps.md->workdir);
+
 
     // optional: run exec scripts that take FPSname as argument
 
 
-    // create archive script (optional)
-	// Write archive script
-	// to be executed to archive most recent calibration data
-	// takes fpsname as input
-	//
-	// REQUIRES :
-	// .out.timestring
-	// .out.dirname
-	// .log2fps
-    //
-    functionparameter_SaveFPS2disk_dir(&fps, outdirname);
-    EXECUTE_SYSTEM_COMMAND("echo \"somedata.txt\" > %s/loglist.dat", outdirname);
-    EXECUTE_SYSTEM_COMMAND("echo \"someimage.fits\" >> %s/loglist.dat", outdirname);
-    EXECUTE_SYSTEM_COMMAND("echo \"anotherimage.fits\" >> %s/loglist.dat", outdirname);
-    functionparameter_write_archivescript(&fps, "../mydatadir");
 
 
 	function_parameter_RUNexit( &fps  );

@@ -9,6 +9,8 @@
 
 
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_tools/timeutils.h"
+#include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "fps_GetParamIndex.h"
 #include "fps_printparameter_valuestring.h"
@@ -55,7 +57,7 @@ int functionparameter_SaveFPS2disk_dir(
     }
 
 
-    sprintf(fname, "%s/fps.%s.dat", dirname, fpsentry->md->name);
+    sprintf(fname, "%s/%s.fps", dirname, fpsentry->md->name);
     fpoutval = fopen(fname, "w");
 
     pid_t tid;
@@ -76,6 +78,7 @@ int functionparameter_SaveFPS2disk_dir(
             1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
             uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
 
+	
     fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
     fprintf(fpoutval, "# PID        %d\n", getpid());
     fprintf(fpoutval, "# TID        %d\n", (int) tid);
@@ -101,12 +104,28 @@ int functionparameter_SaveFPS2disk_dir(
  * Writes in subdirectory fpslog
  */
 int functionparameter_SaveFPS2disk(
-    FUNCTION_PARAMETER_STRUCT *fpsentry
+    FUNCTION_PARAMETER_STRUCT *fps
 )
 {
 	char outdir[STRINGMAXLEN_DIRNAME];
-	WRITE_DIRNAME(outdir, "%s/fpslog", fpsentry->md->fpsdirectory);
-	functionparameter_SaveFPS2disk_dir(fpsentry, outdir);
+	WRITE_DIRNAME(outdir, "%s", fps->md->datadir);
+	functionparameter_SaveFPS2disk_dir(fps, outdir);
+	
+	char timestring[100];
+    char timestringnow[100];
+    
+    // assemble timestrings
+    mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
+    mkUTtimestring_microsec_now(timestringnow);	
+	
+	
+	char ffname[STRINGMAXLEN_FULLFILENAME];
+    FILE *fpout;
+    WRITE_FULLFILENAME(ffname, "%s/%s.outlog", fps->md->datadir, fps->md->name);
+    fpout = fopen(ffname, "w");
+    fprintf(fpout, "%s %s %s fps\n", timestring, timestringnow, fps->md->name);
+    fclose(fpout);
+    	
 	
 	return RETURN_SUCCESS;
 }
@@ -116,23 +135,20 @@ int functionparameter_SaveFPS2disk(
 
 /** @brief Write archive script to .log2fps entry
  *
- * To be executed to archive most recent data
+ * Funciton to be executed inside fps->md->datadir.
+ * 
+ * Writes a script to be executed to archive most recent data
+ * in ../datadir/ (usually a sym link)
  *
  * takes fps as input
- *
- * REQUIRES :
- * - .out.timestring
- * - .out.dirname
- * - .log2fps
  * 
  * Optional input:
  * 
- * File loglist.dat in directory .out.dirname
+ * File loglist.dat in directory .conf.dirname
  * 
  */
 errno_t	functionparameter_write_archivescript(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    char *archdirname
+    FUNCTION_PARAMETER_STRUCT *fps
 )
 {	
     // Write archive script
@@ -141,24 +157,19 @@ errno_t	functionparameter_write_archivescript(
     //
     FILE *fplogscript;
     char ffname[STRINGMAXLEN_FULLFILENAME];
+    
     char datadirname[STRINGMAXLEN_DIRNAME];
 
-	char outdirname[STRINGMAXLEN_DIRNAME];
-	strncpy(outdirname, functionparameter_GetParamPtr_STRING(fps, ".out.dirname"), FUNCTION_PARAMETER_STRMAXLEN);
 
 	char timestring[FUNCTION_PARAMETER_STRMAXLEN];
-	strncpy(timestring, functionparameter_GetParamPtr_STRING(fps, ".out.timestring"), FUNCTION_PARAMETER_STRMAXLEN);    
-            
-	// suppress unused parameter warning
-	(void) archdirname;
+	strncpy(timestring, functionparameter_GetParamPtr_STRING(fps, ".conf.timestring"), FUNCTION_PARAMETER_STRMAXLEN);    
+    
 	
 
-    WRITE_FULLFILENAME(ffname, "%s/logscript.bash", outdirname);
+    WRITE_FULLFILENAME(ffname, "archlogscript.bash");
 
     fplogscript = fopen(ffname, "w");
     fprintf(fplogscript, "#!/bin/bash\n");
-    fprintf(fplogscript, "\n");
-    fprintf(fplogscript, "cd %s\n", outdirname);
     fprintf(fplogscript, "\n");
     fprintf(fplogscript, "# %s fps.%s.dat\n", timestring, fps->md->name);
 
@@ -167,14 +178,14 @@ errno_t	functionparameter_write_archivescript(
     datestring[8] = '\0';
 
     // save FPS
-    WRITE_DIRNAME(datadirname, "../aoldatadir/%s/%s/fps.%s", datestring, fps->md->name, fps->md->name);
+    WRITE_DIRNAME(datadirname, "../datadir/%s/%s/fps.%s", datestring, fps->md->name, fps->md->name);
     fprintf(fplogscript, "mkdir -p %s\n", datadirname);
     fprintf(fplogscript, "cp fps.%s.dat %s/fps.%s.%s.dat\n", fps->md->name, datadirname, fps->md->name, timestring);
 
     // save files listed in loglist.dat
     FILE *fploglist;
     char loglistfname[STRINGMAXLEN_FULLFILENAME];
-    WRITE_FULLFILENAME(loglistfname, "%s/loglist.dat", outdirname);
+    WRITE_FULLFILENAME(loglistfname, "loglist.dat");
     fploglist = fopen(loglistfname, "r");
     if (fploglist != NULL)
     {
@@ -184,7 +195,7 @@ errno_t	functionparameter_write_archivescript(
 
         while(getline(&line, &llen, fploglist) != -1) {
             sscanf(line, "%s", logfname);
-            WRITE_DIRNAME(datadirname, "../aoldatadir/%s/%s/%s", datestring, fps->md->name, logfname);
+            WRITE_DIRNAME(datadirname, "../datadir/%s/%s/%s", datestring, fps->md->name, logfname);
             fprintf(fplogscript, "mkdir -p %s\n", datadirname);
             fprintf(fplogscript, "cp -r %s %s/%s.%s\n", logfname, datadirname, logfname, timestring);
         }
@@ -194,9 +205,84 @@ errno_t	functionparameter_write_archivescript(
     fclose(fplogscript);
     chmod(ffname, S_IRWXU | S_IRWXG  | S_IROTH );
 
-    functionparameter_SetParamValue_STRING(fps, ".log2fs", ffname);
+//    functionparameter_SetParamValue_STRING(fps, ".conf.archivescript", ffname);
     
     return RETURN_SUCCESS;
 }
 
 
+
+
+
+/** @brief Save image as FITS 
+ * 
+ * Standard function to save output of FPS RUN function.
+ * 
+ * imagename is the in-memory image to be saved to disk, written as
+ * outname.fits.
+ * 
+ */
+errno_t fps_write_RUNoutput_image(
+	FUNCTION_PARAMETER_STRUCT *fps,
+	const char *imagename,
+	const char *outname
+)
+{
+	char ffname[STRINGMAXLEN_FULLFILENAME];
+	char timestring[100];
+    char timestringnow[100];
+    
+    // assemble timestrings
+    mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
+    mkUTtimestring_microsec_now(timestringnow);
+    
+    WRITE_FULLFILENAME(ffname, "!%s/%s.fits", fps->md->datadir, outname);
+    save_fits(imagename, ffname);
+    
+    FILE *fpout;
+    WRITE_FULLFILENAME(ffname, "%s/%s.outlog", fps->md->datadir, outname);
+    fpout = fopen(ffname, "w");
+    fprintf(fpout, "%s %s %s fits\n", timestring, timestringnow, outname);
+    fclose(fpout);
+    
+	
+	return RETURN_SUCCESS;
+}
+
+
+
+
+/** @brief Save text file 
+ * 
+ * Standard function to save output of FPS RUN function.
+ * 
+ * 
+ */
+FILE *fps_write_RUNoutput_file(
+	FUNCTION_PARAMETER_STRUCT *fps,
+	const char *filename,
+	const char *extension
+)
+{
+	FILE *fp;
+	
+	char ffname[STRINGMAXLEN_FULLFILENAME];
+	char timestring[100];
+    char timestringnow[100];
+    
+    // assemble timestrings
+    mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
+    mkUTtimestring_microsec_now(timestringnow);
+    
+    WRITE_FULLFILENAME(ffname, "%s/%s.%s", fps->md->datadir, filename, extension);
+    fp = fopen(ffname, "w");
+    
+    FILE *fpout;
+    WRITE_FULLFILENAME(ffname, "%s/%s.outlog", fps->md->datadir, filename);
+    fpout = fopen(ffname, "w");
+    fprintf(fpout, "%s %s %s %s\n", timestring, timestringnow, filename, extension);
+    fclose(fpout);
+    
+	
+	return fp;
+}
