@@ -605,7 +605,7 @@ errno_t runCLI(
 
     // initialize fifo to process name
     DEBUG_TRACEPOINT("set default fifo name");
-    sprintf(data.fifoname, "%s.fifo.%07d", data.processname, getpid());
+    sprintf(data.fifoname, "%s/.%s.fifo.%07d", data.shmsemdirname, data.processname, getpid());
 
     DEBUG_TRACEPOINT("Get command-line options");
     command_line_process_options(argc, argv);
