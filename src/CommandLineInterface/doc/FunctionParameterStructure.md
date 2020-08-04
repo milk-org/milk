@@ -726,23 +726,16 @@ errno_t MyFunction_RUN()
     //
     functionparameter_SaveFPS2disk(&fps);
 
-    EXECUTE_SYSTEM_COMMAND("cd %s", fps.md->outdir);
+    // save image
+    // note that the saved-as name (last arg) could be different from image name (2nd arg)
+    //
+    fps_write_RUNoutput_image(&fps, "output0", "output0");
 
-
-    // Add files to loglist for archieval into file loglist.dat
-    // Example loglist.dat entry / line :
-    // YYYYMMDDTHHMMSSssssss rawfilename logname extension
-    // Will log the file as ${MILKDATALOGDIR}/logname.YYYYMMDDTHHMMSSssssss.extension
-
-    EXECUTE_SYSTEM_COMMAND("touch loglist.dat");
-
-    save_fits(output0, "output0.fits");
-    EXECUTE_SYSTEM_COMMAND("echo \"%s output0.fits output0 fits\" >> loglist.dat", fps.md->runpidstarttime);
-
-    save_fits(output1, "output1.fits");
-    EXECUTE_SYSTEM_COMMAND("echo \"%s output1.fits output1 fits\" >> loglist.dat", fps.md->runpidstarttime);
-
-    EXECUTE_SYSTEM_COMMAND("echo \"%s somedata.dat somedata dat\" >> loglist.dat", fps.md->runpidstarttime);
+    // save file
+    //
+    FILE *fpout1 = fps_write_RUNoutput_file(&fps, "somedata", "dat");
+    fprintf(fpout1, "0.123445");
+    fclose(fpout1);
 
 
     // Create archiving script that will copy files to directory datadir (usually a sym link)

@@ -6,14 +6,18 @@
 #include "CommandLineInterface/CLIcore.h"
 
 
+
+/** @brief Set shared memory directory
+ * 
+ * SHM directory to store shared memory
+ * 
+ * If MILK_SHM_DIR environment variable exists, use it.
+ * If fails, print warning, use SHAREDMEMDIR defined in ImageStruct.h
+ * If fails -> use /tmp
+ * 
+ */
 errno_t setSHMdir()
 {
-    // SHM directory to store shared memory
-    //
-    // If MILK_SHM_DIR environment variable exists, use it
-    // If fails, print warning, use SHAREDMEMDIR defined in ImageStruct.h
-    // If fails -> use /tmp
-    //
     char shmdirname[200];
     int shmdirOK = 0; // toggles to 1 when directory is found
     DIR *tmpdir;
