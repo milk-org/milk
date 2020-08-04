@@ -6,14 +6,14 @@
 #include "CommandLineInterface/CLIcore.h"
 
 
-errno_t mkUTtimestring_nanosec(char *timestring)
+
+
+
+errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 {
-    struct timespec tnow;
 	struct tm *uttime;
     time_t tvsec0;
     
-    
-    clock_gettime(CLOCK_REALTIME, &tnow);
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
@@ -25,15 +25,29 @@ errno_t mkUTtimestring_nanosec(char *timestring)
     return RETURN_SUCCESS;
 }
 
-
-errno_t mkUTtimestring_microsec(char *timestring)
+errno_t mkUTtimestring_nanosec_now(char *timestring)
 {
-    struct timespec tnow;
+    struct timespec tnow;    
+    
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    mkUTtimestring_nanosec(timestring, tnow);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
+{
 	struct tm *uttime;
     time_t tvsec0;
     
     
-    clock_gettime(CLOCK_REALTIME, &tnow);
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
@@ -46,14 +60,26 @@ errno_t mkUTtimestring_microsec(char *timestring)
 }
 
 
-errno_t mkUTtimestring_millisec(char *timestring)
+errno_t mkUTtimestring_microsec_now(char *timestring)
 {
-    struct timespec tnow;
-	struct tm *uttime;
-    time_t tvsec0;
-    
+    struct timespec tnow;    
     
     clock_gettime(CLOCK_REALTIME, &tnow);
+    mkUTtimestring_microsec(timestring, tnow);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
+{
+	struct tm *uttime;
+    time_t tvsec0;
+        
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
@@ -65,19 +91,28 @@ errno_t mkUTtimestring_millisec(char *timestring)
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-errno_t mkUTtimestring_sec(char *timestring)
+errno_t mkUTtimestring_millisec_now(char *timestring)
 {
-    struct timespec tnow;
+    struct timespec tnow;    
+    
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    mkUTtimestring_millisec(timestring, tnow);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
+{
 	struct tm *uttime;
     time_t tvsec0;
     
     
-    clock_gettime(CLOCK_REALTIME, &tnow);
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
@@ -88,6 +123,25 @@ errno_t mkUTtimestring_sec(char *timestring)
 
     return RETURN_SUCCESS;
 }
+
+errno_t mkUTtimestring_sec_now(char *timestring)
+{
+    struct timespec tnow;    
+    
+    clock_gettime(CLOCK_REALTIME, &tnow);
+    mkUTtimestring_sec(timestring, tnow);
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
 
 
 
