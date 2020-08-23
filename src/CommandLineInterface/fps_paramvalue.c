@@ -10,6 +10,7 @@
 
 #include "fps_connect.h"
 #include "fps_disconnect.h"
+#include "fps_paramvalue.h"
 #include "fps_GetParamIndex.h"
 
 
@@ -294,7 +295,3 @@ uint64_t *functionparameter_GetParamPtr_fpflag(
 
     return ptr;
 }
-
-
-
-

@@ -3,7 +3,10 @@
  * @brief   FPS process command line
  */
 
+#ifndef FPS_PROCESSCMDLINE_H
+#define FPS_PROCESSCMDLINE_H
 
+#include "function_parameters.h"
 
 int functionparameter_FPSprocess_cmdline(
     char *FPScmdline,
@@ -13,3 +16,5 @@ int functionparameter_FPSprocess_cmdline(
     FUNCTION_PARAMETER_STRUCT *fps,
     uint64_t *taskstatus
 );
+
+#endif

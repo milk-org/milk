@@ -3,6 +3,10 @@
  * @brief   scan and load FPSs
  */
 
+#ifndef FPS_SCAN_H
+#define FPS_SCAN_H
+
+#include "function_parameters.h"
 
 errno_t functionparameter_scan_fps(
     uint32_t mode,
@@ -14,3 +18,5 @@ errno_t functionparameter_scan_fps(
     long *ptr_pindex,
     int verbose
 );
+
+#endif
