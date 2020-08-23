@@ -184,11 +184,13 @@ install(FILES CLIcore.h
               CLIcore_modules.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
-              processtools.h  
+              processtools.h
               streamCTRL.h
               function_parameters.h
-              fps_add_entry.h              
+              fps_add_entry.h
               fps_checkparameter.h
+              fps_CONFstart.h
+              fps_CONFstop.h
               fps_connect.h
               fps_connectExternalFPS.h
               fps_CTRLscreen.h
@@ -197,13 +199,29 @@ install(FILES CLIcore.h
               fps_FPCONFexit.h
               fps_FPCONFloopstep.h
               fps_FPCONFsetup.h
+              fps_FPSremove.h
+              fps_GetFileName.h
               fps_getFPSargs.h
+              fps_GetParamIndex.h
+              fps_GetTypeString.h
               fps_load.h
+              fps_loadstream.h
               fps_outlog.h
               fps_paramvalue.h
+              fps_PrintParameterInfo.h
+              fps_printparameter_valuestring.h
+              fps_processcmdline.h
+              fps_process_fpsCMDarray.h
               fps_processinfo_entries.h
+              fps_process_user_key.h
+              fps_read_fpsCMD_fifo.h
               fps_RUNexit.h
+              fps_RUNstart.h
+              fps_RUNstop.h
               fps_save2disk.h
+              fps_scan.h
               fps_shmdirname.h
-              standalone_dependencies.h 
-        DESTINATION include/${SRCNAME})
+              fps_tmux.h
+              fps_userinputsetparamvalue.h
+              standalone_dependencies.h
+              DESTINATION include/${SRCNAME})
