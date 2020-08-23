@@ -3,8 +3,8 @@
  * @brief   Load FPS
  */
 
-#ifndef FPS_LOAD.H
-#define FPS_LOAD.H
+#ifndef FPS_LOAD_H
+#define FPS_LOAD_H
 
 long function_parameter_structure_load(
 	char *fpsname

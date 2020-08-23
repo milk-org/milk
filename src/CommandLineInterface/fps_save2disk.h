@@ -5,7 +5,6 @@
 
 #ifndef FPS_SAVE2DISK_H
 #define FPS_SAVE2DISK_H
-#endif
 
 #include "function_parameters.h"
 
@@ -46,3 +45,5 @@ FILE *fps_write_RUNoutput_file(
 errno_t fps_datadir_to_confdir(
 	FUNCTION_PARAMETER_STRUCT *fps
 );
+
+#endif
