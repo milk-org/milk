@@ -187,8 +187,16 @@ errno_t function_parameter_struct_create(
     strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX);
     fps.md->sourceline = 0;
 
-	// set default outdir
-	sprintf(fps.md->datadir, "datadir-%s", fps.md->name);
+	// set default fpsdatadir
+	sprintf(fps.md->datadir, "fps.%s.datadir", fps.md->name);
+	// and create the directory
+	mkdir(fps.md->datadir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+
+	// set default fpsconfdir
+	sprintf(fps.md->confdir, "fps.%s.confdir", fps.md->name);
+	// and create the directory
+	mkdir(fps.md->confdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
