@@ -403,14 +403,14 @@ typedef struct
 
 
 
-#define FPS_CWD_STRLENMAX      200
-#define FPS_DIR_STRLENMAX      200
-#define FPS_SRCDIR_STRLENMAX   200
-#define FPS_PNAME_STRMAXLEN    100
-#define FPS_CALLPROGNAME_STRMAXLEN 80
-#define FPS_CALLFUNCNAME_STRMAXLEN 100
-#define FPS_DESCR_STRMAXLEN    200
-#define STRINGMAXLEN_FPS_DIRNAME 200
+#define FPS_CWD_STRLENMAX           200
+#define FPS_DIR_STRLENMAX           200
+#define FPS_SRCDIR_STRLENMAX        200
+#define FPS_PNAME_STRMAXLEN         100
+#define FPS_CALLPROGNAME_STRMAXLEN   80
+#define FPS_CALLFUNCNAME_STRMAXLEN  100
+#define FPS_DESCR_STRMAXLEN         200
+#define STRINGMAXLEN_FPS_DIRNAME    200
 
 // metadata
 typedef struct
@@ -425,8 +425,10 @@ typedef struct
     // where should processes run from ?
     char                workdir[FPS_CWD_STRLENMAX];
     
-    // where should configurations and results be written to ?
+    // [output] where should configurations and results be written to ?
     char                datadir[FPS_DIR_STRLENMAX];
+    // [input] directory for configuration
+    char                confdir[FPS_DIR_STRLENMAX];
     
     // source code file name
     char				sourcefname[FPS_SRCDIR_STRLENMAX];

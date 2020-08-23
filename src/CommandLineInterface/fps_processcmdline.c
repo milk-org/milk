@@ -239,7 +239,7 @@ int functionparameter_FPSprocess_cmdline(
         cmdFOUND = 1;
         if(nbword != 1)
         {
-            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 1");
+            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 0");
             cmdOK = 0;
         }
         else
@@ -259,7 +259,7 @@ int functionparameter_FPSprocess_cmdline(
         cmdFOUND = 1;
         if(nbword != 2)
         {
-            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 2");
+            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 1");
             cmdOK = 0;
         }
         else
@@ -615,7 +615,6 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-
         // fpsrm
 
         if((cmdFOUND == 0)
@@ -629,9 +628,9 @@ int functionparameter_FPSprocess_cmdline(
             }
             else
             {
-                DEBUG_TRACEPOINT(" ");
+                DEBUG_TRACEPOINT("Removing fps number %d", fpsindex);
                 functionparameter_FPSremove(&fps[fpsindex]);
-
+                DEBUG_TRACEPOINT("Posting to fps log %s", fps[fpsindex].md->name);
                 functionparameter_outlog("FPSRM", "FPS remove %d %s", fpsindex,
                                fps[fpsindex].md->name);
                 cmdOK = 1;

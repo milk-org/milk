@@ -11,9 +11,10 @@
 
 
 #include "CommandLineInterface/CLIcore.h"
-
+#include "COREMOD_tools/timeutils.h"
 #include "fps_shmdirname.h"
 #include "fps_loadstream.h"
+#include "fps_GetParamIndex.h"
 
 
 
@@ -96,7 +97,7 @@ long function_parameter_struct_connect(
     if(fpsconnectmode == FPSCONNECT_RUN)
     {
         fps->md->runpid = getpid();    // write process PID into FPS
-        clock_gettime(CLOCK_REALTIME, &fps->md->runpidstarttime);
+        clock_gettime(CLOCK_REALTIME, &fps->md->runpidstarttime);     
     }
 
 
@@ -182,6 +183,25 @@ long function_parameter_struct_connect(
             }
         }
     }
+    
+    
+    // update time
+    //
+    if(fpsconnectmode == FPSCONNECT_RUN)
+    {
+        // set timestring if applicable
+        //
+        int pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
+        if(pindex > -1) {
+            char timestring[100];
+            mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
+            if(snprintf(fps->parray[pindex].val.string[0],
+                        FUNCTION_PARAMETER_STRMAXLEN, "%s", timestring) < 0)
+            {
+                PRINT_ERROR("snprintf error");
+            }
+        }                
+    }    
 
     return(NBparamMAX);
 }

@@ -37,3 +37,7 @@ FILE *fps_write_RUNoutput_file(
 	const char *filename,
 	const char *extension
 );
+
+errno_t fps_datadir_to_confdir(
+	FUNCTION_PARAMETER_STRUCT *fps
+);

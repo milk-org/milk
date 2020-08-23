@@ -262,7 +262,7 @@ int fpsCTRLscreen_process_user_key(
             if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
             {
 				EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->name);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s/%s.fps\" C-m", fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].md->datadir, fps[fpsindex].md->name);
             }
 
             break;
@@ -347,43 +347,63 @@ int fpsCTRLscreen_process_user_key(
             break;
         
         
-        case '>': // export values to filesystem
+        case '>': // export to confdir
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			
-			functionparameter_SaveFPS2disk(&fps[fpsindex]);
+			fps_datadir_to_confdir(&fps[fpsindex]);
 			break;
 
 
-        case '<': // import settings from filesystem
+        case '<': // Load from confdir
 			TUI_exit();
             if(system("clear") != 0)
             {
                 PRINT_ERROR("system() returns non-zero value");
             }
 			fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-			sprintf(fname, "%s/fpscmd/fps.%s.cmd", fps[fpsindex].md->workdir, fps[fpsindex].md->name);		
-			printf("READING FILE %s\n", fname);	
+			sprintf(fname, "%s/%s.fps", fps[fpsindex].md->confdir, fps[fpsindex].md->name);		
+			//printf("LOADING FPS FILE %s\n", fname);	
+			
 			fpin = fopen(fname, "r");
 			if(fpin != NULL)
 			{				
-				char *FPScmdline = NULL;
+				char *FPSline = NULL;				
                 size_t len = 0;
                 ssize_t read;
 
-                while((read = getline(&FPScmdline, &len, fpin)) != -1)
+                while((read = getline(&FPSline, &len, fpin)) != -1)
                 {   
 					uint64_t taskstatus = 0;
-					printf("READING CMD: %s\n", FPScmdline);
+					
+					//printf("READING LINE: %s\n", FPSline);
+					
+					char delimiter[] = " ";
+					char *varname, *vartype, *varvalue;
+					char *context;
+					
+					int inputLength = strlen(FPSline);
+					char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
+					strncpy(inputCopy, FPSline, inputLength);
+					
+					varname = strtok_r (inputCopy, delimiter, &context);
+					vartype = strtok_r (NULL, delimiter, &context);
+					(void) vartype;
+					varvalue = strtok_r (NULL, delimiter, &context);
+										
+					//printf("%s [%s] -< %s\n", varname, vartype, varvalue);					
+                    
+                    char FPScmdline[200];
+                    sprintf(FPScmdline, "setval %s %s", varname, varvalue);
+                    free(inputCopy);
                     functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode,
                                                          fpsCTRLvar, fps, &taskstatus);
-                }				
+                }		
 				fclose(fpin);
 			}
 			else
 			{
 				printf("File not found\n");
 			}
-			sleep(5);
+			
 			TUI_initncurses();
 			break;
 			
