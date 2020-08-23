@@ -4,8 +4,8 @@
  */
 
 
-#ifndef FPS_ADD_ENTRY_H
-#define FPS_ADD_ENTRY_H
+#ifndef FPS_CONNECT_H
+#define FPS_CONNECT_H
 
 
 long function_parameter_struct_connect(
