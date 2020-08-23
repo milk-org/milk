@@ -2,9 +2,12 @@
  * @file    fps_process_user_key.h
  * @brief   TUI key input processing
  */
- 
- 
- 
+
+#ifndef FPS_PROCESS_USER_KEY_H
+#define FPS_PROCESS_USER_KEY_H
+
+#include "function_parameters.h"
+
 int fpsCTRLscreen_process_user_key(
     int ch,
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -14,3 +17,4 @@ int fpsCTRLscreen_process_user_key(
     FPSCTRL_PROCESS_VARS *fpsCTRLvar
 );
 
+#endif

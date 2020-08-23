@@ -3,7 +3,10 @@
  * @brief   get FPS filename for entry
  */
 
+#ifndef FPS_GETFILENAME_H
+#define FPS_GETFILENAME_H
 
+#include "function_parameters.h"
 
 int functionparameter_GetFileName(
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -11,3 +14,5 @@ int functionparameter_GetFileName(
     char *outfname,
     char *tagname
 );
+
+#endif

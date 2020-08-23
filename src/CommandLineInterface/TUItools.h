@@ -3,6 +3,9 @@
  * @brief   Text User Interface tools
  */
 
+#ifndef TUITOOLS_H
+#define TUITOOLS_H
+
 
 
 /** @brief print to screen, or not
@@ -140,3 +143,5 @@ int get_singlechar_nonblock();
 
 int get_singlechar_block();
 
+
+#endif

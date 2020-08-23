@@ -3,7 +3,8 @@
  * @brief   set and get parameter values
  */
 
-
+#ifndef FPS_PARAMVALUE_H
+#define FPS_PARAMVALUE_H
 
 long functionparameter_GetParamValue_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -100,6 +101,4 @@ uint64_t *functionparameter_GetParamPtr_fpflag(
     const char *paramname
 );
 
-
-
-
+#endif

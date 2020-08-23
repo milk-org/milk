@@ -53,6 +53,43 @@ void quick_sort2l(double *array, long *array1, long count);
 void quick_sort2l_double(double *array, long *array1, long count);
 void quick_sort_long(long *array, long count);
 
+#include "fps_add_entry.h"
+#include "fps_checkparameter.h"
+#include "fps_CONFstart.h"
+#include "fps_CONFstop.h"
+#include "fps_connectExternalFPS.h"
+#include "fps_connect.h"
+#include "fps_CTRLscreen.h"
+#include "fps_disconnect.h"
+#include "fps_execFPScmd.h"
+#include "fps_FPCONFexit.h"
+#include "fps_FPCONFloopstep.h"
+#include "fps_FPCONFsetup.h"
+#include "fps_FPSremove.h"
+#include "fps_GetFileName.h"
+#include "fps_getFPSargs.h"
+#include "fps_GetParamIndex.h"
+#include "fps_GetTypeString.h"
+#include "fps_load.h"
+#include "fps_loadstream.h"
+#include "fps_outlog.h"
+#include "fps_paramvalue.h"
+#include "fps_PrintParameterInfo.h"
+#include "fps_printparameter_valuestring.h"
+#include "fps_processcmdline.h"
+#include "fps_process_fpsCMDarray.h"
+#include "fps_processinfo_entries.h"
+#include "fps_process_user_key.h"
+#include "fps_read_fpsCMD_fifo.h"
+#include "fps_RUNexit.h"
+#include "fps_RUNstart.h"
+#include "fps_RUNstop.h"
+#include "fps_save2disk.h"
+#include "fps_scan.h"
+#include "fps_shmdirname.h"
+#include "fps_tmux.h"
+#include "fps_userinputsetparamvalue.h"
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,5 +1,5 @@
 /**
- * @file    fps_printparameter_valuestring.c
+ * @file    fps_printparameter_valuestring.h
  * @brief   print parameter value string
  */
 
@@ -14,8 +14,8 @@ errno_t functionparameter_PrintParameter_ValueString(
 )
 {
 	int cmdOK = 0;
-	
-	
+
+
     switch(fpsentry->type)
     {
     case FPTYPE_INT64:
@@ -156,14 +156,12 @@ errno_t functionparameter_PrintParameter_ValueString(
 
 
 	if(cmdOK==1)
-	{	
+	{
 		return RETURN_SUCCESS;
 	}
 	else
 	{
 		return RETURN_FAILURE;
 	}
-		
+
 }
-
-
