@@ -6,7 +6,7 @@
 
 #include <sys/stat.h> // fstat
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
-
+#include <dirent.h> 
 
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_tools/timeutils.h"
@@ -121,9 +121,9 @@ int functionparameter_SaveFPS2disk(
 	
 	char ffname[STRINGMAXLEN_FULLFILENAME];
     FILE *fpout;
-    WRITE_FULLFILENAME(ffname, "%s/%s.outlog", fps->md->datadir, fps->md->name);
+    WRITE_FULLFILENAME(ffname, "%s/%s.fps.outlog", fps->md->datadir, fps->md->name);
     fpout = fopen(ffname, "w");
-    fprintf(fpout, "%s %s %s fps\n", timestring, timestringnow, fps->md->name);
+    fprintf(fpout, "%s %s %s fps %s %s fps\n", timestring, timestringnow, fps->md->name, fps->md->name, fps->md->name);
     fclose(fpout);
     	
 	
@@ -240,9 +240,9 @@ errno_t fps_write_RUNoutput_image(
     save_fits(imagename, ffname);
     
     FILE *fpout;
-    WRITE_FULLFILENAME(ffname, "%s/%s.outlog", fps->md->datadir, outname);
+    WRITE_FULLFILENAME(ffname, "%s/%s.fits.outlog", fps->md->datadir, outname);
     fpout = fopen(ffname, "w");
-    fprintf(fpout, "%s %s %s fits\n", timestring, timestringnow, outname);
+    fprintf(fpout, "%s %s %s fits %s %s fits\n", timestring, timestringnow, outname, fps->md->name, outname);
     fclose(fpout);
     
 	
@@ -278,11 +278,140 @@ FILE *fps_write_RUNoutput_file(
     fp = fopen(ffname, "w");
     
     FILE *fpout;
-    WRITE_FULLFILENAME(ffname, "%s/%s.outlog", fps->md->datadir, filename);
+    WRITE_FULLFILENAME(ffname, "%s/%s.%s.outlog", fps->md->datadir, filename, extension);
     fpout = fopen(ffname, "w");
-    fprintf(fpout, "%s %s %s %s\n", timestring, timestringnow, filename, extension);
+    fprintf(fpout, "%s %s %s %s %s %s %s\n", timestring, timestringnow, filename, extension, fps->md->name, filename, extension);
     fclose(fpout);
     
 	
 	return fp;
 }
+
+
+
+
+
+
+/** @brief Get file extension
+ */
+static char *get_filename_ext(const char *filename)
+{
+    char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename)
+    {
+        return "";
+    }
+    return dot + 1;
+}
+
+static char *remove_filename_ext(const char *filename)
+{
+    char *tmpstring;
+    
+    if ((tmpstring = malloc (strlen (filename) + 1)) == NULL) return NULL;
+    strcpy(tmpstring, filename);
+    char *lastdot = strrchr(tmpstring, '.');
+    if(lastdot != NULL)
+    {
+        *lastdot = '\0';
+    }
+    return tmpstring;
+}
+
+
+/** @brief Copy file
+ */
+static errno_t filecopy(char *sourcefilename, char *destfilename)
+{
+    FILE *fp1, *fp2;
+    char ch;
+    int pos;
+
+    if ((fp1 = fopen(sourcefilename,"r")) == NULL)    
+    {    
+        printf("Cannot open file \"%s\" \n", sourcefilename);
+        return RETURN_FAILURE;
+    }
+
+
+    fp2 = fopen(destfilename, "w");  
+
+    fseek(fp1, 0L, SEEK_END); // file pointer at end of file
+    pos = ftell(fp1);
+    fseek(fp1, 0L, SEEK_SET); // file pointer set at start
+    while (pos--)
+    {
+        ch = fgetc(fp1);  // copying file character by character
+        fputc(ch, fp2);
+    }    
+    fclose(fp1);
+    fclose(fp2);
+    
+    return RETURN_SUCCESS;  
+}
+
+
+
+/** @brief Save FPS from datadir to confdir
+ *  
+ *	Scan datadir, looking for .outlog file(s).
+ * 
+ * For each such file, copy <file>.outlog and <file> from datadir to confdir.
+ * 
+ */
+errno_t fps_datadir_to_confdir(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
+{
+    struct dirent *indirentry;  // Pointer for directory entry
+	char *file_ext; // extension
+
+	
+    // opendir() returns a pointer of DIR type.
+    DIR *indir = opendir(fps->md->datadir);
+    if(indir == NULL)   // opendir returns NULL if couldn't open directory
+    {
+        printf("Cannot open directory \"%s\"\n", fps->md->datadir);
+        return RETURN_FAILURE;
+    }
+
+    DIR *outdir = opendir(fps->md->confdir);
+    if(outdir == NULL)   // opendir returns NULL if couldn't open directory
+    {
+        printf("Cannot open directory\"%s\"", fps->md->confdir);
+        return RETURN_FAILURE;
+    }
+
+
+
+    while((indirentry = readdir(indir)) != NULL)
+    {
+        printf("%s\n", indirentry->d_name);
+        file_ext = get_filename_ext(indirentry->d_name);
+        
+        if(strcmp(file_ext, "outlog") == 0)
+        {
+			char ffnamein[STRINGMAXLEN_FULLFILENAME];
+			char ffnameout[STRINGMAXLEN_FULLFILENAME];
+			
+			WRITE_FULLFILENAME(ffnamein, "%s/%s", fps->md->datadir, indirentry->d_name);
+			WRITE_FULLFILENAME(ffnameout, "%s/%s", fps->md->confdir, indirentry->d_name);
+			filecopy(ffnamein, ffnameout);
+			
+			char *fnamenoext;
+			fnamenoext = remove_filename_ext(indirentry->d_name);
+
+			WRITE_FULLFILENAME(ffnamein, "%s/%s", fps->md->datadir, fnamenoext);
+			WRITE_FULLFILENAME(ffnameout, "%s/%s", fps->md->confdir, fnamenoext);
+			filecopy(ffnamein, ffnameout);			
+		}
+    }
+
+    closedir(indir);
+    closedir(outdir);
+    
+    //sleep(10);
+    
+    return RETURN_SUCCESS;
+}
+

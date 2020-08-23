@@ -53,18 +53,7 @@ errno_t functionparameter_RUNstart(
             EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export OMP_NUM_THREADS=%ld\" C-m", fps->md->name, NBthread);
         }
 
-        // set timestring if applicable
-        //
-        pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
-        if(pindex > -1) {
-            char timestring[100];
-            mkUTtimestring_millisec_now(timestring);
-            if(snprintf(fps->parray[pindex].val.string[0],
-                        FUNCTION_PARAMETER_STRMAXLEN, "%s", timestring) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-        }
+
 
 
         // override output directory if applicable

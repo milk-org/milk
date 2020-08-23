@@ -119,8 +119,8 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("C/c/u", "start/stop/update CONF process");
     print_help_entry("R/r",   "start/stop RUN process");
     print_help_entry("l",     "list all entries");
-    print_help_entry(">",     "export values to ./fpslog/fps.<fpsname>.dat");
-    print_help_entry("<",     "import commands from ./fpscmd/fps.<fpsname>.cmd");
+    print_help_entry(">",     "export fpsdatadir values fpsconfdir");
+    print_help_entry("<",     "import/load values from fpsconfdir");
     print_help_entry("P",     "(P)rocess input file \"confscript\"");
     printfw("        format: setval <paramfulname> <value>\n");
 }
@@ -171,8 +171,9 @@ inline static void fpsCTRLscreen_print_nodeinfo(
     printfw("    FPS work     directory    : %s\n",
            fps[keywnode[nodeSelected].fpsindex].md->workdir);
 
-    printfw("    FPS data     directory    : %s\n",
-           fps[keywnode[nodeSelected].fpsindex].md->datadir);
+    printfw("    ( FPS output data directory : %s )  ( FPS input conf directory : %s) \n",
+           fps[keywnode[nodeSelected].fpsindex].md->datadir,
+           fps[keywnode[nodeSelected].fpsindex].md->confdir);
 
     DEBUG_TRACEPOINT(" ");
     printfw("    FPS tmux sessions     :  "); 

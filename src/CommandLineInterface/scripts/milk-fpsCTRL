@@ -142,7 +142,7 @@ fi
 
 mkfifo ${fifoname}
 
-CLIfifoname="$MILK_SHM_DIR/fpsCLIfifo"
+CLIfifoname="${MILK_SHM_DIR}/fpsCLIfifo"
 
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
 echo "fpsCTRL ${MODE} \"$arg1\" \"$fifoname\"" > $SF
@@ -168,7 +168,7 @@ valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${CLIfifoname} -s ${SF}
 rm ./milkdebugtest
 
 else
-
+echo "Running: milk -n ${shortpname} -f ${CLIfifoname} -s ${SF}"
 export MILK_QUIET=1
 milk -n ${shortpname} -f ${CLIfifoname} -s ${SF} 
 #2> testout.txt
