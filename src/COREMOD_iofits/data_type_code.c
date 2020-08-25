@@ -17,7 +17,8 @@ int data_type_code(
                   logical, L              14        TLOGICAL
                   ASCII character, A      16        TSTRING
       16          short integer, I        21        TSHORT
-      32          integer, J              41        TLONG
+      32          integer, J                      41        TLONG
+      64          64-bit long signed integer 'K'  81        TLONGLONG
      -32          real, E                 42        TFLOAT
      -64          double precision, D     82        TDOUBLE
                   complex, C              83        TCOMPLEX
@@ -39,6 +40,10 @@ int data_type_code(
     if(bitpix == 32)
     {
         code = 41;
+    }
+    if(bitpix == 64)
+    {
+        code = 81;
     }
     if(bitpix == -32)
     {
