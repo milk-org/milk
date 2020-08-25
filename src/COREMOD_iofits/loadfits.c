@@ -525,6 +525,70 @@ imageID load_fits(
             larray = NULL;
         }
 
+
+        /* bitpix = 64   TLONG  */
+        if(bitpix == 64)
+        {
+            ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_INT64, data.SHARED_DFT,
+                                 data.NBKEWORD_DFT);
+            larray = (long *) malloc(sizeof(long) * nelements);
+            if(larray == NULL)
+            {
+                PRINT_ERROR("malloc error");
+                exit(0);
+            }
+
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
+                          &anynul, &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                if(errcode != 0)
+                {
+                    fprintf(stderr, "%c[%d;%dm Error while calling \"fits_read_img\" %c[%d;m\n",
+                            (char) 27, 1, 31, (char) 27, 0);
+                    fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1,
+                            31, ID_name, file_name, (char) 27, 0);
+                    fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                            (char) 27, 1, 31, (char) 27, 0);
+                    list_image_ID();
+                    if(errcode > 1)
+                    {
+                        exit(0);
+                    }
+                }
+            }
+
+            fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                if(errcode != 0)
+                {
+                    fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
+                            (char) 27, 1, 31, (char) 27, 0);
+                    fprintf(stderr, "%c[%d;%dm within load_fits ( %s, %s ) %c[%d;m\n", (char) 27, 1,
+                            31, ID_name, file_name, (char) 27, 0);
+                    fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
+                            (char) 27, 1, 31, (char) 27, 0);
+                    list_image_ID();
+                    if(errcode > 1)
+                    {
+                        exit(0);
+                    }
+                }
+            }
+
+            bzero = 0.0;
+            for(ii = 0; ii < nelements; ii++)
+            {
+                data.image[ID].array.SI64[ii] = larray[ii] * bscale + bzero;
+            }
+            free(larray);
+            larray = NULL;
+        }
+
+
+
+
         /* bitpix = 8   TBYTE */
         if(bitpix == 8)
         {
