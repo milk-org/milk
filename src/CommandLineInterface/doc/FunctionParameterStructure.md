@@ -201,7 +201,7 @@ Example source code below.
 
 ~~~~{.c}
 
-errno_t ExampleFunction__cli()
+static errno_t ExampleFunction__cli()
 {
     // Try FPS implementation
 
@@ -485,7 +485,7 @@ errno_t ExampleFunction(
 
     // create FPS
     sprintf(data.FPS_name, "exfunc-%06ld", pindex);
-    data.FPS_CMDMODE = FPSCMDCODE_FPSINIT;
+    data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
     ExampleFunction_FPCONF();
 
     function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
