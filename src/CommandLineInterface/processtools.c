@@ -65,6 +65,8 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include <pthread.h>
 
 
+#include "CommandLineInterface/timeutils.h"
+
 #ifdef STANDALONE
 #include "standalone_dependencies.h"
 #else

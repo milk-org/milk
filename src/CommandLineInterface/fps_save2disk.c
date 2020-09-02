@@ -9,7 +9,7 @@
 #include <dirent.h> 
 
 #include "CommandLineInterface/CLIcore.h"
-#include "COREMOD_tools/timeutils.h"
+#include "CommandLineInterface/timeutils.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "fps_GetParamIndex.h"

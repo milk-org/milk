@@ -52,6 +52,7 @@ add_library(CLIcore
             SHARED
             processtools.c
             streamCTRL.c
+            timeutils.c
             fps_add_entry.c
             fps_checkparameter.c
             fps_connect.c
@@ -190,6 +191,7 @@ install(FILES CLIcore.h
               CLIcore_signals.h
               processtools.h
               streamCTRL.h
+              timeutils.h
               function_parameters.h
               fps_add_entry.h
               fps_checkparameter.h

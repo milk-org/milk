@@ -12,6 +12,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
+#include "CommandLineInterface/timeutils.h"
 
 #include "fps_disconnect.h"
 #include "fps_GetTypeString.h"
