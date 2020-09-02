@@ -13,7 +13,6 @@ set(SOURCEFILES
 	quicksort.c
 	statusstat.c
 	stringutils.c
-	timeutils.c
 )
 
 set(INCLUDEFILES
@@ -26,7 +25,6 @@ set(INCLUDEFILES
 	quicksort.h
 	statusstat.h
 	stringutils.h
-	timeutils.h
 )
 
 

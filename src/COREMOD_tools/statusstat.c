@@ -8,9 +8,11 @@
 
 
 #include "CommandLineInterface/CLIcore.h"
+
+#include "CommandLineInterface/timeutils.h"
+
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "timeutils.h"
 
 
 // ==========================================
