@@ -32,6 +32,8 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+#include "CommandLineInterface/timeutils.h"
+
 #include "clearall.h"
 #include "create_image.h"
 #include "create_variable.h"
