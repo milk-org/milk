@@ -128,7 +128,7 @@ Provided that the module follows milk conventions, linking the module will add t
 	
 ## 2.3. Linking module from within CLI with mload {#page_LoadingModules_linking_mload}
 
-By default, modules shared objects are installed in `/usr/local/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
+By default, modules shared objects are installed in `/usr/local/milk/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
 
 	milk> mload <modulename>
 
@@ -146,7 +146,7 @@ Module functions are called from the command line interface prompt:
 
 Upon startup, milk will read the CLI_ADD_LIBS environment variable to link shared objects. For example:
 
-	CLI_ADD_LIBS="/usr/local/libs/libMyFirstModule.so /usr/local/libs/libMySecondModule.so" milk
+	CLI_ADD_LIBS="/usr/local/milk/lib/libMyFirstModule.so /usr/local/milk/lib/libMySecondModule.so" milk
 	
 will link modules `MyFirstModule` and `MySecondModule`.
 
