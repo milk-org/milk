@@ -71,7 +71,7 @@ cd ../..
 
 To update documentation locally:
 
-	doxygen
+	doxygen doc/Doxyfile
 
 To push the changes to the git webpage:
 
