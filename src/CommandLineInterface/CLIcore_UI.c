@@ -1,12 +1,13 @@
 /**
  * @file CLIcore_UI.c
- * 
+ *
  * @brief User input (UI) functions
  *
  */
 
 
 
+#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -41,10 +42,10 @@ void rl_cb_linehandler(char *linein)
     }
 
     data.CLIexecuteCMDready = 1;
- 
+
     // copy input into data.CLIcmdline
     strcpy(data.CLIcmdline, linein);
- 
+
     CLI_execute_line();
 
     free(linein);
@@ -60,8 +61,8 @@ errno_t runCLI_prompt(
 )
 {
 	int color_cyan = 36;
-	
-	
+
+
     if(data.quiet == 0) {
 
         if(strlen(promptstring) > 0)
@@ -183,7 +184,7 @@ static char *CLI_generator(
 
 
 /** @brief readline custom completion
- * 
+ *
  * Invoked when pressing TAB
  */
 
@@ -207,7 +208,7 @@ char **CLI_completion(
         data.CLImatchMode = 0;    // try to match string with command name
     }
     else
-    {		
+    {
         data.CLImatchMode = 1;    // do not try to match with command
     }
 
@@ -237,9 +238,9 @@ errno_t CLI_execute_line()
     struct  timespec *thetime = (struct timespec *)malloc(sizeof(struct timespec));
 
 
-	
+
 	add_history(data.CLIcmdline);
-	
+
     //
     // If line starts with !, use system()
     //
@@ -427,7 +428,7 @@ errno_t CLI_execute_line()
         {
             data.CMDexecuted = 1;
         }
-		        
+
     }
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
@@ -440,6 +441,3 @@ errno_t CLI_execute_line()
 
     return RETURN_SUCCESS;
 }
-
-
-
