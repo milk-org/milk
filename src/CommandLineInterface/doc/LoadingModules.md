@@ -50,7 +50,7 @@ Note that the commands above will compile the module into a shared object, but i
 	$ milk
 	
 	# load module from command line interface
-	milk> mload NewModuleName 
+	milk> mload milkNewModuleName 
 	
 	# check list of modules. NewModuleName should appear
 	milk> m?
@@ -82,8 +82,10 @@ Lets run it :
 	# start milk
 	$ milk
 	
-	# load module as "mex" (short for module example)
-	milk> mloadas milk_module_example mex
+	# load module. Notice that milk is appended to module name
+	# milk> mload milkmilk_module_example
+	# Alternatively, load module as "mex" (short for module example)
+	milk> mloadas milkmilk_module_example mex
 	
 	# check we have it
 	milk> m?
@@ -122,19 +124,19 @@ The `fullsoname` is the shared object file name, path relative to current direct
 Provided that the module follows milk conventions, linking the module will add the corresponding functions to the CLI. This can be checked by probing the module functions:
 
 	milk> m?                # lists linked modules
-	milk> m? <modulename>   # lists CLI commands in the module
+	milk> m? <ModuleName>   # lists CLI commands in the module
 	
 
 	
 ## 2.3. Linking module from within CLI with mload {#page_LoadingModules_linking_mload}
 
-By default, modules shared objects are installed in `/usr/local/milk/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
+By default, modules shared objects are installed in `/usr/local/milk/lib`, and are named `libmilk<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
 
-	milk> mload <modulename>
+	milk> mload milk<ModuleName>
 
 Alternatively, a short name can be specified 
 
-	milk> mloadas <modulename> <shortname>
+	milk> mloadas <ModuleName> <shortname>
 
 Module functions are called from the command line interface prompt:
 
