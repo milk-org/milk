@@ -59,15 +59,31 @@ function printHELP {
 optlistshort=""
 optindex=0
 while [ $optindex -lt ${NBopt} ]; do
-  optlistshort="${optlistshort}[-${inputMSoptshortARRAY[$optindex]}]"
+  optlistshort="${optlistshort}[${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}]"
   let optindex+=1
 done
+
+argliststring=""
+argindex=0
+while [ $argindex -lt ${NBarg} ]; do
+  argliststring="${argliststring} ${inputMSargnameARRAY[$argindex]}"
+  let argindex+=1
+done
+
 	
 echo "------------------------------------------------------------------------"
 echo "${txBold} $pname : ${MSdescr}  ${txReset}"
 echo "------------------------------------------------------------------------"
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [OPTION]"
+echo "     $0 [OPTION(S)] ${fgYellow}${argliststring}${txReset}"
+echo "     option(s): ${optlistshort}"
+echo ""
+echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
+argindex=0
+while [ $argindex -lt ${NBarg} ]; do
+  printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${inputMSargdescrARRAY[$argindex]}"
+  let argindex+=1
+done
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 optindex=0
@@ -130,6 +146,28 @@ done
 PARAMS=""
 
 
+# Arguments
+inputMSargnameARRAY=( )
+inputMSargtypeARRAY=( )
+inputMSargdescrARRAY=( )
+
+NBarg=0
+for argdat in "${MSarg[@]}";do
+  #echo "Argument ${NBarg}: $argdat"
+  IFS=';' read -r -a argarray <<< "$argdat"
+  inputMSargnameARRAY+=( ${argarray[0]} )
+  inputMSargtypeARRAY+=( ${argarray[1]} )
+  inputMSargdescrARRAY+=( "${argarray[2]}" )
+  #echo "    ${inputMSargnameARRAY[$NBarg]}"
+  let NBarg+=1
+done
+
+#echo "NBarg = ${NBarg}"
+
+
+
+
+
 # Options
 inputMSoptshortARRAY=( )
 inputMSoptlongARRAY=( )
@@ -137,13 +175,8 @@ inputMSoptfuncARRAY=( )
 inputMSoptnbargARRAY=( )
 inputMSoptdescrARRAY=( )
 
-# Arguments
-inputMSargARRAY=( )
-
-
 # parse options
 # options stored as declarative array using short notation
-NBopt=0
 declare -A OPTlong
 declare -A OPTfunc
 declare -A OPTarg
@@ -169,6 +202,11 @@ for optdat in "${MSopt[@]}";do
   OPTarg[${optarray[0]}]="${optarray[3]}"
   OPTlong2short[${OPTlong[${optarray[0]}]}]=${optarray[0]}
 done
+
+
+
+
+
 
 
 #echo "processing arg string; $#"
@@ -228,11 +266,6 @@ done
 
 
 
-NBarg=0
-for MSarg in "${inputMSargARRAY[@]}";do
-  #echo "   input argument $NBarg : $MSarg"
-  let NBarg+=1
-done
 
 NBoptact=0
 for MSopt in "${optactlist[@]}";do
@@ -253,6 +286,18 @@ checkallprerequisites
 
 
 
+
+
+NBargin=0
+for MSarg in "${inputMSargARRAY[@]}";do
+  #echo "   input argument ${NBargin} : $MSarg"
+  let NBargin+=1
+done
+
+if [[ ${NBargin} -ne ${NBarg} ]]; then
+  echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
+  exit
+fi
 
 
 

@@ -13,10 +13,18 @@ RequiredCommands=(tmux ls)
 RequiredFiles=(f1 f2)
 RequiredDirs=("/usr/local")
 
-: '
-SCRIPT OPTIONS
-syntax: "short;long;functioncall;args[types];description"
-'
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name;type(s)/test(s);description"
+
+MSarg+=( "infile;string;input filename" )
+MSarg+=( "nb;int;number of lines" )
+MSarg+=( "outfile;string;output filename" )
+
+
+
+# SCRIPT OPTIONS
+# syntax: "short;long;functioncall;args[types];description"
 
 MSopt+=( "a;archive;archivefunc;;archive .conf files" )
 MSopt+=( "m;match;matchfunc;value[float];check if value is match" )
@@ -54,6 +62,9 @@ function stressfunc() {
 source milk-argparse
 
 
+
+
+exit
 
 
 # execute script commands
