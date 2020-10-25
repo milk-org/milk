@@ -157,6 +157,7 @@ endif()
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
 			scripts/milk-exec
+			scripts/milk-argparse
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
 			scripts/milk-fpsCTRL
@@ -170,6 +171,7 @@ install(PROGRAMS
 			scripts/milk-logshimon
 			scripts/milk-logshimstat
 			scripts/merge3DfitsTelemetry
+			scripts/milk-script-std-config
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
