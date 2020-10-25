@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+# ======================= PROCESS NAME =================================
+pname=`echo "$0" | sed "s/\.\///g"`
+
+# Attempt to use undefined variable outputs error message, and forces an exit
+set -o nounset
+set -o errexit
+set -o pipefail
+
+
+function settrap()
+{
+	trap 'echo "End of ${pname}"' EXIT
+}
+
+
+
+
+# background color using ANSI escape
+
+bgBlack=$(tput setab 0) # black
+bgRed=$(tput setab 1) # red
+bgGreen=$(tput setab 2) # green
+bgYellow=$(tput setab 3) # yellow
+bgBlue=$(tput setab 4) # blue
+bgMagenta=$(tput setab 5) # magenta
+bgCyan=$(tput setab 6) # cyan
+bgWhite=$(tput setab 7) # white
+
+# foreground color using ANSI escape
+
+fgBLack=$(tput setaf 0) # black
+fgRed=$(tput setaf 1) # red
+fgGreen=$(tput setaf 2) # green
+fgYellow=$(tput setaf 3) # yellow
+fgBlue=$(tput setaf 4) # blue
+fgMagenta=$(tput setaf 5) # magenta
+fgCyan=$(tput setaf 6) # cyan
+fgWhite=$(tput setaf 7) # white
+
+fgBBLack=$(tput setaf 8) # Bright black
+fgBRed=$(tput setaf 9) # Bright red
+fgBGreen=$(tput setaf 10) # Bright green
+fgBYellow=$(tput setaf 11) # Bright yellow
+fgBBlue=$(tput setaf 12) # Bright blue
+fgBMagenta=$(tput setaf 13) # Bright magenta
+fgBCyan=$(tput setaf 14) # Bright cyan
+fgBWhite=$(tput setaf 15) # Bright white
+
+# text editing options
+
+txBold=$(tput bold)   # bold
+txHalf=$(tput dim)    # half-bright
+txUnderline=$(tput smul)   # underline
+txEndUnder=$(tput rmul)   # exit underline
+txReverse=$(tput rev)    # reverse
+txStandout=$(tput smso)   # standout
+txEndStand=$(tput rmso)   # exit standout
+txReset=$(tput sgr0)   # reset attributes
+
+
+
+MSopt+=( "h;help;printHELP;;print help and exit" )
+MSopt+=( "hs;helpshort;printHELPshort;;print 1-line help and exit" )
+MSopt+=( "chkp;check-prerequ;checkallprerequisites;;check all prerequisites and exit" )
+
+spin()
+{
+	local CPU=0
+	local cpuprobecntlim=10
+	local cpuprobecnt=0
+	local delay=0.1
+	local spincnt=0
+	spinstr="▏▎▍▌▋▊▉▊▋▌▍▎"
+	#spinstr="▁▃▄▅▆▇▆▅▄▃▁ "
+	#spinstr="/|\\-/|\\-"
+	
+	let cpuprobecnt=cpuprobecntlim+1
+	echo -n "STARTED $(date -u)  "
+	while :
+	do
+	  if [[ "${cpuprobecnt}" -gt "${cpuprobecntlim}" ]]; then
+	    CPU=$( pstree -p $THIS_PID | grep -o '([0-9]\+)' | grep -o '[0-9]\+' |\
+	    xargs ps -o %cpu,cmd -p | awk '{cpu+=$1} END {print cpu}' )  
+	    cpuprobecnt=0
+	  fi
+	  let cpuprobecnt+=1
+	  
+	  t1=$( echo "scale=2;${spincnt}*${delay}" | bc )
+	  local temp=${spinstr#?}
+	  local temp1=${temp:0:4}
+	  
+	  printf " [%s CPU %3.0f%%] %5.1f s" "$temp1" "${CPU}" "${t1}"
+	  local spinstr=$temp${spinstr%"$temp"}
+	  sleep $delay
+	  printf "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+	  let spincnt+=1
+    done
+}
+
+startspin()
+{
+	tput civis
+	# Start the Spinner:
+	THIS_PID=$$
+	spin &
+	SPIN_PID=$!	
+	#echo "SPIN_PID ${SPIN_PID}"
+	#echo "THIS_PID ${THIS_PID}"
+	# Kill the spinner on any signal, including our own exit.
+	trap "kill -9 $SPIN_PID &> /dev/null" `seq 0 15`	
+}
+
+stopspin()
+{
+	kill -9 $SPIN_PID &> /dev/null
+	echo ""
+	tput cnorm
+	settrap
+}
