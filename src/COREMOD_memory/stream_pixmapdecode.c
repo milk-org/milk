@@ -153,7 +153,14 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     xsizein = data.image[IDin].md[0].size[0];
     ysizein = data.image[IDin].md[0].size[1];
-    NBslice = data.image[IDin].md[0].size[2];
+    
+    if(data.image[IDin].md[0].naxis > 2) {
+		NBslice = data.image[IDin].md[0].size[2];
+	}
+	else
+	{	
+		NBslice = 1;
+	}
 
     char pinfoname[200];  // short name for the processinfo instance
     sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
