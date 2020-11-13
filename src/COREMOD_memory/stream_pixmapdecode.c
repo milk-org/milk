@@ -288,7 +288,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         for(ii = 0; ii < nbpixslice[slice]; ii++)
         {
             data.image[IDout_pixslice].array.UI16[ data.image[IDmap].array.UI16[sliceii +
-                                                   ii] ] = (unsigned short) slice;
+                                                   ii] ] = (unsigned short) (1+slice);
         }
     }
 
