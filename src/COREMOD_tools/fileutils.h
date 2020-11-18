@@ -3,8 +3,10 @@
  */
 
 
-errno_t fileutils_addCLIcmd();
+#ifndef _COREMOD_TOOLS_FILEUTILS_H
+#define _COREMOD_TOOLS_FILEUTILS_H
 
+errno_t fileutils_addCLIcmd();
 
 
 int create_counter_file(const char *fname, unsigned long NBpts);
@@ -57,3 +59,5 @@ errno_t write_float_file(
     const char *fname,
     float       value
 );
+
+#endif
