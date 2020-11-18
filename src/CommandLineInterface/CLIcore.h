@@ -44,13 +44,6 @@
 
 
 
-
-// define (custom) types for function return value
-
-#ifndef __STDC_LIB_EXT1__
-typedef int errno_t;
-#endif
-
 typedef long imageID;
 typedef long variableID;
 

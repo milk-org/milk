@@ -9,6 +9,14 @@
 #define _MILKDEBUGTOOLS_H
 
 
+// define (custom) types for function return value
+
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
+
+
 #define STRINGMAXLEN_DEFAULT       1000
 #define STRINGMAXLEN_ERRORMSG      1000
 #define STRINGMAXLEN_CLICMDLINE    1000  // CPU input command line
