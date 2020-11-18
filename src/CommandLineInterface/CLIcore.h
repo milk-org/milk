@@ -68,11 +68,16 @@ typedef long variableID;
 #endif
 
 
+#include "CommandLineInterface/milkDebugTools.h"
+
+
+
 #define PI 3.14159265358979323846264338328
 
 /// Size of array CLICOREVARRAY
 #define SZ_CLICOREVARRAY 1000
 
+/*
 #define STRINGMAXLEN_DEFAULT       1000
 #define STRINGMAXLEN_ERRORMSG      1000
 #define STRINGMAXLEN_CLICMDLINE    1000  // CPU input command line
@@ -87,6 +92,8 @@ typedef long variableID;
 #define STRINGMAXLEN_SHMDIRNAME     200
 
 #define STRINGMAXLEN_FPSPROCESSTYPE 64
+*/
+
 
 
 /// important directories and info
@@ -160,9 +167,7 @@ if ( INITSTATUS_##modname == 1 ) \
 // ************ ERROR HANDLING **********************************
 //
 
-/** @brief Print error (in red) and continue
- *  @ingroup errcheckmacro
- */
+/*
 #ifndef STANDALONE
 #define PRINT_ERROR(...) do { \
 sprintf(data.testpoint_msg, __VA_ARGS__); \
@@ -178,10 +183,6 @@ clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
 
 
 
-/**
- * @brief Print warning and continue
- * @ingroup errcheckmacro
- */
 #define PRINT_WARNING(...) do { \
 char warnmessage[1000]; \
 sprintf(warnmessage, __VA_ARGS__); \
@@ -207,10 +208,6 @@ C_ERRNO = 0; \
 
 
 
-/**
- * @ingroup debugmacro
- * @brief register trace point
- */
 #if defined NDEBUG || defined STANDALONE
 #define DEBUG_TRACEPOINT(...)
 #else
@@ -224,10 +221,6 @@ sprintf(data.testpoint_msg, __VA_ARGS__);             \
 #endif
 
 
-/**
- * @ingroup debugmacro
- * @brief register and log trace point
- */
 #if defined NDEBUG || defined STANDALONE
 #define DEBUG_TRACEPOINTLOG(...)
 #else
@@ -241,7 +234,7 @@ write_process_log();                                 \
 } while(0)
 #endif
 
-
+*/
 
 //
 // ************ ERROR-CHECKING FUNCTIONS **********************************
@@ -249,12 +242,7 @@ write_process_log();                                 \
 
 
 
-
-/**
- * @ingroup errcheckmacro
- * @brief system call with error checking and handling
- *
- */
+/*
 #define EXECUTE_SYSTEM_COMMAND(...) do {                                   \
 char syscommandstring[STRINGMAXLEN_COMMAND];                               \
 int slen = snprintf(syscommandstring, STRINGMAXLEN_COMMAND, __VA_ARGS__);  \
@@ -271,11 +259,6 @@ data.retvalue = system(syscommandstring);                                  \
 
 
 
-/**
- * @ingroup errcheckmacro
- * @brief snprintf with error checking and handling
- *
- */
 #define SNPRINTF_CHECK(string, maxlen, ...) do { \
 int slen = snprintf(string, maxlen, __VA_ARGS__); \
 if(slen<1) {                                                    \
@@ -289,23 +272,6 @@ if(slen >= maxlen) {                              \
 } while(0)
 
 
-
-/**
- * @ingroup errcheckmacro
- * @brief Write image name to string
- *
- * Requires existing image string of len #STRINGMAXLEN_IMGNAME
- *
- * Example use:
- * @code
- * char imname[STRINGMAXLEN_IMGNAME];
- * char name[]="im";
- * int imindex = 34;
- * WRITE_FULLFILENAME(imname, "%s_%04d", name, imindex);
- * @endcode
- *
- *
- */
 #define WRITE_IMAGENAME(imname, ...) do { \
 int slen = snprintf(imname, STRINGMAXLEN_IMGNAME, __VA_ARGS__); \
 if(slen<1) {                                                    \
@@ -336,20 +302,6 @@ if(slen >= STRINGMAXLEN_IMGNAME) {                              \
 
 
 
-/**
- * @ingroup errcheckmacro
- * @brief Write directory name to string
- *
- * Requires existing image string of len #STRINGMAXLEN_DIRNAME
- *
- * Example use:
- * @code
- * char fname[STRINGMAXLEN_FILENAME];
- * char name[]="imlog";
- * WRITE_FULLFILENAME(fname, "%s.txt", name);
- * @endcode
- *
- */
 #define WRITE_DIRNAME(dirname, ...) do { \
 int slen = snprintf(dirname, STRINGMAXLEN_DIRNAME, __VA_ARGS__); \
 if(slen<1) {                                                    \
@@ -365,20 +317,6 @@ if(slen >= STRINGMAXLEN_DIRNAME) {                              \
 
 
 
-/**
- * @ingroup errcheckmacro
- * @brief Write filename to string
- *
- * Requires existing image string of len #STRINGMAXLEN_FILENAME
- *
- * Example use:
- * @code
- * char fname[STRINGMAXLEN_FILENAME];
- * char name[]="imlog";
- * WRITE_FULLFILENAME(fname, "%s.txt", name);
- * @endcode
- *
- */
 #define WRITE_FILENAME(fname, ...) do { \
 int slen = snprintf(fname, STRINGMAXLEN_FILENAME, __VA_ARGS__); \
 if(slen<1) {                                                    \
@@ -392,23 +330,6 @@ if(slen >= STRINGMAXLEN_FILENAME) {                              \
 } while(0)
 
 
-
-
-/**
- * @ingroup errcheckmacro
- * @brief Write full path filename to string
- *
- * Requires existing image string of len #STRINGMAXLEN_FULLFILENAME
- *
- * Example use:
- * @code
- * char ffname[STRINGMAXLEN_FULLFILENAME];
- * char directory[]="/tmp/";
- * char name[]="imlog";
- * WRITE_FULLFILENAME(ffname, "%s/%s.txt", directory, name);
- * @endcode
- *
- */
 #define WRITE_FULLFILENAME(ffname, ...) do { \
 int slen = snprintf(ffname, STRINGMAXLEN_FULLFILENAME, __VA_ARGS__); \
 if(slen<1) {                                                    \
@@ -424,19 +345,6 @@ if(slen >= STRINGMAXLEN_FULLFILENAME) {                              \
 
 
 
-/**
- * @ingroup errcheckmacro
- * @brief Write a string to file
- *
- * Creates file, writes string, and closes file.
- *
- * Example use:
- * @code
- * float piapprox = 3.14;
- * WRITE_STRING_TO_FILE("logfile.txt", "pi is approximately %f\n", piapprox);
- * @endcode
- *
- */
 #define WRITE_STRING_TO_FILE(fname, ...) do { \
 FILE *fptmp;                                                                \
 fptmp = fopen(fname, "w");                                                  \
@@ -466,6 +374,8 @@ fclose(fptmp);                                                              \
 #define RETURN_SUCCESS       0
 #define RETURN_FAILURE       1   // generic error code
 #define RETURN_MISSINGFILE   2
+
+*/
 
 
 #define MAX_NB_FRAMENAME_CHAR 500

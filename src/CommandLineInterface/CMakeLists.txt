@@ -191,6 +191,7 @@ install(FILES CLIcore.h
               CLIcore_modules.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
+              milkDebugTools.h
               processtools.h
               streamCTRL.h
               timeutils.h
