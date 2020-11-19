@@ -278,16 +278,14 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         printf("Slice %5ld   : %5ld pix\n", slice, nbpixslice[slice]);
     }
 
-
-
-
     for(slice = 0; slice < NBslice; slice++)
     {
         sliceii = slice * data.image[IDmap].md[0].size[0] *
                   data.image[IDmap].md[0].size[1];
         for(ii = 0; ii < nbpixslice[slice]; ii++)
         {
-            data.image[IDout_pixslice].array.UI16[ data.image[IDmap].array.UI16[sliceii +
+            // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in 240x240
+            data.image[IDout_pixslice].array.UI16[ data.image[IDmap].array.UI32[sliceii +
                                                    ii] ] = (unsigned short) (1+slice);
         }
     }
@@ -394,11 +392,10 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                               data.image[IDmap].md[0].size[1];
                     for(ii = 0; ii < nbpixslice[slice]; ii++)
                     {
-                        data.image[IDout].array.UI16[data.image[IDmap].array.UI16[sliceii + ii] ] =
+                        data.image[IDout].array.UI16[data.image[IDmap].array.UI32[sliceii + ii] ] =
                             data.image[IDin].array.UI16[sliceii + ii];
                     }
                 }
-                //     printf("[%ld] ", slice); //TEST
 
                 if(slice == NBslice - 1)   //if(slice<oldslice)
                 {
@@ -440,7 +437,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
 
         processinfo_exec_end(processinfo);
-
     }
 
     // ==================================
