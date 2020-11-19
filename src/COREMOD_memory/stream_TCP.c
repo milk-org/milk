@@ -310,9 +310,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     char      *ptr0; // source
     char      *ptr1; // source - offset by slice
     int        rs;
-//    int        sockOK;
 
-    //struct     sched_param schedpar;
+
     struct     timespec ts;
     long       scnt;
     int        semval;
@@ -395,7 +394,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
             exit(0);
         }
 
-        result = setsockopt(fds_client,            /* socket affected */
+        result = setsockopt(fds_client,      /* socket affected */
                             IPPROTO_TCP,     /* set option at TCP level */
                             TCP_NODELAY,     /* name of option */
                             (char *) &flag,  /* the cast is historical cruft */
@@ -561,6 +560,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
             framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
             buff = (char *) malloc(sizeof(char) * framesize1);
 
+			printf("transfer buffer size = %ld\n", framesize1);
+            fflush(stdout);
+
             oldslice = 0;
             //sockOK = 1;
             printf("sem = %d\n", data.image[ID].md[0].sem);
@@ -706,6 +708,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                     memcpy(buff, ptr1, framesize);
 
                     memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
+
+					memset(buff, 0, SIZEOF_DATATYPE_UINT16*120);//TEST
 
                     rs = send(fds_client, buff, framesize1, 0);
 
@@ -1220,7 +1224,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
     buff = (char *) malloc(sizeof(char) * framesize1);
 
-    frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
+    frame_md = (TCP_BUFFER_METADATA *) (buff + framesize);
 
 
 
@@ -1277,7 +1281,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
 
         if(socketOpen == 1)
         {
-            frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
+            frame_md = (TCP_BUFFER_METADATA *) (buff + framesize);
 
 
             data.image[ID].md[0].cnt1 = frame_md[0].cnt1;

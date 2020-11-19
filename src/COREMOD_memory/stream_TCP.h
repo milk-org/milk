@@ -2,6 +2,9 @@
  * @file    stream_TCP.h
  */
 
+#ifndef _STREAM_TCP_H
+#define _STREAM_TCP_H
+
 
 errno_t stream__TCP_addCLIcmd();
 
@@ -27,3 +30,4 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     int RT_priority
 );
 
+#endif
