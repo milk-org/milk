@@ -5,8 +5,6 @@
 
 
 
-
-
 #include "CommandLineInterface/CLIcore.h"
 
 
@@ -21,15 +19,14 @@ int function_parameter_add_entry(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char                *keywordstring,
     const char                *descriptionstring,
-    uint64_t             type,
-    uint64_t             fpflag,
-    void                *valueptr
+    uint64_t                   type,
+    uint64_t                   fpflag,
+    void                      *valueptr
 )
 {
     long pindex = 0;
     char *pch;
-    char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                                        FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     FUNCTION_PARAMETER *funcparamarray;
 
     funcparamarray = fps->parray;
@@ -44,8 +41,7 @@ int function_parameter_add_entry(
 
     // process keywordstring
     // if string starts with ".", insert fps name
-    char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                                                             FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+    char keywordstringC[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     if(keywordstring[0] == '.')
     {
         //printf("--------------- keywstring \"%s\" starts with dot -> adding \"%s\"\n", keywordstring, fps->md->name);
@@ -275,8 +271,8 @@ int function_parameter_add_entry(
         if(valueptr != NULL)  // allocate value requested by function call
         {
             int64_t *valueptr_INT64;
-            double *valueptr_FLOAT64;
-            float *valueptr_FLOAT32;
+            double  *valueptr_FLOAT64;
+            float   *valueptr_FLOAT32;
             struct timespec *valueptr_ts;
 
             switch(funcparamarray[pindex].type)

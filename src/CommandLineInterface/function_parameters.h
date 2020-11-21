@@ -92,7 +92,7 @@
 #define FPFLAG_WRITE         0x0000000000000010    // is value writable when neither CONF and RUN are active
 #define FPFLAG_WRITECONF     0x0000000000000020    // can user change value at configuration time ?
 #define FPFLAG_WRITERUN      0x0000000000000040    // can user change value at run time ?
-#define FPFLAG_WRITESTATUS   0x0000000000000080    // current write status (computed from above flags)
+#define FPFLAG_WRITESTATUS   0x0000000000000080    // current write status (computed from above flags, initialized at 1)
 
 // logging and saving
 #define FPFLAG_LOG           0x0000000000000100    // log on change
@@ -256,7 +256,7 @@
 // PRE-ASSEMBLED DEFAULT FLAGS
 
 // input parameter (used as default when adding entry)
-#define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK
+#define FPFLAG_DEFAULT_INPUT            FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE|FPFLAG_WRITE|FPFLAG_WRITECONF|FPFLAG_SAVEONCHANGE|FPFLAG_FEEDBACK|FPFLAG_WRITESTATUS
 #define FPFLAG_DEFAULT_OUTPUT           FPFLAG_ACTIVE|FPFLAG_USED|FPFLAG_VISIBLE
 #define FPFLAG_DEFAULT_INPUT_STREAM     FPFLAG_DEFAULT_INPUT|FPFLAG_STREAM_RUN_REQUIRED|FPFLAG_CHECKSTREAM
 #define FPFLAG_DEFAULT_OUTPUT_STREAM    FPFLAG_DEFAULT_INPUT|FPFLAG_CHECKSTREAM
