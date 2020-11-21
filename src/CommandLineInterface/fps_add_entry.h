@@ -18,8 +18,11 @@ int function_parameter_add_entry(
 );
 
 
+// =====================================================================
+// INPUT 
+// =====================================================================
 
-/** @brief Add 64-bit float parameter entry
+/** @brief Add 32-bit float parameter entry
  * 
  * Default setting for input parameter\n
  * Also creates function parameter index (fp_##key), type long
@@ -34,7 +37,7 @@ do{ \
 } while(0)
 
 
-/** @brief Add 32-bit float parameter entry
+/** @brief Add 64-bit float parameter entry
  */
 #define FPS_ADDPARAM_FLT64_IN(key, pname, pdescr, dflt) \
 long fp_##key = 0; \
@@ -43,6 +46,18 @@ do{ \
   (void) fp_##key;\
 } while(0)
 
+
+
+
+
+/** @brief Add INT32 input parameter entry
+ */
+#define FPS_ADDPARAM_INT32_IN(key, pname, pdescr, dflt) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT32, FPFLAG_DEFAULT_INPUT, (dflt));\
+  (void) fp_##key;\
+} while(0)
 
 
 /** @brief Add INT64 input parameter entry
@@ -55,6 +70,8 @@ do{ \
 } while(0)
 
 
+
+
 /** @brief Add filename input parameter entry
  */
 #define FPS_ADDPARAM_FILENAME_IN(key, pname, pdescr, dflt) \
@@ -63,6 +80,7 @@ do{ \
   fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FILENAME, FPFLAG_DEFAULT_INPUT_STREAM, (dflt));\
   (void) fp_##key;\
 } while(0)
+
 
 
 /** @brief Add stream input parameter entry
@@ -75,6 +93,11 @@ do{ \
 } while(0)
 
 
+
+// =====================================================================
+// ON/OFF
+// =====================================================================
+
 /** @brief Add ON/OFF parameter entry
  */
 #define FPS_ADDPARAM_ONOFF(key, pname, pdescr, dflt) \
@@ -86,6 +109,11 @@ do{ \
 
 
 
+
+
+// =====================================================================
+// OUTPUT 
+// =====================================================================
 
 /** @brief Add FLT32 output parameter entry
  */
@@ -105,6 +133,17 @@ do{ \
   fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, NULL);\
   (void) fp_##key;\
 } while(0)
+
+
+/** @brief Add IN32 output parameter entry
+ */
+#define FPS_ADDPARAM_INT32_OUT(key, pname, pdescr) \
+long fp_##key = 0; \
+do{ \
+  fp_##key = function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, NULL);\
+  (void) fp_##key;\
+} while(0)
+
 
 
 /** @brief Add INT64 output parameter entry
