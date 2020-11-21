@@ -247,8 +247,8 @@ errno_t processinfo_procdirname(char *procdname)
 
 PROCESSINFO *processinfo_setup(
     char *pinfoname,	// short name for the processinfo instance, avoid spaces, name should be human-readable
-    char descriptionstring[200],
-    char msgstring[200],
+    char  descriptionstring[200],
+    char  msgstring[200],
     const char *functionname,
     const char *filename,
     int   linenumber
@@ -261,7 +261,6 @@ PROCESSINFO *processinfo_setup(
 
 
 #ifdef PROCESSINFO_ENABLED
-
 
     DEBUG_TRACEPOINT(" ");
     if(data.processinfoActive == 0) {
@@ -306,11 +305,9 @@ PROCESSINFO *processinfo_setup(
     processinfo->RT_priority   = -1;  // default: do not assign RT priority
 
     DEBUG_TRACEPOINT(" ");
-
-// Process signals are caught for suitable processing and reporting.
-    DEBUG_TRACEPOINT(" ");
 #endif
     DEBUG_TRACEPOINT(" ");
+    
     return processinfo;
 }
 
@@ -1073,55 +1070,81 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo) {
 
 
 /** @brief Set up input wait stream
- * 
+ *
  * Specify stream on which the loop process will be triggering, and
  * what is the trigger mode.
- * 
+ *
  * The actual trigger mode may be different from the requested trigger mode.
- * 
+ *
  * The standard option should be tiggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE
  * and semindex = -1, which will automatically find a suitable semaphore
- * 
+ *
  */
 errno_t processinfo_waitoninputstream_init(
-	PROCESSINFO *processinfo,
-	imageID      trigID,
-	int          triggermode,
-	int          semindexrequested
+    PROCESSINFO *processinfo,
+    imageID      trigID,
+    int          triggermode,
+    int          semindexrequested
 )
 {
 
-	processinfo->triggerstreamID = trigID;
-	processinfo->triggerstreaminode = data.image[trigID].md[0].inode;
-	strncpy(processinfo->triggerstreamname, data.image[trigID].md[0].name, STRINGMAXLEN_IMAGE_NAME);
+
+    processinfo->triggerstreamID    = trigID;
+
+
+    if(trigID > -1)
+    {
+        processinfo->triggerstreaminode = data.image[trigID].md[0].inode;
+        strncpy(processinfo->triggerstreamname, data.image[trigID].md[0].name,
+                STRINGMAXLEN_IMAGE_NAME);
+    }
+    else
+    {
+        processinfo->triggerstreaminode       = 0;
+		strcpy(processinfo->triggerstreamname, " ");
+    }
+
+
 	processinfo->triggermissedframe_cumul = 0;
-	processinfo->trigggertimeoutcnt = 0;
-	processinfo->triggerstatus = 0;
+	processinfo->trigggertimeoutcnt       = 0;
+	processinfo->triggerstatus            = 0;
 
 	// default
 	processinfo->triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
 	
 	
 	// valid modes
+	
 	if(triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
 	{
+		// trigger on cnt0 increment
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
 		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
 	}
+	
+	
 	if(triggermode == PROCESSINFO_TRIGGERMODE_CNT1)
 	{
+		// trigger on cnt1 increment
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
 		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt1;
 	}
+	
+	
 	if(triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
 	{
+		// immmediate trigger
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
-		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
+		processinfo->triggerstreamcnt = 0; //data.image[processinfo->triggerstreamID].md[0].cnt0;
 	}
+	
+	
 	if(triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
 	{
+		// time wait
+		
 		processinfo->triggermode = PROCESSINFO_TRIGGERMODE_DELAY;
-		processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
+		processinfo->triggerstreamcnt = 0; //data.image[processinfo->triggerstreamID].md[0].cnt0;
 	}	
 	
 	
@@ -1227,12 +1250,9 @@ errno_t processinfo_waitoninputstream(
         
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
         
-        nanosleep(&processinfo->triggerdelay, NULL);
-        processinfo->triggermissedframe = data.image[processinfo->triggerstreamID].md[0].cnt0 - processinfo->triggerstreamcnt - 1;
-        processinfo->triggerstreamcnt = data.image[processinfo->triggerstreamID].md[0].cnt0;
-        
-        //processinfo->triggermissedframe_cumul += processinfo->triggermissedframe;
-        
+        nanosleep(&processinfo->triggerdelay, NULL);        
+        processinfo->triggerstreamcnt++; 
+                
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
         
         return RETURN_SUCCESS;
@@ -1327,15 +1347,15 @@ errno_t processinfo_update_output_stream(
 {
     imageID IDin;
 
-	
-
     IDin = processinfo->triggerstreamID;
+    if(IDin > -1)
+    {
+        int sptisize = data.image[IDin].md[0].NBproctrace - 1;
 
-    int sptisize = data.image[IDin].md[0].NBproctrace - 1;
-
-    // copy streamproctrace from input to output
-    memcpy(&data.image[outstreamID].streamproctrace[1], &data.image[IDin].streamproctrace[0], sizeof(STREAM_PROC_TRACE)*sptisize);
-
+        // copy streamproctrace from input to output
+        memcpy(&data.image[outstreamID].streamproctrace[1],
+               &data.image[IDin].streamproctrace[0], sizeof(STREAM_PROC_TRACE)*sptisize);
+    }
 
     struct timespec ts;
     if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
@@ -1345,17 +1365,32 @@ errno_t processinfo_update_output_stream(
     }
 
     // write first streamproctrace entry
-	data.image[outstreamID].streamproctrace[0].triggermode      = processinfo->triggermode;
-    data.image[outstreamID].streamproctrace[0].procwrite_PID    = getpid();    
-    data.image[outstreamID].streamproctrace[0].trigger_inode    = processinfo->triggerstreaminode;
-    data.image[outstreamID].streamproctrace[0].ts_procstart     = processinfo->texecstart[processinfo->timerindex];
+    data.image[outstreamID].streamproctrace[0].triggermode      =
+        processinfo->triggermode;
+
+    data.image[outstreamID].streamproctrace[0].procwrite_PID    = getpid();
+
+    data.image[outstreamID].streamproctrace[0].trigger_inode    =
+        processinfo->triggerstreaminode;
+
+    data.image[outstreamID].streamproctrace[0].ts_procstart     =
+        processinfo->texecstart[processinfo->timerindex];
+
     data.image[outstreamID].streamproctrace[0].ts_streamupdate  = ts;
-    data.image[outstreamID].streamproctrace[0].trigsemindex     = processinfo->triggersem;
-    data.image[outstreamID].streamproctrace[0].triggerstatus    = processinfo->triggerstatus;
-    data.image[outstreamID].streamproctrace[0].cnt0             = data.image[IDin].md[0].cnt0;
 
+    data.image[outstreamID].streamproctrace[0].trigsemindex     =
+        processinfo->triggersem;
 
-	DEBUG_TRACEPOINT(" ");
+    data.image[outstreamID].streamproctrace[0].triggerstatus    =
+        processinfo->triggerstatus;
+
+    if(IDin > -1)
+    {
+        data.image[outstreamID].streamproctrace[0].cnt0             =
+            data.image[IDin].md[0].cnt0;
+    }
+
+    DEBUG_TRACEPOINT(" ");
 
     data.image[outstreamID].md[0].cnt0++;
     data.image[outstreamID].md[0].write = 0;
@@ -1370,8 +1405,12 @@ errno_t processinfo_update_output_stream(
 
 
 
-int processinfo_exec_start(PROCESSINFO *processinfo) {
+int processinfo_exec_start(
+    PROCESSINFO *processinfo
+)
+{
 #ifdef PROCESSINFO_ENABLED
+DEBUG_TRACEPOINT(" ");
     if(processinfo->MeasureTiming == 1) {
 
         processinfo->timerindex ++;
@@ -1429,6 +1468,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo) {
             }
         }
     }
+    DEBUG_TRACEPOINT(" ");
 #endif
     return 0;
 }
