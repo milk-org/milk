@@ -51,6 +51,7 @@ link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
 add_library(CLIcore
             SHARED
             processtools.c
+            processtools_trigger.c
             streamCTRL.c
             timeutils.c
             fps_add_entry.c
@@ -192,7 +193,9 @@ install(FILES CLIcore.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
               milkDebugTools.h
+              processinfo.h
               processtools.h
+              processtools_trigger.h
               streamCTRL.h
               timeutils.h
               function_parameters.h
