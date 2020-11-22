@@ -252,6 +252,30 @@ errno_t processinfo_update_output_stream(
 
 errno_t processinfo_CTRLscreen();
 
+
+
+
+
+#define PROCINFOLOOP_START \
+processinfo_loopstart(processinfo); \
+while(processloopOK == 1) \
+{ \
+processloopOK = processinfo_loopstep(processinfo); \
+processinfo_waitoninputstream(processinfo); \
+processinfo_exec_start(processinfo); \
+if(processinfo_compute_status(processinfo) == 1) \
+{ 
+
+#define PROCINFOLOOP_END \
+} \
+processinfo_exec_end(processinfo); \
+} \
+processinfo_cleanExit(processinfo);
+
+
+
+
+
 #ifdef __cplusplus
 }
 #endif
