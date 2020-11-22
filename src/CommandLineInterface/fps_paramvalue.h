@@ -114,7 +114,6 @@ do{ \
 
 
 
-
 // =====================================================================
 // FLOAT64
 // =====================================================================
@@ -138,17 +137,6 @@ double *functionparameter_GetParamPtr_FLOAT64(
 );
 
 
-// Creates variable "_varname"
-//
-#define FPS_GETPARAM_FLOAT64(varname, pname) \
-double _##varname = 0; \
-do{ \
-   _##varname = functionparameter_GetParamValue_FLOAT64(&fps, pname);\
-  (void) _##varname;\
-} while(0)
-
-
-
 
 
 
@@ -167,15 +155,6 @@ int functionparameter_SetParamValue_STRING(
     const char *paramname,
     const char *stringvalue
 );
-
-// Creates variable "_varname"
-//
-#define FPS_GETPARAM_STRING(varname, pname) \
-char *_##varname; \
-do{ \
-   _##varname = functionparameter_GetParamPtr_STRING(&fps, pname);\
-  (void) _##varname;\
-} while(0)
 
 
 
