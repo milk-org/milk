@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
 
-#
-# Reads file fpslist.txt
-# For each entry, initialize the FPS :
-#  - Create and initialize FPS
-#  - Create tmux session and functions in tmux sessions
-# Run without argument to print FPSs status
-# 
-# fpslist.txt format:
-# one line per entry
-# add modules with "+module1;module2" line directly before entry
-# 
 
 MSdescr="initialize Function Parameter Structures (FPS)"
 
@@ -106,7 +95,9 @@ FPSNAMEARRAY=( )
 FPSSTATUSARRAY=( )
 TMUXSTATUSARRAY=( )
 ARGSTRINGARRAY=( )
+
 MODULELIST=( )
+MODULELOADSTRING=( )
 
 INITREADYARRAY=( )
 
@@ -194,14 +185,27 @@ do
   fi
 done < "${FPSlistfilename}"
 
+    
 
-cat ${FPSlistfilename}
+
+
+# construct module loading string
+for i in "${!FPSNAMEARRAY[@]}"; do 
+  IFS=';' read -r -a array <<< "${MODULELIST[$i]}"
+  mloadstring=""
+  for module in ${array[@]}; do
+    mloadstring="${mloadstring}mload ${module}:"
+  done
+  printf "string: ${mloadstring}\n"
+  MODULELOADSTRING+=( "${mloadstring}" )
+done
+
 
 
 
 # PRINT STATUS
 
-printf " #  %-25s %-35s %s    %s     %s\n" "FPS name" "[module(s)] CLI command" "FPS" "tmux" "Init"
+printf " #  %-25s %-35s %s    %s     %s\n" "FPS name" "CLI command" "FPS" "tmux" "Init"
 for i in "${!FPSNAMEARRAY[@]}"; do  
 
   if [ "${FPSSTATUSARRAY[$i]}" = "FOUND" ]; then
@@ -226,7 +230,16 @@ for i in "${!FPSNAMEARRAY[@]}"; do
     initreadystring="${STRING_INIT_READY}"
   fi
 
-  printf "%3d %-25s %-35s %s %s  %s\n"  "$i" "${FPSNAMEARRAY[$i]}" "[${MODULELIST[$i]}] ${CLINAMEARRAY[$i]}" "${statusstring}" "${tmuxstatusstring}" "${initreadystring}"
+  printf "%3d %-25s %-35s %s %s  %s\n"  "$i" "${FPSNAMEARRAY[$i]}" "${CLINAMEARRAY[$i]}" "${statusstring}" "${tmuxstatusstring}" "${initreadystring}"
+
+ 
+  if [[ ${#MODULELIST[$i]} -gt 0 ]]; then
+  #printf "      MODULES     : %s\n" "${MODULELIST[$i]}"
+  printf "      +cmdstring : ${fgCyan}${MODULELOADSTRING[$i]}${txReset}\n"
+  fi
+  
+  printf "\n"
+
 done
 
 
@@ -256,7 +269,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 	    tmuxname="${FPSNAMEARRAY[$i]}"
 	    printf "        Remove for tmux session ${tmuxname}\n"
 	    # kill tmux sessions
-        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _TMUXSTOP_ ${ARGSTRINGARRAY[$i]}\""
+        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _TMUXSTOP_ ${ARGSTRINGARRAY[$i]}\""
         printf "    command: %s\n" "${cmdstring}"	
 	    
 	    if [ ${LOGMODE} == 1 ]; then
@@ -280,7 +293,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
       if [ ${TESTMODE} == 0 ]; then
       
         # initialize FPS
-        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    
+        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    
 		printf "    command: %s\n" "${cmdstring}"
         if [ ${LOGMODE} == 1 ]; then
           eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
@@ -290,7 +303,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
     	
         # initialize tmux session
         if [ "${TMUXSTATUSARRAY[$i]}" = "MISSING" ]; then
-          cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${CLINAMEARRAY[$i]} _TMUXSTART_ ${ARGSTRINGARRAY[$i]}\""    
+          cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _TMUXSTART_ ${ARGSTRINGARRAY[$i]}\""    
 		  printf "    command: %s\n" "${cmdstring}"
 		  if [ ${LOGMODE} == 1 ]; then
 			eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
