@@ -34,7 +34,10 @@ source milk-argparse
 
 
 cmdstring="${inputMSargARRAY[0]}"
-#echo "command string : ${cmdstring}"
+
+echo "command string : ${cmdstring}"
+
+
 
 IFS=':' read -r -a array <<< "${cmdstring}"
 
@@ -46,6 +49,7 @@ do
     echo "${cmdstring}" >> $SF
 done
 echo "exitCLI" >> $SF
+cp ${SF} test.txt
 
 milk -n ${pname} -f -s ${SF}
 

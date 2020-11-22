@@ -331,8 +331,8 @@ while (( "$#" )); do
 	shift ${shiftcnt}
   ;;
   *)
-    #echo "param: $1"
-    inputMSargARRAY+=( $1 )
+    echo "param: $1"
+    inputMSargARRAY+=( "$1" )
     inputParamString="${inputParamString} $1"
     shift
   ;;
