@@ -132,7 +132,7 @@ done
 
 	
 echo "------------------------------------------------------------------------"
-echo "${txBold} $pname : ${MSdescr}  ${txReset}"
+echo "${txBold} ${pname} : ${MSdescr}  ${txReset}"
 echo "------------------------------------------------------------------------"
 echo " $(tput bold)USAGE:$(tput sgr0)"
 echo "     $0 [OPTION(S)] ${fgYellow}${argliststring}${txReset}"

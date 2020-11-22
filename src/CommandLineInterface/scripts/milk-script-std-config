@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # ======================= PROCESS NAME =================================
-pname=`echo "$0" | sed "s/\.\///g"`
+pnamefull=`echo "$0" | sed "s/\.\///g"`
+pname=$( basename ${pnamefull} )
 
 # Attempt to use undefined variable outputs error message, and forces an exit
 set -o nounset
