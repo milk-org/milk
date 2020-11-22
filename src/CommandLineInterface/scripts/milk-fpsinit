@@ -14,6 +14,17 @@
 
 MSdescr="initialize Function Parameter Structures (FPS)"
 
+MSextdescr="Reads file fpslist.txt
+ For each entry, initialize the FPS :
+  - Create and initialize FPS
+  - Create tmux session and functions in tmux sessions
+ Run without argument to print FPSs status
+ 
+ fpslist.txt format:
+ one line per entry
+ add modules with \"+module1;module2\" line directly before entry"
+
+
 source milk-script-std-config
 
 FPSlistfilename="fpslist.txt"

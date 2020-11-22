@@ -4,9 +4,15 @@
 # To use, include following code in bash script :
 #
 
-# Script description
+# Short script description
 : '
 MSdescr="Example script"
+'
+
+# Extended description
+: '
+MSextdescr="A longer description of the script is included 
+here anc can span multiple lines"
 '
 
 
@@ -133,9 +139,18 @@ done
 	
 echo "------------------------------------------------------------------------"
 echo "${txBold} ${pname} : ${MSdescr}  ${txReset}"
+echo " $0"
 echo "------------------------------------------------------------------------"
+echo ""
+set +o nounset
+if [ ! -z "${MSextdescr}" ]; then
+printf "${MSextdescr}"
+echo ""
+echo ""
+fi
+set -o nounset
 echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [OPTION(S)] ${fgYellow}${argliststring}${txReset}"
+echo "     ${pname} [OPTION(S)] ${fgYellow}${argliststring}${txReset}"
 echo "     option(s): ${optlistshort}"
 echo ""
 echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
