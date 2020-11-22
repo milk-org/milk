@@ -744,6 +744,7 @@ while(fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { \
 } \
 if(function_parameter_FPCONFloopstep(&fps) == 1) {
 
+
 /** @brief End FPS configuration loop
  */
 #define FPS_CONFLOOP_END  functionparameter_CheckParametersAll(&fps);} \
@@ -752,8 +753,37 @@ function_parameter_FPCONFexit(&fps);
 
 
 
+/** @brief Combine initialization of FPS and procinfo for RUN process
+ */
+
+#define FPSPROCINFOLOOP_RUNINIT(...) PROCESSINFO *processinfo;             \
+int processloopOK = 1;                                                     \
+do {                                                                       \
+char pinfodescr[200];                                                      \
+int slen = snprintf(pinfodescr, 200, __VA_ARGS__);                         \
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= 200) {                                                          \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+ processinfo = processinfo_setup(data.FPS_name, pinfodescr, "startup", __FUNCTION__, __FILE__, __LINE__ ); \
+fps_to_processinfo(&fps, processinfo);                                     \
+} while(0)
 
 
+
+#define FPS_AUTORUN_SETUP(funcstring, shortname) FUNCTION_PARAMETER_STRUCT fps; \
+do { \
+sprintf(data.FPS_name, "%s-%06ld", (shortname), (long) getpid()); \
+data.FPS_CMDCODE = FPSCMDCODE_FPSINIT; \
+FPSCONF_##funcstring(); \
+function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE); \
+} while(0)
+	
+	
 
 
 
