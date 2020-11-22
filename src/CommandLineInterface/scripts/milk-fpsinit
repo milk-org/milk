@@ -22,32 +22,32 @@ FPSINDEX="NULL"
 TESTMODE=0
 LOGMODE=0
 
-MSopt+=( "f;fpslist;set_FPSLISTname;fname[string];set FPS list name" )
+MSopt+=( "f:fpslist:set_FPSLISTname:fname[string]:set FPS list name" )
 function set_FPSLISTname() {
 	FPSlistfilename="$1"
 }
 
-MSopt+=( "e;exec;set_EXECname;exec[string];set exec name" )
+MSopt+=( "e:exec:set_EXECname:exec[string]:set exec name" )
 function set_EXECname() {
 	EXECNAME="$1"
 }
 
-MSopt+=( "c;c;set_FPSindex_single;index[long];(c)reate/setup single FPS" )
+MSopt+=( "c:c:set_FPSindex_single:index[long]:(c)reate/setup single FPS" )
 function set_FPSindex_single () {
 	FPSINDEX="$1"
 }
 
-MSopt+=( "C;C;set_FPSindex_all;;(C)reate/setup ALL FPSs" )
+MSopt+=( "C:C:set_FPSindex_all::(C)reate/setup ALL FPSs" )
 function set_FPSindex_all () {
 	FPSINDEX="ALL"
 }
 
-MSopt+=( "t;t;set_testmode;;(t)est mode: do not execute tasks" )
+MSopt+=( "t:t:set_testmode::(t)est mode, do not execute tasks" )
 function set_testmode () {
 	TESTMODE=1
 }
 
-MSopt+=( "L;L;set_logmode;;(L)og commands" )
+MSopt+=( "L:L:set_logmode::(L)og commands" )
 function set_logmode () {
 	LOGMODE=1
 }
@@ -194,7 +194,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
   IFS=';' read -r -a array <<< "${MODULELIST[$i]}"
   mloadstring=""
   for module in ${array[@]}; do
-    mloadstring="${mloadstring}mload ${module}:"
+    mloadstring="${mloadstring}mload ${module};"
   done
   printf "string: ${mloadstring}\n"
   MODULELOADSTRING+=( "${mloadstring}" )

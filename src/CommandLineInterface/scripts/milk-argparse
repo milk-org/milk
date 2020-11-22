@@ -32,13 +32,13 @@ RequiredDirs=()
 # syntax: "name;type(s)/test(s);description"
 #
 : '
-MSarg+=( "slambdaum;float;wavelength" )
+MSarg+=( "slambdaum:float:wavelength" )
 '
 
 # SCRIPT OPTIONS (optional)
 # syntax: "short;long;functioncall;args[types];description"
 : '
-MSopt+=( "c;create;confcreate;;create configuration file and exit" )
+MSopt+=( "c:create:confcreate::create configuration file and exit" )
 '
 
 # functions called by options (optional)
@@ -229,7 +229,7 @@ inputMSargdescrARRAY=( )
 NBarg=0
 for argdat in "${MSarg[@]}";do
   #echo "Argument ${NBarg}: $argdat"
-  IFS=';' read -r -a argarray <<< "$argdat"
+  IFS=':' read -r -a argarray <<< "$argdat"
   inputMSargnameARRAY+=( ${argarray[0]} )
   inputMSargtypeARRAY+=( ${argarray[1]} )
   inputMSargdescrARRAY+=( "${argarray[2]}" )
@@ -265,7 +265,7 @@ optactlist=( )
 NBopt=0
 for optdat in "${MSopt[@]}";do
   #echo "Option ${NBopt}: $optdat"
-  IFS=';' read -r -a optarray <<< "$optdat"
+  IFS=':' read -r -a optarray <<< "$optdat"
   let NBopt+=1
   inputMSoptshortARRAY+=( ${optarray[0]} )
   inputMSoptlongARRAY+=( ${optarray[1]} )
@@ -287,7 +287,7 @@ done
 #echo "processing arg string; $#"
 shiftcnt=1
 optargstring=""
-inputParamString=""
+inputParamString=( )
 
 function getoptargs {
 	optargstring=""
@@ -331,9 +331,9 @@ while (( "$#" )); do
 	shift ${shiftcnt}
   ;;
   *)
-    echo "param: $1"
+    #echo "param: $1"
     inputMSargARRAY+=( "$1" )
-    inputParamString="${inputParamString} $1"
+    inputParamString+=( "$1" )
     shift
   ;;
   esac
@@ -352,20 +352,19 @@ done
 
 
 # set positional arguments in their proper place
-eval set -- "$inputParamString"
-
-
+#printf 'args before update  : '; printf '%q ' "$@"; echo
+set -- "${inputParamString[@]}"
+#printf 'args after  update  : '; printf '%q ' "$@"; echo
 
 checkallprerequisites
 
 
 
 
-
-
 NBargin=0
-for MSarg in "${inputMSargARRAY[@]}";do
-  #echo "   input argument ${NBargin} : $MSarg"
+#for MSarg in "${inputMSargARRAY[@]}";do
+for MSarg in "${inputParamString[@]}";do
+#  echo "   input argument ${NBargin} : $MSarg"
   let NBargin+=1
 done
 

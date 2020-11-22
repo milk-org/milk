@@ -62,9 +62,9 @@ txReset=$(tput sgr0)   # reset attributes
 
 
 
-MSopt+=( "h;help;printHELP;;print help and exit" )
-MSopt+=( "hs;helpshort;printHELPshort;;print 1-line help and exit" )
-MSopt+=( "chkp;check-prerequ;checkallprerequisites;;check all prerequisites and exit" )
+MSopt+=( "h:help:printHELP::print help and exit" )
+MSopt+=( "hs:helpshort:printHELPshort::print 1-line help and exit" )
+MSopt+=( "chkp:check-prerequ:checkallprerequisites::check all prerequisites and exit" )
 
 spin()
 {
