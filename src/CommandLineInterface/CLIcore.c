@@ -109,29 +109,18 @@
 pid_t CLIPID;
 
 
-//uint8_t TYPESIZE[32];
-
 int C_ERRNO;
-
-
-
 
 
 int Verbose = 0;
 int Listimfile = 0;
 
 
-
-
 char CLIstartupfilename[200] = "CLIstartup.txt";
-
-
 
 // fifo input
 static int fifofd;
 static fd_set cli_fdin_set;
-
-
 
 
 /*-----------------------------------------
@@ -150,7 +139,10 @@ static void runCLI_free();
 
 
 
-static int command_line_process_options(int argc, char **argv);
+static int command_line_process_options(
+    int argc,
+    char **argv
+);
 
 
 /// CLI commands
@@ -589,13 +581,15 @@ errno_t runCLI(
 
     strcpy(data.processname, argv[0]);
 
-
+	
     // Set CLI prompt
     char prompt[200];
     runCLI_prompt(promptstring, prompt);
-
+    
+    
     // CLI initialize
     runCLI_initialize();
+
 
     // set shared memory directory
     setSHMdir();
@@ -619,7 +613,6 @@ errno_t runCLI(
     // Tell readline to use custom completion function
     rl_attempted_completion_function = CLI_completion;
     rl_initialize();
-
 
 
     data.progStatus = 1;
@@ -660,11 +653,11 @@ errno_t runCLI(
 
 
 
-
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
     
     runCLI_cmd_init();
+
 
 
     // initialize readline
@@ -699,6 +692,7 @@ errno_t runCLI(
 
     data.CLIloopON = 1; // start CLI loop
 
+
 	
 	DEBUG_TRACEPOINT("Start CLI loop");
     while(data.CLIloopON == 1)
@@ -728,8 +722,6 @@ errno_t runCLI(
         //  Keep the number of variables addresses available
         //  NB_VARIABLES_BUFFER above the number of used variables
 
-
-
         if(memory_re_alloc() != RETURN_SUCCESS)
         {
             fprintf(stderr,
@@ -741,8 +733,9 @@ errno_t runCLI(
             exit(EXIT_FAILURE);
         }
 
-        compute_image_memory(data);
-        compute_nb_image(data);
+        compute_image_memory();
+        compute_nb_image();
+
 
         // If fifo is on and file CLIstatup.txt exists, load it
         if(initstartup == 0)

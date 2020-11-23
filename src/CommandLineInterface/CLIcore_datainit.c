@@ -39,24 +39,6 @@ void CLI_data_init()
     // do not remove files when delete command on SHM
     data.rmSHMfile       = 0;
 
-    // initialize modules
-    data.NB_MAX_MODULE = DATA_NB_MAX_MODULE;
-    //  data.module = (MODULE*) malloc(sizeof(MODULE)*data.NB_MAX_MODULE);
-
-
-    // initialize commands
-    data.NB_MAX_COMMAND = 5000;
-    if(data.Debug > 0)
-    {
-        printf("Allocating cmd array : %ld\n", sizeof(CMD)*data.NB_MAX_COMMAND);
-        fflush(stdout);
-    }
-
-    data.NB_MAX_COMMAND = DATA_NB_MAX_COMMAND;
-    // data.cmd = (CMD*) malloc(sizeof(CMD)*data.NB_MAX_COMMAND);
-    //  data.NBcmd = 0;
-
-    data.cmdNBarg = 0;
 
 
 

@@ -170,8 +170,8 @@ typedef uint_fast8_t BOOL;
 
 
 
-#define DATA_NB_MAX_COMMAND 1000
-#define DATA_NB_MAX_MODULE 100
+#define DATA_NB_MAX_COMMAND 2000
+#define DATA_NB_MAX_MODULE 200
 
 // In STATIC allocation mode, IMAGE and VARIABLE arrays are allocated statically
 
@@ -200,40 +200,61 @@ extern uid_t suid;
 
 
 
+
+
+
+#define STRINGMAXLEN_MODULE_NAME          100
+#define STRINGMAXLEN_MODULE_SHORTNAME      50
+#define STRINGMAXLEN_MODULE_SOFILENAME   1000
+#define STRINGMAXLEN_MODULE_PACKAGENAME    50
+#define STRINGMAXLEN_MODULE_INFOSTRING   1000
+#define STRINGMAXLEN_MODULE_DATESTRING     20
+#define STRINGMAXLEN_MODULE_TIMESTRING     20
 typedef struct
 {
-    char     key[100];           // command keyword
-    char     module[200];        // module name
+	int status; // 0: unused, 1: loaded
+    char name[STRINGMAXLEN_MODULE_NAME];        // module name
+
+    char shortname[STRINGMAXLEN_MODULE_SHORTNAME];   // short name. If non-empty, access functions as <shortname>.<functionname>
+    char sofilename[STRINGMAXLEN_MODULE_SOFILENAME];
+
+    char package[STRINGMAXLEN_MODULE_PACKAGENAME];     // package to which module belongs
+    int versionmajor;	// package version
+    int versionminor;
+    int versionpatch;
+
+    char info[STRINGMAXLEN_MODULE_INFOSTRING];      // short description
+
+    char datestring[STRINGMAXLEN_MODULE_DATESTRING]; // Compilation date
+    char timestring[STRINGMAXLEN_MODULE_TIMESTRING]; // Compilation time
+    
+    void *DLib_handle;
+
+} MODULE;
+
+
+
+#define STRINGMAXLEN_CMD_KEY        100
+#define STRINGMAXLEN_CMD_INFO      1000
+#define STRINGMAXLEN_CMD_SYNTAX    1000
+#define STRINGMAXLEN_CMD_EXAMPLE   1000
+#define STRINGMAXLEN_CMD_CCALL     1000
+typedef struct
+{
+    char     key[STRINGMAXLEN_CMD_KEY];           // command keyword
+    char     module[STRINGMAXLEN_MODULE_NAME];        // module name
 	// index of module to which command belongs
 	// set to -1 if does not belong to any module
     long     moduleindex;        
     char     modulesrc[200];     // module source filename
     errno_t (* fp)();            // command function pointer
-    char     info[1000];         // short description/help
-    char     syntax[1000];       // command syntax
-    char     example[1000];      // command example
-    char     Ccall[1000];
+    char     info[STRINGMAXLEN_CMD_INFO];         // short description/help
+    char     syntax[STRINGMAXLEN_CMD_SYNTAX];       // command syntax
+    char     example[STRINGMAXLEN_CMD_EXAMPLE];      // command example
+    char     Ccall[STRINGMAXLEN_CMD_CCALL];
 } CMD;
 
 
-
-typedef struct
-{
-    char name[50];        // module name
-
-    char shortname[80];   // short name. If non-empty, access functions as <shortname>.<functionname>
-
-    char package[50];     // package to which module belongs
-    int versionmajor;	// package version
-    int versionminor;
-    int versionpatch;
-
-    char info[1000];      // short description
-
-    char datestring[20]; // Compilation date
-    char timestring[20]; // Compilation time
-
-} MODULE;
 
 
 
@@ -407,8 +428,7 @@ typedef struct
     char           fifoname[100];
     uint32_t       NBcmd;
 
-    long           NB_MAX_COMMAND;
-    CMD            cmd[1000];
+    CMD            cmd[DATA_NB_MAX_COMMAND];
 
 	char           CLIcmdline[STRINGMAXLEN_CLICMDLINE];
     int            CLIexecuteCMDready;
@@ -432,14 +452,18 @@ typedef struct
     // =================================================
 
     long           NBmodule;
-    long           NB_MAX_MODULE;
-    MODULE         module[100];
+    //long           NB_MAX_MODULE;
+    
+    // module info gets sorted into module structure
+    MODULE         module[DATA_NB_MAX_MODULE];
+    
+    // temporary storage
     long           moduleindex;
-    char           modulename[100];
-    char           moduleshortname[80];
-    char           moduleshortname_default[80];
-    char           moduledatestring[20];
-    char           moduletimestring[20];
+    char           modulename[STRINGMAXLEN_MODULE_NAME];
+    char           moduleshortname[STRINGMAXLEN_MODULE_SHORTNAME];
+    char           moduleshortname_default[STRINGMAXLEN_MODULE_SHORTNAME];
+    char           moduledatestring[STRINGMAXLEN_MODULE_DATESTRING];
+    char           moduletimestring[STRINGMAXLEN_MODULE_TIMESTRING];
 
 
 	// FUNCTION PARAMETER STRUCTURES (FPSs)
