@@ -285,6 +285,10 @@ errno_t list_commands()
 
 
 
+
+        
+
+
 errno_t list_commands_module(
     const char *restrict modulename
 )
@@ -292,8 +296,30 @@ errno_t list_commands_module(
     int mOK = 0;
     char cmdinfoshort[38];
 
-    if(strlen(modulename) > 0)
+    int moduleindex = -1;
+    for(int m = 0; m < data.NBmodule; m++)
     {
+        if(strcmp(modulename, data.module[m].name) == 0)
+        {
+            moduleindex = m;
+        }
+    }
+    if(moduleindex == -1)
+    {
+        printf("---- MODULE %s DOES NOT EXIST / NOT LOADED ---------\n", modulename);
+    }
+    else
+    {
+        printf("   name         %s\n", data.module[moduleindex].name);
+        printf("   short name   %s\n", data.module[moduleindex].shortname);
+        printf("   package      %s\n", data.module[moduleindex].package);
+        printf("   sofilename   %s\n", data.module[moduleindex].sofilename);
+        printf("   version      %d %d %d\n", data.module[moduleindex].versionmajor,
+               data.module[moduleindex].versionminor, data.module[moduleindex].versionpatch);
+        printf("   date         %s %s\n", data.module[moduleindex].datestring,
+               data.module[moduleindex].timestring);
+        printf("   info         %s\n", data.module[moduleindex].info);
+
         for(unsigned int i = 0; i < data.NBcmd; i++)
         {
             char cmpstring[200];
@@ -307,45 +333,47 @@ errno_t list_commands_module(
                     printf("---- MODULE %s: LIST OF COMMANDS ---------\n", modulename);
                 }
 
-
-
                 strncpy(cmdinfoshort, data.cmd[i].info, 38);
                 printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort,
                        data.cmd[i].example);
                 mOK = 1;
             }
         }
-    }
 
-    if(mOK == 0)
-    {
-        if(strlen(modulename) > 0)
+
+
+        if(mOK == 0)
         {
-            printf("---- MODULE %s DOES NOT EXIST OR DOES NOT HAVE COMMANDS ---------\n",
-                   modulename);
-        }
-
-        for(unsigned int i = 0; i < data.NBcmd; i++)
-        {
-            char cmpstring[200];
-            sprintf(cmpstring, "%s", basename(data.cmd[i].module));
-
-            if(strncmp(modulename, cmpstring, strlen(modulename)) == 0)
+            if(strlen(modulename) > 0)
             {
-                if(mOK == 0)
-                {
-                    printf("---- MODULES %s* commands  ---------\n", modulename);
-                }
-                strncpy(cmdinfoshort, data.cmd[i].info, 38);
-                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key,
-                       data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
-                mOK = 1;
+                printf("---- MODULE %s DOES NOT HAVE COMMANDS ---------\n",
+                       modulename);
             }
         }
     }
+    /*       for(unsigned int i = 0; i < data.NBcmd; i++)
+           {
+               char cmpstring[200];
+               sprintf(cmpstring, "%s", basename(data.cmd[i].module));
 
+               if(strncmp(modulename, cmpstring, strlen(modulename)) == 0)
+               {
+                   if(mOK == 0)
+                   {
+                       printf("---- MODULES %s* commands  ---------\n", modulename);
+                   }
+                   strncpy(cmdinfoshort, data.cmd[i].info, 38);
+                   printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key,
+                          data.cmd[i].module, cmdinfoshort, data.cmd[i].example);
+                   mOK = 1;
+               }
+           }
+       }
+    */
     return RETURN_SUCCESS;
 }
+
+
 
 
 
@@ -439,16 +467,19 @@ errno_t help_module()
     {
         long i;
         printf("\n");
-        printf("%2s  %10s %32s %10s %7s    %20s %s\n", "#", "shortname", "Name", "Package", "Version", "last compiled", 
+        printf("%2s  %10s %32s %10s %7s    %20s %s\n", "#", "shortname", "Name",
+               "Package", "Version", "last compiled",
                "description");
         printf("--------------------------------------------------------------------------------------------------------------\n");
         for(i = 0; i < data.NBmodule; i++)
         {
-            printf("%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    %11s %8s  %s\n", 
-					i, data.module[i].shortname,
+            printf("%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    %11s %8s  %s\n",
+                   i,
+                   data.module[i].shortname,
                    data.module[i].name,
                    data.module[i].package,
-                   data.module[i].versionmajor, data.module[i].versionminor, data.module[i].versionpatch,
+                   data.module[i].versionmajor, data.module[i].versionminor,
+                   data.module[i].versionpatch,
                    data.module[i].datestring, data.module[i].timestring,
                    data.module[i].info);
         }

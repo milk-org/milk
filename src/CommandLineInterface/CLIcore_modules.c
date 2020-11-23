@@ -25,9 +25,10 @@
 
 
 
-int DLib_index;
-void *DLib_handle[1000];
 
+
+static int DLib_index;
+static void *DLib_handle[1000];
 
 
 
@@ -64,11 +65,6 @@ errno_t load_module_shared(
     int STRINGMAXLEN_LIBRARYNAME = 200;
     char libname[STRINGMAXLEN_LIBRARYNAME];
     char modulenameLC[STRINGMAXLEN_LIBRARYNAME];
-    //    char c;
-    //    int n;
-    //    int (*libinitfunc) ();
-    //    char *error;
-    //    char initfuncname[200];
 
     {
         int slen = snprintf(modulenameLC, STRINGMAXLEN_LIBRARYNAME, "%s", modulename);
@@ -84,14 +80,7 @@ errno_t load_module_shared(
         }
     }
 
-    /*    for(n=0; n<strlen(modulenameLC); n++)
-        {
-            c = modulenameLC[n];
-            modulenameLC[n] = tolower(c);
-        }
-    */
 
-    //    sprintf(libname, "%s/lib/lib%s.so", data.sourcedir, modulenameLC);
     {
         int slen = snprintf(libname, STRINGMAXLEN_LIBRARYNAME,
                             "%s/lib/lib%s.so", getenv("MILK_INSTALLDIR"), modulenameLC);
@@ -108,7 +97,6 @@ errno_t load_module_shared(
     }
 
     printf("libname = %s\n", libname);
-
 
     printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 

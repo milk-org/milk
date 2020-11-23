@@ -4,6 +4,8 @@
 
 
 
+
+
 errno_t memory_re_alloc()
 {
     /* keeps the number of images addresses available
@@ -12,11 +14,16 @@ errno_t memory_re_alloc()
 
 
 #ifdef DATA_STATIC_ALLOC
-    // image static allocation mode
+    //printf("image static allocation mode\n");
+    //fflush(stdout);
 #else
-    int current_NBimage = compute_nb_image(data);
+    //printf("image dynamic allocation mode\n");
+    //fflush(stdout);	
+    
+    int current_NBimage = compute_nb_image();
 
-    //	printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %d\n", current_NBimage, NB_IMAGES_BUFFER, data.NB_MAX_IMAGE);///
+   	//printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %ld\n", current_NBimage, NB_IMAGES_BUFFER, data.NB_MAX_IMAGE);
+   	//fflush(stdout);
 
     if((current_NBimage + NB_IMAGES_BUFFER) > data.NB_MAX_IMAGE)
     {
@@ -71,7 +78,7 @@ errno_t memory_re_alloc()
 #ifdef DATA_STATIC_ALLOC
     // variable static allocation mode
 #else
-    if((compute_nb_variable(data) + NB_VARIABLES_BUFFER) > data.NB_MAX_VARIABLE)
+    if((compute_nb_variable() + NB_VARIABLES_BUFFER) > data.NB_MAX_VARIABLE)
     {
         long tmplong;
 
@@ -98,6 +105,7 @@ errno_t memory_re_alloc()
         }
     }
 #endif
+
 
 
     return RETURN_SUCCESS;
