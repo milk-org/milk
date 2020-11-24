@@ -292,7 +292,7 @@ inputParamString=( )
 function getoptargs {
 	optargstring=""
 	shiftcnt=0
-	nboptarg=$( wc -w <<< "${OPTarg[$shortopt]}" )
+	nboptarg=$( wc -w <<< "${OPTarg[${shortopt}]}" )
 	#echo "nboptarg = ${nboptarg} from $@"
 	optargindex=0
     while [ $optargindex -lt ${nboptarg} ]; do
