@@ -78,7 +78,7 @@ int COREMOD_TOOLS_mvProcCPUset(
         PRINT_ERROR("seteuid error");
     }
 
-    sprintf(command, "sudo -n cset proc -m -p %d -t %s\n", pid, csetname);
+    sprintf(command, "sudo -n cset proc --threads -m -p %d -t %s\n", pid, csetname);
     printf("Executing command: %s\n", command);
 
     if(system(command) != 0)
