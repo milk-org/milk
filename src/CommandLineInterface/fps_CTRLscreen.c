@@ -167,6 +167,13 @@ inline static void fpsCTRLscreen_print_nodeinfo(
     printfw("    FPS source            : %s %d\n",
            fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
            fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+           
+    printfw("   %d libs : ", fps[keywnode[nodeSelected].fpsindex].md->NBmodule);
+    for(int m=0; m<fps[keywnode[nodeSelected].fpsindex].md->NBmodule; m++)
+    {
+		printfw(" [%s]", fps[keywnode[nodeSelected].fpsindex].md->modulename);
+	}
+	printfw("\n");
 
     DEBUG_TRACEPOINT(" ");
     printfw("    FPS work     directory    : %s\n",

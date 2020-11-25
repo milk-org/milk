@@ -1,6 +1,9 @@
 /**
  * @file    fps_tmux.c
+ * 
  * @brief   tmux session management
+ * 
+ * tmux wrapper for FPS control
  */
 
 
