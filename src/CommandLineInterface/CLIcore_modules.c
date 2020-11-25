@@ -26,10 +26,10 @@
 
 
 
-
+// local valiables to keep track of library last loaded
 static int DLib_index;
 static void *DLib_handle[1000];
-
+static char libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
 
@@ -37,19 +37,42 @@ errno_t load_sharedobj(
     const char *restrict libname
 )
 {
-    printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+    //printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+    strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME);
 
-    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-    if(!DLib_handle[DLib_index])
+
+    // check if already loaded
+    //printf("--- %ld modules loaded ---\n", data.NBmodule);
+    int mmatch = -1;
+    for(int m = 0; m < data.NBmodule; m++)
     {
-        fprintf(stderr, "%s\n", dlerror());
-        //exit(EXIT_FAILURE);
+		//printf("  [%03d] %s\n", m, data.module[m].sofilename);
+        if(strcmp(libnameloaded, data.module[m].sofilename) == 0)
+        {
+            mmatch = m;
+        }
+    }
+    if(mmatch > -1)
+    {
+        printf("Shared object %s already loaded - no action taken\n", libnameloaded);
     }
     else
     {
-        dlerror();
-        // increment number of libs dynamically loaded
-        DLib_index ++;
+
+
+        DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
+        if(!DLib_handle[DLib_index])
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            //exit(EXIT_FAILURE);
+        }
+        else
+        {
+            dlerror();
+            printf("  ----- LOADED : %s <- %s\n", libnameloaded, libname);
+            // increment number of libs dynamically loaded
+            DLib_index ++;
+        }
     }
 
     return RETURN_SUCCESS;
@@ -62,18 +85,19 @@ errno_t load_module_shared(
     const char *restrict modulename
 )
 {
-    int STRINGMAXLEN_LIBRARYNAME = 200;
-    char libname[STRINGMAXLEN_LIBRARYNAME];
-    char modulenameLC[STRINGMAXLEN_LIBRARYNAME];
+    char libname[STRINGMAXLEN_MODULE_SOFILENAME];
+
+	// module name local copy
+    char modulenameLC[STRINGMAXLEN_MODULE_SOFILENAME];
 
     {
-        int slen = snprintf(modulenameLC, STRINGMAXLEN_LIBRARYNAME, "%s", modulename);
+        int slen = snprintf(modulenameLC, STRINGMAXLEN_MODULE_SOFILENAME, "%s", modulename);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= STRINGMAXLEN_LIBRARYNAME)
+        if(slen >= STRINGMAXLEN_MODULE_SOFILENAME)
         {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
@@ -82,14 +106,14 @@ errno_t load_module_shared(
 
 
     {
-        int slen = snprintf(libname, STRINGMAXLEN_LIBRARYNAME,
+        int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME,
                             "%s/lib/lib%s.so", getenv("MILK_INSTALLDIR"), modulenameLC);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= STRINGMAXLEN_LIBRARYNAME)
+        if(slen >= STRINGMAXLEN_MODULE_SOFILENAME)
         {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way
@@ -202,6 +226,8 @@ errno_t RegisterModule(
 )
 {
     int OKmsg = 0;
+    
+    //printf("REGISTERING MODULE %s\n", FileName);
 
     if(strlen(data.modulename) == 0)
     {
@@ -238,6 +264,8 @@ errno_t RegisterModule(
     data.module[data.NBmodule].versionminor = versionminor;
     data.module[data.NBmodule].versionpatch = versionpatch;
 
+	//printf("--- libnameloaded : %s\n", libnameloaded);
+	strncpy(data.module[data.NBmodule].sofilename, libnameloaded, STRINGMAXLEN_MODULE_SOFILENAME);
 
     if(data.progStatus == 0)
     {

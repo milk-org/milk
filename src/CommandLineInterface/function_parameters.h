@@ -412,6 +412,10 @@ typedef struct
 #define FPS_DESCR_STRMAXLEN         200
 #define STRINGMAXLEN_FPS_DIRNAME    200
 
+#define FPS_MAXNB_MODULE      20
+#define FPS_MODULE_STRMAXLEN 200
+
+
 // metadata
 typedef struct
 {
@@ -456,8 +460,9 @@ typedef struct
 	struct timespec     runpidstarttime;
 	
 
-
-
+	// shared objects (modules) required to be loaded
+	int NBmodule;
+	char modulename[FPS_MAXNB_MODULE][FPS_MODULE_STRMAXLEN];
 
 
 	// Used to send signals to configuration process
