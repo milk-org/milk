@@ -198,6 +198,18 @@ errno_t function_parameter_struct_create(
 	// and create the directory
 	mkdir(fps.md->confdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	
+	
+	// write currently loaded modules to fps
+	fps.md->NBmodule = 0;
+	for(int m = 0; m < data.NBmodule; m++)
+    {
+		if(data.module[m].type ==  MODULE_TYPE_CUSTOMLOAD) // custom loaded module
+		{
+			strncpy(fps.md->modulename[fps.md->NBmodule], data.module[m].loadname, FPS_MODULE_STRMAXLEN);
+			fps.md->NBmodule++;
+		}
+    }
+	
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default
