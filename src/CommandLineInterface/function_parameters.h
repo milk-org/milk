@@ -792,6 +792,32 @@ function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE); \
 
 
 
+
+
+#define FPS_MAKE_CONF_FUNCNAME(x) FPSCONF_##x
+#define FPSCONF_FUNCTION_NAME(fncname) FPS_MAKE_CONF_FUNCNAME(fncname)
+
+#define FPS_MAKE_RUN_FUNCNAME(x) FPSRUN_##x
+#define FPSRUN_FUNCTION_NAME(fncname) FPS_MAKE_RUN_FUNCNAME(fncname)
+
+#define FPS_MAKE_CLI_FUNCNAME(x) FPSCLI_##x
+#define FPSCLI_FUNCTION_NAME(fncname) FPS_MAKE_CLI_FUNCNAME(fncname)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** @} */ // end group fpsmacro
 
 
