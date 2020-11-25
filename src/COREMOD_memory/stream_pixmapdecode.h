@@ -12,5 +12,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     const char *NBpix_fname,
     const char *IDmap_name,
     const char *IDout_name,
-    const char *IDout_pixslice_fname
+    const char *IDout_pixslice_fname,
+    uint32_t    reverse
 );
