@@ -46,7 +46,7 @@ errno_t load_sharedobj(
     int mmatch = -1;
     for(int m = 0; m < data.NBmodule; m++)
     {
-		//printf("  [%03d] %s\n", m, data.module[m].sofilename);
+        //printf("  [%03d] %s\n", m, data.module[m].sofilename);
         if(strcmp(libnameloaded, data.module[m].sofilename) == 0)
         {
             mmatch = m;
@@ -55,25 +55,25 @@ errno_t load_sharedobj(
     if(mmatch > -1)
     {
         printf("Shared object %s already loaded - no action taken\n", libnameloaded);
+        return RETURN_FAILURE;
+    }
+
+
+
+    DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
+    if(!DLib_handle[DLib_index])
+    {
+        fprintf(stderr, "%s\n", dlerror());
+        //exit(EXIT_FAILURE);
     }
     else
     {
-
-
-        DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
-        if(!DLib_handle[DLib_index])
-        {
-            fprintf(stderr, "%s\n", dlerror());
-            //exit(EXIT_FAILURE);
-        }
-        else
-        {
-            dlerror();
-            printf("  ----- LOADED : %s <- %s\n", libnameloaded, libname);
-            // increment number of libs dynamically loaded
-            DLib_index ++;
-        }
+        dlerror();
+        printf("  ----- LOADED : %s <- %s\n", libnameloaded, libname);
+        // increment number of libs dynamically loaded
+        DLib_index ++;
     }
+
 
     return RETURN_SUCCESS;
 }
@@ -87,6 +87,7 @@ errno_t load_module_shared(
 {
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
 
+	
 	// module name local copy
     char modulenameLC[STRINGMAXLEN_MODULE_SOFILENAME];
 
@@ -124,7 +125,19 @@ errno_t load_module_shared(
 
     printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 
-    load_sharedobj(libname);
+	// a custom module is about to be loaded, so we set the type accordingly
+	// this variable will be written by module register function into module struct
+	data.moduletype = MODULE_TYPE_CUSTOMLOAD; 
+	strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME);
+	strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME);
+    if ( load_sharedobj(libname) == RETURN_SUCCESS )
+    {
+		// 
+	}
+	// reset to default for next load
+	data.moduletype = MODULE_TYPE_STARTUP; 
+	strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME);
+	strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME);
 
     return RETURN_SUCCESS;
 }
@@ -263,6 +276,11 @@ errno_t RegisterModule(
     data.module[data.NBmodule].versionmajor = versionmajor;
     data.module[data.NBmodule].versionminor = versionminor;
     data.module[data.NBmodule].versionpatch = versionpatch;
+
+	data.module[data.NBmodule].type = data.moduletype;
+	
+	strncpy(data.module[data.NBmodule].loadname, data.moduleloadname, STRINGMAXLEN_MODULE_LOADNAME);
+	strncpy(data.module[data.NBmodule].sofilename, data.modulesofilename, STRINGMAXLEN_MODULE_SOFILENAME);	
 
 	//printf("--- libnameloaded : %s\n", libnameloaded);
 	strncpy(data.module[data.NBmodule].sofilename, libnameloaded, STRINGMAXLEN_MODULE_SOFILENAME);

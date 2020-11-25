@@ -311,8 +311,10 @@ errno_t list_commands_module(
     else
     {
         printf("   name         %s\n", data.module[moduleindex].name);
-        printf("   short name   %s\n", data.module[moduleindex].shortname);
+        printf("   type         %d\n", data.module[moduleindex].type);
+        printf("   short name   %s\n", data.module[moduleindex].shortname);        
         printf("   package      %s\n", data.module[moduleindex].package);
+        printf("   loadname     %s\n", data.module[moduleindex].loadname);
         printf("   sofilename   %s\n", data.module[moduleindex].sofilename);
         printf("   version      %d %d %d\n", data.module[moduleindex].versionmajor,
                data.module[moduleindex].versionminor, data.module[moduleindex].versionpatch);
