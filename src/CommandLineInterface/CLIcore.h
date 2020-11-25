@@ -205,17 +205,26 @@ extern uid_t suid;
 
 #define STRINGMAXLEN_MODULE_NAME          100
 #define STRINGMAXLEN_MODULE_SHORTNAME      50
+#define STRINGMAXLEN_MODULE_LOADNAME      500
 #define STRINGMAXLEN_MODULE_SOFILENAME   1000
 #define STRINGMAXLEN_MODULE_PACKAGENAME    50
 #define STRINGMAXLEN_MODULE_INFOSTRING   1000
 #define STRINGMAXLEN_MODULE_DATESTRING     20
 #define STRINGMAXLEN_MODULE_TIMESTRING     20
+
+#define MODULE_TYPE_UNUSED      0
+#define MODULE_TYPE_STARTUP     1
+#define MODULE_TYPE_CUSTOMLOAD  2
+
 typedef struct
 {
-	int status; // 0: unused, 1: loaded
+	int type;
+	
     char name[STRINGMAXLEN_MODULE_NAME];        // module name
 
     char shortname[STRINGMAXLEN_MODULE_SHORTNAME];   // short name. If non-empty, access functions as <shortname>.<functionname>
+    
+    char loadname[STRINGMAXLEN_MODULE_LOADNAME];
     char sofilename[STRINGMAXLEN_MODULE_SOFILENAME];
 
     char package[STRINGMAXLEN_MODULE_PACKAGENAME];     // package to which module belongs
@@ -459,7 +468,10 @@ typedef struct
     
     // temporary storage
     long           moduleindex;
+    int            moduletype;
     char           modulename[STRINGMAXLEN_MODULE_NAME];
+    char           moduleloadname[STRINGMAXLEN_MODULE_LOADNAME];
+    char           modulesofilename[STRINGMAXLEN_MODULE_SOFILENAME];
     char           moduleshortname[STRINGMAXLEN_MODULE_SHORTNAME];
     char           moduleshortname_default[STRINGMAXLEN_MODULE_SHORTNAME];
     char           moduledatestring[STRINGMAXLEN_MODULE_DATESTRING];
