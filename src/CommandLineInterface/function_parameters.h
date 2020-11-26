@@ -803,7 +803,8 @@ function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE); \
 #define FPS_MAKE_CLI_FUNCNAME(x) FPSCLI_##x
 #define FPSCLI_FUNCTION_NAME(fncname) FPS_MAKE_CLI_FUNCNAME(fncname)
 
-
+#define FPS_MAKE_CLIADDCMD_FUNCNAME(x) FPSCLIADDCMD_##x
+#define FPSCLIADDCMD_FUNCTION_NAME(fncname) FPS_MAKE_CLIADDCMD_FUNCNAME(fncname)
 
 
 
