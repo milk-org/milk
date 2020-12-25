@@ -3,15 +3,36 @@
 
 MSdescr="initialize Function Parameter Structures (FPS)"
 
+scriptname=$(basename $0)
+
 MSextdescr="Reads file fpslist.txt
  For each entry, initialize the FPS :
   - Create and initialize FPS
   - Create tmux session and functions in tmux sessions
  Run without argument to print FPSs status
  
- fpslist.txt format:
- one line per entry
- add modules with \"+module1;module2\" line directly before entry"
+$(tput bold)fpslist.txt file format$(tput sgr0)
+   One line per entry: <FPS root name> <CLI command> <optional args>
+   Add modules with \"+module1;module2\" line directly before entry
+   Optional arguments may be parsed by code, or simply used for FPS naming
+
+$(tput bold)Example use$(tput sgr0)
+ 
+ [1] Create fpslist.txt file:
+   +mycustommodule;othercustommodule
+   myfpsname custommod.customcommand im1 304 
+   
+ [2] Run ${scriptname} :
+   > ${scriptname} -c 0
+   Will create FPS named \"myfpsname-im1-304\"
+   
+ [3] Launch milk-fpsCTRL to manage and control
+
+
+$(tput bold)Related scripts:$(tput sgr0)
+  milk-fpsCTRL
+  milk-procCTRL
+ "
 
 
 source milk-script-std-config
@@ -112,16 +133,20 @@ INITREADYARRAY=( )
 #
 
 moduleslist=""
-
+linenumber=0
 while IFS= read -r line
-do	
+do
+  lineOK=0
   nw=$( echo "${line}" | wc -w )
   
   if [[ ${line} == \+* ]]; then
     moduleslist="${line:1}"
+    #echo "Module List : ${moduleslist}"
+    lineOK=1
   fi
     
   if [ "$nw" -gt 1 ] && [[ ${line} != \#* ]] && [[ ${line} != \+* ]]; then
+    lineOK=1
     declare -a OPTARG
     stringarr=(${line})
     nbarg=$(( $nw - 2 ))
@@ -183,6 +208,11 @@ do
     moduleslist=""
     
   fi
+  
+  if [[ "$lineOK" = 0 ]] && [[ "$nw" -gt 0 ]]; then
+    echo "$(tput setaf 1)$(tput bold)ERROR line ${linenumber} not processed:$(tput sgr0) \"${line}\""
+  fi
+  linenumber=$(( $linenumber + 1 ))
 done < "${FPSlistfilename}"
 
     
