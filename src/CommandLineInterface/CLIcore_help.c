@@ -379,6 +379,98 @@ errno_t list_commands_module(
 
 
 
+
+
+
+
+
+
+
+
+
+/** @brief Construct command line (CLI) arguments help string
+ *
+ */
+int CLIhelp_make_argstring(
+    FPSCLIARG fpscliarg[],
+    int nbarg,
+    char *outargstring
+)
+{
+    char tmpstr[1000];
+
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        char typestring[100] = "?";
+
+        switch(fpscliarg[arg].type)
+        {
+
+            case CLIARG_IMG:
+                strcpy(typestring, "string");
+                break;
+
+            case CLIARG_LONG:
+                strcpy(typestring, "long");
+                break;
+        }
+
+        if(arg == 0)
+        {
+            sprintf(tmpstr, "<%s [%s] ->(%s)>", fpscliarg[arg].descr, typestring,
+                    fpscliarg[arg].fpstag);
+        }
+        else
+        {
+            char tmpstr1[1000];
+            sprintf(tmpstr1, " <%s [%s] ->(%s)>", fpscliarg[arg].descr, typestring,
+                    fpscliarg[arg].fpstag);
+            strcat(tmpstr, tmpstr1);
+        }
+    }
+    strcpy(outargstring, tmpstr);
+
+    return strlen(outargstring);
+}
+
+
+
+
+/** @brief Assemble command line (CLI) example command string
+ * 
+ */
+int CLIhelp_make_cmdexamplestring(
+    FPSCLIARG fpscliarg[],
+    int nbarg,
+    char *shortname,
+	char *outcmdexstring
+)
+{
+    char tmpstr[1000];
+
+    sprintf(tmpstr, "%s", shortname);
+
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        char tmpstr1[1000];
+        sprintf(tmpstr1, " %s", fpscliarg[arg].example);
+        strcat(tmpstr, tmpstr1);
+    }
+    strcpy(outcmdexstring, tmpstr);
+
+    return strlen(outcmdexstring);
+}
+
+
+
+
+
+
+
+
+
+
+
 /**
  * @brief command help\n
  *
