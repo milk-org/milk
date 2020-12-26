@@ -7,7 +7,6 @@
 
 
 #ifndef CLICORE_HELP_H
-
 #define CLICORE_HELP_H
 
 
@@ -15,6 +14,21 @@
 errno_t help();
 
 errno_t helpreadline();
+
+
+int CLIhelp_make_argstring(
+    FPSCLIARG fpscliarg[],
+    int nbarg,
+    char *outargstring
+);
+
+int CLIhelp_make_cmdexamplestring(
+    FPSCLIARG fpscliarg[],
+    int nbarg,
+    char *shortname,
+	char *outcmdexstring
+);
+
 
 errno_t help_cmd();
 

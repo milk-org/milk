@@ -58,6 +58,10 @@ typedef long variableID;
 #include "CommandLineInterface/processtools.h"
 #include "CommandLineInterface/streamCTRL.h"
 #include "CommandLineInterface/function_parameters.h"
+
+#include "CommandLineInterface/CLIcore_checkargs.h"
+#include "CommandLineInterface/CLIcore_help.h"
+
 #endif
 
 
@@ -146,18 +150,6 @@ if ( INITSTATUS_##modname == 1 ) \
 
 #ifndef STANDALONE
 
-
-
-// testing argument type for command line interface
-#define CLIARG_FLOAT            1  // floating point number
-#define CLIARG_LONG             2  // integer (int or long)
-#define CLIARG_STR_NOT_IMG      3  // string, not existing image
-#define CLIARG_IMG              4  // existing image
-#define CLIARG_STR              5  // string
-
-#define CLICMD_SUCCESS          0
-#define CLICMD_INVALID_ARG      1
-#define CLICMD_ERROR            2
 
 
 // declare a boolean type "BOOL"
@@ -268,14 +260,6 @@ typedef struct
 
 
 
-/* ---------------------------------------------------------- */
-/*                                                            */
-/*                                                            */
-/*       COMMAND LINE ARGs / TOKENS                           */
-/*                                                            */
-/*                                                            */
-/* ---------------------------------------------------------- */
-
 
 // The command line is parsed and
 
@@ -295,6 +279,7 @@ typedef struct
 #define CMDARG_TYPE_COMMAND        5
 #define CMDARG_TYPE_RAWSTRING      6
 
+
 typedef struct
 {
     int type;
@@ -305,13 +290,6 @@ typedef struct
         char string[200];
     } val;
 } CMDARGTOKEN;
-
-
-
-int CLI_checkarg(int argnum, int argtype);
-int CLI_checkarg_noerrmsg(int argnum, int argtype);
-
-
 
 
 
