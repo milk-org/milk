@@ -40,13 +40,8 @@ uint32_t RegisterCLIcommand(
 
 
 uint32_t RegisterCLIcmd(
-    const char *restrict CLIkey,
-    const char *restrict CLImodulesrc,
-    errno_t (*CLIfptr)(),
-    const char *restrict CLIinfo,
-    CLICMDARG fpscliarg[],
-    int nbarg
+    CLICMDDATA CLIcmddata,
+    errno_t (*CLIfptr)()
 );
-
 
 #endif

@@ -194,8 +194,6 @@ extern uid_t suid;
 
 
 
-
-
 #define STRINGMAXLEN_MODULE_NAME          100
 #define STRINGMAXLEN_MODULE_SHORTNAME      50
 #define STRINGMAXLEN_MODULE_LOADNAME      500

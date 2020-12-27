@@ -49,6 +49,16 @@ typedef struct
 } CLICMDARG;
 
 
+typedef struct
+{
+	char key[100];
+	char description[100];
+	char sourcefilename[100];
+	int nbarg;
+	CLICMDARG *funcfpscliarg;
+} CLICMDDATA;
+
+
 
 #define CLICMD_SUCCESS          0
 #define CLICMD_INVALID_ARG      1

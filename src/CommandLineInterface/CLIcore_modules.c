@@ -386,34 +386,34 @@ uint32_t RegisterCLIcommand(
 // Replaces legacy function RegisterCLIcommand
 //
 uint32_t RegisterCLIcmd(
-    const char *restrict CLIkey,
-    const char *restrict CLImodulesrc,
-    errno_t (*CLIfptr)(),
-    const char *restrict CLIinfo,
-    CLICMDARG fpscliarg[],
-    int nbarg
+    CLICMDDATA CLIcmddata,
+    errno_t (*CLIfptr)()
 )
 {
+	//printf("============== REGISTERING FUNCTION\n");
+	
+	//printf(" nbarg =  %d\n", CLIcmddata.nbarg);
+	//printf(" tag : %s\n", CLIcmddata.funcfpscliarg[0].fpstag);
+	
 	data.cmd[data.NBcmd].moduleindex = data.moduleindex;
 	 if(data.cmd[data.NBcmd].moduleindex == -1)
     {
 		strcpy(data.cmd[data.NBcmd].module, "MAIN");
-		strcpy(data.cmd[data.NBcmd].key, CLIkey);
+		strcpy(data.cmd[data.NBcmd].key, CLIcmddata.key);
     }
     else
     {
 
         if(strlen(data.module[data.moduleindex].shortname) == 0)
         {
-            strcpy(data.cmd[data.NBcmd].key, CLIkey);
+            strcpy(data.cmd[data.NBcmd].key, CLIcmddata.key);
         }
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIkey);
+            sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIcmddata.key);
         }
     }
-
 
     if(strlen(data.modulename) == 0)
     {
@@ -424,17 +424,27 @@ uint32_t RegisterCLIcmd(
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
 
-    strcpy(data.cmd[data.NBcmd].modulesrc, CLImodulesrc);
+    strcpy(data.cmd[data.NBcmd].modulesrc, CLIcmddata.sourcefilename);
     data.cmd[data.NBcmd].fp = CLIfptr;
-    strcpy(data.cmd[data.NBcmd].info,    CLIinfo);
-    strcpy(data.cmd[data.NBcmd].syntax,  "syntaxstring");
-    strcpy(data.cmd[data.NBcmd].example, "examplestring");
-    strcpy(data.cmd[data.NBcmd].Ccall,   "callstring");
-    data.cmd[data.NBcmd].nbarg = 0;
+    strcpy(data.cmd[data.NBcmd].info,    CLIcmddata.description);
+
+    // assemble argument syntax string for help
+    char argstring[1000];
+    CLIhelp_make_argstring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg, argstring);
+    strcpy(data.cmd[data.NBcmd].syntax,  argstring);
+
+    // assemble example string for help
+    char cmdexamplestring[1000];
+    CLIhelp_make_cmdexamplestring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg, CLIcmddata.key,
+                                  cmdexamplestring);
+    strcpy(data.cmd[data.NBcmd].example, cmdexamplestring);
+    
+    strcpy(data.cmd[data.NBcmd].Ccall,   "--callstring--");
+
+    data.cmd[data.NBcmd].nbarg = CLIcmddata.nbarg;
+
     data.NBcmd++;
     
-	
-	data.NBcmd++;
 	return(data.NBcmd);
 }
 
