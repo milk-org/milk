@@ -7,10 +7,7 @@
 
 
 #ifndef CLICORE_MODULES_H
-
 #define CLICORE_MODULES_H
-
-
 
 
 
@@ -28,6 +25,27 @@ errno_t RegisterModule(
     int versionmajor,
     int versionminor,
     int versionpatch
+);
+
+
+uint32_t RegisterCLIcommand(
+    const char *restrict CLIkey,
+    const char *restrict CLImodulesrc,
+    errno_t (*CLIfptr)(),
+    const char *restrict CLIinfo,
+    const char *restrict CLIsyntax,
+    const char *restrict CLIexample,
+    const char *restrict CLICcall
+);
+
+
+uint32_t RegisterCLIcmd(
+    const char *restrict CLIkey,
+    const char *restrict CLImodulesrc,
+    errno_t (*CLIfptr)(),
+    const char *restrict CLIinfo,
+    CLICMDARG fpscliarg[],
+    int nbarg
 );
 
 

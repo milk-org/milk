@@ -53,6 +53,7 @@ errno_t functionparameter_FPS_tmux_init(
 {
 	int funcstring_maxlen = 10000;
 	int argstring_maxlen = 1000;
+	int mloadstring_maxlen = 2000;
 	
     // terminate tmux sessions
     functionparameter_FPS_tmux_kill(fps);
@@ -90,11 +91,13 @@ errno_t functionparameter_FPS_tmux_init(
 
 
 	// module load string
-	char mloadstring[2000];
+	char mloadstring[mloadstring_maxlen];
+	char mloadstringcp[mloadstring_maxlen];
 	sprintf(mloadstring, " ");
 	for(int m=0; m < fps->md->NBmodule; m++)
 	{
-		sprintf(mloadstring, "%smload %s;", mloadstring, fps->md->modulename[m]);		 
+		snprintf(mloadstringcp, mloadstring_maxlen, "%smload %s;", mloadstring, fps->md->modulename[m]);
+		strcpy(mloadstring, mloadstringcp);
 	}
 	
 
