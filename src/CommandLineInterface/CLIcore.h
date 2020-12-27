@@ -253,14 +253,15 @@ typedef struct
 	// command function pointer
     errno_t (* fp)();
 
-    char     info[STRINGMAXLEN_CMD_INFO];         // short description/help
-    char     syntax[STRINGMAXLEN_CMD_SYNTAX];       // command syntax
+    char     info[STRINGMAXLEN_CMD_INFO];            // short description/help
+    char     syntax[STRINGMAXLEN_CMD_SYNTAX];        // command syntax
     char     example[STRINGMAXLEN_CMD_EXAMPLE];      // command example
     char     Ccall[STRINGMAXLEN_CMD_CCALL];
     
     // command arguments and parameters
     int nbarg;
-    CLICMDARG *arg; // type defined in CLIcore_checkargs.h
+    
+    CLICMDARGDATA *argdata; // type defined in CLIcore_checkargs.h
     
 } CMD;
 

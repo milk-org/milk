@@ -348,7 +348,7 @@ int CLI_checkarg_noerrmsg(
  * 
  */
 errno_t CLI_checkarg_array(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg
 )
 {
@@ -397,7 +397,7 @@ errno_t CLI_checkarg_array(
  * 
  */
 int CLIargs_to_FPSparams_setval(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg,
     FUNCTION_PARAMETER_STRUCT *fps
 )
@@ -449,7 +449,7 @@ int CLIargs_to_FPSparams_setval(
 
 
 int CLIargs_to_FPSparams_create(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg,
     FUNCTION_PARAMETER_STRUCT *fps
 )

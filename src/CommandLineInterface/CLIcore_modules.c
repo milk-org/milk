@@ -442,6 +442,19 @@ uint32_t RegisterCLIcmd(
     strcpy(data.cmd[data.NBcmd].Ccall,   "--callstring--");
 
     data.cmd[data.NBcmd].nbarg = CLIcmddata.nbarg;
+    if(CLIcmddata.nbarg > 0)
+    {
+		data.cmd[data.NBcmd].argdata = (CLICMDARGDATA*) malloc(sizeof(CLICMDARGDATA)*CLIcmddata.nbarg);
+		for(int argi=0; argi<CLIcmddata.nbarg; argi++)
+		{
+			data.cmd[data.NBcmd].argdata[argi].type = CLIcmddata.funcfpscliarg[argi].type;
+			data.cmd[data.NBcmd].argdata[argi].flag = CLIcmddata.funcfpscliarg[argi].flag;
+			strcpy(data.cmd[data.NBcmd].argdata[argi].descr, CLIcmddata.funcfpscliarg[argi].descr);
+			strcpy(data.cmd[data.NBcmd].argdata[argi].fpstag, CLIcmddata.funcfpscliarg[argi].fpstag);
+			strcpy(data.cmd[data.NBcmd].argdata[argi].example, CLIcmddata.funcfpscliarg[argi].example);
+			strcpy(data.cmd[data.NBcmd].argdata[argi].lastentry, CLIcmddata.funcfpscliarg[argi].example);
+		}
+	}
 
     data.NBcmd++;
     
