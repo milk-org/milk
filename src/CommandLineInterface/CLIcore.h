@@ -60,6 +60,7 @@ typedef long variableID;
 #include "CommandLineInterface/function_parameters.h"
 
 #include "CommandLineInterface/CLIcore_checkargs.h"
+#include "CommandLineInterface/CLIcore_modules.h"
 #include "CommandLineInterface/CLIcore_help.h"
 
 #endif
@@ -243,16 +244,26 @@ typedef struct
 typedef struct
 {
     char     key[STRINGMAXLEN_CMD_KEY];           // command keyword
+
+	// module 
     char     module[STRINGMAXLEN_MODULE_NAME];        // module name
 	// index of module to which command belongs
 	// set to -1 if does not belong to any module
     long     moduleindex;        
     char     modulesrc[200];     // module source filename
-    errno_t (* fp)();            // command function pointer
+
+	// command function pointer
+    errno_t (* fp)();
+
     char     info[STRINGMAXLEN_CMD_INFO];         // short description/help
     char     syntax[STRINGMAXLEN_CMD_SYNTAX];       // command syntax
     char     example[STRINGMAXLEN_CMD_EXAMPLE];      // command example
     char     Ccall[STRINGMAXLEN_CMD_CCALL];
+    
+    // command arguments and parameters
+    int nbarg;
+    CLICMDARG *arg; // type defined in CLIcore_checkargs.h
+    
 } CMD;
 
 
@@ -542,7 +553,7 @@ errno_t set_signal_catch();
 void sig_handler(int signo);
 
 
-
+/*
 errno_t RegisterModule(
     const char *restrict FileName,
     const char *restrict PackageName,
@@ -561,7 +572,7 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLIexample,
     const char *restrict CLICcall
 );
-
+*/
 
 errno_t runCLItest(int argc, char *argv[], char *promptstring);
 

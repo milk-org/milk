@@ -17,13 +17,13 @@ errno_t helpreadline();
 
 
 int CLIhelp_make_argstring(
-    FPSCLIARG fpscliarg[],
+    CLICMDARG fpscliarg[],
     int nbarg,
     char *outargstring
 );
 
 int CLIhelp_make_cmdexamplestring(
-    FPSCLIARG fpscliarg[],
+    CLICMDARG fpscliarg[],
     int nbarg,
     char *shortname,
 	char *outcmdexstring

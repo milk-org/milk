@@ -14,7 +14,11 @@
 
 // check that input CLI argument matches required argument type
 
-int CLI_checkarg0(int argnum, int argtype, int errmsg)
+int CLI_checkarg0(
+    int argnum,
+    int argtype,
+    int errmsg
+)
 {
     int rval; // 0 if OK, 1 if not
     long IDv;
@@ -306,7 +310,10 @@ int CLI_checkarg0(int argnum, int argtype, int errmsg)
 
 
 // check that input CLI argument matches required argument type
-int CLI_checkarg(int argnum, int argtype)
+int CLI_checkarg(
+    int argnum,
+    int argtype
+)
 {
     int rval;
 
@@ -314,8 +321,13 @@ int CLI_checkarg(int argnum, int argtype)
     return rval;
 }
 
+
+
 // check that input CLI argument matches required argument type - do not print error message
-int CLI_checkarg_noerrmsg(int argnum, int argtype)
+int CLI_checkarg_noerrmsg(
+    int argnum,
+    int argtype
+)
 {
     int rval;
 
@@ -328,25 +340,40 @@ int CLI_checkarg_noerrmsg(int argnum, int argtype)
 
 
 /** @brief Check array of command line (CLI) arguments
- *
+ * 
+ * Use list of arguments in fpscliarg[].
+ * Skip arguments that have CLICMDARG_FLAG_NOCLI flag.
+ * 
+ * CLIarg keep count of argument position in CLI call
+ * 
  */
 errno_t CLI_checkarg_array(
-    FPSCLIARG fpscliarg[],
+    CLICMDARG fpscliarg[],
     int nbarg
 )
 {
-    printf("Number of CLI args : %d\n", nbarg);
+    printf("Number of args in list : %d\n", nbarg);
 
     int nberr = 0;
+    int CLIarg = 0; // index of argument in CLI call
     for(int arg = 0; arg < nbarg; arg++)
     {
-        if(CLI_checkarg(arg + 1, fpscliarg[arg].type) != 0)
+        if(! (fpscliarg[arg].flag & CLICMDARG_FLAG_NOCLI) )
         {
-            nberr ++;
+			printf("  arg %d  CLI %2d  [%2d]  %s\n", arg, CLIarg, fpscliarg[arg].type, fpscliarg[arg].fpstag);
+            if(CLI_checkarg(CLIarg + 1, fpscliarg[arg].type) != 0)
+            {
+                nberr ++;
+            }
+            CLIarg++;
         }
+        else
+        { // argument not part of CLI
+			printf("  arg %d  IGNORED [%2d]  %s\n", arg, fpscliarg[arg].type, fpscliarg[arg].fpstag);
+		}
     }
 
-    printf("Number of arg error(s): %d\n", nberr);
+    printf("Number of arg error(s): %d / %d\n", nberr, CLIarg);
 
     if(nberr == 0)
     {
@@ -360,6 +387,118 @@ errno_t CLI_checkarg_array(
 
 
 
+
+
+
+
+/** @brief Build FPS content from FPSCLIARG list
+ * 
+ * All CLI arguments converted to FPS parameters
+ * 
+ */
+int CLIargs_to_FPSparams_setval(
+    CLICMDARG fpscliarg[],
+    int nbarg,
+    FUNCTION_PARAMETER_STRUCT *fps
+)
+{
+    int NBarg_processed = 0;
+
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        if( ! (fpscliarg[arg].flag & CLICMDARG_FLAG_NOFPS) )
+        { // if argument is part of FPS
+            switch(fpscliarg[arg].type)
+            {
+                case CLIARG_FLOAT:
+                    functionparameter_SetParamValue_FLOAT64(fps, fpscliarg[arg].fpstag,
+                                                            data.cmdargtoken[arg + 1].val.numl);
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_LONG:
+                    functionparameter_SetParamValue_INT64(fps, fpscliarg[arg].fpstag,
+                                                          data.cmdargtoken[arg + 1].val.numl);
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_STR_NOT_IMG:
+                    functionparameter_SetParamValue_STRING(fps, fpscliarg[arg].fpstag,
+                                                           data.cmdargtoken[arg + 1].val.string);
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_IMG:
+                    functionparameter_SetParamValue_STRING(fps, fpscliarg[arg].fpstag,
+                                                           data.cmdargtoken[arg + 1].val.string);
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_STR:
+                    functionparameter_SetParamValue_STRING(fps, fpscliarg[arg].fpstag,
+                                                           data.cmdargtoken[arg + 1].val.string);
+                    NBarg_processed++;
+                    break;
+
+            }
+        }
+    }
+
+    return NBarg_processed;
+}
+
+
+int CLIargs_to_FPSparams_create(
+    CLICMDARG fpscliarg[],
+    int nbarg,
+    FUNCTION_PARAMETER_STRUCT *fps
+)
+{
+    int NBarg_processed = 0;
+
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        if( ! (fpscliarg[arg].flag & CLICMDARG_FLAG_NOFPS) )
+        { // if argument is part of FPS
+            switch(fpscliarg[arg].type)
+            {
+                case CLIARG_FLOAT:
+                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
+                                                 FPTYPE_FLOAT64, FPFLAG_DEFAULT_INPUT, NULL);
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_LONG:
+                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
+                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, NULL);
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_STR_NOT_IMG:
+                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
+                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, "null");
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_IMG:
+                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
+                                                 FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, "nullim");
+                    NBarg_processed++;
+                    break;
+
+                case CLIARG_STR:
+                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
+                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, "null");
+                    NBarg_processed++;
+                    break;
+
+            }
+
+        }
+    }
+
+    return NBarg_processed;
+}
 
 
 
