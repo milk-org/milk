@@ -19,9 +19,10 @@
 #define CLIARG_STR              5  // string
 
 
-#define STRINGMAXLEN_FPSCLIARG_TAG     100
-#define STRINGMAXLEN_FPSCLIARG_DESCR   100
-#define STRINGMAXLEN_FPSCLIARG_EXAMPLE 100
+#define STRINGMAXLEN_FPSCLIARG_TAG       100
+#define STRINGMAXLEN_FPSCLIARG_DESCR     100
+#define STRINGMAXLEN_FPSCLIARG_EXAMPLE   100
+#define STRINGMAXLEN_FPSCLIARG_LASTENTRY 100
 
 #define CLICMDARG_FLAG_NOCLI 0x00000001 // 1 if argument is not part or CLI call
 // If set to 1, the argument value is not specified as part of the
@@ -46,7 +47,19 @@ typedef struct
 	
 	// flag
 	uint64_t flag;
-} CLICMDARG;
+} CLICMDARGDEF;
+
+
+typedef struct
+{
+	int type;
+	char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
+	char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
+	char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
+	uint64_t flag;
+	char lastentry[STRINGMAXLEN_FPSCLIARG_LASTENTRY];
+} CLICMDARGDATA;
+
 
 
 typedef struct
@@ -55,7 +68,7 @@ typedef struct
 	char description[100];
 	char sourcefilename[100];
 	int nbarg;
-	CLICMDARG *funcfpscliarg;
+	CLICMDARGDEF *funcfpscliarg;
 } CLICMDDATA;
 
 
@@ -79,20 +92,20 @@ int CLI_checkarg(int argnum, int argtype);
 int CLI_checkarg_noerrmsg(int argnum, int argtype);
 
 errno_t CLI_checkarg_array(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg
 );
 
 
 
 int CLIargs_to_FPSparams_setval(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg,
     FUNCTION_PARAMETER_STRUCT *fps
 );
 
 int CLIargs_to_FPSparams_create(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg,
     FUNCTION_PARAMETER_STRUCT *fps
 );

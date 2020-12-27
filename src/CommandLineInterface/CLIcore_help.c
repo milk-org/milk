@@ -392,7 +392,7 @@ errno_t list_commands_module(
  *
  */
 int CLIhelp_make_argstring(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg,
     char *outargstring
 )
@@ -440,7 +440,7 @@ int CLIhelp_make_argstring(
  * 
  */
 int CLIhelp_make_cmdexamplestring(
-    CLICMDARG fpscliarg[],
+    CLICMDARGDEF fpscliarg[],
     int nbarg,
     char *shortname,
 	char *outcmdexstring
@@ -491,12 +491,34 @@ errno_t help_command(
         {
             printf("\n");
             printf("key        :    %s\n", data.cmd[i].key);
-            printf("module     :    %ld %s [ \"%s\" ]\n", data.cmd[i].moduleindex, data.cmd[i].module, data.module[data.cmd[i].moduleindex].shortname);
+            printf("module     :    %ld %s [ \"%s\" ]\n", data.cmd[i].moduleindex,
+                   data.cmd[i].module, data.module[data.cmd[i].moduleindex].shortname);
             printf("module src :    %s\n", data.cmd[i].modulesrc);
             printf("info       :    %s\n", data.cmd[i].info);
             printf("syntax     :    %s\n", data.cmd[i].syntax);
             printf("example    :    %s\n", data.cmd[i].example);
             printf("C call     :    %s\n", data.cmd[i].Ccall);
+            printf("nbarg      :    %d\n", data.cmd[i].nbarg);
+            
+            int CLIargcnt = 0;
+            for(int argi = 0; argi < data.cmd[i].nbarg; argi++)
+            {
+				if( ! (data.cmd[i].argdata[argi].flag & CLICMDARG_FLAG_NOCLI) )
+				{
+					printf(" %2d", CLIargcnt);
+					CLIargcnt++;
+				}
+				else
+				{
+					printf(" --");
+				}
+				printf(" %-16s %s\n", data.cmd[i].argdata[argi].fpstag, data.cmd[i].argdata[argi].descr);
+				printf("     %s\n", data.cmd[i].argdata[argi].lastentry);
+                //data.cmd[data.NBcmd].argdata[argi].type;
+                //data.cmd[data.NBcmd].argdata[argi].flag;
+                // data.cmd[data.NBcmd].argdata[argi].example;
+            }
+
             printf("\n");
             cOK = 1;
         }
