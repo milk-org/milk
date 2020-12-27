@@ -405,13 +405,24 @@ int CLIhelp_make_argstring(
 
         switch(fpscliarg[arg].type)
         {
+            case CLIARG_FLOAT:
+                strcpy(typestring, "float");
+                break;
+
+            case CLIARG_LONG:
+                strcpy(typestring, "long");
+                break;
+
+            case CLIARG_STR_NOT_IMG:
+                strcpy(typestring, "string");
+                break;
 
             case CLIARG_IMG:
                 strcpy(typestring, "string");
                 break;
 
-            case CLIARG_LONG:
-                strcpy(typestring, "long");
+            case CLIARG_STR:
+                strcpy(typestring, "string");
                 break;
         }
 
@@ -499,24 +510,50 @@ errno_t help_command(
             printf("example    :    %s\n", data.cmd[i].example);
             printf("C call     :    %s\n", data.cmd[i].Ccall);
             printf("nbarg      :    %d\n", data.cmd[i].nbarg);
-            
+
             int CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[i].nbarg; argi++)
             {
-				if( ! (data.cmd[i].argdata[argi].flag & CLICMDARG_FLAG_NOCLI) )
-				{
-					printf(" %2d", CLIargcnt);
-					CLIargcnt++;
-				}
-				else
-				{
-					printf(" --");
-				}
-				printf(" %-16s %s\n", data.cmd[i].argdata[argi].fpstag, data.cmd[i].argdata[argi].descr);
-				printf("     %s\n", data.cmd[i].argdata[argi].lastentry);
+                if(!(data.cmd[i].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
+                {
+                    printf(" %2d", CLIargcnt);
+                    CLIargcnt++;
+                }
+                else
+                {
+                    printf(" --");
+                }
+
+                char typestring[100] = "?";
+
+                switch(data.cmd[i].argdata[argi].type)
+                {
+                    case CLIARG_FLOAT:
+                        strcpy(typestring, "FLOAT");
+                        break;
+
+                    case CLIARG_LONG:
+                        strcpy(typestring, "LONG");
+                        break;
+
+                    case CLIARG_STR_NOT_IMG:
+                        strcpy(typestring, "STR_NOT_IMG");
+                        break;
+
+                    case CLIARG_IMG:
+                        strcpy(typestring, "IMG");
+                        break;
+
+                    case CLIARG_STR:
+                        strcpy(typestring, "STR");
+                        break;
+                }
+
+
+                printf(" %-16s %12s %s\n", data.cmd[i].argdata[argi].fpstag,
+                       typestring, data.cmd[i].argdata[argi].descr);
+                printf("     %s\n", data.cmd[i].argdata[argi].lastentry);
                 //data.cmd[data.NBcmd].argdata[argi].type;
-                //data.cmd[data.NBcmd].argdata[argi].flag;
-                // data.cmd[data.NBcmd].argdata[argi].example;
             }
 
             printf("\n");
