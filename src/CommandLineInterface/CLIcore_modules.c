@@ -382,7 +382,7 @@ uint32_t RegisterCLIcommand(
 
 
 
-// Register command 
+// Register command
 // Replaces legacy function RegisterCLIcommand
 //
 uint32_t RegisterCLIcmd(
@@ -390,16 +390,16 @@ uint32_t RegisterCLIcmd(
     errno_t (*CLIfptr)()
 )
 {
-	//printf("============== REGISTERING FUNCTION\n");
-	
-	//printf(" nbarg =  %d\n", CLIcmddata.nbarg);
-	//printf(" tag : %s\n", CLIcmddata.funcfpscliarg[0].fpstag);
-	
-	data.cmd[data.NBcmd].moduleindex = data.moduleindex;
-	 if(data.cmd[data.NBcmd].moduleindex == -1)
+    //printf("============== REGISTERING FUNCTION\n");
+
+    //printf(" nbarg =  %d\n", CLIcmddata.nbarg);
+    //printf(" tag : %s\n", CLIcmddata.funcfpscliarg[0].fpstag);
+
+    data.cmd[data.NBcmd].moduleindex = data.moduleindex;
+    if(data.cmd[data.NBcmd].moduleindex == -1)
     {
-		strcpy(data.cmd[data.NBcmd].module, "MAIN");
-		strcpy(data.cmd[data.NBcmd].key, CLIcmddata.key);
+        strcpy(data.cmd[data.NBcmd].module, "MAIN");
+        strcpy(data.cmd[data.NBcmd].key, CLIcmddata.key);
     }
     else
     {
@@ -411,7 +411,8 @@ uint32_t RegisterCLIcmd(
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIcmddata.key);
+            sprintf(data.cmd[data.NBcmd].key, "%s.%s",
+                    data.module[data.moduleindex].shortname, CLIcmddata.key);
         }
     }
 
@@ -435,29 +436,52 @@ uint32_t RegisterCLIcmd(
 
     // assemble example string for help
     char cmdexamplestring[1000];
-    CLIhelp_make_cmdexamplestring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg, CLIcmddata.key,
+    CLIhelp_make_cmdexamplestring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg,
+                                  CLIcmddata.key,
                                   cmdexamplestring);
     strcpy(data.cmd[data.NBcmd].example, cmdexamplestring);
-    
+
     strcpy(data.cmd[data.NBcmd].Ccall,   "--callstring--");
 
     data.cmd[data.NBcmd].nbarg = CLIcmddata.nbarg;
     if(CLIcmddata.nbarg > 0)
     {
-		data.cmd[data.NBcmd].argdata = (CLICMDARGDATA*) malloc(sizeof(CLICMDARGDATA)*CLIcmddata.nbarg);
-		for(int argi=0; argi<CLIcmddata.nbarg; argi++)
-		{
-			data.cmd[data.NBcmd].argdata[argi].type = CLIcmddata.funcfpscliarg[argi].type;
-			data.cmd[data.NBcmd].argdata[argi].flag = CLIcmddata.funcfpscliarg[argi].flag;
-			strcpy(data.cmd[data.NBcmd].argdata[argi].descr, CLIcmddata.funcfpscliarg[argi].descr);
-			strcpy(data.cmd[data.NBcmd].argdata[argi].fpstag, CLIcmddata.funcfpscliarg[argi].fpstag);
-			strcpy(data.cmd[data.NBcmd].argdata[argi].example, CLIcmddata.funcfpscliarg[argi].example);
-			strcpy(data.cmd[data.NBcmd].argdata[argi].lastentry, CLIcmddata.funcfpscliarg[argi].example);
-		}
-	}
+        data.cmd[data.NBcmd].argdata =
+            (CLICMDARGDATA *) malloc(sizeof(CLICMDARGDATA) * CLIcmddata.nbarg);
+        
+        for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
+        {
+            data.cmd[data.NBcmd].argdata[argi].type = CLIcmddata.funcfpscliarg[argi].type;
+            data.cmd[data.NBcmd].argdata[argi].flag = CLIcmddata.funcfpscliarg[argi].flag;
+            strcpy(data.cmd[data.NBcmd].argdata[argi].descr,
+                   CLIcmddata.funcfpscliarg[argi].descr);
+            strcpy(data.cmd[data.NBcmd].argdata[argi].fpstag,
+                   CLIcmddata.funcfpscliarg[argi].fpstag);
+            strcpy(data.cmd[data.NBcmd].argdata[argi].example,
+                   CLIcmddata.funcfpscliarg[argi].example);
+            switch(data.cmd[data.NBcmd].argdata[argi].type)
+            {
+                case CLIARG_FLOAT:
+                    data.cmd[data.NBcmd].argdata[argi].defaultval.f = atof(CLIcmddata.funcfpscliarg[argi].example);
+                    break;
+                case CLIARG_LONG:
+                    data.cmd[data.NBcmd].argdata[argi].defaultval.l = atol(CLIcmddata.funcfpscliarg[argi].example);
+                    break;
+                case CLIARG_STR_NOT_IMG:
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].defaultval.s, CLIcmddata.funcfpscliarg[argi].example);
+                    break;
+                case CLIARG_IMG:
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].defaultval.s, CLIcmddata.funcfpscliarg[argi].example);
+                    break;
+                case CLIARG_STR:
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].defaultval.s, CLIcmddata.funcfpscliarg[argi].example);
+                    break;
+            }
+        }
+    }
 
     data.NBcmd++;
-    
-	return(data.NBcmd);
+
+    return(data.NBcmd);
 }
 
