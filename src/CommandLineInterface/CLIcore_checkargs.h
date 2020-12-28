@@ -24,10 +24,13 @@
 #define STRINGMAXLEN_FPSCLIARG_EXAMPLE   100
 #define STRINGMAXLEN_FPSCLIARG_LASTENTRY 100
 
+
+
+#define CLICMDARG_FLAG_DEFAULT 0x00000000
+
 #define CLICMDARG_FLAG_NOCLI 0x00000001 // 1 if argument is not part or CLI call
 // If set to 1, the argument value is not specified as part of the
 // command line function call in the CLI
-
 #define CLICMDARG_FLAG_NOFPS 0x00000002 // 1 if argument is not part or FPS
 
 
@@ -52,12 +55,29 @@ typedef struct
 
 typedef struct
 {
-	int type;
-	char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
-	char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
-	char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
-	uint64_t flag;
-	char lastentry[STRINGMAXLEN_FPSCLIARG_LASTENTRY];
+    int type;
+    struct
+    {
+        double numf;
+        long numl;
+        char string[200];
+    } val;
+} CMDARGVAL;
+
+
+typedef struct
+{
+    int type;
+    char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
+    char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
+    char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
+    uint64_t flag;
+    union
+    {
+        double f;
+        long l;
+        char s[80];
+    } defaultval;
 } CLICMDARGDATA;
 
 
@@ -68,7 +88,7 @@ typedef struct
 	char description[100];
 	char sourcefilename[100];
 	int nbarg;
-	CLICMDARGDEF *funcfpscliarg;
+	CLICMDARGDEF *funcfpscliarg;	
 } CLICMDDATA;
 
 

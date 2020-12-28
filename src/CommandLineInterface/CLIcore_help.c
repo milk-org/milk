@@ -496,25 +496,25 @@ errno_t help_command(
 {
     int cOK = 0;
 
-    for(unsigned int i = 0; i < data.NBcmd; i++)
+    for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
     {
-        if(!strcmp(cmdkey, data.cmd[i].key))
+        if(!strcmp(cmdkey, data.cmd[cmdi].key))
         {
             printf("\n");
-            printf("key        :    %s\n", data.cmd[i].key);
-            printf("module     :    %ld %s [ \"%s\" ]\n", data.cmd[i].moduleindex,
-                   data.cmd[i].module, data.module[data.cmd[i].moduleindex].shortname);
-            printf("module src :    %s\n", data.cmd[i].modulesrc);
-            printf("info       :    %s\n", data.cmd[i].info);
-            printf("syntax     :    %s\n", data.cmd[i].syntax);
-            printf("example    :    %s\n", data.cmd[i].example);
-            printf("C call     :    %s\n", data.cmd[i].Ccall);
-            printf("nbarg      :    %d\n", data.cmd[i].nbarg);
+            printf("key        :    %s\n", data.cmd[cmdi].key);
+            printf("module     :    %ld %s [ \"%s\" ]\n", data.cmd[cmdi].moduleindex,
+                   data.cmd[cmdi].module, data.module[data.cmd[cmdi].moduleindex].shortname);
+            printf("module src :    %s\n", data.cmd[cmdi].modulesrc);
+            printf("info       :    %s\n", data.cmd[cmdi].info);
+            printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
+            printf("example    :    %s\n", data.cmd[cmdi].example);
+            printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
+            printf("nbarg      :    %d\n", data.cmd[cmdi].nbarg);
 
             int CLIargcnt = 0;
-            for(int argi = 0; argi < data.cmd[i].nbarg; argi++)
+            for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
-                if(!(data.cmd[i].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
+                if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
                     printf(" %2d", CLIargcnt);
                     CLIargcnt++;
@@ -526,7 +526,7 @@ errno_t help_command(
 
                 char typestring[100] = "?";
 
-                switch(data.cmd[i].argdata[argi].type)
+                switch(data.cmd[cmdi].argdata[argi].type)
                 {
                     case CLIARG_FLOAT:
                         strcpy(typestring, "FLOAT");
@@ -550,9 +550,30 @@ errno_t help_command(
                 }
 
 
-                printf(" %-16s %12s %s\n", data.cmd[i].argdata[argi].fpstag,
-                       typestring, data.cmd[i].argdata[argi].descr);
-                printf("     %s\n", data.cmd[i].argdata[argi].lastentry);
+                printf(" %-16s %12s %s\n", data.cmd[cmdi].argdata[argi].fpstag,
+                       typestring, data.cmd[cmdi].argdata[argi].descr);
+
+                switch(data.cmd[cmdi].argdata[argi].type)
+                {
+                    case CLIARG_FLOAT:
+                        printf("     default [ FLOAT ] %f\n", data.cmd[cmdi].argdata[argi].defaultval.f);
+                        break;
+                    case CLIARG_LONG:
+                        printf("     default [ FLOAT ] %ld\n", data.cmd[cmdi].argdata[argi].defaultval.l);
+                        break;
+                    case CLIARG_STR_NOT_IMG:
+                        printf("     default [STRnIMG] %s\n", data.cmd[cmdi].argdata[argi].defaultval.s);
+                        break;
+                    case CLIARG_IMG:
+                        printf("     default [  IMG  ] %s\n", data.cmd[cmdi].argdata[argi].defaultval.s);
+                        break;
+                    case CLIARG_STR:
+                        printf("     default [  STR  ] %s\n", data.cmd[cmdi].argdata[argi].defaultval.s);
+                        break;
+                }
+
+
+                //printf("     %s\n", data.cmd[i].argdata[argi].lastentry);
                 //data.cmd[data.NBcmd].argdata[argi].type;
             }
 
