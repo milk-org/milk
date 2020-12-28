@@ -792,6 +792,44 @@ function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE); \
 
 
 
+#define FPS_EXECFUNCTION_STD static errno_t FPSEXECfunction() { \
+FUNCTION_PARAMETER_STRUCT fps;\
+sprintf(data.FPS_name, "%s-%06ld", CLIcmddata.key, (long) getpid());\
+data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;\
+FPSCONFfunction();\
+function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);\
+CLIargs_to_FPSparams_setval(farg, CLIcmddata.nbarg, &fps);\
+function_parameter_struct_disconnect(&fps);\
+FPSRUNfunction();\
+return RETURN_SUCCESS;\
+}
+
+
+#define FPS_CLIFUNCTION_STD static errno_t FPSCLIfunction(void) { \
+function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);\
+if(data.FPS_CMDCODE != 0)\
+    {\
+        data.FPS_CONFfunc = FPSCONFfunction;\
+        data.FPS_RUNfunc  = FPSRUNfunction;\
+        function_parameter_execFPScmd();\
+        return RETURN_SUCCESS;\
+    }\
+    if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
+    {\
+        FPSEXECfunction();\
+        return RETURN_SUCCESS;\
+    }\
+    else\
+    {\
+        return CLICMD_INVALID_ARG;\
+    }\
+}
+
+
+
+
+
+
 
 
 #define FPS_MAKE_CONF_FUNCNAME(x) FPSCONF_##x
