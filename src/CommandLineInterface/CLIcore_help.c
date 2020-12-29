@@ -3,6 +3,7 @@
 
 #include <readline/readline.h>
 #include <fitsio.h>
+#include <regex.h>
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -556,19 +557,24 @@ errno_t help_command(
                 switch(data.cmd[cmdi].argdata[argi].type)
                 {
                     case CLIARG_FLOAT:
-                        printf("     default [ FLOAT ] %f\n", data.cmd[cmdi].argdata[argi].defaultval.f);
+                        printf("     default [ FLOAT ] %f\n",
+                               data.cmd[cmdi].argdata[argi].defaultval.f);
                         break;
                     case CLIARG_LONG:
-                        printf("     default [ FLOAT ] %ld\n", data.cmd[cmdi].argdata[argi].defaultval.l);
+                        printf("     default [ FLOAT ] %ld\n",
+                               data.cmd[cmdi].argdata[argi].defaultval.l);
                         break;
                     case CLIARG_STR_NOT_IMG:
-                        printf("     default [STRnIMG] %s\n", data.cmd[cmdi].argdata[argi].defaultval.s);
+                        printf("     default [STRnIMG] %s\n",
+                               data.cmd[cmdi].argdata[argi].defaultval.s);
                         break;
                     case CLIARG_IMG:
-                        printf("     default [  IMG  ] %s\n", data.cmd[cmdi].argdata[argi].defaultval.s);
+                        printf("     default [  IMG  ] %s\n",
+                               data.cmd[cmdi].argdata[argi].defaultval.s);
                         break;
                     case CLIARG_STR:
-                        printf("     default [  STR  ] %s\n", data.cmd[cmdi].argdata[argi].defaultval.s);
+                        printf("     default [  STR  ] %s\n",
+                               data.cmd[cmdi].argdata[argi].defaultval.s);
                         break;
                 }
 
@@ -581,26 +587,101 @@ errno_t help_command(
             cOK = 1;
         }
     }
+
+    int foundsubstring = 0;
+    int foundregexmatch = 0;
     if(cOK == 0)
     {
         printf("\tCommand \"%s\" does not exist\n", cmdkey);
-        // look for commands containing string
-		int foundpartialmatch = 0;
+
+
+        regex_t regex;
+        int reti;
+        /* Compile regular expression */
+        reti = regcomp(&regex, cmdkey, REG_EXTENDED);
+        if(reti)
+        {
+            fprintf(stderr, "Could not compile regex : \"%s\"\n", cmdkey);
+            exit(1);
+        }
+        int maxGroups = 8;
+        regmatch_t groupArray[maxGroups];
+
+
+
         for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
         {
-			if(strstr(data.cmd[cmdi].key, cmdkey) != NULL)
-			{
-				if(foundpartialmatch == 0){
-					printf("\tFound substring in commands :\n");
-					foundpartialmatch = 1;
-				}
-				printf("\t  %32s in %24s [%s]\n", data.cmd[cmdi].key, data.cmd[cmdi].module, data.module[data.cmd[cmdi].moduleindex].shortname);
-			}			
-		}
-		if (foundpartialmatch == 0)
-		{
-			printf("\t\"%s\" not found as substring in loaded commands\n", cmdkey);			
-		}
+
+            int matchsubstring = 0;
+            // look for substring match
+
+            if(strstr(data.cmd[cmdi].key, cmdkey) != NULL)
+            {
+                foundsubstring = 1;
+                matchsubstring = 1;
+                printf("\t(substring)  %32s in %24s [%s]\n", data.cmd[cmdi].key,
+                       data.cmd[cmdi].module,
+                       data.module[data.cmd[cmdi].moduleindex].shortname);
+            }
+
+            // Regular expression search
+            if(matchsubstring == 0)
+            {
+                // Regular expression search
+                reti = regexec(&regex, data.cmd[cmdi].key, maxGroups, groupArray, 0);
+                if(!reti)
+                {
+                    foundregexmatch = 1;
+                    printf("\t( regex   )  %32s in %24s [%s]\n", data.cmd[cmdi].key,
+                           data.cmd[cmdi].module,
+                           data.module[data.cmd[cmdi].moduleindex].shortname);
+
+                    char *cursor = data.cmd[cmdi].key;
+                    unsigned int offset = 0;
+                    for(int g = 0; g < maxGroups; g++)
+                    {
+                        if(groupArray[g].rm_so == (regoff_t)((size_t) -1))
+                        {
+                            break;    // No more groups
+                        }
+
+                        if(g == 0)
+                        {
+                            offset = groupArray[g].rm_eo;
+                        }
+
+                        char cursorCopy[strlen(cursor) + 1];
+                        strcpy(cursorCopy, cursor);
+                        cursorCopy[groupArray[g].rm_eo] = 0;
+                        /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
+                               g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                               cursorCopy + groupArray[g].rm_so);*/
+                    }
+                    cursor += offset;
+                }
+                else if(reti == REG_NOMATCH)
+                {
+                    //puts("No match");
+                }
+                else
+                {
+                    char msgbuf[100];
+                    regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+                    fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                    exit(1);
+                }
+            }
+        }
+
+        regfree(&regex);
+
+        if(foundsubstring == 0)
+        {
+            if(foundregexmatch == 0)
+            {
+                printf("\tNo substring or regex match to \"%s\"\n", cmdkey);
+            }
+        }
     }
 
     return RETURN_SUCCESS;
@@ -631,9 +712,8 @@ errno_t helpreadline()
 
 errno_t help_cmd()
 {
-
-    if((data.cmdargtoken[1].type == 3) || (data.cmdargtoken[1].type == 4)
-            || (data.cmdargtoken[1].type == 5))
+    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
         help_command(data.cmdargtoken[1].val.string);
     }
