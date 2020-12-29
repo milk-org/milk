@@ -584,6 +584,23 @@ errno_t help_command(
     if(cOK == 0)
     {
         printf("\tCommand \"%s\" does not exist\n", cmdkey);
+        // look for commands containing string
+		int foundpartialmatch = 0;
+        for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+        {
+			if(strstr(data.cmd[cmdi].key, cmdkey) != NULL)
+			{
+				if(foundpartialmatch == 0){
+					printf("\tFound substring in commands :\n");
+					foundpartialmatch = 1;
+				}
+				printf("\t  %32s in %24s [%s]\n", data.cmd[cmdi].key, data.cmd[cmdi].module, data.module[data.cmd[cmdi].moduleindex].shortname);
+			}			
+		}
+		if (foundpartialmatch == 0)
+		{
+			printf("\t\"%s\" not found as substring in loaded commands\n", cmdkey);			
+		}
     }
 
     return RETURN_SUCCESS;
