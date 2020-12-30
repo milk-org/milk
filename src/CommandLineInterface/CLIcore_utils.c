@@ -15,7 +15,7 @@
 
 
 
-IMGID makeIMGID(
+inline IMGID makeIMGID(
     const char *restrict name
 )
 {
@@ -27,7 +27,7 @@ IMGID makeIMGID(
     return img;
 }
 
-imageID resolveIMGID(
+inline imageID resolveIMGID(
     IMGID *img
 )
 {
