@@ -33,6 +33,7 @@ else()
   add_flex_bison_dependency(MilkFlex MilkBison)
   set(CORE_FILES
       CLIcore.c
+      CLIcore_utils.c
       CLIcore_UI.c
       CLIcore_checkargs.c
       CLIcore_datainit.c
@@ -184,6 +185,7 @@ install(PROGRAMS
 install(TARGETS CLIcore DESTINATION lib)
 
 install(FILES CLIcore.h
+              CLIcore_utils.h
               CLIcore_UI.h
               CLIcore_checkargs.h
               CLIcore_datainit.h

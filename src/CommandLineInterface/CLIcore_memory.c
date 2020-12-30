@@ -5,7 +5,6 @@
 
 
 
-
 errno_t memory_re_alloc()
 {
     /* keeps the number of images addresses available
