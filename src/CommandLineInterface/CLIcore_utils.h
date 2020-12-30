@@ -9,8 +9,8 @@
 
 #include "CommandLineInterface/IMGID.h"
 
-inline IMGID makeIMGID(const char * restrict name);
+IMGID makeIMGID(const char * restrict name);
 
-inline imageID resolveIMGID(IMGID * img);
+imageID resolveIMGID(IMGID * img);
 
 #endif
