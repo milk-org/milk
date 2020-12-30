@@ -510,14 +510,15 @@ errno_t help_command(
             printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("example    :    %s\n", data.cmd[cmdi].example);
             printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
-            
-            printf("Function arguments (%d) :\n", data.cmd[cmdi].nbarg);
-            printf("  # CLI#       tagname             type  description\n");
+
+            printf("Function arguments and parameters (%d) :\n", data.cmd[cmdi].nbarg);
+            printf("  # CLI#       tagname             Value         description\n");
 
             int CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
-				printf("%3d ", argi);
+				int colorcode = 34;
+                printf("%3d ", argi);
                 if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
                     printf("%3d  ", CLIargcnt);
@@ -526,60 +527,42 @@ errno_t help_command(
                 else
                 {
                     printf(" --  ");
+                    colorcode = 33;
                 }
 
-                char typestring[100] = "?";
+
+
+                char valuestring[100] = "?";
 
                 switch(data.cmd[cmdi].argdata[argi].type)
                 {
                     case CLIARG_FLOAT:
-                        strcpy(typestring, "FLOAT");
+                        sprintf(valuestring, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
                         break;
 
                     case CLIARG_LONG:
-                        strcpy(typestring, "LONG");
+                        sprintf(valuestring, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
                         break;
 
                     case CLIARG_STR_NOT_IMG:
-                        strcpy(typestring, "STR_NOT_IMG");
+                        sprintf(valuestring, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
                         break;
 
                     case CLIARG_IMG:
-                        strcpy(typestring, "IMG");
+                        sprintf(valuestring, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
                         break;
 
                     case CLIARG_STR:
-                        strcpy(typestring, "STR");
+                        sprintf(valuestring, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
                         break;
                 }
 
 
-                printf(" %-16s %12s %s\n", data.cmd[cmdi].argdata[argi].fpstag,
-                       typestring, data.cmd[cmdi].argdata[argi].descr);
-
-                switch(data.cmd[cmdi].argdata[argi].type)
-                {
-                    case CLIARG_FLOAT:
-                        printf("     default [ FLOAT ] %f\n",
-                               data.cmd[cmdi].argdata[argi].val.f);
-                        break;
-                    case CLIARG_LONG:
-                        printf("     default [ FLOAT ] %ld\n",
-                               data.cmd[cmdi].argdata[argi].val.l);
-                        break;
-                    case CLIARG_STR_NOT_IMG:
-                        printf("     default [STRnIMG] %s\n",
-                               data.cmd[cmdi].argdata[argi].val.s);
-                        break;
-                    case CLIARG_IMG:
-                        printf("     default [  IMG  ] %s\n",
-                               data.cmd[cmdi].argdata[argi].val.s);
-                        break;
-                    case CLIARG_STR:
-                        printf("     default [  STR  ] %s\n",
-                               data.cmd[cmdi].argdata[argi].val.s);
-                        break;
-                }
+                printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
+                       (char) 27, 1, colorcode,
+                       data.cmd[cmdi].argdata[argi].fpstag,
+                       (char) 27, 0,
+                       valuestring, data.cmd[cmdi].argdata[argi].descr);
             }
 
             printf("\n");
