@@ -381,6 +381,8 @@ errno_t CLI_checkarg_array(
 
         if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOCLI))
         {
+			int cmdi = data.cmdindex;
+			
             DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
                    fpscliarg[arg].fpstag);
 
@@ -391,20 +393,20 @@ errno_t CLI_checkarg_array(
                 switch(fpscliarg[arg].type)
                 {
                     case CLIARG_FLOAT:
-                        data.cmdargtoken[CLIarg+1].val.numf = data.cmd[data.cmdindex].argdata[arg].defaultval.f;
+                        data.cmdargtoken[CLIarg+1].val.numf = data.cmd[cmdi].argdata[arg].val.f;
                         data.cmdargtoken[CLIarg+1].type = CLIARG_FLOAT;
                         break;
                     case CLIARG_LONG:
-                        data.cmdargtoken[CLIarg+1].val.numl = data.cmd[data.cmdindex].argdata[arg].defaultval.l;
+                        data.cmdargtoken[CLIarg+1].val.numl = data.cmd[cmdi].argdata[arg].val.l;
                         data.cmdargtoken[CLIarg+1].type = CLIARG_LONG;
                         break;
                     case CLIARG_STR_NOT_IMG:
-                        strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[data.cmdindex].argdata[arg].defaultval.s);
+                        strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[cmdi].argdata[arg].val.s);
                         data.cmdargtoken[CLIarg+1].type = CLIARG_STR_NOT_IMG;
                         break;
                     case CLIARG_IMG: // should be image
-						strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[data.cmdindex].argdata[arg].defaultval.s);
-						if ( image_ID(data.cmd[data.cmdindex].argdata[arg].defaultval.s) != -1) 
+						strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[cmdi].argdata[arg].val.s);
+						if ( image_ID(data.cmd[cmdi].argdata[arg].val.s) != -1) 
 						{ // if image exists
 							data.cmdargtoken[CLIarg+1].type = CLIARG_IMG;
 						}
@@ -415,7 +417,7 @@ errno_t CLI_checkarg_array(
                         //printf("arg %d IMG        : %s\n", CLIarg+1, data.cmdargtoken[CLIarg+1].val.string);
                         break;
                     case CLIARG_STR:
-                        strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[data.cmdindex].argdata[arg].defaultval.s);
+                        strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[cmdi].argdata[arg].val.s);
                         data.cmdargtoken[CLIarg+1].type = CLIARG_STR;
                         break;
                 }                
@@ -429,23 +431,23 @@ errno_t CLI_checkarg_array(
                 switch(fpscliarg[arg].type)
                 {
                     case CLIARG_FLOAT:
-                        data.cmd[data.cmdindex].argdata[arg].defaultval.f = data.cmdargtoken[CLIarg +
+                        data.cmd[cmdi].argdata[arg].val.f = data.cmdargtoken[CLIarg +
                                 1].val.numf;
                         break;
                     case CLIARG_LONG:
-                        data.cmd[data.cmdindex].argdata[arg].defaultval.l = data.cmdargtoken[CLIarg +
+                        data.cmd[cmdi].argdata[arg].val.l = data.cmdargtoken[CLIarg +
                                 1].val.numl;
                         break;
                     case CLIARG_STR_NOT_IMG:
-                        strcpy(data.cmd[data.cmdindex].argdata[arg].defaultval.s,
+                        strcpy(data.cmd[cmdi].argdata[arg].val.s,
                                data.cmdargtoken[CLIarg + 1].val.string);
                         break;
                     case CLIARG_IMG:
-                        strcpy(data.cmd[data.cmdindex].argdata[arg].defaultval.s,
+                        strcpy(data.cmd[cmdi].argdata[arg].val.s,
                                data.cmdargtoken[CLIarg + 1].val.string);
                         break;
                     case CLIARG_STR:
-                        strcpy(data.cmd[data.cmdindex].argdata[arg].defaultval.s,
+                        strcpy(data.cmd[cmdi].argdata[arg].val.s,
                                data.cmdargtoken[CLIarg + 1].val.string);
                         break;
                 }

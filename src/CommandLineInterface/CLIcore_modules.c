@@ -462,19 +462,19 @@ uint32_t RegisterCLIcmd(
             switch(data.cmd[data.NBcmd].argdata[argi].type)
             {
                 case CLIARG_FLOAT:
-                    data.cmd[data.NBcmd].argdata[argi].defaultval.f = atof(CLIcmddata.funcfpscliarg[argi].example);
+                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_LONG:
-                    data.cmd[data.NBcmd].argdata[argi].defaultval.l = atol(CLIcmddata.funcfpscliarg[argi].example);
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_STR_NOT_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].defaultval.s, CLIcmddata.funcfpscliarg[argi].example);
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s, CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].defaultval.s, CLIcmddata.funcfpscliarg[argi].example);
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s, CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_STR:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].defaultval.s, CLIcmddata.funcfpscliarg[argi].example);
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s, CLIcmddata.funcfpscliarg[argi].example);
                     break;
             }
         }

@@ -561,23 +561,23 @@ errno_t help_command(
                 {
                     case CLIARG_FLOAT:
                         printf("     default [ FLOAT ] %f\n",
-                               data.cmd[cmdi].argdata[argi].defaultval.f);
+                               data.cmd[cmdi].argdata[argi].val.f);
                         break;
                     case CLIARG_LONG:
                         printf("     default [ FLOAT ] %ld\n",
-                               data.cmd[cmdi].argdata[argi].defaultval.l);
+                               data.cmd[cmdi].argdata[argi].val.l);
                         break;
                     case CLIARG_STR_NOT_IMG:
                         printf("     default [STRnIMG] %s\n",
-                               data.cmd[cmdi].argdata[argi].defaultval.s);
+                               data.cmd[cmdi].argdata[argi].val.s);
                         break;
                     case CLIARG_IMG:
                         printf("     default [  IMG  ] %s\n",
-                               data.cmd[cmdi].argdata[argi].defaultval.s);
+                               data.cmd[cmdi].argdata[argi].val.s);
                         break;
                     case CLIARG_STR:
                         printf("     default [  STR  ] %s\n",
-                               data.cmd[cmdi].argdata[argi].defaultval.s);
+                               data.cmd[cmdi].argdata[argi].val.s);
                         break;
                 }
             }
