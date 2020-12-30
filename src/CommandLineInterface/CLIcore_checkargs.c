@@ -338,19 +338,82 @@ int CLI_checkarg_noerrmsg(
 
 
 /** @brief Check array of command line (CLI) arguments
- * 
+ *
  * Use list of arguments in fpscliarg[].
  * Skip arguments that have CLICMDARG_FLAG_NOCLI flag.
- * 
+ *
  * CLIarg keep count of argument position in CLI call
- * 
+ *
  */
 errno_t CLI_checkarg_array(
     CLICMDARGDEF fpscliarg[],
     int nbarg
 )
 {
-    DEBUG_TRACEPOINT("%d args in list\n", nbarg);
+    //printf("%d args in list\n", nbarg);
+
+
+    //printf("arg 0: %s\n", data.cmdargtoken[1].val.string);
+    int argindexmatch = -1;
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        if(strcmp(data.cmdargtoken[1].val.string, fpscliarg[arg].fpstag) == 0)
+        {
+            argindexmatch = arg;
+        }
+    }
+    if(argindexmatch != -1)
+    {
+        //printf("match to arg %s\n", fpscliarg[argindexmatch].fpstag);
+
+        if(data.cmdargtoken[2].type == CLIARG_MISSING)
+        {
+            printf("Setting arg %s : input missing\n", fpscliarg[argindexmatch].fpstag);
+            return RETURN_FAILURE;
+        }
+
+        if(CLI_checkarg(2, fpscliarg[argindexmatch].type) == 0)
+        {
+			int cmdi = data.cmdindex;            
+            switch(fpscliarg[argindexmatch].type)
+            {
+                case CLIARG_FLOAT:
+                    data.cmd[cmdi].argdata[argindexmatch].val.f = data.cmdargtoken[2].val.numf;
+                    break;
+                case CLIARG_LONG:
+                    data.cmd[cmdi].argdata[argindexmatch].val.l = data.cmdargtoken[2].val.numl;
+                    break;
+                case CLIARG_STR_NOT_IMG:
+                    strcpy(data.cmd[cmdi].argdata[argindexmatch].val.s,
+                           data.cmdargtoken[2].val.string);
+                    break;
+                case CLIARG_IMG:
+                    strcpy(data.cmd[cmdi].argdata[argindexmatch].val.s,
+                           data.cmdargtoken[2].val.string);
+                    break;
+                case CLIARG_STR:
+                    strcpy(data.cmd[cmdi].argdata[argindexmatch].val.s,
+                           data.cmdargtoken[2].val.string);
+                    break;
+            }
+        }
+        else
+        {
+            printf("Setting arg %s : Wrong type\n", fpscliarg[argindexmatch].fpstag);
+            return RETURN_FAILURE;
+        }
+        
+        
+        printf("Argument %s value updated\n", fpscliarg[argindexmatch].fpstag);
+
+        //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
+        return RETURN_FAILURE;
+    }
+
+
+    //printf("arg 1: %s %f %ld\n", data.cmdargtoken[2].val.string);
+
+
 
     int nberr = 0;
     int CLIarg = 0; // index of argument in CLI call
