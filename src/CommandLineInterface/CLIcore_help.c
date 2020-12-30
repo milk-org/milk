@@ -510,19 +510,22 @@ errno_t help_command(
             printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("example    :    %s\n", data.cmd[cmdi].example);
             printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
-            printf("nbarg      :    %d\n", data.cmd[cmdi].nbarg);
+            
+            printf("Function arguments (%d) :\n", data.cmd[cmdi].nbarg);
+            printf("  # CLI#       tagname             type  description\n");
 
             int CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
+				printf("%3d ", argi);
                 if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
-                    printf(" %2d", CLIargcnt);
+                    printf("%3d  ", CLIargcnt);
                     CLIargcnt++;
                 }
                 else
                 {
-                    printf(" --");
+                    printf(" --  ");
                 }
 
                 char typestring[100] = "?";
@@ -577,10 +580,6 @@ errno_t help_command(
                                data.cmd[cmdi].argdata[argi].defaultval.s);
                         break;
                 }
-
-
-                //printf("     %s\n", data.cmd[i].argdata[argi].lastentry);
-                //data.cmd[data.NBcmd].argdata[argi].type;
             }
 
             printf("\n");
