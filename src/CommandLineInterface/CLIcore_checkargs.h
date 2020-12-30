@@ -77,7 +77,7 @@ typedef struct
         double f;
         long l;
         char s[80];
-    } defaultval;
+    } val;
 } CLICMDARGDATA;
 
 
