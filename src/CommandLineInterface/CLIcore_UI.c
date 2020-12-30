@@ -239,7 +239,7 @@ errno_t CLI_execute_line()
 
 
 
-	add_history(data.CLIcmdline);
+    add_history(data.CLIcmdline);
 
     //
     // If line starts with !, use system()
@@ -321,42 +321,59 @@ errno_t CLI_execute_line()
 
         //
         data.cmdNBarg = 0;
+        
+        
         // extract first word
-        cmdargstring = strtok(data.CLIcmdline, " ");
 
-        while(cmdargstring != NULL)   // iterate on words
+        // First, split double-quote strings out
+        // strings inside double quotes are not processed, and will be given type CMDARGTOKEN_TYPE_RAWSTRING
+        int rawstringmode = 0;
+        char str1[200];
+        strcpy(str1, data.CLIcmdline);
+
+        char *tokengroup;
+        char *rest = str1;
+        if(str1[0] == '\"')
         {
-            // always copy word in string, so that arg can be processed as string if needed
-            sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
-            //printf("PROCESSING WORD \"%s\"  -> \"%s\"\n", cmdargstring, data.cmdargtoken[data.cmdNBarg].val.string);
+			rawstringmode = 1;
+		}
 
-            if((cmdargstring[0] == '\"')
-                    && (cmdargstring[strlen(cmdargstring) - 1] == '\"'))
-            {
-                // if within quotes, store as raw string
-                unsigned int stri;
-                for(stri = 0; stri < strlen(cmdargstring) - 2; stri++)
-                {
-                    cmdargstring[stri] = cmdargstring[stri + 1];
-                }
-                cmdargstring[stri] = '\0';
-                printf("%s\n", cmdargstring);
-                data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
-                sprintf(data.cmdargtoken[data.cmdNBarg].val.string, "%s", cmdargstring);
-            }
-            else     // otherwise, process it
-            {
-                sprintf(str, "%s\n", cmdargstring);
-                yy_scan_string(str);
-                data.calctmp_imindex = 0;
-                yyparse();
-                yylex_destroy();
-            }
+        while((tokengroup = strtok_r(rest, "\"", &rest)))
+        {
+            //printf(" TOKEN [%d]:  %s\n", rawstringmode, tokengroup);
 
-            cmdargstring = strtok(NULL, " ");
-            data.cmdNBarg++;
+			// always copy word in string, so that arg can be processed as string if needed
+            //strcpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring);
+            
+            if(rawstringmode == 0) // not in a raw string, process tokengroup
+            {
+				cmdargstring = strtok(tokengroup, " ");
+				while(cmdargstring != NULL)   // iterate on words
+				{
+					//printf("\t processing -- %s\n", cmdargstring);
+					sprintf(str, "%s\n", cmdargstring);
+					yy_scan_string(str);
+					data.calctmp_imindex = 0;
+					yyparse();
+					yylex_destroy();
+                
+					cmdargstring = strtok(NULL, " ");
+					data.cmdNBarg++;
+				}
+				rawstringmode = 1;
+			}
+			else
+			{
+				strcpy(data.cmdargtoken[data.cmdNBarg].val.string, tokengroup);
+				data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
+				data.cmdNBarg++;
+				rawstringmode = 0;
+			}
         }
-        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
+		data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
+
+
+
 
 
         i = 0;
@@ -365,30 +382,33 @@ errno_t CLI_execute_line()
             while(data.cmdargtoken[i].type != 0)
             {
 
-                printf("TOKEN %ld/%ld   \"%s\"  type : %d\n", i, data.cmdNBarg, data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
+                printf("TOKEN %ld/%ld   \"%s\"  type : %d\n", i, data.cmdNBarg,
+                       data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_FLOAT)   // double
                 {
-                    printf("\t double : %g\n", data.cmdargtoken[i].val.numf);
+                    printf("\t CMDARGTOKEN_TYPE_FLOAT           : %g\n", data.cmdargtoken[i].val.numf);
                 }
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_LONG)   // long
                 {
-                    printf("\t long   : %ld\n", data.cmdargtoken[i].val.numl);
+                    printf("\t CMDARGTOKEN_TYPE_LONG           : %ld\n", data.cmdargtoken[i].val.numl);
                 }
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_STRING)   // new variable/image
                 {
-                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_STRING        : %s\n", data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)   // existing image
+                if(data.cmdargtoken[i].type ==
+                        CMDARGTOKEN_TYPE_EXISTINGIMAGE)   // existing image
                 {
-                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_EXISTINGIMAGE : %s\n", data.cmdargtoken[i].val.string);
                 }
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_COMMAND)   // command
                 {
-                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_COMMAND       : %s\n", data.cmdargtoken[i].val.string);
                 }
-                if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_RAWSTRING)   // unprocessed string
+                if(data.cmdargtoken[i].type ==
+                        CMDARGTOKEN_TYPE_RAWSTRING)   // unprocessed string
                 {
-                    printf("\t string : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_RAWSTRING    : %s\n", data.cmdargtoken[i].val.string);
                 }
 
                 i++;
@@ -424,7 +444,8 @@ errno_t CLI_execute_line()
         }
 
 
-        if(!((data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_STRING) || (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_RAWSTRING)))
+        if(!((data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_STRING)
+                || (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_RAWSTRING)))
         {
             data.CMDexecuted = 1;
         }
