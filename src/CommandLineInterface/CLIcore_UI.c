@@ -20,7 +20,9 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
-
+#define CLICOMPLETIONMODE_COMMANDS 0
+#define CLICOMPLETIONMODE_IMAGES   1
+#define CLICOMPLETIONMODE_CMDARGS  2
 
 
 extern void yy_scan_string(const char *);
@@ -138,7 +140,7 @@ static char *CLI_generator(
     static unsigned int len;
     char      *name;
 
-	//printf("[generator %d %d %d]\n", state, data.CLImatchMode, list_index);
+    //printf("[generator %d %d %d]\n", state, data.CLImatchMode, list_index);
 
     if(!state)
     {
@@ -147,7 +149,10 @@ static char *CLI_generator(
         len = strlen(text);
     }
 
-    if(data.CLImatchMode == 0)
+    if(data.CLImatchMode ==
+            CLICOMPLETIONMODE_COMMANDS)
+    {
+        // search through list of commands
         while(list_index < data.NBcmd)
         {
             name = data.cmd[list_index].key;
@@ -157,25 +162,48 @@ static char *CLI_generator(
                 return (dupstr(name));
             }
         }
+    }
 
-    while(list_index1 < data.NB_MAX_IMAGE)
+    if(data.CLImatchMode ==
+            CLICOMPLETIONMODE_IMAGES)
     {
-        int iok;
-        iok = data.image[list_index1].used;
-        if(iok == 1)
+        // search through list of images
+        while(list_index1 < data.NB_MAX_IMAGE)
         {
-            name = data.image[list_index1].name;
-            //	  printf("  name %d = %s %s\n", list_index1, data.image[list_index1].name, name);
+            int iok;
+            iok = data.image[list_index1].used;
+            if(iok == 1)
+            {
+                name = data.image[list_index1].name;
+                //	  printf("  name %d = %s %s\n", list_index1, data.image[list_index1].name, name);
+            }
+            list_index1++;
+            if(iok == 1)
+            {
+                if(strncmp(name, text, len) == 0)
+                {
+                    return (dupstr(name));
+                }
+            }
         }
-        list_index1++;
-        if(iok == 1)
+    }
+
+    if(data.CLImatchMode ==
+            CLICOMPLETIONMODE_CMDARGS)
+    { 
+		// search through command arguments and parameters
+		while((int) list_index < data.cmd[data.cmdindex].nbarg)
         {
+            name = data.cmd[data.cmdindex].argdata[list_index].fpstag;
+            list_index++;
             if(strncmp(name, text, len) == 0)
             {
                 return (dupstr(name));
             }
         }
     }
+
+
     return ((char *)NULL);
 
 }
@@ -196,8 +224,8 @@ char **CLI_completion(
 {
     char **matches;
 
-	//printf("[%d %s]", start, rl_line_buffer);
-	//rl_message("[%d %s]", start, rl_line_buffer);
+	//printf("[%d | %s | %s]", start, rl_line_buffer, text);
+	//rl_message("\n[%d %s]\n", start, rl_line_buffer);
 	//rl_redisplay();
 	//rl_forced_update_display();
 
@@ -205,11 +233,36 @@ char **CLI_completion(
 
     if(start == 0)
     {
-        data.CLImatchMode = 0;    // try to match string with command name
+        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;    // match string with commands
     }
     else
     {
-        data.CLImatchMode = 1;    // do not try to match with command
+		// is first word a command ?
+		char str[200];
+		char *firstword;
+		firstword = strcpy(str, rl_line_buffer);
+		strtok(str, " ");
+		int cmdimatch = -1;
+		uint32_t cmdi = 0;
+		while ( ( cmdimatch == -1) && (cmdi<data.NBcmd) )
+		{
+			if(strcmp(firstword, data.cmd[cmdi].key) == 0)
+			{
+				cmdimatch = cmdi;
+				//printf("COMMAND MATCH %s\n", data.cmd[cmdi].key);
+				data.cmdindex = cmdi;
+			}
+			cmdi++;
+		}
+		
+		if((cmdimatch != -1) && (text[0] == '.'))
+		{
+			data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
+		}
+		else
+		{
+			data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;    // match string with images
+		}
     }
 
     matches = rl_completion_matches((char *)text, &CLI_generator);

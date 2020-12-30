@@ -507,9 +507,9 @@ errno_t help_command(
                    data.cmd[cmdi].module, data.module[data.cmd[cmdi].moduleindex].shortname);
             printf("module src :    %s\n", data.cmd[cmdi].modulesrc);
             printf("info       :    %s\n", data.cmd[cmdi].info);
-            printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
+            //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("example    :    %s\n", data.cmd[cmdi].example);
-            printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
+            //printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
 
             printf("Function arguments and parameters (%d) :\n", data.cmd[cmdi].nbarg);
             printf("  # CLI#       tagname             Value         description\n");

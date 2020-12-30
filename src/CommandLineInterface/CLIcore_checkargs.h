@@ -12,6 +12,7 @@
 
 
 // testing argument type for command line interface
+#define CLIARG_MISSING          0 
 #define CLIARG_FLOAT            1  // floating point number
 #define CLIARG_LONG             2  // integer (int or long)
 #define CLIARG_STR_NOT_IMG      3  // string, not existing image
