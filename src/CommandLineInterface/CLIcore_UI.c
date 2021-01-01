@@ -232,12 +232,12 @@ char **CLI_completion(
     matches = (char **)NULL;
 
     if((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
-    {
-        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;    // match string with commands
+    {   // if first word, or second argument to cmd?, match string with commands
+        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;
     }
     else
     {
-		// is first word a command ?
+		// test if first word is a command
 		char str[200];
 		char *firstword;
 		firstword = strcpy(str, rl_line_buffer);
@@ -261,7 +261,8 @@ char **CLI_completion(
 		}
 		else
 		{
-			data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;    // match string with images
+			// match string with images
+			data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
 		}
     }
 
