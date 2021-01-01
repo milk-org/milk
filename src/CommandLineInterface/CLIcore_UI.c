@@ -231,7 +231,7 @@ char **CLI_completion(
 
     matches = (char **)NULL;
 
-    if(start == 0)
+    if((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
     {
         data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;    // match string with commands
     }
