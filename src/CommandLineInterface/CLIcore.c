@@ -964,6 +964,14 @@ void runCLI_cmd_init()
         "cmd?",
         "int help_cmd()");
 
+	 RegisterCLIcommand(
+        "cmdinfo?",
+        __FILE__,
+        cmdinfosearch,
+        "search for string/regex in command info",
+        "<search expression>",
+        "cmdinfo? image",
+        "int cmdinfosearch()");
 
 	 RegisterCLIcommand(
         "m?",

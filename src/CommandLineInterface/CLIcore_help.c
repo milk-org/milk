@@ -489,12 +489,14 @@ int CLIhelp_make_cmdexamplestring(
  * @param[in] cmdkey Commmand name
  */
 
-
-
 errno_t help_command(
     const char *restrict cmdkey
 )
 {
+    int colorcodecmd = 31; // red
+    int colorcodeinfo = 32; // green
+    int colorcodeargCLI = 36; // argument part of CLI call: cyan 
+    int colorcodeargnotCLI = 35; // argument not part of CLI call: yellow
     int cOK = 0;
 
     for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
@@ -502,13 +504,18 @@ errno_t help_command(
         if(!strcmp(cmdkey, data.cmd[cmdi].key))
         {
             printf("\n");
-            printf("key        :    %s\n", data.cmd[cmdi].key);
-            printf("module     :    %ld %s [ \"%s\" ]\n", data.cmd[cmdi].moduleindex,
-                   data.cmd[cmdi].module, data.module[data.cmd[cmdi].moduleindex].shortname);
-            printf("module src :    %s\n", data.cmd[cmdi].modulesrc);
-            printf("info       :    %s\n", data.cmd[cmdi].info);
+            printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                   (char) 27, 1, colorcodecmd,
+                   data.cmd[cmdi].key,
+                   (char) 27, 0,
+                   data.cmd[cmdi].module,
+                   data.module[data.cmd[cmdi].moduleindex].shortname,
+                   (char) 27, 0, colorcodeinfo,
+                   data.cmd[cmdi].info,
+                   (char) 27, 0);
+
             //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
-            printf("example    :    %s\n", data.cmd[cmdi].example);
+            printf("\texample> %s\n", data.cmd[cmdi].example);
             //printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
 
             printf("Function arguments and parameters (%d) :\n", data.cmd[cmdi].nbarg);
@@ -517,7 +524,7 @@ errno_t help_command(
             int CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
-				int colorcode = 34;
+                int colorcode = colorcodeargCLI;
                 printf("%3d ", argi);
                 if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
@@ -527,7 +534,7 @@ errno_t help_command(
                 else
                 {
                     printf(" --  ");
-                    colorcode = 33;
+                    colorcode = colorcodeargnotCLI;
                 }
 
 
@@ -559,7 +566,7 @@ errno_t help_command(
 
 
                 printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
-                       (char) 27, 1, colorcode,
+                       (char) 27, 0, colorcode,
                        data.cmd[cmdi].argdata[argi].fpstag,
                        (char) 27, 0,
                        valuestring, data.cmd[cmdi].argdata[argi].descr);
@@ -574,7 +581,7 @@ errno_t help_command(
     int foundregexmatch = 0;
     if(cOK == 0)
     {
-        printf("\tCommand \"%s\" does not exist\n", cmdkey);
+        printf("Command \"%s\" does not exist. Partial matches:\n", cmdkey);
 
 
         regex_t regex;
@@ -601,9 +608,15 @@ errno_t help_command(
             {
                 foundsubstring = 1;
                 matchsubstring = 1;
-                printf("\t(substring)  %32s in %24s [%s]\n", data.cmd[cmdi].key,
+                printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                       (char) 27, 1, colorcodecmd,
+                       data.cmd[cmdi].key,
+                       (char) 27, 0,
                        data.cmd[cmdi].module,
-                       data.module[data.cmd[cmdi].moduleindex].shortname);
+                       data.module[data.cmd[cmdi].moduleindex].shortname,
+                       (char) 27, 0, colorcodeinfo,
+                       data.cmd[cmdi].info,
+                       (char) 27, 0);
             }
 
             // Regular expression search
@@ -614,9 +627,15 @@ errno_t help_command(
                 if(!reti)
                 {
                     foundregexmatch = 1;
-                    printf("\t( regex   )  %32s in %24s [%s]\n", data.cmd[cmdi].key,
+                    printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                           (char) 27, 1, colorcodecmd,
+                           data.cmd[cmdi].key,
+                           (char) 27, 0,
                            data.cmd[cmdi].module,
-                           data.module[data.cmd[cmdi].moduleindex].shortname);
+                           data.module[data.cmd[cmdi].moduleindex].shortname,
+                           (char) 27, 0, colorcodeinfo,
+                           data.cmd[cmdi].info,
+                           (char) 27, 0);
 
                     char *cursor = data.cmd[cmdi].key;
                     unsigned int offset = 0;
@@ -672,6 +691,143 @@ errno_t help_command(
 
 
 
+/**
+ * @brief search for string in command info
+ *
+ */
+
+errno_t command_info_search(
+    const char *restrict searchstring
+)
+{
+    int foundsubstring = 0;
+    int foundregexmatch = 0;
+    int colorcodecmd = 31; // red
+    int colorcodeinfo = 32; // green
+
+    regex_t regex;
+    /* Compile regular expression */
+    int reti = regcomp(&regex, searchstring, REG_EXTENDED);
+    if(reti)
+    {
+        fprintf(stderr, "Could not compile regex : \"%s\"\n", searchstring);
+        exit(1);
+    }
+    int maxGroups = 8;
+    regmatch_t groupArray[maxGroups];
+
+
+
+    for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+    {
+
+        int matchsubstring = 0;
+        // look for substring match
+
+        if(strstr(data.cmd[cmdi].info, searchstring) != NULL)
+        {
+            foundsubstring = 1;
+            matchsubstring = 1;
+            printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                   (char) 27, 1, colorcodecmd,
+                   data.cmd[cmdi].key,
+                   (char) 27, 0,
+                   data.cmd[cmdi].module,
+                   data.module[data.cmd[cmdi].moduleindex].shortname,
+                   (char) 27, 1, colorcodeinfo,
+                   data.cmd[cmdi].info,
+                   (char) 27, 0);
+        }
+
+        // Regular expression search
+        if(matchsubstring == 0)
+        {
+            // Regular expression search
+            reti = regexec(&regex, data.cmd[cmdi].info, maxGroups, groupArray, 0);
+            if(!reti)
+            {
+                foundregexmatch = 1;
+
+                printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                       (char) 27, 1, colorcodecmd,
+                       data.cmd[cmdi].key,
+                       (char) 27, 0,
+                       data.cmd[cmdi].module,
+                       data.module[data.cmd[cmdi].moduleindex].shortname,
+                       (char) 27, 1, colorcodeinfo,
+                       data.cmd[cmdi].info,
+                       (char) 27, 0);
+
+                char *cursor = data.cmd[cmdi].info;
+                unsigned int offset = 0;
+                for(int g = 0; g < maxGroups; g++)
+                {
+                    if(groupArray[g].rm_so == (regoff_t)((size_t) -1))
+                    {
+                        break;    // No more groups
+                    }
+
+                    if(g == 0)
+                    {
+                        offset = groupArray[g].rm_eo;
+                    }
+
+                    char cursorCopy[strlen(cursor) + 1];
+                    strcpy(cursorCopy, cursor);
+                    cursorCopy[groupArray[g].rm_eo] = 0;
+                    /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
+                           g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                           cursorCopy + groupArray[g].rm_so);*/
+                }
+                cursor += offset;
+            }
+            else if(reti == REG_NOMATCH)
+            {
+                //puts("No match");
+            }
+            else
+            {
+                char msgbuf[100];
+                regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+                fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                exit(1);
+            }
+        }
+    }
+
+    regfree(&regex);
+
+    if(foundsubstring == 0)
+    {
+        if(foundregexmatch == 0)
+        {
+            printf("\tNo substring or regex match to \"%s\"\n", searchstring);
+        }
+    }
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 errno_t help()
 {
 
@@ -706,6 +862,24 @@ errno_t help_cmd()
 
     return RETURN_SUCCESS;
 }
+
+errno_t cmdinfosearch()
+{
+    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+    {
+        command_info_search(data.cmdargtoken[1].val.string);
+    }
+    else
+    {
+        list_commands();
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+
 
 
 
