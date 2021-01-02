@@ -1,14 +1,15 @@
 /**
- * @file    save_fits_function.h
+ * @file    logshmim.h
  */
 
 
 
+#ifndef CLICORE_MEMORY_LOGSHMIM_H
+#define CLICORE_MEMORY_LOGSHMIM_H
+
+
+
 errno_t logshmim_addCLIcmd();
-
-
-
-
 
 
 void      *save_fits_function(
@@ -37,3 +38,5 @@ errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
     const char  *logdir,
     const char  *IDlogdata_name
 );
+
+#endif

@@ -4,7 +4,10 @@
  *
  */
  
- 
+#ifndef CLICORE_MEMORY_LOGSHMIM_TYPES_H
+#define CLICORE_MEMORY_LOGSHMIM_TYPES_H
+
+
 typedef struct
 {
     char iname[100];
@@ -39,5 +42,4 @@ typedef struct
     char      fname[200];
 } LOGSHIM_CONF;
 
-
-
+#endif
