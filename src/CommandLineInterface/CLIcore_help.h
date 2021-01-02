@@ -32,6 +32,8 @@ int CLIhelp_make_cmdexamplestring(
 
 errno_t help_cmd();
 
+errno_t cmdinfosearch();
+
 errno_t help_module();
 
 
