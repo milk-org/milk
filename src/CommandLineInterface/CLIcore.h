@@ -59,7 +59,6 @@ typedef long variableID;
 #include "CommandLineInterface/streamCTRL.h"
 #include "CommandLineInterface/function_parameters.h"
 
-#include "CommandLineInterface/CLIcore_utils.h"
 #include "CommandLineInterface/CLIcore_checkargs.h"
 #include "CommandLineInterface/CLIcore_modules.h"
 #include "CommandLineInterface/CLIcore_help.h"
@@ -542,7 +541,7 @@ typedef struct
 
 extern DATA data;
 
-
+#include "CommandLineInterface/CLIcore_utils.h"
 
 
 
