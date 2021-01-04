@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_checkargs.c
- * 
+ *
  * @brief Check CLI command line arguments
  *
  */
@@ -37,7 +37,7 @@ int CLI_checkarg0(
                 case CLIARG_LONG: // convert long to float
                     if(data.Debug > 0)
                     {
-                        printf("Converting arg %d to floating point number\n", argnum-1);
+                        printf("Converting arg %d to floating point number\n", argnum - 1);
                     }
                     data.cmdargtoken[argnum].val.numf = (double) data.cmdargtoken[argnum].val.numl;
                     data.cmdargtoken[argnum].type = CLIARG_FLOAT;
@@ -49,7 +49,7 @@ int CLI_checkarg0(
                     {
                         if(errmsg == 1)
                         {
-                            printf("arg %d is string (=\"%s\"), but should be integer\n", argnum-1,
+                            printf("arg %d is string (=\"%s\"), but should be integer\n", argnum - 1,
                                    data.cmdargtoken[argnum].val.string);
                         }
                         rval = 1;
@@ -71,7 +71,7 @@ int CLI_checkarg0(
                             default:
                                 if(errmsg == 1)
                                 {
-                                    printf("  arg %d (string \"%s\") not an integer\n", argnum-1,
+                                    printf("  arg %d (string \"%s\") not an integer\n", argnum - 1,
                                            data.cmdargtoken[argnum].val.string);
                                 }
                                 rval = 1;
@@ -83,7 +83,7 @@ int CLI_checkarg0(
                     if(errmsg == 1)
                     {
                         printf("  arg %d (image \"%s\") not a floating point number\n",
-                               argnum-1, data.cmdargtoken[argnum].val.string);
+                               argnum - 1, data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
                     break;
@@ -91,7 +91,7 @@ int CLI_checkarg0(
                     if(errmsg == 1)
                     {
                         printf("  arg %d (command \"%s\") not a floating point number\n",
-                               argnum-1, data.cmdargtoken[argnum].val.string);
+                               argnum - 1, data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
                     break;
@@ -109,7 +109,7 @@ int CLI_checkarg0(
                 case CLIARG_FLOAT:
                     if(errmsg == 1)
                     {
-                        printf("converting floating point arg %d to integer\n", argnum-1);
+                        printf("converting floating point arg %d to integer\n", argnum - 1);
                     }
                     data.cmdargtoken[argnum].val.numl = (long)(data.cmdargtoken[argnum].val.numf +
                                                         0.5);
@@ -125,7 +125,7 @@ int CLI_checkarg0(
                     {
                         if(errmsg == 1)
                         {
-                            printf("  arg %d (string \"%s\") not an integer\n", argnum-1,
+                            printf("  arg %d (string \"%s\") not an integer\n", argnum - 1,
                                    data.cmdargtoken[argnum].val.string);
                         }
                         rval = 1;
@@ -147,7 +147,7 @@ int CLI_checkarg0(
                             default:
                                 if(errmsg == 1)
                                 {
-                                    printf("  arg %d (string \"%s\") not an integer\n", argnum-1,
+                                    printf("  arg %d (string \"%s\") not an integer\n", argnum - 1,
                                            data.cmdargtoken[argnum].val.string);
                                 }
                                 rval = 1;
@@ -158,7 +158,7 @@ int CLI_checkarg0(
                 case CLIARG_IMG:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (image \"%s\") not an integer\n", argnum-1,
+                        printf("  arg %d (image \"%s\") not an integer\n", argnum - 1,
                                data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
@@ -166,7 +166,7 @@ int CLI_checkarg0(
                 case CLIARG_STR:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (command \"%s\") not an integer\n", argnum-1,
+                        printf("  arg %d (command \"%s\") not an integer\n", argnum - 1,
                                data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
@@ -180,14 +180,16 @@ int CLI_checkarg0(
                 case CLIARG_FLOAT:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (float %f) not a non-img-string\n", argnum-1, data.cmdargtoken[argnum].val.numf);
+                        printf("  arg %d (float %f) not a non-img-string\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.numf);
                     }
                     rval = 1;
                     break;
                 case CLIARG_LONG:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (integer %ld) not a non-img-string\n", argnum-1, data.cmdargtoken[argnum].val.numl);
+                        printf("  arg %d (integer %ld) not a non-img-string\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.numl);
                     }
                     rval = 1;
                     break;
@@ -197,7 +199,8 @@ int CLI_checkarg0(
                 case CLIARG_IMG:
                     if(errmsg == 1)
                     {
-						printf("  arg %d (image %s) not a non-img-string\n", argnum-1, data.cmdargtoken[argnum].val.string);
+                        printf("  arg %d (image %s) not a non-img-string\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
                     break;
@@ -218,21 +221,24 @@ int CLI_checkarg0(
                 case CLIARG_FLOAT:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (float %f) not an image\n", argnum-1, data.cmdargtoken[argnum].val.numf);
+                        printf("  arg %d (float %f) not an image\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.numf);
                     }
                     rval = 1;
                     break;
                 case CLIARG_LONG:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (integer %ld) not an image\n", argnum-1, data.cmdargtoken[argnum].val.numl);
+                        printf("  arg %d (integer %ld) not an image\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.numl);
                     }
                     rval = 1;
                     break;
                 case CLIARG_STR_NOT_IMG:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (string \"%s\") not an image\n", argnum-1, data.cmdargtoken[argnum].val.string);
+                        printf("  arg %d (string \"%s\") not an image\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
                     break;
@@ -242,7 +248,8 @@ int CLI_checkarg0(
                 case CLIARG_STR:
                     if(errmsg == 1)
                     {
-						printf("  arg %d (string \"%s\") not an image\n", argnum-1, data.cmdargtoken[argnum].val.string);
+                        printf("  arg %d (string \"%s\") not an image\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
                     break;
@@ -257,14 +264,16 @@ int CLI_checkarg0(
                 case CLIARG_FLOAT:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (float %f) not a string or image\n", argnum-1, data.cmdargtoken[argnum].val.numf);
+                        printf("  arg %d (float %f) not a string or image\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.numf);
                     }
                     rval = 1;
                     break;
                 case CLIARG_LONG:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (integer %ld) not string or image\n", argnum-1, data.cmdargtoken[argnum].val.numl);
+                        printf("  arg %d (integer %ld) not string or image\n", argnum - 1,
+                               data.cmdargtoken[argnum].val.numl);
                     }
                     rval = 1;
                     break;
@@ -277,7 +286,7 @@ int CLI_checkarg0(
                 case CLIARG_STR:
                     if(errmsg == 1)
                     {
-                        printf("  arg %d (command \"%s\") not string or image\n", argnum-1,
+                        printf("  arg %d (command \"%s\") not string or image\n", argnum - 1,
                                data.cmdargtoken[argnum].val.string);
                     }
                     rval = 1;
@@ -374,7 +383,7 @@ errno_t CLI_checkarg_array(
 
         if(CLI_checkarg(2, fpscliarg[argindexmatch].type) == 0)
         {
-			int cmdi = data.cmdindex;            
+            int cmdi = data.cmdindex;
             switch(fpscliarg[argindexmatch].type)
             {
                 case CLIARG_FLOAT:
@@ -402,8 +411,8 @@ errno_t CLI_checkarg_array(
             printf("Setting arg %s : Wrong type\n", fpscliarg[argindexmatch].fpstag);
             return RETURN_FAILURE;
         }
-        
-        
+
+
         printf("Argument %s value updated\n", fpscliarg[argindexmatch].fpstag);
 
         //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
@@ -444,10 +453,10 @@ errno_t CLI_checkarg_array(
 
         if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOCLI))
         {
-			int cmdi = data.cmdindex;
-			
+            int cmdi = data.cmdindex;
+
             DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
-                   fpscliarg[arg].fpstag);
+                             fpscliarg[arg].fpstag);
 
             //printf("     input : %s\n", );data.cmdargtoken[argnum].type
             if(strcmp(data.cmdargtoken[CLIarg + 1].val.string, ".") == 0)
@@ -456,38 +465,42 @@ errno_t CLI_checkarg_array(
                 switch(fpscliarg[arg].type)
                 {
                     case CLIARG_FLOAT:
-                        data.cmdargtoken[CLIarg+1].val.numf = data.cmd[cmdi].argdata[arg].val.f;
-                        data.cmdargtoken[CLIarg+1].type = CLIARG_FLOAT;
+                        data.cmdargtoken[CLIarg + 1].val.numf = data.cmd[cmdi].argdata[arg].val.f;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT;
                         break;
                     case CLIARG_LONG:
-                        data.cmdargtoken[CLIarg+1].val.numl = data.cmd[cmdi].argdata[arg].val.l;
-                        data.cmdargtoken[CLIarg+1].type = CLIARG_LONG;
+                        data.cmdargtoken[CLIarg + 1].val.numl = data.cmd[cmdi].argdata[arg].val.l;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_LONG;
                         break;
                     case CLIARG_STR_NOT_IMG:
-                        strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[cmdi].argdata[arg].val.s);
-                        data.cmdargtoken[CLIarg+1].type = CLIARG_STR_NOT_IMG;
+                        strcpy(data.cmdargtoken[CLIarg + 1].val.string,
+                               data.cmd[cmdi].argdata[arg].val.s);
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_STR_NOT_IMG;
                         break;
                     case CLIARG_IMG: // should be image
-						strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[cmdi].argdata[arg].val.s);
-						if ( image_ID(data.cmd[cmdi].argdata[arg].val.s) != -1) 
-						{ // if image exists
-							data.cmdargtoken[CLIarg+1].type = CLIARG_IMG;
-						}
-						else
-						{
-							data.cmdargtoken[CLIarg+1].type = CLIARG_STR_NOT_IMG;
-						}                                                
+                        strcpy(data.cmdargtoken[CLIarg + 1].val.string,
+                               data.cmd[cmdi].argdata[arg].val.s);
+                        if(image_ID(data.cmd[cmdi].argdata[arg].val.s) != -1)
+                        {
+                            // if image exists
+                            data.cmdargtoken[CLIarg + 1].type = CLIARG_IMG;
+                        }
+                        else
+                        {
+                            data.cmdargtoken[CLIarg + 1].type = CLIARG_STR_NOT_IMG;
+                        }
                         //printf("arg %d IMG        : %s\n", CLIarg+1, data.cmdargtoken[CLIarg+1].val.string);
                         break;
                     case CLIARG_STR:
-                        strcpy(data.cmdargtoken[CLIarg+1].val.string, data.cmd[cmdi].argdata[arg].val.s);
-                        data.cmdargtoken[CLIarg+1].type = CLIARG_STR;
+                        strcpy(data.cmdargtoken[CLIarg + 1].val.string,
+                               data.cmd[cmdi].argdata[arg].val.s);
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_STR;
                         break;
-                }                
+                }
             }
-            
-            
-            
+
+
+
             if(CLI_checkarg(CLIarg + 1, fpscliarg[arg].type) == 0)
             {
                 DEBUG_TRACEPOINT("successful parsing, update default to last");
@@ -495,11 +508,11 @@ errno_t CLI_checkarg_array(
                 {
                     case CLIARG_FLOAT:
                         data.cmd[cmdi].argdata[arg].val.f = data.cmdargtoken[CLIarg +
-                                1].val.numf;
+                                                            1].val.numf;
                         break;
                     case CLIARG_LONG:
                         data.cmd[cmdi].argdata[arg].val.l = data.cmdargtoken[CLIarg +
-                                1].val.numl;
+                                                            1].val.numl;
                         break;
                     case CLIARG_STR_NOT_IMG:
                         strcpy(data.cmd[cmdi].argdata[arg].val.s,
@@ -525,7 +538,7 @@ errno_t CLI_checkarg_array(
         {
             DEBUG_TRACEPOINT("argument not part of CLI");
             DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s\n", arg, argtypestring,
-                   fpscliarg[arg].fpstag);
+                             fpscliarg[arg].fpstag);
         }
     }
 
@@ -548,9 +561,9 @@ errno_t CLI_checkarg_array(
 
 
 /** @brief Build FPS content from FPSCLIARG list
- * 
+ *
  * All CLI arguments converted to FPS parameters
- * 
+ *
  */
 int CLIargs_to_FPSparams_setval(
     CLICMDARGDEF fpscliarg[],
@@ -562,8 +575,9 @@ int CLIargs_to_FPSparams_setval(
 
     for(int arg = 0; arg < nbarg; arg++)
     {
-        if( ! (fpscliarg[arg].flag & CLICMDARG_FLAG_NOFPS) )
-        { // if argument is part of FPS
+        if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOFPS))
+        {
+            // if argument is part of FPS
             switch(fpscliarg[arg].type)
             {
                 case CLIARG_FLOAT:
@@ -604,6 +618,7 @@ int CLIargs_to_FPSparams_setval(
 }
 
 
+
 int CLIargs_to_FPSparams_create(
     CLICMDARGDEF fpscliarg[],
     int nbarg,
@@ -612,39 +627,56 @@ int CLIargs_to_FPSparams_create(
 {
     int NBarg_processed = 0;
 
-    for(int arg = 0; arg < nbarg; arg++)
+    printf("COMMAND [%ld] key : \"%s\"\n", data.cmdindex,
+           data.cmd[data.cmdindex].key);
+
+    for(int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
     {
-        if( ! (fpscliarg[arg].flag & CLICMDARG_FLAG_NOFPS) )
-        { // if argument is part of FPS
-            switch(fpscliarg[arg].type)
+        if(!(data.cmd[data.cmdindex].argdata[argi].flag & CLICMDARG_FLAG_NOFPS))
+        {
+            // if argument is part of FPS
+            double tmpvalf = 0.0;
+            long tmpvall = 0;
+
+            switch(data.cmd[data.cmdindex].argdata[argi].type)
             {
                 case CLIARG_FLOAT:
-                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
-                                                 FPTYPE_FLOAT64, FPFLAG_DEFAULT_INPUT, NULL);
+                    tmpvalf = data.cmd[data.cmdindex].argdata[argi].val.f;
+                    function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                                 data.cmd[data.cmdindex].argdata[argi].descr,
+                                                 FPTYPE_FLOAT64, FPFLAG_DEFAULT_INPUT, &tmpvalf);
                     NBarg_processed++;
                     break;
 
                 case CLIARG_LONG:
-                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
-                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, NULL);
+                    tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
+                    function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                                 data.cmd[data.cmdindex].argdata[argi].descr,
+                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall);
                     NBarg_processed++;
                     break;
 
                 case CLIARG_STR_NOT_IMG:
-                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
-                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, "null");
+                    function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                                 data.cmd[data.cmdindex].argdata[argi].descr,
+                                                 FPTYPE_STRING, FPFLAG_DEFAULT_INPUT,
+                                                 data.cmd[data.cmdindex].argdata[argi].val.s);
                     NBarg_processed++;
                     break;
 
                 case CLIARG_IMG:
-                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
-                                                 FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT_STREAM, "nullim");
+                    function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                                 data.cmd[data.cmdindex].argdata[argi].descr,
+                                                 FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT,
+                                                 data.cmd[data.cmdindex].argdata[argi].val.s);
                     NBarg_processed++;
                     break;
 
                 case CLIARG_STR:
-                    function_parameter_add_entry(fps, fpscliarg[arg].fpstag, fpscliarg[arg].descr,
-                                                 FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, "null");
+                    function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                                 data.cmd[data.cmdindex].argdata[argi].descr,
+                                                 FPTYPE_STRING, FPFLAG_DEFAULT_INPUT,
+                                                 data.cmd[data.cmdindex].argdata[argi].val.s);
                     NBarg_processed++;
                     break;
 
