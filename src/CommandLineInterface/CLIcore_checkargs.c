@@ -618,15 +618,13 @@ int CLIargs_to_FPSparams_setval(
 }
 
 
-
+/** @brief Build FPS from command args
+ */
 int CMDargs_to_FPSparams_create(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
     int NBarg_processed = 0;
-
-    printf("COMMAND [%ld] key : \"%s\"\n", data.cmdindex,
-           data.cmd[data.cmdindex].key);
 
     for(int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
     {

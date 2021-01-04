@@ -136,6 +136,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
                 argindex ++;
             }
         }
+        printf(">>>>> %s >>>>>>> FPS name : %s\n", fpsname_default, data.FPS_name);
     }
 
 #endif
