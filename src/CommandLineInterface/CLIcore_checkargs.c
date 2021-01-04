@@ -619,9 +619,7 @@ int CLIargs_to_FPSparams_setval(
 
 
 
-int CLIargs_to_FPSparams_create(
-    CLICMDARGDEF fpscliarg[],
-    int nbarg,
+int CMDargs_to_FPSparams_create(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
