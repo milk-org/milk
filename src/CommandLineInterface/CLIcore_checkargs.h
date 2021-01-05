@@ -49,8 +49,15 @@ typedef struct
 	// example value, will be used as default
 	char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
 	
-	// flag
+	// CLICMDARG flag
 	uint64_t flag;
+
+    // see FPTYPE_ in function_parameters.h
+    uint64_t fptype;
+
+    // see FPFLAG_  in function_parameters.h
+    uint64_t fpflag;
+
 } CLICMDARGDEF;
 
 
