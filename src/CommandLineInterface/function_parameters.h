@@ -50,7 +50,8 @@
 // ... to be used with caution: most of the time, use type exclusively
 // type is uint32_t
 
-#define FPTYPE_UNDEF         0x00000001
+#define FPTYPE_AUTO          0x00000000 // automatic typing
+#define FPTYPE_UNDEF         0x00000001 
 #define FPTYPE_INT32         0x00000002
 #define FPTYPE_UINT32        0x00000004
 #define FPTYPE_INT64         0x00000008
@@ -81,7 +82,7 @@
 
 
 
-// STATUS FLAGS
+// Function Parameter (FP) flags
 
 // parameter use and visibility
 #define FPFLAG_ACTIVE        0x0000000000000001    // is this entry registered ?

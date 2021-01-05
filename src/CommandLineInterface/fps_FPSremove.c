@@ -10,16 +10,16 @@
 
 
 /** @brief remove FPS and associated files
- * 
+ *
  * Requires CONF and RUN to be off
- * 
- */ 
+ *
+ */
 errno_t functionparameter_FPSremove(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
 
-	// get directory name
+    // get directory name
     char shmdname[STRINGMAXLEN_DIRNAME];
     function_parameter_struct_shmdirname(shmdname);
 
@@ -34,43 +34,46 @@ errno_t functionparameter_FPSremove(
     fps->SMfd = -1;
     close(fps->SMfd);
 
-//    remove(conflogfname);
+	//    remove(conflogfname);
     int ret = remove(fpsfname);
     int errcode = errno;
-    
-	// TEST
-	FILE *fp;
-	fp = fopen("rmlist.txt", "a");
-	fprintf(fp, "remove %s  %d\n", fpsfname, ret);	
-	if(ret == -1)
-	{
-		switch (errcode) {
-		
-		case EACCES:
-		fprintf(fp, "EACCES\n");
-		break;
+	(void) ret;
+	(void) errcode;
 
-		case EBUSY:
-		fprintf(fp, "EBUSY\n");
-		break;
+    // TEST
+	/*
+    FILE *fp;
+    fp = fopen("rmlist.txt", "a");
+    fprintf(fp, "remove %s  %d\n", fpsfname, ret);
+    if(ret == -1)
+    {
+        switch(errcode)
+        {
 
-		case ENOENT:
-		fprintf(fp, "ENOENT\n");
-		break;
+            case EACCES:
+                fprintf(fp, "EACCES\n");
+                break;
 
-		case EPERM:
-		fprintf(fp, "EPERM\n");
-		break;
+            case EBUSY:
+                fprintf(fp, "EBUSY\n");
+                break;
 
-		case EROFS:
-		fprintf(fp, "EROFS\n");
-		break;
-		
-		}
-	}
-	fclose(fp);
+            case ENOENT:
+                fprintf(fp, "ENOENT\n");
+                break;
 
+            case EPERM:
+                fprintf(fp, "EPERM\n");
+                break;
 
+            case EROFS:
+                fprintf(fp, "EROFS\n");
+                break;
+
+        }
+    }
+    fclose(fp);
+	*/
 
     // terminate tmux sessions
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
