@@ -319,11 +319,11 @@ typedef struct
     union
     {
 		// value, min (inclusive), max (inclusive), current state (if different from request)
-        int64_t l[4];
+        int64_t i64[4];
 
 		// value, min, max, current state (if different from request)
-        double f[4];          
-        float  s[4];
+        double f64[4];          
+        float  f32[4];
         
         // first value is set point, second is current state
         pid_t pid[2];

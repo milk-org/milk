@@ -24,10 +24,10 @@ errno_t functionparameter_PrintParameter_ValueString(
             stringmaxlen,
             "%-40s INT64      %ld %ld %ld %ld",
             fpsentry->keywordfull,
-            fpsentry->val.l[0],
-            fpsentry->val.l[1],
-            fpsentry->val.l[2],
-            fpsentry->val.l[3]);
+            fpsentry->val.i64[0],
+            fpsentry->val.i64[1],
+            fpsentry->val.i64[2],
+            fpsentry->val.i64[3]);
         cmdOK = 1;
         break;
 
@@ -37,10 +37,10 @@ errno_t functionparameter_PrintParameter_ValueString(
             stringmaxlen,
             "%-40s FLOAT64    %f %f %f %f",
             fpsentry->keywordfull,
-            fpsentry->val.f[0],
-            fpsentry->val.f[1],
-            fpsentry->val.f[2],
-            fpsentry->val.f[3]);
+            fpsentry->val.f64[0],
+            fpsentry->val.f64[1],
+            fpsentry->val.f64[2],
+            fpsentry->val.f64[3]);
         cmdOK = 1;
         break;
 
@@ -50,10 +50,10 @@ errno_t functionparameter_PrintParameter_ValueString(
             stringmaxlen,
             "%-40s FLOAT32    %f %f %f %f",
             fpsentry->keywordfull,
-            fpsentry->val.s[0],
-            fpsentry->val.s[1],
-            fpsentry->val.s[2],
-            fpsentry->val.s[3]);
+            fpsentry->val.f32[0],
+            fpsentry->val.f32[1],
+            fpsentry->val.f32[2],
+            fpsentry->val.f32[3]);
         cmdOK = 1;
         break;
 
@@ -63,7 +63,7 @@ errno_t functionparameter_PrintParameter_ValueString(
             stringmaxlen,
             "%-40s PID        %ld",
             fpsentry->keywordfull,
-            fpsentry->val.l[0]);
+            fpsentry->val.i64[0]);
         cmdOK = 1;
         break;
 

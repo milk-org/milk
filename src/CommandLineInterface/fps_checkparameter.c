@@ -67,7 +67,7 @@ int functionparameter_CheckParameter(
         // Check min value
         if(fpsentry->parray[pindex].type == FPTYPE_INT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
-                if(fpsentry->parray[pindex].val.l[0] < fpsentry->parray[pindex].val.l[1])
+                if(fpsentry->parray[pindex].val.i64[0] < fpsentry->parray[pindex].val.i64[1])
                 {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN |
@@ -75,8 +75,8 @@ int functionparameter_CheckParameter(
                     if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                                 FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                                 "int64 value %ld below min %ld",
-                                fpsentry->parray[pindex].val.l[0],
-                                fpsentry->parray[pindex].val.l[1]) < 0)
+                                fpsentry->parray[pindex].val.i64[0],
+                                fpsentry->parray[pindex].val.i64[1]) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }
@@ -87,7 +87,7 @@ int functionparameter_CheckParameter(
 
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
-                if(fpsentry->parray[pindex].val.f[0] < fpsentry->parray[pindex].val.f[1])
+                if(fpsentry->parray[pindex].val.f64[0] < fpsentry->parray[pindex].val.f64[1])
                 {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN |
@@ -95,8 +95,8 @@ int functionparameter_CheckParameter(
                     if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                                 FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                                 "float64 value %lf below min %lf",
-                                fpsentry->parray[pindex].val.f[0],
-                                fpsentry->parray[pindex].val.f[1]) < 0)
+                                fpsentry->parray[pindex].val.f64[0],
+                                fpsentry->parray[pindex].val.f64[1]) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }
@@ -107,7 +107,7 @@ int functionparameter_CheckParameter(
 
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
-                if(fpsentry->parray[pindex].val.s[0] < fpsentry->parray[pindex].val.s[1])
+                if(fpsentry->parray[pindex].val.f32[0] < fpsentry->parray[pindex].val.f32[1])
                 {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_BELOWMIN |
@@ -115,8 +115,8 @@ int functionparameter_CheckParameter(
                     if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                                 FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                                 "float32 value %f below min %f",
-                                fpsentry->parray[pindex].val.s[0],
-                                fpsentry->parray[pindex].val.s[1]) < 0)
+                                fpsentry->parray[pindex].val.f32[0],
+                                fpsentry->parray[pindex].val.f32[1]) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }
@@ -131,7 +131,7 @@ int functionparameter_CheckParameter(
         // Check max value
         if(fpsentry->parray[pindex].type == FPTYPE_INT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
-                if(fpsentry->parray[pindex].val.l[0] > fpsentry->parray[pindex].val.l[2])
+                if(fpsentry->parray[pindex].val.i64[0] > fpsentry->parray[pindex].val.i64[2])
                 {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX |
@@ -139,8 +139,8 @@ int functionparameter_CheckParameter(
                     if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                                 FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                                 "int64 value %ld above max %ld",
-                                fpsentry->parray[pindex].val.l[0],
-                                fpsentry->parray[pindex].val.l[2]) < 0)
+                                fpsentry->parray[pindex].val.i64[0],
+                                fpsentry->parray[pindex].val.i64[2]) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }
@@ -152,7 +152,7 @@ int functionparameter_CheckParameter(
 
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
-                if(fpsentry->parray[pindex].val.f[0] > fpsentry->parray[pindex].val.f[2])
+                if(fpsentry->parray[pindex].val.f64[0] > fpsentry->parray[pindex].val.f64[2])
                 {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX |
@@ -160,8 +160,8 @@ int functionparameter_CheckParameter(
                     if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                                 FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                                 "float64 value %lf above max %lf",
-                                fpsentry->parray[pindex].val.f[0],
-                                fpsentry->parray[pindex].val.f[2]) < 0)
+                                fpsentry->parray[pindex].val.f64[0],
+                                fpsentry->parray[pindex].val.f64[2]) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }
@@ -174,7 +174,7 @@ int functionparameter_CheckParameter(
 
         if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
             if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
-                if(fpsentry->parray[pindex].val.s[0] > fpsentry->parray[pindex].val.s[2])
+                if(fpsentry->parray[pindex].val.f32[0] > fpsentry->parray[pindex].val.f32[2])
                 {
                     fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
                     fpsentry->md->msgcode[fpsentry->md->msgcnt] =  FPS_MSG_FLAG_ABOVEMAX |
@@ -182,8 +182,8 @@ int functionparameter_CheckParameter(
                     if(snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                                 FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
                                 "float32 value %f above max %f",
-                                fpsentry->parray[pindex].val.s[0],
-                                fpsentry->parray[pindex].val.s[2]) < 0)
+                                fpsentry->parray[pindex].val.f32[0],
+                                fpsentry->parray[pindex].val.f32[2]) < 0)
                     {
                         PRINT_ERROR("snprintf error");
                     }

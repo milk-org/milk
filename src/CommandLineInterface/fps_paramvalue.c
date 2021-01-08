@@ -26,8 +26,8 @@ long functionparameter_GetParamValue_INT64(
     long value;
 
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    value = fps->parray[fpsi].val.l[0];
-    fps->parray[fpsi].val.l[3] = value;
+    value = fps->parray[fpsi].val.i64[0];
+    fps->parray[fpsi].val.i64[3] = value;
 
     return value;
 }
@@ -40,7 +40,7 @@ int functionparameter_SetParamValue_INT64(
 )
 {
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    fps->parray[fpsi].val.l[0] = value;
+    fps->parray[fpsi].val.i64[0] = value;
     fps->parray[fpsi].cnt0++;
 
     return EXIT_SUCCESS;
@@ -83,7 +83,7 @@ int function_parameter_SetValue_int64(
     int pindex = functionparameter_GetParamIndex(&fps, keywordfull);
 
 
-    fps.parray[pindex].val.l[0] = val;
+    fps.parray[pindex].val.i64[0] = val;
 
     function_parameter_struct_disconnect(&fps);
 
@@ -107,7 +107,7 @@ long *functionparameter_GetParamPtr_INT64(
     long *ptr;
 
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    ptr = &fps->parray[fpsi].val.l[0];
+    ptr = &fps->parray[fpsi].val.i64[0];
 
     return ptr;
 }
@@ -124,8 +124,8 @@ double functionparameter_GetParamValue_FLOAT64(
     double value;
 
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    value = fps->parray[fpsi].val.f[0];
-    fps->parray[fpsi].val.f[3] = value;
+    value = fps->parray[fpsi].val.f64[0];
+    fps->parray[fpsi].val.f64[3] = value;
 
     return value;
 }
@@ -137,7 +137,7 @@ int functionparameter_SetParamValue_FLOAT64(
 )
 {
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    fps->parray[fpsi].val.f[0] = value;
+    fps->parray[fpsi].val.f64[0] = value;
     fps->parray[fpsi].cnt0++;
 
     return EXIT_SUCCESS;
@@ -163,7 +163,7 @@ double *functionparameter_GetParamPtr_FLOAT64(
     double *ptr;
 
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    ptr = &fps->parray[fpsi].val.f[0];
+    ptr = &fps->parray[fpsi].val.f64[0];
 
     return ptr;
 }
@@ -177,8 +177,8 @@ float functionparameter_GetParamValue_FLOAT32(
     float value;
 
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    value = fps->parray[fpsi].val.s[0];
-    fps->parray[fpsi].val.s[3] = value;
+    value = fps->parray[fpsi].val.f32[0];
+    fps->parray[fpsi].val.f32[3] = value;
 
     return value;
 }
@@ -190,7 +190,7 @@ int functionparameter_SetParamValue_FLOAT32(
 )
 {
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    fps->parray[fpsi].val.s[0] = value;
+    fps->parray[fpsi].val.f32[0] = value;
     fps->parray[fpsi].cnt0++;
 
     return EXIT_SUCCESS;
@@ -204,7 +204,7 @@ float *functionparameter_GetParamPtr_FLOAT32(
     float *ptr;
 
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
-    ptr = &fps->parray[fpsi].val.s[0];
+    ptr = &fps->parray[fpsi].val.f32[0];
 
     return ptr;
 }
@@ -268,12 +268,12 @@ int functionparameter_SetParamValue_ONOFF(
     if(ONOFFvalue == 1)
     {
         fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
-        fps->parray[fpsi].val.l[0] = 1;
+        fps->parray[fpsi].val.i64[0] = 1;
     }
     else
     {
         fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
-        fps->parray[fpsi].val.l[0] = 0;
+        fps->parray[fpsi].val.i64[0] = 0;
     }
 
     fps->parray[fpsi].cnt0++;

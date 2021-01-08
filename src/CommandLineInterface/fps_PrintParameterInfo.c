@@ -704,17 +704,17 @@ errno_t functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].type == FPTYPE_INT64)
     {
-        printf("  %10d", (int) fpsentry->parray[pindex].val.l[0]);
+        printf("  %10d", (int) fpsentry->parray[pindex].val.i64[0]);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
     {
-        printf("  %10f", (float) fpsentry->parray[pindex].val.f[0]);
+        printf("  %10f", (float) fpsentry->parray[pindex].val.f64[0]);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FLOAT32)
     {
-        printf("  %10f", (float) fpsentry->parray[pindex].val.s[0]);
+        printf("  %10f", (float) fpsentry->parray[pindex].val.f32[0]);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_PID)

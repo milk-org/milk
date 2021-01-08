@@ -128,24 +128,24 @@ int function_parameter_add_entry(
         switch(funcparamarray[pindex].type)
         {
         case FPTYPE_INT64 :
-            funcparamarray[pindex].val.l[0] = 0;
-            funcparamarray[pindex].val.l[1] = 0;
-            funcparamarray[pindex].val.l[2] = 0;
-            funcparamarray[pindex].val.l[3] = 0;
+            funcparamarray[pindex].val.i64[0] = 0;
+            funcparamarray[pindex].val.i64[1] = 0;
+            funcparamarray[pindex].val.i64[2] = 0;
+            funcparamarray[pindex].val.i64[3] = 0;
             break;
 
         case FPTYPE_FLOAT64 :
-            funcparamarray[pindex].val.f[0] = 0.0;
-            funcparamarray[pindex].val.f[1] = 0.0;
-            funcparamarray[pindex].val.f[2] = 0.0;
-            funcparamarray[pindex].val.f[3] = 0.0;
+            funcparamarray[pindex].val.f64[0] = 0.0;
+            funcparamarray[pindex].val.f64[1] = 0.0;
+            funcparamarray[pindex].val.f64[2] = 0.0;
+            funcparamarray[pindex].val.f64[3] = 0.0;
             break;
 
         case FPTYPE_FLOAT32 :
-            funcparamarray[pindex].val.s[0] = 0.0;
-            funcparamarray[pindex].val.s[1] = 0.0;
-            funcparamarray[pindex].val.s[2] = 0.0;
-            funcparamarray[pindex].val.s[3] = 0.0;
+            funcparamarray[pindex].val.f32[0] = 0.0;
+            funcparamarray[pindex].val.f32[1] = 0.0;
+            funcparamarray[pindex].val.f32[2] = 0.0;
+            funcparamarray[pindex].val.f32[3] = 0.0;
             break;
 
         case FPTYPE_PID :
@@ -280,28 +280,28 @@ int function_parameter_add_entry(
 
             case FPTYPE_INT64 :
                 valueptr_INT64 = (int64_t *) valueptr;
-                funcparamarray[pindex].val.l[0] = valueptr_INT64[0];
-                funcparamarray[pindex].val.l[1] = valueptr_INT64[1];
-                funcparamarray[pindex].val.l[2] = valueptr_INT64[2];
-                funcparamarray[pindex].val.l[3] = valueptr_INT64[3];
+                funcparamarray[pindex].val.i64[0] = valueptr_INT64[0];
+                funcparamarray[pindex].val.i64[1] = valueptr_INT64[1];
+                funcparamarray[pindex].val.i64[2] = valueptr_INT64[2];
+                funcparamarray[pindex].val.i64[3] = valueptr_INT64[3];
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_FLOAT64 :
                 valueptr_FLOAT64 = (double *) valueptr;
-                funcparamarray[pindex].val.f[0] = valueptr_FLOAT64[0];
-                funcparamarray[pindex].val.f[1] = valueptr_FLOAT64[1];
-                funcparamarray[pindex].val.f[2] = valueptr_FLOAT64[2];
-                funcparamarray[pindex].val.f[3] = valueptr_FLOAT64[3];
+                funcparamarray[pindex].val.f64[0] = valueptr_FLOAT64[0];
+                funcparamarray[pindex].val.f64[1] = valueptr_FLOAT64[1];
+                funcparamarray[pindex].val.f64[2] = valueptr_FLOAT64[2];
+                funcparamarray[pindex].val.f64[3] = valueptr_FLOAT64[3];
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_FLOAT32 :
                 valueptr_FLOAT32 = (float *) valueptr;
-                funcparamarray[pindex].val.s[0] = valueptr_FLOAT32[0];
-                funcparamarray[pindex].val.s[1] = valueptr_FLOAT32[1];
-                funcparamarray[pindex].val.s[2] = valueptr_FLOAT32[2];
-                funcparamarray[pindex].val.s[3] = valueptr_FLOAT32[3];
+                funcparamarray[pindex].val.f32[0] = valueptr_FLOAT32[0];
+                funcparamarray[pindex].val.f32[1] = valueptr_FLOAT32[1];
+                funcparamarray[pindex].val.f32[2] = valueptr_FLOAT32[2];
+                funcparamarray[pindex].val.f32[3] = valueptr_FLOAT32[3];
                 funcparamarray[pindex].cnt0++;
                 break;
 

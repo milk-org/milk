@@ -68,15 +68,15 @@ int functionparameter_WriteParameterToDisk(
         {
 
             case FPTYPE_INT64:
-                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.l[0], timestring);
+                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[0], timestring);
                 break;
 
             case FPTYPE_FLOAT64:
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[0], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[0], timestring);
                 break;
 
             case FPTYPE_FLOAT32:
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[0], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[0], timestring);
                 break;
 
             case FPTYPE_PID:
@@ -147,19 +147,19 @@ int functionparameter_WriteParameterToDisk(
 
             case FPTYPE_INT64:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.l[1], timestring);
+                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[1], timestring);
                 fclose(fp);
                 break;
 
             case FPTYPE_FLOAT64:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[1], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[1], timestring);
                 fclose(fp);
                 break;
 
             case FPTYPE_FLOAT32:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[1], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[1], timestring);
                 fclose(fp);
                 break;
         }
@@ -176,19 +176,19 @@ int functionparameter_WriteParameterToDisk(
 
             case FPTYPE_INT64:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.l[2], timestring);
+                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[2], timestring);
                 fclose(fp);
                 break;
 
             case FPTYPE_FLOAT64:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[2], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[2], timestring);
                 fclose(fp);
                 break;
 
             case FPTYPE_FLOAT32:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[2], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[2], timestring);
                 fclose(fp);
                 break;
         }
@@ -205,19 +205,19 @@ int functionparameter_WriteParameterToDisk(
 
             case FPTYPE_INT64:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.l[3], timestring);
+                fprintf(fp, "%10ld  # %s\n", fpsentry->parray[pindex].val.i64[3], timestring);
                 fclose(fp);
                 break;
 
             case FPTYPE_FLOAT64:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f[3], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f64[3], timestring);
                 fclose(fp);
                 break;
 
             case FPTYPE_FLOAT32:
                 fp = fopen(fname, "w");
-                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.s[3], timestring);
+                fprintf(fp, "%18f  # %s\n", fpsentry->parray[pindex].val.f32[3], timestring);
                 fclose(fp);
                 break;
         }
