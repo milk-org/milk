@@ -68,12 +68,12 @@ static inline imageID resolveIMGID(
     {
         if( (ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            PRINT_ERROR("Cannot resolve image %s", img->name);
+            printf("ERROR: %c[%d;%dm Cannot resolve image %s %c[%d;m\n", (char) 27, 1, 31, img->name, (char) 27, 0);
             abort();
         }
         else if(ERRMODE == ERRMODE_WARN)
         {
-            PRINT_WARNING("Cannot resolve image %s", img->name);
+            printf("WARNING: %c[%d;%dm Cannot resolve image %s %c[%d;m\n", (char) 27, 1, 35, img->name, (char) 27, 0);
         }
     }
 
