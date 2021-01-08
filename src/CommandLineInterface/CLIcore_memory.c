@@ -60,6 +60,7 @@ errno_t memory_re_alloc()
         for(i = tmplong; i < data.NB_MAX_IMAGE; i++)
         {
             data.image[i].used    = 0;
+            data.image[i].createcnt = 0;
             data.image[i].shmfd   = -1;
             data.image[i].memsize = 0;
             data.image[i].semptr  = NULL;

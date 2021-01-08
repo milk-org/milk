@@ -1,7 +1,7 @@
 /**
  * @file    CLIcore_utils.h
  * @brief   Util functions for coding convenience
- * 
+ *
  */
 
 #ifndef CLICORE_UTILS_H
@@ -22,21 +22,58 @@ static inline IMGID makeIMGID(
     img.ID = -1;
     strcpy(img.name, name);
 
+    img.im = NULL;
+    img.md = NULL;
+    img.createcnt = -1;
+
     return img;
 }
 
 
 static inline imageID resolveIMGID(
-    IMGID *img
+    IMGID *img,
+    int ERRMODE
 )
 {
     if(img->ID == -1)
     {
+        // has not been previously resolved -> resolve
         img->ID = image_ID(img->name);
         if(img->ID > -1)
         {
             img->im = &data.image[img->ID];
             img->md = &data.image[img->ID].md[0];
+            img->createcnt = data.image[img->ID].createcnt;
+        }
+    }
+    else
+    {
+        // check that create counter matches and image is in use
+        if((img->createcnt != data.image[img->ID].createcnt)
+                || (data.image[img->ID].used != 1))
+        {
+            // create counter mismatch -> need to re-resolve
+            img->ID = image_ID(img->name);
+            if(img->ID > -1)
+            {
+                img->im = &data.image[img->ID];
+                img->md = &data.image[img->ID].md[0];
+                img->createcnt = data.image[img->ID].createcnt;
+            }
+        }
+
+    }
+
+    if(img->ID == -1)
+    {
+        if( (ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
+        {
+            PRINT_ERROR("Cannot resolve image %s", img->name);
+            abort();
+        }
+        else if(ERRMODE == ERRMODE_WARN)
+        {
+            PRINT_WARNING("Cannot resolve image %s", img->name);
         }
     }
 

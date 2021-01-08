@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_datainit.c
- * 
+ *
  * @brief data structure init
  *
  */
@@ -66,6 +66,7 @@ void CLI_data_init()
     for(long i = 0; i < data.NB_MAX_IMAGE; i++)
     {
         data.image[i].used = 0;
+        data.image[i].createcnt = 0;
     }
 
 
@@ -111,9 +112,9 @@ void CLI_data_init()
 
 
 
-	// Allocate data.fps
-	data.fps = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
-	
+    // Allocate data.fps
+    data.fps = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
+
     // Initialize file descriptors to -1
     //
     for(int fpsindex = 0; fpsindex < data.NB_MAX_FPS; fpsindex++)

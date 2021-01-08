@@ -16,6 +16,13 @@ typedef int errno_t;
 #endif
 
 
+// error mode
+// defines function behavior on error
+#define ERRMODE_NULL   0  // ignore error
+#define ERRMODE_WARN   1  // issue warning and continue
+#define ERRMODE_FAIL   2  // fail nicely if possible
+#define ERRMODE_ABORT  3  // abort process
+
 
 #define STRINGMAXLEN_DEFAULT       1000
 #define STRINGMAXLEN_ERRORMSG      1000
