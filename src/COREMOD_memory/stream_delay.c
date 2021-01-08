@@ -185,7 +185,7 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF()
     FPS_CONFLOOP_START 
 
 
-    if(fps.parray[fp_option_timeavemode].val.l[0] != 0)
+    if(fps.parray[fp_option_timeavemode].val.i64[0] != 0)
     { // time averaging enabled
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_WRITERUN;
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_USED;
