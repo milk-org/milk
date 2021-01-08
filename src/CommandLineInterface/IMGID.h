@@ -14,8 +14,9 @@
 // Pass this as argument to functions to have both input-by-ID (ID>-1)
 // and input-by-name (ID=-1).
 typedef struct {
-	imageID ID;       // -1 if not resolved
-	char    name[32]; // used to resolve if needed
+	imageID ID;          // -1 if not resolved
+	int64_t createcnt;  // increments when image created
+	char    name[32];    // used to resolve if needed
 	IMAGE * im;
 	IMAGE_METADATA * md; // pointer to metadata
 } IMGID;
