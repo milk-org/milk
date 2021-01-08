@@ -1251,8 +1251,8 @@ errno_t functionparameter_CTRLscreen(
                                     if(data.fps[fpsindex].parray[pindex].fpflag &
                                             FPFLAG_FEEDBACK)   // Check value feedback if available
                                         if(!(data.fps[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(data.fps[fpsindex].parray[pindex].val.l[0] !=
-                                                    data.fps[fpsindex].parray[pindex].val.l[3])
+                                            if(data.fps[fpsindex].parray[pindex].val.i64[0] !=
+                                                    data.fps[fpsindex].parray[pindex].val.i64[3])
                                             {
                                                 paramsync = 0;
                                             }
@@ -1265,7 +1265,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (int) data.fps[fpsindex].parray[pindex].val.l[0]);
+                                    printfw("  %10d", (int) data.fps[fpsindex].parray[pindex].val.i64[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1289,10 +1289,10 @@ errno_t functionparameter_CTRLscreen(
                                             double epsrel = 1.0e-6;
                                             double epsabs = 1.0e-10;
 
-                                            absdiff = fabs(data.fps[fpsindex].parray[pindex].val.f[0] -
-                                                           data.fps[fpsindex].parray[pindex].val.f[3]);
-                                            abssum = fabs(data.fps[fpsindex].parray[pindex].val.f[0]) + fabs(
-                                                         data.fps[fpsindex].parray[pindex].val.f[3]);
+                                            absdiff = fabs(data.fps[fpsindex].parray[pindex].val.f64[0] -
+                                                           data.fps[fpsindex].parray[pindex].val.f64[3]);
+                                            abssum = fabs(data.fps[fpsindex].parray[pindex].val.f64[0]) + fabs(
+                                                         data.fps[fpsindex].parray[pindex].val.f64[3]);
 
 
                                             if((absdiff < epsrel * abssum) || (absdiff < epsabs))
@@ -1313,7 +1313,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10f", (float) data.fps[fpsindex].parray[pindex].val.f[0]);
+                                    printfw("  %10f", (float) data.fps[fpsindex].parray[pindex].val.f64[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1337,10 +1337,10 @@ errno_t functionparameter_CTRLscreen(
                                             double epsrel = 1.0e-6;
                                             double epsabs = 1.0e-10;
 
-                                            absdiff = fabs(data.fps[fpsindex].parray[pindex].val.s[0] -
-                                                           data.fps[fpsindex].parray[pindex].val.s[3]);
-                                            abssum = fabs(data.fps[fpsindex].parray[pindex].val.s[0]) + fabs(
-                                                         data.fps[fpsindex].parray[pindex].val.s[3]);
+                                            absdiff = fabs(data.fps[fpsindex].parray[pindex].val.f32[0] -
+                                                           data.fps[fpsindex].parray[pindex].val.f32[3]);
+                                            abssum = fabs(data.fps[fpsindex].parray[pindex].val.f32[0]) + fabs(
+                                                         data.fps[fpsindex].parray[pindex].val.f32[3]);
 
 
                                             if((absdiff < epsrel * abssum) || (absdiff < epsabs))
@@ -1361,7 +1361,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10f", (float) data.fps[fpsindex].parray[pindex].val.s[0]);
+                                    printfw("  %10f", (float) data.fps[fpsindex].parray[pindex].val.f32[0]);
 
                                     if(paramsync == 0)
                                     {

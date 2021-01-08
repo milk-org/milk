@@ -106,7 +106,7 @@ int function_parameter_printlist(
             if(funcparamarray[pindex].type & FPTYPE_INT64)
             {
                 printf("    TYPE  = INT64\n");
-                printf("    VALUE = %ld\n", (long) funcparamarray[pindex].val.l[0]);
+                printf("    VALUE = %ld\n", (long) funcparamarray[pindex].val.i64[0]);
             }
             if(funcparamarray[pindex].type & FPTYPE_FLOAT64)
             {

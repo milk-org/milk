@@ -110,7 +110,7 @@ int functionparameter_UserInputSetParamValue(
 
                     if(vOK == 1)
                     {
-                        fpsentry->parray[pindex].val.l[0] = lval;
+                        fpsentry->parray[pindex].val.i64[0] = lval;
                     }
                     break;
 
@@ -136,7 +136,7 @@ int functionparameter_UserInputSetParamValue(
 
                     if(vOK == 1)
                     {
-                        fpsentry->parray[pindex].val.f[0] = fval;
+                        fpsentry->parray[pindex].val.f64[0] = fval;
                     }
                     break;
 
@@ -163,7 +163,7 @@ int functionparameter_UserInputSetParamValue(
 
                     if(vOK == 1)
                     {
-                        fpsentry->parray[pindex].val.s[0] = fval;
+                        fpsentry->parray[pindex].val.f32[0] = fval;
                     }
                     break;
 
