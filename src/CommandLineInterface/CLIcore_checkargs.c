@@ -685,4 +685,31 @@ int CMDargs_to_FPSparams_create(
 }
 
 
+/** @brief get pointer to function argument/parameter
+ */
+void * get_farg_ptr(
+    char *tag
+)
+{
+    void *ptr = NULL;
 
+    DEBUG_TRACEPOINT("looking for pointer %s", tag);
+    DEBUG_TRACEPOINT("FPS_CMDCODE = %d", data.FPS_CMDCODE);
+    if(data.FPS_CMDCODE != 0)
+    {
+        ptr = (void *) functionparameter_GetParamPtr_INT64(data.fps, tag);
+    }
+    else
+    {
+        for(int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
+        {
+            if(strcmp(data.cmd[data.cmdindex].argdata[argi].fpstag, tag) == 0)
+            {
+                ptr = (void *)(&data.cmd[data.cmdindex].argdata[argi].val);
+                break;
+            }
+        }
+    }
+
+    return ptr;
+}

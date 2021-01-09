@@ -137,4 +137,11 @@ int CMDargs_to_FPSparams_create(
 );
 
 
+
+void * get_farg_ptr(
+    char *tag
+);
+
+
+
 #endif
