@@ -17,6 +17,7 @@ int functionparameter_GetParamIndex(
     long index = -1;
     long pindex = 0;
 
+
     long NBparamMAX = fps->md->NBparamMAX;
 
     int found = 0;
