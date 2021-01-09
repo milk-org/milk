@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_checkargs.h
- * 
+ *
  * @brief Check CLI command line arguments
  *
  */
@@ -12,7 +12,7 @@
 
 
 // testing argument type for command line interface
-#define CLIARG_MISSING          0 
+#define CLIARG_MISSING          0
 #define CLIARG_FLOAT            1  // floating point number
 #define CLIARG_LONG             2  // integer (int or long)
 #define CLIARG_STR_NOT_IMG      3  // string, not existing image
@@ -37,20 +37,20 @@
 
 typedef struct
 {
-	// Type is one of CLIARG_XXXX
-	int type;
-	
-	// tag is hierarchical set of words separated by dot: "word1.word2.word3"
-	char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
-	
-	// short description of argument
-	char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
+    // Type is one of CLIARG_XXXX
+    int type;
 
-	// example value, will be used as default
-	char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
-	
-	// CLICMDARG flag
-	uint64_t flag;
+    // tag is hierarchical set of words separated by dot: "word1.word2.word3"
+    char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
+
+    // short description of argument
+    char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
+
+    // example value, will be used as default
+    char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
+
+    // CLICMDARG flag
+    uint64_t flag;
 
     // see FPTYPE_ in function_parameters.h
     uint64_t fptype;
@@ -92,11 +92,11 @@ typedef struct
 
 typedef struct
 {
-	char key[100];
-	char description[100];
-	char sourcefilename[100];
-	int nbarg;
-	CLICMDARGDEF *funcfpscliarg;	
+    char key[100];
+    char description[100];
+    char sourcefilename[100];
+    int nbarg;
+    CLICMDARGDEF *funcfpscliarg;
 } CLICMDDATA;
 
 
@@ -138,7 +138,7 @@ int CMDargs_to_FPSparams_create(
 
 
 
-void * get_farg_ptr(
+void *get_farg_ptr(
     char *tag
 );
 
