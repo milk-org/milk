@@ -209,12 +209,12 @@ extern uid_t suid;
 
 typedef struct
 {
-	int type;
-	
+    int type;
+
     char name[STRINGMAXLEN_MODULE_NAME];        // module name
 
     char shortname[STRINGMAXLEN_MODULE_SHORTNAME];   // short name. If non-empty, access functions as <shortname>.<functionname>
-    
+
     char loadname[STRINGMAXLEN_MODULE_LOADNAME];
     char sofilename[STRINGMAXLEN_MODULE_SOFILENAME];
 
@@ -227,7 +227,7 @@ typedef struct
 
     char datestring[STRINGMAXLEN_MODULE_DATESTRING]; // Compilation date
     char timestring[STRINGMAXLEN_MODULE_TIMESTRING]; // Compilation time
-    
+
     void *DLib_handle;
 
 } MODULE;
@@ -243,26 +243,26 @@ typedef struct
 {
     char     key[STRINGMAXLEN_CMD_KEY];           // command keyword
 
-	// module 
+    // module
     char     module[STRINGMAXLEN_MODULE_NAME];        // module name
-	// index of module to which command belongs
-	// set to -1 if does not belong to any module
-    long     moduleindex;        
+    // index of module to which command belongs
+    // set to -1 if does not belong to any module
+    long     moduleindex;
     char     modulesrc[200];     // module source filename
 
-	// command function pointer
+    // command function pointer
     errno_t (* fp)();
 
     char     info[STRINGMAXLEN_CMD_INFO];            // short description/help
     char     syntax[STRINGMAXLEN_CMD_SYNTAX];        // command syntax
     char     example[STRINGMAXLEN_CMD_EXAMPLE];      // command example
     char     Ccall[STRINGMAXLEN_CMD_CCALL];
-    
+
     // command arguments and parameters
     int nbarg;
-    
+
     CLICMDARGDATA *argdata; // type defined in CLIcore_checkargs.h
-    
+
 } CMD;
 
 
@@ -342,11 +342,11 @@ typedef struct
     char shmsemdirname[100]; // same ad above with .s instead of /s
 
 
-	// SIGNALS
-	// =================================================
+    // SIGNALS
+    // =================================================
 
     struct sigaction sigact;
-  
+
     int signal_USR1;
     int signal_USR2;
     int signal_TERM;
@@ -359,10 +359,10 @@ typedef struct
 
 
 
-	// TEST POINTS
-	// =================================================
+    // TEST POINTS
+    // =================================================
     // can be used to trace program execution for runtime profiling and debugging
-    
+
     int    testpoint_line;
     char   testpoint_file[STRINGMAXLEN_FILENAME];
     char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
@@ -370,16 +370,16 @@ typedef struct
     struct timespec testpoint_time;
 
 
-    
-    
+
+
     int progStatus;  // main program status
     // 0: before automatic loading of shared objects
     // 1: after automatic loading of shared objects
 
 
-	// REAL-TIME PRIO
-	// =================================================
-	
+    // REAL-TIME PRIO
+    // =================================================
+
     uid_t ruid; // Real UID (= user launching process at startup)
     uid_t euid; // Effective UID (= owner of executable at startup)
     uid_t suid; // Saved UID (= owner of executable at startup)
@@ -390,9 +390,9 @@ typedef struct
     // when reverting to user privileges : euid <- ruid
 
 
-	// OPERATION MODE
-	// =================================================
-	
+    // OPERATION MODE
+    // =================================================
+
     int            Debug;
     int            quiet;
     int            overwrite;		// automatically overwrite FITS files
@@ -415,7 +415,7 @@ typedef struct
 
 
     // COMMAND LINE INTERFACE (CLI)
-	// =================================================
+    // =================================================
 
     int            fifoON;
     char           processname[100];
@@ -426,20 +426,20 @@ typedef struct
 
     CMD            cmd[DATA_NB_MAX_COMMAND];
 
-	char           CLIcmdline[STRINGMAXLEN_CLICMDLINE];
+    char           CLIcmdline[STRINGMAXLEN_CLICMDLINE];
     int            CLIexecuteCMDready;
     int            CLImatchMode;
     // 1 if error, 0 otherwise
     int            parseerror;
-	// number of arguments in last command line
+    // number of arguments in last command line
     long           cmdNBarg;
     CMDARGTOKEN    cmdargtoken[NB_ARG_MAX];
 
-	// when command is found in command line, holds index of command
+    // when command is found in command line, holds index of command
     long           cmdindex;
     // used to create temporary images
     long           calctmp_imindex;
-	// 0 if command has not been executed, 1 otherwise
+    // 0 if command has not been executed, 1 otherwise
     int            CMDexecuted;
 
 
@@ -449,10 +449,10 @@ typedef struct
 
     long           NBmodule;
     //long           NB_MAX_MODULE;
-    
+
     // module info gets sorted into module structure
     MODULE         module[DATA_NB_MAX_MODULE];
-    
+
     // temporary storage
     long           moduleindex;
     int            moduletype;
@@ -465,25 +465,26 @@ typedef struct
     char           moduletimestring[STRINGMAXLEN_MODULE_TIMESTRING];
 
 
-	// FUNCTION PARAMETER STRUCTURES (FPSs)
-	// =================================================
+    // FUNCTION PARAMETER STRUCTURES (FPSs)
+    // =================================================
 
-	// array of FPSs
-	long           NB_MAX_FPS;
-	FUNCTION_PARAMETER_STRUCT *fps;
-	
+    // array of FPSs
+    long           NB_MAX_FPS;
+    FUNCTION_PARAMETER_STRUCT *fps;
+
 
     // Function parameter structure (FPS) CLI integration
     // These entries are set when CLI process links to FPS
     char           FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
-	// Which type of FPS process is the current process ?
-	// conf, run, ctrl
-	char           FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
-	long           FPS_TIMESTAMP;     // included in log file name
+    // Which type of FPS process is the current process ?
+    // conf, run, ctrl
+    char
+    FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
+    long           FPS_TIMESTAMP;     // included in log file name
     uint32_t       FPS_CMDCODE;       // current FPS mode
-    errno_t        (*FPS_CONFfunc)(); // pointer to FPS conf function
-    errno_t        (*FPS_RUNfunc)();  // pointer to FPS run function
-	
+    errno_t (*FPS_CONFfunc)();        // pointer to FPS conf function
+    errno_t (*FPS_RUNfunc)();         // pointer to FPS run function
+
 
 
 
@@ -492,12 +493,12 @@ typedef struct
     // =================================================
     long           NB_MAX_IMAGE;
 #ifdef DATA_STATIC_ALLOC
-	// image static allocation mode
+    // image static allocation mode
     IMAGE          image[STATIC_NB_MAX_IMAGE];
 #else
     IMAGE         *image;
 #endif
-	int            MEM_MONITOR; // memory monitor enabled ?
+    int            MEM_MONITOR; // memory monitor enabled ?
 
     // shared memory default
     int            SHARED_DFT;
@@ -507,12 +508,12 @@ typedef struct
 
 
 
-    // VARIABLES 
+    // VARIABLES
     // =================================================
 
     long           NB_MAX_VARIABLE;
 #ifdef DATA_STATIC_ALLOC
-	// variable static allocation mode
+    // variable static allocation mode
     VARIABLE variable[STATIC_NB_MAX_VARIABLE];
 #else
     VARIABLE      *variable;
@@ -520,17 +521,17 @@ typedef struct
 
 
 
-	
-	
-	// CONVENIENCE STORAGE
-	// =================================================
+
+
+    // CONVENIENCE STORAGE
+    // =================================================
     float          FLOATARRAY[1000];	// array to store temporary variables
     double         DOUBLEARRAY[1000];    // for convenience
     char           SAVEDIR[500];
 
-	// gen purpose return value
-	// used for system commands
-	int            retvalue; 
+    // gen purpose return value
+    // used for system commands
+    int            retvalue;
 
     // status counter (used for profiling)
     int            status0;
@@ -558,7 +559,7 @@ errno_t RegisterModule(
     const char *restrict InfoString,
     int versionmajor,
     int versionminor,
-    int versionpatch    
+    int versionpatch
 );
 
 uint32_t RegisterCLIcommand(

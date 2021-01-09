@@ -84,6 +84,10 @@ static errno_t CLIfunction(void)\
 static errno_t FPSCONFfunction()\
 {\
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);\
+    if( CLIcmddata.flag & CLICMDFLAG_PROCINFO )\
+    {\
+        fps_add_processinfo_entries(&fps);\
+    }\
     data.fps = &fps;\
     CMDargs_to_FPSparams_create(&fps);\
     variables_link();\
@@ -126,13 +130,24 @@ static errno_t FPSCONFfunction()\
 #define INSERT_STD_FPSRUNfunction \
 static errno_t FPSRUNfunction()\
 {\
-FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);\
-data.fps = &fps;\
-variables_link();\
-compute_function();\
-data.fps = NULL;\
-function_parameter_RUNexit(&fps);\
-return RETURN_SUCCESS;\
+    FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);\
+    data.fps = &fps;\
+    variables_link();\
+    if( CLIcmddata.flag & CLICMDFLAG_PROCINFO)\
+    {\
+        FPSPROCINFOLOOP_RUNINIT("function %.10s", CLIcmddata.key);\
+        processinfo->loopcntMax = 0;\
+        processinfo->MeasureTiming =  1;\
+        PROCINFOLOOP_START\
+    }\
+    compute_function();\
+    if( CLIcmddata.flag & CLICMDFLAG_PROCINFO)\
+    {\
+        PROCINFOLOOP_END\
+    }\
+    data.fps = NULL;\
+    function_parameter_RUNexit(&fps);\
+    return RETURN_SUCCESS;\
 }
 
 

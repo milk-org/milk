@@ -90,13 +90,22 @@ typedef struct
 
 
 
+// command supports FPS mode
+#define CLICMDFLAG_FPS      0x00000001
+
+// processinfo enabled
+#define CLICMDFLAG_PROCINFO 0x00000002
+
 typedef struct
 {
     char key[100];
     char description[100];
     char sourcefilename[100];
+
     int nbarg;
     CLICMDARGDEF *funcfpscliarg;
+
+    uint32_t flag;
 } CLICMDDATA;
 
 
