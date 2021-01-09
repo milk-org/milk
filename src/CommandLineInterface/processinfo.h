@@ -1,6 +1,6 @@
 /**
  * @file    processinfo.h
- * 
+ *
  *
  *
  */
@@ -35,7 +35,8 @@
  * File name:  /tmp/proc.PID.shm
  *
  */
-typedef struct {
+typedef struct
+{
     char name[STRINGMAXLEN_PROCESSINFO_NAME];             /// process name (human-readable)
 
     char source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC];  /// source code function
@@ -56,23 +57,23 @@ typedef struct {
 
     char tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];  // name of tmux session in which process is running, or
     // "NULL"
-    int loopstat;        
+    int loopstat;
     // 0: INIT       Initialization before loop
     // 1: ACTIVE     in loop
     // 2: PAUSED     loop paused (do not iterate)
     // 3: STOPPED    terminated (clean exit following user request to stop process)
     // 4: ERROR      process could not run, typically used when loop can't start, e.g. missing input
     // 5: SPINNING   do not compute (loop iterates, but does not compute. output stream(s) will still be posted/incremented)
-	// 6: CRASHED    pid has gone away without proper exit sequence. Will attempt to generate exit log file (using atexit) to identify crash location
+    // 6: CRASHED    pid has gone away without proper exit sequence. Will attempt to generate exit log file (using atexit) to identify crash location
 
     char statusmsg[STRINGMAXLEN_PROCESSINFO_STATUSMSG];  // status message
     int  statuscode;       // status code
 
     FILE *logFile;
     char  logfilename[STRINGMAXLEN_PROCESSINFO_LOGFILENAME];
-    
-    
-    
+
+
+
     // OPTIONAL INPUT STREAM SETUP
     // Used to specify which stream will trigger the computation and track trigger state
     // Enables use of function processinfo_waitoninputstream()
@@ -81,21 +82,21 @@ typedef struct {
     int       triggermode;                    // see TRIGGERMODE codes
     imageID   triggerstreamID;                // -1 if not initialized
     ino_t     triggerstreaminode;
-    char      triggerstreamname[STRINGMAXLEN_IMAGE_NAME];  
+    char      triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
     int       triggersem;                     // semaphore index
     uint64_t  triggerstreamcnt;               // previous value of trigger counter, updates on trigger
-	struct timespec triggerdelay;            // for PROCESSINFO_TRIGGERMODE_DELAY
-	struct timespec triggertimeout;          // how long to wait until trigger ?
-	uint64_t  trigggertimeoutcnt;
-	int       triggermissedframe;               // have we missed any frame, if yes how many ?
-	//  0  : no missed frame, loop has been waiting for semaphore to be posted
-	//  1  : no missed frame, but semaphore was already posted and at 1 when triggering
-	//  2+ : frame(s) missed
-	uint64_t  triggermissedframe_cumul;      // cumulative missed frames
-	int       triggerstatus;   // see TRIGGERSTATUS codes
+    struct timespec triggerdelay;            // for PROCESSINFO_TRIGGERMODE_DELAY
+    struct timespec triggertimeout;          // how long to wait until trigger ?
+    uint64_t  trigggertimeoutcnt;
+    int       triggermissedframe;               // have we missed any frame, if yes how many ?
+    //  0  : no missed frame, loop has been waiting for semaphore to be posted
+    //  1  : no missed frame, but semaphore was already posted and at 1 when triggering
+    //  2+ : frame(s) missed
+    uint64_t  triggermissedframe_cumul;      // cumulative missed frames
+    int       triggerstatus;   // see TRIGGERSTATUS codes
 
 
-	
+
     int RT_priority;    // -1 if unused. 0-99 for higher priority
     cpu_set_t CPUmask;
 
@@ -105,7 +106,7 @@ typedef struct {
     // Provides means to stop/pause loop process if timing constraints exceeded
     //
     int MeasureTiming;  // 1 if timing is measured, 0 otherwise
-    
+
     // the last PROCESSINFO_NBtimer times are stored in a circular buffer, from
     // which timing stats are derived
     int    timerindex;       // last written index in circular buffer
