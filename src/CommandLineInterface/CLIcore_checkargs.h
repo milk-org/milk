@@ -96,6 +96,14 @@ typedef struct
 // processinfo enabled
 #define CLICMDFLAG_PROCINFO 0x00000002
 
+
+typedef struct
+{
+    int tmpi;
+} CMDSETTINGS;
+
+
+
 typedef struct
 {
     char key[100];
@@ -105,7 +113,12 @@ typedef struct
     int nbarg;
     CLICMDARGDEF *funcfpscliarg;
 
-    uint32_t flag;
+    uint64_t flags; // controls function behavior and capabilities
+    // see CLICMDFLAGS for details
+
+    // pointer to CMD struct initialized by CLI function registration
+    CMDSETTINGS *cmdsettings;
+
 } CLICMDDATA;
 
 
