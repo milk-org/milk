@@ -777,7 +777,7 @@ if(slen >= 200) {                                                          \
     PRINT_ERROR("snprintf string truncation");                             \
     abort();                                                               \
 }                                                                          \
- processinfo = processinfo_setup(data.FPS_name, pinfodescr, "startup", __FUNCTION__, __FILE__, __LINE__ ); \
+processinfo = processinfo_setup(data.FPS_name, pinfodescr, "startup", __FUNCTION__, __FILE__, __LINE__ ); \
 fps_to_processinfo(&fps, processinfo);                                     \
 } while(0)
 

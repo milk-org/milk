@@ -261,8 +261,13 @@ typedef struct
     // command arguments and parameters
     int nbarg;
 
-    CLICMDARGDATA *argdata; // type defined in CLIcore_checkargs.h
+    CLICMDARGDATA *argdata; // arguments and parameters to function
 
+    // defines static function capabilities and behavior
+    uint64_t flags;
+
+    // dynamic settings for function
+    CMDSETTINGS *cmdsettings;
 } CMD;
 
 

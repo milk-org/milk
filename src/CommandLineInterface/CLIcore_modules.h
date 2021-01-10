@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_modules.h
- * 
+ *
  * @brief Modules functions
  *
  */

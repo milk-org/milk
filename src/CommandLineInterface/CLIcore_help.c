@@ -478,7 +478,23 @@ int CLIhelp_make_cmdexamplestring(
 
 
 
-
+static void checkFlag64(
+    uint64_t flags,
+    uint64_t testflag,
+    char *flagdescription
+)
+{
+    if(flags & testflag)
+    {
+        printf("    [%c[%d;%dm ON%c[%dm]  %s\n",
+               (char) 27, 1, 32, (char) 27, 0, flagdescription);
+    }
+    else
+    {
+        printf("    [%c[%d;%dmOFF%c[%dm]  %s\n",
+               (char) 27, 1, 31, (char) 27, 0, flagdescription);
+    }
+}
 
 
 
@@ -493,7 +509,7 @@ errno_t help_command(
     const char *restrict cmdkey
 )
 {
-    int colorcodecmd = 34; // red
+    int colorcodecmd = 34;
     int colorcodeinfo = 32; // green
     int colorcodeargCLI = 36; // argument part of CLI call: cyan
     int colorcodeargnotCLI = 35; // argument not part of CLI call: yellow
@@ -516,12 +532,14 @@ errno_t help_command(
 
             //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("\texample> %s\n", data.cmd[cmdi].example);
-            //printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
 
 
+            printf("\n");
+            checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_FPS, "FPS support");
+            checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_PROCINFO, "processinfo support");
+            printf("\n");
 
 
-            //printf("Function arguments and parameters (%d) :\n", data.cmd[cmdi].nbarg);
 
             printf("\n");
             printf("    CLI call arguments:\n");

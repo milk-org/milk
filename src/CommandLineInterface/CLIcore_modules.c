@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_modules.c
- * 
+ *
  * @brief Modules functions
  *
  */
@@ -87,12 +87,13 @@ errno_t load_module_shared(
 {
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
 
-	
-	// module name local copy
+
+    // module name local copy
     char modulenameLC[STRINGMAXLEN_MODULE_SOFILENAME];
 
     {
-        int slen = snprintf(modulenameLC, STRINGMAXLEN_MODULE_SOFILENAME, "%s", modulename);
+        int slen = snprintf(modulenameLC, STRINGMAXLEN_MODULE_SOFILENAME, "%s",
+                            modulename);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -125,19 +126,19 @@ errno_t load_module_shared(
 
     printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 
-	// a custom module is about to be loaded, so we set the type accordingly
-	// this variable will be written by module register function into module struct
-	data.moduletype = MODULE_TYPE_CUSTOMLOAD; 
-	strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME);
-	strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME);
-    if ( load_sharedobj(libname) == RETURN_SUCCESS )
+    // a custom module is about to be loaded, so we set the type accordingly
+    // this variable will be written by module register function into module struct
+    data.moduletype = MODULE_TYPE_CUSTOMLOAD;
+    strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME);
+    strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME);
+    if(load_sharedobj(libname) == RETURN_SUCCESS)
     {
-		// 
-	}
-	// reset to default for next load
-	data.moduletype = MODULE_TYPE_STARTUP; 
-	strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME);
-	strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME);
+        //
+    }
+    // reset to default for next load
+    data.moduletype = MODULE_TYPE_STARTUP;
+    strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME);
+    strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME);
 
     return RETURN_SUCCESS;
 }
@@ -239,7 +240,7 @@ errno_t RegisterModule(
 )
 {
     int OKmsg = 0;
-    
+
     //printf("REGISTERING MODULE %s\n", FileName);
 
     if(strlen(data.modulename) == 0)
@@ -277,13 +278,16 @@ errno_t RegisterModule(
     data.module[data.NBmodule].versionminor = versionminor;
     data.module[data.NBmodule].versionpatch = versionpatch;
 
-	data.module[data.NBmodule].type = data.moduletype;
-	
-	strncpy(data.module[data.NBmodule].loadname, data.moduleloadname, STRINGMAXLEN_MODULE_LOADNAME);
-	strncpy(data.module[data.NBmodule].sofilename, data.modulesofilename, STRINGMAXLEN_MODULE_SOFILENAME);	
+    data.module[data.NBmodule].type = data.moduletype;
 
-	//printf("--- libnameloaded : %s\n", libnameloaded);
-	strncpy(data.module[data.NBmodule].sofilename, libnameloaded, STRINGMAXLEN_MODULE_SOFILENAME);
+    strncpy(data.module[data.NBmodule].loadname, data.moduleloadname,
+            STRINGMAXLEN_MODULE_LOADNAME);
+    strncpy(data.module[data.NBmodule].sofilename, data.modulesofilename,
+            STRINGMAXLEN_MODULE_SOFILENAME);
+
+    //printf("--- libnameloaded : %s\n", libnameloaded);
+    strncpy(data.module[data.NBmodule].sofilename, libnameloaded,
+            STRINGMAXLEN_MODULE_SOFILENAME);
 
     if(data.progStatus == 0)
     {
@@ -340,8 +344,8 @@ uint32_t RegisterCLIcommand(
 
     if(data.cmd[data.NBcmd].moduleindex == -1)
     {
-		strcpy(data.cmd[data.NBcmd].module, "MAIN");
-		strcpy(data.cmd[data.NBcmd].key, CLIkey);
+        strcpy(data.cmd[data.NBcmd].module, "MAIN");
+        strcpy(data.cmd[data.NBcmd].key, CLIkey);
     }
     else
     {
@@ -353,7 +357,8 @@ uint32_t RegisterCLIcommand(
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            sprintf(data.cmd[data.NBcmd].key, "%s.%s", data.module[data.moduleindex].shortname, CLIkey);
+            sprintf(data.cmd[data.NBcmd].key, "%s.%s",
+                    data.module[data.moduleindex].shortname, CLIkey);
         }
     }
 
@@ -443,12 +448,14 @@ uint32_t RegisterCLIcmd(
 
     strcpy(data.cmd[data.NBcmd].Ccall,   "--callstring--");
 
+
+    // define arguments to CLI function from content of CLIcmddata.funcfpscliarg
     data.cmd[data.NBcmd].nbarg = CLIcmddata.nbarg;
     if(CLIcmddata.nbarg > 0)
     {
         data.cmd[data.NBcmd].argdata =
             (CLICMDARGDATA *) malloc(sizeof(CLICMDARGDATA) * CLIcmddata.nbarg);
-        
+
         for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
         {
             data.cmd[data.NBcmd].argdata[argi].type = CLIcmddata.funcfpscliarg[argi].type;
@@ -462,26 +469,34 @@ uint32_t RegisterCLIcmd(
             switch(data.cmd[data.NBcmd].argdata[argi].type)
             {
                 case CLIARG_FLOAT:
-                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(CLIcmddata.funcfpscliarg[argi].example);
+                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
+                                CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_LONG:
-                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(CLIcmddata.funcfpscliarg[argi].example);
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_STR_NOT_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s, CLIcmddata.funcfpscliarg[argi].example);
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                           CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s, CLIcmddata.funcfpscliarg[argi].example);
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                           CLIcmddata.funcfpscliarg[argi].example);
                     break;
                 case CLIARG_STR:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s, CLIcmddata.funcfpscliarg[argi].example);
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                           CLIcmddata.funcfpscliarg[argi].example);
                     break;
             }
         }
     }
 
+    // define CLI function flags from content of CLIcmddata.flags
+    data.cmd[data.NBcmd].flags = CLIcmddata.flags;
+
     data.NBcmd++;
 
-    return(data.NBcmd);
+    return(data.NBcmd-1);
 }
 
