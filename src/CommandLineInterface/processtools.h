@@ -55,7 +55,8 @@ typedef int errno_t;
 // It is used to quickly build (without scanning directory) an array of
 // PROCESSINFO
 //
-typedef struct {
+typedef struct
+{
     pid_t PIDarray[PROCESSINFOLISTSIZE];
     int   active[PROCESSINFOLISTSIZE];
     char  pnamearray[PROCESSINFOLISTSIZE][STRINGMAXLEN_PROCESSINFO_NAME];  // short name
@@ -66,51 +67,52 @@ typedef struct {
 
 typedef struct
 {
-	int           active;
-	pid_t         PID;
-	char          name[40];
-	long          updatecnt;
+    int           active;
+    pid_t         PID;
+    char          name[40];
+    long          updatecnt;
 
-	long          loopcnt;
-	int           loopstat;
-	
-	int           createtime_hr;
-	int           createtime_min;
-	int           createtime_sec;
-	long          createtime_ns;
-	
-	char          cpuset[16];       /**< cpuset name  */
-	char          cpusallowed[20];
-	int           cpuOKarray[MAXNBCPU];
-	int           threads;
-	
-	int           rt_priority;
-	float         memload;
-		
-	char          statusmsg[200];
-	char          tmuxname[100];
-	
-	int           NBsubprocesses;
-	int           subprocPIDarray[MAXNBSUBPROCESS];	
-	
-	double        sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
-	double        sampletimearray_prev[MAXNBSUBPROCESS];
-	
-	long          ctxtsw_voluntary[MAXNBSUBPROCESS];
-	long          ctxtsw_nonvoluntary[MAXNBSUBPROCESS];
-	long          ctxtsw_voluntary_prev[MAXNBSUBPROCESS];
-	long          ctxtsw_nonvoluntary_prev[MAXNBSUBPROCESS];
-	
-	long long     cpuloadcntarray[MAXNBSUBPROCESS];
-	long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
-	float         subprocCPUloadarray[MAXNBSUBPROCESS];
-	float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
-	
-	long          VmRSSarray[MAXNBSUBPROCESS];
-	
-	int           processorarray[MAXNBSUBPROCESS];
+    long          loopcnt;
+    int           loopstat;
 
-	
+    int           createtime_hr;
+    int           createtime_min;
+    int           createtime_sec;
+    long          createtime_ns;
+
+    char          cpuset[16];       /**< cpuset name  */
+    char          cpusallowed[20];
+    int           cpuOKarray[MAXNBCPU];
+    int           threads;
+
+    int           rt_priority;
+    float         memload;
+
+    char          statusmsg[200];
+    char          tmuxname[100];
+
+    int           NBsubprocesses;
+    int           subprocPIDarray[MAXNBSUBPROCESS];
+
+    double
+    sampletimearray[MAXNBSUBPROCESS];  // time at which sampling was performed [sec]
+    double        sampletimearray_prev[MAXNBSUBPROCESS];
+
+    long          ctxtsw_voluntary[MAXNBSUBPROCESS];
+    long          ctxtsw_nonvoluntary[MAXNBSUBPROCESS];
+    long          ctxtsw_voluntary_prev[MAXNBSUBPROCESS];
+    long          ctxtsw_nonvoluntary_prev[MAXNBSUBPROCESS];
+
+    long long     cpuloadcntarray[MAXNBSUBPROCESS];
+    long long     cpuloadcntarray_prev[MAXNBSUBPROCESS];
+    float         subprocCPUloadarray[MAXNBSUBPROCESS];
+    float         subprocCPUloadarray_timeaveraged[MAXNBSUBPROCESS];
+
+    long          VmRSSarray[MAXNBSUBPROCESS];
+
+    int           processorarray[MAXNBSUBPROCESS];
+
+
 } PROCESSINFODISP;
 
 
@@ -119,67 +121,71 @@ typedef struct
 
 typedef struct
 {
-	int      loop;   // 1 : loop     0 : exit
-	long     loopcnt;
-	
-	int      twaitus; // sleep time between scans
-	double   dtscan; // measured time interval between scans [s]
-	pid_t    scanPID;
-	int      scandebugline; // for debugging	
-	
-	
-	// ensure list of process and mmap operation blocks display
-	int      SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
-	int      SCANBLOCK_OK;         // display thread toggles to 1 to let scan know it can proceed
-		
-	PROCESSINFOLIST *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
+    int      loop;   // 1 : loop     0 : exit
+    long     loopcnt;
 
-	long NBpinfodisp;
-	PROCESSINFODISP *pinfodisp;
-	
-	int DisplayMode;
-	int DisplayDetailedMode;
-	
+    int      twaitus; // sleep time between scans
+    double   dtscan; // measured time interval between scans [s]
+    pid_t    scanPID;
+    int      scandebugline; // for debugging
+
+
+    // ensure list of process and mmap operation blocks display
+    int      SCANBLOCK_requested;  // scan thread toggles to 1 to requests blocking
+    int      SCANBLOCK_OK;         // display thread toggles to 1 to let scan know it can proceed
+
+    PROCESSINFOLIST
+    *pinfolist;  // copy of pointer  static PROCESSINFOLIST *pinfolist
+
+    long NBpinfodisp;
+    PROCESSINFODISP *pinfodisp;
+
+    int DisplayMode;
+    int DisplayDetailedMode;
+
     //
     // these arrays are indexed together
     // the index is different from the displayed order
     // new process takes first available free index
     //
     PROCESSINFO  *pinfoarray[PROCESSINFOLISTSIZE];
-    int           pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
-    pid_t         PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
-    int           updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
+    int
+    pinfommapped[PROCESSINFOLISTSIZE];             // 1 if mmapped, 0 otherwise
+    pid_t
+    PIDarray[PROCESSINFOLISTSIZE];                 // used to track changes
+    int
+    updatearray[PROCESSINFOLISTSIZE];              // 0: don't load, 1: (re)load
     int           fdarray[PROCESSINFOLISTSIZE];                  // file descriptors
     long          loopcntarray[PROCESSINFOLISTSIZE];
     long          loopcntoffsetarray[PROCESSINFOLISTSIZE];
     int           selectedarray[PROCESSINFOLISTSIZE];
 
     int           sorted_pindex_time[PROCESSINFOLISTSIZE];
-		
-		
-	int NBcpus;
-	int NBcpusocket;
-	
-	float CPUload[MAXNBCPU];
-	long long CPUcnt0[MAXNBCPU];
-	long long CPUcnt1[MAXNBCPU];
-	long long CPUcnt2[MAXNBCPU];
-	long long CPUcnt3[MAXNBCPU];
-	long long CPUcnt4[MAXNBCPU];
-	long long CPUcnt5[MAXNBCPU];
-	long long CPUcnt6[MAXNBCPU];
-	long long CPUcnt7[MAXNBCPU];
-	long long CPUcnt8[MAXNBCPU];
 
-	int CPUids[MAXNBCPU];  // individual cpus (same cores)
-	int CPUphys[MAXNBCPU]; // Physical CPU socket
 
-	int CPUpcnt[MAXNBCPU];	
-	
-	int NBpindexActive;
-	int pindexActive[PROCESSINFOLISTSIZE];
-	int psysinfostatus[PROCESSINFOLISTSIZE];
-	
+    int NBcpus;
+    int NBcpusocket;
+
+    float CPUload[MAXNBCPU];
+    long long CPUcnt0[MAXNBCPU];
+    long long CPUcnt1[MAXNBCPU];
+    long long CPUcnt2[MAXNBCPU];
+    long long CPUcnt3[MAXNBCPU];
+    long long CPUcnt4[MAXNBCPU];
+    long long CPUcnt5[MAXNBCPU];
+    long long CPUcnt6[MAXNBCPU];
+    long long CPUcnt7[MAXNBCPU];
+    long long CPUcnt8[MAXNBCPU];
+
+    int CPUids[MAXNBCPU];  // individual cpus (same cores)
+    int CPUphys[MAXNBCPU]; // Physical CPU socket
+
+    int CPUpcnt[MAXNBCPU];
+
+    int NBpindexActive;
+    int pindexActive[PROCESSINFOLISTSIZE];
+    int psysinfostatus[PROCESSINFOLISTSIZE];
+
 } PROCINFOPROC;
 
 
@@ -188,7 +194,8 @@ typedef struct
 
 // ---------------------  -------------------------------
 
-typedef struct {
+typedef struct
+{
     char name[200];
     char description[200];
 } STRINGLISTENTRY;
@@ -199,8 +206,8 @@ extern "C" {
 
 
 
-PROCESSINFO * processinfo_setup(
-    char *pinfoname,	
+PROCESSINFO *processinfo_setup(
+    char *pinfoname,
     char descriptionstring[200],
     char msgstring[200],
     const char *functionname,
@@ -260,15 +267,15 @@ errno_t processinfo_CTRLscreen();
 processinfo_loopstart(processinfo); \
 while(processloopOK == 1) \
 { \
-processloopOK = processinfo_loopstep(processinfo); \
-processinfo_waitoninputstream(processinfo); \
-processinfo_exec_start(processinfo); \
-if(processinfo_compute_status(processinfo) == 1) \
-{ 
+	processloopOK = processinfo_loopstep(processinfo); \
+	processinfo_waitoninputstream(processinfo); \
+	processinfo_exec_start(processinfo); \
+	if(processinfo_compute_status(processinfo) == 1) \
+	{
 
 #define PROCINFOLOOP_END \
-} \
-processinfo_exec_end(processinfo); \
+	} \
+	processinfo_exec_end(processinfo); \
 } \
 processinfo_cleanExit(processinfo);
 

@@ -186,61 +186,61 @@ errno_t printInfo()
            sizeof(IMAGE) * 8, sizeof(IMAGE));
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, name),                      offsetof(IMAGE, name));
-           
+
     printf("   used                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, used),                      offsetof(IMAGE, used));
-    
+
     printf("   shmfd                       offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, shmfd),                     offsetof(IMAGE, shmfd));
-    
+
     printf("   memsize                     offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, memsize),                   offsetof(IMAGE, memsize));
-    
+
     printf("   semlog                      offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, semlog),                    offsetof(IMAGE, semlog));
-    
+
     printf("   md                          offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, md),                        offsetof(IMAGE, md));
-    
+
     printf("   atimearray                  offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, atimearray),                offsetof(IMAGE, atimearray));
-    
+
     printf("   writetimearray              offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, writetimearray),            offsetof(IMAGE,
                    writetimearray));
-    
+
     printf("   flagarray                   offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, flagarray),                 offsetof(IMAGE, flagarray));
-    
+
     printf("   cntarray                    offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, cntarray),                  offsetof(IMAGE, cntarray));
-    
+
     printf("   array                       offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, array),                     offsetof(IMAGE, array));
-    
+
     printf("   semptr                      offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, semptr),                    offsetof(IMAGE, semptr));
-    
+
     printf("   kw                          offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE, kw),                        offsetof(IMAGE, kw));
 
-    
+
     printf("sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte ------------------\n",
            sizeof(IMAGE_KEYWORD) * 8, sizeof(IMAGE_KEYWORD));
-    
+
     printf("   name                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, name), offsetof(IMAGE_KEYWORD, name));
-    
+
     printf("   type                        offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, type), offsetof(IMAGE_KEYWORD, type));
-    
+
     printf("   value                       offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, value), offsetof(IMAGE_KEYWORD, value));
-    
+
     printf("   comment                     offset = %4zu bit  = %4zu byte\n",
            8 * offsetof(IMAGE_KEYWORD, comment), offsetof(IMAGE_KEYWORD, comment));
 
-    
+
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
     printf("READLINE : version %x\n", RL_READLINE_VERSION);
@@ -287,7 +287,7 @@ errno_t list_commands()
 
 
 
-        
+
 
 
 errno_t list_commands_module(
@@ -313,7 +313,7 @@ errno_t list_commands_module(
     {
         printf("   name         %s\n", data.module[moduleindex].name);
         printf("   type         %d\n", data.module[moduleindex].type);
-        printf("   short name   %s\n", data.module[moduleindex].shortname);        
+        printf("   short name   %s\n", data.module[moduleindex].shortname);
         printf("   package      %s\n", data.module[moduleindex].package);
         printf("   loadname     %s\n", data.module[moduleindex].loadname);
         printf("   sofilename   %s\n", data.module[moduleindex].sofilename);
@@ -449,13 +449,13 @@ int CLIhelp_make_argstring(
 
 
 /** @brief Assemble command line (CLI) example command string
- * 
+ *
  */
 int CLIhelp_make_cmdexamplestring(
     CLICMDARGDEF fpscliarg[],
     int nbarg,
     char *shortname,
-	char *outcmdexstring
+    char *outcmdexstring
 )
 {
     char tmpstr[1000];
@@ -493,9 +493,9 @@ errno_t help_command(
     const char *restrict cmdkey
 )
 {
-    int colorcodecmd = 31; // red
+    int colorcodecmd = 34; // red
     int colorcodeinfo = 32; // green
-    int colorcodeargCLI = 36; // argument part of CLI call: cyan 
+    int colorcodeargCLI = 36; // argument part of CLI call: cyan
     int colorcodeargnotCLI = 35; // argument not part of CLI call: yellow
     int cOK = 0;
 
@@ -518,61 +518,113 @@ errno_t help_command(
             printf("\texample> %s\n", data.cmd[cmdi].example);
             //printf("C call     :    %s\n", data.cmd[cmdi].Ccall);
 
-            printf("Function arguments and parameters (%d) :\n", data.cmd[cmdi].nbarg);
-            printf("  # CLI#       tagname             Value         description\n");
+
+
+
+            //printf("Function arguments and parameters (%d) :\n", data.cmd[cmdi].nbarg);
+
+            printf("\n");
+            printf("    CLI call arguments:\n");
+            //printf("  CLI#       tagname             Value         description\n");
 
             int CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
                 int colorcode = colorcodeargCLI;
-                printf("%3d ", argi);
+                //printf("%3d ", argi);
                 if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
-                    printf("%3d  ", CLIargcnt);
+                    printf("%6d  ", CLIargcnt);
                     CLIargcnt++;
+
+                    //colorcode = colorcodeargnotCLI;
+
+                    char valuestring[100] = "?";
+
+                    switch(data.cmd[cmdi].argdata[argi].type)
+                    {
+                        case CLIARG_FLOAT:
+                            sprintf(valuestring, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
+                            break;
+
+                        case CLIARG_LONG:
+                            sprintf(valuestring, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
+                            break;
+
+                        case CLIARG_STR_NOT_IMG:
+                            sprintf(valuestring, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
+                            break;
+
+                        case CLIARG_IMG:
+                            sprintf(valuestring, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                            break;
+
+                        case CLIARG_STR:
+                            sprintf(valuestring, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                            break;
+                    }
+
+
+                    printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
+                           (char) 27, 0, colorcode,
+                           data.cmd[cmdi].argdata[argi].fpstag,
+                           (char) 27, 0,
+                           valuestring, data.cmd[cmdi].argdata[argi].descr);
                 }
-                else
-                {
-                    printf(" --  ");
-                    colorcode = colorcodeargnotCLI;
-                }
-
-
-
-                char valuestring[100] = "?";
-
-                switch(data.cmd[cmdi].argdata[argi].type)
-                {
-                    case CLIARG_FLOAT:
-                        sprintf(valuestring, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
-                        break;
-
-                    case CLIARG_LONG:
-                        sprintf(valuestring, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                        break;
-
-                    case CLIARG_STR_NOT_IMG:
-                        sprintf(valuestring, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
-                        break;
-
-                    case CLIARG_IMG:
-                        sprintf(valuestring, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
-                        break;
-
-                    case CLIARG_STR:
-                        sprintf(valuestring, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
-                        break;
-                }
-
-
-                printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
-                       (char) 27, 0, colorcode,
-                       data.cmd[cmdi].argdata[argi].fpstag,
-                       (char) 27, 0,
-                       valuestring, data.cmd[cmdi].argdata[argi].descr);
             }
 
             printf("\n");
+            printf("    non-CLI call arguments:\n");
+
+            CLIargcnt = 0;
+            for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
+            {
+                int colorcode = colorcodeargnotCLI;
+                //printf("%3d ", argi);
+                if(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI)
+                {
+                    printf("        ");
+                    CLIargcnt++;
+
+
+                    char valuestring[100] = "?";
+
+                    switch(data.cmd[cmdi].argdata[argi].type)
+                    {
+                        case CLIARG_FLOAT:
+                            sprintf(valuestring, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
+                            break;
+
+                        case CLIARG_LONG:
+                            sprintf(valuestring, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
+                            break;
+
+                        case CLIARG_STR_NOT_IMG:
+                            sprintf(valuestring, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
+                            break;
+
+                        case CLIARG_IMG:
+                            sprintf(valuestring, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                            break;
+
+                        case CLIARG_STR:
+                            sprintf(valuestring, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                            break;
+                    }
+
+
+                    printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
+                           (char) 27, 0, colorcode,
+                           data.cmd[cmdi].argdata[argi].fpstag,
+                           (char) 27, 0,
+                           valuestring, data.cmd[cmdi].argdata[argi].descr);
+                }
+            }
+
+
+
+            printf("\n");
+
             cOK = 1;
         }
     }
@@ -850,8 +902,10 @@ errno_t helpreadline()
 
 errno_t help_cmd()
 {
-    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
-            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
         help_command(data.cmdargtoken[1].val.string);
     }
@@ -865,8 +919,10 @@ errno_t help_cmd()
 
 errno_t cmdinfosearch()
 {
-    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
-            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND)
+            || (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
         command_info_search(data.cmdargtoken[1].val.string);
     }
