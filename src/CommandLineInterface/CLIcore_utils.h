@@ -98,6 +98,64 @@ static errno_t FPSCONFfunction()\
 }
 
 
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
+int processloopOK = 1;\
+PROCESSINFO *processinfo;\
+if( CLIcmddata.flag & CLICMDFLAG_PROCINFO)\
+{\
+    char pinfodescr[200];\
+    int slen = snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);\
+    if(slen<1) {\
+        PRINT_ERROR("snprintf wrote <1 char");\
+        abort();\
+    }\
+    if(slen >= 200) {\
+        PRINT_ERROR("snprintf string truncation");\
+        abort();\
+    }\
+    if( CLIcmddata.flag & CLICMDFLAG_FPS ) {\
+        processinfo = processinfo_setup(data.FPS_name, pinfodescr,\
+            "startup", __FUNCTION__, __FILE__, __LINE__ );\
+        fps_to_processinfo(&data.fps, processinfo);\
+    }\
+    else\
+    {\
+        processinfo = processinfo_setup(CLIcmddata.key, pinfodescr,\
+            "startup", __FUNCTION__, __FILE__, __LINE__ );\
+    }\
+\
+    processinfo->loopcntMax = 0;\
+    processinfo->MeasureTiming =  1;\
+    processinfo_loopstart(processinfo);\
+}\
+while(processloopOK == 1) \
+{ \
+	if( CLIcmddata.flag & CLICMDFLAG_PROCINFO) {\
+        processloopOK = processinfo_loopstep(processinfo); \
+	    processinfo_waitoninputstream(processinfo); \
+	    processinfo_exec_start(processinfo); \
+    }\
+    else {\
+        processloopOK = 0;\
+    }\
+    int processcompstatus = 1;\
+    if( CLIcmddata.flag & CLICMDFLAG_PROCINFO) {\
+        processcompstatus = processinfo_compute_status(processinfo);\
+    }\
+	if(processcompstatus == 1) \
+	{
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_END \
+	} \
+	if( CLIcmddata.flag & CLICMDFLAG_PROCINFO) {\
+        processinfo_exec_end(processinfo); \
+    }\
+} \
+if( CLIcmddata.flag & CLICMDFLAG_PROCINFO) {\
+    processinfo_cleanExit(processinfo);\
+}
+
 
 
 
@@ -133,18 +191,7 @@ static errno_t FPSRUNfunction()\
     FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);\
     data.fps = &fps;\
     variables_link();\
-    if( CLIcmddata.flag & CLICMDFLAG_PROCINFO)\
-    {\
-        FPSPROCINFOLOOP_RUNINIT("function %.10s", CLIcmddata.key);\
-        processinfo->loopcntMax = 0;\
-        processinfo->MeasureTiming =  1;\
-        PROCINFOLOOP_START\
-    }\
     compute_function();\
-    if( CLIcmddata.flag & CLICMDFLAG_PROCINFO)\
-    {\
-        PROCINFOLOOP_END\
-    }\
     data.fps = NULL;\
     function_parameter_RUNexit(&fps);\
     return RETURN_SUCCESS;\
@@ -165,27 +212,26 @@ static errno_t FPSRUNfunction()\
 #define INSERT_STD_FPSCLIfunction \
 static errno_t FPSCLIfunction(void)\
 {\
+if( CLIcmddata.flag & CLICMDFLAG_FPS )\
+{\
 function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);\
 if(data.FPS_CMDCODE != 0)\
-    {\
-        data.FPS_CONFfunc = FPSCONFfunction;\
-        data.FPS_RUNfunc  = FPSRUNfunction;\
-        function_parameter_execFPScmd();\
-        return RETURN_SUCCESS;\
-    }\
-    else\
-    {\
-        if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
-        {\
-            variables_link();\
-            compute_function();\
-        }\
-        else\
-        {\
-            return CLICMD_INVALID_ARG;\
-        }\
-    }\
+{\
+    data.FPS_CONFfunc = FPSCONFfunction;\
+    data.FPS_RUNfunc  = FPSRUNfunction;\
+    function_parameter_execFPScmd();\
     return RETURN_SUCCESS;\
+}\
+}\
+\
+if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
+{\
+    variables_link();\
+    compute_function();\
+    return RETURN_SUCCESS;\
+}\
+\
+return CLICMD_INVALID_ARG;\
 }
 
 
