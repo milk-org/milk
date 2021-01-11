@@ -237,6 +237,10 @@ return CLICMD_INVALID_ARG;\
 }
 
 
+#define INSERT_STD_FPSCLIfunctions \
+INSERT_STD_FPSCONFfunction \
+INSERT_STD_FPSRUNfunction \
+INSERT_STD_FPSCLIfunction
 
 
 
