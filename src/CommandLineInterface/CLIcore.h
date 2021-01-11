@@ -267,7 +267,7 @@ typedef struct
     uint64_t flags;
 
     // dynamic settings for function
-    CMDSETTINGS *cmdsettings;
+    CMDSETTINGS cmdsettings;
 } CMD;
 
 
