@@ -11,7 +11,7 @@
 
 
 /** @brief Add parameters to FPS for real-time process settings
- * 
+ *
  * Adds standard set of parameters for integration with process info
  * and other milk conventions.
  *
@@ -37,29 +37,29 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
     function_parameter_add_entry(fps, ".conf.procinfo.NBthread", "max NB threads",
                                  FPTYPE_INT64, FPFLAG, &maxNBthread_default);
 
-	// taskset
+    // taskset
     function_parameter_add_entry(fps, ".conf.taskset", "CPUs mask",
-                                 FPTYPE_STRING, FPFLAG, "0-127");	
+                                 FPTYPE_STRING, FPFLAG, "0-127");
 
     // run time string
     function_parameter_add_entry(fps, ".conf.timestring", "runstart time string",
                                  FPTYPE_STRING, FPFLAG, "undef");
 
 
-	// custom label
+    // custom label
     function_parameter_add_entry(fps, ".conf.label", "custom label",
-                                 FPTYPE_STRING, FPFLAG, "");	
+                                 FPTYPE_STRING, FPFLAG, "");
 
 
-	// output directory where results are saved
-	//
+    // output directory where results are saved
+    //
 //	char outdir[FPS_DIR_STRLENMAX];
 //	snprintf(outdir, FPS_DIR_STRLENMAX, "fps.%s", fps->md->name);
     function_parameter_add_entry(fps, ".conf.datadir", "data directory",
                                  FPTYPE_DIRNAME, FPFLAG, fps->md->datadir);
 
-	// input directory, FPS configuration files ready by FPSsync operation
-	//
+    // input directory, FPS configuration files ready by FPSsync operation
+    //
 //	char confdir[FPS_DIR_STRLENMAX];
 //	snprintf(confdir, FPS_DIR_STRLENMAX, "fpsconfdir-%s", fps->md->name);
     function_parameter_add_entry(fps, ".conf.confdir", "conf directory",
@@ -67,8 +67,8 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
 
 
 
-	// Where results are archived
-	//	
+    // Where results are archived
+    //
     function_parameter_add_entry(fps, ".conf.archivedir", "archive directory",
                                  FPTYPE_DIRNAME, FPFLAG, NULL);
 
@@ -78,18 +78,23 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
 
 
 
-errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *procinfo)
+errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
+                           PROCESSINFO *procinfo)
 {
-
-
+    DEBUG_TRACEPOINT("Checking fps pointer");
+    if ( fps == NULL )
+    {
+        PRINT_ERROR("Null pointer - cannot proceed\n");
+        abort();
+    }
     // set RT_priority if applicable
     long pindex = functionparameter_GetParamIndex(fps, ".conf.procinfo.RTprio");
-    if(pindex > -1) {
-        long RTprio = functionparameter_GetParamValue_INT64(fps, ".conf.procinfo.RTprio");
+    if(pindex > -1)
+    {
+        long RTprio = functionparameter_GetParamValue_INT64(fps,
+                      ".conf.procinfo.RTprio");
         procinfo->RT_priority = RTprio;
     }
-
-
 
     return RETURN_SUCCESS;
 }

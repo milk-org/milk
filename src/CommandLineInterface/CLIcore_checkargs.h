@@ -99,7 +99,8 @@ typedef struct
 
 typedef struct
 {
-    int tmpi;
+    long procinfo_loopcntMax;
+    int procinfo_MeasureTiming;
 } CMDSETTINGS;
 
 

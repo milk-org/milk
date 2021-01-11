@@ -113,7 +113,7 @@ if( CLIcmddata.flags & CLICMDFLAG_PROCINFO)\
         PRINT_ERROR("snprintf string truncation");\
         abort();\
     }\
-    if( CLIcmddata.flags & CLICMDFLAG_FPS ) {\
+    if( data.fps != NULL ) {\
         processinfo = processinfo_setup(data.FPS_name, pinfodescr,\
             "startup", __FUNCTION__, __FILE__, __LINE__ );\
         fps_to_processinfo(data.fps, processinfo);\
@@ -124,8 +124,9 @@ if( CLIcmddata.flags & CLICMDFLAG_PROCINFO)\
             "startup", __FUNCTION__, __FILE__, __LINE__ );\
     }\
 \
-    processinfo->loopcntMax = 0;\
-    processinfo->MeasureTiming =  1;\
+    processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
+    processinfo->MeasureTiming =  CLIcmddata.cmdsettings->procinfo_MeasureTiming;\
+    DEBUG_TRACEPOINT(" ");\
     processinfo_loopstart(processinfo);\
 }\
 while(processloopOK == 1) \
@@ -226,6 +227,7 @@ if(data.FPS_CMDCODE != 0)\
 \
 if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
 {\
+    data.fps = NULL;\
     variables_link();\
     compute_function();\
     return RETURN_SUCCESS;\

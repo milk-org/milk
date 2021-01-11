@@ -478,22 +478,27 @@ int CLIhelp_make_cmdexamplestring(
 
 
 
-static void checkFlag64(
+static int checkFlag64(
     uint64_t flags,
     uint64_t testflag,
     char *flagdescription
 )
 {
+    int rval = 0;
+
     if(flags & testflag)
     {
+        rval = 1;
         printf("    [%c[%d;%dm ON%c[%dm]  %s\n",
                (char) 27, 1, 32, (char) 27, 0, flagdescription);
     }
     else
     {
+        rval = 0;
         printf("    [%c[%d;%dmOFF%c[%dm]  %s\n",
                (char) 27, 1, 31, (char) 27, 0, flagdescription);
     }
+    return rval;
 }
 
 
@@ -536,7 +541,11 @@ errno_t help_command(
 
             printf("\n");
             checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_FPS, "FPS support");
-            checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_PROCINFO, "processinfo support");
+            if(checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_PROCINFO, "processinfo support") == 1)
+            {
+                printf("        loopcntMax    : %ld\n", data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
+                printf("        MeasureTiming : %d\n", data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
+            }
             printf("\n");
 
 
