@@ -13,8 +13,13 @@
 #include "CommandLineInterface/IMGID.h"
 
 
-
-
+// binding between variables and function args/params
+#define STD_FARG_LINKfunction \
+for(int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF)); argi++)\
+    {\
+        void *ptr = get_farg_ptr(farg[argi].fpstag);\
+        *(farg[argi].valptr) = ptr;\
+    }
 
 
 
@@ -34,7 +39,7 @@ static errno_t CLIfunction(void)\
 {\
     if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
     {\
-        variables_link();\
+        STD_FARG_LINKfunction\
         compute_function();\
 \
         return RETURN_SUCCESS;\
@@ -90,7 +95,7 @@ static errno_t FPSCONFfunction()\
     }\
     data.fps = &fps;\
     CMDargs_to_FPSparams_create(&fps);\
-    variables_link();\
+    STD_FARG_LINKfunction\
     FPS_CONFLOOP_START\
     data.fps = NULL;\
     FPS_CONFLOOP_END\
@@ -191,7 +196,7 @@ static errno_t FPSRUNfunction()\
 {\
     FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);\
     data.fps = &fps;\
-    variables_link();\
+    STD_FARG_LINKfunction\
     compute_function();\
     data.fps = NULL;\
     function_parameter_RUNexit(&fps);\
@@ -228,7 +233,7 @@ if(data.FPS_CMDCODE != 0)\
 if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
 {\
     data.fps = NULL;\
-    variables_link();\
+    STD_FARG_LINKfunction\
     compute_function();\
     return RETURN_SUCCESS;\
 }\
