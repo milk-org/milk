@@ -188,9 +188,10 @@ errno_t exitCLI()
         EXECUTE_SYSTEM_COMMAND("rm imlist.txt");
     }
 
-	if(data.quiet == 0) {
-		printf("Closing PID %ld (prompt process)\n", (long) getpid());
-	}
+    if(data.quiet == 0)
+    {
+        printf("Closing PID %ld (prompt process)\n", (long) getpid());
+    }
     //    exit(0);
     data.CLIloopON = 0; // stop CLI loop
 
@@ -305,8 +306,8 @@ errno_t functionparameter_CTRLscreen__cli()
 {
     if(
         (CLI_checkarg(1, CLIARG_LONG) == 0) &&
-        (CLI_checkarg(2, CLIARG_STR ) == 0) &&
-        (CLI_checkarg(3, CLIARG_STR ) == 0)
+        (CLI_checkarg(2, CLIARG_STR) == 0) &&
+        (CLI_checkarg(3, CLIARG_STR) == 0)
     )
     {
         functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl,
@@ -324,7 +325,7 @@ errno_t functionparameter_CTRLscreen__cli()
 
 
 errno_t function_parameter_structure_load__cli()
-{	
+{
     if(CLI_checkarg(1, CLIARG_STR) == 0)
     {
         function_parameter_structure_load(
@@ -401,18 +402,18 @@ static errno_t runCLI_initialize(
 )
 {
     // NOTE: change to function call to ImageStreamIO_typename
-   /* TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
-    TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
-    TYPESIZE[_DATATYPE_UINT16]                 = SIZEOF_DATATYPE_UINT16;
-    TYPESIZE[_DATATYPE_INT16]                  = SIZEOF_DATATYPE_INT16;
-    TYPESIZE[_DATATYPE_UINT32]                 = SIZEOF_DATATYPE_UINT32;
-    TYPESIZE[_DATATYPE_INT32]                  = SIZEOF_DATATYPE_INT32;
-    TYPESIZE[_DATATYPE_UINT64]                 = SIZEOF_DATATYPE_UINT64;
-    TYPESIZE[_DATATYPE_INT64]                  = SIZEOF_DATATYPE_INT64;
-    TYPESIZE[_DATATYPE_FLOAT]                  = SIZEOF_DATATYPE_FLOAT;
-    TYPESIZE[_DATATYPE_DOUBLE]                 = SIZEOF_DATATYPE_DOUBLE;
-    TYPESIZE[_DATATYPE_COMPLEX_FLOAT]          = SIZEOF_DATATYPE_COMPLEX_FLOAT;
-    TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;*/
+    /* TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
+     TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
+     TYPESIZE[_DATATYPE_UINT16]                 = SIZEOF_DATATYPE_UINT16;
+     TYPESIZE[_DATATYPE_INT16]                  = SIZEOF_DATATYPE_INT16;
+     TYPESIZE[_DATATYPE_UINT32]                 = SIZEOF_DATATYPE_UINT32;
+     TYPESIZE[_DATATYPE_INT32]                  = SIZEOF_DATATYPE_INT32;
+     TYPESIZE[_DATATYPE_UINT64]                 = SIZEOF_DATATYPE_UINT64;
+     TYPESIZE[_DATATYPE_INT64]                  = SIZEOF_DATATYPE_INT64;
+     TYPESIZE[_DATATYPE_FLOAT]                  = SIZEOF_DATATYPE_FLOAT;
+     TYPESIZE[_DATATYPE_DOUBLE]                 = SIZEOF_DATATYPE_DOUBLE;
+     TYPESIZE[_DATATYPE_COMPLEX_FLOAT]          = SIZEOF_DATATYPE_COMPLEX_FLOAT;
+     TYPESIZE[_DATATYPE_COMPLEX_DOUBLE]         = SIZEOF_DATATYPE_COMPLEX_DOUBLE;*/
     //    TYPESIZE[_DATATYPE_EVENT_UI8_UI8_UI16_UI8] = SIZEOF_DATATYPE_EVENT_UI8_UI8_UI16_UI8;
 
 
@@ -581,12 +582,12 @@ errno_t runCLI(
 
     strcpy(data.processname, argv[0]);
 
-	
+
     // Set CLI prompt
     char prompt[200];
     runCLI_prompt(promptstring, prompt);
-    
-    
+
+
     // CLI initialize
     runCLI_initialize();
 
@@ -600,7 +601,8 @@ errno_t runCLI(
     // initialize fifo to process name
     DEBUG_TRACEPOINT("set default fifo name");
     //sprintf(data.fifoname, "%s.fifo.%07d", data.processname, getpid());
-    sprintf(data.fifoname, "%s/.%s.fifo.%07d", data.shmdir, data.processname, getpid());
+    sprintf(data.fifoname, "%s/.%s.fifo.%07d", data.shmdir, data.processname,
+            getpid());
 
     DEBUG_TRACEPOINT("Get command-line options");
     command_line_process_options(argc, argv);
@@ -655,7 +657,7 @@ errno_t runCLI(
 
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
-    
+
     runCLI_cmd_init();
 
 
@@ -668,15 +670,16 @@ errno_t runCLI(
     fdmax = fileno(stdin);
     if(data.fifoON == 1)
     {
-		if(data.quiet == 0) {
-        printf("Creating fifo %s\n", data.fifoname);
-	}
+        if(data.quiet == 0)
+        {
+            printf("Creating fifo %s\n", data.fifoname);
+        }
         mkfifo(data.fifoname, 0666);
         fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
         if(fifofd == -1)
         {
             perror("open");
-            printf("File name : %s\n", data.fifoname);            
+            printf("File name : %s\n", data.fifoname);
             return EXIT_FAILURE;
         }
         if(fifofd > fdmax)
@@ -693,8 +696,8 @@ errno_t runCLI(
     data.CLIloopON = 1; // start CLI loop
 
 
-	
-	DEBUG_TRACEPOINT("Start CLI loop");
+
+    DEBUG_TRACEPOINT("Start CLI loop");
     while(data.CLIloopON == 1)
     {
         FILE *fp;
@@ -742,21 +745,22 @@ errno_t runCLI(
         {
             if(data.fifoON == 1)
             {
-				EXECUTE_SYSTEM_COMMAND("file %s", CLIstartupfilename); //TEST
+                EXECUTE_SYSTEM_COMMAND("file %s", CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND("cat %s", CLIstartupfilename); //TEST
                 EXECUTE_SYSTEM_COMMAND("cat %s > %s 2> /dev/null", CLIstartupfilename,
                                        data.fifoname);
-                                       
-                if(data.quiet == 0) { 
-                printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
-                printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
-				}
+
+                if(data.quiet == 0)
+                {
+                    printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
+                    printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
+                }
             }
-		}
+        }
         initstartup = 1;
 
 
- 
+
         DEBUG_TRACEPOINT("Get user input"); //===============================
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
@@ -775,6 +779,7 @@ errno_t runCLI(
 
         while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
+            DEBUG_TRACEPOINT("processing input command");
             //printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
@@ -838,7 +843,8 @@ errno_t runCLI(
                         {
                             buf1[total_bytes - 1] = '\0';
                             strcpy(data.CLIcmdline, buf1);
-                            DEBUG_TRACEPOINT("CLI executing line: %s", data.CLIcmdline); //===============================
+                            DEBUG_TRACEPOINT("CLI executing line: %s",
+                                             data.CLIcmdline); //===============================
                             CLI_execute_line();
                             DEBUG_TRACEPOINT("CLI line executed");
                             printf("%s", prompt);
@@ -866,13 +872,16 @@ errno_t runCLI(
     // clear all images and variables
     clearall();
 
+    DEBUG_TRACEPOINT("images and variables cleared");
 
     runCLI_free();
 
+    DEBUG_TRACEPOINT("memory freed");
 
-	#if ( RL_READLINE_VERSION > 0x602 )
-	rl_clear_history();
-	#endif
+
+#if ( RL_READLINE_VERSION > 0x602 )
+    rl_clear_history();
+#endif
 
     rl_callback_handler_remove();
 
@@ -895,11 +904,11 @@ errno_t runCLI(
 
 void runCLI_cmd_init()
 {
-	// ensure that commands below belong to root/MAIN module
-	data.moduleindex = -1;
+    // ensure that commands below belong to root/MAIN module
+    data.moduleindex = -1;
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "exit",
         __FILE__,
         exitCLI,
@@ -908,7 +917,7 @@ void runCLI_cmd_init()
         "exit",
         "exitCLI");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "quit",
         __FILE__,
         exitCLI,
@@ -917,7 +926,7 @@ void runCLI_cmd_init()
         "quit",
         "exitCLI");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "exitCLI",
         __FILE__,
         exitCLI,
@@ -927,7 +936,7 @@ void runCLI_cmd_init()
         "exitCLI");
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "help",
         __FILE__,
         help,
@@ -936,7 +945,7 @@ void runCLI_cmd_init()
         "help",
         "int help()");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "?",
         __FILE__,
         help,
@@ -945,7 +954,7 @@ void runCLI_cmd_init()
         "?",
         "int help()");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "helprl",
         __FILE__,
         help,
@@ -955,7 +964,7 @@ void runCLI_cmd_init()
         "int help()");
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "cmd?",
         __FILE__,
         help_cmd,
@@ -964,7 +973,7 @@ void runCLI_cmd_init()
         "cmd?",
         "int help_cmd()");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "cmdinfo?",
         __FILE__,
         cmdinfosearch,
@@ -973,7 +982,7 @@ void runCLI_cmd_init()
         "cmdinfo? image",
         "int cmdinfosearch()");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "m?",
         __FILE__,
         help_module,
@@ -982,7 +991,7 @@ void runCLI_cmd_init()
         "m? COREMOD_memory",
         "errno_t list_commands_module()");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "soload",
         __FILE__,
         load_so__cli,
@@ -991,7 +1000,7 @@ void runCLI_cmd_init()
         "soload mysharedobj.so",
         "int load_sharedobj(char *libname)");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "mload",
         __FILE__,
         load_module__cli,
@@ -1000,7 +1009,7 @@ void runCLI_cmd_init()
         "mload mymodule",
         "errno_t load_module_shared(char *modulename)");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "mloadas",
         __FILE__,
         CLIcore__load_module_as__cli,
@@ -1009,7 +1018,7 @@ void runCLI_cmd_init()
         "mloadas mymodule mymod",
         "errno_t load_module_shared(char *modulename)");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "ci",
         __FILE__,
         printInfo,
@@ -1019,7 +1028,7 @@ void runCLI_cmd_init()
         "int printInfo()");
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "dpsingle",
         __FILE__,
         set_default_precision_single,
@@ -1028,7 +1037,7 @@ void runCLI_cmd_init()
         "dpsingle",
         "data.precision = 0");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "dpdouble",
         __FILE__,
         set_default_precision_double,
@@ -1043,7 +1052,7 @@ void runCLI_cmd_init()
     // process info
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "setprocinfoON",
         __FILE__,
         set_processinfoON,
@@ -1052,7 +1061,7 @@ void runCLI_cmd_init()
         "setprocinfoON",
         "set_processinfoON()");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "setprocinfoOFF",
         __FILE__,
         set_processinfoOFF,
@@ -1062,7 +1071,7 @@ void runCLI_cmd_init()
         "set_processinfoOFF()");
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "procCTRL",
         __FILE__,
         processinfo_CTRLscreen__cli,
@@ -1074,9 +1083,9 @@ void runCLI_cmd_init()
 
 
 
-	// stream ctrl
+    // stream ctrl
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "streamCTRL",
         __FILE__,
         streamCTRL_CTRLscreen__cli,
@@ -1087,8 +1096,8 @@ void runCLI_cmd_init()
 
 
 
-	// FPS
-	 RegisterCLIcommand(
+    // FPS
+    RegisterCLIcommand(
         "fpsread",
         __FILE__,
         function_parameter_structure_load__cli,
@@ -1097,7 +1106,7 @@ void runCLI_cmd_init()
         "readfps imanalyze",
         "long function_parameter_structure_load(char *fpsname)");
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "fpsCTRL",
         __FILE__,
         functionparameter_CTRLscreen__cli,
@@ -1114,7 +1123,7 @@ void runCLI_cmd_init()
 
 
 
-	 RegisterCLIcommand(
+    RegisterCLIcommand(
         "usleep",
         __FILE__,
         milk_usleep__cli,
@@ -1142,13 +1151,27 @@ static void runCLI_free()
 {
 #ifndef DATA_STATIC_ALLOC
     // Free
+    DEBUG_TRACEPOINT("free data.image");
     free(data.image);
+
+    DEBUG_TRACEPOINT("free data.variable");
     free(data.variable);
-    
-    free(data.fps);
-    
+
+    DEBUG_TRACEPOINT("free data.fps");
+    if(data.fpsarray == NULL)
+    {
+        printf("NULL pointer\n");
+    }
+    else
+    {
+        free(data.fpsarray);
+    }
+
+
+
 #endif
     //  free(data.cmd);
+    DEBUG_TRACEPOINT("free data.rndgen");
     gsl_rng_free(data.rndgen);
 }
 
@@ -1293,8 +1316,9 @@ static int command_line_process_options(
                 break;
 
             case 'n':
-				if(data.quiet == 0) {
-					printf("process name '%s'\n", optarg);
+                if(data.quiet == 0)
+                {
+                    printf("process name '%s'\n", optarg);
                 }
                 strcpy(data.processname, optarg);
                 data.processnameflag = 1; // this process has been named
@@ -1329,24 +1353,26 @@ static int command_line_process_options(
                 break;
 
             case 'f':
-				if(data.quiet == 0) {
-					printf("fifo input ON\n");
-				}
+                if(data.quiet == 0)
+                {
+                    printf("fifo input ON\n");
+                }
                 data.fifoON = 1;
                 break;
 
             case 'F':
                 printf("using input fifo '%s'\n", optarg);
                 data.fifoON = 1;
-                sprintf(data.fifoname, "%s", optarg);               
-                printf("FIFO NAME = %s\n", data.fifoname);                
+                sprintf(data.fifoname, "%s", optarg);
+                printf("FIFO NAME = %s\n", data.fifoname);
                 break;
 
             case 's':
                 strcpy(CLIstartupfilename, optarg);
-                if(data.quiet == 0) {
-					printf("Startup file : %s\n", CLIstartupfilename);
-				}
+                if(data.quiet == 0)
+                {
+                    printf("Startup file : %s\n", CLIstartupfilename);
+                }
                 break;
 
             case '?':

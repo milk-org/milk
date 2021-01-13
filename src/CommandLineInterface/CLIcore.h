@@ -475,11 +475,12 @@ typedef struct
 
     // array of FPSs
     long           NB_MAX_FPS;
-    FUNCTION_PARAMETER_STRUCT *fps;
+    FUNCTION_PARAMETER_STRUCT *fpsarray;
 
 
     // Function parameter structure (FPS) CLI integration
     // These entries are set when CLI process links to FPS
+    FUNCTION_PARAMETER_STRUCT *fpsptr;
     char           FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
     // Which type of FPS process is the current process ?
     // conf, run, ctrl

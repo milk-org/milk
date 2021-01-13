@@ -55,7 +55,7 @@ errno_t function_parameter_execFPScmd()
         fpsID = function_parameter_structure_load(data.FPS_name);
         if(fpsID != -1)
         {
-            functionparameter_FPS_tmux_init(&data.fps[fpsID]);
+            functionparameter_FPS_tmux_init(&data.fpsarray[fpsID]);
         }
         return RETURN_SUCCESS;
     }
@@ -66,7 +66,7 @@ errno_t function_parameter_execFPScmd()
         fpsID = function_parameter_structure_load(data.FPS_name);
         if(fpsID != -1)
         {
-            functionparameter_FPS_tmux_kill(&data.fps[fpsID]);
+            functionparameter_FPS_tmux_kill(&data.fpsarray[fpsID]);
         }
         return RETURN_SUCCESS;
     }
