@@ -113,13 +113,15 @@ void CLI_data_init()
 
 
     // Allocate data.fps
-    data.fps = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
+    data.fpsarray = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
 
     // Initialize file descriptors to -1
     //
     for(int fpsindex = 0; fpsindex < data.NB_MAX_FPS; fpsindex++)
     {
-        data.fps[fpsindex].SMfd = -1;
+        data.fpsarray[fpsindex].SMfd = -1;
+        data.fpsarray[fpsindex].md = NULL;
+        data.fpsarray[fpsindex].parray = NULL;
     }
 
 

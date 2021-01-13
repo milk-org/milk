@@ -93,11 +93,11 @@ static errno_t FPSCONFfunction()\
     {\
         fps_add_processinfo_entries(&fps);\
     }\
-    data.fps = &fps;\
+    data.fpsptr = &fps;\
     CMDargs_to_FPSparams_create(&fps);\
     STD_FARG_LINKfunction\
     FPS_CONFLOOP_START\
-    data.fps = NULL;\
+    data.fpsptr = NULL;\
     FPS_CONFLOOP_END\
     return RETURN_SUCCESS;\
 }
@@ -118,10 +118,10 @@ if( CLIcmddata.flags & CLICMDFLAG_PROCINFO)\
         PRINT_ERROR("snprintf string truncation");\
         abort();\
     }\
-    if( data.fps != NULL ) {\
+    if( data.fpsptr != NULL ) {\
         processinfo = processinfo_setup(data.FPS_name, pinfodescr,\
             "startup", __FUNCTION__, __FILE__, __LINE__ );\
-        fps_to_processinfo(data.fps, processinfo);\
+        fps_to_processinfo(data.fpsptr, processinfo);\
     }\
     else\
     {\
@@ -195,10 +195,10 @@ if( CLIcmddata.flags & CLICMDFLAG_PROCINFO) {\
 static errno_t FPSRUNfunction()\
 {\
     FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);\
-    data.fps = &fps;\
+    data.fpsptr = &fps;\
     STD_FARG_LINKfunction\
     compute_function();\
-    data.fps = NULL;\
+    data.fpsptr = NULL;\
     function_parameter_RUNexit(&fps);\
     return RETURN_SUCCESS;\
 }
@@ -232,7 +232,7 @@ if(data.FPS_CMDCODE != 0)\
 \
 if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
 {\
-    data.fps = NULL;\
+    data.fpsptr = NULL;\
     STD_FARG_LINKfunction\
     compute_function();\
     return RETURN_SUCCESS;\

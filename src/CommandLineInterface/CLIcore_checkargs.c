@@ -697,7 +697,7 @@ void * get_farg_ptr(
     DEBUG_TRACEPOINT("FPS_CMDCODE = %d", data.FPS_CMDCODE);
     if(data.FPS_CMDCODE != 0)
     {
-        ptr = (void *) functionparameter_GetParamPtr_INT64(data.fps, tag);
+        ptr = (void *) functionparameter_GetParamPtr_INT64(data.fpsptr, tag);
     }
     else
     {
