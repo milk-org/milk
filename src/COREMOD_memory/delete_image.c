@@ -164,10 +164,10 @@ errno_t delete_image_ID(
             if(data.rmSHMfile == 1)    // remove files from disk
             {
                 EXECUTE_SYSTEM_COMMAND("rm /dev/shm/sem.%s.%s_sem*",
-                        data.shmsemdirname, imname);
+                                       data.shmsemdirname, imname);
                 sprintf(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
                 remove(fname);
-								
+
                 EXECUTE_SYSTEM_COMMAND("rm %s/%s.im.shm", data.shmdir, imname);
             }
 
@@ -301,7 +301,7 @@ errno_t destroy_shared_image_ID(
     imageID ID;
 
     ID = image_ID(imname);
-    if( (ID != -1) && (data.image[ID].md[0].shared == 1) )
+    if((ID != -1) && (data.image[ID].md[0].shared == 1))
     {
         ImageStreamIO_destroyIm(&data.image[ID]);
     }
@@ -311,6 +311,6 @@ errno_t destroy_shared_image_ID(
                 "%c[%d;%dm WARNING: shared image %s does not exist [ %s  %s  %d ] %c[%d;m\n",
                 (char) 27, 1, 31, imname, __FILE__, __func__, __LINE__, (char) 27, 0);
     }
-    
+
     return RETURN_SUCCESS;
 }
