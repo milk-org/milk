@@ -21,13 +21,13 @@ long fps_ID(
     loopOK = 1;
     while(loopOK == 1)
     {
-		
-        if( data.fps[i].SMfd >= 0 )
+
+        if(data.fpsarray[i].SMfd >= 0)
         {
-			// fps in use
-			
-            if((strncmp(name, data.fps[i].md->name, strlen(name)) == 0)
-                    && (data.fps[i].md->name[strlen(name)] == '\0'))
+            // fps in use
+
+            if((strncmp(name, data.fpsarray[i].md->name, strlen(name)) == 0)
+                    && (data.fpsarray[i].md->name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID = i;
@@ -61,9 +61,10 @@ long next_avail_fps_ID()
 #endif
         for(i = 0; i < data.NB_MAX_FPS; i++)
         {
-            if(data.fps[i].SMfd < 0)
-            { // fps is unused, lets grab it
-                ID = i;                
+            if(data.fpsarray[i].SMfd < 0)
+            {
+                // fps is unused, lets grab it
+                ID = i;
                 break;
             }
         }
