@@ -65,17 +65,17 @@ errno_t fps_list()
            NBchar_fpsname, "name",
            NBchar_NBparam, "#par"
           );
-          
+
     for(fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
     {
-        if(data.fps[fpsID].SMfd > -1 )
+        if(data.fpsarray[fpsID].SMfd > -1)
         {
             // connected
             printf("%*ld  %*s  %*ld/%*ld\n",
                    NBchar_fpsID, fpsID,
-                   NBchar_fpsname, data.fps[fpsID].md[0].name,
-                   NBchar_NBparam, data.fps[fpsID].NBparamActive,
-                   NBchar_NBparam, data.fps[fpsID].NBparam
+                   NBchar_fpsname, data.fpsarray[fpsID].md[0].name,
+                   NBchar_NBparam, data.fpsarray[fpsID].NBparamActive,
+                   NBchar_NBparam, data.fpsarray[fpsID].NBparam
                   );
 
             fpscnt++;
