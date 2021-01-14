@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-option(python_build "Compile Python Wrappers" ON)
+option(build_python_module "Compile Python Wrappers" ON)
 
 include(CheckLanguage)
 
@@ -338,7 +338,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/cream_config.h
         )
 
 
-if(python_build)
+if(build_python_module)
 add_subdirectory (python_module)
 endif()
 
