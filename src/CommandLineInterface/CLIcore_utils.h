@@ -7,6 +7,12 @@
 #ifndef CLICORE_UTILS_H
 #define CLICORE_UTILS_H
 
+#ifdef __cplusplus
+typedef const char * CONST_WORD;
+#else
+typedef const char *restrict  CONST_WORD;
+#endif
+
 #include "CommandLineInterface/CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -256,7 +262,7 @@ INSERT_STD_FPSCLIfunction
 
 
 static inline IMGID makeIMGID(
-    const char *restrict name
+    CONST_WORD name
 )
 {
     IMGID img;

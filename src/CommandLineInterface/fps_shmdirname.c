@@ -10,11 +10,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-#ifndef STANDALONE
 #define SHAREDSHMDIR data.shmdir
-#else
-#include "standalone_dependencies.h"
-#endif
 
 
 errno_t function_parameter_struct_shmdirname(char *shmdname)

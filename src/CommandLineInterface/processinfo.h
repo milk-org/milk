@@ -23,7 +23,7 @@
 // timing info for real-time loop processes
 #define PROCESSINFO_NBtimer 100
 
-
+#include "CLIcore.h"
 
 /**
  *
