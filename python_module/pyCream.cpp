@@ -9,8 +9,8 @@ namespace py = pybind11;
 
 DATA __attribute__((used)) data;
 
-PYBIND11_MODULE(CacaoProcessTools, m) {
-  m.doc() = "CacaoProcessTools library module";
+PYBIND11_MODULE(pyCream, m) {
+  m.doc() = "pyCream library module";
 
   m.def("processCTRL", &processinfo_CTRLscreen,
         R"pbdoc(Open the process control monitor
