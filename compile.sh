@@ -7,13 +7,21 @@
 mkdir -p _build
 cd _build
 
-cmake .. -Dpython_build=ON
+if [ ! -z $1 ]
+then
+    CREAM_INSTALL_ROOT=$1
+fi
+
+if [ -z $CREAM_INSTALL_ROOT ]
+then
+    CREAM_INSTALL_ROOT=/usr/local
+fi
+
+cmake .. -Dpython_build=ON -DPYTHON_EXECUTABLE=$(which python) -DCMAKE_INSTALL_PREFIX=$CREAM_INSTALL_ROOT
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
 
-make -j$NCPUS
-
-# sudo make install
+cmake --build . --target install -- -j $NCPUS
 
 # # MANUAL stuff - just as reminder
 # # Grab version and link to folder - if you switch versions regularly, don't forget to hack your way around:

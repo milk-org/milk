@@ -19,9 +19,6 @@ imageID functionparameter_LoadStream(
     uint32_t     imLOC;
 
 
-#ifdef STANDALONE
-    printf("====================== Not working in standalone mode \n");
-#else
     printf("====================== Loading stream \"%s\" = %s\n",
            fps->parray[pindex].keywordfull, fps->parray[pindex].val.string[0]);
     ID = COREMOD_IOFITS_LoadMemStream(fps->parray[pindex].val.string[0],
@@ -55,7 +52,6 @@ imageID functionparameter_LoadStream(
             }
         }
     }
-#endif
 
 
     // TODO: Add testing for fps

@@ -194,7 +194,6 @@ int functionparameter_CheckParameter(
     }
 
 
-#ifndef STANDALONE
     if(fpsentry->parray[pindex].type == FPTYPE_FILENAME)
     {
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED)
@@ -240,7 +239,6 @@ int functionparameter_CheckParameter(
             }
         }
     }
-#endif
 
 
     if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME)
@@ -302,11 +300,7 @@ int functionparameter_CheckParameter(
 
 
 
-#ifdef STANDALONE
-    printf("====================== Not working in standalone mode \n");
-#else
     // STREAM CHECK
-
     if((fpsentry->parray[pindex].type & FPTYPE_STREAMNAME))
     {
 
@@ -371,7 +365,6 @@ int functionparameter_CheckParameter(
             }
         }
     }
-#endif
 
 
     if(err == 1)
@@ -490,10 +483,3 @@ int functionparameter_CheckParametersAll(
 
     return 0;
 }
-
-
-
-
-
-
-

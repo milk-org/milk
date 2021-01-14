@@ -22,7 +22,6 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 )
 {
 
-#ifndef STANDALONE
     // Check if function will be executed through FPS interface
     // set to 0 as default (no FPS)
     data.FPS_CMDCODE = 0;
@@ -139,7 +138,5 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
         printf(">>>>> %s >>>>>>> FPS name : %s\n", fpsname_default, data.FPS_name);
     }
 
-#endif
     return RETURN_SUCCESS;
 }
-

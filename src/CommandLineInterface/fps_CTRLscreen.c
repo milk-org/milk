@@ -541,9 +541,7 @@ errno_t functionparameter_CTRLscreen(
     }
 
 
-#ifndef STANDALONE
     set_signal_catch();
-#endif
 
 
 
@@ -2024,7 +2022,6 @@ errno_t functionparameter_CTRLscreen(
 
         loopcnt++;
 
-#ifndef STANDALONE
         if((data.signal_TERM == 1)
                 || (data.signal_INT == 1)
                 || (data.signal_ABRT == 1)
@@ -2036,7 +2033,6 @@ errno_t functionparameter_CTRLscreen(
             printf("Exit condition met\n");
             loopOK = 0;
         }
-#endif
     }
 
 
@@ -2066,6 +2062,3 @@ errno_t functionparameter_CTRLscreen(
 
     return RETURN_SUCCESS;
 }
-
-
-

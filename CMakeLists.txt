@@ -65,9 +65,6 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # linked to executable by default
 #
 
-list(APPEND libsrcdir src/CommandLineInterface)
-list(APPEND libname CLIcore)
-
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 # Update submodules as needed
@@ -106,6 +103,9 @@ list(APPEND libname milk${mname1})
 message("======= adding module  ${mname}")
 endforeach()
 
+list(APPEND libsrcdir src/CommandLineInterface)
+list(APPEND libname CLIcore)
+
 # =======================================
 # BUILD TYPE
 # =======================================
@@ -138,13 +138,14 @@ add_compile_options($<$<COMPILE_LANGUAGE:C>:-std=gnu17>)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
 
 
-# OpenMP
-find_package(OpenMP)
-if (OPENMP_FOUND)
-message("Found OpenMP")
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-fopenmp>)
-#add_compile_options(-fopenmp)
-endif()
+# # OpenMP
+# find_package(OpenMP)
+# if (OPENMP_FOUND)
+# message("Found OpenMP")
+# add_compile_options($<$<COMPILE_LANGUAGE:C>:-fopenmp>)
+# add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fopenmp>)
+# #add_compile_options(-fopenmp)
+# endif()
 
 # link-time optimizer
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto>)
@@ -337,8 +338,35 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/cream_config.h
         )
 
 
+if(python_build)
+add_subdirectory (python_module)
+endif()
 
-
+install(TARGETS CLIcore DESTINATION bin)
+install(PROGRAMS
+			scripts/milk-exec
+			scripts/milk-argparse
+			scripts/milk-streamCTRL
+			scripts/milk-procCTRL
+			scripts/milk-fpsCTRL
+			scripts/milk-cr2tofits
+			scripts/milk-FITS2shm
+			scripts/milk-fpsmkcmd
+			scripts/milk-fpsinit
+			scripts/milk-logshim
+			scripts/milk-logshimkill
+			scripts/milk-logshimoff
+			scripts/milk-logshimon
+			scripts/milk-logshimstat
+			scripts/merge3DfitsTelemetry
+			scripts/milk-script-std-config
+			scripts/milk-streamlink
+			scripts/milk-shm2FITS
+			scripts/milk-shm2FITSloop
+			scripts/tmuxkillall
+			scripts/tmuxsessionname
+			scripts/waitforfile
+        DESTINATION bin)
 
 
 # ====================================
