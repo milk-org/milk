@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-option(build_python_module "Compile Python Wrappers" ON)
+option(build_python_module "Compile Python Wrappers" OFF)
 
 include(CheckLanguage)
 

@@ -7,10 +7,15 @@
 
 namespace py = pybind11;
 
+extern "C" {
 DATA __attribute__((used)) data;
+}
 
 PYBIND11_MODULE(pyCream, m) {
   m.doc() = "pyCream library module";
+
+  CLI_data_init();
+//   m.attr("data") = &data;
 
   m.def("processCTRL", &processinfo_CTRLscreen,
         R"pbdoc(Open the process control monitor
