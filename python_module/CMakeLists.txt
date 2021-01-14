@@ -32,7 +32,7 @@ else()
   pybind11_add_module(pyCream pyCream.cpp)
 endif()
 
-target_link_libraries(pyCream PRIVATE CLIcore ImageStreamIO)
+target_link_libraries(pyCream PRIVATE CLIcore ImageStreamIO milkCOREMODiofits milkCOREMODmemory milkCOREMODtools)
 
 install(TARGETS pyCream
         EXPORT pyCreamConfig
