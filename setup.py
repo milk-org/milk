@@ -62,20 +62,20 @@ class CMakeBuildExt(build_ext):
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j%d' % os.cpu_count()]  #, 'VERBOSE=1']
 
-        if "CUDA_ROOT" in os.environ:
-            if os.path.isfile('{}/bin/gcc'.format(os.environ["CUDA_ROOT"])):
-                cmake_args += [
-                    '-DCMAKE_C_COMPILER={}/bin/gcc'.format(
-                        os.environ["CUDA_ROOT"])
-                ]
-            if os.path.isfile('{}/bin/g++'.format(os.environ["CUDA_ROOT"])):
-                cmake_args += [
-                    '-DCMAKE_CXX_COMPILER={}/bin/g++'.format(
-                        os.environ["CUDA_ROOT"])
-                ]
-            cmake_args += ['-DUSE_CUDA=ON']
-        else:
-            cmake_args += ['-DUSE_CUDA=OFF']
+        #if "CUDA_ROOT" in os.environ:
+        #    if os.path.isfile('{}/bin/gcc'.format(os.environ["CUDA_ROOT"])):
+        #        cmake_args += [
+        #            '-DCMAKE_C_COMPILER={}/bin/gcc'.format(
+        #                os.environ["CUDA_ROOT"])
+        #        ]
+        #    if os.path.isfile('{}/bin/g++'.format(os.environ["CUDA_ROOT"])):
+        #        cmake_args += [
+        #            '-DCMAKE_CXX_COMPILER={}/bin/g++'.format(
+        #                os.environ["CUDA_ROOT"])
+        #        ]
+        #    cmake_args += ['-DUSE_CUDA=ON']
+        #else:
+        #    cmake_args += ['-DUSE_CUDA=OFF']
 
         cmake_args += ['-Dbuild_python_module=ON']
 
