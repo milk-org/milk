@@ -130,11 +130,7 @@ target_link_directories(CLIcore
 
 target_link_libraries(CLIcore
                       PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${HWLOC_LIBRARIES}
-                             ${NCURSES_LIBRARIES}
-                             milkCOREMODarith
-                             milkCOREMODiofits
-                             milkCOREMODmemory
-                             milkCOREMODtools)
+                             ${NCURSES_LIBRARIES})
 
 if(${python_module})
   add_subdirectory(python_module)

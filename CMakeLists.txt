@@ -65,6 +65,13 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # linked to executable by default
 #
 
+# =======================================
+# MODULES INCLUDED
+# =======================================
+# modules are added to two lists:
+# libsrcdir : source code directory
+# libname   : shared object name
+
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 # Update submodules as needed
@@ -83,28 +90,21 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
-list(APPEND libsrcdir src/ImageStreamIO)
-list(APPEND libname ImageStreamIO)
-
-# =======================================
-# MODULES INCLUDED
-# =======================================
-# modules are added to two lists:
-# libsrcdir : source code directory
-# libname   : shared object name
 
 # CORE MODULES
-list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
+list(APPEND libsrcdir src/ImageStreamIO)
+list(APPEND libname ImageStreamIO m)
 
+list(APPEND libsrcdir src/CommandLineInterface)
+list(APPEND libname CLIcore)
+
+list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
 foreach(mname IN LISTS modulelist)
 string(REPLACE "_" "" mname1 "${mname}")
 list(APPEND libsrcdir src/${mname})
 list(APPEND libname milk${mname1})
 message("======= adding module  ${mname}")
 endforeach()
-
-list(APPEND libsrcdir src/CommandLineInterface)
-list(APPEND libname CLIcore)
 
 # =======================================
 # BUILD TYPE
@@ -248,6 +248,7 @@ ${GSL_LIBRARIES}
 ${FFTW_LIBRARIES}
 ${FFTWF_LIBRARIES}
 ${CMAKE_THREAD_LIBS_INIT}
+${libname}
 -fopenmp
 )
 
