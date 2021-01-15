@@ -200,4 +200,5 @@ install(FILES CLIcore.h
               fps_shmdirname.h
               fps_tmux.h
               fps_userinputsetparamvalue.h
+              IMGID.h
               DESTINATION include/${SRCNAME})

@@ -284,6 +284,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cream.pc
 
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/cream_config.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h
         DESTINATION include
         )
 
