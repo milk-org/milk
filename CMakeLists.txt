@@ -24,8 +24,6 @@ enable_language(C)
 
 project(cream VERSION 1.0.0 DESCRIPTION "cream library" LANGUAGES C)
 
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 # Version number
 set ( VERSION_MAJOR 1 )
 set ( VERSION_MINOR 01 )
@@ -91,12 +89,11 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-# CORE MODULES
-list(APPEND libsrcdir src/ImageStreamIO)
-list(APPEND libname ImageStreamIO m)
-
 list(APPEND libsrcdir src/CommandLineInterface)
 list(APPEND libname CLIcore)
+
+list(APPEND libsrcdir src/ImageStreamIO)
+list(APPEND libname ImageStreamIO m)
 
 list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
 foreach(mname IN LISTS modulelist)
@@ -223,33 +220,9 @@ ${FFTWF_CFLAGS_OTHER}
 set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"cream\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
 
 
-#
-# link order must satisfy dependancies
-#
-
-# ADD SOURCE DIRECTORIES
-# recursively add libraries to be compiled
-
-foreach(lname IN LISTS libname)
-target_link_libraries (cream PUBLIC "${lname}" )
-endforeach()
-
-
-
-
 target_link_libraries (cream PUBLIC
-m
-readline
-ncurses
-cfitsio
-dl
-rt
-${GSL_LIBRARIES}
-${FFTW_LIBRARIES}
-${FFTWF_LIBRARIES}
-${CMAKE_THREAD_LIBS_INIT}
 ${libname}
--fopenmp
+# -fopenmp
 )
 
 
@@ -289,30 +262,6 @@ set(PROGRAM_PERMISSIONS_DEFAULT
 
 
 install(TARGETS cream DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
-
-# Note: may need to write "/usr/local/magma/lib" to:
-# /etc/ld.so.conf.d/magma.conf
-
-
-
-# =======================================
-# MAKE DEFAULT
-# =======================================
-
-set(CMAKE_INSTALL_PREFIX_LINK "/usr/local/${PROJECT_NAME}")
-if(INSTALLMAKEDEFAULT)
-    install(CODE "
-    EXECUTE_PROCESS(COMMAND ln -snf ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX_LINK})
-    ")
-endif(INSTALLMAKEDEFAULT)
-
-
-
-
-
-
-
-
 
 # =======================================
 # PKG-CONFIG
