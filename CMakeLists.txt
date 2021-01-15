@@ -222,18 +222,8 @@ set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"cream\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_D
 
 
 target_link_libraries (cream PUBLIC
-m
-readline
-ncurses
-cfitsio
-dl
-rt
-${GSL_LIBRARIES}
-${FFTW_LIBRARIES}
-${FFTWF_LIBRARIES}
-${CMAKE_THREAD_LIBS_INIT}
 ${libname}
--fopenmp
+# -fopenmp
 )
 
 
