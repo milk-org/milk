@@ -101,7 +101,15 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 #
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
-target_link_libraries(${LIBNAME} PUBLIC m)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CFITSIO cfitsio)
+if(${CFITSIO_FOUND})
+  link_directories(${CFITSIO_LIBRARY_DIRS})
+  target_compile_definitions(${LIBNAME} PRIVATE USE_CFITSIO=1)
+  target_include_directories(${LIBNAME} PRIVATE ${CFITSIO_INCLUDE_DIRS})
+endif()
+
+target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES})
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})

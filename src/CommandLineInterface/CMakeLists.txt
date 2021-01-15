@@ -92,12 +92,20 @@ add_library(CLIcore
             TUItools.c
             ${CORE_FILES})
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CFITSIO cfitsio)
+if(${CFITSIO_FOUND})
+  link_directories(${CFITSIO_LIBRARY_DIRS})
+  target_compile_definitions(CLIcore PRIVATE USE_CFITSIO=1)
+  target_include_directories(CLIcore PRIVATE ${CFITSIO_INCLUDE_DIRS})
+endif()
+
 target_include_directories(CLIcore
-                            PUBLIC ${PROJECT_SOURCE_DIR}/..
-                                  ${PROJECT_SOURCE_DIR}/src
-                                  ${GSL_INCLUDE_DIRS}
-                                  ${FFTW_INCLUDE_DIRS}
-                                  ${FFTWF_INCLUDE_DIRS})
+                PUBLIC ${PROJECT_SOURCE_DIR}/..
+                      ${PROJECT_SOURCE_DIR}/src
+                      ${GSL_INCLUDE_DIRS}
+                      ${FFTW_INCLUDE_DIRS}
+                      ${FFTWF_INCLUDE_DIRS})
 
 target_compile_options(CLIcore
                         PUBLIC ${FFTW_CFLAGS_OTHER} ${FFTWF_CFLAGS_OTHER})
@@ -105,7 +113,7 @@ target_compile_options(CLIcore
 target_link_libraries(CLIcore
                       PUBLIC m
                               readline
-                              cfitsio
+                              ${CFITSIO_LIBRARIES}
                               dl
                               rt
                               ${GSL_LIBRARIES}
