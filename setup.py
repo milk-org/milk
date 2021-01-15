@@ -89,13 +89,13 @@ class CMakeBuildExt(build_ext):
 
 
 setup(
-    name='pyCream',
+    name='CacaoProcessTools',
     version='1.0.0',
     author=['Arnaud Sevin'],
     author_email=['Arnaud.Sevin@obspm.fr'],
     description='A wrap project to use cream with python',
     long_description='A wrap project to use cream with python',
-    ext_modules=[CMakeExtension('pyCream')],
+    ext_modules=[CMakeExtension('CacaoProcessTools')],
     install_requires=['pybind11>=2.4', 'cmake'],
     setup_requires=['pybind11>=2.4', 'cmake'],
     python_requires='>=3',

@@ -11,8 +11,8 @@ extern "C" {
 DATA __attribute__((used)) data;
 }
 
-PYBIND11_MODULE(pyCream, m) {
-  m.doc() = "pyCream library module";
+PYBIND11_MODULE(CacaoProcessTools, m) {
+  m.doc() = "CacaoProcessTools library module";
 
   CLI_data_init();
 //   m.attr("data") = &data;
