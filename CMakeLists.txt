@@ -24,8 +24,6 @@ enable_language(C)
 
 project(cream VERSION 1.0.0 DESCRIPTION "cream library" LANGUAGES C)
 
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 # Version number
 set ( VERSION_MAJOR 1 )
 set ( VERSION_MINOR 01 )
@@ -65,6 +63,13 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # linked to executable by default
 #
 
+# =======================================
+# MODULES INCLUDED
+# =======================================
+# modules are added to two lists:
+# libsrcdir : source code directory
+# libname   : shared object name
+
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 # Update submodules as needed
@@ -83,28 +88,21 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
-list(APPEND libsrcdir src/ImageStreamIO)
-list(APPEND libname ImageStreamIO)
 
-# =======================================
-# MODULES INCLUDED
-# =======================================
-# modules are added to two lists:
-# libsrcdir : source code directory
-# libname   : shared object name
+list(APPEND libsrcdir src/CommandLineInterface)
+list(APPEND libname CLIcore)
+
+list(APPEND libsrcdir src/ImageStreamIO)
+list(APPEND libname ImageStreamIO m)
 
 # CORE MODULES
 list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
-
 foreach(mname IN LISTS modulelist)
 string(REPLACE "_" "" mname1 "${mname}")
 list(APPEND libsrcdir src/${mname})
 list(APPEND libname milk${mname1})
 message("======= adding module  ${mname}")
 endforeach()
-
-list(APPEND libsrcdir src/CommandLineInterface)
-list(APPEND libname CLIcore)
 
 # =======================================
 # BUILD TYPE
@@ -223,20 +221,6 @@ ${FFTWF_CFLAGS_OTHER}
 set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"cream\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
 
 
-#
-# link order must satisfy dependancies
-#
-
-# ADD SOURCE DIRECTORIES
-# recursively add libraries to be compiled
-
-foreach(lname IN LISTS libname)
-target_link_libraries (cream PUBLIC "${lname}" )
-endforeach()
-
-
-
-
 target_link_libraries (cream PUBLIC
 m
 readline
@@ -248,6 +232,7 @@ ${GSL_LIBRARIES}
 ${FFTW_LIBRARIES}
 ${FFTWF_LIBRARIES}
 ${CMAKE_THREAD_LIBS_INIT}
+${libname}
 -fopenmp
 )
 
@@ -288,30 +273,6 @@ set(PROGRAM_PERMISSIONS_DEFAULT
 
 
 install(TARGETS cream DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
-
-# Note: may need to write "/usr/local/magma/lib" to:
-# /etc/ld.so.conf.d/magma.conf
-
-
-
-# =======================================
-# MAKE DEFAULT
-# =======================================
-
-set(CMAKE_INSTALL_PREFIX_LINK "/usr/local/${PROJECT_NAME}")
-if(INSTALLMAKEDEFAULT)
-    install(CODE "
-    EXECUTE_PROCESS(COMMAND ln -snf ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX_LINK})
-    ")
-endif(INSTALLMAKEDEFAULT)
-
-
-
-
-
-
-
-
 
 # =======================================
 # PKG-CONFIG

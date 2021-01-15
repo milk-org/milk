@@ -20,7 +20,7 @@ set(SOURCEFILES
     image_copy.c
     image_ID.c
     image_keyword.c
-    image_set_counters.c    
+    image_set_counters.c
     list_image.c
     list_variable.c
     logshmim.c
@@ -86,7 +86,7 @@ set(INCLUDEFILES
    )
 
 
-# DEFAULT SETTINGS 
+# DEFAULT SETTINGS
 # Do not change unless needed
 # =====================================================================
 
@@ -98,8 +98,10 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 
 # Library can be compiled from multiple source files
 # Convention: the main souce file is named <libname>.c
-# 
+#
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
+
+target_link_libraries(${LIBNAME} PUBLIC m)
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
