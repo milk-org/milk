@@ -17,7 +17,17 @@ then
     CREAM_INSTALL_ROOT=/usr/local
 fi
 
-cmake .. -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=$(which python) -DCMAKE_INSTALL_PREFIX=$CREAM_INSTALL_ROOT
+# find python executable
+pythonexec=$(which python)
+if command -v python3 &> /dev/null
+then
+    pythonexec=$(which python3)
+fi
+
+echo "using python at ${pythonexec}"
+
+
+cmake .. -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$CREAM_INSTALL_ROOT
 # cmake .. -DCMAKE_INSTALL_PREFIX=$CREAM_INSTALL_ROOT
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
