@@ -2,7 +2,7 @@
 
 # Compile script for milk_package
 # Customize / add you own options
-# Do not commit
+# Use as-is, or make a local custom copy (private, do not commit)
 
 mkdir -p _build
 cd _build
