@@ -16,6 +16,7 @@ pkg_check_modules(NCURSES REQUIRED ncurses)
 
 pkg_check_modules(HWLOC hwloc)
 
+pkg_check_modules(CFITSIO cfitsio)
 
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
@@ -92,8 +93,6 @@ add_library(CLIcore
             TUItools.c
             ${CORE_FILES})
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO cfitsio)
 if(${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(CLIcore PRIVATE USE_CFITSIO=1)
