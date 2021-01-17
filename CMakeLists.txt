@@ -199,10 +199,10 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # main
-add_executable(cream src/CLImain.c)
+add_executable(milk src/CLImain.c)
 
 
-target_include_directories(cream PUBLIC
+target_include_directories(milk PUBLIC
 ${PROJECT_SOURCE_DIR}/src
 ${GSL_INCLUDE_DIRS}
 ${FFTW_INCLUDE_DIRS}
@@ -211,34 +211,34 @@ ${CURSES_INCLUDE_DIR}
 )
 
 # adds the options to all targets within the directory and its sub-directories
-target_compile_options(cream PUBLIC
+target_compile_options(milk PUBLIC
 ${FFTW_CFLAGS_OTHER}
 ${FFTWF_CFLAGS_OTHER}
 -fopenmp
 )
 
-set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"cream\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
+set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
 
 
-target_link_libraries (cream PUBLIC
+target_link_libraries (milk PUBLIC
 ${libname}
 # -fopenmp
 )
 
 
 if(USE_CUDA)
-target_link_libraries (cream PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
-set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE0_CUDA" )
+target_link_libraries (milk PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
 endif(USE_CUDA)
 
-set_target_properties(cream PROPERTIES COMPILE_FLAGS "${BUILD_FLAGS}" )
+set_target_properties(milk PROPERTIES COMPILE_FLAGS "${BUILD_FLAGS}" )
 
 message("====================================================")
-get_target_property(creamcompopts cream COMPILE_OPTIONS)
+get_target_property(milkcompopts milk COMPILE_OPTIONS)
 
 message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
 message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
-message("COMPILE_OPTIONS         :  ${creamcompopts}")
+message("COMPILE_OPTIONS         :  ${milkcompopts}")
 message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
 
 message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
@@ -261,7 +261,7 @@ set(PROGRAM_PERMISSIONS_DEFAULT
     WORLD_READ WORLD_EXECUTE)
 
 
-install(TARGETS cream DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
+install(TARGETS milk DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
 
 # =======================================
 # PKG-CONFIG
@@ -326,8 +326,8 @@ install(PROGRAMS
 
 include(CTest)
 
-# test that cream CLI launches and list modules
-add_test(creamCLIlaunch cream-exec "-T" "m?")
-set_tests_properties(creamCLIlaunch PROPERTIES TIMEOUT 120)
+# test that milk CLI launches and list modules
+add_test(milkCLIlaunch milk-exec "-T" "m?")
+set_tests_properties(milkCLIlaunch PROPERTIES TIMEOUT 120)
 
-add_test(creamsemspeedtest cream-semtestspeed "100000" "1")
+add_test(milksemspeedtest milk-semtestspeed "100000" "1")
