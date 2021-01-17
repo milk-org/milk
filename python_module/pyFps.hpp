@@ -2,14 +2,13 @@
 #define PYFPS_H
 
 extern "C" {
-#include "processtools.h"
-
+#include "CLIcore.h"
+#include "CLIcore_datainit.h"
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"
-
 #include "fps_RUNstart.h"
 #include "fps_RUNstop.h"
-
+#include "processtools.h"
 }
 
 /**
@@ -19,8 +18,7 @@ extern "C" {
  *
  */
 
-
-enum FPS_status : uint16_t {
+enum FPS_status : uint32_t {
   CONF = FUNCTION_PARAMETER_STRUCT_STATUS_CONF,
   RUN = FUNCTION_PARAMETER_STRUCT_STATUS_RUN,
   CMDCONF = FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF,
@@ -32,15 +30,45 @@ enum FPS_status : uint16_t {
   TMUXCTRL = FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL
 };
 
+enum FPS_type : uint32_t {
+  AUTO = FPTYPE_AUTO,
+  UNDEF = FPTYPE_UNDEF,
+  INT32 = FPTYPE_INT32,
+  UINT32 = FPTYPE_UINT32,
+  INT64 = FPTYPE_INT64,
+  UINT64 = FPTYPE_UINT64,
+  FLOAT32 = FPTYPE_FLOAT32,
+  FLOAT64 = FPTYPE_FLOAT64,
+  PID = FPTYPE_PID,
+  TIMESPEC = FPTYPE_TIMESPEC,
+  FILENAME = FPTYPE_FILENAME,
+  FITSFILENAME = FPTYPE_FITSFILENAME,
+  EXECFILENAME = FPTYPE_EXECFILENAME,
+  DIRNAME = FPTYPE_DIRNAME,
+  STREAMNAME = FPTYPE_STREAMNAME,
+  STRING = FPTYPE_STRING,
+  ONOFF = FPTYPE_ONOFF,
+  PROCESS = FPTYPE_PROCESS,
+  FPSNAME = FPTYPE_FPSNAME,
+};
+
 class pyFps {
- public:
-  std::string name;
-  FUNCTION_PARAMETER_STRUCT fps;
-  std::map<std::string, std::string> keys;
-  std::map<std::string, const int> fptype_map{{"int", FPTYPE_INT64},
-                                              {"double", FPTYPE_FLOAT64},
-                                              {"float", FPTYPE_FLOAT32},
-                                              {"string", FPTYPE_STRING}};
+  std::string name_;
+  FUNCTION_PARAMETER_STRUCT fps_;
+  std::map<std::string, FPS_type> keys_;
+
+  int read_keys() {
+    int k = 0;
+    while ((k < fps_.md->NBparamMAX) &&
+           (fps_.parray[k].keywordfull[0] != '\0')) {
+      int offset = strlen(fps_.parray[k].keyword[0]) + 1;
+      char *key = fps_.parray[k].keywordfull + offset;
+      keys_[key] = static_cast<FPS_type>(fps_.parray[k].type);
+      k++;
+    }
+
+    return EXIT_SUCCESS;
+  };
 
  public:
   /**
@@ -58,15 +86,14 @@ class pyFps {
    * @param create : flag for creating of shared memory identifier
    * @param NBparamMAX : Max number of parameters
    */
-  pyFps(std::string fps_name, bool create, int NBparamMAX) {
-    this->name = fps_name;
+  pyFps(std::string fps_name, bool create, int NBparamMAX) : name_(fps_name) {
     if (create) {
-      this->create_and_connect(NBparamMAX);
+      create_and_connect(NBparamMAX);
     } else {
-      while (this->connect() == -1) {
+      while (connect() == -1) {
         sleep(0.01);
       }
-      this->read_keys();
+      read_keys();
     }
     std::cout << "FPS connected" << std::endl;
   }
@@ -77,9 +104,11 @@ class pyFps {
    */
   ~pyFps() = default;
 
-  FUNCTION_PARAMETER_STRUCT *operator->() { return &fps; }
-
-  FUNCTION_PARAMETER_STRUCT_MD *md() {return fps.md;}
+  FUNCTION_PARAMETER_STRUCT *operator->() { return &fps_; }
+  operator FUNCTION_PARAMETER_STRUCT *() { return &fps_; }
+  const FUNCTION_PARAMETER_STRUCT_MD *md() const { return fps_.md; }
+  const std::map<std::string, FPS_type> &keys() { return keys_; }
+  const FPS_type keys(const std::string &key) { return keys_[key]; }
 
   /**
    * @brief Create a and connect object
@@ -88,14 +117,14 @@ class pyFps {
    * @return int
    */
   int create_and_connect(int NBparamMAX) {
-    if (this->connect() == -1) {
+    if (connect() == -1) {
       std::cout << "Creating FPS...";
-      function_parameter_struct_create(NBparamMAX, this->name.c_str());
+      function_parameter_struct_create(NBparamMAX, name_.c_str());
       std::cout << "Done" << std::endl;
-      this->connect();
+      connect();
     } else {
-      this->connect();
-      this->read_keys();
+      connect();
+      read_keys();
     }
     return EXIT_SUCCESS;
   }
@@ -106,7 +135,7 @@ class pyFps {
    * @param name : the name of the shared memory file to connect
    */
   int connect() {
-    return function_parameter_struct_connect(this->name.c_str(), &this->fps,
+    return function_parameter_struct_connect(name_.c_str(), &fps_,
                                              FPSCONNECT_SIMPLE);
   };
 
@@ -121,11 +150,11 @@ class pyFps {
    * @return int
    */
   int add_entry(std::string entry_name, std::string entry_desc,
-                std::string fptype) {
-    this->keys[entry_name] = fptype;
-    return function_parameter_add_entry(
-        &this->fps, entry_name.c_str(), entry_desc.c_str(),
-        this->fptype_map[fptype], FPFLAG_DEFAULT_INPUT, nullptr);
+                uint32_t fptype) {
+    keys_[entry_name] = static_cast<FPS_type>(fptype);
+    return function_parameter_add_entry(&fps_, entry_name.c_str(),
+                                        entry_desc.c_str(), fptype,
+                                        FPFLAG_DEFAULT_INPUT, nullptr);
   }
 
   /**
@@ -133,7 +162,7 @@ class pyFps {
    *
    * @return int
    */
-  int get_status() { return this->fps.md->status; }
+  int get_status() { return fps_.md->status; }
 
   /**
    * @brief Set the status object
@@ -142,24 +171,9 @@ class pyFps {
    * @return int
    */
   int set_status(int status) {
-    this->fps.md->status = status;
+    fps_.md->status = status;
     return EXIT_SUCCESS;
   }
-  int read_keys() {
-    int k = 0;
-    while ((k < this->fps.md->NBparamMAX) &&
-           (this->fps.parray[k].keywordfull[0] != '\0')) {
-      for (auto const &fptype : fptype_map) {
-        if (fptype.second == this->fps.parray[k].type) {
-          this->keys[this->fps.parray[k].keywordfull] = fptype.first;
-          break;
-        }
-      }
-      k++;
-    }
-
-    return EXIT_SUCCESS;
-  };
 
   /**
    * @brief Get the levelKeys object
@@ -170,9 +184,8 @@ class pyFps {
   std::vector<std::string> get_levelKeys(int level) {
     std::vector<std::string> levelKeys = std::vector<std::string>();
     int k = 0;
-    while (this->fps.parray[k].keywordfull[0] != '\0' &&
-           k < this->fps.md->NBparamMAX) {
-      std::string tmp = this->fps.parray[k].keyword[level];
+    while (fps_.parray[k].keywordfull[0] != '\0' && k < fps_.md->NBparamMAX) {
+      std::string tmp = fps_.parray[k].keyword[level];
       auto exist = std::find(levelKeys.begin(), levelKeys.end(), tmp);
       if (exist == levelKeys.end()) {
         levelKeys.push_back(tmp);
@@ -182,6 +195,24 @@ class pyFps {
 
     return levelKeys;
   }
+
+  errno_t CONFstart() { return functionparameter_CONFstart(&fps_); }
+
+  errno_t CONFstop() { return functionparameter_CONFstop(&fps_); }
+
+  errno_t FPCONFexit() { return function_parameter_FPCONFexit(&fps_); }
+
+  // errno_t  FPCONFsetup(){
+  //   return function_parameter_FPCONFsetup(&fps_);
+  // }
+
+  errno_t FPCONFloopstep() { return function_parameter_FPCONFloopstep(&fps_); }
+
+  errno_t RUNstart() { return functionparameter_RUNstart(&fps_); }
+
+  errno_t RUNstop() { return functionparameter_RUNstop(&fps_); }
+
+  errno_t RUNexit() { return function_parameter_RUNexit(&fps_); }
 };
 
 #endif

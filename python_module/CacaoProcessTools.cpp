@@ -2,20 +2,74 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "pyProcessInfo.hpp"
 #include "pyFps.hpp"
+#include "pyProcessInfo.hpp"
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 extern "C" {
 DATA __attribute__((used)) data;
+}
+
+int fps_value_to_key(pyFps &cls, const std::string &key,
+                     const FPS_type fps_type, py::object value) {
+  switch (fps_type) {
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+    case FPS_type::UINT64:
+      return functionparameter_SetParamValue_INT64(cls, key.c_str(),
+                                                   py::int_(value));
+    case FPS_type::FLOAT32:
+      return functionparameter_SetParamValue_FLOAT32(cls, key.c_str(),
+                                                     py::float_(value));
+    case FPS_type::FLOAT64:
+      return functionparameter_SetParamValue_FLOAT64(cls, key.c_str(),
+                                                     py::float_(value));
+    case FPS_type::STRING:
+      return functionparameter_SetParamValue_STRING(cls, key.c_str(),
+                                                    std::string(py::str(value)).c_str());
+    default:
+      return EXIT_FAILURE;
+  }
+}
+
+py::object fps_value_from_key(pyFps &cls, const std::string &key,
+                              const FPS_type fps_type) {
+  switch (fps_type) {
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+    case FPS_type::UINT64:
+      return py::int_(functionparameter_GetParamValue_INT64(cls, key.c_str()));
+    case FPS_type::FLOAT32:
+      return py::float_(
+          functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
+    case FPS_type::FLOAT64:
+      return py::float_(
+          functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
+    case FPS_type::STRING:
+      return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
+    default:
+      return py::none();
+  }
+}
+
+py::dict fps_to_dict(pyFps &cls) {
+  py::dict fps_dict;
+  for (auto &key : cls.keys()) {
+    fps_dict[py::str(key.first)] =
+        fps_value_from_key(cls, key.first, key.second);
+  }
+  return fps_dict;
 }
 
 PYBIND11_MODULE(CacaoProcessTools, m) {
   m.doc() = "CacaoProcessTools library module";
 
   CLI_data_init();
-//   m.attr("data") = &data;
+  //   m.attr("data") = &data;
 
   m.def("processCTRL", &processinfo_CTRLscreen,
         R"pbdoc(Open the process control monitor
@@ -39,6 +93,28 @@ PYBIND11_MODULE(CacaoProcessTools, m) {
       .value("TMUXCONF", FPS_status::TMUXCONF)
       .value("TMUXRUN", FPS_status::TMUXRUN)
       .value("TMUXCTRL", FPS_status::TMUXCTRL)
+      .export_values();
+
+  py::enum_<FPS_type>(m, "FPS_type")
+      .value("AUTO", FPS_type::AUTO)
+      .value("UNDEF", FPS_type::UNDEF)
+      .value("INT32", FPS_type::INT32)
+      .value("UINT32", FPS_type::UINT32)
+      .value("INT64", FPS_type::INT64)
+      .value("UINT64", FPS_type::UINT64)
+      .value("FLOAT32", FPS_type::FLOAT32)
+      .value("FLOAT64", FPS_type::FLOAT64)
+      .value("PID", FPS_type::PID)
+      .value("TIMESPEC", FPS_type::TIMESPEC)
+      .value("FILENAME", FPS_type::FILENAME)
+      .value("FITSFILENAME", FPS_type::FITSFILENAME)
+      .value("EXECFILENAME", FPS_type::EXECFILENAME)
+      .value("DIRNAME", FPS_type::DIRNAME)
+      .value("STREAMNAME", FPS_type::STREAMNAME)
+      .value("STRING", FPS_type::STRING)
+      .value("ONOFF", FPS_type::ONOFF)
+      .value("PROCESS", FPS_type::PROCESS)
+      .value("FPSNAME", FPS_type::FPSNAME)
       .export_values();
 
   py::class_<timespec>(m, "timespec")
@@ -218,6 +294,18 @@ Parameters:
            py::arg("name"), py::arg("create"),
            py::arg("NBparamMAX") = FUNCTION_PARAMETER_NBPARAM_DEFAULT)
 
+      .def("asdict", &fps_to_dict)
+
+      .def("__getitem__",
+           [](pyFps &cls, const std::string &key) {
+             return fps_value_from_key(cls, key, cls.keys(key));
+           })
+
+      .def("__setitem__",
+           [](pyFps &cls, const std::string &key, py::object value) {
+             return fps_value_to_key(cls, key, cls.keys(key), value);
+           })
+
       .def("md", &pyFps::md, py::return_value_policy::reference)
 
       .def("add_entry", &pyFps::add_entry,
@@ -240,7 +328,7 @@ Parameters:
       .def(
           "get_param_value_int",
           [](pyFps &cls, std::string key) {
-            return functionparameter_GetParamValue_INT64(&cls.fps, key.c_str());
+            return functionparameter_GetParamValue_INT64(cls, key.c_str());
           },
           R"pbdoc(Get the int64 value of the FPS key
 
@@ -254,8 +342,7 @@ Return:
       .def(
           "get_param_value_float",
           [](pyFps &cls, std::string key) {
-            return functionparameter_GetParamValue_FLOAT32(&cls.fps,
-                                                           key.c_str());
+            return functionparameter_GetParamValue_FLOAT32(cls, key.c_str());
           },
           R"pbdoc(Get the float32 value of the FPS key
 
@@ -268,8 +355,7 @@ Return:
       .def(
           "get_param_value_double",
           [](pyFps &cls, std::string key) {
-            return functionparameter_GetParamValue_FLOAT64(&cls.fps,
-                                                           key.c_str());
+            return functionparameter_GetParamValue_FLOAT64(cls, key.c_str());
           },
           R"pbdoc(Get the float64 value of the FPS key
 
@@ -283,7 +369,7 @@ Return:
           "get_param_value_string",
           [](pyFps &cls, std::string key) {
             return std::string(
-                functionparameter_GetParamPtr_STRING(&cls.fps, key.c_str()));
+                functionparameter_GetParamPtr_STRING(cls, key.c_str()));
           },
           R"pbdoc(Get the string value of the FPS key
 
@@ -297,7 +383,7 @@ Return:
       .def(
           "set_param_value_int",
           [](pyFps &cls, std::string key, std::string value) {
-            return functionparameter_SetParamValue_INT64(&cls.fps, key.c_str(),
+            return functionparameter_SetParamValue_INT64(cls, key.c_str(),
                                                          std::stol(value));
           },
           R"pbdoc(Set the int64 value of the FPS key
@@ -312,8 +398,8 @@ Return:
       .def(
           "set_param_value_float",
           [](pyFps &cls, std::string key, std::string value) {
-            return functionparameter_SetParamValue_FLOAT32(
-                &cls.fps, key.c_str(), std::stol(value));
+            return functionparameter_SetParamValue_FLOAT32(cls, key.c_str(),
+                                                           std::stol(value));
           },
           R"pbdoc(Set the float32 value of the FPS key
 
@@ -327,8 +413,8 @@ Return:
       .def(
           "set_param_value_double",
           [](pyFps &cls, std::string key, std::string value) {
-            return functionparameter_SetParamValue_FLOAT64(
-                &cls.fps, key.c_str(), std::stol(value));
+            return functionparameter_SetParamValue_FLOAT64(cls, key.c_str(),
+                                                           std::stol(value));
           },
           R"pbdoc(Set the float64 value of the FPS key
 
@@ -342,7 +428,7 @@ Return:
       .def(
           "set_param_value_string",
           [](pyFps &cls, std::string key, std::string value) {
-            return functionparameter_SetParamValue_STRING(&cls.fps, key.c_str(),
+            return functionparameter_SetParamValue_STRING(cls, key.c_str(),
                                                           value.c_str());
           },
           R"pbdoc(Set the string value of the FPS key
@@ -355,12 +441,10 @@ Return:
 )pbdoc",
           py::arg("key"), py::arg("value"))
 
-      .def_property_readonly("keys", [](const pyFps &cls) { return cls.keys; })
+      .def_property_readonly("keys", [](pyFps &cls) { return cls.keys(); })
 
-      .def(
-          "CONFstart",
-          [](pyFps &cls) { return functionparameter_CONFstart(&cls.fps); },
-          R"pbdoc(FPS start CONF process
+      .def("CONFstart", &pyFps::CONFstart,
+           R"pbdoc(FPS start CONF process
 
 Requires setup performed by milk-fpsinit, which performs the following setup
 - creates the FPS shared memory
@@ -371,28 +455,36 @@ Return:
     ret      [out]: error code
 )pbdoc")
 
-      .def(
-          "CONFstop",
-          [](pyFps &cls) { return functionparameter_CONFstop(&cls.fps); },
-          R"pbdoc(FPS stop CONF process
+      .def("CONFstop", &pyFps::CONFstop,
+           R"pbdoc(FPS stop CONF process
 
 Return:
     ret      [out]: error code
 )pbdoc")
 
-//       .def(
-//           "CONFupdate",
-//           [](pyFps &cls) { return functionparameter_CONFupdate(&cls.fps); },
-//           R"pbdoc(FPS update CONF process
+      .def("FPCONFexit", &pyFps::FPCONFexit,
+           R"pbdoc(FPS exit FPCONF process
 
-// Return:
-//     ret      [out]: error code
-// )pbdoc")
+      Return:
+          ret      [out]: error code
+      )pbdoc")
 
-      .def(
-          "RUNstart",
-          [](pyFps &cls) { return functionparameter_RUNstart(&cls.fps); },
-          R"pbdoc(FPS start RUN process
+      //   .def("FPCONFsetup", &pyFps::FPCONFsetup,
+      //        R"pbdoc(FPS setup FPCONF process
+
+      //   Return:
+      //       ret      [out]: error code
+      //   )pbdoc")
+
+      .def("FPCONFloopstep", &pyFps::FPCONFloopstep,
+           R"pbdoc(FPS loop step FPCONF process
+
+      Return:
+          ret      [out]: error code
+      )pbdoc")
+
+      .def("RUNstart", &pyFps::RUNstart,
+           R"pbdoc(FPS start RUN process
 
 Requires setup performed by milk-fpsinit, which performs the following setup
 - creates the FPS shared memory
@@ -403,10 +495,8 @@ Return:
     ret      [out]: error code
 )pbdoc")
 
-      .def(
-          "RUNstop",
-          [](pyFps &cls) { return functionparameter_RUNstop(&cls.fps); },
-          R"pbdoc(FPS stop RUN process
+      .def("RUNstop", &pyFps::RUNstop,
+           R"pbdoc(FPS stop RUN process
 
  Run pre-set function fpsrunstop in tmux ctrl window
 
@@ -414,10 +504,8 @@ Return:
     ret      [out]: error code
 )pbdoc")
 
-      .def(
-          "RUNexit",
-          [](pyFps &cls) { return function_parameter_RUNexit(&cls.fps); },
-          R"pbdoc(FPS exit RUN process
+      .def("RUNexit", &pyFps::RUNexit,
+           R"pbdoc(FPS exit RUN process
 
 Return:
     ret      [out]: error code
