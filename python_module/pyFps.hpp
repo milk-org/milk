@@ -87,6 +87,17 @@ class pyFps {
    * @param NBparamMAX : Max number of parameters
    */
   pyFps(std::string fps_name, bool create, int NBparamMAX) : name_(fps_name) {
+    fps_.md = nullptr;
+    fps_.parray = nullptr;  // array of function parameters
+
+    // these variables are local to each process
+    fps_.localstatus = 0;  // 1 if conf loop should be active
+    fps_.SMfd = -1;
+    fps_.CMDmode = 0;
+
+    fps_.NBparam = 0;        // number of parameters in array
+    fps_.NBparamActive = 0;  // number of active parameters
+
     if (create) {
       create_and_connect(NBparamMAX);
     } else {
