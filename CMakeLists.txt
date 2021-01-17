@@ -189,10 +189,13 @@ message("EXTRAMODULES             = ${EXTRAMODULES}")
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
 
-foreach(lsrcdir IN LISTS libsrcdir)
-add_subdirectory ( "${lsrcdir}" )
-endforeach()
+execute_process(COMMAND bash -c "ls -d ${PROJECT_SOURCE_DIR}/extra/*"
+                OUTPUT_VARIABLE libextradir)
+string(REGEX REPLACE "\n$" "" libextradir "${libextradir}")
 
+foreach(lsrcdir IN LISTS libsrcdir libextradir)
+add_subdirectory ( ${lsrcdir} )
+endforeach()
 
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
