@@ -95,8 +95,8 @@ add_library(CLIcore
 
 if(${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
-  target_compile_definitions(CLIcore PRIVATE USE_CFITSIO=1)
-  target_include_directories(CLIcore PRIVATE ${CFITSIO_INCLUDE_DIRS})
+  target_compile_definitions(CLIcore PUBLIC USE_CFITSIO=1)
+  target_include_directories(CLIcore PUBLIC ${CFITSIO_INCLUDE_DIRS})
 endif()
 
 target_include_directories(CLIcore
