@@ -186,6 +186,12 @@ message("USE_CUDA                 = ${USE_CUDA}")
 
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
+
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
+
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
 
@@ -204,8 +210,6 @@ endif()
 endforeach()
 
 
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # main
 add_executable(milk src/CLImain.c)
@@ -226,6 +230,7 @@ ${FFTWF_CFLAGS_OTHER}
 -fopenmp
 )
 
+# note: set -SOURCEDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" for autoload
 set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
 
 
