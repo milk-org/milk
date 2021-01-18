@@ -189,12 +189,18 @@ message("EXTRAMODULES             = ${EXTRAMODULES}")
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
 
-execute_process(COMMAND bash -c "ls -d ${PROJECT_SOURCE_DIR}/extra/*"
+execute_process(COMMAND bash -c "ls -c1 -d ${PROJECT_SOURCE_DIR}/extra/*"
                 OUTPUT_VARIABLE libextradir)
-string(REGEX REPLACE "\n$" "" libextradir "${libextradir}")
+message("libextradir             = ${libextradir}")
+string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
+message("libextradir             = ${libextradir}")
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
+string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
+message("adding ${lsrcdir} dir")
+if (NOT ${lsrcdir} EQUAL "")
 add_subdirectory ( ${lsrcdir} )
+endif()
 endforeach()
 
 
