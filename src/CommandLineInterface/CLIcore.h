@@ -335,11 +335,12 @@ typedef struct
     int  package_version_minor;
     int  package_version_patch;
     char package_version[100];
-    char configdir[100];
-    char sourcedir[100];
+    char configdir[STRINGMAXLEN_DIRNAME];
+    char sourcedir[STRINGMAXLEN_DIRNAME];
+    char installdir[STRINGMAXLEN_DIRNAME];
 
-    char shmdir[100];
-    char shmsemdirname[100]; // same ad above with .s instead of /s
+    char shmdir[STRINGMAXLEN_DIRNAME];
+    char shmsemdirname[STRINGMAXLEN_DIRNAME]; // same ad above with .s instead of /s
 
 
     // SIGNALS
