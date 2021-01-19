@@ -131,18 +131,9 @@ message("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 # =======================================
 
 # add gnu17 option only for C, don't add for nvcc
+# TODO: should use set_property(TARGET tgt PROPERTY C_STANDARD 17)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-std=gnu17>)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
-
-
-# # OpenMP
-# find_package(OpenMP)
-# if (OPENMP_FOUND)
-# message("Found OpenMP")
-# add_compile_options($<$<COMPILE_LANGUAGE:C>:-fopenmp>)
-# add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fopenmp>)
-# #add_compile_options(-fopenmp)
-# endif()
 
 # link-time optimizer
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto>)
@@ -160,17 +151,6 @@ add_compile_options($<$<COMPILE_LANGUAGE:C>:-fwhole-program>)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 message("COMPILE_OPTIONS:  ${COMPILE_OPTIONS}")
-
-
-# =======================================
-# DEPENDENCIES
-# =======================================
-
-# ncurses
-SET(CURSES_USE_NCURSES TRUE)
-
-find_package( Threads )
-
 
 message("====================================================")
 message("VERSION  ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
@@ -191,19 +171,14 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
-
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
-
 execute_process(COMMAND bash -c "ls -c1 -d ${PROJECT_SOURCE_DIR}/extra/*"
                 OUTPUT_VARIABLE libextradir)
-message("libextradir             = ${libextradir}")
 string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
-message("libextradir             = ${libextradir}")
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
 string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
-message("adding ${lsrcdir} dir")
 if (NOT ${lsrcdir} EQUAL "")
 add_subdirectory ( ${lsrcdir} )
 endif()
@@ -215,28 +190,12 @@ endforeach()
 add_executable(milk src/CLImain.c)
 
 
-target_include_directories(milk PUBLIC
-${PROJECT_SOURCE_DIR}/src
-${GSL_INCLUDE_DIRS}
-${FFTW_INCLUDE_DIRS}
-${FFTWF_INCLUDE_DIRS}
-${CURSES_INCLUDE_DIR}
-)
-
-# adds the options to all targets within the directory and its sub-directories
-target_compile_options(milk PUBLIC
-${FFTW_CFLAGS_OTHER}
-${FFTWF_CFLAGS_OTHER}
--fopenmp
-)
-
 # note: set -SOURCEDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" for autoload
 set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
 
 
 target_link_libraries (milk PUBLIC
 ${libname}
-# -fopenmp
 )
 
 
