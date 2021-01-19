@@ -231,7 +231,7 @@ ${FFTWF_CFLAGS_OTHER}
 )
 
 # note: set -SOURCEDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" for autoload
-set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
+set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
 
 
 target_link_libraries (milk PUBLIC

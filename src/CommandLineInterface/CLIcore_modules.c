@@ -108,7 +108,7 @@ errno_t load_module_shared(
 
     // Assemble absolute path module filename
     printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n",
-           MILK_INSTALLDIR);
+           getenv("MILK_INSTALLDIR"));
     {
         int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME,
                             "%s/lib/lib%s.so", getenv("MILK_INSTALLDIR"), modulenameLC);
