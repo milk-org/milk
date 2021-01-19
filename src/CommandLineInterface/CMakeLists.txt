@@ -13,11 +13,11 @@ find_package(GSL QUIET REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3)
 pkg_check_modules(FFTWF REQUIRED fftw3f)
 pkg_check_modules(NCURSES REQUIRED ncurses)
+find_package(OpenMP)
 
 pkg_check_modules(HWLOC hwloc)
 
 pkg_check_modules(CFITSIO cfitsio)
-
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
@@ -108,6 +108,11 @@ target_include_directories(CLIcore
 
 target_compile_options(CLIcore
                         PUBLIC ${FFTW_CFLAGS_OTHER} ${FFTWF_CFLAGS_OTHER})
+if (OPENMP_C_FOUND)
+  message("Found OpenMP")
+  target_link_libraries(CLIcore PUBLIC OpenMP::OpenMP_C)
+endif()
+
 
 target_link_libraries(CLIcore
                       PUBLIC m
