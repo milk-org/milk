@@ -88,7 +88,7 @@ errno_t load_module_shared(
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
-    // module name local copy
+    // make locacl copy of module name
     char modulenameLC[STRINGMAXLEN_MODULE_SOFILENAME];
 
     {
@@ -106,7 +106,9 @@ errno_t load_module_shared(
         }
     }
 
-
+    // Assemble absolute path module filename
+    printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n",
+           MILK_INSTALLDIR);
     {
         int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME,
                             "%s/lib/lib%s.so", getenv("MILK_INSTALLDIR"), modulenameLC);
@@ -500,6 +502,6 @@ uint32_t RegisterCLIcmd(
 
     data.NBcmd++;
 
-    return(data.NBcmd-1);
+    return(data.NBcmd - 1);
 }
 
