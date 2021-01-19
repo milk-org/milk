@@ -78,6 +78,7 @@ int main(
 
     strcpy(data.sourcedir, SOURCEDIR);
     strcpy(data.configdir, CONFIGDIR);
+    strcpy(data.installdir, INSTALLDIR);
 
 
     if(data.quiet == 0)
