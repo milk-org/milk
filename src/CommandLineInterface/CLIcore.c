@@ -639,8 +639,9 @@ errno_t runCLI(
 
         while(libname != NULL)
         {
-            printf("--- CLI Adding library: %s\n", libname);
-            load_sharedobj(libname);
+            DEBUG_TRACEPOINT("--- CLI Adding library: %s\n", libname);
+            // load_sharedobj(libname);
+            load_module_shared(libname);
             libname = strtok(NULL, " ,;");
         }
         printf("\n");
