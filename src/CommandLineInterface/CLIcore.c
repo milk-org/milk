@@ -621,8 +621,9 @@ errno_t runCLI(
     printf("\n");
 
 
-    DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
-    load_module_shared_ALL();
+    // uncomment following two lines to auto-load all modules
+    //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
+    //load_module_shared_ALL();
 
     // load other libs specified by environment variable CLI_ADD_LIBS
     char *CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
@@ -648,7 +649,7 @@ errno_t runCLI(
     {
         if(data.quiet == 0)
         {
-            printf(" [ CLI_ADD_LIBS ] not set\n");
+            printf(" [ CLI_ADD_LIBS ] not set -> no additional module loaded\n");
         }
     }
 
