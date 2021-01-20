@@ -625,13 +625,13 @@ errno_t runCLI(
     //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
     //load_module_shared_ALL();
 
-    // load other libs specified by environment variable CLI_ADD_LIBS
-    char *CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
+    // load other libs specified by environment variable MILKCLI_ADD_LIBS
+    char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
     if(CLI_ADD_LIBS != NULL)
     {
         if(data.quiet == 0)
         {
-            printf(" [ CLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
+            printf(" [ MILKCLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
         }
 
         char *libname;
@@ -650,7 +650,7 @@ errno_t runCLI(
     {
         if(data.quiet == 0)
         {
-            printf(" [ CLI_ADD_LIBS ] not set -> no additional module loaded\n");
+            printf(" [ MILKCLI_ADD_LIBS ] not set -> no additional module loaded\n");
         }
     }
 
