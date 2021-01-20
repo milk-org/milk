@@ -9,7 +9,7 @@
 
 
 #define COLORRESET      "\033[0m"
-#define COLORCMD        "\033[34m"
+#define COLORCMD        "\033[94m"
 #define COLORINFO       "\033[32m" // green
 #define COLORARGCLI     "\033[36m" // argument part of CLI call: cyan
 #define COLORARGnotCLI  "\033[35m" // argument not part of CLI call: yellow
@@ -676,7 +676,7 @@ errno_t help_command(
             {
                 foundsubstring = 1;
                 matchsubstring = 1;
-                printf( COLORCMD "%s" COLORRESET "in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
+                printf( COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
                        data.cmd[cmdi].key,
                        data.cmd[cmdi].module,
                        data.module[data.cmd[cmdi].moduleindex].shortname,
