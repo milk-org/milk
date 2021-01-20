@@ -25,14 +25,14 @@ SKIP=0
 function ProbeUserContinue {
     echo "CLI COMMANDS TO BE RUN:"
     echo ""
-    echo "${CLIinput}"
+    echo "$(tput bold)$(tput setaf 3)${CLIinput} $(tput sgr0)"
     echo ""
     inputOK=0
     while [  ${inputOK} = 0 ]; do
     inputOK=1
     echo -n "(r)un, (s)kip or (q)uit (r/s/q) ? "
     read answer
-    
+
     if [ "$answer" != "${answer#[Rr]}" ] ;then
         echo "Continuing"
         SKIP=0
@@ -67,14 +67,14 @@ EOF
 
 
 examplestring="PRINT HELP"
-CLIinput="mload milkmilkmoduleexample
+CLIinput="mload milkmoduleexample
 m? milk_module_example
 cmd? modex.simplefuncFPS
 "
 
 clear
-echo "Example ${examplestring}
-
+tput bold; echo "Example ${examplestring}"; tput sgr0
+echo "
 This first example demonstrates how to:
 - Load module (mload)
 - Print help for module (m?)
@@ -92,13 +92,14 @@ RunExampleCode
 
 
 examplestring="RUN FUNCTION, CLI MODE"
-CLIinput="mload milkmilkmoduleexample
+CLIinput="mload milkmoduleexample
+mload milkimagegen
 imgen.mkdisk imd1 256 256 128 128 50
 modex.simplefuncFPS imd1
 "
 clear
-echo "Example ${examplestring}
-
+tput bold; echo "Example ${examplestring}"; tput sgr0
+echo "
 Command modex.simplefuncFPS is called using the standard CLI mode.
 Argument(s) immediately follow the function call. In this case,
 the function takes one argument, which is the image name.
@@ -116,7 +117,8 @@ RunExampleCode
 
 
 examplestring="RUN FUNCTION, CLI MODE, RECALL ARG"
-CLIinput="mload milkmilkmoduleexample
+CLIinput="mload milkmoduleexample
+mload milkimagegen
 imgen.mkdisk imd1 256 256 128 128 50
 imgen.mkdisk imd2 256 256 128 128 10
 modex.simplefuncFPS imd1
@@ -141,7 +143,8 @@ RunExampleCode
 
 
 examplestring="CHANGE NON-CLI ARGUMENTS"
-CLIinput="mload milkmilkmoduleexample
+CLIinput="mload milkmoduleexample
+mload milkimagegen
 imgen.mkdisk imd1 256 256 128 128 50
 modex.simplefuncFPS .scaling 0.31
 cmd? modex.simplefuncFPS
@@ -174,7 +177,8 @@ RunExampleCode
 
 
 examplestring="CREATE FUNCTION FPS"
-CLIinput="mload milkmilkmoduleexample
+CLIinput="mload milkmoduleexample
+mload milkimagegen
 imgen.mkdisk imd1 256 256 128 128 50
 modex.simplefuncFPS imd1
 modex.simplefuncFPS .scaling 0.31
@@ -198,7 +202,8 @@ RunExampleCode
 
 
 examplestring="MULTIPLE FPS INSTANCES"
-CLIinput="mload milkmilkmoduleexample
+CLIinput="mload milkmoduleexample
+mload milkimagegen
 imgen.mkdisk imd1 256 256 128 128 50
 modex.simplefuncFPS imd1
 modex.simplefuncFPS .scaling 0.31

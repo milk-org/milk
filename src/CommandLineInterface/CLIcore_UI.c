@@ -25,15 +25,9 @@
 #define CLICOMPLETIONMODE_CMDARGS  2
 
 
-#define COLORNRM  "\x1B[0m"
-#define COLORRED  "\x1B[31m"
-#define COLORGRN  "\x1B[32m"
-#define COLORYEL  "\x1B[33m"
-#define COLORBLU  "\x1B[34m"
-#define COLORMAG  "\x1B[35m"
-#define COLORCYN  "\x1B[36m"
-#define COLORWHT  "\x1B[37m"
-#define COLORRES  "\033[0m"
+#define COLORRESET   "\033[0m"
+#define COLORRED     "\033[31m"      /* Red */
+#define COLORHBOLDCYAN    "\e[0;96m"      /* High Intensity Bold Cyan */
 
 
 
@@ -84,17 +78,17 @@ errno_t runCLI_prompt(
         {
             if(data.processnameflag == 0)
             {
-                sprintf(prompt, COLORCYN "%s > " COLORRES, promptstring);
+                sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, promptstring);
             }
             else
             {
-                sprintf(prompt, COLORCYN "%s-%s > " COLORRES, promptstring,
+                sprintf(prompt, COLORHBOLDCYAN "%s-%s > " COLORRESET, promptstring,
                         data.processname);
             }
         }
         else
         {
-            sprintf(prompt, COLORCYN "%s > " COLORRES, data.processname);
+            sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, data.processname);
         }
     }
     else
@@ -122,7 +116,7 @@ static void *xmalloc(int size)
     buf = malloc(size);
     if(!buf)
     {
-        fprintf(stderr, COLORRED "Error: Out of memory. Exiting.'n" COLORRES);
+        fprintf(stderr, COLORRED "Error: Out of memory. Exiting.'n" COLORRESET);
         exit(1);
     }
 
@@ -528,7 +522,7 @@ errno_t CLI_execute_line()
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
-        printf( COLORRED "Command not found, or command with no effect\n" COLORRES);
+        printf( COLORRED "Command not found, or command with no effect\n" COLORRESET);
     }
 
 
