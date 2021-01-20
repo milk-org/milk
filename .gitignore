@@ -9,3 +9,4 @@ _tmplist.txt
 .vscode
 extra
 *-code-workspace
+.gitmodules
