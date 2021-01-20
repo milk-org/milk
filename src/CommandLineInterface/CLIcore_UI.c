@@ -25,6 +25,18 @@
 #define CLICOMPLETIONMODE_CMDARGS  2
 
 
+#define COLORNRM  "\x1B[0m"
+#define COLORRED  "\x1B[31m"
+#define COLORGRN  "\x1B[32m"
+#define COLORYEL  "\x1B[33m"
+#define COLORBLU  "\x1B[34m"
+#define COLORMAG  "\x1B[35m"
+#define COLORCYN  "\x1B[36m"
+#define COLORWHT  "\x1B[37m"
+#define COLORRES  "\033[0m"
+
+
+
 extern void yy_scan_string(const char *);
 extern int yylex_destroy(void);
 
@@ -62,31 +74,32 @@ errno_t runCLI_prompt(
     char *prompt
 )
 {
-	int color_cyan = 36;
+    int color_cyan = 36;
 
 
-    if(data.quiet == 0) {
+    if(data.quiet == 0)
+    {
 
         if(strlen(promptstring) > 0)
         {
             if(data.processnameflag == 0)
             {
-                sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, color_cyan, promptstring, 0x1B, 0);
+                sprintf(prompt, COLORCYN "%s > " COLORRES, promptstring);
             }
             else
             {
-                sprintf(prompt, "%c[%d;%dm%s-%s >%c[%dm ", 0x1B, 1, color_cyan, promptstring,
-                        data.processname, 0x1B, 0);
+                sprintf(prompt, COLORCYN "%s-%s > " COLORRES, promptstring,
+                        data.processname);
             }
         }
         else
         {
-            sprintf(prompt, "%c[%d;%dm%s >%c[%dm ", 0x1B, 1, color_cyan, data.processname, 0x1B, 0);
+            sprintf(prompt, COLORCYN "%s > " COLORRES, data.processname);
         }
     }
     else
     {
-		sprintf(prompt," ");
+        sprintf(prompt, " ");
     }
 
 
@@ -109,7 +122,7 @@ static void *xmalloc(int size)
     buf = malloc(size);
     if(!buf)
     {
-        fprintf(stderr, "Error: Out of memory. Exiting.'n");
+        fprintf(stderr, COLORRED "Error: Out of memory. Exiting.'n" COLORRES);
         exit(1);
     }
 
@@ -190,9 +203,9 @@ static char *CLI_generator(
 
     if(data.CLImatchMode ==
             CLICOMPLETIONMODE_CMDARGS)
-    { 
-		// search through command arguments and parameters
-		while((int) list_index < data.cmd[data.cmdindex].nbarg)
+    {
+        // search through command arguments and parameters
+        while((int) list_index < data.cmd[data.cmdindex].nbarg)
         {
             name = data.cmd[data.cmdindex].argdata[list_index].fpstag;
             list_index++;
@@ -224,46 +237,47 @@ char **CLI_completion(
 {
     char **matches;
 
-	//printf("[%d | %s | %s]", start, rl_line_buffer, text);
-	//rl_message("\n[%d %s]\n", start, rl_line_buffer);
-	//rl_redisplay();
-	//rl_forced_update_display();
+    //printf("[%d | %s | %s]", start, rl_line_buffer, text);
+    //rl_message("\n[%d %s]\n", start, rl_line_buffer);
+    //rl_redisplay();
+    //rl_forced_update_display();
 
     matches = (char **)NULL;
 
     if((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
-    {   // if first word, or second argument to cmd?, match string with commands
+    {
+        // if first word, or second argument to cmd?, match string with commands
         data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;
     }
     else
     {
-		// test if first word is a command
-		char str[200];
-		char *firstword;
-		firstword = strcpy(str, rl_line_buffer);
-		strtok(str, " ");
-		int cmdimatch = -1;
-		uint32_t cmdi = 0;
-		while ( ( cmdimatch == -1) && (cmdi<data.NBcmd) )
-		{
-			if(strcmp(firstword, data.cmd[cmdi].key) == 0)
-			{
-				cmdimatch = cmdi;
-				//printf("COMMAND MATCH %s\n", data.cmd[cmdi].key);
-				data.cmdindex = cmdi;
-			}
-			cmdi++;
-		}
-		
-		if((cmdimatch != -1) && (text[0] == '.'))
-		{
-			data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
-		}
-		else
-		{
-			// match string with images
-			data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
-		}
+        // test if first word is a command
+        char str[200];
+        char *firstword;
+        firstword = strcpy(str, rl_line_buffer);
+        strtok(str, " ");
+        int cmdimatch = -1;
+        uint32_t cmdi = 0;
+        while((cmdimatch == -1) && (cmdi < data.NBcmd))
+        {
+            if(strcmp(firstword, data.cmd[cmdi].key) == 0)
+            {
+                cmdimatch = cmdi;
+                //printf("COMMAND MATCH %s\n", data.cmd[cmdi].key);
+                data.cmdindex = cmdi;
+            }
+            cmdi++;
+        }
+
+        if((cmdimatch != -1) && (text[0] == '.'))
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
+        }
+        else
+        {
+            // match string with images
+            data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
+        }
     }
 
     matches = rl_completion_matches((char *)text, &CLI_generator);
@@ -375,8 +389,8 @@ errno_t CLI_execute_line()
 
         //
         data.cmdNBarg = 0;
-        
-        
+
+
         // extract first word
 
         // First, split double-quote strings out
@@ -389,42 +403,42 @@ errno_t CLI_execute_line()
         char *rest = str1;
         if(str1[0] == '\"')
         {
-			rawstringmode = 1;
-		}
+            rawstringmode = 1;
+        }
 
         while((tokengroup = strtok_r(rest, "\"", &rest)))
         {
             //printf(" TOKEN [%d]:  %s\n", rawstringmode, tokengroup);
 
-			// always copy word in string, so that arg can be processed as string if needed
+            // always copy word in string, so that arg can be processed as string if needed
             //strcpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring);
-            
+
             if(rawstringmode == 0) // not in a raw string, process tokengroup
             {
-				cmdargstring = strtok(tokengroup, " ");
-				while(cmdargstring != NULL)   // iterate on words
-				{
-					//printf("\t processing -- %s\n", cmdargstring);
-					sprintf(str, "%s\n", cmdargstring);
-					yy_scan_string(str);
-					data.calctmp_imindex = 0;
-					yyparse();
-					yylex_destroy();
-                
-					cmdargstring = strtok(NULL, " ");
-					data.cmdNBarg++;
-				}
-				rawstringmode = 1;
-			}
-			else
-			{
-				strcpy(data.cmdargtoken[data.cmdNBarg].val.string, tokengroup);
-				data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
-				data.cmdNBarg++;
-				rawstringmode = 0;
-			}
+                cmdargstring = strtok(tokengroup, " ");
+                while(cmdargstring != NULL)   // iterate on words
+                {
+                    //printf("\t processing -- %s\n", cmdargstring);
+                    sprintf(str, "%s\n", cmdargstring);
+                    yy_scan_string(str);
+                    data.calctmp_imindex = 0;
+                    yyparse();
+                    yylex_destroy();
+
+                    cmdargstring = strtok(NULL, " ");
+                    data.cmdNBarg++;
+                }
+                rawstringmode = 1;
+            }
+            else
+            {
+                strcpy(data.cmdargtoken[data.cmdNBarg].val.string, tokengroup);
+                data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
+                data.cmdNBarg++;
+                rawstringmode = 0;
+            }
         }
-		data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
+        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
 
@@ -440,29 +454,35 @@ errno_t CLI_execute_line()
                        data.cmdargtoken[i].val.string, data.cmdargtoken[i].type);
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_FLOAT)   // double
                 {
-                    printf("\t CMDARGTOKEN_TYPE_FLOAT           : %g\n", data.cmdargtoken[i].val.numf);
+                    printf("\t CMDARGTOKEN_TYPE_FLOAT           : %g\n",
+                           data.cmdargtoken[i].val.numf);
                 }
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_LONG)   // long
                 {
-                    printf("\t CMDARGTOKEN_TYPE_LONG           : %ld\n", data.cmdargtoken[i].val.numl);
+                    printf("\t CMDARGTOKEN_TYPE_LONG           : %ld\n",
+                           data.cmdargtoken[i].val.numl);
                 }
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_STRING)   // new variable/image
                 {
-                    printf("\t CMDARGTOKEN_TYPE_STRING        : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_STRING        : %s\n",
+                           data.cmdargtoken[i].val.string);
                 }
                 if(data.cmdargtoken[i].type ==
                         CMDARGTOKEN_TYPE_EXISTINGIMAGE)   // existing image
                 {
-                    printf("\t CMDARGTOKEN_TYPE_EXISTINGIMAGE : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_EXISTINGIMAGE : %s\n",
+                           data.cmdargtoken[i].val.string);
                 }
                 if(data.cmdargtoken[i].type == CMDARGTOKEN_TYPE_COMMAND)   // command
                 {
-                    printf("\t CMDARGTOKEN_TYPE_COMMAND       : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_COMMAND       : %s\n",
+                           data.cmdargtoken[i].val.string);
                 }
                 if(data.cmdargtoken[i].type ==
                         CMDARGTOKEN_TYPE_RAWSTRING)   // unprocessed string
                 {
-                    printf("\t CMDARGTOKEN_TYPE_RAWSTRING    : %s\n", data.cmdargtoken[i].val.string);
+                    printf("\t CMDARGTOKEN_TYPE_RAWSTRING    : %s\n",
+                           data.cmdargtoken[i].val.string);
                 }
 
                 i++;
@@ -508,7 +528,7 @@ errno_t CLI_execute_line()
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
-        printf("Command not found, or command with no effect\n");
+        printf( COLORRED "Command not found, or command with no effect\n" COLORRES);
     }
 
 
