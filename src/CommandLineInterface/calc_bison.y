@@ -27,7 +27,7 @@ int yyerror(char *);
   %}
 
 %union {
-  long     val_l;  /* long */  
+  long     val_l;  /* long */
   float    val_f;  /* float */
   double   val_d;  /* For returning numbers.     */
   char  string[200];   /* For returning strings (variables, images)  */
@@ -67,14 +67,14 @@ input:   /* empty */
 
 line:
 '\n'
-| expd '\n'  { 
-printf("\t double: %.10g\n", $1); 
-data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_FLOAT; 
+| expd '\n'  {
+//printf("\t double: %.10g\n", $1);
+data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_FLOAT;
 data.cmdargtoken[data.cmdNBarg].val.numf = $1;
 }
-| expl '\n'  { 
-printf("\t long:   %ld\n", $1); 
-data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_LONG; 
+| expl '\n'  {
+//printf("\t long:   %ld\n", $1);
+data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_LONG;
 data.cmdargtoken[data.cmdNBarg].val.numl = $1;
 }
 | exps '\n' { if(data.Debug>0) {printf("\t string: %s\n", $1);}
