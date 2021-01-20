@@ -19,7 +19,7 @@ set(SCRIPTFILES
 
 
 
-# DEFAULT SETTINGS 
+# DEFAULT SETTINGS
 # Do not change unless needed
 # =====================================================================
 
@@ -30,7 +30,7 @@ string(REGEX MATCH "[a-zA-Z0-9_]+$" SRCNAME "${NAME0}")
 message(" SRCNAME = ${SRCNAME}")
 
 # LIBNAME constructed by removing spaces
-string(REPLACE "_" "" LIBNAME "${PROJECT_NAME}${SRCNAME}")
+string(REPLACE "_" "" LIBNAME "${SRCNAME}")
 message(" LIBNAME = ${LIBNAME}")
 
 
@@ -43,7 +43,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 
 # Library can be compiled from multiple source files
 # Convention: the main souce file is named <libname>.c
-# 
+#
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
