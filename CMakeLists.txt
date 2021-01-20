@@ -184,7 +184,8 @@ add_subdirectory ( ${lsrcdir} )
 endif()
 endforeach()
 
-
+# add example module
+add_subdirectory(src/milk_module_example)
 
 # main
 add_executable(milk src/CLImain.c)
