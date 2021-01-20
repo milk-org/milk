@@ -2,3 +2,45 @@
 	path = src/ImageStreamIO
 	url = https://github.com/milk-org/ImageStreamIO.git
 	branch = dev
+[submodule "extra/ZernikePolyn"]
+	path = extra/ZernikePolyn
+	url = https://github.com/milk-org/ZernikePolyn
+[submodule "exra/cudacomp"]
+	path = extra/cudacomp
+	url = https://github.com/milk-org/cudacomp
+[submodule "extra/fft"]
+	path = extra/fft
+	url = https://github.com/milk-org/fft
+[submodule "extra/image_basic"]
+	path = extra/image_basic
+	url = https://github.com/milk-org/image_basic
+[submodule "extra/image_filter"]
+	path = extra/image_filter
+	url = https://github.com/milk-org/image_filter
+[submodule "extra/image_format"]
+	path = extra/image_format
+	url = https://github.com/milk-org/image_format
+[submodule "extra/image_gen"]
+	path = extra/image_gen
+	url = https://github.com/milk-org/image_gen
+[submodule "extra/img_reduce"]
+	path = extra/img_reduce
+	url = https://github.com/milk-org/img_reduce
+[submodule "extra/info"]
+	path = extra/info
+	url = https://github.com/milk-org/info
+[submodule "extra/kdtree"]
+	path = extra/kdtree
+	url = https://github.com/milk-org/kdtree
+[submodule "extra/linARfilterPred"]
+	path = extra/linARfilterPred
+	url = https://github.com/milk-org/linARfilterPred
+[submodule "extra/linopt_imtools"]
+	path = extra/linopt_imtools
+	url = https://github.com/milk-org/linopt_imtools
+[submodule "extra/psf"]
+	path = extra/psf
+	url = https://github.com/milk-org/psf
+[submodule "extra/statistic"]
+	path = extra/statistic
+	url = https://github.com/milk-org/statistic
