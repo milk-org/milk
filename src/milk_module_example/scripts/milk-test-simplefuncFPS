@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+
+
+MSdescr="Simple function test"
+
+scriptname=$(basename $0)
+
+MSextdescr="Simple function test
+
+Computes image total.
+Demonstrates use of milk command line interface (CLI) and its interaction
+with function parameter structure (FPS) and process information (procinfo)."
+
+
+source milk-script-std-config
+
+RequiredCommands=(milk)
+RequiredFiles=()
+RequiredDirs=()
+
+source milk-argparse
+
+SKIP=0
+
+function ProbeUserContinue {
+    echo "CLI COMMANDS TO BE RUN:"
+    echo ""
+    echo "${CLIinput}"
+    echo ""
+    inputOK=0
+    while [  ${inputOK} = 0 ]; do
+    inputOK=1
+    echo -n "(r)un, (s)kip or (q)uit (r/s/q) ? "
+    read answer
+    
+    if [ "$answer" != "${answer#[Rr]}" ] ;then
+        echo "Continuing"
+        SKIP=0
+    elif [ "$answer" != "${answer#[Ss]}" ]; then
+        SKIP=1
+    elif [ "$answer" != "${answer#[Qq]}" ]; then
+        exit
+    else
+        echo "Not a valid input"
+        inputOK=0
+    fi
+    done
+}
+
+function RunExampleCode {
+    if [ ${SKIP} = 0 ]; then
+    clear
+    echo "======= START OF EXAMPLE =================="
+milk << EOF
+${CLIinput}
+exitCLI
+EOF
+    echo "======= END OF EXAMPLE ===================="
+    read -p "Press enter to clear screen and continue"
+    clear
+    fi
+}
+
+
+
+
+
+
+examplestring="PRINT HELP"
+CLIinput="mload milkmilkmoduleexample
+m? milk_module_example
+cmd? modex.simplefuncFPS
+"
+
+clear
+echo "Example ${examplestring}
+
+This first example demonstrates how to:
+- Load module (mload)
+- Print help for module (m?)
+- Print help for command (cmd?
+"
+ProbeUserContinue
+RunExampleCode
+
+
+
+
+
+
+
+
+
+examplestring="RUN FUNCTION, CLI MODE"
+CLIinput="mload milkmilkmoduleexample
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS imd1
+"
+clear
+echo "Example ${examplestring}
+
+Command modex.simplefuncFPS is called using the standard CLI mode.
+Argument(s) immediately follow the function call. In this case,
+the function takes one argument, which is the image name.
+
+Note that a non-CLI visible argument (.scaling) is not specified in
+the CLI mode. Its default value is used.
+"
+ProbeUserContinue
+RunExampleCode
+
+
+
+
+
+
+
+examplestring="RUN FUNCTION, CLI MODE, RECALL ARG"
+CLIinput="mload milkmilkmoduleexample
+imgen.mkdisk imd1 256 256 128 128 50
+imgen.mkdisk imd2 256 256 128 128 10
+modex.simplefuncFPS imd1
+modex.simplefuncFPS .
+modex.simplefuncFPS imd2
+modex.simplefuncFPS .
+"
+clear
+echo "Example ${examplestring}
+
+Arguments last used for a function can be recalled by the dot
+character '.'
+
+Here, we create two images and demonstrate how to recall the
+function argument used on the previous call of the function.
+"
+ProbeUserContinue
+RunExampleCode
+
+
+
+
+
+examplestring="CHANGE NON-CLI ARGUMENTS"
+CLIinput="mload milkmilkmoduleexample
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS .scaling 0.31
+cmd? modex.simplefuncFPS
+modex.simplefuncFPS imd1
+imgen.mkdisk imd2 256 256 128 128 10
+modex.simplefuncFPS .in_name imd2
+modex.simplefuncFPS .
+"
+clear
+echo "Example ${examplestring}
+
+Function parameters that are not part of the CLI call are
+set by providing the parameter tag (a string) and the set value
+as parameters of the CLI function call.
+
+Note that tab-complete can be used to list possible matches following
+the dot character.
+
+The same syntax also holds for arguments accessible by the CLI call.
+"
+ProbeUserContinue
+RunExampleCode
+
+
+
+
+
+
+
+
+
+examplestring="CREATE FUNCTION FPS"
+CLIinput="mload milkmilkmoduleexample
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS imd1
+modex.simplefuncFPS .scaling 0.31
+modex.simplefuncFPS _FPSINIT_ \"03\"
+"
+clear
+echo "Example ${examplestring}
+
+Create/initialize FPS if it does not exist
+Default FPS name is function key without namespace.
+Arguments following _FPSINIT_ are pasted to construct
+the FPS name.
+If FPS already exists, do nothing (param values
+may then be out of sync)
+"
+ProbeUserContinue
+RunExampleCode
+
+
+
+
+
+examplestring="MULTIPLE FPS INSTANCES"
+CLIinput="mload milkmilkmoduleexample
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS imd1
+modex.simplefuncFPS .scaling 0.31
+modex.simplefuncFPS _FPSINIT_ \"03\"
+modex.simplefuncFPS .scaling 0.5
+modex.simplefuncFPS _FPSINIT_ \"05\"
+modex.simplefuncFPS _RUNSTART_
+modex.simplefuncFPS _RUNSTART_ \"03\"
+modex.simplefuncFPS _RUNSTART_ \"05\"
+modex.simplefuncFPS .
+"
+clear
+echo "Example ${examplestring}
+
+Create/initialize FPS
+"
+ProbeUserContinue
+RunExampleCode
+
+
+
+
+
+
+
+
+
+
+
+
+
+
