@@ -54,7 +54,7 @@ errno_t load_sharedobj(
     }
     if(mmatch > -1)
     {
-        printf("Shared object %s already loaded - no action taken\n", libnameloaded);
+        printf("    Shared object %s already loaded - no action taken\n", libnameloaded);
         return RETURN_FAILURE;
     }
 
@@ -63,13 +63,13 @@ errno_t load_sharedobj(
     DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
     if(!DLib_handle[DLib_index])
     {
-        fprintf(stderr, KRED "%s\n" KRES, dlerror());
+        fprintf(stderr, KRED"%s\n"KRES, dlerror());
         //exit(EXIT_FAILURE);
     }
     else
     {
         dlerror();
-        printf(KGRN "   LOADED : %s\n" KRES, libnameloaded);
+        printf(KGRN"   LOADED : %s\n"KRES, libnameloaded);
         // increment number of libs dynamically loaded
         DLib_index ++;
     }
@@ -160,7 +160,7 @@ errno_t load_module_shared_ALL()
     int loopOK;
     int itermax;
 
-    sprintf(dirname, "%s/lib", data.sourcedir);
+    sprintf(dirname, "%s/lib", data.installdir);
 
     if(data.quiet == 0)
     {
@@ -181,11 +181,11 @@ errno_t load_module_shared_ALL()
                 char *dot = strrchr(dir->d_name, '.');
                 if(dot && !strcmp(dot, ".so"))
                 {
-                    sprintf(libname, "%s/lib/%s", data.sourcedir, dir->d_name);
+                    sprintf(libname, "%s/lib/%s", data.installdir, dir->d_name);
                     //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
                     //fflush(stdout);
 
-                    //printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+                    printf("    [%5d] Loading shared object \"%s\"\n", DLib_index, libname);
                     DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
                     if(!DLib_handle[DLib_index])
                     {
