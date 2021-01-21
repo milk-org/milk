@@ -29,13 +29,12 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-// CLI function data
+// CLI function initialization data
 static CLICMDDATA CLIcmddata =
 {
     "simplefuncFPS",                              // keyword (CLI call name)
     "compute total of image using FPS",           // short description
-    __FILE__,
-    sizeof(farg) / sizeof(CLICMDARGDEF), farg,
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
     CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO,         // supported capabilities
     NULL                                          // pointer to command settings (will be assigned when function is registered)
 };
@@ -65,10 +64,11 @@ static errno_t example_compute_2Dimage_total(
     }
     total *= scalingcoeff;
 
-    printf("image total = %lf, scaling coeff %lf\n", total, scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n", img.im->name, total, scalingcoeff);
 
     return RETURN_SUCCESS;
 }
+
 
 
 // Wrapper function, used by all CLI calls
