@@ -28,7 +28,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");
         if(MILK_SHM_DIR != NULL)
         {
-            printf(" [ MILK_SHM_DIR ] is '%s'\n", MILK_SHM_DIR);
+            printf("        MILK_SHM_DIR is '%s'\n", MILK_SHM_DIR);
 
             {
                 int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", MILK_SHM_DIR);

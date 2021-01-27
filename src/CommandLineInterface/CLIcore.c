@@ -423,9 +423,9 @@ static errno_t runCLI_initialize(
     CLIPID = getpid();
     if(data.quiet == 0)
     {
-        printf("    CLI PID = %d\n", (int) CLIPID);
+        printf("        CLI PID = %d\n", (int) CLIPID);
 
-        EXECUTE_SYSTEM_COMMAND("echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list",
+        EXECUTE_SYSTEM_COMMAND("echo -n \"        \"; cat /proc/%d/status | grep Cpus_allowed_list",
                                CLIPID);
     }
 
@@ -441,13 +441,13 @@ static errno_t runCLI_initialize(
 # ifdef _OPENMP
     if(data.quiet == 0)
     {
-        printf("    Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
+        printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
                omp_get_max_threads());
     }
 # else
     if(data.quiet == 0)
     {
-        printf("    Compiled without openMP\n");
+        printf("        Compiled without openMP\n");
     }
 # endif
 
@@ -455,7 +455,7 @@ static errno_t runCLI_initialize(
     int openACC_devtype = acc_get_device_type();
     if(data.quiet == 0)
     {
-        printf("    Running with openACC version %d.  %d device(s), type %d\n",
+        printf("        Running with openACC version %d.  %d device(s), type %d\n",
                _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
     }
 # endif
@@ -631,7 +631,7 @@ errno_t runCLI(
     {
         if(data.quiet == 0)
         {
-            printf(" [ MILKCLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
+            printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
         }
 
         char *libname;
@@ -650,7 +650,7 @@ errno_t runCLI(
     {
         if(data.quiet == 0)
         {
-            printf(" [ MILKCLI_ADD_LIBS ] not set -> no additional module loaded\n");
+            printf("        MILKCLI_ADD_LIBS not set -> no additional module loaded\n");
         }
     }
 
