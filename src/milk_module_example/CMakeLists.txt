@@ -14,6 +14,7 @@ set(INCLUDEFILES
 
 # list scripts that should be installed on system
 set(SCRIPTFILES
+	scripts/milk-example-simplefuncFPS
 	scripts/milk-semtestspeed)
 
 
