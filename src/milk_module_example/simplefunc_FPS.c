@@ -73,6 +73,7 @@ static errno_t example_compute_2Dimage_total(
 
 // Wrapper function, used by all CLI calls
 // Defines how local variables are fed to computation code
+// Always local to this translation unit
 static errno_t compute_function()
 {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -96,8 +97,7 @@ INSERT_STD_FPSCLIfunctions
 // Register function in CLI
 errno_t FPSCLIADDCMD_milk_module_example__simplefunc_FPS()
 {
-    int cmdi = RegisterCLIcmd(CLIcmddata, FPSCLIfunction);
-    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
+    INSERT_STD_CLIREGISTERFUNC
 
     // Optional custom settings for this function
     // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;
