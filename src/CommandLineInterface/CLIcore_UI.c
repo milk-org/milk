@@ -291,7 +291,6 @@ char **CLI_completion(
 
 errno_t CLI_execute_line()
 {
-    long    i;
     char   *cmdargstring;
     char    str[200];
     FILE   *fp;
@@ -326,7 +325,7 @@ errno_t CLI_execute_line()
         // some initialization
         data.parseerror = 0;
         data.calctmp_imindex = 0;
-        for(i = 0; i < NB_ARG_MAX; i++)
+        for(int i = 0; i < NB_ARG_MAX; i++)
         {
             data.cmdargtoken[0].type = CMDARGTOKEN_TYPE_UNSOLVED;
         }
@@ -390,7 +389,7 @@ errno_t CLI_execute_line()
         // First, split double-quote strings out
         // strings inside double quotes are not processed, and will be given type CMDARGTOKEN_TYPE_RAWSTRING
         int rawstringmode = 0;
-        char str1[200];
+        char str1[500];
         strcpy(str1, data.CLIcmdline);
 
         char *tokengroup;
@@ -412,7 +411,7 @@ errno_t CLI_execute_line()
                 cmdargstring = strtok(tokengroup, " ");
                 while(cmdargstring != NULL)   // iterate on words
                 {
-                    //printf("\t processing -- %s\n", cmdargstring);
+                    // printf("\t processing -- %s\n", cmdargstring);
                     sprintf(str, "%s\n", cmdargstring);
                     yy_scan_string(str);
                     data.calctmp_imindex = 0;
@@ -437,10 +436,9 @@ errno_t CLI_execute_line()
 
 
 
-
-        i = 0;
         if(data.Debug == 1)
         {
+            long  i = 0;
             while(data.cmdargtoken[i].type != 0)
             {
 
@@ -497,9 +495,9 @@ errno_t CLI_execute_line()
             }
         }
 
-        for(i = 0; i < data.calctmp_imindex; i++)
+        for(int i = 0; i < data.calctmp_imindex; i++)
         {
-            CREATE_IMAGENAME(calctmpimname, "_tmpcalc%ld", i);
+            CREATE_IMAGENAME(calctmpimname, "_tmpcalc%d", i);
             //sprintf(calctmpimname, "_tmpcalc%ld", i);
             if(image_ID(calctmpimname) != -1)
             {

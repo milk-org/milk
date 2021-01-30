@@ -68,12 +68,12 @@ input:   /* empty */
 line:
 '\n'
 | expd '\n'  {
-//printf("\t double: %.10g\n", $1);
+printf("\t double: %.10g\n", $1);
 data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_FLOAT;
 data.cmdargtoken[data.cmdNBarg].val.numf = $1;
 }
 | expl '\n'  {
-//printf("\t long:   %ld\n", $1);
+printf("\t long:   %ld\n", $1);
 data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_LONG;
 data.cmdargtoken[data.cmdNBarg].val.numl = $1;
 }

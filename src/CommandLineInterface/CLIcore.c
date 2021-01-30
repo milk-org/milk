@@ -845,8 +845,7 @@ errno_t runCLI(
                         {
                             buf1[total_bytes - 1] = '\0';
                             strcpy(data.CLIcmdline, buf1);
-                            DEBUG_TRACEPOINT("CLI executing line: %s",
-                                             data.CLIcmdline); //===============================
+                            DEBUG_TRACEPOINT("CLI executing line: %s", data.CLIcmdline);
                             CLI_execute_line();
                             DEBUG_TRACEPOINT("CLI line executed");
                             printf("%s", prompt);
