@@ -14,18 +14,43 @@ with function parameter structure (FPS) and process information (procinfo)."
 
 source milk-script-std-config
 
-RequiredCommands=( milk )
+RequiredCommands=( milk tmux )
 RequiredFiles=()
 RequiredDirs=()
 
 source milk-argparse
 
 SKIP=0
+TMUXMODE=1
 
-function ProbeUserContinue {
-    echo "CLI COMMANDS TO BE RUN:"
+if [ $TMUXMODE = 1 ]; then
+set +e
+tmux new -d -s milkexample
+set -e
+echo "Example(s) will run in tmux session milkexample"
+echo "Run \"tmux a -t milkexample\" to connect"
+echo
+read -p "Press enter to clear screen and continue"
+fi
+
+
+function ProbeUserRunExample {
+    readarray -t CLIinarray <<<"$CLIinput"
+    nbCLIcmd=${#CLIinarray[@]}
+    echo "Running milk in tmux session \"milkexample\""
+    tmux send-keys -t milkexample "milk" C-m
     echo ""
-    echo "$(tput bold)$(tput setaf 3)${CLIinput} $(tput sgr0)"
+    for (( i=0; i<$nbCLIcmd; i++ )); do
+        CLIline=${CLIinarray[$i]}
+        if [[ $CLIline == \#* ]]; then
+            echo "$(tput setaf 2)${CLIline} $(tput sgr0)"
+        else
+            echo "$(tput bold)$(tput setaf 3)${CLIline} $(tput sgr0)"
+            tmux send-keys -t milkexample "${CLIline}" C-m
+            read -p ""
+        fi
+    done
+    tmux send-keys -t milkexample "exitCLI" C-m
     echo ""
     inputOK=0
     while [  ${inputOK} = 0 ]; do
@@ -51,7 +76,7 @@ function RunExampleCode {
     if [ ${SKIP} = 0 ]; then
     clear
     echo "======= START OF EXAMPLE =================="
-milk << EOF
+MILK_QUIET=1 milk << EOF
 ${CLIinput}
 exitCLI
 EOF
@@ -67,8 +92,12 @@ EOF
 
 
 examplestring="PRINT HELP"
-CLIinput="mload milkmoduleexample
+CLIinput="
+# load module
+mload milkmoduleexample
+# get module info
 m? milk_module_example
+# get function info
 cmd? modex.simplefuncFPS
 "
 
@@ -80,7 +109,7 @@ This first example demonstrates how to:
 - Print help for module (m?)
 - Print help for command (cmd?
 "
-ProbeUserContinue
+ProbeUserRunExample
 RunExampleCode
 
 
@@ -107,7 +136,7 @@ the function takes one argument, which is the image name.
 Note that a non-CLI visible argument (.scaling) is not specified in
 the CLI mode. Its default value is used.
 "
-ProbeUserContinue
+ProbeUserRunExample
 RunExampleCode
 
 
@@ -135,7 +164,7 @@ character '.'
 Here, we create two images and demonstrate how to recall the
 function argument used on the previous call of the function.
 "
-ProbeUserContinue
+ProbeUserRunExample
 RunExampleCode
 
 
@@ -165,7 +194,7 @@ the dot character.
 
 The same syntax also holds for arguments accessible by the CLI call.
 "
-ProbeUserContinue
+ProbeUserRunExample
 RunExampleCode
 
 
@@ -194,7 +223,7 @@ the FPS name.
 If FPS already exists, do nothing (param values
 may then be out of sync)
 "
-ProbeUserContinue
+ProbeUserRunExample
 RunExampleCode
 
 
@@ -220,7 +249,7 @@ echo "Example ${examplestring}
 
 Create/initialize FPS
 "
-ProbeUserContinue
+ProbeUserRunExample
 RunExampleCode
 
 
