@@ -28,7 +28,7 @@ RequiredFiles=()
 RequiredDirs=()
 '
 
-# list SCRIPT ARGUMENTS 
+# list SCRIPT ARGUMENTS
 # syntax: "name;type(s)/test(s);description"
 #
 : '
@@ -136,7 +136,7 @@ while [ $argindex -lt ${NBarg} ]; do
   let argindex+=1
 done
 
-	
+
 echo "------------------------------------------------------------------------"
 echo "${txBold} ${pname} : ${MSdescr}  ${txReset}"
 echo " $0"
@@ -175,13 +175,13 @@ exit
 
 printHELPshort ()
 {
-	printf "%20s       ${MSdescr}\n" "$0" 
+	printf "%20s       ${MSdescr}\n" "$0"
 	exit
 }
 
 
 
-# call settrap function 
+# call settrap function
 settrap
 
 
@@ -199,7 +199,6 @@ for cmd in ${RequiredCommands[@]}; do
   checkCommand $cmd
 done
 
-
 for fname in ${RequiredFiles[@]}; do
   checkFile $fname
 done
@@ -209,6 +208,11 @@ for dname in ${RequiredDirs[@]}; do
 done
 }
 
+function checkallprerequisitesExit()
+{
+  checkallprerequisites
+  exit
+}
 
 
 
@@ -322,7 +326,7 @@ while (( "$#" )); do
   -*) # short option
     inputMSoptshortARRAY+=( $1 )
     shortopt=$1
-    shortopt="${shortopt:1}"        
+    shortopt="${shortopt:1}"
     #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
     optactlist+=( $shortopt )
     shift
@@ -356,9 +360,8 @@ done
 set -- "${inputParamString[@]}"
 #printf 'args after  update  : '; printf '%q ' "$@"; echo
 
+
 checkallprerequisites
-
-
 
 
 NBargin=0
