@@ -90,8 +90,6 @@ static errno_t compute_function()
 
 
 
-
-
 INSERT_STD_FPSCLIfunctions
 
 // Register function in CLI

@@ -14,7 +14,7 @@ with function parameter structure (FPS) and process information (procinfo)."
 
 source milk-script-std-config
 
-RequiredCommands=(milkexec)
+RequiredCommands=( milk )
 RequiredFiles=()
 RequiredDirs=()
 
@@ -51,7 +51,7 @@ function RunExampleCode {
     if [ ${SKIP} = 0 ]; then
     clear
     echo "======= START OF EXAMPLE =================="
-milkexec << EOF
+milk << EOF
 ${CLIinput}
 exitCLI
 EOF
