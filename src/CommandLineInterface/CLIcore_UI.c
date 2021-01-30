@@ -71,30 +71,25 @@ errno_t runCLI_prompt(
     int color_cyan = 36;
 
 
-    if(data.quiet == 0)
-    {
 
-        if(strlen(promptstring) > 0)
+
+    if(strlen(promptstring) > 0)
+    {
+        if(data.processnameflag == 0)
         {
-            if(data.processnameflag == 0)
-            {
-                sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, promptstring);
-            }
-            else
-            {
-                sprintf(prompt, COLORHBOLDCYAN "%s-%s > " COLORRESET, promptstring,
-                        data.processname);
-            }
+            sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, promptstring);
         }
         else
         {
-            sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, data.processname);
+            sprintf(prompt, COLORHBOLDCYAN "%s-%s > " COLORRESET, promptstring,
+                    data.processname);
         }
     }
     else
     {
-        sprintf(prompt, " ");
+        sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, data.processname);
     }
+
 
 
 
@@ -520,7 +515,7 @@ errno_t CLI_execute_line()
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
-        printf( COLORRED "Command not found, or command with no effect\n" COLORRESET);
+        printf(COLORRED "Command not found, or command with no effect\n" COLORRESET);
     }
 
 
