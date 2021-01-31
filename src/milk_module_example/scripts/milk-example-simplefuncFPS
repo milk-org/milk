@@ -14,251 +14,86 @@ with function parameter structure (FPS) and process information (procinfo)."
 
 source milk-script-std-config
 
-RequiredCommands=( milk tmux )
+RequiredCommands=( milk tmux nnn )
 RequiredFiles=()
 RequiredDirs=()
 
 source milk-argparse
 
 SKIP=0
-TMUXMODE=1
 
-if [ $TMUXMODE = 1 ]; then
+TMUXSESSIONNAME="milkexample"
+
 set +e
-tmux new -d -s milkexample
+tmux new -d -s ${TMUXSESSIONNAME}
+tmux send-keys -t ${TMUXSESSIONNAME} C-c
+tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
 set -e
-echo "Example(s) will run in tmux session milkexample"
-echo "Run \"tmux a -t milkexample\" to connect"
+echo "Example(s) will run in tmux session ${TMUXSESSIONNAME}"
+echo "$(tput bold)Run \"tmux a -t ${TMUXSESSIONNAME}\" to connect$(tput sgr0)"
 echo
-read -p "Press enter to clear screen and continue"
-fi
+read -p "Press [ENTER] to clear screen and continue"
+
 
 
 function ProbeUserRunExample {
     readarray -t CLIinarray <<<"$CLIinput"
     nbCLIcmd=${#CLIinarray[@]}
-    echo "Running milk in tmux session \"milkexample\""
-    tmux send-keys -t milkexample "milk" C-m
+    echo "Running example in tmux session \"${TMUXSESSIONNAME}\""
+    tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
     echo ""
     for (( i=0; i<$nbCLIcmd; i++ )); do
         CLIline=${CLIinarray[$i]}
+        if [ -n "$CLIline" ]; then # only process non-empty lines
         if [[ $CLIline == \#* ]]; then
+            # this is a comment, just print it in green
             echo "$(tput setaf 2)${CLIline} $(tput sgr0)"
         else
             echo "$(tput bold)$(tput setaf 3)${CLIline} $(tput sgr0)"
-            tmux send-keys -t milkexample "${CLIline}" C-m
-            read -p ""
+            read -p "   Press [ENTER] to run this command in tmux session ${TMUXSESSIONNAME} "
+            tmux send-keys -t ${TMUXSESSIONNAME} "${CLIline}" C-m
+            echo ""
+        fi
         fi
     done
-    tmux send-keys -t milkexample "exitCLI" C-m
-    echo ""
-    inputOK=0
-    while [  ${inputOK} = 0 ]; do
-    inputOK=1
-    echo -n "(r)un, (s)kip or (q)uit (r/s/q) ? "
-    read answer
-
-    if [ "$answer" != "${answer#[Rr]}" ] ;then
-        echo "Continuing"
-        SKIP=0
-    elif [ "$answer" != "${answer#[Ss]}" ]; then
-        SKIP=1
-    elif [ "$answer" != "${answer#[Qq]}" ]; then
-        exit
-    else
-        echo "Not a valid input"
-        inputOK=0
-    fi
-    done
-}
-
-function RunExampleCode {
-    if [ ${SKIP} = 0 ]; then
-    clear
-    echo "======= START OF EXAMPLE =================="
-MILK_QUIET=1 milk << EOF
-${CLIinput}
-exitCLI
-EOF
-    echo "======= END OF EXAMPLE ===================="
-    read -p "Press enter to clear screen and continue"
-    clear
-    fi
 }
 
 
 
 
+ExampleDir="/home/oguyon/src/cream/src/milk_module_example/examples/"
 
+loopOK=1
+while [ ${loopOK} = 1 ]; do
 
-examplestring="PRINT HELP"
-CLIinput="
-# load module
-mload milkmoduleexample
-# get module info
-m? milk_module_example
-# get function info
-cmd? modex.simplefuncFPS
-"
+#EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
+EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
+ExampleDir="$(dirname "$EXAMPLEFILE")"
+#echo "selected : $EXAMPLEFILE in $ExampleDir"
+
+source $EXAMPLEFILE
 
 clear
 tput bold; echo "Example ${examplestring}"; tput sgr0
-echo "
-This first example demonstrates how to:
-- Load module (mload)
-- Print help for module (m?)
-- Print help for command (cmd?
-"
+echo
+echo "$exampleDescription"
+echo
 ProbeUserRunExample
-RunExampleCode
 
 
+echo -n "[ENTER] return to menu or (q)uit ? "
+read answer
+
+if [ "$answer" != "${answer#[Qq]}" ]; then
+    loopOK=0
+else
+    loopOK=1
+fi
 
 
+done
 
-
-
-
-
-examplestring="RUN FUNCTION, CLI MODE"
-CLIinput="mload milkmoduleexample
-mload milkimagegen
-imgen.mkdisk imd1 256 256 128 128 50
-modex.simplefuncFPS imd1
-"
-clear
-tput bold; echo "Example ${examplestring}"; tput sgr0
-echo "
-Command modex.simplefuncFPS is called using the standard CLI mode.
-Argument(s) immediately follow the function call. In this case,
-the function takes one argument, which is the image name.
-
-Note that a non-CLI visible argument (.scaling) is not specified in
-the CLI mode. Its default value is used.
-"
-ProbeUserRunExample
-RunExampleCode
-
-
-
-
-
-
-
-examplestring="RUN FUNCTION, CLI MODE, RECALL ARG"
-CLIinput="mload milkmoduleexample
-mload milkimagegen
-imgen.mkdisk imd1 256 256 128 128 50
-imgen.mkdisk imd2 256 256 128 128 10
-modex.simplefuncFPS imd1
-modex.simplefuncFPS .
-modex.simplefuncFPS imd2
-modex.simplefuncFPS .
-"
-clear
-echo "Example ${examplestring}
-
-Arguments last used for a function can be recalled by the dot
-character '.'
-
-Here, we create two images and demonstrate how to recall the
-function argument used on the previous call of the function.
-"
-ProbeUserRunExample
-RunExampleCode
-
-
-
-
-
-examplestring="CHANGE NON-CLI ARGUMENTS"
-CLIinput="mload milkmoduleexample
-mload milkimagegen
-imgen.mkdisk imd1 256 256 128 128 50
-modex.simplefuncFPS .scaling 0.31
-cmd? modex.simplefuncFPS
-modex.simplefuncFPS imd1
-imgen.mkdisk imd2 256 256 128 128 10
-modex.simplefuncFPS .in_name imd2
-modex.simplefuncFPS .
-"
-clear
-echo "Example ${examplestring}
-
-Function parameters that are not part of the CLI call are
-set by providing the parameter tag (a string) and the set value
-as parameters of the CLI function call.
-
-Note that tab-complete can be used to list possible matches following
-the dot character.
-
-The same syntax also holds for arguments accessible by the CLI call.
-"
-ProbeUserRunExample
-RunExampleCode
-
-
-
-
-
-
-
-
-
-examplestring="CREATE FUNCTION FPS"
-CLIinput="mload milkmoduleexample
-mload milkimagegen
-imgen.mkdisk imd1 256 256 128 128 50
-modex.simplefuncFPS imd1
-modex.simplefuncFPS .scaling 0.31
-modex.simplefuncFPS _FPSINIT_ \"03\"
-"
-clear
-echo "Example ${examplestring}
-
-Create/initialize FPS if it does not exist
-Default FPS name is function key without namespace.
-Arguments following _FPSINIT_ are pasted to construct
-the FPS name.
-If FPS already exists, do nothing (param values
-may then be out of sync)
-"
-ProbeUserRunExample
-RunExampleCode
-
-
-
-
-
-examplestring="MULTIPLE FPS INSTANCES"
-CLIinput="mload milkmoduleexample
-mload milkimagegen
-imgen.mkdisk imd1 256 256 128 128 50
-modex.simplefuncFPS imd1
-modex.simplefuncFPS .scaling 0.31
-modex.simplefuncFPS _FPSINIT_ \"03\"
-modex.simplefuncFPS .scaling 0.5
-modex.simplefuncFPS _FPSINIT_ \"05\"
-modex.simplefuncFPS _RUNSTART_
-modex.simplefuncFPS _RUNSTART_ \"03\"
-modex.simplefuncFPS _RUNSTART_ \"05\"
-modex.simplefuncFPS .
-"
-clear
-echo "Example ${examplestring}
-
-Create/initialize FPS
-"
-ProbeUserRunExample
-RunExampleCode
-
-
-
-
-
-
-
-
+echo "End examples"
 
 
 

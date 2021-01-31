@@ -1,0 +1,26 @@
+examplestring="Getting help"
+
+exampleDescription="
+This first example demonstrates how to:
+- Load module (mload)
+- Print help for module (m?)
+- Print help for command (cmd?)
+"
+
+CLIinput="
+
+# launch milk command line interpreter (CLI)
+milk
+
+# load module
+mload milkmoduleexample
+
+# get module info
+m? milk_module_example
+
+# get function info
+cmd? modex.simplefuncFPS
+
+# exit milk CLI
+exitCLI
+"

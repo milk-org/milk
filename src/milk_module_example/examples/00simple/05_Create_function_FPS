@@ -1,0 +1,22 @@
+
+examplestring="CREATE FUNCTION FPS"
+
+exampleDescription="
+Create/initialize FPS if it does not exist
+Default FPS name is function key without namespace.
+Arguments following _FPSINIT_ are pasted to construct
+the FPS name.
+If FPS already exists, do nothing (param values
+may then be out of sync)
+"
+
+CLIinput="
+milk
+mload milkmoduleexample
+mload milkimagegen
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS imd1
+modex.simplefuncFPS .scaling 0.31
+modex.simplefuncFPS _FPSINIT_ \"03\"
+exitCLI
+"
