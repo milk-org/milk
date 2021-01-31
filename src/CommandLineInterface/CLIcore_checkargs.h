@@ -98,11 +98,22 @@ typedef struct
 // processinfo enabled
 #define CLICMDFLAG_PROCINFO 0x00000002
 
-
+// Function attributes
+// These values are copied to processinfo upon function startup
 typedef struct
 {
     long procinfo_loopcntMax;
+
+    int  triggermode;
+    char triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
+    struct timespec triggerdelay;
+    struct timespec triggertimeout;
+
+    int RT_priority;    // -1 if unused. 0-99 for higher priority
+    cpu_set_t CPUmask;
+
     int procinfo_MeasureTiming;
+
 } CMDSETTINGS;
 
 
