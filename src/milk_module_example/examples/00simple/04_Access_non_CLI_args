@@ -1,0 +1,27 @@
+
+examplestring="CHANGE NON-CLI ARGUMENTS"
+
+exampleDescription="
+Function parameters that are not part of the CLI call are
+set by providing the parameter tag (a string) and the set value
+as parameters of the CLI function call.
+
+Note that tab-complete can be used to list possible matches following
+the dot character.
+
+The same syntax also holds for arguments accessible by the CLI call.
+"
+
+CLIinput="
+milk
+mload milkmoduleexample
+mload milkimagegen
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS .scaling 0.31
+cmd? modex.simplefuncFPS
+modex.simplefuncFPS imd1
+imgen.mkdisk imd2 256 256 128 128 10
+modex.simplefuncFPS .in_name imd2
+modex.simplefuncFPS .
+exitCLI
+"

@@ -1,0 +1,22 @@
+examplestring="RUN FUNCTION, CLI MODE, RECALL ARG"
+
+exampleDescription="
+Arguments last used for a function can be recalled by the dot
+character '.'
+
+Here, we create two images and demonstrate how to recall the
+function argument used on the previous call of the function.
+"
+
+CLIinput="
+milk
+mload milkmoduleexample
+mload milkimagegen
+imgen.mkdisk imd1 256 256 128 128 50
+imgen.mkdisk imd2 256 256 128 128 10
+modex.simplefuncFPS imd1
+modex.simplefuncFPS .
+modex.simplefuncFPS imd2
+modex.simplefuncFPS .
+exitCLI
+"

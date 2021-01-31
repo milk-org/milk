@@ -1,0 +1,23 @@
+
+examplestring="MULTIPLE FPS INSTANCES"
+
+exampleDescription="
+Create/initialize FPS
+"
+
+CLIinput="
+milk
+mload milkmoduleexample
+mload milkimagegen
+imgen.mkdisk imd1 256 256 128 128 50
+modex.simplefuncFPS imd1
+modex.simplefuncFPS .scaling 0.31
+modex.simplefuncFPS _FPSINIT_ \"03\"
+modex.simplefuncFPS .scaling 0.5
+modex.simplefuncFPS _FPSINIT_ \"05\"
+modex.simplefuncFPS _RUNSTART_
+modex.simplefuncFPS _RUNSTART_ \"03\"
+modex.simplefuncFPS _RUNSTART_ \"05\"
+modex.simplefuncFPS .
+exitCLI
+"
