@@ -21,14 +21,27 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     char     *fpsname_default
 )
 {
-
     // Check if function will be executed through FPS interface
-    // set to 0 as default (no FPS)
+
+    // set to 0 as default (no FPS, function will be processed according to CLI rules)
     data.FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     if(CLI_checkarg(1, CLIARG_STR) == 0)
     {
+
+        // if "?", call help
+        if(strcmp(data.cmdargtoken[1].val.string, "?") == 0)
+        {
+            help_command(data.cmdargtoken[0].val.string);
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+
+        // modify function attribute
+
+
         // check that first arg is a string
         // if it isn't, the non-FPS implementation should be called
 
@@ -72,7 +85,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
 
     // if recognized FPSCMDCODE, use FPS implementation
-    if(data.FPS_CMDCODE != 0)
+    if( (data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE) )
     {
         // ===============================
         //     SET FPS INTERFACE NAME
