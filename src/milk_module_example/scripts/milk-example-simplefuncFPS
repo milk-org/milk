@@ -25,7 +25,12 @@ SKIP=0
 TMUXSESSIONNAME="milkexample"
 
 set +e
+echo "list of sessions:"
+tmux ls
+echo "Ceating session ${TMUXSESSIONNAME}"
 tmux new -d -s ${TMUXSESSIONNAME}
+echo "list of sessions:"
+tmux ls
 tmux send-keys -t ${TMUXSESSIONNAME} C-c
 tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
 set -e
@@ -68,18 +73,21 @@ while [ ${loopOK} = 1 ]; do
 
 #EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
 EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
-ExampleDir="$(dirname "$EXAMPLEFILE")"
-#echo "selected : $EXAMPLEFILE in $ExampleDir"
 
-source $EXAMPLEFILE
+echo "selected : $EXAMPLEFILE in $ExampleDir"
+if [ -f "$EXAMPLEFILE" ]; then
+    ExampleDir="$(dirname "$EXAMPLEFILE")"
+    source $EXAMPLEFILE
 
-clear
-tput bold; echo "Example ${examplestring}"; tput sgr0
-echo
-echo "$exampleDescription"
-echo
-ProbeUserRunExample
-
+    clear
+    tput bold; echo "Example ${examplestring}"; tput sgr0
+    echo
+    echo "$exampleDescription"
+    echo
+    ProbeUserRunExample
+else
+    echo "ERROR: File does not exist, could not run test"
+fi
 
 echo -n "[ENTER] return to menu or (q)uit ? "
 read answer
@@ -92,6 +100,11 @@ fi
 
 
 done
+
+# close tmux session
+tmux send-keys -t ${TMUXSESSIONNAME} "" C-c
+tmux send-keys -t ${TMUXSESSIONNAME} "exit" C-m
+
 
 echo "End examples"
 
