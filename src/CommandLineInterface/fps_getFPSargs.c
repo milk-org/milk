@@ -40,7 +40,13 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
 
         // modify function attribute
-
+        if(strcmp(data.cmdargtoken[1].val.string, "..loopcntMax") == 0)
+        {
+            printf("Command %ld: updating loopcntMax to value %ld\n", data.cmdindex, data.cmdargtoken[2].val.numl);
+            data.cmd[data.cmdindex].cmdsettings.procinfo_loopcntMax = data.cmdargtoken[2].val.numl;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
 
         // check that first arg is a string
         // if it isn't, the non-FPS implementation should be called
