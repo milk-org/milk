@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 
-MSdescr="Simple function test"
+MSdescr="milk tutorial by examples"
 
 scriptname=$(basename $0)
 
-MSextdescr="Simple function test
+MSextdescr="milk tutorial and examples
 
-Computes image total.
+Runs milk examples.
 Demonstrates use of milk command line interface (CLI) and its interaction
 with function parameter structure (FPS) and process information (procinfo)."
 

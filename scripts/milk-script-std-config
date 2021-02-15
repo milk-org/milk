@@ -10,9 +10,17 @@ set -o errexit
 set -o pipefail
 
 
+function cleanup()
+{
+	echo ""
+	reset
+	echo "Exiting script ${pname}"
+	echo ""
+}
+
 function settrap()
 {
-	trap 'echo "End of ${pname}"' EXIT
+	trap cleanup EXIT
 }
 
 
