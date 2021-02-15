@@ -47,6 +47,8 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
+        // TODO: add other function attributes
+
 
         // check that first arg is a string
         // if it isn't, the non-FPS implementation should be called
