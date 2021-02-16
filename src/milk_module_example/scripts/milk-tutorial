@@ -12,7 +12,18 @@ Demonstrates use of milk command line interface (CLI) and its interaction
 with function parameter structure (FPS) and process information (procinfo)."
 
 
+
+
 source milk-script-std-config
+
+TMUXSESSIONNAME="milkexample"
+
+function customcleanup {
+    tmux send-keys -t ${TMUXSESSIONNAME} C-c
+    tmux send-keys -t ${TMUXSESSIONNAME} "exit" C-m
+    reset
+    echo "custom cleanup done"
+}
 
 RequiredCommands=( milk tmux nnn )
 RequiredFiles=()
@@ -22,22 +33,23 @@ source milk-argparse
 
 SKIP=0
 
-TMUXSESSIONNAME="milkexample"
+
 
 set +e
-echo "list of sessions:"
-tmux ls
-echo "Ceating session ${TMUXSESSIONNAME}"
+#echo "list of sessions:"
+#tmux ls
+#echo "Ceating session ${TMUXSESSIONNAME}"
 tmux new -d -s ${TMUXSESSIONNAME}
-echo "list of sessions:"
-tmux ls
+#echo "list of sessions:"
+#tmux ls
 tmux send-keys -t ${TMUXSESSIONNAME} C-c
 tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
 set -e
+echo ""
 echo "Example(s) will run in tmux session ${TMUXSESSIONNAME}"
 echo "$(tput bold)Run \"tmux a -t ${TMUXSESSIONNAME}\" to connect$(tput sgr0)"
 echo
-read -p "Press [ENTER] to clear screen and continue"
+read -s -p "Press [ENTER] to clear screen and continue, [CTRL-C] to exit "
 
 
 

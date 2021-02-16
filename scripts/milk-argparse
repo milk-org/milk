@@ -181,8 +181,6 @@ printHELPshort ()
 
 
 
-# call settrap function
-settrap
 
 
 
@@ -380,3 +378,19 @@ fi
 
 
 
+function cleanup()
+{
+	echo ""
+	# optional custom cleanup provided by application
+	customcleanup
+	echo "Exiting script ${pname}"
+	echo ""
+}
+
+function settrap()
+{
+	trap cleanup EXIT
+}
+
+# call settrap function
+settrap
