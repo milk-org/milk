@@ -40,13 +40,51 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
 
         // modify function attribute
+
         if(strcmp(data.cmdargtoken[1].val.string, "..loopcntMax") == 0)
         {
-            printf("Command %ld: updating loopcntMax to value %ld\n", data.cmdindex, data.cmdargtoken[2].val.numl);
-            data.cmd[data.cmdindex].cmdsettings.procinfo_loopcntMax = data.cmdargtoken[2].val.numl;
+            printf("Command %ld: updating loopcntMax to value %ld\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numl);
+            data.cmd[data.cmdindex].cmdsettings.procinfo_loopcntMax =
+                data.cmdargtoken[2].val.numl;
             data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..fps") == 0)
+        {
+            if(data.cmdargtoken[2].val.numl == 0)
+            {
+                printf("Command %ld: updating FPS mode OFF\n", data.cmdindex);
+                data.cmd[data.cmdindex].cmdsettings.flags &= ~CLICMDFLAG_FPS;
+
+            }
+            else
+            {
+                printf("Command %ld: updating FPS mode ON\n", data.cmdindex);
+                data.cmd[data.cmdindex].cmdsettings.flags |= CLICMDFLAG_FPS;
+            }
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..procinfo") == 0)
+        {
+            if(data.cmdargtoken[2].val.numl == 0)
+            {
+                printf("Command %ld: updating PROCINFO mode OFF\n", data.cmdindex);
+                data.cmd[data.cmdindex].cmdsettings.flags &= ~CLICMDFLAG_PROCINFO;
+
+            }
+            else
+            {
+                printf("Command %ld: updating PROCINFO mode ON\n", data.cmdindex);
+                data.cmd[data.cmdindex].cmdsettings.flags |= CLICMDFLAG_PROCINFO;
+            }
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
         // TODO: add other function attributes
 
 
@@ -93,7 +131,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
 
     // if recognized FPSCMDCODE, use FPS implementation
-    if( (data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE) )
+    if((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
     {
         // ===============================
         //     SET FPS INTERFACE NAME

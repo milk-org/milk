@@ -497,6 +497,8 @@ static int checkFlag64(
 {
     int rval = 0;
 
+    printf("--------- flags: %ld\n", flags);
+
     if(flags & testflag)
     {
         rval = 1;
@@ -542,9 +544,9 @@ errno_t help_command(
             printf("\texample> %s\n", data.cmd[cmdi].example);
 
             printf("\n");
-            checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_FPS, "FPS support");
-            if(checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_PROCINFO,
-                           "processinfo support") == 1)
+            checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_FPS, "FPS support (..fps 0/1)");
+            if(checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_PROCINFO,
+                           "processinfo support (..procinfo 0/1)") == 1)
             {
                 printf("        loopcntMax         : %ld\n",
                        data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);

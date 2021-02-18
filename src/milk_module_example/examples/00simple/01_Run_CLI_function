@@ -10,10 +10,25 @@ the CLI mode. Its default value is used.
 "
 
 CLIinput="
+# Launch milk command line interpreter (CLI)
 milk
+
+# Load modules
 mload milkmoduleexample
 mload milkimagegen
+
+# Create disk image
 imgen.mkdisk imd1 256 256 128 128 50
+
+# Turn off procinfo
+modex.simplefuncFPS ..procinfo 0
+
+# get function info
+cmd? modex.simplefuncFPS
+
+# Run function
 modex.simplefuncFPS imd1
+
+# Exit CLI
 exitCLI
 "

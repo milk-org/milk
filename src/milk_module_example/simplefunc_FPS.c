@@ -35,7 +35,7 @@ static CLICMDDATA CLIcmddata =
     "simplefuncFPS",                              // keyword (CLI call name)
     "compute total of image using FPS",           // short description
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO,         // supported capabilities
+    CLICMDFLAG_FPS,                               // enabled modes at module initialization, copied to CLIcmddata.cmdsettings.flags
     NULL                                          // pointer to command settings (will be assigned when function is registered)
 };
 

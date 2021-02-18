@@ -259,7 +259,7 @@ typedef struct
     CLICMDARGDATA *argdata; // arguments and parameters to function
 
     // defines static function capabilities and behavior
-    uint64_t flags;
+    //uint64_t flags;
 
     // dynamic settings for function
     CMDSETTINGS cmdsettings;

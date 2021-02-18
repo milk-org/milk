@@ -78,11 +78,11 @@ errno_t stream_process_loop_simple_addCLIcmd()
 {
 
     RegisterCLIcommand(
-        "streamloop",                                                                    
-        __FILE__,                                                                     
+        "streamloop",
+        __FILE__,
         milk_module_example__stream_process_loop_simple__cli,
         "simple stream loop",
-        "<streamA> <stramB> <NBiter>",                  
+        "<streamA> <stramB> <NBiter>",
         "streamloop imA imB 10000 2",
         "milk_module_example__stream_process_loop_simple(char *streamA_name, char *streamB_name, long loopNBiter, int semtrig)");
 
