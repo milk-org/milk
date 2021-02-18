@@ -45,11 +45,14 @@ tmux new -d -s ${TMUXSESSIONNAME}
 tmux send-keys -t ${TMUXSESSIONNAME} C-c
 tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
 set -e
+echo
+echo "This tool navigates through a series of examples demonstrating milk use."
+echo "Use arrow keys to navigate and select example script."
 echo ""
-echo "Example(s) will run in tmux session ${TMUXSESSIONNAME}"
+echo "All examples will run in tmux session ${TMUXSESSIONNAME}"
 echo "$(tput bold)Run \"tmux a -t ${TMUXSESSIONNAME}\" to connect$(tput sgr0)"
 echo
-read -s -p "Press [ENTER] to clear screen and continue, [CTRL-C] to exit "
+read -s -p "Press [ENTER] to proceed to navigator, [CTRL-C] to exit at any time"
 
 
 

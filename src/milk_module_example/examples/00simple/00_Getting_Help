@@ -9,7 +9,7 @@ This first example demonstrates how to:
 
 CLIinput="
 
-# launch milk command line interpreter (CLI)
+# Launch milk command line interpreter (CLI)
 milk
 
 # load module

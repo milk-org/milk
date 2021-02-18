@@ -102,6 +102,8 @@ typedef struct
 // These values are copied to processinfo upon function startup
 typedef struct
 {
+    uint64_t flags;
+
     long procinfo_loopcntMax;
 
     int  triggermode;

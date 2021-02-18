@@ -95,7 +95,7 @@ static errno_t CLIfunction(void)\
 static errno_t FPSCONFfunction()\
 {\
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);\
-    if( CLIcmddata.flags & CLICMDFLAG_PROCINFO )\
+    if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO )\
     {\
         fps_add_processinfo_entries(&fps);\
     }\
@@ -112,7 +112,7 @@ static errno_t FPSCONFfunction()\
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
 int processloopOK = 1;\
 PROCESSINFO *processinfo;\
-if( CLIcmddata.flags & CLICMDFLAG_PROCINFO)\
+if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 {\
     char pinfodescr[200];\
     int slen = snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);\
@@ -151,7 +151,7 @@ if( CLIcmddata.flags & CLICMDFLAG_PROCINFO)\
 }\
 while(processloopOK == 1) \
 { \
-	if( CLIcmddata.flags & CLICMDFLAG_PROCINFO) {\
+	if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {\
         processloopOK = processinfo_loopstep(processinfo); \
 	    processinfo_waitoninputstream(processinfo); \
 	    processinfo_exec_start(processinfo); \
@@ -160,7 +160,7 @@ while(processloopOK == 1) \
         processloopOK = 0;\
     }\
     int processcompstatus = 1;\
-    if( CLIcmddata.flags & CLICMDFLAG_PROCINFO) {\
+    if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {\
         processcompstatus = processinfo_compute_status(processinfo);\
     }\
 	if(processcompstatus == 1) \
@@ -169,11 +169,11 @@ while(processloopOK == 1) \
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_END \
 	} \
-	if( CLIcmddata.flags & CLICMDFLAG_PROCINFO) {\
+	if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {\
         processinfo_exec_end(processinfo); \
     }\
 } \
-if( CLIcmddata.flags & CLICMDFLAG_PROCINFO) {\
+if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {\
     processinfo_cleanExit(processinfo);\
 }
 
@@ -233,7 +233,7 @@ static errno_t FPSRUNfunction()\
 #define INSERT_STD_FPSCLIfunction \
 static errno_t FPSCLIfunction(void)\
 {\
-if( CLIcmddata.flags & CLICMDFLAG_FPS )\
+if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_FPS )\
 {\
 function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);\
 if(data.FPS_CMDCODE != 0)\
