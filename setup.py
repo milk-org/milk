@@ -96,8 +96,9 @@ setup(
     description='A wrap project to use cream with python',
     long_description='A wrap project to use cream with python',
     ext_modules=[CMakeExtension('CacaoProcessTools')],
-    install_requires=['pybind11>=2.4', 'cmake'],
-    setup_requires=['pybind11>=2.4', 'cmake'],
+    install_requires=['pybind11>=2.4', 'wheel', 'cmake'],
+    setup_requires=['pybind11>=2.4', 'wheel', 'cmake'],
     python_requires='>=3',
     cmdclass={'build_ext': CMakeBuildExt},
-    zip_safe=False, )
+    zip_safe=False,
+)
