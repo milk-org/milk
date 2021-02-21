@@ -101,8 +101,8 @@ class pyFps {
     if (create) {
       create_and_connect(NBparamMAX);
     } else {
-      while (connect() == -1) {
-        sleep(0.01);
+      if (connect() == -1) {
+        throw std::runtime_error("FPS does not exist");
       }
       read_keys();
     }

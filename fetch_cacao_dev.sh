@@ -10,11 +10,6 @@ if [ -d "${mod}" ]; then
   echo "	Already installed -> skipping"
 else
   git clone -b dev https://github.com/cacao-org/${mod}
-  cat >> ../.gitmodules << EOF
-[submodule "extra/${mod}"]
-	path = extra/${mod}
-	url = ""
-EOF
   echo ""
 fi
 done
