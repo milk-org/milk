@@ -2,7 +2,6 @@ examplestring="Getting help"
 
 exampleDescription="
 This first example demonstrates how to:
-- Load module (mload)
 - Print help for module (m?)
 - Print help for command (cmd?)
 "
@@ -12,14 +11,17 @@ CLIinput="
 # Launch milk command line interpreter (CLI)
 milk
 
-# load module
-mload milkmoduleexample
+# List loaded modules
+m?
 
 # get module info
-m? milk_module_example
+m? COREMOD_iofits
 
-# get function info
-cmd? modex.simplefuncFPS
+# Get function help
+cmd? loadfits
+
+# Alternate help syntax (same result as above)
+loadfits ?
 
 # exit milk CLI
 exitCLI

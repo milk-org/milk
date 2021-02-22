@@ -6,18 +6,39 @@ Create/initialize FPS
 "
 
 CLIinput="
-milk
-mload milkmoduleexample
-mload milkimagegen
+# Start milk CLI with required modules
+MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image
 imgen.mkdisk imd1 256 256 128 128 50
+
+# Run function
 modex.simplefuncFPS imd1
+
+# Change non-CLI parameter value
 modex.simplefuncFPS .scaling 0.31
+
+# Save current parameters in FPS named 03
 modex.simplefuncFPS _FPSINIT_ \"03\"
+
+# Change non-CLI parameter value
 modex.simplefuncFPS .scaling 0.5
+
+# Save current parameters in FPS named 05
 modex.simplefuncFPS _FPSINIT_ \"05\"
+
+# Run function with current parameter values
 modex.simplefuncFPS _RUNSTART_
+
+# Run function with parameters from FPS 03
 modex.simplefuncFPS _RUNSTART_ \"03\"
+
+# Run function with parameters from FPS 05
 modex.simplefuncFPS _RUNSTART_ \"05\"
+
+# Re-run function with last used parameter values
 modex.simplefuncFPS .
+
+# Exit CLI
 exitCLI
 "
