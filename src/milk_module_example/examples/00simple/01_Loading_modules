@@ -1,0 +1,35 @@
+examplestring="Loading modules"
+
+exampleDescription="
+Modules can be loaded at runtime from the CLI, 
+or by using the MILKCLI_ADD_LIBS environment
+variable.
+"
+
+CLIinput="
+
+# Launch milk command line interpreter (CLI) with module milkmoduleexample
+MILKCLI_ADD_LIBS=\"milkmoduleexample\" milk
+
+# get module info
+m? milk_module_example
+
+# Get function help
+cmd? modex.simplefuncFPS
+
+# Alternate help syntax (same result as above)
+modex.simplefuncFPS ?
+
+# exit milk CLI
+exitCLI
+
+# Modules can also be loaded at runtime from the CLI using mload
+# Launch milk
+milk
+
+# load module from CLI
+mload milkmoduleexample
+
+# exit milk CLI
+exitCLI
+"

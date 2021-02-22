@@ -1,5 +1,4 @@
-
-examplestring="CHANGE NON-CLI ARGUMENTS"
+examplestring="Access non-CLI arguments"
 
 exampleDescription="
 Function parameters that are not part of the CLI call are
@@ -13,15 +12,30 @@ The same syntax also holds for arguments accessible by the CLI call.
 "
 
 CLIinput="
-milk
-mload milkmoduleexample
-mload milkimagegen
+# Start milk CLI with required modules
+MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image
 imgen.mkdisk imd1 256 256 128 128 50
+
+# Set non-CLI argument value
 modex.simplefuncFPS .scaling 0.31
+
+# Get function help to print value of non-CLI argument(s)
 cmd? modex.simplefuncFPS
+
+# Run function
 modex.simplefuncFPS imd1
+
+# Create second disk image
 imgen.mkdisk imd2 256 256 128 128 10
+
+# Set new value for CLI-visible argument
 modex.simplefuncFPS .in_name imd2
+
+# Run function
 modex.simplefuncFPS .
+
+# Exit CLI
 exitCLI
 "
