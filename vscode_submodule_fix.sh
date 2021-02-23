@@ -2,7 +2,7 @@
 
 git checkout -- .gitmodules
 
-for mod in `find plugins/milk-extra-src -mindepth 2 -maxdepth 2 -type d| grep -v .git`
+for mod in `find plugins/milk-extra-src -mindepth 1 -maxdepth 1 -type d| grep -v .git`
 do
 cat >> .gitmodules << EOF
 [submodule "${mod}"]
