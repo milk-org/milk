@@ -2,7 +2,7 @@
 
 git checkout -- .gitmodules
 
-for mod in `ls -c1 -d ./plugins/*/*`
+for mod in `find plugins/milk-extra-src -mindepth 2 -maxdepth 2 -type d| grep -v .git`
 do
 cat >> .gitmodules << EOF
 [submodule "${mod}"]
@@ -10,3 +10,11 @@ cat >> .gitmodules << EOF
 	url = ""
 EOF
 done
+
+if [ -d "plugins/cacao-src" ]; then
+cat >> .gitmodules << EOF
+[submodule "cacao"]
+	path = plugins/cacao-src
+	url = ""
+EOF
+fi
