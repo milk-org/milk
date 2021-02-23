@@ -19,9 +19,9 @@ if(NOT TARGET pybind11)
 
   add_library(CacaoProcessTools MODULE CacaoProcessTools.cpp)
 
-  target_compile_features(CacaoProcessTools PRIVATE cxx_std_14)
-  target_include_directories(CacaoProcessTools PRIVATE "${pybind11_inc}")
-  target_compile_options(CacaoProcessTools PRIVATE "-Wno-deprecated-declarations")
+  target_compile_features(CacaoProcessTools PUBLIC cxx_std_14)
+  target_include_directories(CacaoProcessTools PUBLIC "${pybind11_inc}")
+  target_compile_options(CacaoProcessTools PUBLIC "-Wno-deprecated-declarations")
   set_target_properties(CacaoProcessTools
           PROPERTIES PREFIX
               "${PYTHON_MODULE_PREFIX}"
@@ -32,7 +32,7 @@ else()
   pybind11_add_module(CacaoProcessTools CacaoProcessTools.cpp)
 endif()
 
-target_link_libraries(CacaoProcessTools PRIVATE CLIcore ImageStreamIO milkCOREMODiofits milkCOREMODmemory milkCOREMODtools)
+target_link_libraries(CacaoProcessTools PUBLIC CLIcore ImageStreamIO milkCOREMODiofits milkCOREMODmemory milkCOREMODtools)
 
 install(TARGETS CacaoProcessTools
         EXPORT CacaoProcessToolsConfig

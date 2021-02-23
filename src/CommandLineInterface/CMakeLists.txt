@@ -19,9 +19,6 @@ pkg_check_modules(HWLOC hwloc)
 
 pkg_check_modules(CFITSIO cfitsio)
 
-include_directories("${PROJECT_SOURCE_DIR}/src")
-include_directories("${PROJECT_SOURCE_DIR}/..")
-
 find_package(BISON)
 find_package(FLEX)
 # find_package(Curses REQUIRED) # already performed in main build dir
@@ -100,9 +97,7 @@ if(${CFITSIO_FOUND})
 endif()
 
 target_include_directories(CLIcore
-                PUBLIC ${PROJECT_SOURCE_DIR}/..
-                      ${PROJECT_SOURCE_DIR}/src
-                      ${GSL_INCLUDE_DIRS}
+                PUBLIC ${GSL_INCLUDE_DIRS}
                       ${FFTW_INCLUDE_DIRS}
                       ${FFTWF_INCLUDE_DIRS})
 
@@ -128,9 +123,8 @@ target_link_libraries(CLIcore
                               milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools)
 
 if(${HWLOC_FOUND})
-  target_compile_definitions(CLIcore PRIVATE USE_HWLOC)
+  target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
 endif()
-
 target_include_directories(CLIcore
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                   ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}

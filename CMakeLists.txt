@@ -173,7 +173,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
-execute_process(COMMAND bash -c "ls -c1 -d ${PROJECT_SOURCE_DIR}/extra/*"
+execute_process(COMMAND bash -c "ls -c1 -d ${PROJECT_SOURCE_DIR}/plugins/*/*"
                 OUTPUT_VARIABLE libextradir)
 string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 
