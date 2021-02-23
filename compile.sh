@@ -9,12 +9,12 @@ cd _build
 
 if [ ! -z $1 ]
 then
-    CREAM_INSTALL_ROOT=$1
+    MILK_INSTALL_ROOT=$1
 fi
 
-if [ -z $CREAM_INSTALL_ROOT ]
+if [ -z $MILK_INSTALL_ROOT ]
 then
-    CREAM_INSTALL_ROOT=/usr/local
+    MILK_INSTALL_ROOT=/usr/local
 fi
 
 # find python executable
@@ -27,8 +27,8 @@ fi
 echo "using python at ${pythonexec}"
 
 
-cmake .. -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$CREAM_INSTALL_ROOT
-# cmake .. -DCMAKE_INSTALL_PREFIX=$CREAM_INSTALL_ROOT
+cmake .. -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT
+# cmake .. -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
 

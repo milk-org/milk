@@ -81,7 +81,7 @@ function ProbeUserRunExample {
 
 
 
-ExampleDir="/home/oguyon/src/cream/src/milk_module_example/examples/"
+ExampleDir="/home/oguyon/src/milk/src/milk_module_example/examples/"
 
 loopOK=1
 while [ ${loopOK} = 1 ]; do
@@ -122,9 +122,3 @@ tmux send-keys -t ${TMUXSESSIONNAME} "exit" C-m
 
 
 echo "End examples"
-
-
-
-
-
-
