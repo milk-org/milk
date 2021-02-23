@@ -1,5 +1,5 @@
-python -m venv pyCream
+python -m venv pyMilk
 
-source pyCream/bin/activate
+source pyMilk/bin/activate
 
 pip install .
