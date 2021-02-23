@@ -22,13 +22,13 @@ endif(USE_CUDA)
 
 enable_language(C)
 
-project(cream VERSION 1.0.0 DESCRIPTION "cream library" LANGUAGES C)
+project(milk VERSION 1.0.0 DESCRIPTION "milk library" LANGUAGES C)
 
 # Version number
 set ( VERSION_MAJOR 1 )
 set ( VERSION_MINOR 01 )
 set ( VERSION_PATCH 02 )
-set ( CREAM_VERSION_OPTION "" )
+set ( MILK_VERSION_OPTION "" )
 set ( PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 set ( PROJECT_DESCRIPTION "Modular Image processing tooLKit" )
 
@@ -38,14 +38,14 @@ option ( INSTALLMAKEDEFAULT "Make this installation the system default" ON )
 # turn VERBOSE ON
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cream-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/milk-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 
 # Configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/cream_config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/cream_config.h"
+  "${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
+  "${PROJECT_SOURCE_DIR}/src/milk_config.h"
   )
 
 configure_file (
@@ -192,7 +192,7 @@ add_executable(milk src/CLImain.c)
 
 
 # note: set -SOURCEDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" for autoload
-set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
+set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/milk/issues\\\"" )
 
 
 target_link_libraries (milk PUBLIC
@@ -250,14 +250,14 @@ message("LINKSTRING: ${LINKSTRING}")
 set(INSTALL_PKGCONFIG_DIR "lib/pkgconfig"
     CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cream.pc.in
-               ${CMAKE_CURRENT_BINARY_DIR}/cream.pc @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
+               ${CMAKE_CURRENT_BINARY_DIR}/milk.pc @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cream.pc
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
         DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/cream_config.h
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
               ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h
         DESTINATION include
         )
