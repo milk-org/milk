@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-git co -- .gitmodules
+git checkout -- .gitmodules
 
 for mod in `ls -c1 -d ./plugins/*/*`
 do
