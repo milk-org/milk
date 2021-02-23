@@ -2,7 +2,7 @@
 
 git co -- .gitmodules
 
-for mod in `ls -d extra/*`
+for mod in `ls -c1 -d ./plugins/*/*`
 do
 cat >> .gitmodules << EOF
 [submodule "${mod}"]
