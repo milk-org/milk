@@ -1099,12 +1099,12 @@ void runCLI_cmd_init()
 
     // FPS
     RegisterCLIcommand(
-        "fpsread",
+        "fpsload",
         __FILE__,
         function_parameter_structure_load__cli,
-        "Read function parameter struct",
+        "Load function parameter struct (FPS)",
         "<fpsname>",
-        "readfps imanalyze",
+        "fpsload imanalyze",
         "long function_parameter_structure_load(char *fpsname)");
 
     RegisterCLIcommand(
