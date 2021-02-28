@@ -4,6 +4,9 @@
  */
 
 
+
+#include <dirent.h>
+
 #include "CommandLineInterface/CLIcore.h"
 
 
@@ -59,19 +62,19 @@ errno_t fps_list()
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    printf("\n");
-    printf("%*s  %*s  %*s\n",
+    printf("FPSs currently connected :\n");
+    /*printf("%*s  %*s  %*s\n",
            NBchar_fpsID, "ID",
            NBchar_fpsname, "name",
            NBchar_NBparam, "#par"
-          );
+          );*/
 
     for(fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
     {
         if(data.fpsarray[fpsID].SMfd > -1)
         {
             // connected
-            printf("%*ld  %*s  %*ld/%*ld\n",
+            printf("%*ld  %*s  %*ld/%*ld entries\n",
                    NBchar_fpsID, fpsID,
                    NBchar_fpsname, data.fpsarray[fpsID].md[0].name,
                    NBchar_NBparam, data.fpsarray[fpsID].NBparamActive,
@@ -82,7 +85,27 @@ errno_t fps_list()
         }
     }
 
-    printf("\n %ld FPS(s) found\n\n", fpscnt);
+    //printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
+    printf("\n");
+
+    printf("FPSs in system shared memory (%s):\n", data.shmdir);
+
+    struct dirent *de;
+    DIR *dr = opendir(data.shmdir);
+    if(dr == NULL)
+    {
+        printf("Could not open current directory");
+        return RETURN_FAILURE;
+    }
+
+    while((de = readdir(dr)) != NULL)
+    {
+        if(strstr(de->d_name, ".fps.shm") != NULL)
+        {
+            printf("    %s\n", de->d_name);
+        }
+    }
+    closedir(dr);
 
     return RETURN_SUCCESS;
 }
