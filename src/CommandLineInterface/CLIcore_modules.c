@@ -496,9 +496,7 @@ uint32_t RegisterCLIcmd(
     }
 
     // define CLI function flags from content of CLIcmddata.flags
-    printf("flags = %ld\n", CLIcmddata.flags);
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
-    printf("    flags = %ld\n", data.cmd[data.NBcmd].cmdsettings.flags);
 
     data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax = 0;
     data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;

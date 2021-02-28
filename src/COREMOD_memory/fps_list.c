@@ -34,12 +34,12 @@ errno_t fps_list_addCLIcmd()
 {
 
     RegisterCLIcommand(
-        "listfps",
+        "fpslist",
         __FILE__,
         fps_list,
         "list function parameter structures (FPSs)",
         "no argument",
-        "listfps",
+        "fpslist",
         "errno_t fps_list()");
 
     return RETURN_SUCCESS;
