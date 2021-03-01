@@ -98,11 +98,19 @@ errno_t fps_list()
         return RETURN_FAILURE;
     }
 
+    fpscnt = 0;
     while((de = readdir(dr)) != NULL)
     {
         if(strstr(de->d_name, ".fps.shm") != NULL)
         {
-            printf("    %s\n", de->d_name);
+            char fpsname[100];
+            int slen = strlen(de->d_name);
+            int slen1 = slen - strlen(".fps.shm");
+
+            strncpy(fpsname, de->d_name, slen1);
+            fpsname[slen1] = '\0';
+            printf("%2ld    %s\n", fpscnt, fpsname);
+            fpscnt ++;
         }
     }
     closedir(dr);
