@@ -1,0 +1,23 @@
+
+examplestring="CONNECT TO FPS"
+
+exampleDescription="
+Connecting to FPS
+"
+
+CLIinput="
+# Start milk CLI with required modules
+milk
+
+# list FPSs on system
+fpslist
+
+# Load FPS
+fpsload \"simplefuncFPS-03\"
+
+# list FPSs on system
+fpslist
+
+# Exit CLI
+exitCLI
+"
