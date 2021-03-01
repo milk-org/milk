@@ -45,7 +45,7 @@ long function_parameter_struct_connect(
 
     char shmdname[stringmaxlen];
 
-    printf("Connect to fps %s\n", name);
+    DEBUG_TRACEPOINT("Connect to fps %s\n", name);
 
     if(fps->SMfd > -1)
     {
@@ -61,7 +61,7 @@ long function_parameter_struct_connect(
     {
         PRINT_ERROR("snprintf error");
     }
-    printf("File : %s\n", SM_fname);
+    DEBUG_TRACEPOINT("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1)
     {
@@ -110,7 +110,7 @@ long function_parameter_struct_connect(
 
     //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
     NBparamMAX = fps->md->NBparamMAX;
-    printf("[%s %5d] Connected to %s, %ld entries\n", __FILE__, __LINE__, SM_fname,
+    printf("    Connected to %s, %ld entries\n", SM_fname,
            NBparamMAX);
     fflush(stdout);
 
