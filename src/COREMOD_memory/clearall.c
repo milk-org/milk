@@ -78,17 +78,11 @@ errno_t clearall()
         data.fpsarray[fpsindex].SMfd = -1;
         if(data.fpsarray[fpsindex].parray != NULL)
         {
-            DEBUG_TRACEPOINT("free data.fps[%d].parray\n", fpsindex);
-            printf("free data.fps[%d].parray\n", fpsindex);
-            free(data.fpsarray[fpsindex].parray);
-            printf("... done\n");
+            data.fpsarray[fpsindex].parray = NULL;
         }
         if(data.fpsarray[fpsindex].md != NULL)
         {
-            DEBUG_TRACEPOINT("free data.fps[%d].md\n", fpsindex);
-            printf("free data.fps[%d].md\n", fpsindex);
-            free(data.fpsarray[fpsindex].md);
-            printf("... done\n");
+            data.fpsarray[fpsindex].md = NULL;
         }
     }
 

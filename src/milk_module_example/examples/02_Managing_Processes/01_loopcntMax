@@ -1,0 +1,32 @@
+examplestring="processinfo loopcntMax"
+
+exampleDescription="
+loopcntMax (default 0) specifies how many times the function should run:
+-  0: run only once
+-  N: run N+1 times
+- -1: run in infinite loop
+"
+
+CLIinput="
+# Start milk CLI with required modules
+MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image named imd1
+imgen.mkdisk imd1 256 256 128 128 50
+
+# Activate processinfo
+modex.simplefuncFPS ..procinfo 1
+
+# Check that processinfo is now activated
+# Multiple additional function attributes appear
+modex.simplefuncFPS ..loopcntMax 5
+
+# Check settings
+modex.simplefuncFPS ?
+
+# Run function on image imd1
+modex.simplefuncFPS imd1
+
+# exit milk CLI
+exitCLI
+"
