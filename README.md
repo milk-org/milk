@@ -13,5 +13,18 @@ Module inclues key frameworks :
 
 ## Compilation
 
-    ./compile.sh
+    ./compile.sh $PWD/local
+
+## Adding plugins
+
+Compile with cacao plugins:
+
+    ./fetch_cacao_dev.sh
+    ./compile.sh $PWD/local
+
+Compile with coffee plugins:
+
+    ./fetch_coffee_dev.sh
+    ./compile.sh $PWD/local
+
 
