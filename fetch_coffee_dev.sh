@@ -2,7 +2,8 @@
 
 ./fetch_milk_dev.sh
 
-
+CWD=$PWD
+cd plugins/milk-extra-src
 for mod in WFpropagate
 do
 echo "Module ${mod}"
@@ -14,7 +15,7 @@ else
   echo ""
 fi
 done
-
+cd $CWD
 
 
 echo "COFFEE modules"
