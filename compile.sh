@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Compile script for milk_package
 # Customize / add you own options
