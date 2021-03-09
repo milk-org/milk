@@ -4,7 +4,7 @@
 
 CWD=$PWD
 cd plugins/milk-extra-src
-for mod in WFpropagate
+for mod in WFpropagate OpticsMaterials
 do
 echo "Module ${mod}"
 if [ -d "${mod}" ]; then
