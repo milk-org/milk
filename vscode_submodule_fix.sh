@@ -18,3 +18,11 @@ cat >> .gitmodules << EOF
 	url = ""
 EOF
 fi
+
+if [ -d "plugins/coffee-src" ]; then
+cat >> .gitmodules << EOF
+[submodule "coffee"]
+	path = plugins/coffee-src
+	url = ""
+EOF
+fi
