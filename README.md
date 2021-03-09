@@ -7,6 +7,11 @@ milk-core for **milk** package.
 
 Module inclues key frameworks :
 
+- **image streams** : low-latency shared memory streams
 - **processinfo** : process management and control
 - **function parameter structure (FPS)** : reading/writing function parameters
-- ...
+
+## Compilation
+
+    ./compile.sh
+
