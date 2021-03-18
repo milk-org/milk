@@ -497,7 +497,7 @@ static int checkFlag64(
 {
     int rval = 0;
 
-    printf("--------- flags: %ld\n", flags);
+    // printf("--------- flags: %ld\n", flags);
 
     if(flags & testflag)
     {
