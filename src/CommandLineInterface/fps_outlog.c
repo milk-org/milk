@@ -172,7 +172,7 @@ errno_t functionparameter_outlog_namelink()
 
     if(access(linkfname, F_OK) == 0) // link already exists, remove
     {
-        printf("outlog file %s exists -> removing\n", linkfname);
+        printf("outlog file %s exists -> updating symlink\n", linkfname);
         remove(linkfname);
     }
 
