@@ -15,7 +15,7 @@ on the filesystem.
 
 CLIinput="
 # Start milk CLI
-milk
+MILK_QUIET="1" milk
 
 # List FPS currently connected to, and/or on current system
 fpslist

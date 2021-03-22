@@ -14,14 +14,20 @@ milk
 # exit milk CLI
 exitCLI
 
+# clear screen
+clear
+
 # Quiet mode
-MILK_QUIET="1" milk
+MILK_QUIET=1 milk
 
 # exit milk CLI
 exitCLI
 
+# clear screen
+clear
+
 # Rename prompt
-MILK_QUIET="1" MILKCLI_APPNAME="milk-example" milk
+MILK_QUIET=1 MILKCLI_APPNAME=\"milk-example\" milk
 
 # exit milk CLI
 exitCLI

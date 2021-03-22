@@ -11,7 +11,7 @@ the CLI mode. Its default value is used.
 
 CLIinput="
 # Launch milk command line interpreter (CLI)
-milk
+MILK_QUIET="1" milk
 
 # Load modules
 mload milkmoduleexample
