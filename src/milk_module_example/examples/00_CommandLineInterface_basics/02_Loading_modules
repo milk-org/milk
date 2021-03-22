@@ -15,10 +15,10 @@ MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample\" milk
 m? milk_module_example
 
 # Get function help
-cmd? modex.simplefuncFPS
+cmd? modex.simplefunc
 
 # Alternate help syntax (same result as above)
-modex.simplefuncFPS ?
+modex.simplefunc ?
 
 # exit milk CLI
 exitCLI

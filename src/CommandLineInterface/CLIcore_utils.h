@@ -265,11 +265,15 @@ INSERT_STD_FPSCLIfunction
 
 #define INSERT_STD_CLIREGISTERFUNC \
 { \
-    int cmdi = RegisterCLIcmd(CLIcmddata, FPSCLIfunction); \
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction); \
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings; \
 }
 
-
+#define INSERT_STD_FPSCLIREGISTERFUNC \
+{ \
+    int cmdi = RegisterCLIcmd(CLIcmddata, FPSCLIfunction); \
+    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings; \
+}
 
 
 

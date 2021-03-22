@@ -5,7 +5,7 @@
 
 
 #include <stdarg.h>
-
+#include <unistd.h> // access()
 
 #include "CommandLineInterface/CLIcore.h"
 
