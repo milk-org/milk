@@ -170,12 +170,20 @@ errno_t functionparameter_outlog_namelink()
     WRITE_FULLFILENAME(linkfname, "%s/fpslog.%s", shmdname,
                        data.FPS_PROCESS_TYPE);
 
+    if(access(linkfname, F_OK) == 0) // link already exists, remove
+    {
+        printf("outlog file %s exists -> removing\n", linkfname);
+        remove(linkfname);
+    }
+
+
     if(symlink(logfname, linkfname) == -1)
     {
         int errnum = errno;
         fprintf(stderr, "Error symlink: %s\n", strerror(errnum));
         PRINT_ERROR("symlink error %s %s", logfname, linkfname);
     }
+
 
 
     return RETURN_SUCCESS;
