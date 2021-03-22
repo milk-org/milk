@@ -10,35 +10,79 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
+// variables local to this translation unit
+static char *inimname;
+
 
 static CLICMDARGDEF farg[] =
 {
     {
         CLIARG_IMG,  ".in_name",   "input stream", "ims1",
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
-        NULL
-    },
-    {
-        CLIARG_LONG, ".delayus",   "delay [us]",   "2000",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
-        NULL
+        (void **) &inimname
     }
 };
 
 static CLICMDDATA CLIcmddata =
 {
-    "streamupdatebrief",
+    "streamupdate",
     "update stream",
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    0,
+    CLICMDFLAG_FPS,
     NULL
 };
 
 
 
+
+
+
+// Wrapper function, used by all CLI calls
+// Defines how local variables are fed to computation code
+// Always local to this translation unit
+static errno_t compute_function()
+{
+    IMGID img = makeIMGID(inimname);
+    resolveIMGID(&img, ERRMODE_ABORT);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    //printf("ID : %ld\n", img.ID);
+    processinfo_update_output_stream(processinfo, img.ID);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+INSERT_STD_FPSCLIfunctions
+
+// Register function in CLI
+errno_t FPSCLIADDCMD_milk_module_example__updatestreamloop()
+{
+    INSERT_STD_FPSCLIREGISTERFUNC
+
+    // Optional custom settings for this function
+    // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
 /** @brief FPCONF function
  */
-static errno_t FPSCONFfunction()
+/*static errno_t FPSCONFfunction()
 {
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);
     fps_add_processinfo_entries(&fps);
@@ -53,13 +97,13 @@ static errno_t FPSCONFfunction()
     FPS_CONFLOOP_END
 
     return RETURN_SUCCESS;
-}
+}*/
 
 
 
 /** @brief Loop process code example
  */
-static errno_t FPSRUNfunction()
+/*static errno_t FPSRUNfunction()
 {
     FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);
 
@@ -93,7 +137,7 @@ errno_t FPSCLIADDCMD_milk_module_example__updatestreamloop_brief()
     RegisterCLIcmd(CLIcmddata, FPSCLIfunction);
     return RETURN_SUCCESS;
 }
-
+*/
 
 
 

@@ -81,12 +81,15 @@
 // Forward declarations are required to connect CLI calls to functions
 // If functions are in separate .c files, include here the corresponding .h files
 //
-#include "create_example_image.h"
-#include "stream_process_loop_simple.h"
-#include "updatestreamloop.h"
-#include "updatestreamloop_brief.h"
 #include "simplefunc.h"
 #include "simplefunc_FPS.h"
+#include "updatestreamloop.h"
+
+//#include "create_example_image.h"
+//#include "stream_process_loop_simple.h"
+
+//#include "updatestreamloop_brief.h"
+
 
 
 
@@ -115,16 +118,17 @@ static errno_t init_module_CLI()
 
     //CLI_CMD_CONNECT("func1", "create_image_with_value");
 
-    create_example_image_addCLIcmd();
-    stream_process_loop_simple_addCLIcmd();
+    //create_example_image_addCLIcmd();
+    //stream_process_loop_simple_addCLIcmd();
 
     //	milk_module_example__updatestreamloop_addCLIcmd();
 
     FPSCLIADDCMD_milk_module_example__simplefunc();
 	FPSCLIADDCMD_milk_module_example__simplefunc_FPS();
 
+    //FPSCLIADDCMD_milk_module_example__updatestreamloop();
+
     FPSCLIADDCMD_milk_module_example__updatestreamloop();
-    FPSCLIADDCMD_milk_module_example__updatestreamloop_brief();
 
     // optional: add atexit functions here
 
