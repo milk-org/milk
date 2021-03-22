@@ -62,17 +62,16 @@ errno_t fps_list()
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    printf("FPSs currently connected :\n");
-    /*printf("%*s  %*s  %*s\n",
-           NBchar_fpsID, "ID",
-           NBchar_fpsname, "name",
-           NBchar_NBparam, "#par"
-          );*/
 
     for(fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
     {
         if(data.fpsarray[fpsID].SMfd > -1)
         {
+
+            if(fpscnt == 0)
+            {
+                printf("FPSs currently connected :\n");
+            }
             // connected
             printf("%*ld  %*s  %*ld/%*ld entries\n",
                    NBchar_fpsID, fpsID,
@@ -84,9 +83,13 @@ errno_t fps_list()
             fpscnt++;
         }
     }
+    if(fpscnt == 0)
+    {
+        printf("No FPS currently connected\n");
+    }
 
     //printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
-    printf("\n");
+    //printf("\n");
 
     printf("FPSs in system shared memory (%s):\n", data.shmdir);
 
@@ -109,7 +112,7 @@ errno_t fps_list()
 
             strncpy(fpsname, de->d_name, slen1);
             fpsname[slen1] = '\0';
-            printf("%2ld    %s\n", fpscnt, fpsname);
+            printf("%5ld    %s\n", fpscnt, fpsname);
             fpscnt ++;
         }
     }
