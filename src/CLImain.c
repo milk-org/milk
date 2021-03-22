@@ -94,6 +94,10 @@ int main(
 	if(data.quiet == 0) {
 		printf("NORMAL EXIT\n");
 	}
+    else
+    {
+        printf("\n");
+    }
 
 
     // clean-up calling thread

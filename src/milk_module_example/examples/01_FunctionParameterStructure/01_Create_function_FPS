@@ -12,7 +12,7 @@ may then be out of sync)
 
 CLIinput="
 # Start milk CLI with required modules
-MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image
 imgen.mkdisk imd1 256 256 128 128 50

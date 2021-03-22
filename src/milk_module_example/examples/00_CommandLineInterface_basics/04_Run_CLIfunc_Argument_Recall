@@ -10,7 +10,7 @@ function argument used on the previous call of the function.
 
 CLIinput="
 # Start milk CLI with required modules
-MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+MILK_QUIET="1"  MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image named imd1
 imgen.mkdisk imd1 256 256 128 128 50

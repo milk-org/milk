@@ -9,7 +9,7 @@ This first example demonstrates how to:
 CLIinput="
 
 # Launch milk command line interpreter (CLI)
-milk
+MILK_QUIET="1" milk
 
 # List loaded modules
 m?

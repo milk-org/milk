@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-
+# script 1-line description
 MSdescr="milk tutorial by examples"
 
 scriptname=$(basename $0)
 
+# Extended description (multi-line)
 MSextdescr="milk tutorial and examples
 
 Runs milk examples.
 Demonstrates use of milk command line interface (CLI) and its interaction
 with function parameter structure (FPS) and process information (procinfo)."
-
 
 
 
@@ -34,14 +34,18 @@ source milk-argparse
 SKIP=0
 
 
-
+# don't exit on errors
 set +e
-#echo "list of sessions:"
-#tmux ls
-#echo "Ceating session ${TMUXSESSIONNAME}"
+
+# create tmux session
+echo "list of sessions:"
+tmux ls
+echo "Ceating session ${TMUXSESSIONNAME}"
 tmux new -d -s ${TMUXSESSIONNAME}
-#echo "list of sessions:"
-#tmux ls
+echo "list of sessions:"
+tmux ls
+
+
 tmux send-keys -t ${TMUXSESSIONNAME} C-c
 tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
 set -e

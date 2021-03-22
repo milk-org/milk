@@ -9,7 +9,7 @@ variable.
 CLIinput="
 
 # Launch milk command line interpreter (CLI) with module milkmoduleexample
-MILKCLI_ADD_LIBS=\"milkmoduleexample\" milk
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample\" milk
 
 # get module info
 m? milk_module_example
@@ -23,9 +23,12 @@ modex.simplefuncFPS ?
 # exit milk CLI
 exitCLI
 
+# clear screen
+clear
+
 # Modules can also be loaded at runtime from the CLI using mload
 # Launch milk
-milk
+MILK_QUIET="1" milk
 
 # load module from CLI
 mload milkmoduleexample
