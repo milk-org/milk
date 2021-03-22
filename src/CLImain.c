@@ -20,14 +20,24 @@ DATA __attribute__((used)) data;
 
 
 #define STRINGMAXLEN_VERSIONSTRING 80
-
+#define STRINGMAXLEN_APPNAME 40
 
 int main(
     int argc,
     char *argv[]
 )
 {
-    char *AppName = "milk";
+    char AppName[STRINGMAXLEN_APPNAME];
+
+    char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
+    if(CLI_APPNAME != NULL)
+    {
+        strncpy(AppName, CLI_APPNAME, STRINGMAXLEN_APPNAME-1);
+    }
+    else
+    {
+        strncpy(AppName, "milk", STRINGMAXLEN_APPNAME-1);
+    }
 
 
     if(getenv("MILK_QUIET"))
