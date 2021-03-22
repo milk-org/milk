@@ -9,6 +9,13 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
+// Local variables pointers
+// Within this translation unit, these point to the variables values
+static char *inimname;
+static double *scoeff;
+
+
 // List of arguments to function
 // { CLItype, tag, description, initial value, flag, fptype, fpflag}
 //
@@ -21,20 +28,15 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
-        NULL
+        (void **) &inimname
     },
     {
         // argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
         CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
-        NULL
+        (void **) &scoeff
     }
 };
-
-// Local variables pointers
-// Within this translation unit, these point to the variables values
-static char *inimname;
-static double *scoeff;
 
 
 
@@ -48,9 +50,6 @@ static CLICMDDATA CLIcmddata =
     0,
     NULL
 };
-
-
-
 
 
 
@@ -89,6 +88,7 @@ static errno_t example_compute_2Dimage_total(
  */
 static errno_t compute_function()
 {
+
     example_compute_2Dimage_total(
         makeIMGID(inimname),
         *scoeff
@@ -110,7 +110,7 @@ INSERT_STD_CLIfunction
  */
 errno_t FPSCLIADDCMD_milk_module_example__simplefunc()
 {
-    RegisterCLIcmd(CLIcmddata, CLIfunction);
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }

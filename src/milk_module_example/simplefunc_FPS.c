@@ -22,7 +22,7 @@ static CLICMDARGDEF farg[] =
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &inimname
     },
-    {
+    {   // non-CLI parameter
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
         CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &scoeff
@@ -95,7 +95,7 @@ INSERT_STD_FPSCLIfunctions
 // Register function in CLI
 errno_t FPSCLIADDCMD_milk_module_example__simplefunc_FPS()
 {
-    INSERT_STD_CLIREGISTERFUNC
+    INSERT_STD_FPSCLIREGISTERFUNC
 
     // Optional custom settings for this function
     // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;

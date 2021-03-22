@@ -31,6 +31,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     {
 
         // if "?", call help
+        // note: this may be redundant with checkarg function
         if(strcmp(data.cmdargtoken[1].val.string, "?") == 0)
         {
             help_command(data.cmdargtoken[0].val.string);
