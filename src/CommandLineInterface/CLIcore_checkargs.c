@@ -27,7 +27,8 @@ int CLI_checkarg0(
 
     rval = 2;
 
-    //printf("    checking arg %d  %s\n", argnum, data.cmdargtoken[argnum].val.string);
+    printf("    checking arg %d  %s\n", argnum,
+           data.cmdargtoken[argnum].val.string);
     if(strcmp(data.cmdargtoken[argnum].val.string, "?") == 0)
     {
         //printf("CALLING HELP\n");
@@ -334,6 +335,12 @@ int CLI_checkarg(
 )
 {
     int rval;
+
+    if(argnum == 1)
+    {
+        argcheck_process_flag = 1;
+    }
+
     if(argcheck_process_flag == 1)
     {
         rval = CLI_checkarg0(argnum, argtype, 1);
@@ -355,6 +362,11 @@ int CLI_checkarg_noerrmsg(
 )
 {
     int rval;
+
+    if(argnum == 1)
+    {
+        argcheck_process_flag = 1;
+    }
 
     if(argcheck_process_flag == 1)
     {
