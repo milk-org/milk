@@ -17,8 +17,14 @@ imgen.mkdisk imd1 256 256 128 128 50
 # Activate processinfo
 modex.simplefuncFPS ..procinfo 1
 
-# Run computation 1000 times
-modex.simplefuncFPS ..loopcntMax 999
+# Run computation 20 times
+modex.simplefuncFPS ..loopcntMax 19
+
+# Change triggermode to 4 : DELAY
+modex.simplefuncFPS ..triggermode 4
+
+# set delay to 0.1 sec
+modex.simplefuncFPS ..triggerdelay 0.1
 
 # Check settings
 modex.simplefuncFPS ?
