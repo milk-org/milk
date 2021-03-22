@@ -20,14 +20,11 @@ mload milkimagegen
 # Create disk image
 imgen.mkdisk imd1 256 256 128 128 50
 
-# Turn off procinfo
-modex.simplefuncFPS ..procinfo 0
-
 # get function info
-cmd? modex.simplefuncFPS
+cmd? modex.simplefunc
 
 # Run function
-modex.simplefuncFPS imd1
+modex.simplefunc imd1
 
 # Exit CLI
 exitCLI
