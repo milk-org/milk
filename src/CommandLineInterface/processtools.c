@@ -1127,6 +1127,7 @@ errno_t processinfo_update_output_stream(
     imageID IDin;
 
     IDin = processinfo->triggerstreamID;
+    //printf("trigger IDin = %ld\n", IDin);
     if(IDin > -1)
     {
         int sptisize = data.image[IDin].md[0].NBproctrace - 1;

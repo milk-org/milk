@@ -137,6 +137,7 @@ if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 \
     processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
 \
+    processinfo->triggerstreamID = -1;\
     processinfo->triggermode = CLIcmddata.cmdsettings->triggermode;\
     strcpy(processinfo->triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname);\
     processinfo->triggerdelay = CLIcmddata.cmdsettings->triggerdelay;\

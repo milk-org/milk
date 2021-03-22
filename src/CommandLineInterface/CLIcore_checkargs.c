@@ -27,8 +27,6 @@ int CLI_checkarg0(
 
     rval = 2;
 
-    printf("    checking arg %d  %s\n", argnum,
-           data.cmdargtoken[argnum].val.string);
     if(strcmp(data.cmdargtoken[argnum].val.string, "?") == 0)
     {
         //printf("CALLING HELP\n");

@@ -1,11 +1,11 @@
 # list source files (.c) other than modulename.c
 set(SOURCEFILES
-	create_example_image.c
+	#create_example_image.c
 	simplefunc.c
 	simplefunc_FPS.c
-	stream_process_loop_simple.c
+	#stream_process_loop_simple.c
 	updatestreamloop.c
-	updatestreamloop_brief.c
+	#updatestreamloop_brief.c
 )
 
 # list include files (.h) that should be installed on system
