@@ -216,6 +216,7 @@ errno_t processinfo_waitoninputstream(
 
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
+        // Note: nanosleep adds a few x10us of latency on most systems
         nanosleep(&processinfo->triggerdelay, NULL);
         processinfo->triggerstreamcnt++;
 
