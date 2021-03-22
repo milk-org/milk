@@ -62,7 +62,6 @@ errno_t fps_list()
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-
     for(fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
     {
         if(data.fpsarray[fpsID].SMfd > -1)
@@ -112,7 +111,9 @@ errno_t fps_list()
 
             strncpy(fpsname, de->d_name, slen1);
             fpsname[slen1] = '\0';
-            printf("%5ld    %s\n", fpscnt, fpsname);
+            printf("%*ld  %*s\n",
+                   NBchar_fpsID, fpscnt,
+                   NBchar_fpsname, fpsname);
             fpscnt ++;
         }
     }
