@@ -38,13 +38,16 @@ SKIP=0
 set +e
 
 # create tmux session
-echo "list of sessions:"
+echo ""
+echo "======== SETTING UP TMUX SESSION ========"
+echo "List of current tmux sessions:"
 tmux ls
-echo "Ceating session ${TMUXSESSIONNAME}"
+echo "Ceating tmux session ${TMUXSESSIONNAME}"
 tmux new -d -s ${TMUXSESSIONNAME}
-echo "list of sessions:"
+echo "list of current tmux sessions:"
 tmux ls
-
+echo "========================================="
+echo ""
 
 tmux send-keys -t ${TMUXSESSIONNAME} C-c
 tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
