@@ -16,9 +16,6 @@
 #define STYLE_NO_BOLD "\033[22m"
 
 
-DATA __attribute__((used)) data;
-
-
 #define STRINGMAXLEN_VERSIONSTRING 80
 #define STRINGMAXLEN_APPNAME 40
 
