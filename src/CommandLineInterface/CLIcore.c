@@ -106,6 +106,8 @@
 *       Globals exported to all modules
 */
 
+DATA __attribute__((used)) data;
+
 pid_t CLIPID;
 
 
@@ -1389,13 +1391,3 @@ static int command_line_process_options(
     return RETURN_SUCCESS;
 
 }
-
-
-
-
-
-
-
-
-
-
