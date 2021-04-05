@@ -1,0 +1,31 @@
+examplestring="Run a function from CLI"
+
+exampleDescription="
+Command modex.simplefuncFPS is called using the standard CLI mode.
+Argument(s) immediately follow the function call. In this case,
+the function takes one argument, which is the image name.
+
+Note that a non-CLI visible argument (.scaling) is not specified in
+the CLI mode. Its default value is used.
+"
+
+CLIinput="
+# Launch milk command line interpreter (CLI)
+MILK_QUIET="1" milk
+
+# Load modules
+mload milkmoduleexample
+mload milkimagegen
+
+# Create disk image
+imgen.mkdisk imd1 256 256 128 128 50
+
+# get function info
+cmd? modex.simplefunc
+
+# Run function
+modex.simplefunc imd1
+
+# Exit CLI
+exitCLI
+"

@@ -23,7 +23,7 @@
 // timing info for real-time loop processes
 #define PROCESSINFO_NBtimer 100
 
-
+#include "CLIcore.h"
 
 /**
  *
@@ -55,8 +55,10 @@ typedef struct
     // 2: increment single step (will go back to 1)
     // 3: exit loop
 
-    char tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];  // name of tmux session in which process is running, or
+    char tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];
+    // name of tmux session in which process is running, or
     // "NULL"
+
     int loopstat;
     // 0: INIT       Initialization before loop
     // 1: ACTIVE     in loop

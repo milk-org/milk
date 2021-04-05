@@ -12,6 +12,8 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
+static int argcheck_process_flag = 1; // keep processing if 1
+
 // check that input CLI argument matches required argument type
 
 int CLI_checkarg0(
@@ -20,10 +22,18 @@ int CLI_checkarg0(
     int errmsg
 )
 {
-    int rval; // 0 if OK, 1 if not
+    int rval; // 0 if OK, 1 if not, 2: do not process other args
     imageID IDv;
 
     rval = 2;
+
+    if(strcmp(data.cmdargtoken[argnum].val.string, "?") == 0)
+    {
+        //printf("CALLING HELP\n");
+        argcheck_process_flag = 0; // stop processing arguments
+        help_command(data.cmdargtoken[0].val.string);
+        return 1;
+    }
 
     switch(argtype)
     {
@@ -324,7 +334,20 @@ int CLI_checkarg(
 {
     int rval;
 
-    rval = CLI_checkarg0(argnum, argtype, 1);
+    if(argnum == 1)
+    {
+        argcheck_process_flag = 1;
+    }
+
+    if(argcheck_process_flag == 1)
+    {
+        rval = CLI_checkarg0(argnum, argtype, 1);
+    }
+    else
+    {
+        rval = 1;
+    }
+
     return rval;
 }
 
@@ -338,7 +361,19 @@ int CLI_checkarg_noerrmsg(
 {
     int rval;
 
-    rval = CLI_checkarg0(argnum, argtype, 0);
+    if(argnum == 1)
+    {
+        argcheck_process_flag = 1;
+    }
+
+    if(argcheck_process_flag == 1)
+    {
+        rval = CLI_checkarg0(argnum, argtype, 0);
+    }
+    else
+    {
+        rval = 1;
+    }
     return rval;
 }
 
@@ -359,10 +394,9 @@ errno_t CLI_checkarg_array(
     int nbarg
 )
 {
-    //printf("%d args in list\n", nbarg);
+//    printf("%d args in list\n", nbarg);
 
-
-    //printf("arg 0: %s\n", data.cmdargtoken[1].val.string);
+//    printf("arg 0: %s\n", data.cmdargtoken[1].val.string);
     int argindexmatch = -1;
     for(int arg = 0; arg < nbarg; arg++)
     {
@@ -687,7 +721,7 @@ int CMDargs_to_FPSparams_create(
 
 /** @brief get pointer to function argument/parameter
  */
-void * get_farg_ptr(
+void *get_farg_ptr(
     char *tag
 )
 {

@@ -47,7 +47,6 @@
 typedef long imageID;
 typedef long variableID;
 
-#ifndef STANDALONE
 #include "config.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
@@ -62,9 +61,6 @@ typedef long variableID;
 #include "CommandLineInterface/CLIcore_checkargs.h"
 #include "CommandLineInterface/CLIcore_modules.h"
 #include "CommandLineInterface/CLIcore_help.h"
-
-#endif
-
 
 #include "CommandLineInterface/milkDebugTools.h"
 
@@ -149,7 +145,6 @@ if ( INITSTATUS_##modname == 1 ) \
 #define MAX_NB_FRAMENAME_CHAR 500
 #define MAX_NB_EXCLUSIONS      40
 
-#ifndef STANDALONE
 
 
 
@@ -264,7 +259,7 @@ typedef struct
     CLICMDARGDATA *argdata; // arguments and parameters to function
 
     // defines static function capabilities and behavior
-    uint64_t flags;
+    //uint64_t flags;
 
     // dynamic settings for function
     CMDSETTINGS cmdsettings;
@@ -340,11 +335,12 @@ typedef struct
     int  package_version_minor;
     int  package_version_patch;
     char package_version[100];
-    char configdir[100];
-    char sourcedir[100];
+    char configdir[STRINGMAXLEN_DIRNAME];
+    char sourcedir[STRINGMAXLEN_DIRNAME];
+    char installdir[STRINGMAXLEN_DIRNAME];
 
-    char shmdir[100];
-    char shmsemdirname[100]; // same ad above with .s instead of /s
+    char shmdir[STRINGMAXLEN_DIRNAME];
+    char shmsemdirname[STRINGMAXLEN_DIRNAME]; // same ad above with .s instead of /s
 
 
     // SIGNALS
@@ -588,7 +584,6 @@ errno_t CLI_execute_line();
 
 
 
-#endif // ifndef STANDALONE
 
 errno_t write_process_log();
 

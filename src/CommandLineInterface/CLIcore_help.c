@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <malloc.h>
 #include <libgen.h>
 
@@ -5,11 +6,20 @@
 #include <fitsio.h>
 #include <regex.h>
 
+#include <sched.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <assert.h>
+
 #include "CommandLineInterface/CLIcore.h"
 
 
-
-
+#define COLORRESET      "\033[0m"
+#define COLORCMD        "\033[94m"
+#define COLORINFO       "\033[32m" // green
+#define COLORARGCLI     "\033[36m" // argument part of CLI call: cyan
+#define COLORARGnotCLI  "\033[35m" // argument not part of CLI call: yellow
 
 
 errno_t printInfo()
@@ -333,12 +343,13 @@ errno_t list_commands_module(
             {
                 if(mOK == 0)
                 {
-                    printf("---- MODULE %s: LIST OF COMMANDS ---------\n", modulename);
+                    printf("---- MODULE %s COMMANDS ---------\n", modulename);
                 }
 
                 strncpy(cmdinfoshort, data.cmd[i].info, 38);
-                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort,
-                       data.cmd[i].example);
+                printf(COLORCMD "   %-24s" COLORRESET COLORINFO "  %-40s\n" COLORRESET,
+                       data.cmd[i].key, cmdinfoshort);
+//                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -486,6 +497,8 @@ static int checkFlag64(
 {
     int rval = 0;
 
+    // printf("--------- flags: %ld\n", flags);
+
     if(flags & testflag)
     {
         rval = 1;
@@ -514,10 +527,6 @@ errno_t help_command(
     const char *restrict cmdkey
 )
 {
-    int colorcodecmd = 34;
-    int colorcodeinfo = 32; // green
-    int colorcodeargCLI = 36; // argument part of CLI call: cyan
-    int colorcodeargnotCLI = 35; // argument not part of CLI call: yellow
     int cOK = 0;
 
     for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
@@ -525,26 +534,75 @@ errno_t help_command(
         if(!strcmp(cmdkey, data.cmd[cmdi].key))
         {
             printf("\n");
-            printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
-                   (char) 27, 1, colorcodecmd,
+            printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
                    data.cmd[cmdi].key,
-                   (char) 27, 0,
                    data.cmd[cmdi].module,
                    data.module[data.cmd[cmdi].moduleindex].shortname,
-                   (char) 27, 0, colorcodeinfo,
-                   data.cmd[cmdi].info,
-                   (char) 27, 0);
+                   data.cmd[cmdi].info);
 
             //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("\texample> %s\n", data.cmd[cmdi].example);
 
-
             printf("\n");
-            checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_FPS, "FPS support");
-            if(checkFlag64(data.cmd[cmdi].flags, CLICMDFLAG_PROCINFO, "processinfo support") == 1)
+            checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_FPS, "FPS support (..fps 0/1)");
+            if(checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_PROCINFO,
+                           "processinfo support (..procinfo 0/1)") == 1)
             {
-                printf("        loopcntMax    : %ld\n", data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
-                printf("        MeasureTiming : %d\n", data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
+                printf("        loopcntMax         : %ld\n",
+                       data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
+                printf("      Triggering:\n");
+
+                printf("        triggermode        : %d ",
+                       data.cmd[cmdi].cmdsettings.triggermode);
+                switch(data.cmd[cmdi].cmdsettings.triggermode)
+                {
+                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                        printf("IMMEDIATE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT0:
+                        printf("CNT0");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT1:
+                        printf("CNT1");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                        printf("SEMAPHORE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_DELAY:
+                        printf("DELAY");
+                        break;
+                    default:
+                        printf("unknown");
+                        break;
+                }
+                printf("\n");
+
+                printf("        triggerstreamname  : %s\n",
+                       data.cmd[cmdi].cmdsettings.triggerstreamname);
+
+                printf("        triggerdelay       : %lld.%09ld\n",
+                       (long long)data.cmd[cmdi].cmdsettings.triggerdelay.tv_sec,
+                       data.cmd[cmdi].cmdsettings.triggerdelay.tv_nsec);
+
+                printf("        triggertimeout     : %lld.%09ld\n",
+                       (long long)data.cmd[cmdi].cmdsettings.triggertimeout.tv_sec,
+                       data.cmd[cmdi].cmdsettings.triggertimeout.tv_nsec);
+
+                printf("      Resources:\n");
+                printf("        RT_priority        : %d\n",
+
+                       data.cmd[cmdi].cmdsettings. RT_priority);
+
+                printf("        CPUmask            : ");
+
+                int nproc = sysconf(_SC_NPROCESSORS_ONLN);
+                for(int cpu = 0; cpu < nproc; cpu++)
+                {
+                    printf(" %d", CPU_ISSET(cpu, &data.cmd[cmdi].cmdsettings.CPUmask));
+                }
+                printf("\n");
+                printf("        MeasureTiming      : %d\n",
+                       data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
             }
             printf("\n");
 
@@ -557,8 +615,8 @@ errno_t help_command(
             int CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
-                int colorcode = colorcodeargCLI;
-                //printf("%3d ", argi);
+                //int colorcode = colorcodeargCLI;
+
                 if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
                 {
                     printf("%6d  ", CLIargcnt);
@@ -592,10 +650,8 @@ errno_t help_command(
                     }
 
 
-                    printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
-                           (char) 27, 0, colorcode,
+                    printf(COLORARGCLI " %-16s" COLORRESET " %-24s %s\n",
                            data.cmd[cmdi].argdata[argi].fpstag,
-                           (char) 27, 0,
                            valuestring, data.cmd[cmdi].argdata[argi].descr);
                 }
             }
@@ -606,8 +662,6 @@ errno_t help_command(
             CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
-                int colorcode = colorcodeargnotCLI;
-                //printf("%3d ", argi);
                 if(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI)
                 {
                     printf("        ");
@@ -640,10 +694,8 @@ errno_t help_command(
                     }
 
 
-                    printf(" %c[%d;%dm%-16s%c[%dm %-24s %s\n",
-                           (char) 27, 0, colorcode,
+                    printf(COLORARGnotCLI " %-16s" COLORRESET " %-24s %s\n",
                            data.cmd[cmdi].argdata[argi].fpstag,
-                           (char) 27, 0,
                            valuestring, data.cmd[cmdi].argdata[argi].descr);
                 }
             }
@@ -687,15 +739,11 @@ errno_t help_command(
             {
                 foundsubstring = 1;
                 matchsubstring = 1;
-                printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
-                       (char) 27, 1, colorcodecmd,
+                printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
                        data.cmd[cmdi].key,
-                       (char) 27, 0,
                        data.cmd[cmdi].module,
                        data.module[data.cmd[cmdi].moduleindex].shortname,
-                       (char) 27, 0, colorcodeinfo,
-                       data.cmd[cmdi].info,
-                       (char) 27, 0);
+                       data.cmd[cmdi].info);
             }
 
             // Regular expression search
@@ -706,15 +754,11 @@ errno_t help_command(
                 if(!reti)
                 {
                     foundregexmatch = 1;
-                    printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
-                           (char) 27, 1, colorcodecmd,
+                    printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO "%s\n" COLORRESET,
                            data.cmd[cmdi].key,
-                           (char) 27, 0,
                            data.cmd[cmdi].module,
                            data.module[data.cmd[cmdi].moduleindex].shortname,
-                           (char) 27, 0, colorcodeinfo,
-                           data.cmd[cmdi].info,
-                           (char) 27, 0);
+                           data.cmd[cmdi].info);
 
                     char *cursor = data.cmd[cmdi].key;
                     unsigned int offset = 0;

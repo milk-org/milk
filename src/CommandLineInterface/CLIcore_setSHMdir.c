@@ -28,7 +28,7 @@ errno_t setSHMdir()
     {
         if(data.quiet == 0)
         {
-            printf(" [ MILK_SHM_DIR ] '%s'\n", MILK_SHM_DIR);
+            printf("        MILK_SHM_DIR '%s'\n", MILK_SHM_DIR);
         }
         sprintf(shmdirname, "%s", MILK_SHM_DIR);
 
@@ -40,7 +40,7 @@ errno_t setSHMdir()
             closedir(tmpdir);
             if(data.quiet == 0)
             {
-                printf("    Using SHM directory %s\n", shmdirname);
+                printf("        Using SHM directory %s\n", shmdirname);
             }
         }
         else
@@ -77,14 +77,14 @@ errno_t setSHMdir()
             closedir(tmpdir);
             if(data.quiet == 0)
             {
-                printf("    Using SHM directory %s\n", shmdirname);
+                printf("        Using SHM directory %s\n", shmdirname);
             }
         }
         else
         {
             if(data.quiet == 0)
             {
-                printf("    Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
+                printf("        Directory %s : %s\n", SHAREDMEMDIR, strerror(errno));
             }
         }
     }
@@ -95,7 +95,7 @@ errno_t setSHMdir()
         tmpdir = opendir("/tmp");
         if(!tmpdir)
         {
-            printf("    ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
+            printf("        ERROR: Directory %s : %s\n", shmdirname, strerror(errno));
             exit(EXIT_FAILURE);
         }
         else
@@ -104,9 +104,9 @@ errno_t setSHMdir()
             shmdirOK = 1;
             if(data.quiet == 0)
             {
-                printf("    Using SHM directory %s\n", shmdirname);
+                printf("        Using SHM directory %s\n", shmdirname);
 
-                printf("    NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
+                printf("        NOTE: Consider creating tmpfs directory and setting env var MILK_SHM_DIR for improved performance :\n");
                 printf("        $ echo \"tmpfs %s tmpfs rw,nosuid,nodev\" | sudo tee -a /etc/fstab\n",
                        SHAREDMEMDIR);
                 printf("        $ sudo mkdir -p %s\n", SHAREDMEMDIR);
@@ -129,7 +129,7 @@ errno_t setSHMdir()
     sprintf(data.shmsemdirname, "%s", shmdirname);
     if(data.quiet == 0)
     {
-        printf("    semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n",
+        printf("        semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n",
                data.shmsemdirname);
     }
 

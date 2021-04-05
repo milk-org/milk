@@ -21,15 +21,129 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     char     *fpsname_default
 )
 {
-
-#ifndef STANDALONE
     // Check if function will be executed through FPS interface
-    // set to 0 as default (no FPS)
+
+    // set to 0 as default (no FPS, function will be processed according to CLI rules)
     data.FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     if(CLI_checkarg(1, CLIARG_STR) == 0)
     {
+
+        // if "?", call help
+        // note: this may be redundant with checkarg function
+        /*if(strcmp(data.cmdargtoken[1].val.string, "?") == 0)
+        {
+            help_command(data.cmdargtoken[0].val.string);
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }*/
+
+
+        // modify function attribute
+
+        /*        if(strcmp(data.cmdargtoken[1].val.string, "..fps") == 0)
+                {
+                    if(data.cmdargtoken[2].val.numl == 0)
+                    {
+                        printf("Command %ld: updating FPS mode OFF\n", data.cmdindex);
+                        data.cmd[data.cmdindex].cmdsettings.flags &= ~CLICMDFLAG_FPS;
+
+                    }
+                    else
+                    {
+                        printf("Command %ld: updating FPS mode ON\n", data.cmdindex);
+                        data.cmd[data.cmdindex].cmdsettings.flags |= CLICMDFLAG_FPS;
+                    }
+                    data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+                    return RETURN_SUCCESS;
+                }
+        */
+        if(strcmp(data.cmdargtoken[1].val.string, "..procinfo") == 0)
+        {
+            if(data.cmdargtoken[2].val.numl == 0)
+            {
+                printf("Command %ld: updating PROCINFO mode OFF\n", data.cmdindex);
+                data.cmd[data.cmdindex].cmdsettings.flags &= ~CLICMDFLAG_PROCINFO;
+
+            }
+            else
+            {
+                printf("Command %ld: updating PROCINFO mode ON\n", data.cmdindex);
+                data.cmd[data.cmdindex].cmdsettings.flags |= CLICMDFLAG_PROCINFO;
+            }
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..loopcntMax") == 0)
+        {
+            printf("Command %ld: updating loopcntMax to value %ld\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numl);
+            data.cmd[data.cmdindex].cmdsettings.procinfo_loopcntMax =
+                data.cmdargtoken[2].val.numl;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggermode") == 0)
+        {
+            printf("Command %ld: updating triggermode to value %ld\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numl);
+            data.cmd[data.cmdindex].cmdsettings.triggermode =
+                data.cmdargtoken[2].val.numl;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggerstreamname") == 0)
+        {
+            printf("Command %ld: updating triggermode to value %ld\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numl);
+            strcpy(data.cmd[data.cmdindex].cmdsettings.triggerstreamname,
+                   data.cmdargtoken[2].val.string);
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggerdelay") == 0)
+        {
+            printf("Command %ld: updating triggerdelay to value %f\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numf);
+            double x = data.cmdargtoken[2].val.numf;
+            x += 0.5e-9;
+            long x_sec = (long) x;
+            long x_nsec = (x - x_sec) * 1000000000L;
+
+            data.cmd[data.cmdindex].cmdsettings.triggerdelay.tv_sec = x_sec;
+            data.cmd[data.cmdindex].cmdsettings.triggerdelay.tv_nsec = x_nsec;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggertimeout") == 0)
+        {
+            printf("Command %ld: updating triggertimeout to value %f\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numf);
+            double x = data.cmdargtoken[2].val.numf;
+            x += 0.5e-9;
+            long x_sec = (long) x;
+            long x_nsec = (x - x_sec) * 1000000000L;
+
+            data.cmd[data.cmdindex].cmdsettings.triggertimeout.tv_sec = x_sec;
+            data.cmd[data.cmdindex].cmdsettings.triggertimeout.tv_nsec = x_nsec;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+        // TODO: add other function attributes
+
+
+
+
+
         // check that first arg is a string
         // if it isn't, the non-FPS implementation should be called
 
@@ -73,7 +187,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
 
     // if recognized FPSCMDCODE, use FPS implementation
-    if(data.FPS_CMDCODE != 0)
+    if((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
     {
         // ===============================
         //     SET FPS INTERFACE NAME
@@ -139,7 +253,5 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
         printf(">>>>> %s >>>>>>> FPS name : %s\n", fpsname_default, data.FPS_name);
     }
 
-#endif
     return RETURN_SUCCESS;
 }
-

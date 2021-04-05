@@ -2,10 +2,10 @@
 /**
  * @file streamCTRL.c
  * @brief Data streams control panel
- * 
+ *
  * Manages data streams
- * 
- * 
+ *
+ *
  */
 
 
@@ -48,7 +48,7 @@ typedef int errno_t;
 
 
 #include <ncurses.h>
-#include <fcntl.h> 
+#include <fcntl.h>
 #include <ctype.h>
 
 #include <dirent.h>
@@ -62,14 +62,10 @@ typedef int errno_t;
 
 #include "CommandLineInterface/timeutils.h"
 
-#ifdef STANDALONE
-#include "standalone_dependencies.h"
-#else
 #include "CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #define SHAREDSHMDIR    data.shmdir  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
-#endif
 
 #include "streamCTRL.h"
 
@@ -147,7 +143,7 @@ static int initncurses()
     start_color();
 
     //  colored background
-    
+
     init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
     init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
     init_pair(  3, COLOR_BLACK,  COLOR_YELLOW );  // parameter out of sync
@@ -159,7 +155,7 @@ static int initncurses()
     init_pair(  9, COLOR_BLACK,  COLOR_RED    );
     init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
     init_pair( 12, COLOR_GREEN,  COLOR_WHITE  ); // highlighted version of #2
-    
+
 
     return 0;
 }
@@ -247,7 +243,7 @@ imageID image_get_first_ID_available_from_images(
 
 
 int get_process_name_by_pid(const int pid, char *pname)
-{	
+{
     char* fname = (char*) calloc(STRINGMAXLEN_FULLFILENAME, sizeof(char));
 
 	WRITE_FULLFILENAME(fname, "/proc/%d/cmdline", pid);
@@ -262,7 +258,7 @@ int get_process_name_by_pid(const int pid, char *pname)
         }
         fclose(fp);
     }
-    
+
     free(fname);
 
     return 0;
@@ -279,7 +275,6 @@ int get_process_name_by_pid(const int pid, char *pname)
 int streamCTRL_CatchSignals()
 {
 
-#ifndef STANDALONE
     if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGTERM\n");
 
@@ -300,7 +295,6 @@ int streamCTRL_CatchSignals()
 
     if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
         printf("\ncan't catch SIGPIPE\n");
-#endif
 
     return 0;
 }
@@ -1161,7 +1155,7 @@ static int streamCTRL_print_procpid(
             }
         }
     }
-    
+
     if ( is_upstream == 1 )
     {
 		if( activitycolorcode !=2 )
@@ -1173,16 +1167,16 @@ static int streamCTRL_print_procpid(
 			activitycolorcode = 12;
 		}
 	}
-	
-    
-    
+
+
+
 
     if(activitycolorcode > 0)
     {
         attron(COLOR_PAIR(activitycolorcode));
     }
 
-    
+
     if(is_upstream)
     {
 		char upstreamstring[DispPID_NBchar+1];
@@ -1193,7 +1187,7 @@ static int streamCTRL_print_procpid(
 	{
 		printw("%*d", DispPID_NBchar, (int) procpid);
     }
-    
+
 
     if(activitycolorcode > 0)
     {
@@ -1532,11 +1526,9 @@ errno_t streamCTRL_CTRLscreen()
                        CLIPID);
     //sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
 
-#ifndef STANDALONE  // TODO(sevin): why it fails in STANDALONE mode?
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, 0644);
     dup2(newstderr, STDERR_FILENO);
     close(newstderr);
-#endif
 
 
     DEBUG_TRACEPOINT(" ");
@@ -2244,7 +2236,7 @@ errno_t streamCTRL_CTRLscreen()
                 long ID;
                 sindex = ssindex[dindex];
                 ID = streaminfo[sindex].ID;
-	
+
 				int downstreammin = NO_DOWNSTREAM_INDEX; // minumum downstream index
 				// looks for inodeselected in the list of upstream inodes
 				// picks the smallest corresponding index
@@ -2278,7 +2270,7 @@ errno_t streamCTRL_CTRLscreen()
                 {
 					// currently selected inode
 					inodeselected = streamCTRLimages[streaminfo[sindex].ID].md[0].inode;
-					
+
                     // identify upstream inodes
                     NBupstreaminode = 0;
                     for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
@@ -2295,7 +2287,7 @@ errno_t streamCTRL_CTRLscreen()
                     }
 
                     // identify upstream processes
-                    print_pid_mode = PRINT_PID_FORCE_NOUPSTREAM;                    
+                    print_pid_mode = PRINT_PID_FORCE_NOUPSTREAM;
                     NBupstreamproc = 0;
                     for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
                     {
@@ -2308,13 +2300,13 @@ errno_t streamCTRL_CTRLscreen()
                                 NBupstreamproc ++;
                             }
                         }
-                    }                   
-                    
+                    }
+
                 }
                 else
                 {
                     print_pid_mode = PRINT_PID_DEFAULT;
-                                       
+
                     for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
                       {
                             ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
@@ -2326,7 +2318,7 @@ errno_t streamCTRL_CTRLscreen()
 								}
 							}
 						}
-                    
+
                 }
 
 
@@ -2685,8 +2677,8 @@ errno_t streamCTRL_CTRLscreen()
                             ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
                             int   sem   = streamCTRLimages[ID].streamproctrace[spti].trigsemindex;
                             pid_t pid   = streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
-                            
-                            
+
+
 
 
                             switch( streamCTRLimages[ID].streamproctrace[spti].triggermode)
@@ -2724,12 +2716,12 @@ errno_t streamCTRL_CTRLscreen()
                             linecharcnt += 3 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
                             printw(")> ");
                         }
-                    
+
 						if(DisplayDetailLevel == 1)
 						{
 							printw("\n");
 							streamCTRL_print_SPTRACE_details(streamCTRLimages, ID, upstreamproc, NBupstreamproc, PRINT_PID_DEFAULT);
-						}                    
+						}
                     }
                 }
 
@@ -2821,7 +2813,6 @@ errno_t streamCTRL_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
-#ifndef STANDALONE
                 if(streaminfoproc.fuserUpdate == 1)
                 {
                     //      refresh();
@@ -2831,7 +2822,6 @@ errno_t streamCTRL_CTRLscreen()
                         data.signal_INT = 0; // reset
                     }
                 }
-#endif
             }
 
 
@@ -2846,14 +2836,12 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT(" ");
 
         loopcnt++;
-#ifndef STANDALONE
         if((data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1)
                 || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1)
                 || (data.signal_PIPE == 1))
         {
             loopOK = 0;
         }
-#endif
 
         DEBUG_TRACEPOINT(" ");
     }

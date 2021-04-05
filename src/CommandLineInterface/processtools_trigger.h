@@ -1,6 +1,6 @@
 /**
  * @file    processtools_trigger.h
- * 
+ *
  * @brief   Process triggering
  *
  *
@@ -36,8 +36,9 @@
 #define PROCESSINFO_TRIGGERSTATUS_RECEIVED     2
 #define PROCESSINFO_TRIGGERSTATUS_TIMEDOUT     3
 
+#include "CLIcore.h"
 
-
+#include "processinfo.h"
 
 
 
@@ -72,4 +73,3 @@ processinfo->triggerdelay.tv_sec += 1;                                  \
 
 
 #endif
-

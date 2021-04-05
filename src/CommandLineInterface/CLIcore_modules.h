@@ -9,19 +9,23 @@
 #ifndef CLICORE_MODULES_H
 #define CLICORE_MODULES_H
 
+#ifdef __cplusplus
+typedef const char * CONST_WORD;
+#else
+typedef const char *restrict  CONST_WORD;
+#endif
 
 
+errno_t load_sharedobj(CONST_WORD libname);
 
-errno_t load_sharedobj(const char *restrict libname);
-
-errno_t load_module_shared(const char *restrict modulename);
+errno_t load_module_shared(CONST_WORD modulename);
 
 errno_t load_module_shared_ALL();
 
 errno_t RegisterModule(
-    const char *restrict FileName,
-    const char *restrict PackageName,
-    const char *restrict InfoString,
+    CONST_WORD FileName,
+    CONST_WORD PackageName,
+    CONST_WORD InfoString,
     int versionmajor,
     int versionminor,
     int versionpatch
@@ -29,13 +33,13 @@ errno_t RegisterModule(
 
 
 uint32_t RegisterCLIcommand(
-    const char *restrict CLIkey,
-    const char *restrict CLImodulesrc,
+    CONST_WORD CLIkey,
+    CONST_WORD CLImodulesrc,
     errno_t (*CLIfptr)(),
-    const char *restrict CLIinfo,
-    const char *restrict CLIsyntax,
-    const char *restrict CLIexample,
-    const char *restrict CLICcall
+    CONST_WORD CLIinfo,
+    CONST_WORD CLIsyntax,
+    CONST_WORD CLIexample,
+    CONST_WORD CLICcall
 );
 
 

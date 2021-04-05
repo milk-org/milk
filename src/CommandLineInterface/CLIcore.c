@@ -106,6 +106,8 @@
 *       Globals exported to all modules
 */
 
+DATA __attribute__((used)) data;
+
 pid_t CLIPID;
 
 
@@ -423,9 +425,9 @@ static errno_t runCLI_initialize(
     CLIPID = getpid();
     if(data.quiet == 0)
     {
-        printf("    CLI PID = %d\n", (int) CLIPID);
+        printf("        CLI PID = %d\n", (int) CLIPID);
 
-        EXECUTE_SYSTEM_COMMAND("echo -n \"    \"; cat /proc/%d/status | grep Cpus_allowed_list",
+        EXECUTE_SYSTEM_COMMAND("echo -n \"        \"; cat /proc/%d/status | grep Cpus_allowed_list",
                                CLIPID);
     }
 
@@ -441,13 +443,13 @@ static errno_t runCLI_initialize(
 # ifdef _OPENMP
     if(data.quiet == 0)
     {
-        printf("    Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
+        printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
                omp_get_max_threads());
     }
 # else
     if(data.quiet == 0)
     {
-        printf("    Compiled without openMP\n");
+        printf("        Compiled without openMP\n");
     }
 # endif
 
@@ -455,7 +457,7 @@ static errno_t runCLI_initialize(
     int openACC_devtype = acc_get_device_type();
     if(data.quiet == 0)
     {
-        printf("    Running with openACC version %d.  %d device(s), type %d\n",
+        printf("        Running with openACC version %d.  %d device(s), type %d\n",
                _OPENACC, acc_get_num_devices(openACC_devtype), openACC_devtype);
     }
 # endif
@@ -621,16 +623,17 @@ errno_t runCLI(
     printf("\n");
 
 
-    DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
-    load_module_shared_ALL();
+    // uncomment following two lines to auto-load all modules
+    //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
+    //load_module_shared_ALL();
 
-    // load other libs specified by environment variable CLI_ADD_LIBS
-    char *CLI_ADD_LIBS = getenv("CLI_ADD_LIBS");
+    // load other libs specified by environment variable MILKCLI_ADD_LIBS
+    char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
     if(CLI_ADD_LIBS != NULL)
     {
         if(data.quiet == 0)
         {
-            printf(" [ CLI_ADD_LIBS ] '%s'\n", CLI_ADD_LIBS);
+            printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
         }
 
         char *libname;
@@ -638,8 +641,9 @@ errno_t runCLI(
 
         while(libname != NULL)
         {
-            printf("--- CLI Adding library: %s\n", libname);
-            load_sharedobj(libname);
+            DEBUG_TRACEPOINT("--- CLI Adding library: %s\n", libname);
+            // load_sharedobj(libname);
+            load_module_shared(libname);
             libname = strtok(NULL, " ,;");
         }
         printf("\n");
@@ -648,7 +652,7 @@ errno_t runCLI(
     {
         if(data.quiet == 0)
         {
-            printf(" [ CLI_ADD_LIBS ] not set\n");
+            printf("        MILKCLI_ADD_LIBS not set -> no additional module loaded\n");
         }
     }
 
@@ -843,8 +847,7 @@ errno_t runCLI(
                         {
                             buf1[total_bytes - 1] = '\0';
                             strcpy(data.CLIcmdline, buf1);
-                            DEBUG_TRACEPOINT("CLI executing line: %s",
-                                             data.CLIcmdline); //===============================
+                            DEBUG_TRACEPOINT("CLI executing line: %s", data.CLIcmdline);
                             CLI_execute_line();
                             DEBUG_TRACEPOINT("CLI line executed");
                             printf("%s", prompt);
@@ -1098,12 +1101,12 @@ void runCLI_cmd_init()
 
     // FPS
     RegisterCLIcommand(
-        "fpsread",
+        "fpsload",
         __FILE__,
         function_parameter_structure_load__cli,
-        "Read function parameter struct",
+        "Load function parameter struct (FPS)",
         "<fpsname>",
-        "readfps imanalyze",
+        "fpsload imanalyze",
         "long function_parameter_structure_load(char *fpsname)");
 
     RegisterCLIcommand(
@@ -1388,13 +1391,3 @@ static int command_line_process_options(
     return RETURN_SUCCESS;
 
 }
-
-
-
-
-
-
-
-
-
-

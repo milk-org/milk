@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+
+# script 1-line description
+MSdescr="milk tutorial by examples"
+
+scriptname=$(basename $0)
+
+# Extended description (multi-line)
+MSextdescr="milk tutorial and examples
+
+Runs milk examples.
+Demonstrates use of milk command line interface (CLI) and its interaction
+with function parameter structure (FPS) and process information (procinfo)."
+
+
+
+source milk-script-std-config
+
+TMUXSESSIONNAME="milkexample"
+
+function customcleanup {
+    tmux send-keys -t ${TMUXSESSIONNAME} C-c
+    tmux send-keys -t ${TMUXSESSIONNAME} "exit" C-m
+    reset
+    echo "custom cleanup done"
+}
+
+RequiredCommands=( milk tmux nnn )
+RequiredFiles=()
+RequiredDirs=()
+
+source milk-argparse
+
+SKIP=0
+
+
+# don't exit on errors
+set +e
+
+# create tmux session
+echo ""
+echo "======== SETTING UP TMUX SESSION ========"
+echo "List of current tmux sessions:"
+tmux ls
+echo "Ceating tmux session ${TMUXSESSIONNAME}"
+tmux new -d -s ${TMUXSESSIONNAME}
+echo "list of current tmux sessions:"
+tmux ls
+echo "========================================="
+echo ""
+
+tmux send-keys -t ${TMUXSESSIONNAME} C-c
+tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
+set -e
+echo
+echo "This tool navigates through a series of examples demonstrating milk use."
+echo "Use arrow keys to navigate and select example script."
+echo ""
+echo "All examples will run in tmux session ${TMUXSESSIONNAME}"
+echo "$(tput bold)Run \"tmux a -t ${TMUXSESSIONNAME}\" to connect$(tput sgr0)"
+echo
+read -s -p "Press [ENTER] to proceed to navigator, [CTRL-C] to exit at any time"
+
+
+
+function ProbeUserRunExample {
+    readarray -t CLIinarray <<<"$CLIinput"
+    nbCLIcmd=${#CLIinarray[@]}
+    echo "Running example in tmux session \"${TMUXSESSIONNAME}\""
+    tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
+    echo ""
+    for (( i=0; i<$nbCLIcmd; i++ )); do
+        CLIline=${CLIinarray[$i]}
+        if [ -n "$CLIline" ]; then # only process non-empty lines
+        if [[ $CLIline == \#* ]]; then
+            # this is a comment, just print it in green
+            echo "$(tput setaf 2)${CLIline} $(tput sgr0)"
+        else
+            echo "$(tput bold)$(tput setaf 3)${CLIline} $(tput sgr0)"
+            read -p "   Press [ENTER] to run this command in tmux session ${TMUXSESSIONNAME} "
+            tmux send-keys -t ${TMUXSESSIONNAME} "${CLIline}" C-m
+            echo ""
+        fi
+        fi
+    done
+}
+
+
+
+
+ExampleDir="/home/oguyon/src/milk/src/milk_module_example/examples/"
+
+loopOK=1
+while [ ${loopOK} = 1 ]; do
+
+#EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
+EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
+
+echo "selected : $EXAMPLEFILE in $ExampleDir"
+if [ -f "$EXAMPLEFILE" ]; then
+    ExampleDir="$(dirname "$EXAMPLEFILE")"
+    source $EXAMPLEFILE
+
+    clear
+    tput bold; echo "Example ${examplestring}"; tput sgr0
+    echo
+    echo "$exampleDescription"
+    echo
+    ProbeUserRunExample
+else
+    echo "ERROR: File does not exist, could not run test"
+fi
+
+echo -n "[ENTER] return to menu or (q)uit ? "
+read answer
+
+if [ "$answer" != "${answer#[Qq]}" ]; then
+    loopOK=0
+else
+    loopOK=1
+fi
+
+
+done
+
+# close tmux session
+tmux send-keys -t ${TMUXSESSIONNAME} "" C-c
+tmux send-keys -t ${TMUXSESSIONNAME} "exit" C-m
+
+
+echo "End examples"

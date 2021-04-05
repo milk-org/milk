@@ -2,6 +2,11 @@
 
 MSdescr="Example script"
 
+
+MSextdescr="Example script long description
+Can span muliple lines
+"
+
 # standard configuration
 # 
 source milk-script-std-config
@@ -61,7 +66,8 @@ function stressfunc() {
 # parse arguments
 source milk-argparse
 
-
+# pull paramters
+infile="${inputMSargARRAY[0]}"
 
 
 

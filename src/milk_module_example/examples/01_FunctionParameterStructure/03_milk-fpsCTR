@@ -1,0 +1,17 @@
+
+examplestring="milk-fpsCTRL tool"
+
+exampleDescription="
+milk-fpsCTRL tool
+"
+
+CLIinput="
+# Start milk-fpsCTRL tool
+milk-fpsCTRL
+
+# Navigate with keyboard arrows to view parameters
+# Type h for help
+
+# Exit 
+x
+"

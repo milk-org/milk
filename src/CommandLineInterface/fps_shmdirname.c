@@ -10,11 +10,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-#ifndef STANDALONE
 #define SHAREDSHMDIR data.shmdir
-#else
-#include "standalone_dependencies.h"
-#endif
 
 
 errno_t function_parameter_struct_shmdirname(char *shmdname)
@@ -32,7 +28,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");
         if(MILK_SHM_DIR != NULL)
         {
-            printf(" [ MILK_SHM_DIR ] is '%s'\n", MILK_SHM_DIR);
+            DEBUG_TRACEPOINT("MILK_SHM_DIR is '%s'\n", MILK_SHM_DIR);
 
             {
                 int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", MILK_SHM_DIR);

@@ -4,8 +4,27 @@
 
 milk-core for **milk** package.
 
+
 Module inclues key frameworks :
 
+- **image streams** : low-latency shared memory streams
 - **processinfo** : process management and control
 - **function parameter structure (FPS)** : reading/writing function parameters
-- ...
+
+## Compilation
+
+    ./compile.sh $PWD/local
+
+## Adding plugins
+
+Compile with cacao plugins:
+
+    ./fetch_cacao_dev.sh
+    ./compile.sh $PWD/local
+
+Compile with coffee plugins:
+
+    ./fetch_coffee_dev.sh
+    ./compile.sh $PWD/local
+
+

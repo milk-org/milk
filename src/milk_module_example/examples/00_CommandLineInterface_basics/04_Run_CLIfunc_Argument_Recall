@@ -1,0 +1,34 @@
+examplestring="RUN FUNCTION, CLI MODE, RECALL ARG"
+
+exampleDescription="
+Arguments last used for a function can be recalled by the dot
+character.
+
+Here, we create two images and demonstrate how to recall the
+function argument used on the previous call of the function.
+"
+
+CLIinput="
+# Start milk CLI with required modules
+MILK_QUIET="1"  MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image named imd1
+imgen.mkdisk imd1 256 256 128 128 50
+
+# Create disk image named imd2
+imgen.mkdisk imd2 256 256 128 128 10
+
+# Run function on image imd1
+modex.simplefunc imd1
+
+# Run function again, recall argument from last call
+modex.simplefunc .
+
+# Run function on image imd2
+modex.simplefunc imd2
+
+# Run function again, recall argument from last call
+modex.simplefunc .
+
+exitCLI
+"

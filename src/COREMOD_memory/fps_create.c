@@ -40,12 +40,12 @@ static errno_t fps_create__cli()
             data.cmdargtoken[1].val.numl,
             data.cmdargtoken[2].val.string
         );
-		return CLICMD_SUCCESS;
+        return CLICMD_SUCCESS;
     }
     else
     {
-		return CLICMD_INVALID_ARG;
-	}
+        return CLICMD_INVALID_ARG;
+    }
 
 }
 
@@ -170,8 +170,9 @@ errno_t function_parameter_struct_create(
 
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME);
-	strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN);
-	strncpy(fps.md->callfuncname, data.cmdargtoken[0].val.string, FPS_CALLFUNCNAME_STRMAXLEN);
+    strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN);
+    strncpy(fps.md->callfuncname, data.cmdargtoken[0].val.string,
+            FPS_CALLFUNCNAME_STRMAXLEN);
 
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
@@ -187,29 +188,30 @@ errno_t function_parameter_struct_create(
     strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX);
     fps.md->sourceline = 0;
 
-	// set default fpsdatadir
-	sprintf(fps.md->datadir, "fps.%s.datadir", fps.md->name);
-	// and create the directory
-	mkdir(fps.md->datadir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    // set default fpsdatadir
+    sprintf(fps.md->datadir, "fps.%s.datadir", fps.md->name);
+    // and create the directory
+    mkdir(fps.md->datadir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 
-	// set default fpsconfdir
-	sprintf(fps.md->confdir, "fps.%s.confdir", fps.md->name);
-	// and create the directory
-	mkdir(fps.md->confdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	
-	
-	// write currently loaded modules to fps
-	fps.md->NBmodule = 0;
-	for(int m = 0; m < data.NBmodule; m++)
+    // set default fpsconfdir
+    sprintf(fps.md->confdir, "fps.%s.confdir", fps.md->name);
+    // and create the directory
+    mkdir(fps.md->confdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+
+    // write currently loaded modules to fps
+    fps.md->NBmodule = 0;
+    for(int m = 0; m < data.NBmodule; m++)
     {
-		if(data.module[m].type ==  MODULE_TYPE_CUSTOMLOAD) // custom loaded module
-		{
-			strncpy(fps.md->modulename[fps.md->NBmodule], data.module[m].loadname, FPS_MODULE_STRMAXLEN);
-			fps.md->NBmodule++;
-		}
+        if(data.module[m].type ==  MODULE_TYPE_CUSTOMLOAD) // custom loaded module
+        {
+            strncpy(fps.md->modulename[fps.md->NBmodule], data.module[m].loadname,
+                    FPS_MODULE_STRMAXLEN);
+            fps.md->NBmodule++;
+        }
     }
-	
+
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default

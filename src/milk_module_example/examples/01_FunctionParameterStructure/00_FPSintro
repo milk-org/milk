@@ -1,0 +1,25 @@
+
+examplestring="Function Parameter Structure (FPS) - intro"
+
+exampleDescription="
+FPS is a structure holding function parameters, held in shared memory.
+
+FPSs are specific to milk functions. Their content matches the function 
+set of parameters. They are created and managed by the functions:
+There is no way to add/remove entries in an FPS other than changing the 
+source code for the function.
+
+FPSs only exist in shared memory - they do not exist as regular files
+on the filesystem.
+"
+
+CLIinput="
+# Start milk CLI
+MILK_QUIET="1" milk
+
+# List FPS currently connected to, and/or on current system
+fpslist
+
+# Quit
+exitCLI
+"
