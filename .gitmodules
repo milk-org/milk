@@ -2,4 +2,57 @@
 	path = src/ImageStreamIO
 	url = https://github.com/milk-org/ImageStreamIO.git
 	branch = dev
-
+[submodule "plugins/milk-extra-src/ZernikePolyn"]
+	path = plugins/milk-extra-src/ZernikePolyn
+	url = ""
+[submodule "plugins/milk-extra-src/image_gen"]
+	path = plugins/milk-extra-src/image_gen
+	url = ""
+[submodule "plugins/milk-extra-src/linARfilterPred"]
+	path = plugins/milk-extra-src/linARfilterPred
+	url = ""
+[submodule "plugins/milk-extra-src/image_basic"]
+	path = plugins/milk-extra-src/image_basic
+	url = ""
+[submodule "plugins/milk-extra-src/info"]
+	path = plugins/milk-extra-src/info
+	url = ""
+[submodule "plugins/milk-extra-src/image_filter"]
+	path = plugins/milk-extra-src/image_filter
+	url = ""
+[submodule "plugins/milk-extra-src/linopt_imtools"]
+	path = plugins/milk-extra-src/linopt_imtools
+	url = ""
+[submodule "plugins/milk-extra-src/kdtree"]
+	path = plugins/milk-extra-src/kdtree
+	url = ""
+[submodule "plugins/milk-extra-src/image_format"]
+	path = plugins/milk-extra-src/image_format
+	url = ""
+[submodule "plugins/milk-extra-src/fft"]
+	path = plugins/milk-extra-src/fft
+	url = ""
+[submodule "plugins/milk-extra-src/img_reduce"]
+	path = plugins/milk-extra-src/img_reduce
+	url = ""
+[submodule "plugins/milk-extra-src/psf"]
+	path = plugins/milk-extra-src/psf
+	url = ""
+[submodule "plugins/milk-extra-src/statistic"]
+	path = plugins/milk-extra-src/statistic
+	url = ""
+[submodule "plugins/milk-extra-src/cudacomp"]
+	path = plugins/milk-extra-src/cudacomp
+	url = ""
+[submodule "plugins/milk-extra-src/WFpropagate"]
+	path = plugins/milk-extra-src/WFpropagate
+	url = ""
+[submodule "plugins/milk-extra-src/OpticsMaterials"]
+	path = plugins/milk-extra-src/OpticsMaterials
+	url = ""
+[submodule "cacao"]
+	path = plugins/cacao-src
+	url = ""
+[submodule "coffee"]
+	path = plugins/coffee-src
+	url = ""
