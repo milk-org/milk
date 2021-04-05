@@ -39,6 +39,8 @@
 #define FPSCMDCODE_TMUXSTART          0x00000100  // start tmux sessions
 #define FPSCMDCODE_TMUXSTOP           0x00000200  // stop tmux sessions
 
+#define FPSCMDCODE_IGNORE             0x00001000  // do not run anything
+
 
 // function can use this structure to expose parameters for external control or monitoring
 // the structure describes how user can interact with parameter, so it allows for control GUIs to connect to parameters

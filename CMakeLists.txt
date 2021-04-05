@@ -1,25 +1,34 @@
 cmake_minimum_required(VERSION 3.14)
 
-option(python_build "Compile Python Wrappers" ON)
+option(build_python_module "Compile Python Wrappers" OFF)
 
 include(CheckLanguage)
+
+# =======================================
+# GPU ACCELERATION
+# =======================================
+
+# options
+option(USE_CUDA  "Use CUDA        library" OFF)
+
+if(USE_CUDA)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 else()
-  message(STATUS "No CUDA support")
+  message(FATAL_ERROR "No CUDA support")
 endif()
+endif(USE_CUDA)
+
 enable_language(C)
 
-project(cream VERSION 1.0.0 DESCRIPTION "cream library" LANGUAGES C)
-
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+project(milk VERSION 1.0.0 DESCRIPTION "milk library" LANGUAGES C)
 
 # Version number
 set ( VERSION_MAJOR 1 )
 set ( VERSION_MINOR 01 )
 set ( VERSION_PATCH 02 )
-set ( CREAM_VERSION_OPTION "" )
+set ( MILK_VERSION_OPTION "" )
 set ( PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 set ( PROJECT_DESCRIPTION "Modular Image processing tooLKit" )
 
@@ -29,14 +38,14 @@ option ( INSTALLMAKEDEFAULT "Make this installation the system default" ON )
 # turn VERBOSE ON
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/cream-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/milk-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 
 # Configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/cream_config.h.in"
-  "${PROJECT_SOURCE_DIR}/src/cream_config.h"
+  "${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
+  "${PROJECT_SOURCE_DIR}/src/milk_config.h"
   )
 
 configure_file (
@@ -54,8 +63,12 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # linked to executable by default
 #
 
-list(APPEND libsrcdir src/CommandLineInterface)
-list(APPEND libname CLIcore)
+# =======================================
+# MODULES INCLUDED
+# =======================================
+# modules are added to two lists:
+# libsrcdir : source code directory
+# libname   : shared object name
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -75,19 +88,14 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
+
+list(APPEND libsrcdir src/CommandLineInterface)
+list(APPEND libname CLIcore)
+
 list(APPEND libsrcdir src/ImageStreamIO)
-list(APPEND libname ImageStreamIO)
+list(APPEND libname ImageStreamIO m)
 
-# =======================================
-# MODULES INCLUDED
-# =======================================
-# modules are added to two lists:
-# libsrcdir : source code directory
-# libname   : shared object name
-
-# CORE MODULES
 list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
-
 foreach(mname IN LISTS modulelist)
 string(REPLACE "_" "" mname1 "${mname}")
 list(APPEND libsrcdir src/${mname})
@@ -123,17 +131,9 @@ message("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 # =======================================
 
 # add gnu17 option only for C, don't add for nvcc
+# TODO: should use set_property(TARGET tgt PROPERTY C_STANDARD 17)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-std=gnu17>)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
-
-
-# OpenMP
-find_package(OpenMP)
-if (OPENMP_FOUND)
-message("Found OpenMP")
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-fopenmp>)
-#add_compile_options(-fopenmp)
-endif()
 
 # link-time optimizer
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto>)
@@ -152,31 +152,6 @@ add_compile_options($<$<COMPILE_LANGUAGE:C>:-pipe>)
 
 message("COMPILE_OPTIONS:  ${COMPILE_OPTIONS}")
 
-
-
-
-
-# =======================================
-# GPU ACCELERATION
-# =======================================
-
-# options
-option(USE_CUDA  "Use CUDA        library" OFF)
-
-if(USE_CUDA)
-find_package( CUDA REQUIRED )
-endif(USE_CUDA)
-
-# =======================================
-# DEPENDENCIES
-# =======================================
-
-# ncurses
-SET(CURSES_USE_NCURSES TRUE)
-
-find_package( Threads )
-
-
 message("====================================================")
 message("VERSION  ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 message("====================================================")
@@ -191,82 +166,53 @@ message("USE_CUDA                 = ${USE_CUDA}")
 
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
-# ADD SOURCE DIRECTORIES
-# recursively add libraries to be compiled
-
-foreach(lsrcdir IN LISTS libsrcdir)
-add_subdirectory ( "${lsrcdir}" )
-endforeach()
-
-
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-# main
-add_executable(cream src/CLImain.c)
-
-
-target_include_directories(cream PUBLIC
-${PROJECT_SOURCE_DIR}/src
-${GSL_INCLUDE_DIRS}
-${FFTW_INCLUDE_DIRS}
-${FFTWF_INCLUDE_DIRS}
-${CURSES_INCLUDE_DIR}
-)
-
-# adds the options to all targets within the directory and its sub-directories
-target_compile_options(cream PUBLIC
-${FFTW_CFLAGS_OTHER}
-${FFTWF_CFLAGS_OTHER}
--fopenmp
-)
-
-set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"cream\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/cream/issues\\\"" )
-
-
-#
-# link order must satisfy dependancies
-#
 
 # ADD SOURCE DIRECTORIES
 # recursively add libraries to be compiled
+execute_process(COMMAND bash -c "find ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 -maxdepth 2 -type d| grep -v .git"
+                OUTPUT_VARIABLE libextradir)
+string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 
-foreach(lname IN LISTS libname)
-target_link_libraries (cream PUBLIC "${lname}" )
+foreach(lsrcdir IN LISTS libsrcdir libextradir)
+string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
+if (NOT ${lsrcdir} EQUAL "")
+add_subdirectory ( ${lsrcdir} )
+endif()
 endforeach()
 
+# add example module
+add_subdirectory(src/milk_module_example)
+
+# main
+add_executable(milk src/CLImain.c)
 
 
+# note: set -SOURCEDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" for autoload
+set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/milk/issues\\\"" )
 
-target_link_libraries (cream PUBLIC
-m
-readline
-ncurses
-cfitsio
-dl
-rt
-${GSL_LIBRARIES}
-${FFTW_LIBRARIES}
-${FFTWF_LIBRARIES}
-${CMAKE_THREAD_LIBS_INIT}
--fopenmp
+
+target_link_libraries (milk PUBLIC
+${libname}
 )
 
 
 if(USE_CUDA)
-target_link_libraries (cream PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
-set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE0_CUDA" )
+target_link_libraries (milk PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
 endif(USE_CUDA)
 
-set_target_properties(cream PROPERTIES COMPILE_FLAGS "${BUILD_FLAGS}" )
+set_target_properties(milk PROPERTIES COMPILE_FLAGS "${BUILD_FLAGS}" )
 
 message("====================================================")
-get_target_property(creamcompopts cream COMPILE_OPTIONS)
+get_target_property(milkcompopts milk COMPILE_OPTIONS)
 
 message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
 message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
-message("COMPILE_OPTIONS         :  ${creamcompopts}")
+message("COMPILE_OPTIONS         :  ${milkcompopts}")
 message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
 
 message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
@@ -289,31 +235,7 @@ set(PROGRAM_PERMISSIONS_DEFAULT
     WORLD_READ WORLD_EXECUTE)
 
 
-install(TARGETS cream DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
-
-# Note: may need to write "/usr/local/magma/lib" to:
-# /etc/ld.so.conf.d/magma.conf
-
-
-
-# =======================================
-# MAKE DEFAULT
-# =======================================
-
-set(CMAKE_INSTALL_PREFIX_LINK "/usr/local/${PROJECT_NAME}")
-if(INSTALLMAKEDEFAULT)
-    install(CODE "
-    EXECUTE_PROCESS(COMMAND ln -snf ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX_LINK})
-    ")
-endif(INSTALLMAKEDEFAULT)
-
-
-
-
-
-
-
-
+install(TARGETS milk DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
 
 # =======================================
 # PKG-CONFIG
@@ -328,20 +250,48 @@ message("LINKSTRING: ${LINKSTRING}")
 set(INSTALL_PKGCONFIG_DIR "lib/pkgconfig"
     CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cream.pc.in
-               ${CMAKE_CURRENT_BINARY_DIR}/cream.pc @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/milk.pc.in
+               ${CMAKE_CURRENT_BINARY_DIR}/milk.pc @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cream.pc
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/milk.pc
         DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/cream_config.h
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h
         DESTINATION include
         )
 
 
+if(build_python_module)
+add_subdirectory (python_module)
+endif()
 
-
+install(TARGETS CLIcore DESTINATION bin)
+install(PROGRAMS
+			scripts/milk-exec
+			scripts/milk-argparse
+			scripts/milk-streamCTRL
+			scripts/milk-procCTRL
+			scripts/milk-fpsCTRL
+			scripts/milk-cr2tofits
+			scripts/milk-FITS2shm
+			scripts/milk-fpsmkcmd
+			scripts/milk-fpsinit
+			scripts/milk-logshim
+			scripts/milk-logshimkill
+			scripts/milk-logshimoff
+			scripts/milk-logshimon
+			scripts/milk-logshimstat
+			scripts/merge3DfitsTelemetry
+			scripts/milk-script-std-config
+			scripts/milk-streamlink
+			scripts/milk-shm2FITS
+			scripts/milk-shm2FITSloop
+			scripts/tmuxkillall
+			scripts/tmuxsessionname
+			scripts/waitforfile
+        DESTINATION bin)
 
 
 # ====================================
@@ -350,8 +300,8 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/cream_config.h
 
 include(CTest)
 
-# test that cream CLI launches and list modules
-add_test(creamCLIlaunch cream-exec "-T" "m?")
-set_tests_properties(creamCLIlaunch PROPERTIES TIMEOUT 120)
+# test that milk CLI launches and list modules
+add_test(milkCLIlaunch milk-exec "-T" "m?")
+set_tests_properties(milkCLIlaunch PROPERTIES TIMEOUT 120)
 
-add_test(creamsemspeedtest cream-semtestspeed "100000" "1")
+add_test(milksemspeedtest milk-semtestspeed "100000" "1")

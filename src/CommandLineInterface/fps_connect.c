@@ -45,6 +45,8 @@ long function_parameter_struct_connect(
 
     char shmdname[stringmaxlen];
 
+    DEBUG_TRACEPOINT("Connect to fps %s\n", name);
+
     if(fps->SMfd > -1)
     {
         printf("[%s %s %d] ERROR: file descriptor already allocated : %d\n", __FILE__,
@@ -59,7 +61,7 @@ long function_parameter_struct_connect(
     {
         PRINT_ERROR("snprintf error");
     }
-    printf("File : %s\n", SM_fname);
+    DEBUG_TRACEPOINT("File : %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1)
     {
@@ -97,7 +99,7 @@ long function_parameter_struct_connect(
     if(fpsconnectmode == FPSCONNECT_RUN)
     {
         fps->md->runpid = getpid();    // write process PID into FPS
-        clock_gettime(CLOCK_REALTIME, &fps->md->runpidstarttime);     
+        clock_gettime(CLOCK_REALTIME, &fps->md->runpidstarttime);
     }
 
 
@@ -108,7 +110,7 @@ long function_parameter_struct_connect(
 
     //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
     NBparamMAX = fps->md->NBparamMAX;
-    printf("[%s %5d] Connected to %s, %ld entries\n", __FILE__, __LINE__, SM_fname,
+    printf("    Connected to %s, %ld entries\n", SM_fname,
            NBparamMAX);
     fflush(stdout);
 
@@ -153,19 +155,19 @@ long function_parameter_struct_connect(
     fps->md->NBnameindex = NBi;
 
 
-	// count active parameters
-	int pactivecnt = 0;
-	for(int pindex = 0; pindex < NBparamMAX; pindex++)
+    // count active parameters
+    int pactivecnt = 0;
+    for(int pindex = 0; pindex < NBparamMAX; pindex++)
     {
         if(fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
         {
-			pactivecnt ++;
-		}
-	}
-	fps->NBparamActive = pactivecnt;
-	
-        
-	
+            pactivecnt ++;
+        }
+    }
+    fps->NBparamActive = pactivecnt;
+
+
+
     //function_parameter_printlist(fps->parray, NBparamMAX);
 
 
@@ -183,8 +185,8 @@ long function_parameter_struct_connect(
             }
         }
     }
-    
-    
+
+
     // update time
     //
     if(fpsconnectmode == FPSCONNECT_RUN)
@@ -192,7 +194,8 @@ long function_parameter_struct_connect(
         // set timestring if applicable
         //
         int pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
-        if(pindex > -1) {
+        if(pindex > -1)
+        {
             char timestring[100];
             mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
             if(snprintf(fps->parray[pindex].val.string[0],
@@ -200,8 +203,8 @@ long function_parameter_struct_connect(
             {
                 PRINT_ERROR("snprintf error");
             }
-        }                
-    }    
+        }
+    }
 
     return(NBparamMAX);
 }

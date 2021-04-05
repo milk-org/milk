@@ -1,0 +1,46 @@
+examplestring="Update Stream Loop"
+
+exampleDescription="
+Update stream in a loop
+
+Script milk-streampoke performs similar function
+"
+
+CLIinput="
+# Start milk CLI with required modules
+MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image named imd1
+imgen.mkdisk imd1 256 256 128 128 50
+
+# Copy to shared memory stream
+cpsh imd1 ims1
+
+# List loaded images
+listim
+
+# Activate processinfo
+modex.streamupdate ..procinfo 1
+
+# Check settings
+modex.streamupdate ?
+
+
+# Run computation 20 times
+modex.streamupdate ..loopcntMax 19
+
+# Change triggermode to 4 : DELAY
+modex.streamupdate ..triggermode 4
+
+# set delay to 0.1 sec
+modex.streamupdate ..triggerdelay 0.1
+
+# Check settings
+modex.streamupdate ?
+
+# Run function on image imd1
+modex.streamupdate ims1
+
+# exit milk CLI
+exitCLI
+"

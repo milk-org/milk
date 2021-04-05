@@ -1,0 +1,29 @@
+examplestring="Introduction to processinfo"
+
+exampleDescription="
+The processinfo shared memory structure manages deployment of functions
+into processes.
+"
+
+CLIinput="
+
+# Start milk command line interpreter (CLI)
+milk
+
+# Load module
+mload milkmoduleexample
+
+# Get function help
+# Notice that processinfo is currently OFF
+modex.simplefuncFPS ?
+
+# Activate processinfo
+modex.simplefuncFPS ..procinfo 1
+
+# Check that processinfo is now activated
+# Multiple additional function attributes appear
+modex.simplefuncFPS ?
+
+# exit milk CLI
+exitCLI
+"

@@ -1,0 +1,41 @@
+examplestring="Access non-CLI arguments"
+
+exampleDescription="
+Function parameters that are not part of the CLI call are
+set by providing the parameter tag (a string) and the set value
+as parameters of the CLI function call.
+
+Note that tab-complete can be used to list possible matches following
+the dot character.
+
+The same syntax also holds for arguments accessible by the CLI call.
+"
+
+CLIinput="
+# Start milk CLI with required modules
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image
+imgen.mkdisk imd1 256 256 128 128 50
+
+# Set non-CLI argument value
+modex.simplefunc .scaling 0.31
+
+# Get function help to print value of non-CLI argument(s)
+cmd? modex.simplefunc
+
+# Run function
+modex.simplefunc imd1
+
+# Create second disk image
+imgen.mkdisk imd2 256 256 128 128 10
+
+# Set new value for CLI-visible argument
+modex.simplefunc .in_name imd2
+
+# Run function
+modex.simplefunc .
+
+# Exit CLI
+exitCLI
+"

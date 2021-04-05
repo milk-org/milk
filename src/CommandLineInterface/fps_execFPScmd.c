@@ -16,7 +16,6 @@
  */
 errno_t function_parameter_execFPScmd()
 {
-#ifndef STANDALONE
     long fpsID;
 
     if(data.FPS_CMDCODE == FPSCMDCODE_FPSINIT)   // Initialize FPS
@@ -71,8 +70,5 @@ errno_t function_parameter_execFPScmd()
         return RETURN_SUCCESS;
     }
 
-#endif
-
     return RETURN_SUCCESS;
 }
-

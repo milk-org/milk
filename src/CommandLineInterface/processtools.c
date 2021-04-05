@@ -11,11 +11,6 @@
  */
 
 
-#ifndef STANDALONE
-#define PROCESSINFO_ENABLED
-#endif
-
-
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
 #endif
@@ -67,13 +62,9 @@ static int CTRLscreenExitLine = 0; // for debugging
 
 #include "CommandLineInterface/timeutils.h"
 
-#ifdef STANDALONE
-#include "standalone_dependencies.h"
-#else
 #include "CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #define SHAREDPROCDIR data.shmdir
-#endif
 
 
 #include <processtools.h>
@@ -268,8 +259,6 @@ PROCESSINFO *processinfo_setup(
 
 
 
-#ifdef PROCESSINFO_ENABLED
-
     DEBUG_TRACEPOINT(" ");
     if(data.processinfoActive == 0)
     {
@@ -316,8 +305,6 @@ PROCESSINFO *processinfo_setup(
     processinfo->RT_priority   = -1;  // default: do not assign RT priority
 
     DEBUG_TRACEPOINT(" ");
-#endif
-    DEBUG_TRACEPOINT(" ");
 
     return processinfo;
 }
@@ -333,11 +320,9 @@ errno_t processinfo_error(
     char *errmsgstring
 )
 {
-#ifdef PROCESSINFO_ENABLED
     processinfo->loopstat = 4; // ERROR
     processinfo_WriteMessage(processinfo, errmsgstring);
     processinfo_cleanExit(processinfo);
-#endif
     return RETURN_SUCCESS;
 }
 
@@ -350,7 +335,6 @@ errno_t processinfo_loopstart(
     PROCESSINFO *processinfo
 )
 {
-#ifdef PROCESSINFO_ENABLED
     processinfo->loopcnt = 0;
     processinfo->loopstat = 1;
 
@@ -376,8 +360,6 @@ errno_t processinfo_loopstart(
     }
 
 
-#endif
-
     return RETURN_SUCCESS;
 }
 
@@ -393,7 +375,6 @@ int processinfo_loopstep(
 {
     int loopstatus = 1;
 
-#ifdef PROCESSINFO_ENABLED
     while(processinfo->CTRLval == 1)   // pause
     {
         usleep(50);
@@ -423,7 +404,6 @@ int processinfo_loopstep(
             loopstatus = 0;
         }
 
-#endif
 
     return loopstatus;
 }
@@ -438,13 +418,11 @@ int processinfo_compute_status(
 {
     int compstatus = 1;
 
-#ifdef PROCESSINFO_ENABLED
     // CTRLval = 5 will disable computations in loop (usually for testing)
     if(processinfo->CTRLval == 5)
     {
         compstatus = 0;
     }
-#endif
 
     return compstatus;
 }
@@ -716,9 +694,7 @@ PROCESSINFO *processinfo_shm_create(
     pinfo->dtiter_limit_enable = 0;
     pinfo->dtexec_limit_enable = 0;
 
-#ifndef STANDALONE
     data.pinfo = pinfo;
-#endif
     pinfo->PID = PID;
 
 
@@ -788,7 +764,6 @@ int processinfo_shm_close(PROCESSINFO *pinfo, int fd)
 
 int processinfo_cleanExit(PROCESSINFO *processinfo)
 {
-#ifdef PROCESSINFO_ENABLED
 
     if(processinfo->loopstat != 4)
     {
@@ -816,7 +791,6 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
         processinfo->loopstat = 3; // clean exit
     }
 
-#endif
     return 0;
 }
 
@@ -1019,7 +993,6 @@ int processinfo_WriteMessage(
     const char  *msgstring
 )
 {
-#ifdef PROCESSINFO_ENABLED
     struct timespec tnow;
     struct tm *tmnow;
 
@@ -1041,7 +1014,6 @@ int processinfo_WriteMessage(
 
     DEBUG_TRACEPOINT(" ");
     fflush(processinfo->logFile);
-#endif
     return 0;
 }
 
@@ -1050,7 +1022,6 @@ int processinfo_WriteMessage(
 
 int processinfo_CatchSignals()
 {
-#ifndef STANDALONE
     if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
     {
         printf("\ncan't catch SIGTERM\n");
@@ -1085,7 +1056,6 @@ int processinfo_CatchSignals()
     {
         printf("\ncan't catch SIGPIPE\n");
     }
-#endif
 
     return 0;
 }
@@ -1097,63 +1067,47 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
     int loopOK = 1;
     // process signals
 
-#ifndef STANDALONE
     if(data.signal_TERM == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGTERM);
-#endif
     }
 
     if(data.signal_INT == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGINT);
-#endif
     }
 
     if(data.signal_ABRT == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGABRT);
-#endif
     }
 
     if(data.signal_BUS == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGBUS);
-#endif
     }
 
     if(data.signal_SEGV == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGSEGV);
-#endif
     }
 
     if(data.signal_HUP == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGHUP);
-#endif
     }
 
     if(data.signal_PIPE == 1)
     {
         loopOK = 0;
-#ifdef PROCESSINFO_ENABLED
         processinfo_SIGexit(processinfo, SIGPIPE);
-#endif
     }
-#endif
 
     return loopOK;
 }
@@ -1173,6 +1127,7 @@ errno_t processinfo_update_output_stream(
     imageID IDin;
 
     IDin = processinfo->triggerstreamID;
+    //printf("trigger IDin = %ld\n", IDin);
     if(IDin > -1)
     {
         int sptisize = data.image[IDin].md[0].NBproctrace - 1;
@@ -1234,7 +1189,6 @@ int processinfo_exec_start(
     PROCESSINFO *processinfo
 )
 {
-#ifdef PROCESSINFO_ENABLED
     DEBUG_TRACEPOINT(" ");
     if(processinfo->MeasureTiming == 1)
     {
@@ -1307,7 +1261,6 @@ int processinfo_exec_start(
         }
     }
     DEBUG_TRACEPOINT(" ");
-#endif
     return 0;
 }
 
@@ -1318,7 +1271,6 @@ int processinfo_exec_end(
 )
 {
     int loopOK = 1;
-#ifdef PROCESSINFO_ENABLED
 
     DEBUG_TRACEPOINT("End of execution loop, measure timing = %d",
                      processinfo->MeasureTiming);
@@ -1387,7 +1339,6 @@ int processinfo_exec_end(
     loopOK = processinfo_ProcessSignals(processinfo);
 
     processinfo->loopcnt++;
-#endif
 
     return loopOK;  // returns 0 if signal stops loop
 }
@@ -5322,14 +5273,12 @@ errno_t processinfo_CTRLscreen()
 
 
 
-#ifndef STANDALONE
         if((data.signal_TERM == 1) || (data.signal_INT == 1) || (data.signal_ABRT == 1)
                 || (data.signal_BUS == 1) || (data.signal_SEGV == 1) || (data.signal_HUP == 1)
                 || (data.signal_PIPE == 1))
         {
             loopOK = 0;
         }
-#endif
 
     }
     endwin();
@@ -5340,7 +5289,6 @@ errno_t processinfo_CTRLscreen()
     printf("loopOK = 0 -> exit\n");
 
 
-#ifndef STANDALONE
     if(Xexit == 1)    // normal exit
     {
         printf("[%4d] User typed x -> exiting\n", __LINE__);
@@ -5373,7 +5321,6 @@ errno_t processinfo_CTRLscreen()
     {
         printf("[%4d] Received signal PIPE\n", __LINE__);
     }
-#endif
 
 
     procinfoproc.loop = 0;

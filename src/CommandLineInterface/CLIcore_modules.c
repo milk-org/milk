@@ -37,12 +37,12 @@ errno_t load_sharedobj(
     const char *restrict libname
 )
 {
-    //printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+    DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
     strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME);
 
 
     // check if already loaded
-    //printf("--- %ld modules loaded ---\n", data.NBmodule);
+    DEBUG_TRACEPOINT("--- %ld modules loaded ---\n", data.NBmodule);
     int mmatch = -1;
     for(int m = 0; m < data.NBmodule; m++)
     {
@@ -54,7 +54,7 @@ errno_t load_sharedobj(
     }
     if(mmatch > -1)
     {
-        printf("Shared object %s already loaded - no action taken\n", libnameloaded);
+        printf("    Shared object %s already loaded - no action taken\n", libnameloaded);
         return RETURN_FAILURE;
     }
 
@@ -63,13 +63,13 @@ errno_t load_sharedobj(
     DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
     if(!DLib_handle[DLib_index])
     {
-        fprintf(stderr, "%s\n", dlerror());
+        fprintf(stderr, KRED"%s\n"KRES, dlerror());
         //exit(EXIT_FAILURE);
     }
     else
     {
         dlerror();
-        printf("  ----- LOADED : %s <- %s\n", libnameloaded, libname);
+        printf(KGRN"   LOADED : %s\n"KRES, libnameloaded);
         // increment number of libs dynamically loaded
         DLib_index ++;
     }
@@ -88,7 +88,7 @@ errno_t load_module_shared(
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
-    // module name local copy
+    // make locacl copy of module name
     char modulenameLC[STRINGMAXLEN_MODULE_SOFILENAME];
 
     {
@@ -106,10 +106,13 @@ errno_t load_module_shared(
         }
     }
 
+    // Assemble absolute path module filename
+    //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
+    DEBUG_TRACEPOINT("Searching for shared object in directory [data.installdir]/lib : %s/lib\n", data.installdir);
 
     {
         int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME,
-                            "%s/lib/lib%s.so", getenv("MILK_INSTALLDIR"), modulenameLC);
+                            "%s/lib/lib%s.so", data.installdir, modulenameLC);
         if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
@@ -122,9 +125,9 @@ errno_t load_module_shared(
         }
     }
 
-    printf("libname = %s\n", libname);
+    DEBUG_TRACEPOINT("libname = %s\n", libname);
 
-    printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+    DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
 
     // a custom module is about to be loaded, so we set the type accordingly
     // this variable will be written by module register function into module struct
@@ -157,7 +160,7 @@ errno_t load_module_shared_ALL()
     int loopOK;
     int itermax;
 
-    sprintf(dirname, "%s/lib", data.sourcedir);
+    sprintf(dirname, "%s/lib", data.installdir);
 
     if(data.quiet == 0)
     {
@@ -178,11 +181,11 @@ errno_t load_module_shared_ALL()
                 char *dot = strrchr(dir->d_name, '.');
                 if(dot && !strcmp(dot, ".so"))
                 {
-                    sprintf(libname, "%s/lib/%s", data.sourcedir, dir->d_name);
+                    sprintf(libname, "%s/lib/%s", data.installdir, dir->d_name);
                     //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
                     //fflush(stdout);
 
-                    //printf("[%5d] Loading shared object \"%s\"\n", DLib_index, libname);
+                    printf("    [%5d] Loading shared object \"%s\"\n", DLib_index, libname);
                     DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
                     if(!DLib_handle[DLib_index])
                     {
@@ -303,7 +306,7 @@ errno_t RegisterModule(
     if(data.progStatus == 1)
     {
         OKmsg = 1;
-        printf("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n",
+        DEBUG_TRACEPOINT("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n",
                data.NBmodule,
                PackageName,
                FileName);
@@ -493,13 +496,13 @@ uint32_t RegisterCLIcmd(
     }
 
     // define CLI function flags from content of CLIcmddata.flags
-    data.cmd[data.NBcmd].flags = CLIcmddata.flags;
+    data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
 
     data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax = 0;
     data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
 
     data.NBcmd++;
 
-    return(data.NBcmd-1);
+    return(data.NBcmd - 1);
 }
 

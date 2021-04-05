@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+
+MSdescr="Simple function test"
+
+scriptname=$(basename $0)
+
+MSextdescr="Simple function test
+
+Computes image total"
+
+
+source milk-script-std-config
+
+RequiredCommands=(milk)
+RequiredFiles=()
+RequiredDirs=()
+
+source milk-argparse
+
+
+milk << EOF
+
+# create images imd1 and imd2
+imgen.mkdisk imd1 256 256 128 128 50
+imgen.mkdisk imd2 256 256 128 128 10
+
+# load module
+mload milkmilkmoduleexample
+m? milk_module_example
+
+# print function help
+cmd? modex.simplefunc
+
+# list images in memory
+listim
+
+# run function
+modex.simplefunc imd1
+
+# change scaling parameter for function
+modex.simplefunc .scaling 0.3
+
+# run again
+modex.simplefunc .
+
+exitCLI
+EOF
+

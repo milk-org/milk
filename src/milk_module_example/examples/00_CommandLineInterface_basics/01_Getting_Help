@@ -1,0 +1,28 @@
+examplestring="Getting help"
+
+exampleDescription="
+This first example demonstrates how to:
+- Print help for module (m?)
+- Print help for command (cmd?)
+"
+
+CLIinput="
+
+# Launch milk command line interpreter (CLI)
+MILK_QUIET="1" milk
+
+# List loaded modules
+m?
+
+# get module info
+m? COREMOD_iofits
+
+# Get function help
+cmd? loadfits
+
+# Alternate help syntax (same result as above)
+loadfits ?
+
+# exit milk CLI
+exitCLI
+"

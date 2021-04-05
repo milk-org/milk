@@ -1,20 +1,38 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Compile script for milk_package
 # Customize / add you own options
-# Do not commit
+# Use as-is, or make a local custom copy (private, do not commit)
 
 mkdir -p _build
 cd _build
 
-cmake ..
-# cmake .. -Dpython_build=ON
+if [ ! -z $1 ]
+then
+    MILK_INSTALL_ROOT=$1
+fi
+
+if [ -z $MILK_INSTALL_ROOT ]
+then
+    MILK_INSTALL_ROOT=/usr/local
+fi
+
+# find python executable
+pythonexec=$(which python)
+if command -v python3 &> /dev/null
+then
+    pythonexec=$(which python3)
+fi
+
+echo "using python at ${pythonexec}"
+
+
+cmake .. -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT
+# cmake .. -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
 
-make -j$NCPUS
-
-# sudo make install
+cmake --build . --target install -- -j $NCPUS
 
 # # MANUAL stuff - just as reminder
 # # Grab version and link to folder - if you switch versions regularly, don't forget to hack your way around:
