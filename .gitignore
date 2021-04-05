@@ -1,3 +1,10 @@
+build
 _build
 src/config.h
-src/cream_config.h
+src/milk_config.h
+local
+
+_tmplist.txt
+.vscode
+plugins
+*-code-workspace

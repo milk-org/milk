@@ -1,0 +1,34 @@
+
+examplestring="CREATE FUNCTION FPS"
+
+exampleDescription="
+Create/initialize FPS if it does not exist
+Default FPS name is function key without namespace.
+Arguments following _FPSINIT_ are pasted to construct
+the FPS name.
+If FPS already exists, do nothing (param values
+may then be out of sync)
+"
+
+CLIinput="
+# Start milk CLI with required modules
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+
+# Create disk image
+imgen.mkdisk imd1 256 256 128 128 50
+
+# Run function
+modex.simplefuncFPS imd1
+
+# Change non-CLI parameter value
+modex.simplefuncFPS .scaling 0.31
+
+# Create FPS
+# To view FPSs in memory, run milk-fpsCTRL in a separate terminal
+modex.simplefuncFPS _FPSINIT_ \"03\"
+
+# Exit CLI
+# The FPS created in above step will continue to exist
+# and can be recalled by future function calls
+exitCLI
+"

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+echo "CTEST_FULL_OUTPUT"
+
+SEMTRIG="$2"
+NBLOOP="$1"
+
+milk << EOF
+creaimshm imA 100 100
+creaimshm imB 100 100
+imsetsempost imA -1
+imsetsempost imB -1
+exitCLI
+EOF
+
+
+tmux new-session -d -s loopAB
+tmux new-session -d -s loopBA
+
+tmux send-keys -t loopAB "milk" C-M
+tmux send-keys -t loopAB "mloadas milk_module_example mex" C-M
+tmux send-keys -t loopAB "readshmim imA" C-M
+tmux send-keys -t loopAB "readshmim imB" C-M
+tmux send-keys -t loopAB "mex.streamloop imA imB ${NBLOOP} ${SEMTRIG}" C-M
+tmux send-keys -t loopAB "exitCLI" C-M
+
+
+
+milk << EOF
+mloadas milk_module_example mex
+readshmim imA
+readshmim imB
+mex.streamloop imB imA ${NBLOOP} ${SEMTRIG}
+exitCLI
+EOF
+

@@ -31,8 +31,8 @@ static errno_t init_module_CLI()
 	images2cube_addCLIcmd();
 	loadfits_addCLIcmd();
 	savefits_addCLIcmd();
-	
-	
+
+
     // add atexit functions here
 
     return RETURN_SUCCESS;

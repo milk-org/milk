@@ -57,7 +57,7 @@ long function_parameter_structure_load(
             }
             else
             {
-                printf("--- loaded FPS %s to ID %ld\n", fpsname, fpsID);
+                DEBUG_TRACEPOINT("loaded FPS %s to ID %ld\n", fpsname, fpsID);
             }
         }
         else
