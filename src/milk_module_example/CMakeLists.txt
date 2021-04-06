@@ -1,11 +1,10 @@
+set(LIBNAME "milkmoduleexample")
+
 # list source files (.c) other than modulename.c
 set(SOURCEFILES
-	#create_example_image.c
 	simplefunc.c
 	simplefunc_FPS.c
-	#stream_process_loop_simple.c
 	updatestreamloop.c
-	#updatestreamloop_brief.c
 )
 
 # list include files (.h) that should be installed on system
@@ -33,8 +32,8 @@ string(REGEX MATCH "[a-zA-Z0-9_]+$" SRCNAME "${NAME0}")
 message(" SRCNAME = ${SRCNAME}")
 
 # LIBNAME constructed by removing spaces
-string(REPLACE "_" "" LIBNAME "${SRCNAME}")
-message(" LIBNAME = ${LIBNAME}")
+#string(REPLACE "_" "" LIBNAME "${SRCNAME}")
+#message(" LIBNAME = ${LIBNAME}")
 
 
 
