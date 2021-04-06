@@ -108,7 +108,7 @@ INSERT_STD_CLIfunction
  * Adds function to list of CLI commands.
  * Called by main module initialization function init_module_CLI().
  */
-errno_t FPSCLIADDCMD_milk_module_example__simplefunc()
+errno_t CLIADDCMD_milk_module_example__simplefunc()
 {
     INSERT_STD_CLIREGISTERFUNC
 

@@ -65,7 +65,6 @@
 
 
 
-
 /* ================================================================== */
 /* ================================================================== */
 /*  HEADER FILES                                                      */
@@ -123,12 +122,12 @@ static errno_t init_module_CLI()
 
     //	milk_module_example__updatestreamloop_addCLIcmd();
 
-    FPSCLIADDCMD_milk_module_example__simplefunc();
-	FPSCLIADDCMD_milk_module_example__simplefunc_FPS();
+    CLIADDCMD_milk_module_example__simplefunc();
+	CLIADDCMD_milk_module_example__simplefunc_FPS();
 
     //FPSCLIADDCMD_milk_module_example__updatestreamloop();
 
-    FPSCLIADDCMD_milk_module_example__updatestreamloop();
+    CLIADDCMD_milk_module_example__updatestreamloop();
 
     // optional: add atexit functions here
 
