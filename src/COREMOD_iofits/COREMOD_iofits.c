@@ -29,6 +29,7 @@ static errno_t init_module_CLI()
 
 
 	CLIADDCMD_loadfits();
+	CLIADDCMD_COREMOD_iofits__saveFITS();
 
 	breakcube_addCLIcmd();
 	images2cube_addCLIcmd();
