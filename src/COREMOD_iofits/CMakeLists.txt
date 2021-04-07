@@ -1,10 +1,8 @@
 # library name
 set(LIBNAME "milkCOREMODiofits")
-set(SRCNAME "COREMOD_iofits")
 
-
+# list source files (.c) other than modulename.c
 set(SOURCEFILES
-	${SRCNAME}.c
 	breakcube.c
 	check_fitsio_status.c
 	data_type_code.c
@@ -17,8 +15,8 @@ set(SOURCEFILES
 	savefits.c
 )
 
+# list include files (.h) that should be installed on system
 set(INCLUDEFILES
-	${SRCNAME}.h
 	COREMOD_iofits_common.h
 	breakcube.h
 	check_fitsio_status.h
@@ -32,17 +30,25 @@ set(INCLUDEFILES
 	savefits.h
 )
 
+# list scripts that should be installed on system
+set(SCRIPTFILES
+	)
+
+
 
 # DEFAULT SETTINGS
 # Do not change unless needed
 # =====================================================================
 
+# SRCNAME is current directory (last subdir)
+set(NAME0 "${CMAKE_CURRENT_SOURCE_DIR}")
+string(REPLACE "/" " " NAME1 ${NAME0})
+string(REGEX MATCH "[a-zA-Z0-9_]+$" SRCNAME "${NAME0}")
+message(" SRCNAME = ${SRCNAME}")
+
 project(lib_${LIBNAME}_project)
 
-# Library can be compiled from multiple source files
-# Convention: the main souce file is named <libname>.c
-#
-add_library(${LIBNAME} SHARED ${SOURCEFILES})
+add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CFITSIO cfitsio)
@@ -52,8 +58,9 @@ if(${CFITSIO_FOUND})
   target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
 endif()
 
-target_include_directories(${LIBNAME} PUBLIC ${PROJECT_SOURCE_DIR}/..)
-target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES})
+target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(${LIBNAME} PRIVATE m ${CFITSIO_LIBRARIES})
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
-install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)

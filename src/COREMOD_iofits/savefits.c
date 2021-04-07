@@ -4,10 +4,10 @@
  */
 
 
-#include <pthread.h>
-
 #include "CommandLineInterface/CLIcore.h"
 
+
+#include <pthread.h>
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
@@ -18,6 +18,7 @@
 
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
+
 
 
 
@@ -187,7 +188,7 @@ errno_t savefits_addCLIcmd()
         "savefits im im.fits",
         "int save_fits(char *ID_name, char *file_name)"
     );
-   
+
 
     return RETURN_SUCCESS;
 }
@@ -213,12 +214,12 @@ errno_t save_db_fits(
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);               
-        WRITE_FULLFILENAME(file_name1, "!%s", file_name);       
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-		WRITE_FULLFILENAME(file_name1, "!%s", file_name);       
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -342,25 +343,16 @@ errno_t save_db_fits(
         fits_create_file(&fptr, file_name1, &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_file\" %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm within save_db_fits ( %s, %s ) %c[%d;m\n", (char) 27,
-                    1, 31, ID_name, file_name, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
+            PRINT_ERROR("fits_create_file error %s -> %s", ID_name, file_name);
             list_image_ID();
         }
 
 
-        fits_create_img(fptr, DOUBLE_IMG, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, DOUBLE_IMG, naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm within save_db_fits ( %s, %s ) %c[%d;m\n", (char) 27,
-                    1, 31, ID_name, file_name, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
+            PRINT_ERROR("fits_create_img error %s -> %s", ID_name, file_name);
             list_image_ID();
         }
 
@@ -371,31 +363,22 @@ errno_t save_db_fits(
         }
         else
         {
-            fits_write_img(fptr, TDOUBLE, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TDOUBLE, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
 
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_write_img\" %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm within save_db_fits ( %s, %s ) %c[%d;m\n", (char) 27,
-                    1, 31, ID_name, file_name, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
+            PRINT_ERROR("fits_write_img error %s -> %s", ID_name, file_name);
             list_image_ID();
         }
 
         fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
-            fprintf(stderr, "%c[%d;%dm Error while calling \"fits_close_file\" %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm within save_db_fits ( %s, %s ) %c[%d;m\n", (char) 27,
-                    1, 31, ID_name, file_name, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Printing Cfits image buffer content: %c[%d;m\n",
-                    (char) 27, 1, 31, (char) 27, 0);
+            PRINT_ERROR("fits_close_file error %s -> %s", ID_name, file_name);
             list_image_ID();
         }
     }
@@ -428,13 +411,13 @@ errno_t save_fl_fits(
 
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
-    {		
+    {
         PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
-        WRITE_FULLFILENAME(file_name1, "!%s", file_name);      
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-		WRITE_FULLFILENAME(file_name1, "%s", file_name);
+        WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -568,7 +551,8 @@ errno_t save_fl_fits(
             }
         }
 
-        fits_create_img(fptr, FLOAT_IMG, (int) naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, FLOAT_IMG, (int) naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
             fprintf(stderr, "%c[%d;%dm Error while calling \"fits_create_img\" %c[%d;m\n",
@@ -587,7 +571,8 @@ errno_t save_fl_fits(
         }
         else
         {
-            fits_write_img(fptr, TFLOAT, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TFLOAT, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
@@ -651,11 +636,11 @@ errno_t save_sh16_fits(
             && (file_exists(file_name) == 1))
     {
         PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
-        WRITE_FULLFILENAME(file_name1, "!%s", file_name);        
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-		WRITE_FULLFILENAME(file_name1, "%s", file_name);
+        WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -795,7 +780,8 @@ errno_t save_sh16_fits(
 
 
         //    16          short integer, I        21        TSHORT
-        fits_create_img(fptr, SHORT_IMG, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, SHORT_IMG, naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
             fprintf(stderr,
@@ -817,7 +803,8 @@ errno_t save_sh16_fits(
         }
         else
         {
-            fits_write_img(fptr, TSHORT, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TSHORT, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
@@ -883,12 +870,12 @@ errno_t save_ush16_fits(
     if((data.overwrite == 1) && (file_name[0] != '!')
             && (file_exists(file_name) == 1))
     {
-		PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
+        PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
         WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
-		WRITE_FULLFILENAME(file_name1, "%s", file_name);
+        WRITE_FULLFILENAME(file_name1, "%s", file_name);
     }
 
     ID = image_ID(ID_name);
@@ -1015,7 +1002,8 @@ errno_t save_ush16_fits(
             }
         }
 
-        fits_create_img(fptr, USHORT_IMG, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, USHORT_IMG, naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
             fprintf(stderr,
@@ -1034,7 +1022,8 @@ errno_t save_ush16_fits(
         }
         else
         {
-            fits_write_img(fptr, TUSHORT, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TUSHORT, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
@@ -1248,7 +1237,8 @@ errno_t save_int32_fits(
 
 
         //    32          long integer        TLONG
-        fits_create_img(fptr, LONG_IMG, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, LONG_IMG, naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
             fprintf(stderr,
@@ -1270,7 +1260,8 @@ errno_t save_int32_fits(
         }
         else
         {
-            fits_write_img(fptr, TINT, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TINT, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
@@ -1338,7 +1329,7 @@ errno_t save_uint32_fits(
             && (file_exists(file_name) == 1))
     {
         PRINT_WARNING("automatic overwrite on file \"%s\"\n", file_name);
-		WRITE_FULLFILENAME(file_name1, "!%s", file_name);
+        WRITE_FULLFILENAME(file_name1, "!%s", file_name);
     }
     else
     {
@@ -1469,7 +1460,8 @@ errno_t save_uint32_fits(
             }
         }
 
-        fits_create_img(fptr, USHORT_IMG, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, USHORT_IMG, naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
             fprintf(stderr,
@@ -1488,7 +1480,8 @@ errno_t save_uint32_fits(
         }
         else
         {
-            fits_write_img(fptr, TUINT, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TUINT, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
@@ -1699,7 +1692,8 @@ errno_t save_int64_fits(
 
 
         //    32          long integer        TLONG
-        fits_create_img(fptr, LONGLONG_IMG, naxis, naxesl, &COREMOD_iofits_data.FITSIO_status);
+        fits_create_img(fptr, LONGLONG_IMG, naxis, naxesl,
+                        &COREMOD_iofits_data.FITSIO_status);
         if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
         {
             fprintf(stderr,
@@ -1721,7 +1715,8 @@ errno_t save_int64_fits(
         }
         else
         {
-            fits_write_img(fptr, TLONG, fpixel, nelements, array, &COREMOD_iofits_data.FITSIO_status);
+            fits_write_img(fptr, TLONG, fpixel, nelements, array,
+                           &COREMOD_iofits_data.FITSIO_status);
             free(array);
             array = NULL;
         }
@@ -1872,12 +1867,11 @@ errno_t saveall_fits(
     const char *restrict savedirname
 )
 {
-    long i;
     char fname[STRINGMAXLEN_FULLFILENAME];
 
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", savedirname);
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(long i = 0; i < data.NB_MAX_IMAGE; i++)
         if(data.image[i].used == 1)
         {
 

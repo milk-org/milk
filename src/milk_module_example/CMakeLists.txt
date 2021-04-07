@@ -9,16 +9,19 @@ set(SOURCEFILES
 
 # list include files (.h) that should be installed on system
 set(INCLUDEFILES
-	)
+)
 
 # list scripts that should be installed on system
 set(SCRIPTFILES
 	scripts/milk-tutorial
 	scripts/milk-streampoke
 	scripts/milk-semtestspeed
-	)
+)
 
 
+set(LINKLIBS
+	CLIcore
+)
 
 
 # DEFAULT SETTINGS
@@ -44,11 +47,9 @@ project(lib_${LIBNAME}_project)
 #
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
-target_link_libraries(${LIBNAME} PUBLIC CLIcore)
+target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
-
-install(PROGRAMS
-	${SCRIPTFILES}
-	DESTINATION bin)
+install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
