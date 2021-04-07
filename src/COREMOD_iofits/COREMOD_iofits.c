@@ -27,9 +27,11 @@ static errno_t init_module_CLI()
 {
 	COREMOD_iofits_data.FITSIO_status = 0;
 
+
+	CLIADDCMD_loadfits();
+
 	breakcube_addCLIcmd();
 	images2cube_addCLIcmd();
-	loadfits_addCLIcmd();
 	savefits_addCLIcmd();
 
 
