@@ -3,7 +3,8 @@
 **Contents**
 * TOC
 {:toc}
-My first paragraph.
+
+
 # Installing milk
 
 instructions to install
