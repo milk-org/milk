@@ -1,4 +1,7 @@
-## Welcome to GitHub Pages
+# Installing milk
+
+
+## Documentation
 
 You can use the [editor on GitHub](https://github.com/milk-org/milk/edit/dev/docs/index.md) to maintain and preview the content for your website in Markdown files.
 
