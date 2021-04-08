@@ -31,6 +31,7 @@ modex.simplefunc imd1
 imgen.mkdisk imd2 256 256 128 128 10
 
 # Set new value for CLI-visible argument
+# Note: tab complete after dot lists all possible parameters
 modex.simplefunc .in_name imd2
 
 # Run function
