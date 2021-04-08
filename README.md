@@ -6,7 +6,7 @@
 |     branch       |   version             |  status                     | latest        |
 |------------------|-----------------------|-----------------------------|---------------|
 **main** | xx | [![Build Status](https://www.travis-ci.com/milk-org/milk.svg?branch=main)](https://www.travis-ci.com/milk-org/milk) | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)
-[**dev**](https://github.com/milk-org/milk-package/tree/dev) | xx | [![Build Status dev](https://travis-ci.org/milk-org/milk-package.svg?branch=dev)](https://www.travis-ci.com/milk-org/milk) | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)
+[**dev**](https://github.com/milk-org/milk-package/tree/dev) | xx | [![Build Status dev](https://www.travis-ci.com/milk-org/milk.svg?branch=dev)](https://www.travis-ci.com/milk-org/milk) | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)
 
 
 [![Build Status](https://www.travis-ci.com/milk-org/milk.svg?branch=dev)](https://www.travis-ci.com/milk-org/milk)
