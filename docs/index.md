@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: post
 title: milk page title
 ---
 
@@ -10,7 +10,7 @@ title: milk page title
 
 # Installing milk
 
-instructions to install milk
+instructions to install milk - post
 
 ## Documentation
 
