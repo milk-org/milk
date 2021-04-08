@@ -1,5 +1,3 @@
-
-
 **Contents**
 * TOC
 {:toc}
@@ -7,7 +5,7 @@
 
 # Installing milk
 
-instructions to install
+instructions to install milk - post
 
 ## Documentation
 
