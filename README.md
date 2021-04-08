@@ -10,7 +10,7 @@
 
 
 
-# Module milk-core  {#page_module_milk-core}
+# Milk
 
 milk-core for **milk** package.
 
