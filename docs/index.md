@@ -1,4 +1,7 @@
-
+---
+layout: page
+title: milk page title
+---
 
 **Contents**
 * TOC
@@ -7,7 +10,7 @@
 
 # Installing milk
 
-instructions to install
+instructions to install milk
 
 ## Documentation
 
