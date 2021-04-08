@@ -1,8 +1,3 @@
----
-layout: post
-title: milk page title
----
-
 **Contents**
 * TOC
 {:toc}
