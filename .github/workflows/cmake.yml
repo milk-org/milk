@@ -58,6 +58,6 @@ jobs:
           export PATH=${PATH}:${MILK_INSTALLDIR}/bin
           export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${MILK_INSTALLDIR}/lib/pkgconfig
           echo $PATH
-          ctest -C $BUILD_TYPE
+          ctest -C $BUILD_TYPE -D Experimental
 
 
