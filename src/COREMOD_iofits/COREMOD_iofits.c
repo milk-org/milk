@@ -33,7 +33,6 @@ static errno_t init_module_CLI()
 
 	breakcube_addCLIcmd();
 	images2cube_addCLIcmd();
-	savefits_addCLIcmd();
 
 
     // add atexit functions here
