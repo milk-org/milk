@@ -53,12 +53,12 @@ jobs:
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         #run: ctest -C $BUILD_TYPE
         run: |
-          export MILK_ROOT=${HOME}/src/milk \
-          export MILK_INSTALLDIR=/usr/local/milk \
-          export PATH=${PATH}:${MILK_INSTALLDIR}/bin \
-          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH \
-          ${MILK_INSTALLDIR}/lib/pkgconfig \
-          echo $PATH \
+          export MILK_ROOT=${HOME}/src/milk
+          export MILK_INSTALLDIR=/usr/local/milk
+          export PATH=${PATH}:${MILK_INSTALLDIR}/bin
+          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH
+          ${MILK_INSTALLDIR}/lib/pkgconfig
+          echo $PATH
           ctest -C $BUILD_TYPE
 
 
