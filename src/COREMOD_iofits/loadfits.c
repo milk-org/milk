@@ -130,7 +130,6 @@ imageID load_fits(
     }
 
 
-
     for(int try = 0;
                 try < NBtry;
                     try++)
