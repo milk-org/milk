@@ -33,7 +33,7 @@ set ( PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 set ( PROJECT_DESCRIPTION "Modular Image processing tooLKit" )
 
 
-option ( INSTALLMAKEDEFAULT "Make this installation the system default" ON )
+option ( INSTALLMAKEDEFAULT "Make this installation the system default" OFF )
 
 # turn VERBOSE ON
 #set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -236,6 +236,21 @@ set(PROGRAM_PERMISSIONS_DEFAULT
 
 
 install(TARGETS milk DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
+
+
+
+# =======================================
+# MAKE DEFAULT
+# =======================================
+
+set(CMAKE_INSTALL_PREFIX_LINK "/usr/local/${PROJECT_NAME}")
+if(INSTALLMAKEDEFAULT)
+    install(CODE "
+    EXECUTE_PROCESS(COMMAND ln -snf ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX_LINK})
+    ")
+endif(INSTALLMAKEDEFAULT)
+
+
 
 # =======================================
 # PKG-CONFIG
