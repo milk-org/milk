@@ -56,8 +56,7 @@ jobs:
           export MILK_ROOT=${HOME}/src/milk
           export MILK_INSTALLDIR=/usr/local/milk
           export PATH=${PATH}:${MILK_INSTALLDIR}/bin
-          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH
-          ${MILK_INSTALLDIR}/lib/pkgconfig
+          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${MILK_INSTALLDIR}/lib/pkgconfig
           echo $PATH
           ctest -C $BUILD_TYPE
 
