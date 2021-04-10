@@ -3,7 +3,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/1c9a67a8529340359a2047eba5c971bf)](https://www.codacy.com/gh/milk-org/milk/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/milk&amp;utm_campaign=Badge_Grade)
 
 
-[!(https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)
+[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)
 
 
 |     branch       |   version             |  build status               | latest        |
