@@ -22,15 +22,18 @@ endif(USE_CUDA)
 
 enable_language(C)
 
-project(milk VERSION 1.0.0 DESCRIPTION "milk library" LANGUAGES C)
+
+project(milk LANGUAGES C)
 
 # Version number
 set ( VERSION_MAJOR 1 )
-set ( VERSION_MINOR 01 )
-set ( VERSION_PATCH 02 )
+set ( VERSION_MINOR 02 )
+set ( VERSION_PATCH 00 )
 set ( MILK_VERSION_OPTION "" )
 set ( PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 set ( PROJECT_DESCRIPTION "Modular Image processing tooLKit" )
+
+
 
 
 option ( INSTALLMAKEDEFAULT "Make this installation the system default" OFF )
