@@ -220,7 +220,19 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
     IDout = create_image_ID(IDout_name, 2, sizearray,
-                            data.image[IDin].md[0].datatype, 1, 0);
+                            data.image[IDin].md[0].datatype, 1, 25);
+
+    // Copy the keywords over from IDin to IDout
+    int NBkw = data.image[IDin].md[0].NBkw;
+    for (int kw =0; kw < NBkw; ++kw) {
+        strcpy(data.image[IDout].kw[kw].name, data.image[IDin].kw[kw].name);
+        data.image[IDout].kw[kw].type = data.image[IDin].kw[kw].type;
+        data.image[IDout].kw[kw].value = data.image[IDin].kw[kw].value;
+        strcpy(data.image[IDout].kw[kw].comment, data.image[IDin].kw[kw].comment);
+    }
+
+
+
     COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
 
     dtarray = (double *) malloc(sizeof(double) * NBslice);
@@ -384,6 +396,11 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                     for(ii = 0; ii < nbpixout; ++ii) {
                         data.image[IDout].array.UI16[ii] = data.image[IDin].array.UI16[data.image[IDmap].array.UI32[ii]];
                     }
+                }
+
+                // Copy the value of the keywords
+                for (int kw =0; kw < NBkw; ++kw) {
+                    data.image[IDout].kw[kw].value = data.image[IDin].kw[kw].value;
                 }
 
                 if(slice == NBslice - 1)
