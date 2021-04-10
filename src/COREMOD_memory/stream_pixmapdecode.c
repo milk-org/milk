@@ -220,7 +220,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
     IDout = create_image_ID(IDout_name, 2, sizearray,
-                            data.image[IDin].md[0].datatype, 1, 0);
+                            data.image[IDin].md[0].datatype, 1, 25);
     COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
 
     dtarray = (double *) malloc(sizeof(double) * NBslice);
