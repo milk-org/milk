@@ -1,23 +1,11 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
 
-**main** branch:
-[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)
-[![Build Status](https://www.travis-ci.com/milk-org/milk.svg?branch=main)](https://www.travis-ci.com/milk-org/milk)
-![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)
+|--------|-----------------------|-----------------------------|---------------|
+**main** | [![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/cmake.yml) | [![Build Status](https://www.travis-ci.com/milk-org/milk.svg?branch=main)](https://www.travis-ci.com/milk-org/milk) | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg) |
 
-**dev** branch:
-[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)
-[![Build Status dev](https://www.travis-ci.com/milk-org/milk.svg?branch=dev)](https://www.travis-ci.com/milk-org/milk)
- ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)
+**dev** | [![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/cmake.yml) | [![Build Status dev](https://www.travis-ci.com/milk-org/milk.svg?branch=dev)](https://www.travis-ci.com/milk-org/milk) |  ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)
 
-
-
-
-
-|     branch       |   version             |  build status               | latest        |
-|------------------|-----------------------|-----------------------------|---------------|
-**main** | xx | [![Build Status](https://www.travis-ci.com/milk-org/milk.svg?branch=main)](https://www.travis-ci.com/milk-org/milk) | ![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)
 
 
 
