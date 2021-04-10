@@ -14,7 +14,7 @@ errno_t create_image_addCLIcmd();
 
 
 
-imageID    create_image_ID(
+imageID create_image_ID(
     const char *name,
     long        naxis,
     uint32_t   *size,
