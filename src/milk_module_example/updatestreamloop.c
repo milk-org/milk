@@ -53,7 +53,7 @@ static errno_t compute_function()
 INSERT_STD_FPSCLIfunctions
 
 // Register function in CLI
-errno_t FPSCLIADDCMD_milk_module_example__updatestreamloop()
+errno_t CLIADDCMD_milk_module_example__updatestreamloop()
 {
     INSERT_STD_FPSCLIREGISTERFUNC
 
