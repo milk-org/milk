@@ -20,6 +20,12 @@ m? COREMOD_iofits
 # Get function help
 cmd? loadfits
 
+# Looking for function partially matching string
+cmd? im
+
+# Regular expression search
+cmd? \"imset.*0\"
+
 # Alternate help syntax (same result as above)
 loadfits ?
 
