@@ -15,6 +15,7 @@ include(CheckLanguage)
 
 # options
 option(USE_CUDA  "Use CUDA        library" OFF)
+option(USE_MAGMA "Use MAGMA       library" OFF)
 
 if(USE_CUDA)
 #find_package(CUDA 9.0 REQUIRED)
@@ -173,6 +174,7 @@ message("PROJECT_BINARY_DIR       = ${PROJECT_BINARY_DIR}")
 message("CMAKE_INSTALL_PREFIX     = ${CMAKE_INSTALL_PREFIX}")
 
 message("USE_CUDA                 = ${USE_CUDA}")
+message("USE_MAGMA                = ${USE_MAGMA}")
 
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
