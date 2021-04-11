@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 
+
+# Example:
+# cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON
+
+
 option(build_python_module "Compile Python Wrappers" OFF)
 
 include(CheckLanguage)
@@ -12,11 +17,13 @@ include(CheckLanguage)
 option(USE_CUDA  "Use CUDA        library" OFF)
 
 if(USE_CUDA)
+#find_package(CUDA 9.0 REQUIRED)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 else()
-  message(FATAL_ERROR "No CUDA support")
+  #message(FATAL_ERROR "No CUDA support")
+  message(WARNING "No CUDA support")
 endif()
 endif(USE_CUDA)
 
@@ -207,6 +214,8 @@ if(USE_CUDA)
 target_link_libraries (milk PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
 set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
 endif(USE_CUDA)
+
+
 
 set_target_properties(milk PROPERTIES COMPILE_FLAGS "${BUILD_FLAGS}" )
 
