@@ -10,22 +10,22 @@ MSextdescr="Reads file fpslist.txt
   - Create and initialize FPS
   - Create tmux session and functions in tmux sessions
  Run without argument to print FPSs status
- 
+
 $(tput bold)fpslist.txt file format$(tput sgr0)
    One line per entry: <FPS root name> <CLI command> <optional args>
    Add modules with \"+module1;module2\" line directly before entry
    Optional arguments may be parsed by code, or simply used for FPS naming
 
 $(tput bold)Example use$(tput sgr0)
- 
+
  [1] Create fpslist.txt file:
    +mycustommodule;othercustommodule
-   myfpsname custommod.customcommand im1 304 
-   
+   myfpsname custommod.customcommand im1 304
+
  [2] Run ${scriptname} :
    > ${scriptname} -c 0
    Will create FPS named \"myfpsname-im1-304\"
-   
+
  [3] Launch milk-fpsCTRL to manage and control
 
 
@@ -138,13 +138,13 @@ while IFS= read -r line
 do
   lineOK=0
   nw=$( echo "${line}" | wc -w )
-  
+
   if [[ ${line} == \+* ]]; then
     moduleslist="${line:1}"
     #echo "Module List : ${moduleslist}"
     lineOK=1
   fi
-    
+
   if [ "$nw" -gt 1 ] && [[ ${line} != \#* ]] && [[ ${line} != \+* ]]; then
     lineOK=1
     declare -a OPTARG
@@ -164,7 +164,7 @@ do
       FPSname+="-"${OPTARG[$arg]}
       argstring="${argstring} ${OPTARG[$arg]}"
 	done
-	
+
 	CLINAMEARRAY+=( "${CLIname}" )
 	FPSNAMEARRAY+=( "${FPSname}" )
 	ARGSTRINGARRAY+=( "${argstring}" )
@@ -184,7 +184,7 @@ do
 	# check if tmux session exists
 	#
 	set +o errexit
-    tmux has-session -t ${FPSname} 2>/dev/null    
+    tmux has-session -t ${FPSname} 2>/dev/null
     if [ $? = 0 ]; then
       TMUXSTATUS="FOUND"
       TMUXSTATUSARRAY+=( "FOUND" )
@@ -193,7 +193,7 @@ do
       TMUXSTATUSARRAY+=( "MISSING" )
     fi
     set -o errexit
-    
+
     # update status
     #
     INITREADY="error"
@@ -206,27 +206,27 @@ do
     INITREADYARRAY+=( ${INITREADY} )
 
     moduleslist=""
-    
+
   fi
-  
+
   if [[ "$lineOK" = 0 ]] && [[ "$nw" -gt 0 ]]; then
     echo "$(tput setaf 1)$(tput bold)ERROR line ${linenumber} not processed:$(tput sgr0) \"${line}\""
   fi
   linenumber=$(( $linenumber + 1 ))
 done < "${FPSlistfilename}"
 
-    
+
 
 
 
 # construct module loading string
-for i in "${!FPSNAMEARRAY[@]}"; do 
+for i in "${!FPSNAMEARRAY[@]}"; do
   IFS=';' read -r -a array <<< "${MODULELIST[$i]}"
   mloadstring=""
   for module in ${array[@]}; do
     mloadstring="${mloadstring}mload ${module};"
   done
-  printf "string: ${mloadstring}\n"
+  # printf "%20s module load string: ${mloadstring}\n" "${FPSNAMEARRAY[i]}"
   MODULELOADSTRING+=( "${mloadstring}" )
 done
 
@@ -236,7 +236,7 @@ done
 # PRINT STATUS
 
 printf " #  %-25s %-35s %s    %s     %s\n" "FPS name" "CLI command" "FPS" "tmux" "Init"
-for i in "${!FPSNAMEARRAY[@]}"; do  
+for i in "${!FPSNAMEARRAY[@]}"; do
 
   if [ "${FPSSTATUSARRAY[$i]}" = "FOUND" ]; then
     statusstring="${STRING_STAT_FOUND}"
@@ -262,12 +262,12 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 
   printf "%3d %-25s %-35s %s %s  %s\n"  "$i" "${FPSNAMEARRAY[$i]}" "${CLINAMEARRAY[$i]}" "${statusstring}" "${tmuxstatusstring}" "${initreadystring}"
 
- 
+
   if [[ ${#MODULELIST[$i]} -gt 0 ]]; then
   #printf "      MODULES     : %s\n" "${MODULELIST[$i]}"
   printf "      +cmdstring : ${fgCyan}${MODULELOADSTRING[$i]}${txReset}\n"
   fi
-  
+
   printf "\n"
 
 done
@@ -286,69 +286,67 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 
 	# if status is error, cleanup
 	#
-	if [ "${INITREADYARRAY[$i]}" = "error" ]; then	
+	if [ "${INITREADYARRAY[$i]}" = "error" ]; then
 	  printf "  Clearing error %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
-	  
+
 	  if [ "${FPSSTATUSARRAY[$i]}" = "FOUND" ]; then
 	    fpsfile="${MILK_SHM_DIR}/${FPSNAMEARRAY[$i]}.fps.shm"
 	    printf "        Remove fps file ${fpsfile}\n"
 	    rm ${fpsfile}
 	  fi
-	
+
 	  if [ "${TMUXSTATUSARRAY[$i]}" = "FOUND" ]; then
 	    tmuxname="${FPSNAMEARRAY[$i]}"
 	    printf "        Remove for tmux session ${tmuxname}\n"
 	    # kill tmux sessions
         cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _TMUXSTOP_ ${ARGSTRINGARRAY[$i]}\""
-        printf "    command: %s\n" "${cmdstring}"	
-	    
+        printf "    command: %s\n" "${cmdstring}"
+
 	    if [ ${LOGMODE} == 1 ]; then
 	      eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
 	    else
 	      eval "${cmdstring}"
-	    fi	
-	  
-	  fi	
-	
+	    fi
+
+	  fi
+
 	  INITREADYARRAY[$i]="ready"
-	
+
 	fi
-	
-	 
-	
-  
+
+
     if [ "${INITREADYARRAY[$i]}" = "ready" ]; then
       printf "  (re-)CREATING  %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
-    
+
       if [ ${TESTMODE} == 0 ]; then
-      
+
         # initialize FPS
-        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""    
+        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""
 		printf "    command: %s\n" "${cmdstring}"
         if [ ${LOGMODE} == 1 ]; then
           eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
     	else
     	  eval "${cmdstring}"
     	fi
-    	
+
         # initialize tmux session
         if [ "${TMUXSTATUSARRAY[$i]}" = "MISSING" ]; then
-          cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _TMUXSTART_ ${ARGSTRINGARRAY[$i]}\""    
+          cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _TMUXSTART_ ${ARGSTRINGARRAY[$i]}\""
 		  printf "    command: %s\n" "${cmdstring}"
 		  if [ ${LOGMODE} == 1 ]; then
 			eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
 		  else
 		    eval "${cmdstring}"
 		  fi
-        
-        fi	    
-        
+
+        fi
+
       fi
-    fi 
-  
+    fi
+
   fi
 done
-    
+
 
 
 
