@@ -298,8 +298,9 @@ endif()
 
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
-			scripts/milk-exec
+			scripts/milk-all
 			scripts/milk-argparse
+			scripts/milk-exec
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
 			scripts/milk-fpsCTRL
@@ -317,6 +318,7 @@ install(PROGRAMS
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
+			scripts/milk-shmimmon
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
 			scripts/waitforfile
