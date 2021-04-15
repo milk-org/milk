@@ -4,7 +4,7 @@
  */
 
 
-#define _GNU_SOURCE 
+#define _GNU_SOURCE
 
 #include <sched.h>
 #include <pthread.h>
@@ -286,9 +286,9 @@ void *save_fits_function(
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(imsizearray == NULL)
     {
-		PRINT_ERROR("malloc error");
-		abort();
-	}
+        PRINT_ERROR("malloc error");
+        abort();
+    }
 
     //    tmsg = (struct savethreadmsg*) ptr;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
@@ -450,8 +450,8 @@ void *save_fits_function(
 
 
 /** @brief creates logshimconf shared memory and loads it
- * 
- */ 
+ *
+ */
 LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
     const char *logshimname
 )
@@ -676,7 +676,7 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(
 
 
 /** @brief Logs a shared memory stream onto disk
- * 
+ *
  * uses semlog semaphore
  *
  * uses data cube buffer to store frames
@@ -1284,7 +1284,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
                 printf("%5d  Building file name: fits\n", __LINE__);
                 fflush(stdout);
             }
-            sprintf(fname, "!%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname,
+            sprintf(fname, "%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname,
                     uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60,
                     timenowStart.tv_nsec);
 
