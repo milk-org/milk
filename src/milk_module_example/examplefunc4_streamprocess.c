@@ -2,89 +2,88 @@
  * @file    stream_process_loop_simple.c
  * @brief   template for simple stream processing loop
  *
- *
+ * Example 3
+ * Function has input stream and output stream.
  */
 
 
 #include "CommandLineInterface/CLIcore.h"
 
 // required for create_2Dimage_ID()
-#include "COREMOD_memory/COREMOD_memory.h"
+//#include "COREMOD_memory/COREMOD_memory.h"
 
 // required for timespec_diff()
-#include "COREMOD_tools/COREMOD_tools.h"
+//#include "COREMOD_tools/COREMOD_tools.h"
 
 // required for timespec_diff
-#include "CommandLineInterface/timeutils.h"
+//#include "CommandLineInterface/timeutils.h"
 
 
 
-
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
-
-errno_t milk_module_example__stream_process_loop_simple(
-    char *streamA_name,
-    char *streamB_name,
-    long loopNBiter,
-    int semtrig
-);
+// Local variables pointers
+static char *inimname;
+static char *outimname;
 
 
-
-
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
-
-
-
-static errno_t milk_module_example__stream_process_loop_simple__cli()
+static CLICMDARGDEF farg[] =
 {
-    if(0
-            + CLI_checkarg(1, CLIARG_IMG)
-            + CLI_checkarg(2, CLIARG_IMG)
-            + CLI_checkarg(3, CLIARG_LONG)
-            + CLI_checkarg(4, CLIARG_LONG)
-            == 0)
     {
-        milk_module_example__stream_process_loop_simple(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.string,
-            data.cmdargtoken[3].val.numl,
-            data.cmdargtoken[4].val.numl);
+        CLIARG_IMG, ".in_name", "input image", "im1",
+        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        (void **) &inimname
+    },
+    {
+        CLIARG_IMG, ".out_name", "output image", "out1",
+        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        (void **) &outimname
+    }
+};
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+
+static CLICMDDATA CLIcmddata =
+{
+    "streamupdate",
+    "process input stream to output stream",
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
+    CLICMDFLAG_FPS,
+    NULL
+};
+
+
+
+static errno_t streamprocess(IMGID inimg, IMGID outimg)
+{
+    // custom stream process function code
+}
+
+static errno_t compute_function()
+{
+    IMGID inimg = makeIMGID(inimname);
+    resolveIMGID(&inimg, ERRMODE_ABORT);
+
+    IMGID outimg = makeIMGID(outimname);
+    resolveIMGID(&outimg, ERRMODE_ABORT);
+
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    streamprocess(inimg, outimg);
+    processinfo_update_output_stream(processinfo, outimg.ID);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    return RETURN_SUCCESS;
 }
 
 
 
 
+INSERT_STD_FPSCLIfunctions
 
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-
-errno_t stream_process_loop_simple_addCLIcmd()
+// Register function in CLI
+errno_t CLIADDCMD_milk_module_example__streamprocess()
 {
-
-    RegisterCLIcommand(
-        "streamloop",
-        __FILE__,
-        milk_module_example__stream_process_loop_simple__cli,
-        "simple stream loop",
-        "<streamA> <stramB> <NBiter>",
-        "streamloop imA imB 10000 2",
-        "milk_module_example__stream_process_loop_simple(char *streamA_name, char *streamB_name, long loopNBiter, int semtrig)");
+    INSERT_STD_FPSCLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
@@ -96,14 +95,7 @@ errno_t stream_process_loop_simple_addCLIcmd()
 
 
 
-
-/**
- * @brief simple stream processing
- *
- * Requires streamA and streamB in memory\n
- *
- *
- */
+/*
 errno_t milk_module_example__stream_process_loop_simple(
     char *streamA_name,
     char *streamB_name,
@@ -206,7 +198,7 @@ errno_t milk_module_example__stream_process_loop_simple(
 
     return RETURN_SUCCESS;
 }
-
+*/
 
 
 

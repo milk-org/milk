@@ -2,9 +2,9 @@
  * @file    simplefunc.c
  * @brief   simple function example
  *
+ * Example 1
  * Demonstrates how functions are registered and their arguments processed.
  * See script milk-test-simplefunc for example usage.
- *
  */
 
 #include "CommandLineInterface/CLIcore.h"
@@ -30,8 +30,7 @@ static CLICMDARGDEF farg[] =
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &inimname
     },
-    {
-        // argument is not part of CLI call, FPFLAG ignored
+    {   // argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
         CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &scoeff
@@ -39,9 +38,7 @@ static CLICMDARGDEF farg[] =
 };
 
 
-
-
-
+// CLI function initialization data
 static CLICMDDATA CLIcmddata =
 {
     "simplefunc",             // keyword to call function in CLI
@@ -83,12 +80,11 @@ static errno_t example_compute_2Dimage_total(
 }
 
 
-/** @brief Compute function call
- * Links local variables to function parameters
- */
+// Wrapper function, used by all CLI calls
+// Defines how local variables are fed to computation code
+// Always local to this translation unit
 static errno_t compute_function()
 {
-
     example_compute_2Dimage_total(
         makeIMGID(inimname),
         *scoeff

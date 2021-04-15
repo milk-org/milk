@@ -119,9 +119,9 @@ errno_t milk_module_example__create_image_with_value(
 {
     uint32_t xsize = 128; // by convention, pixel index variables are uint32_t type
     uint32_t ysize = 256;
-    
+
     // overall image size is, by convention, uint64_t type
-    uint64_t xysize = xsize * ysize; 
+    uint64_t xysize = xsize * ysize;
 
     // create 2D image
     // store image index in variable ID

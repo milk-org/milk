@@ -80,9 +80,10 @@
 // Forward declarations are required to connect CLI calls to functions
 // If functions are in separate .c files, include here the corresponding .h files
 //
-#include "simplefunc.h"
-#include "simplefunc_FPS.h"
-#include "updatestreamloop.h"
+#include "examplefunc1.h"
+#include "examplefunc2_FPS.h"
+#include "examplefunc3_updatestreamloop.h"
+#include "examplefunc4_streamprocess.h"
 
 //#include "create_example_image.h"
 //#include "stream_process_loop_simple.h"
@@ -124,10 +125,9 @@ static errno_t init_module_CLI()
 
     CLIADDCMD_milk_module_example__simplefunc();
 	CLIADDCMD_milk_module_example__simplefunc_FPS();
-
-    //FPSCLIADDCMD_milk_module_example__updatestreamloop();
-
     CLIADDCMD_milk_module_example__updatestreamloop();
+    CLIADDCMD_milk_module_example__streamprocess();
+
 
     // optional: add atexit functions here
 

@@ -2,6 +2,7 @@
  * @file    updatestreamloop.c
  * @brief   simple procinfo+fps example - brief, no comments, uses macros
  *
+ * Example 3
  */
 
 
