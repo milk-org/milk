@@ -117,8 +117,8 @@ pname="shmimmon-$1"
 fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
 
-echo "csetpmove RTmon" >$SF
-echo "readshmim $1" >> $SF 
+#echo "csetpmove RTmon" >$SF
+echo "readshmim $1" > $SF
 echo "imgmon $1 10" >> $SF
 echo "exitCLI" >> $SF
 milk -n ${pname} -f ${fifoname} -s ${SF}
