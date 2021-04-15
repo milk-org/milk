@@ -2,9 +2,10 @@ set(LIBNAME "milkmoduleexample")
 
 # list source files (.c) other than modulename.c
 set(SOURCEFILES
-	simplefunc.c
-	simplefunc_FPS.c
-	updatestreamloop.c
+	examplefunc1.c
+	examplefunc2_FPS.c
+	examplefunc3_updatestreamloop.c
+	examplefunc4_streamprocess.c
 )
 
 # list include files (.h) that should be installed on system

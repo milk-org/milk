@@ -2,6 +2,7 @@
  * @file    simplefunc_FPS.c
  * @brief   simple function example with FPS and processinfo support
  *
+ * Example 2
  * Demonstrates using FPS to hold function arguments and parameters.
  * See script milk-test-simplefuncFPS for example usage.
  */
@@ -9,12 +10,12 @@
 #include "CommandLineInterface/CLIcore.h"
 
 
-// variables local to this translation unit
+// Local variables pointers
 static char *inimname;
 static double *scoeff;
 
 
-// CLI function arguments and parameters
+// List of arguments to function
 static CLICMDARGDEF farg[] =
 {
     {
@@ -22,30 +23,28 @@ static CLICMDARGDEF farg[] =
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &inimname
     },
-    {   // non-CLI parameter
+    {
+        // argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
         CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &scoeff
     }
 };
 
-// CLI function initialization data
+
+// flag CLICMDFLAG_FPS enabled FPS capability
 static CLICMDDATA CLIcmddata =
 {
-    "simplefuncFPS",                              // keyword (CLI call name)
-    "compute total of image using FPS",           // short description
+    "simplefuncFPS",
+    "compute total of image using FPS",
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,                               // enabled modes at module initialization, copied to CLIcmddata.cmdsettings.flags
-    NULL                                          // pointer to command settings (will be assigned when function is registered)
+    CLICMDFLAG_FPS,
+    NULL
 };
 
 
 
-
-
-
 // Computation code
-// Can be made non-static and exported to other translation units
 static errno_t example_compute_2Dimage_total(
     IMGID img,
     double scalingcoeff
@@ -64,16 +63,14 @@ static errno_t example_compute_2Dimage_total(
     }
     total *= scalingcoeff;
 
-    printf("image %s total = %lf (scaling coeff %lf)\n", img.im->name, total, scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n", img.im->name, total,
+           scalingcoeff);
 
     return RETURN_SUCCESS;
 }
 
 
-
-// Wrapper function, used by all CLI calls
-// Defines how local variables are fed to computation code
-// Always local to this translation unit
+// adding INSERT_STD_PROCINFO statements enable processinfo support
 static errno_t compute_function()
 {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
