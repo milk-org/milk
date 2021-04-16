@@ -43,6 +43,99 @@ static long tret; // thread return value
 
 
 
+// Local variables pointers
+static char *instreamname;
+static char *logdir;
+static long *logcubesize;
+static char *auxFITSheaderfname;
+
+
+
+
+// List of arguments to function
+static CLICMDARGDEF farg[] =
+{
+    {
+        CLIARG_IMG, ".in_sname", "input stream name", "im1",
+        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        (void **) &instreamname
+    },
+    {
+        // argument is not part of CLI call, FPFLAG ignored
+        CLIARG_LONG, ".cubesize", "cube size", "10000",
+        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        (void **) &logcubesize
+    },
+    {
+        CLIARG_STR, ".logdir", "log directory", "/media/data",
+        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        (void **) &logdir
+    },
+    {
+        // argument is not part of CLI call, FPFLAG ignored
+        CLIARG_LONG, ".auxFITSheader", "auxillary FITS header", "",
+        CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        (void **) &auxFITSheaderfname
+    }
+};
+
+
+// flag CLICMDFLAG_FPS enabled FPS capability
+static CLICMDDATA CLIcmddata =
+{
+    "shmimstreamlog",
+    "logs shared memory stream",
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
+    CLICMDFLAG_FPS,
+    NULL
+};
+
+
+
+
+
+// Forward declarations
+
+
+
+
+// adding INSERT_STD_PROCINFO statements enable processinfo support
+static errno_t compute_function()
+{
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    return RETURN_SUCCESS;
+}
+
+
+
+INSERT_STD_FPSCLIfunctions
+
+// Register function in CLI
+errno_t CLIADDCMD_COREMOD_memory__shmimstreamlog()
+{
+    INSERT_STD_FPSCLIREGISTERFUNC
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -70,7 +163,8 @@ errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
     const char  *IDname,
     uint32_t     zsize,
     const char  *logdir,
-    const char  *IDlogdata_name
+    const char  *IDlogdata_name,
+    const char *auxheaderfname
 );
 
 
@@ -151,13 +245,15 @@ static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
             + CLI_checkarg(1, 3)
             + CLI_checkarg(2, CLIARG_LONG)
             + CLI_checkarg(3, 3)
+            + CLI_checkarg(5, 3)
             == 0)
     {
         COREMOD_MEMORY_sharedMem_2Dim_log(
             data.cmdargtoken[1].val.string,
             data.cmdargtoken[2].val.numl,
             data.cmdargtoken[3].val.string,
-            data.cmdargtoken[4].val.string
+            data.cmdargtoken[4].val.string,
+            data.cmdargtoken[5].val.string
         );
         return CLICMD_SUCCESS;
     }
@@ -184,9 +280,9 @@ errno_t logshmim_addCLIcmd()
         __FILE__,
         COREMOD_MEMORY_sharedMem_2Dim_log__cli,
         "logs shared memory stream (run in current directory)",
-        "<shm image> <cubesize [long]> <logdir>",
-        "shmimstreamlog wfscamim 10000 /media/data",
-        "long COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name)");
+        "<shm image> <cubesize [long]> <logdir> <auxheaderfile>",
+        "shmimstreamlog wfscamim 10000 /media/data \"\"",
+        "long COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name, const char *auxheaderfname)");
 
     RegisterCLIcommand(
         "shmimslogstat",
@@ -391,7 +487,11 @@ void *save_fits_function(
 
 
         memcpy((void *) ptr1, (void *) ptr0, framesize * tmsg->cubesize);
-        save_fits("tmpsavecube", tmsg->fname);
+
+        //save_fits("tmpsavecube", tmsg->fname);
+        saveFITS("tmpsavecube", tmsg->fname, 0, tmsg->fname_auxFITSheader);
+
+
         delete_image_ID("tmpsavecube");
     }
 
@@ -686,7 +786,8 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     const char *IDname,
     uint32_t    zsize,
     const char *logdir,
-    const char *IDlogdata_name
+    const char *IDlogdata_name,
+    const char *auxheaderfname
 )
 {
     // WAIT time. If no new frame during this time, save existing cube

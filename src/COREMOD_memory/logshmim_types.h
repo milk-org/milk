@@ -1,9 +1,9 @@
-/** @file logshmim_types.h 
- * 
+/** @file logshmim_types.h
+ *
  * data logging of shared memory image stream
  *
  */
- 
+
 #ifndef CLICORE_MEMORY_LOGSHMIM_TYPES_H
 #define CLICORE_MEMORY_LOGSHMIM_TYPES_H
 
@@ -19,6 +19,8 @@ typedef struct
     // 0 : Not saving ascii
     // 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
     // 2 : ???
+
+    char      fname_auxFITSheader[200];
 
     char      fnameascii[200];  // name of frame to be saved
     uint64_t *arrayindex;

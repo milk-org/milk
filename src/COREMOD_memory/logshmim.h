@@ -36,7 +36,8 @@ errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
     const char  *IDname,
     uint32_t     zsize,
     const char  *logdir,
-    const char  *IDlogdata_name
+    const char  *IDlogdata_name,
+    const char *auxheaderfname
 );
 
 #endif
