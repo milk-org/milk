@@ -230,6 +230,10 @@ imageID read_sharedmem_image(
         fflush(stdout);
 
         printf("%d keywords\n", (int) data.image[ID].md[0].NBkw);
+        for(int kw=0; kw<data.image[ID].md[0].NBkw; kw++)
+        {
+            printf("%3d %c\n", kw, data.image[ID].kw[kw].type);
+        }
     }
 
     if(data.MEM_MONITOR == 1)
