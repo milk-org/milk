@@ -96,62 +96,64 @@ INIT_MODULE_LIB(COREMOD_memory)
 
 static errno_t init_module_CLI()
 {
-	
-	data.MEM_MONITOR = 0; // 1 if memory monitor is on
-	
-	
-	clearall_addCLIcmd();
-	list_image_addCLIcmd();   
-	delete_image_addCLIcmd();
-	
-    //KEYWORDS                                                                                     
-	image_keyword_addCLIcmd();
 
-    // READ SHARED MEM IMAGE AND SIZE 
-	read_shmim_addCLIcmd();
+    data.MEM_MONITOR = 0; // 1 if memory monitor is on
+
+
+    clearall_addCLIcmd();
+    list_image_addCLIcmd();
+    delete_image_addCLIcmd();
+
+    //KEYWORDS
+    image_keyword_addCLIcmd();
+
+    // READ SHARED MEM IMAGE AND SIZE
+    read_shmim_addCLIcmd();
 
     // CREATE IMAGE
-	create_image_addCLIcmd();
+    create_image_addCLIcmd();
 
-    // COPY IMAGE 
-	image_copy_addCLIcmd();
+    // COPY IMAGE
+    image_copy_addCLIcmd();
 
-	list_variable_addCLIcmd();
-	
-	// FPS
-	fps_list_addCLIcmd();
-	fps_create_addCLIcmd();
-	
-	
-	
+    list_variable_addCLIcmd();
+
+    // FPS
+    fps_list_addCLIcmd();
+    fps_create_addCLIcmd();
+
+
+
     // TYPE CONVERSIONS TO AND FROM COMPLEX
-	image_complex_addCLIcmd();
-    
-    // SET IMAGE FLAGS / COUNTERS 
-	image_set_counters_addCLIcmd();
+    image_complex_addCLIcmd();
+
+    // SET IMAGE FLAGS / COUNTERS
+    image_set_counters_addCLIcmd();
 
     // MANAGE SEMAPHORES
-	stream_sem_addCLIcmd();
+    stream_sem_addCLIcmd();
 
-	// STREAMS
-	read_shmimall_addCLIcmd();
-	shmim_purge_addCLIcmd();	
-	shmim_setowner_addCLIcmd();
-	
-	stream_updateloop_addCLIcmd();
-	stream_delay_addCLIcmd();
-	saveall_addCLIcmd();
-	stream__TCP_addCLIcmd();
-	stream_pixmapdecode_addCLIcmd();
-	stream_poke_addCLIcmd();
-	stream_diff_addCLIcmd();
-	stream_paste_addCLIcmd();
-	stream_halfimdiff_addCLIcmd();
-	stream_ave_addCLIcmd();
-	stream_monitorlimits_addCLIcmd();
+    // STREAMS
+    read_shmimall_addCLIcmd();
+    shmim_purge_addCLIcmd();
+    shmim_setowner_addCLIcmd();
+
+    stream_updateloop_addCLIcmd();
+    stream_delay_addCLIcmd();
+    saveall_addCLIcmd();
+    stream__TCP_addCLIcmd();
+    stream_pixmapdecode_addCLIcmd();
+    stream_poke_addCLIcmd();
+    stream_diff_addCLIcmd();
+    stream_paste_addCLIcmd();
+    stream_halfimdiff_addCLIcmd();
+    stream_ave_addCLIcmd();
+    stream_monitorlimits_addCLIcmd();
 
     // DATA LOGGING
-	logshmim_addCLIcmd();
+    logshmim_addCLIcmd();
+
+	CLIADDCMD_COREMOD_memory__shmimstreamlog();
 
 
     // add atexit functions here

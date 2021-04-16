@@ -1,12 +1,9 @@
 /**
  * @file    loadmemstream.c
  * @brief   load memory stream
- * 
+ *
  * Scan for source location, load stream of FITS file
  */
-
-
-
 
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"

@@ -47,7 +47,7 @@ static long tret; // thread return value
 static char *instreamname;
 static char *logdir;
 static long *logcubesize;
-static char *auxFITSheaderfname;
+
 
 
 
@@ -61,7 +61,6 @@ static CLICMDARGDEF farg[] =
         (void **) &instreamname
     },
     {
-        // argument is not part of CLI call, FPFLAG ignored
         CLIARG_LONG, ".cubesize", "cube size", "10000",
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &logcubesize
@@ -70,12 +69,6 @@ static CLICMDARGDEF farg[] =
         CLIARG_STR, ".logdir", "log directory", "/media/data",
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &logdir
-    },
-    {
-        // argument is not part of CLI call, FPFLAG ignored
-        CLIARG_LONG, ".auxFITSheader", "auxillary FITS header", "",
-        CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
-        (void **) &auxFITSheaderfname
     }
 };
 
@@ -83,10 +76,10 @@ static CLICMDARGDEF farg[] =
 // flag CLICMDFLAG_FPS enabled FPS capability
 static CLICMDDATA CLIcmddata =
 {
-    "shmimstreamlog",
+    "shmimstreamlogT",
     "logs shared memory stream",
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
+    0,
     NULL
 };
 
@@ -102,23 +95,19 @@ static CLICMDDATA CLIcmddata =
 // adding INSERT_STD_PROCINFO statements enable processinfo support
 static errno_t compute_function()
 {
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
-
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    printf("Running comp func %s %s %ld\n", instreamname, logdir, *logcubesize);
 
     return RETURN_SUCCESS;
 }
 
 
 
-INSERT_STD_FPSCLIfunctions
+INSERT_STD_CLIfunction
 
 // Register function in CLI
 errno_t CLIADDCMD_COREMOD_memory__shmimstreamlog()
 {
-    INSERT_STD_FPSCLIREGISTERFUNC
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
