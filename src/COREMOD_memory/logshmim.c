@@ -390,7 +390,9 @@ void *save_fits_function(
     //fflush(stdout);
     if(tmsg->partial == 0) // full image
     {
-        save_fits(tmsg->iname, tmsg->fname);
+//        save_fits(tmsg->iname, tmsg->fname);
+        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+        saveFITS("tmpsavecube", tmsg->fname, 0, tmsg->fname_auxFITSheader);
     }
     else
     {
