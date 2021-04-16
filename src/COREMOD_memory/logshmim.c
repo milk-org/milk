@@ -163,8 +163,7 @@ errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
     const char  *IDname,
     uint32_t     zsize,
     const char  *logdir,
-    const char  *IDlogdata_name,
-    const char *auxheaderfname
+    const char  *IDlogdata_name
 );
 
 
@@ -252,8 +251,7 @@ static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
             data.cmdargtoken[1].val.string,
             data.cmdargtoken[2].val.numl,
             data.cmdargtoken[3].val.string,
-            data.cmdargtoken[4].val.string,
-            data.cmdargtoken[5].val.string
+            data.cmdargtoken[4].val.string
         );
         return CLICMD_SUCCESS;
     }
@@ -280,9 +278,9 @@ errno_t logshmim_addCLIcmd()
         __FILE__,
         COREMOD_MEMORY_sharedMem_2Dim_log__cli,
         "logs shared memory stream (run in current directory)",
-        "<shm image> <cubesize [long]> <logdir> <auxheaderfile>",
+        "<shm image> <cubesize [long]> <logdir>",
         "shmimstreamlog wfscamim 10000 /media/data \"\"",
-        "long COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name, const char *auxheaderfname)");
+        "long COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name");
 
     RegisterCLIcommand(
         "shmimslogstat",
@@ -786,8 +784,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     const char *IDname,
     uint32_t    zsize,
     const char *logdir,
-    const char *IDlogdata_name,
-    const char *auxheaderfname
+    const char *IDlogdata_name
 )
 {
     // WAIT time. If no new frame during this time, save existing cube
@@ -1469,6 +1466,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
             tmsg->arraycnt0 = array_cnt0_cp;
             tmsg->arraycnt1 = array_cnt1_cp;
             tmsg->arraytime = array_time_cp;
+            sprintf(tmsg->fname_auxFITSheader, "%s/%s.auxFITSheader.shm", data.shmdir, IDname);
             iret_savefits = pthread_create(&thread_savefits, NULL, save_fits_function,
                                            tmsg);
 
