@@ -392,7 +392,7 @@ void *save_fits_function(
     {
 //        save_fits(tmsg->iname, tmsg->fname);
         printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
-        saveFITS("tmpsavecube", tmsg->fname, 0, tmsg->fname_auxFITSheader);
+        saveFITS(tmsg->iname, tmsg->fname, 0, tmsg->fname_auxFITSheader);
     }
     else
     {
