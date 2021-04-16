@@ -90,7 +90,7 @@ static errno_t read_sharedmem_image__cli()
 
 errno_t read_shmim_addCLIcmd()
 {
-   RegisterCLIcommand(
+    RegisterCLIcommand(
         "readshmimsize",
         __FILE__,
         read_sharedmem_image_size__cli,
@@ -105,7 +105,7 @@ errno_t read_shmim_addCLIcmd()
         "read shared memory image",
         "<name>",
         "readshmim im1",
-        "read_sharedmem_image(const char *name)");    
+        "read_sharedmem_image(const char *name)");
 
     return RETURN_SUCCESS;
 }
@@ -228,6 +228,8 @@ imageID read_sharedmem_image(
         ID = image_ID(name);
         printf("read shared mem image success -> ID = %ld\n", ID);
         fflush(stdout);
+
+        printf("%d keywords\n", (int) data.image[ID].md[0].NBkw);
     }
 
     if(data.MEM_MONITOR == 1)
