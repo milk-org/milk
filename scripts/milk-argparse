@@ -345,7 +345,7 @@ done
 
 
 
-
+optactlist=( )
 NBoptact=0
 for MSopt in "${optactlist[@]}";do
   #echo "   input option   ${NBoptact} : $MSopt -> ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}"
