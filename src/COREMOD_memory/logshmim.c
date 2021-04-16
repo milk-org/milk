@@ -487,6 +487,7 @@ void *save_fits_function(
         memcpy((void *) ptr1, (void *) ptr0, framesize * tmsg->cubesize);
 
         //save_fits("tmpsavecube", tmsg->fname);
+        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
         saveFITS("tmpsavecube", tmsg->fname, 0, tmsg->fname_auxFITSheader);
 
 
