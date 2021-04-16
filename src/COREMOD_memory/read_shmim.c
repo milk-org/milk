@@ -230,9 +230,34 @@ imageID read_sharedmem_image(
         fflush(stdout);
 
         printf("%d keywords\n", (int) data.image[ID].md[0].NBkw);
-        for(int kw=0; kw<data.image[ID].md[0].NBkw; kw++)
+        for(int kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
         {
-            printf("%3d %c\n", kw, data.image[ID].kw[kw].type);
+            if(data.image[ID].kw[kw].type != 'N')
+            {
+                printf("%3d %c %16s  ",
+                       kw,
+                       data.image[ID].kw[kw].type,
+                       data.image[ID].kw[kw].name
+                      );
+
+                switch(data.image[ID].kw[kw].type)
+                {
+                    case 'S' : // string
+                        printf("%16s", data.image[ID].kw[kw].value.valstr);
+                        break;
+                    case 'L' : // string
+                        printf("%16ld", data.image[ID].kw[kw].value.numl);
+                        break;
+                    case 'D' : // string
+                        printf("%16f", data.image[ID].kw[kw].value.numf);
+                        break;
+                    default : // unknown
+                        printf("== DATA TYPE NOT RECOGNIZED --");
+                    break;
+                }
+
+                printf("   %s\n", data.image[ID].kw[kw].comment);
+            }
         }
     }
 
