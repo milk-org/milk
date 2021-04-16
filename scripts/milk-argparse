@@ -195,6 +195,7 @@ printHELPshort ()
 # =================================================
 function checkallprerequisites()
 {
+set +o nounset
 for cmd in ${RequiredCommands[@]}; do
   checkCommand $cmd
 done
@@ -206,6 +207,7 @@ done
 for dname in ${RequiredDirs[@]}; do
   checkDir $dname
 done
+set -o nounset
 }
 
 function checkallprerequisitesExit()
