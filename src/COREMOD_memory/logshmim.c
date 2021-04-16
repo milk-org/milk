@@ -244,7 +244,6 @@ static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
             + CLI_checkarg(1, 3)
             + CLI_checkarg(2, CLIARG_LONG)
             + CLI_checkarg(3, 3)
-            + CLI_checkarg(5, 3)
             == 0)
     {
         COREMOD_MEMORY_sharedMem_2Dim_log(
