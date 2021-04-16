@@ -55,6 +55,7 @@ add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CFITSIO cfitsio)
 if(${CFITSIO_FOUND})
+message("Found cfitsio")
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
   target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
@@ -62,6 +63,8 @@ endif()
 
 target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${LIBNAME} PRIVATE m ${CFITSIO_LIBRARIES})
+
+message(" CFITSIO_LIBRARIES : ${CFITSIO_LIBRARIES}")
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
