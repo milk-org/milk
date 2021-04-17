@@ -24,7 +24,7 @@ typedef const char *restrict  CONST_WORD;
 #define CLIARG_HIDDEN_DEFAULT   CLICMDARG_FLAG_NOCLI,FPTYPE_AUTO,FPFLAG_DEFAULT_INPUT
 
 #define CLICMD_FIELDS_DEFAULTS  __FILE__,sizeof(farg)/sizeof(CLICMDARGDEF),farg,CLICMDFLAG_FPS,NULL
-#define CLICMD_FIELDS_NOFPS     __FILE__,sizeof(farg)/sizeof(CLICMDARGDEF),farg,CLICMDFLAG_FPS,NULL
+#define CLICMD_FIELDS_NOFPS     __FILE__,sizeof(farg)/sizeof(CLICMDARGDEF),farg,0,NULL
 
 
 // binding between variables and function args/params

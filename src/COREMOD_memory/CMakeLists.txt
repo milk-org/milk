@@ -23,6 +23,10 @@ set(SOURCEFILES
     image_copy.c
     image_ID.c
     image_keyword.c
+    image_keyword_addD.c
+    image_keyword_addL.c
+    image_keyword_addS.c
+    image_keyword_list.c
     image_set_counters.c
     list_image.c
     list_variable.c
@@ -65,6 +69,10 @@ set(INCLUDEFILES
     image_copy.h
     image_ID.h
     image_keyword.h
+    image_keyword_addD.h
+    image_keyword_addL.h
+    image_keyword_addS.h
+    image_keyword_list.h
     image_set_counters.h
     list_image.h
     list_variable.h
