@@ -375,7 +375,7 @@ uint32_t RegisterCLIcommand(
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
 
-    strcpy(data.cmd[data.NBcmd].modulesrc, CLImodulesrc);
+    strcpy(data.cmd[data.NBcmd].srcfile, CLImodulesrc);
     data.cmd[data.NBcmd].fp = CLIfptr;
     strcpy(data.cmd[data.NBcmd].info,    CLIinfo);
     strcpy(data.cmd[data.NBcmd].syntax,  CLIsyntax);
@@ -433,7 +433,7 @@ uint32_t RegisterCLIcmd(
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
 
-    strcpy(data.cmd[data.NBcmd].modulesrc, CLIcmddata.sourcefilename);
+    strcpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename);
     data.cmd[data.NBcmd].fp = CLIfptr;
     strcpy(data.cmd[data.NBcmd].info,    CLIcmddata.description);
 

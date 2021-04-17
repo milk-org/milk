@@ -234,6 +234,7 @@ typedef struct
 #define STRINGMAXLEN_CMD_SYNTAX    1000
 #define STRINGMAXLEN_CMD_EXAMPLE   1000
 #define STRINGMAXLEN_CMD_CCALL     1000
+#define STRINGMAXLEN_CMD_SRCFILE   1000
 typedef struct
 {
     char     key[STRINGMAXLEN_CMD_KEY];           // command keyword
@@ -243,7 +244,7 @@ typedef struct
     // index of module to which command belongs
     // set to -1 if does not belong to any module
     long     moduleindex;
-    char     modulesrc[200];     // module source filename
+    char     srcfile[STRINGMAXLEN_CMD_SRCFILE];     // module source filename
 
     // command function pointer
     errno_t (* fp)();
