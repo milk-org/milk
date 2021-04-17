@@ -21,6 +21,7 @@ set(SOURCEFILES
     image_checksize.c
     image_complex.c
     image_copy.c
+    image_copy_shm.c
     image_ID.c
     image_keyword.c
     image_keyword_addD.c
@@ -32,6 +33,7 @@ set(SOURCEFILES
     list_variable.c
     logshmim.c
     read_shmim.c
+    read_shmim_size.c
     read_shmimall.c
     saveall.c
     shmim_purge.c
@@ -67,6 +69,7 @@ set(INCLUDEFILES
     image_checksize.h
     image_complex.h
     image_copy.h
+    image_copy_shm.h
     image_ID.h
     image_keyword.h
     image_keyword_addD.h
@@ -78,6 +81,7 @@ set(INCLUDEFILES
     list_variable.h
     logshmim.h
     read_shmim.h
+    read_shmim_size.h
     read_shmimall.h
     saveall.h
     shmim_purge.h
