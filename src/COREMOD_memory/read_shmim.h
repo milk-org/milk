@@ -3,18 +3,10 @@
  */
 
 
-#ifndef _READ_SHMIM_H
-#define _READ_SHMIM_H
+#ifndef COREMOD_MEMORY_READ_SHMIM_H
+#define COREMOD_MEMORY_READ_SHMIM_H
 
-
-
-errno_t read_shmim_addCLIcmd();
-
-
-imageID    read_sharedmem_image_size(
-    const char *name,
-    const char *fname
-);
+errno_t CLIADDCMD_COREMOD_memory__read_sharedmem_image();
 
 imageID    read_sharedmem_image(
     const char *name

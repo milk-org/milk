@@ -41,6 +41,7 @@
 #include "image_ID.h"
 #include "image_complex.h"
 #include "image_copy.h"
+#include "image_copy_shm.h"
 
 #include "image_keyword.h"
 #include "image_keyword_list.h"
@@ -57,8 +58,11 @@
 #include "list_image.h"
 #include "list_variable.h"
 #include "logshmim.h"
+
 #include "read_shmim.h"
+#include "read_shmim_size.h"
 #include "read_shmimall.h"
+
 #include "saveall.h"
 #include "shmim_purge.h"
 #include "shmim_setowner.h"
@@ -118,13 +122,16 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_memory__image_keyword_addS();
 
     // READ SHARED MEM IMAGE AND SIZE
-    read_shmim_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__read_sharedmem_image();
+    CLIADDCMD_COREMOD_memory__read_sharedmem_image_size();
+    read_shmimall_addCLIcmd();
 
     // CREATE IMAGE
     create_image_addCLIcmd();
 
     // COPY IMAGE
     image_copy_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__image_copy_shm();
 
     list_variable_addCLIcmd();
 
@@ -144,7 +151,6 @@ static errno_t init_module_CLI()
     stream_sem_addCLIcmd();
 
     // STREAMS
-    read_shmimall_addCLIcmd();
     shmim_purge_addCLIcmd();
     shmim_setowner_addCLIcmd();
 

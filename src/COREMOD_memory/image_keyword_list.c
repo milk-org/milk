@@ -20,7 +20,7 @@ static CLICMDDATA CLIcmddata =
 };
 
 
-static errno_t image_keywords_list(
+errno_t image_keywords_list(
     IMGID img
 )
 {
@@ -33,19 +33,19 @@ static errno_t image_keywords_list(
         switch(img.im->kw[kw].type)
         {
             case 'L':
-                printf("%18s  %20ld %s\n", img.im->kw[kw].name,
+                printf("[L] %-8s= %20ld / %s\n", img.im->kw[kw].name,
                        img.im->kw[kw].value.numl, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
 
             case 'D':
-                printf("%18s  %20g %s\n", img.im->kw[kw].name,
+                printf("[D] %-8s= %20g / %s\n", img.im->kw[kw].name,
                        img.im->kw[kw].value.numf, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
 
             case 'S':
-                printf("%18s  %20s %s\n", img.im->kw[kw].name,
+                printf("[S] %-8s= '%18s' / %s\n", img.im->kw[kw].name,
                        img.im->kw[kw].value.valstr, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
@@ -55,7 +55,7 @@ static errno_t image_keywords_list(
         }
     }
 
-    printf("%d keywords\n", kwcnt);
+    printf("%d / %d keyword(s)\n", kwcnt, NBkw);
 
     return RETURN_SUCCESS;
 }
