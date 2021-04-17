@@ -27,7 +27,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     data.FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
-    DEBUG_TRACEPOINT("calling CLI_checkarg");
+    DEBUG_TRACEPOINT("pre-processing CLI arg");
 
     int argpreprocess = 1; // by default, pre-process argument
     switch(data.cmdargtoken[1].type)
@@ -39,8 +39,6 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             argpreprocess = 0;
             break;
     }
-
-//    if(CLI_checkarg(1, CLIARG_STR) == 0)
 
     if(argpreprocess == 1)
     {

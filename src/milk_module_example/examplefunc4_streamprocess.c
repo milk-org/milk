@@ -83,7 +83,7 @@ INSERT_STD_FPSCLIfunctions
 // Register function in CLI
 errno_t CLIADDCMD_milk_module_example__streamprocess()
 {
-    INSERT_STD_FPSCLIREGISTERFUNC
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
