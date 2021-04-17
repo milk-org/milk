@@ -543,6 +543,7 @@ errno_t help_command(
 
             //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
             printf("\texample> %s\n", data.cmd[cmdi].example);
+            printf("\tsrc: %s\n", data.cmd[cmdi].srcfile);
 
             printf("\n");
             checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_FPS, "FPS support (..fps 0/1)");
