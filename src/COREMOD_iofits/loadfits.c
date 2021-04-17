@@ -578,13 +578,7 @@ static errno_t compute_function()
 
 
 
-//INSERT_STD_FPSCLIfunctions
-
-INSERT_STD_FPSCONFfunction
-
-INSERT_STD_FPSRUNfunction
-
-INSERT_STD_FPSCLIfunction
+INSERT_STD_FPSCLIfunctions
 
 
 // Register function in CLI
@@ -592,7 +586,7 @@ errno_t CLIADDCMD_COREMOD_iofits__loadfits()
 {
     //INSERT_STD_FPSCLIREGISTERFUNC
 
-    int cmdi = RegisterCLIcmd(CLIcmddata, FPSCLIfunction);
+    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
