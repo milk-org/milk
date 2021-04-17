@@ -469,7 +469,7 @@ INSERT_STD_FPSCLIfunctions
 // Register function in CLI
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS()
 {
-    INSERT_STD_FPSCLIREGISTERFUNC
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }

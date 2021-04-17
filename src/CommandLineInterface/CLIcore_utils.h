@@ -232,7 +232,7 @@ static errno_t FPSRUNfunction()\
  * See code in function_parameter.h for detailed rules.
  */
 #define INSERT_STD_FPSCLIfunction \
-static errno_t FPSCLIfunction(void)\
+static errno_t CLIfunction(void)\
 {\
 if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_FPS )\
 {\
@@ -267,12 +267,6 @@ INSERT_STD_FPSCLIfunction
 #define INSERT_STD_CLIREGISTERFUNC \
 { \
     int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction); \
-    CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings; \
-}
-
-#define INSERT_STD_FPSCLIREGISTERFUNC \
-{ \
-    int cmdi = RegisterCLIcmd(CLIcmddata, FPSCLIfunction); \
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings; \
 }
 

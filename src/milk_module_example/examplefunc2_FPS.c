@@ -92,7 +92,7 @@ INSERT_STD_FPSCLIfunctions
 // Register function in CLI
 errno_t CLIADDCMD_milk_module_example__simplefunc_FPS()
 {
-    INSERT_STD_FPSCLIREGISTERFUNC
+    INSERT_STD_CLIREGISTERFUNC
 
     // Optional custom settings for this function
     // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;
