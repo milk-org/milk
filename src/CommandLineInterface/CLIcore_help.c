@@ -545,73 +545,74 @@ errno_t help_command(
             printf("\texample> %s\n", data.cmd[cmdi].example);
             printf("\tsrc: %s\n", data.cmd[cmdi].srcfile);
 
-            printf("\n");
-            checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_FPS, "FPS support (..fps 0/1)");
-            if(checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_PROCINFO,
-                           "processinfo support (..procinfo 0/1)") == 1)
+            int FPSsupport = checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_FPS,
+                                         "FPS support");
+            if(FPSsupport == 1)
             {
-                printf("        loopcntMax         : %ld\n",
-                       data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
-                printf("      Triggering:\n");
-
-                printf("        triggermode        : %d ",
-                       data.cmd[cmdi].cmdsettings.triggermode);
-                switch(data.cmd[cmdi].cmdsettings.triggermode)
+                if(checkFlag64(data.cmd[cmdi].cmdsettings.flags, CLICMDFLAG_PROCINFO,
+                               "processinfo support (..procinfo 0/1)") == 1)
                 {
-                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                        printf("IMMEDIATE");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_CNT0:
-                        printf("CNT0");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_CNT1:
-                        printf("CNT1");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                        printf("SEMAPHORE");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_DELAY:
-                        printf("DELAY");
-                        break;
-                    default:
-                        printf("unknown");
-                        break;
+                    printf("        loopcntMax         : %ld\n",
+                           data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
+                    printf("      Triggering:\n");
+
+                    printf("        triggermode        : %d ",
+                           data.cmd[cmdi].cmdsettings.triggermode);
+                    switch(data.cmd[cmdi].cmdsettings.triggermode)
+                    {
+                        case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                            printf("IMMEDIATE");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_CNT0:
+                            printf("CNT0");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_CNT1:
+                            printf("CNT1");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                            printf("SEMAPHORE");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_DELAY:
+                            printf("DELAY");
+                            break;
+                        default:
+                            printf("unknown");
+                            break;
+                    }
+                    printf("\n");
+
+                    printf("        triggerstreamname  : %s\n",
+                           data.cmd[cmdi].cmdsettings.triggerstreamname);
+
+                    printf("        triggerdelay       : %lld.%09ld\n",
+                           (long long)data.cmd[cmdi].cmdsettings.triggerdelay.tv_sec,
+                           data.cmd[cmdi].cmdsettings.triggerdelay.tv_nsec);
+
+                    printf("        triggertimeout     : %lld.%09ld\n",
+                           (long long)data.cmd[cmdi].cmdsettings.triggertimeout.tv_sec,
+                           data.cmd[cmdi].cmdsettings.triggertimeout.tv_nsec);
+
+                    printf("      Resources:\n");
+                    printf("        RT_priority        : %d\n",
+
+                           data.cmd[cmdi].cmdsettings. RT_priority);
+
+                    printf("        CPUmask            : ");
+
+                    int nproc = sysconf(_SC_NPROCESSORS_ONLN);
+                    for(int cpu = 0; cpu < nproc; cpu++)
+                    {
+                        printf(" %d", CPU_ISSET(cpu, &data.cmd[cmdi].cmdsettings.CPUmask));
+                    }
+                    printf("\n");
+                    printf("        MeasureTiming      : %d\n",
+                           data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
                 }
-                printf("\n");
-
-                printf("        triggerstreamname  : %s\n",
-                       data.cmd[cmdi].cmdsettings.triggerstreamname);
-
-                printf("        triggerdelay       : %lld.%09ld\n",
-                       (long long)data.cmd[cmdi].cmdsettings.triggerdelay.tv_sec,
-                       data.cmd[cmdi].cmdsettings.triggerdelay.tv_nsec);
-
-                printf("        triggertimeout     : %lld.%09ld\n",
-                       (long long)data.cmd[cmdi].cmdsettings.triggertimeout.tv_sec,
-                       data.cmd[cmdi].cmdsettings.triggertimeout.tv_nsec);
-
-                printf("      Resources:\n");
-                printf("        RT_priority        : %d\n",
-
-                       data.cmd[cmdi].cmdsettings. RT_priority);
-
-                printf("        CPUmask            : ");
-
-                int nproc = sysconf(_SC_NPROCESSORS_ONLN);
-                for(int cpu = 0; cpu < nproc; cpu++)
-                {
-                    printf(" %d", CPU_ISSET(cpu, &data.cmd[cmdi].cmdsettings.CPUmask));
-                }
-                printf("\n");
-                printf("        MeasureTiming      : %d\n",
-                       data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
             }
-            printf("\n");
-
 
 
             printf("\n");
-            printf("    CLI call arguments:\n");
+            printf("  CLI call arguments:\n");
             //printf("  CLI#       tagname             Value         description\n");
 
             int CLIargcnt = 0;
@@ -658,15 +659,16 @@ errno_t help_command(
                 }
             }
 
-            printf("\n");
-            printf("    non-CLI call arguments:\n");
+            //printf("\n");
+            //printf("    non-CLI call arguments:\n");
 
             CLIargcnt = 0;
             for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
             {
                 if(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI)
                 {
-                    printf("        ");
+                    //printf("        ");
+                    printf("(hidden)");
                     CLIargcnt++;
 
 

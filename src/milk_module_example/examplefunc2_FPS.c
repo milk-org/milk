@@ -37,9 +37,7 @@ static CLICMDDATA CLIcmddata =
 {
     "simplefuncFPS",
     "compute total of image using FPS",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 
@@ -70,7 +68,7 @@ static errno_t example_compute_2Dimage_total(
 }
 
 
-// adding INSERT_STD_PROCINFO statements enable processinfo support
+// adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()
 {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

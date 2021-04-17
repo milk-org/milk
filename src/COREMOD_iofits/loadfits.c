@@ -441,7 +441,7 @@ imageID load_fits(
             }
 
             bzero = 0.0;
-            for(uint64_t ii = 0; ii < nelements; ii++)
+            for(int64_t ii = 0; ii < nelements; ii++)
             {
                 data.image[ID].array.SI32[ii] = larray[ii] * bscale + bzero;
             }

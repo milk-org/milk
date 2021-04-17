@@ -10,6 +10,11 @@
 #include "CommandLineInterface/CLIcore.h"
 
 
+// set function as FPS capable
+#define FPSFUNC
+
+
+
 // Local variables pointers
 // Within this translation unit, these point to the variables values
 static char *inimname;
@@ -27,12 +32,12 @@ static CLICMDARGDEF farg[] =
 {
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &inimname
     },
-    {   // argument is not part of CLI call, FPFLAG ignored
+    {   // hidden argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
-        CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_HIDDEN_DEFAULT,
         (void **) &scoeff
     }
 };
@@ -43,9 +48,7 @@ static CLICMDDATA CLIcmddata =
 {
     "simplefunc",             // keyword to call function in CLI
     "compute total of image", // description of what the function does
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    0,
-    NULL
+    CLICMD_FIELDS_NOFPS
 };
 
 
