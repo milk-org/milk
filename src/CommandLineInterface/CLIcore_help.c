@@ -529,6 +529,7 @@ errno_t help_command(
 {
     int cOK = 0;
 
+
     for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
     {
         if(!strcmp(cmdkey, data.cmd[cmdi].key))

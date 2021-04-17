@@ -151,7 +151,7 @@ typedef struct
 
 
 
-int CLI_checkarg0(int argnum, int argtype, int errmsg);
+//int CLI_checkarg0(int argnum, int argtype, int errmsg);
 
 int CLI_checkarg(int argnum, int argtype);
 
