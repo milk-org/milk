@@ -27,8 +27,6 @@ static errno_t init_module_CLI()
 {
 	COREMOD_iofits_data.FITSIO_status = 0;
 
-	printf("============ INIT FUNCTION =============\n");
-
 	CLIADDCMD_COREMOD_iofits__loadfits();
 	CLIADDCMD_COREMOD_iofits__saveFITS();
 
