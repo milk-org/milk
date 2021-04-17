@@ -9,6 +9,20 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ==========================================
 // forward declarations
 // ==========================================
@@ -97,9 +111,9 @@ errno_t image_keyword_addCLIcmd()
         "list image keywords",
         "<imname>",
         "imlistkw im1",
-        "long image_list_keywords(const char *IDname)");	
-	
-	return RETURN_SUCCESS;
+        "long image_list_keywords(const char *IDname)");
+
+    return RETURN_SUCCESS;
 }
 
 

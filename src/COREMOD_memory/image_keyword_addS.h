@@ -1,0 +1,6 @@
+#ifndef COREMOD_MEMORY_IMAGE_KEYWORD_ADD_H
+#define COREMOD_MEMORY_IMAGE_KEYWORD_ADD_H
+
+errno_t CLIADDCMD_COREMOD_memory__image_keyword_add();
+
+#endif
