@@ -18,7 +18,7 @@ static char *inimname;
 static CLICMDARGDEF farg[] =
 {
     {
-        CLIARG_IMG,  ".in_name",   "input stream", "ims1",
+        CLIARG_IMG,  ".in_name", "input stream", "ims1",
         CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
         (void **) &inimname
     }

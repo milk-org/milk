@@ -404,7 +404,7 @@ errno_t CLI_checkarg_array(
     int nbarg
 )
 {
-//    printf("%d args in list\n", nbarg);
+    argcheck_process_flag = 1; // initialize arg check
 
 //    printf("arg 0: %s\n", data.cmdargtoken[1].val.string);
     int argindexmatch = -1;
@@ -426,6 +426,7 @@ errno_t CLI_checkarg_array(
         }
 
         DEBUG_TRACEPOINT("calling CLI_checkarg");
+        printf("CLI check arg 2 %d type %d\n", argindexmatch, fpscliarg[argindexmatch].type);
         if(CLI_checkarg(2, fpscliarg[argindexmatch].type) == 0)
         {
             int cmdi = data.cmdindex;
