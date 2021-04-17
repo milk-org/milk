@@ -27,19 +27,23 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     data.FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
-    if(CLI_checkarg(1, CLIARG_STR) == 0)
+    DEBUG_TRACEPOINT("calling CLI_checkarg");
+
+    int argpreprocess = 1; // by default, pre-process argument
+    switch(data.cmdargtoken[1].type)
     {
+        case CLIARG_FLOAT:
+            argpreprocess = 0;
+            break;
+        case CLIARG_LONG:
+            argpreprocess = 0;
+            break;
+    }
 
-        // if "?", call help
-        // note: this may be redundant with checkarg function
-        /*if(strcmp(data.cmdargtoken[1].val.string, "?") == 0)
-        {
-            help_command(data.cmdargtoken[0].val.string);
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
-            return RETURN_SUCCESS;
-        }*/
+//    if(CLI_checkarg(1, CLIARG_STR) == 0)
 
-
+    if(argpreprocess == 1)
+    {
         // modify function attribute
 
         /*        if(strcmp(data.cmdargtoken[1].val.string, "..fps") == 0)
