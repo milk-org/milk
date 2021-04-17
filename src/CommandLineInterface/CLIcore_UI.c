@@ -68,9 +68,7 @@ errno_t runCLI_prompt(
     char *prompt
 )
 {
-    int color_cyan = 36;
-
-
+    //int color_cyan = 36;
 
 
     if(strlen(promptstring) > 0)

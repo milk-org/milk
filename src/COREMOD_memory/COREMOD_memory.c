@@ -41,7 +41,13 @@
 #include "image_ID.h"
 #include "image_complex.h"
 #include "image_copy.h"
+
 #include "image_keyword.h"
+#include "image_keyword_list.h"
+#include "image_keyword_addD.h"
+#include "image_keyword_addL.h"
+#include "image_keyword_addS.h"
+
 #include "image_set_counters.h"
 
 #include "fps_ID.h"
@@ -106,6 +112,10 @@ static errno_t init_module_CLI()
 
     //KEYWORDS
     image_keyword_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__image_keyword_list();
+    CLIADDCMD_COREMOD_memory__image_keyword_addD();
+    CLIADDCMD_COREMOD_memory__image_keyword_addL();
+    CLIADDCMD_COREMOD_memory__image_keyword_addS();
 
     // READ SHARED MEM IMAGE AND SIZE
     read_shmim_addCLIcmd();
