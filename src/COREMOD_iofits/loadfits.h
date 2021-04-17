@@ -6,8 +6,7 @@
 #ifndef MILK_COREMOD_IOFIT_LOADFITS_H
 #define MILK_COREMOD_IOFIT_LOADFITS_H
 
-errno_t CLIADDCMD_loadfits();
-
+errno_t CLIADDCMD_COREMOD_iofits__loadfits();
 
 imageID load_fits(
     const char *restrict file_name,

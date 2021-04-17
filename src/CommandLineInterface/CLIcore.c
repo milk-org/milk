@@ -235,6 +235,7 @@ static errno_t load_module__cli()
 
 static errno_t CLIcore__load_module_as__cli()
 {
+    DEBUG_TRACEPOINT("calling CLI_checkarg");
     if(0
             + CLI_checkarg(1, CLIARG_STR)
             + CLI_checkarg(2, CLIARG_STR)
@@ -306,6 +307,7 @@ errno_t milk_usleep__cli()
 
 errno_t functionparameter_CTRLscreen__cli()
 {
+    DEBUG_TRACEPOINT("calling CLI_checkarg");
     if(
         (CLI_checkarg(1, CLIARG_LONG) == 0) &&
         (CLI_checkarg(2, CLIARG_STR) == 0) &&
@@ -328,6 +330,7 @@ errno_t functionparameter_CTRLscreen__cli()
 
 errno_t function_parameter_structure_load__cli()
 {
+    DEBUG_TRACEPOINT("calling CLI_checkarg");
     if(CLI_checkarg(1, CLIARG_STR) == 0)
     {
         function_parameter_structure_load(
@@ -815,6 +818,7 @@ errno_t runCLI(
                     return EXIT_FAILURE;
                 }
             }
+            DEBUG_TRACEPOINT(" ");
 
             blockCLIinput = 0;
 
@@ -859,9 +863,11 @@ errno_t runCLI(
                 }
             }
 
+
             if(blockCLIinput == 0)  // revert to default mode
                 if(FD_ISSET(fileno(stdin), &cli_fdin_set))
                 {
+                    DEBUG_TRACEPOINT("readline callback");
                     rl_callback_read_char();
                 }
         }
