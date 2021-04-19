@@ -233,7 +233,7 @@ imageID copy_image_ID(
 
     if(IDout == -1)
     {
-        create_image_ID(newname, naxis, size, datatype, shared, data.NBKEWORD_DFT);
+        create_image_ID(newname, naxis, size, datatype, shared, data.NBKEYWORD_DFT);
         IDout = image_ID(newname);
     }
     else
