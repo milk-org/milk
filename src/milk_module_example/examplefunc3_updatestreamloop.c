@@ -18,8 +18,8 @@ static char *inimname;
 static CLICMDARGDEF farg[] =
 {
     {
-        CLIARG_IMG,  ".in_name", "input stream", "ims1",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_IMG,  ".in_sname", "input stream", "ims1",
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &inimname
     }
 };
@@ -28,9 +28,7 @@ static CLICMDDATA CLIcmddata =
 {
     "streamupdate",
     "update stream",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 

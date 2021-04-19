@@ -56,18 +56,18 @@ MILK_QUIET=1 milk << EOF
 readshmim ${streamname}
 
 # Activate processinfo
-modex.streamupdate ..procinfo 1
+shmimpoke ..procinfo 1
 
 # Run computation N times
-modex.streamupdate ..loopcntMax ${NBpoke}
+shmimpoke ..loopcntMax ${NBpoke}
 
 # Change triggermode to 4 : DELAY
-modex.streamupdate ..triggermode 4
+shmimpoke ..triggermode 4
 
 # set delay
-modex.streamupdate ..triggerdelay ${pokedelay}
+shmimpoke ..triggerdelay ${pokedelay}
 
-modex.streamupdate ${streamname}
+shmimpoke ${streamname}
 listim
 exitCLI
 EOF
