@@ -100,6 +100,14 @@ set(INCLUDEFILES
     variable_ID.h
    )
 
+# list scripts that should be installed on system
+set(SCRIPTFILES
+  scripts/milk-rmshmim
+	scripts/milk-shmimpurge
+	scripts/milk-shmimpoke
+)
+
+
 
 # DEFAULT SETTINGS
 # Do not change unless needed
@@ -125,9 +133,4 @@ target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES})
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
-
-
-install(PROGRAMS
-			scripts/milk-rmshmim
-			scripts/milk-shmimpurge
-		DESTINATION bin)
+install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)

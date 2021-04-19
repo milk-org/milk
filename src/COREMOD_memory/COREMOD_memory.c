@@ -159,7 +159,9 @@ static errno_t init_module_CLI()
     saveall_addCLIcmd();
     stream__TCP_addCLIcmd();
     stream_pixmapdecode_addCLIcmd();
-    stream_poke_addCLIcmd();
+
+    CLIADDCMD_COREMOD_memory__stream_poke();
+
     stream_diff_addCLIcmd();
     stream_paste_addCLIcmd();
     stream_halfimdiff_addCLIcmd();
@@ -169,7 +171,7 @@ static errno_t init_module_CLI()
     // DATA LOGGING
     logshmim_addCLIcmd();
 
-	CLIADDCMD_COREMOD_memory__shmimstreamlog();
+    CLIADDCMD_COREMOD_memory__shmimstreamlog();
 
 
     // add atexit functions here
