@@ -30,6 +30,7 @@ errno_t image_keywords_list(
     int kwcnt = 0;
     for(int kw = 0; kw < NBkw; kw++)
     {
+        char tmpkwvalstr[81];
         switch(img.im->kw[kw].type)
         {
             case 'L':
@@ -45,8 +46,9 @@ errno_t image_keywords_list(
                 break;
 
             case 'S':
-                printf("[S] %-8s= '%18s' / %s\n", img.im->kw[kw].name,
-                       img.im->kw[kw].value.valstr, img.im->kw[kw].comment);
+                sprintf(tmpkwvalstr, "'%s'", img.im->kw[kw].value.valstr);
+                printf("[S] %-8s= %-20s / %s\n", img.im->kw[kw].name,
+                       tmpkwvalstr, img.im->kw[kw].comment);
                 kwcnt++;
                 break;
 

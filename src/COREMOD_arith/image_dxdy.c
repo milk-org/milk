@@ -30,20 +30,20 @@ imageID arith_image_dx(
         PRINT_ERROR("Function only supports 2-D images\n");
         abort();
     }
-    
+
     assert(naxis != 0);
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-		PRINT_ERROR("malloc error. size %d", (int) naxis);
-		abort();
-	}
-    
+        PRINT_ERROR("malloc error. size %d", (int) naxis);
+        abort();
+    }
+
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
     IDout = create_image_ID(IDout_name, naxis, naxes, datatype, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
     {
         for(uint32_t ii = 1; ii < naxes[0] - 1; ii++)
@@ -85,20 +85,20 @@ imageID arith_image_dy(
         PRINT_ERROR("Function only supports 2-D images\n");
         abort();
     }
-    
+
     assert(naxis != 0);
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-		PRINT_ERROR("malloc error. size %d", (int) naxis);
-		abort();
-	}
-    
+        PRINT_ERROR("malloc error. size %d", (int) naxis);
+        abort();
+    }
+
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
     IDout = create_image_ID(IDout_name, naxis, naxes, datatype, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     for(uint32_t ii = 0; ii < naxes[0]; ii++)
     {
         for(uint32_t jj = 1; jj < naxes[1] - 1; jj++)

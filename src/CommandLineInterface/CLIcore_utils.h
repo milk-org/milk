@@ -8,7 +8,7 @@
 #define CLICORE_UTILS_H
 
 #ifdef __cplusplus
-typedef const char * CONST_WORD;
+typedef const char *CONST_WORD;
 #else
 typedef const char *restrict  CONST_WORD;
 #endif
@@ -296,6 +296,25 @@ static inline IMGID makeIMGID(
 
     return img;
 }
+
+
+static inline IMGID makesetIMGID(
+    CONST_WORD name,
+    imageID ID
+)
+{
+    IMGID img;
+
+    img.ID = ID;
+    strcpy(img.name, name);
+
+    img.im = &data.image[ID];
+    img.md = &data.image[ID].md[0];
+    img.createcnt = data.image[ID].createcnt;
+
+    return img;
+}
+
 
 
 static inline imageID resolveIMGID(

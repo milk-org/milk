@@ -10,11 +10,6 @@
 #include "CommandLineInterface/CLIcore.h"
 
 
-// set function as FPS capable
-#define FPSFUNC
-
-
-
 // Local variables pointers
 // Within this translation unit, these point to the variables values
 static char *inimname;

@@ -32,12 +32,12 @@ static CLICMDARGDEF farg[] =
 {
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &inimname
     },
     {
         CLIARG_STR, ".out_fname", "output FITS file name", "out.fits",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &outfname
     },
     {
@@ -48,12 +48,12 @@ static CLICMDARGDEF farg[] =
         "16/(20) 32/(40) 64/(80) : (un)sig int\n"
         "-32/-64 : 32/64-b flt\n"
         , "0",
-        CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_HIDDEN_DEFAULT,
         (void **) &outbitpix
     },
     {
         CLIARG_STR, ".in_header", "header import from this FITS file", "",
-        CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_HIDDEN_DEFAULT,
         (void **) &inheader
     }
 };
@@ -64,9 +64,7 @@ static CLICMDDATA CLIcmddata =
 {
     "saveFITS",
     "save image as FITS",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 
@@ -109,19 +107,17 @@ errno_t saveFITS(
     WRITE_FILENAME(savename, "%s", fnametmp);
 
 
-
-    imageID IDin = image_ID(inputimname);
-    if(IDin == -1)
+    IMGID imgin = makeIMGID(inputimname);
+    resolveIMGID(&imgin, ERRMODE_WARN);
+    if(imgin.ID == -1)
     {
         PRINT_WARNING("Image %s does not exist in memory - cannot save to FITS",
                       inputimname);
         return RETURN_SUCCESS;
     }
 
-
     // data types
-
-    uint8_t datatype = data.image[IDin].md[0].datatype;
+    uint8_t datatype = imgin.md->datatype;
     int FITSIOdatatype = TFLOAT;
     int bitpix = FLOAT_IMG;
 
@@ -133,65 +129,65 @@ errno_t saveFITS(
         case _DATATYPE_UINT8:
             FITSIOdatatype = TBYTE;
             bitpix = BYTE_IMG;
-            datainptr = (char *) data.image[IDin].array.UI8;
+            datainptr = (char *) imgin.im->array.UI8;
             break;
 
         case _DATATYPE_INT8:
             FITSIOdatatype = TSBYTE;
             bitpix = SBYTE_IMG;
-            datainptr = (char *) data.image[IDin].array.SI8;
+            datainptr = (char *) imgin.im->array.SI8;
             break;
 
 
         case _DATATYPE_UINT16:
             FITSIOdatatype = TUSHORT;
             bitpix = SHORT_IMG;
-            datainptr = (char *) data.image[IDin].array.UI16;
+            datainptr = (char *) imgin.im->array.UI16;
             break;
 
         case _DATATYPE_INT16:
             FITSIOdatatype = TUSHORT;
             bitpix = SHORT_IMG;
-            datainptr = (char *) data.image[IDin].array.SI16;
+            datainptr = (char *) imgin.im->array.SI16;
             break;
 
 
         case _DATATYPE_UINT32:
             FITSIOdatatype = TUINT;
             bitpix = ULONG_IMG;
-            datainptr = (char *) data.image[IDin].array.UI32;
+            datainptr = (char *) imgin.im->array.UI32;
             break;
 
         case _DATATYPE_INT32:
             FITSIOdatatype = TINT;
             bitpix = LONG_IMG;
-            datainptr = (char *) data.image[IDin].array.SI32;
+            datainptr = (char *) imgin.im->array.SI32;
             break;
 
 
         case _DATATYPE_UINT64:
             FITSIOdatatype = TULONG;
             bitpix = ULONGLONG_IMG;
-            datainptr = (char *) data.image[IDin].array.UI64;
+            datainptr = (char *) imgin.im->array.UI64;
             break;
 
         case _DATATYPE_INT64:
             FITSIOdatatype = TLONG;
             bitpix = LONGLONG_IMG;
-            datainptr = (char *) data.image[IDin].array.SI64;
+            datainptr = (char *) imgin.im->array.SI64;
             break;
 
 
         case _DATATYPE_FLOAT:
             FITSIOdatatype = TFLOAT;
             bitpix = FLOAT_IMG;
-            datainptr = (char *) data.image[IDin].array.F;
+            datainptr = (char *) imgin.im->array.F;
             break;
 
         case _DATATYPE_DOUBLE:
             FITSIOdatatype = TDOUBLE;
             bitpix = DOUBLE_IMG;
-            datainptr = (char *) data.image[IDin].array.D;
+            datainptr = (char *) imgin.im->array.D;
             break;
     }
 
@@ -256,11 +252,11 @@ errno_t saveFITS(
 
 
 
-    int naxis = data.image[IDin].md[0].naxis;
+    int naxis = imgin.md->naxis;
     long naxesl[3];
     for(int i = 0; i < naxis; i++)
     {
-        naxesl[i] = (long) data.image[IDin].md[0].size[i];
+        naxesl[i] = (long) imgin.md->size[i];
     }
 
     long nelements = 1;
@@ -300,7 +296,57 @@ errno_t saveFITS(
     fits_write_date(fptr, &COREMOD_iofits_data.FITSIO_status);
 
 
+    // HEADER
 
+
+    // Add FITS keywords from image keywords
+    {
+        int NBkw = imgin.md->NBkw;
+        int kwcnt = 0;
+        for(int kw = 0; kw < NBkw; kw++)
+        {
+            char tmpkwvalstr[81];
+            switch(imgin.im->kw[kw].type)
+            {
+                case 'L':
+                    printf("writing keyword [L] %-8s= %20ld / %s\n", imgin.im->kw[kw].name,
+                           imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment);
+                    fits_update_key(fptr, TLONG, imgin.im->kw[kw].name,
+                                    &imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    kwcnt++;
+                    break;
+
+                case 'D':
+                    printf("writing keyword [D] %-8s= %20g / %s\n", imgin.im->kw[kw].name,
+                           imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment);
+                    fits_update_key(fptr, TDOUBLE, imgin.im->kw[kw].name,
+                                    &imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    kwcnt++;
+                    break;
+
+                case 'S':
+                    sprintf(tmpkwvalstr, "'%s'", imgin.im->kw[kw].value.valstr);
+                    printf("writing keyword [S] %-8s= %20s / %s\n", imgin.im->kw[kw].name,
+                           tmpkwvalstr, imgin.im->kw[kw].comment);
+                    fits_update_key(fptr, TSTRING, imgin.im->kw[kw].name,
+                                    imgin.im->kw[kw].value.valstr, imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    kwcnt++;
+                    break;
+
+                default:
+                    break;
+            }
+
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                PRINT_ERROR("fits_write_record error on keyword %s", imgin.im->kw[kw].name);
+                abort();
+            }
+        }
+    }
 
     // Add FITS keywords from importheaderfile (optional)
     if(strlen(importheaderfile) > 0)
@@ -309,7 +355,6 @@ errno_t saveFITS(
 
         fitsfile *fptr_header = NULL;
         int nkeys;
-        int status;
 
         char *header;
 

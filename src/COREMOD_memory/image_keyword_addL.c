@@ -38,7 +38,7 @@ static CLICMDDATA CLIcmddata =
 };
 
 
-static errno_t image_keyword_addL(
+errno_t image_keyword_addL(
     IMGID img,
     char *kwname,
     long kwval,
