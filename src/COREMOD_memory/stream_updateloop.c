@@ -1,6 +1,6 @@
 /** @file stream_updateloop.c
  */
- 
+
 #include <sched.h>
 
 
@@ -155,15 +155,15 @@ static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
 
 errno_t stream_updateloop_addCLIcmd()
 {
-	RegisterCLIcommand(
-		"streamburst",
-		__FILE__,
-		COREMOD_MEMORY_image_streamburst__cli,
-		"send burst of frames to stream",
-		"<input cube> <output stream> <period[us]>",
-		"streamburst inC outstream 1000",
-		"errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name, const char *IDout_name, long periodus)");
-	
+    RegisterCLIcommand(
+        "streamburst",
+        __FILE__,
+        COREMOD_MEMORY_image_streamburst__cli,
+        "send burst of frames to stream",
+        "<input cube> <output stream> <period[us]>",
+        "streamburst inC outstream 1000",
+        "errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name, const char *IDout_name, long periodus)");
+
     RegisterCLIcommand(
         "creaimstream",
         __FILE__,
@@ -180,7 +180,7 @@ errno_t stream_updateloop_addCLIcmd()
         "create 2D image stream from 3D cube, use other stream to synchronize",
         "<image3d in> <image2d out> <period [int]> <delay [us]> <sync stream> <sync sem index> <timing mode>",
         "creaimstreamstrig imcube outstream 3 152 streamsync 3 0",
-        "long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const char *IDoutname, long period, long offsetus, const char *IDsync_name, int semtrig, int timingmode)");    
+        "long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname, const char *IDoutname, long period, long offsetus, const char *IDsync_name, int semtrig, int timingmode)");
 
     return RETURN_SUCCESS;
 }
@@ -201,23 +201,23 @@ errno_t COREMOD_MEMORY_image_streamburst(
 {
     imageID IDin;
     imageID IDout;
-    
+
     int        RT_priority = 80; //any number from 0-99
     struct     sched_param schedpar;
-    
+
     char      *ptr0s; // source start 3D array ptr
     char      *ptr0; // source
     char      *ptr1; // dest
     long       framesize;
 
-	struct timespec tim;
-    
+    struct timespec tim;
+
     schedpar.sched_priority = RT_priority;
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
 
 
-	IDin = image_ID(IDin_name);
-	long naxis = data.image[IDin].md[0].naxis;
+    IDin = image_ID(IDin_name);
+    long naxis = data.image[IDin].md[0].naxis;
     uint32_t *arraysize;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxis != 3)
@@ -228,118 +228,118 @@ errno_t COREMOD_MEMORY_image_streamburst(
     arraysize[0] = data.image[IDin].md[0].size[0];
     arraysize[1] = data.image[IDin].md[0].size[1];
     arraysize[2] = data.image[IDin].md[0].size[2];
-	uint8_t datatype = data.image[IDin].md[0].datatype;
-	int NBslice = arraysize[2];
+    uint8_t datatype = data.image[IDin].md[0].datatype;
+    int NBslice = arraysize[2];
 
-	// check that IDout has same format
-	IDout = image_ID(IDout_name);
-	if(data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
-	{
-		printf("ERROR: in and out have different size\n");
-		return RETURN_FAILURE;
-	}
-	if(data.image[IDout].md[0].size[1] != data.image[IDin].md[0].size[1])
-	{
-		printf("ERROR: in and out have different size\n");
-		return RETURN_FAILURE;
-	}
-	if(data.image[IDout].md[0].datatype != data.image[IDin].md[0].datatype)
-	{
-		printf("ERROR: in and out have different datatype\n");
-		return RETURN_FAILURE;
-	}	
-	
-	
+    // check that IDout has same format
+    IDout = image_ID(IDout_name);
+    if(data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
+    {
+        printf("ERROR: in and out have different size\n");
+        return RETURN_FAILURE;
+    }
+    if(data.image[IDout].md[0].size[1] != data.image[IDin].md[0].size[1])
+    {
+        printf("ERROR: in and out have different size\n");
+        return RETURN_FAILURE;
+    }
+    if(data.image[IDout].md[0].datatype != data.image[IDin].md[0].datatype)
+    {
+        printf("ERROR: in and out have different datatype\n");
+        return RETURN_FAILURE;
+    }
+
+
     switch(datatype)
     {
-    case _DATATYPE_INT8:
-        ptr0s = (char *) data.image[IDin].array.SI8;
-        ptr1 = (char *) data.image[IDout].array.SI8;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
-        break;
+        case _DATATYPE_INT8:
+            ptr0s = (char *) data.image[IDin].array.SI8;
+            ptr1 = (char *) data.image[IDout].array.SI8;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
+            break;
 
-    case _DATATYPE_UINT8:
-        ptr0s = (char *) data.image[IDin].array.UI8;
-        ptr1 = (char *) data.image[IDout].array.UI8;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
-        break;
+        case _DATATYPE_UINT8:
+            ptr0s = (char *) data.image[IDin].array.UI8;
+            ptr1 = (char *) data.image[IDout].array.UI8;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
+            break;
 
-    case _DATATYPE_INT16:
-        ptr0s = (char *) data.image[IDin].array.SI16;
-        ptr1 = (char *) data.image[IDout].array.SI16;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
-        break;
+        case _DATATYPE_INT16:
+            ptr0s = (char *) data.image[IDin].array.SI16;
+            ptr1 = (char *) data.image[IDout].array.SI16;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
+            break;
 
-    case _DATATYPE_UINT16:
-        ptr0s = (char *) data.image[IDin].array.UI16;
-        ptr1 = (char *) data.image[IDout].array.UI16;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
-        break;
+        case _DATATYPE_UINT16:
+            ptr0s = (char *) data.image[IDin].array.UI16;
+            ptr1 = (char *) data.image[IDout].array.UI16;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
+            break;
 
-    case _DATATYPE_INT32:
-        ptr0s = (char *) data.image[IDin].array.SI32;
-        ptr1 = (char *) data.image[IDout].array.SI32;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
-        break;
+        case _DATATYPE_INT32:
+            ptr0s = (char *) data.image[IDin].array.SI32;
+            ptr1 = (char *) data.image[IDout].array.SI32;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
+            break;
 
-    case _DATATYPE_UINT32:
-        ptr0s = (char *) data.image[IDin].array.UI32;
-        ptr1 = (char *) data.image[IDout].array.UI32;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
-        break;
+        case _DATATYPE_UINT32:
+            ptr0s = (char *) data.image[IDin].array.UI32;
+            ptr1 = (char *) data.image[IDout].array.UI32;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
+            break;
 
-    case _DATATYPE_INT64:
-        ptr0s = (char *) data.image[IDin].array.SI64;
-        ptr1 = (char *) data.image[IDout].array.SI64;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
-        break;
+        case _DATATYPE_INT64:
+            ptr0s = (char *) data.image[IDin].array.SI64;
+            ptr1 = (char *) data.image[IDout].array.SI64;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
+            break;
 
-    case _DATATYPE_UINT64:
-        ptr0s = (char *) data.image[IDin].array.UI64;
-        ptr1 = (char *) data.image[IDout].array.UI64;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
-        break;
+        case _DATATYPE_UINT64:
+            ptr0s = (char *) data.image[IDin].array.UI64;
+            ptr1 = (char *) data.image[IDout].array.UI64;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
+            break;
 
 
-    case _DATATYPE_FLOAT:
-        ptr0s = (char *) data.image[IDin].array.F;
-        ptr1 = (char *) data.image[IDout].array.F;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * sizeof(float);
-        break;
+        case _DATATYPE_FLOAT:
+            ptr0s = (char *) data.image[IDin].array.F;
+            ptr1 = (char *) data.image[IDout].array.F;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * sizeof(float);
+            break;
 
-    case _DATATYPE_DOUBLE:
-        ptr0s = (char *) data.image[IDin].array.D;
-        ptr1 = (char *) data.image[IDout].array.D;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * sizeof(double);
-        break;
+        case _DATATYPE_DOUBLE:
+            ptr0s = (char *) data.image[IDin].array.D;
+            ptr1 = (char *) data.image[IDout].array.D;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * sizeof(double);
+            break;
 
     }
 
-	
-   tim.tv_sec = 0;
-   tim.tv_nsec = (long) (1000*periodus);
-	
 
-	for(int slice = 0; slice < NBslice; slice++)
-	{
-		if(nanosleep(&tim , NULL) < 0 )   
-		{
-			printf("Nano sleep system call failed \n");
-		}
+    tim.tv_sec = 0;
+    tim.tv_nsec = (long)(1000 * periodus);
 
-		
+
+    for(int slice = 0; slice < NBslice; slice++)
+    {
+        if(nanosleep(&tim, NULL) < 0)
+        {
+            printf("Nano sleep system call failed \n");
+        }
+
+
         ptr0 = ptr0s + slice * framesize;
-        
+
         ptr0 = ptr0s + slice * framesize;
         data.image[IDout].md[0].write = 1;
         memcpy((void *) ptr1, (void *) ptr0, framesize);
@@ -347,7 +347,7 @@ errno_t COREMOD_MEMORY_image_streamburst(
         data.image[IDout].md[0].cnt0++;
         data.image[IDout].md[0].write = 0;
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-	}
+    }
 
     free(arraysize);
 

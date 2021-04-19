@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+# script 1-line description
+MSdescr="poke existing stream"
+
+# Extended description
+MSdescr="poke existing stream
+Can poke in a loop
+"
+
+# standard configuration
+#
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk )
+RequiredFiles=()
+RequiredDirs=()
+
+
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "streamname:string:stream name" )
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+NBpoke="0"
+MSopt+=( "n:nbpoke:set_NBpoke:nbpoke[long]:set number of pokes" )
+function set_NBpoke() {
+	NBpoke="$1"
+}
+
+pokedelay="0.001"
+MSopt+=( "d:pokedelay:set_pokeDelay:pokedelay[float]:set delay between pokes in sec" )
+function set_pokeDelay() {
+	pokedelay="$1"
+}
+
+# parse arguments
+source milk-argparse
+streamname="${inputMSargARRAY[0]}"
+
+
+echo ${streamname}
+
+MILK_QUIET=1 MILKCLI_ADD_LIBS="milkmoduleexample" milk << EOF
+readshmim ${streamname}
+# Activate processinfo
+modex.streamupdate ..procinfo 1
+# Run computation N times
+modex.streamupdate ..loopcntMax ${NBpoke}
+# Change triggermode to 4 : DELAY
+modex.streamupdate ..triggermode 4
+# set delay
+modex.streamupdate ..triggerdelay ${pokedelay}
+modex.streamupdate ${streamname}
+listim
+exitCLI
+EOF
+
