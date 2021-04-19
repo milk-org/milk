@@ -507,7 +507,7 @@ typedef struct
     int            SHARED_DFT;
 
     // Number of keyword per image default
-    int            NBKEWORD_DFT;
+    int            NBKEYWORD_DFT;
 
 
 

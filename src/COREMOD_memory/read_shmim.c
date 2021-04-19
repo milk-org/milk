@@ -11,7 +11,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "image_ID.h"
 #include "list_image.h"
-
+#include "image_keyword_list.h"
 
 
 
@@ -64,43 +64,14 @@ imageID read_sharedmem_image(
     }
     else
     {
-        ID = image_ID(sname);
-        printf("read shared mem image success -> ID = %ld\n", ID);
+        IMGID img = makeIMGID(sname);
+        resolveIMGID(&img, ERRMODE_ABORT);
+
+        //ID = image_ID(sname);
+        printf("read shared mem image success -> ID = %ld\n", img.ID);
         fflush(stdout);
 
-        if(ID != -1)
-        {
-            printf("%d keywords\n", (int) data.image[ID].md[0].NBkw);
-            for(int kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
-            {
-                if(data.image[ID].kw[kw].type != 'N')
-                {
-                    printf("%3d %c %16s  ",
-                           kw,
-                           data.image[ID].kw[kw].type,
-                           data.image[ID].kw[kw].name
-                          );
-
-                    switch(data.image[ID].kw[kw].type)
-                    {
-                        case 'S' : // string
-                            printf("%16s", data.image[ID].kw[kw].value.valstr);
-                            break;
-                        case 'L' : // string
-                            printf("%16ld", data.image[ID].kw[kw].value.numl);
-                            break;
-                        case 'D' : // string
-                            printf("%16f", data.image[ID].kw[kw].value.numf);
-                            break;
-                        default : // unknown
-                            printf("== DATA TYPE NOT RECOGNIZED --");
-                            break;
-                    }
-
-                    printf("   %s\n", data.image[ID].kw[kw].comment);
-                }
-            }
-        }
+        image_keywords_list(img);
     }
 
     if(data.MEM_MONITOR == 1)

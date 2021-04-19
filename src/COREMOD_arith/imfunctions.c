@@ -79,7 +79,7 @@ errno_t arith_image_function_im_im__d_d(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -245,7 +245,7 @@ errno_t arith_image_function_imd_im__dd_d(
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-       PRINT_ERROR("malloc() error");
+        PRINT_ERROR("malloc() error");
         exit(0);
     }
 
@@ -263,7 +263,7 @@ errno_t arith_image_function_imd_im__dd_d(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -450,7 +450,7 @@ errno_t arith_image_function_imdd_im__ddd_d(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -820,7 +820,7 @@ errno_t arith_image_function_1_1(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -1296,7 +1296,7 @@ errno_t arith_image_function_2_1(
     long nelement1, nelement2, nelement;
     uint8_t naxis, naxis2;
     uint8_t datatype1, datatype2, datatypeout;
-   
+
     int op3D2Dto3D = 0; // 3D image, 2D image -> 3D image
     long xysize;
 
@@ -1324,20 +1324,20 @@ errno_t arith_image_function_2_1(
     datatype2 = data.image[ID2].md[0].datatype;
     naxis = data.image[ID1].md[0].naxis;
     naxis2 = data.image[ID2].md[0].naxis;
-    
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);    
+
+    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
         PRINT_ERROR("malloc() error");
         abort();
     }
 
-	naxes2 = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    naxes2 = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if(naxes2 == NULL)
     {
         PRINT_ERROR("malloc() error");
         abort();
-    }	
+    }
 
 
     for(uint8_t i = 0; i < naxis; i++)
@@ -1369,7 +1369,7 @@ errno_t arith_image_function_2_1(
 
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
 
 
 
@@ -1402,8 +1402,8 @@ errno_t arith_image_function_2_1(
         if(nelement1 != nelement2)
         {
             PRINT_ERROR(
-                         "images %s and %s have different number of elements ( %ld %ld )\n", ID_name1,
-                         ID_name2, nelement1, nelement2);
+                "images %s and %s have different number of elements ( %ld %ld )\n", ID_name1,
+                ID_name2, nelement1, nelement2);
             exit(0);
         }
 
@@ -4010,7 +4010,7 @@ errno_t arith_image_function_2_1_inplace_byID(
     if(nelement1 != nelement2)
     {
         PRINT_ERROR(
-                     "images %ld and %ld have different number of elements\n", ID1, ID2);
+            "images %ld and %ld have different number of elements\n", ID1, ID2);
         exit(0);
     }
 
@@ -4392,7 +4392,7 @@ errno_t arith_image_function_CF_CF__CF(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatype1, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
     nelement = data.image[ID1].md[0].nelement;
 
@@ -4452,7 +4452,7 @@ errno_t arith_image_function_CD_CD__CD(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatype1, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
     nelement = data.image[ID1].md[0].nelement;
 
@@ -4516,7 +4516,7 @@ int arith_image_function_1f_1(const char *ID_name, double f1,
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
 
     free(naxes);
     nelement = data.image[ID].md[0].nelement;
@@ -4847,7 +4847,7 @@ int arith_image_function_1ff_1(const char *ID_name, double f1, double f2,
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEWORD_DFT);
+                            data.NBKEYWORD_DFT);
     free(naxes);
     nelement = data.image[ID].md[0].nelement;
 

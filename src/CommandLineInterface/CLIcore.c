@@ -503,7 +503,7 @@ static errno_t runCLI_initialize(
     data.overwrite         = 0;
     data.precision         = 0; // float is default precision
     data.SHARED_DFT        = 0; // do not allocate shared memory for images
-    data.NBKEWORD_DFT      = 10; // allocate memory for 10 keyword per image
+    data.NBKEYWORD_DFT     = 50; // allocate memory for 10 keyword per image
     sprintf(data.SAVEDIR, ".");
 
     data.CLIlogON          = 0;     // log every command
