@@ -119,7 +119,7 @@ static errno_t FPSCONFfunction()\
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
 int processloopOK = 1;\
-PROCESSINFO *processinfo;\
+PROCESSINFO *processinfo = NULL;\
 if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 {\
     char pinfodescr[200];\

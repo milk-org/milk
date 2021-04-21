@@ -399,7 +399,7 @@ int processinfo_loopstep(
     }
 
     if(processinfo->loopcntMax != -1)
-        if(processinfo->loopcnt >= processinfo->loopcntMax-1 )
+        if(processinfo->loopcnt >= processinfo->loopcntMax - 1)
         {
             loopstatus = 0;
         }
@@ -1128,53 +1128,58 @@ errno_t processinfo_update_output_stream(
     {
         imageID IDin;
 
-        IDin = processinfo->triggerstreamID;
-        DEBUG_TRACEPOINT("trigger IDin = %ld", IDin);
 
-        if(IDin > -1)
+        DEBUG_TRACEPOINT(" ");
+
+        if(processinfo != NULL)
         {
-            int sptisize = data.image[IDin].md[0].NBproctrace - 1;
+            IDin = processinfo->triggerstreamID;
+            DEBUG_TRACEPOINT("trigger IDin = %ld", IDin);
 
-            // copy streamproctrace from input to output
-            memcpy(&data.image[outstreamID].streamproctrace[1],
-                   &data.image[IDin].streamproctrace[0], sizeof(STREAM_PROC_TRACE)*sptisize);
+            if(IDin > -1)
+            {
+                int sptisize = data.image[IDin].md[0].NBproctrace - 1;
+
+                // copy streamproctrace from input to output
+                memcpy(&data.image[outstreamID].streamproctrace[1],
+                       &data.image[IDin].streamproctrace[0], sizeof(STREAM_PROC_TRACE)*sptisize);
+            }
+
+            DEBUG_TRACEPOINT("timing");
+            struct timespec ts;
+            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            {
+                perror("clock_gettime");
+                exit(EXIT_FAILURE);
+            }
+
+            // write first streamproctrace entry
+            DEBUG_TRACEPOINT("trigger info");
+            data.image[outstreamID].streamproctrace[0].triggermode      =
+                processinfo->triggermode;
+
+            data.image[outstreamID].streamproctrace[0].procwrite_PID    = getpid();
+
+            data.image[outstreamID].streamproctrace[0].trigger_inode    =
+                processinfo->triggerstreaminode;
+
+            data.image[outstreamID].streamproctrace[0].ts_procstart     =
+                processinfo->texecstart[processinfo->timerindex];
+
+            data.image[outstreamID].streamproctrace[0].ts_streamupdate  = ts;
+
+            data.image[outstreamID].streamproctrace[0].trigsemindex     =
+                processinfo->triggersem;
+
+            data.image[outstreamID].streamproctrace[0].triggerstatus    =
+                processinfo->triggerstatus;
+
+            if(IDin > -1)
+            {
+                data.image[outstreamID].streamproctrace[0].cnt0             =
+                    data.image[IDin].md[0].cnt0;
+            }
         }
-
-        DEBUG_TRACEPOINT("timing");
-        struct timespec ts;
-        if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
-        {
-            perror("clock_gettime");
-            exit(EXIT_FAILURE);
-        }
-
-        // write first streamproctrace entry
-        DEBUG_TRACEPOINT("trigger info");
-        data.image[outstreamID].streamproctrace[0].triggermode      =
-            processinfo->triggermode;
-
-        data.image[outstreamID].streamproctrace[0].procwrite_PID    = getpid();
-
-        data.image[outstreamID].streamproctrace[0].trigger_inode    =
-            processinfo->triggerstreaminode;
-
-        data.image[outstreamID].streamproctrace[0].ts_procstart     =
-            processinfo->texecstart[processinfo->timerindex];
-
-        data.image[outstreamID].streamproctrace[0].ts_streamupdate  = ts;
-
-        data.image[outstreamID].streamproctrace[0].trigsemindex     =
-            processinfo->triggersem;
-
-        data.image[outstreamID].streamproctrace[0].triggerstatus    =
-            processinfo->triggerstatus;
-
-        if(IDin > -1)
-        {
-            data.image[outstreamID].streamproctrace[0].cnt0             =
-                data.image[IDin].md[0].cnt0;
-        }
-
         DEBUG_TRACEPOINT(" ");
 
         data.image[outstreamID].md[0].cnt0++;

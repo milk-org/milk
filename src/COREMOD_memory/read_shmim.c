@@ -65,7 +65,7 @@ imageID read_sharedmem_image(
     else
     {
         IMGID img = makeIMGID(sname);
-        resolveIMGID(&img, ERRMODE_ABORT);
+        ID = resolveIMGID(&img, ERRMODE_ABORT);
 
         //ID = image_ID(sname);
         printf("read shared mem image success -> ID = %ld\n", img.ID);

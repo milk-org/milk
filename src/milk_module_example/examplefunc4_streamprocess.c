@@ -29,12 +29,12 @@ static CLICMDARGDEF farg[] =
 {
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &inimname
     },
     {
         CLIARG_IMG, ".out_name", "output image", "out1",
-        CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &outimname
     }
 };
@@ -44,9 +44,7 @@ static CLICMDDATA CLIcmddata =
 {
     "streamupdate",
     "process input stream to output stream",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 
