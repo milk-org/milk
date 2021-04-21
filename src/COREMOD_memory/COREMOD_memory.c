@@ -151,7 +151,7 @@ static errno_t init_module_CLI()
     stream_sem_addCLIcmd();
 
     // STREAMS
-    shmim_purge_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__shmim_purge();
     shmim_setowner_addCLIcmd();
 
     stream_updateloop_addCLIcmd();

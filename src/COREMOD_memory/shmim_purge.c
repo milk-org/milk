@@ -13,73 +13,34 @@
 #include "read_shmim.h"
 
 
+// Local variables pointers
+static char *stringfilter;
 
 
-// ==========================================
-// forward declaration
-// ==========================================
-
-errno_t    shmim_purge(
-    const char *strfilter
-);
-
-
-
-// ==========================================
-// command line interface wrapper functions
-// ==========================================
-
-
-static errno_t shmim_purge__cli()
+static CLICMDARGDEF farg[] =
 {
-    if(0
-            + CLI_checkarg(1, CLIARG_STR)
-            == 0)
     {
-
-        shmim_purge(
-            data.cmdargtoken[1].val.string);
-
-        return CLICMD_SUCCESS;
+        CLIARG_STR, ".strfilter", "string filter", "im",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &stringfilter
     }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
+};
 
 
-
-
-
-
-
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t shmim_purge_addCLIcmd()
+static CLICMDDATA CLIcmddata =
 {
+    "shmimpurge",
+    "purge orphan streams",
+    CLICMD_FIELDS_DEFAULTS
+};
 
-    RegisterCLIcommand(
-        "shmimpurge",
-        __FILE__, 
-        shmim_purge__cli,
-        "purge orphan streams",
-        "<strfilter>",
-        "shmimpurge im_",
-        "errno_t shmim_purge(const char *strfilter)");    
-
-    return RETURN_SUCCESS;
-}
 
 
 
 
 /** @brief purge orphan share memory streams
- * 
- * 
+ *
+ *
  */
 errno_t    shmim_purge(
     const char *strfilter
@@ -90,35 +51,46 @@ errno_t    shmim_purge(
     int NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
+    DEBUG_TRACEPOINT("Searching for streams");
     streaminfo = (STREAMINFO *) malloc(sizeof(STREAMINFO) * NBstreamMAX);
-
     int NBstream = find_streams(streaminfo, 1, strfilter);
+    printf("%d stream(s) found\n", NBstream);
 
-    //printf("%d streams found :\n", NBstream);
+    DEBUG_TRACEPOINT("scanning %d streams for purging", NBstream);
     for(int sindex = 0; sindex < NBstream; sindex++)
     {
-        //printf(" %3d   %s\n", sindex, streaminfo[sindex].sname);
+        printf(" STREAM %3d   %s\n", sindex, streaminfo[sindex].sname);
         imageID ID = image_ID(streaminfo[sindex].sname);
         if(ID == -1)
         {
             ID = read_sharedmem_image(streaminfo[sindex].sname);
         }
+        DEBUG_TRACEPOINT("stream %s loaded ID %ld", streaminfo[sindex].sname,
+                         (long) ID);
 
         pid_t opid; // owner PID
         opid = data.image[ID].md[0].ownerPID;
+        DEBUG_TRACEPOINT("owner PID : %ld", (long) opid);
+        printf("owner PID : %ld\n", (long) opid);
 
         if(opid != 0)
         {
-			if(getpgid(opid) >= 0)
-			{
-				//printf("Keeping stream %s\n", streaminfo[sindex].sname);
-			}
-			else
-			{
-				printf("Purging stream %s\n", streaminfo[sindex].sname);
-				ImageStreamIO_destroyIm(&data.image[ID]);
-			}
-		}
+            if(getpgid(opid) >= 0)
+            {
+                printf("Keeping stream %s\n", streaminfo[sindex].sname);
+            }
+            else
+            {
+                printf("Purging stream %s\n", streaminfo[sindex].sname);
+                ImageStreamIO_destroyIm(&data.image[ID]);
+            }
+        }
+        else
+        {
+            // owner unset: assumes no owner
+            printf("Purging stream %s\n", streaminfo[sindex].sname);
+            ImageStreamIO_destroyIm(&data.image[ID]);
+        }
     }
 
     free(streaminfo);
@@ -126,3 +98,31 @@ errno_t    shmim_purge(
     return RETURN_SUCCESS;
 }
 
+
+
+// adding INSERT_STD_PROCINFO statements enables processinfo support
+static errno_t compute_function()
+{
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    shmim_purge(stringfilter);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    return RETURN_SUCCESS;
+}
+
+
+
+INSERT_STD_FPSCLIfunctions
+
+// Register function in CLI
+errno_t CLIADDCMD_COREMOD_memory__shmim_purge()
+{
+    INSERT_STD_CLIREGISTERFUNC
+
+    // Optional custom settings for this function
+    // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;
+
+    return RETURN_SUCCESS;
+}
