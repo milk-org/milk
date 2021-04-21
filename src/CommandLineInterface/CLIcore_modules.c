@@ -498,7 +498,7 @@ uint32_t RegisterCLIcmd(
     // define CLI function flags from content of CLIcmddata.flags
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
 
-    data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax = 0;
+    data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax = 1;
     data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
 
     data.NBcmd++;

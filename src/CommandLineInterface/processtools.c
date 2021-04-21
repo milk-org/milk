@@ -399,7 +399,7 @@ int processinfo_loopstep(
     }
 
     if(processinfo->loopcntMax != -1)
-        if(processinfo->loopcnt >= processinfo->loopcntMax)
+        if(processinfo->loopcnt >= processinfo->loopcntMax-1 )
         {
             loopstatus = 0;
         }
