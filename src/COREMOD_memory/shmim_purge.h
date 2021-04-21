@@ -1,14 +1,8 @@
-/**
- * @file    shmim_purge.h
- */
+#ifndef COREMOD_MEMORY_SHMIM_PURGE_H
+#define COREMOD_MEMORY_SHMIM_PURGE_H
 
 
-#ifndef _SHMIM_PURGE_H
-#define _SHMIM_PURGE_H
-
-
-
-errno_t shmim_purge_addCLIcmd();
+errno_t CLIADDCMD_COREMOD_memory__shmim_purge();
 
 
 errno_t    shmim_purge(
