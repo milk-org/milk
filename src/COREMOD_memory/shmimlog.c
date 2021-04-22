@@ -1,35 +1,11 @@
-/**
- * @file    logshmim.c
- * @brief   Save telemetry stream data
- */
-
-
 #define _GNU_SOURCE
 
-#include <sched.h>
-#include <pthread.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <pthread.h>
 
-
-
 #include "CommandLineInterface/CLIcore.h"
-
-#include "COREMOD_iofits/COREMOD_iofits.h"
-
-#include "image_ID.h"
-#include "list_image.h"
-#include "create_image.h"
-#include "delete_image.h"
-#include "read_shmim.h"
-#include "stream_sem.h"
-
 #include "shmimlog_types.h"
-
 
 
 
@@ -37,186 +13,76 @@
 #define unlikely(x)	__builtin_expect(!!(x), 0)
 
 
-static long tret; // thread return value
+
+// Local variables pointers
+static char *instreamname;
+static char *logdir;
+static long *logcubesize;
+
+
+
+
+// List of arguments to function
+static CLICMDARGDEF farg[] =
+{
+    {
+        CLIARG_IMG, ".in_sname", "input stream name", "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &instreamname
+    },
+    {
+        CLIARG_LONG, ".cubesize", "cube size", "10000",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &logcubesize
+    },
+    {
+        CLIARG_STR, ".logdir", "log directory", "/media/data",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &logdir
+    }
+};
+
+
+// flag CLICMDFLAG_FPS enabled FPS capability
+static CLICMDDATA CLIcmddata =
+{
+    "shmimlog",
+    "log shared memory stream",
+    CLICMD_FIELDS_DEFAULTS
+};
 
 
 
 
 
+// Forward declarations
 
-
-
-
-
-
-
-
-
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
-errno_t COREMOD_MEMORY_logshim_printstatus(
-    const char *IDname
-);
-
-errno_t COREMOD_MEMORY_logshim_set_on(
+static errno_t __attribute__((hot)) shmimlog2D(
     const char *IDname,
-    int         setv
-);
-
-errno_t COREMOD_MEMORY_logshim_set_logexit(
-    const char *IDname,
-    int setv
-);
-
-errno_t COREMOD_MEMORY_sharedMem_2Dim_log(
-    const char  *IDname,
-    uint32_t     zsize,
-    const char  *logdir,
-    const char  *IDlogdata_name
+    uint32_t    zsize,
+    const char *logdir,
+    const char *IDlogdata_name
 );
 
 
-
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
-
-
-static errno_t COREMOD_MEMORY_logshim_printstatus__cli()
+// adding INSERT_STD_PROCINFO statements enable processinfo support
+static errno_t compute_function()
 {
-    if(0
-            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
-            == 0)
-    {
-        COREMOD_MEMORY_logshim_printstatus(
-            data.cmdargtoken[1].val.string
-        );
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
+    printf("Running comp func %s %s %ld\n", instreamname, logdir, *logcubesize);
 
+    shmimlog2D(instreamname, *logcubesize, logdir, "");
 
-static errno_t COREMOD_MEMORY_logshim_set_on__cli()
-{
-    if(0
-            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
-            + CLI_checkarg(2, CLIARG_LONG)
-            == 0)
-    {
-        printf("logshim_set_on ----------------------\n");
-        COREMOD_MEMORY_logshim_set_on(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.numl
-        );
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-
-static errno_t COREMOD_MEMORY_logshim_set_logexit__cli()
-{
-    if(0
-            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
-            + CLI_checkarg(2, CLIARG_LONG)
-            == 0)
-    {
-        COREMOD_MEMORY_logshim_set_logexit(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.numl
-        );
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-
-static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
-{
-
-    if(CLI_checkarg_noerrmsg(4, CLIARG_STR_NOT_IMG) != 0)
-    {
-        sprintf(data.cmdargtoken[4].val.string, "null");
-    }
-
-    if(0
-            + CLI_checkarg(1, 3)
-            + CLI_checkarg(2, CLIARG_LONG)
-            + CLI_checkarg(3, 3)
-            == 0)
-    {
-        COREMOD_MEMORY_sharedMem_2Dim_log(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.numl,
-            data.cmdargtoken[3].val.string,
-            data.cmdargtoken[4].val.string
-        );
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+    return RETURN_SUCCESS;
 }
 
 
 
+INSERT_STD_CLIfunction
 
-
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t logshmim_addCLIcmd()
+// Register function in CLI
+errno_t CLIADDCMD_COREMOD_memory__shmimlog()
 {
-
-    RegisterCLIcommand(
-        "shmimstreamlog",
-        __FILE__,
-        COREMOD_MEMORY_sharedMem_2Dim_log__cli,
-        "logs shared memory stream (run in current directory)",
-        "<shm image> <cubesize [long]> <logdir>",
-        "shmimstreamlog wfscamim 10000 /media/data \"\"",
-        "long COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname, uint32_t zsize, const char *logdir, const char *IDlogdata_name");
-
-    RegisterCLIcommand(
-        "shmimslogstat",
-        __FILE__,
-        COREMOD_MEMORY_logshim_printstatus__cli,
-        "print log shared memory stream status",
-        "<shm image>", "shmimslogstat wfscamim",
-        "int COREMOD_MEMORY_logshim_printstatus(const char *IDname)");
-
-    RegisterCLIcommand(
-        "shmimslogonset", __FILE__,
-        COREMOD_MEMORY_logshim_set_on__cli,
-        "set on variable in log shared memory stream",
-        "<shm image> <setv [long]>",
-        "shmimslogonset imwfs 1",
-        "int COREMOD_MEMORY_logshim_set_on(const char *IDname, int setv)");
-
-    RegisterCLIcommand(
-        "shmimslogexitset",
-        __FILE__,
-        COREMOD_MEMORY_logshim_set_logexit__cli,
-        "set exit variable in log shared memory stream",
-        "<shm image> <setv [long]>",
-        "shmimslogexitset imwfs 1",
-        "int COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)");
-
+    INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
@@ -228,254 +94,22 @@ errno_t logshmim_addCLIcmd()
 
 
 
-
-
-
-
-
-
-
-
-
-
-/**
- * ## Purpose
- *
- * Save telemetry stream data
- *
- */
-void *save_fits_function(
-    void *ptr
-)
-{
-    imageID  ID;
-
-
-    //struct savethreadmsg *tmsg; // = malloc(sizeof(struct savethreadmsg));
-    STREAMSAVE_THREAD_MESSAGE *tmsg;
-
-    uint32_t     *imsizearray;
-    uint32_t      xsize, ysize;
-    uint8_t       datatype;
-
-
-    imageID       IDc;
-    long          framesize;  // in bytes
-    char         *ptr0;       // source pointer
-    char         *ptr1;       // destination pointer
-    long          k;
-    FILE         *fp;
-
-
-    int RT_priority = 20;
-    struct sched_param schedpar;
-
-
-    schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
-    if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0, SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)     //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-#endif
-
-
-
-    imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if(imsizearray == NULL)
-    {
-        PRINT_ERROR("malloc error");
-        abort();
-    }
-
-    //    tmsg = (struct savethreadmsg*) ptr;
-    tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
-
-    // printf("THREAD : SAVING  %s -> %s \n", tmsg->iname, tmsg->fname);
-    //fflush(stdout);
-    if(tmsg->partial == 0) // full image
-    {
-//        save_fits(tmsg->iname, tmsg->fname);
-        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
-        saveFITS(tmsg->iname, tmsg->fname, 0, tmsg->fname_auxFITSheader);
-    }
-    else
-    {
-        //      printf("Saving partial image (name = %s   zsize = %ld)\n", tmsg->iname, tmsg->cubesize);
-
-        //	list_image_ID();
-
-        ID = image_ID(tmsg->iname);
-        datatype = data.image[ID].md[0].datatype;
-        xsize = data.image[ID].md[0].size[0];
-        ysize = data.image[ID].md[0].size[1];
-
-        //printf("step00\n");
-        //fflush(stdout);
-
-        imsizearray[0] = xsize;
-        imsizearray[1] = ysize;
-        imsizearray[2] = tmsg->cubesize;
-
-
-
-        IDc = create_image_ID("tmpsavecube", 3, imsizearray, datatype, 0, 1);
-
-        // list_image_ID();
-
-        switch(datatype)
-        {
-
-            case _DATATYPE_UINT8:
-                framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI8; // source
-                ptr1 = (char *) data.image[IDc].array.UI8; // destination
-                break;
-            case _DATATYPE_INT8:
-                framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI8; // source
-                ptr1 = (char *) data.image[IDc].array.SI8; // destination
-                break;
-
-            case _DATATYPE_UINT16:
-                framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI16; // source
-                ptr1 = (char *) data.image[IDc].array.UI16; // destination
-                break;
-            case _DATATYPE_INT16:
-                framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI16; // source
-                ptr1 = (char *) data.image[IDc].array.SI16; // destination
-                break;
-
-            case _DATATYPE_UINT32:
-                framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI32; // source
-                ptr1 = (char *) data.image[IDc].array.UI32; // destination
-                break;
-            case _DATATYPE_INT32:
-                framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI32; // source
-                ptr1 = (char *) data.image[IDc].array.SI32; // destination
-                break;
-
-            case _DATATYPE_UINT64:
-                framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI64; // source
-                ptr1 = (char *) data.image[IDc].array.UI64; // destination
-                break;
-            case _DATATYPE_INT64:
-                framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI64; // source
-                ptr1 = (char *) data.image[IDc].array.SI64; // destination
-                break;
-
-            case _DATATYPE_FLOAT:
-                framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.F; // source
-                ptr1 = (char *) data.image[IDc].array.F; // destination
-                break;
-            case _DATATYPE_DOUBLE:
-                framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.D; // source
-                ptr1 = (char *) data.image[IDc].array.D; // destination
-                break;
-
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                free(imsizearray);
-                free(tmsg);
-                exit(0);
-                break;
-        }
-
-
-        memcpy((void *) ptr1, (void *) ptr0, framesize * tmsg->cubesize);
-
-        //save_fits("tmpsavecube", tmsg->fname);
-        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
-        saveFITS("tmpsavecube", tmsg->fname, 0, tmsg->fname_auxFITSheader);
-
-
-        delete_image_ID("tmpsavecube");
-    }
-
-    if(tmsg->saveascii == 1)
-    {
-        if((fp = fopen(tmsg->fnameascii, "w")) == NULL)
-        {
-            printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
-            exit(0);
-        }
-
-        fprintf(fp, "# Telemetry stream timing data \n");
-        fprintf(fp, "# File written by function %s in file %s\n", __FUNCTION__,
-                __FILE__);
-        fprintf(fp, "# \n");
-        fprintf(fp, "# col1 : datacube frame index\n");
-        fprintf(fp, "# col2 : Main index\n");
-        fprintf(fp, "# col3 : Time since cube origin\n");
-        fprintf(fp, "# col4 : Absolute time\n");
-        fprintf(fp, "# col5 : stream cnt0 index\n");
-        fprintf(fp, "# col6 : stream cnt1 index\n");
-        fprintf(fp, "# \n");
-
-        double t0; // time reference
-        t0 = tmsg->arraytime[0];
-        for(k = 0; k < tmsg->cubesize; k++)
-        {
-            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
-
-            // entries are:
-            // - index within cube
-            // - loop index (if applicable)
-            // - time since cube start
-            // - time (absolute)
-            // - cnt0
-            // - cnt1
-
-            fprintf(fp, "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n", k,
-                    tmsg->arrayindex[k], tmsg->arraytime[k] - t0, tmsg->arraytime[k],
-                    tmsg->arraycnt0[k], tmsg->arraycnt1[k]);
-        }
-        fclose(fp);
-    }
-
-    //    printf(" DONE\n");
-    //fflush(stdout);
-
-    ID = image_ID(tmsg->iname);
-    tret = ID;
-    free(imsizearray);
-    pthread_exit(&tret);
-
-    //  free(tmsg);
-}
-
-
-
 /** @brief creates logshimconf shared memory and loads it
  *
  */
-LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
+static LOGSHIM_CONF *shmimlog_create_SHMconf(
     const char *logshimname
 )
 {
     int             SM_fd;
     size_t          sharedsize = 0; // shared memory size in bytes
-    char            SM_fname[200];
+    char            SM_fname[STRINGMAXLEN_FILENAME];
     int             result;
     LOGSHIM_CONF   *map;
 
     sharedsize = sizeof(LOGSHIM_CONF);
 
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, logshimname);
+    WRITE_FILENAME(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, logshimname);
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1)
@@ -525,167 +159,6 @@ LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
 
 
 
-
-// IDname is name of image logged
-errno_t COREMOD_MEMORY_logshim_printstatus(
-    const char *IDname
-)
-{
-    LOGSHIM_CONF *map;
-    char          SM_fname[200];
-    int           SM_fd;
-    struct        stat file_stat;
-
-    // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
-    printf("Importing mmap file \"%s\"\n", SM_fname);
-
-    SM_fd = open(SM_fname, O_RDWR);
-    if(SM_fd == -1)
-    {
-        printf("Cannot import file - continuing\n");
-        exit(0);
-    }
-    else
-    {
-        fstat(SM_fd, &file_stat);
-        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-        map = (LOGSHIM_CONF *) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE,
-                                    MAP_SHARED, SM_fd, 0);
-        if(map == MAP_FAILED)
-        {
-            close(SM_fd);
-            perror("Error mmapping the file");
-            exit(0);
-        }
-
-        printf("LOG   on = %d\n", map[0].on);
-        printf("    cnt  = %lld\n", map[0].cnt);
-        printf(" filecnt = %lld\n", map[0].filecnt);
-        printf("interval = %ld\n", map[0].interval);
-        printf("logexit  = %d\n", map[0].logexit);
-
-        if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-        {
-            printf("unmapping %s\n", SM_fname);
-            perror("Error un-mmapping the file");
-        }
-        close(SM_fd);
-    }
-    return RETURN_SUCCESS;
-}
-
-
-
-
-
-
-// set the on field in logshim
-// IDname is name of image logged
-errno_t COREMOD_MEMORY_logshim_set_on(
-    const char *IDname,
-    int         setv
-)
-{
-    LOGSHIM_CONF  *map;
-    char           SM_fname[200];
-    int            SM_fd;
-    struct stat    file_stat;
-
-    // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
-    printf("Importing mmap file \"%s\"\n", SM_fname);
-
-    SM_fd = open(SM_fname, O_RDWR);
-    if(SM_fd == -1)
-    {
-        printf("Cannot import file - continuing\n");
-        exit(0);
-    }
-    else
-    {
-        fstat(SM_fd, &file_stat);
-        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-        map = (LOGSHIM_CONF *) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE,
-                                    MAP_SHARED, SM_fd, 0);
-        if(map == MAP_FAILED)
-        {
-            close(SM_fd);
-            perror("Error mmapping the file");
-            exit(0);
-        }
-
-        map[0].on = setv;
-
-        if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-        {
-            printf("unmapping %s\n", SM_fname);
-            perror("Error un-mmapping the file");
-        }
-        close(SM_fd);
-    }
-    return RETURN_SUCCESS;
-}
-
-
-
-
-
-// set the on field in logshim
-// IDname is name of image logged
-errno_t COREMOD_MEMORY_logshim_set_logexit(
-    const char *IDname,
-    int         setv
-)
-{
-    LOGSHIM_CONF  *map;
-    char           SM_fname[200];
-    int            SM_fd;
-    struct stat    file_stat;
-
-    // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
-    printf("Importing mmap file \"%s\"\n", SM_fname);
-
-    SM_fd = open(SM_fname, O_RDWR);
-    if(SM_fd == -1)
-    {
-        printf("Cannot import file - continuing\n");
-        exit(0);
-    }
-    else
-    {
-        fstat(SM_fd, &file_stat);
-        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-        map = (LOGSHIM_CONF *) mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE,
-                                    MAP_SHARED, SM_fd, 0);
-        if(map == MAP_FAILED)
-        {
-            close(SM_fd);
-            perror("Error mmapping the file");
-            exit(0);
-        }
-
-        map[0].logexit = setv;
-
-        if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-        {
-            printf("unmapping %s\n", SM_fname);
-            perror("Error un-mmapping the file");
-        }
-        close(SM_fd);
-    }
-    return RETURN_SUCCESS;
-}
-
-
-
-
-
-
 /** @brief Logs a shared memory stream onto disk
  *
  * uses semlog semaphore
@@ -693,7 +166,7 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(
  * uses data cube buffer to store frames
  * if an image name logdata exists (should ideally be in shared mem), then this will be included in the timing txt file
  */
-errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
+static errno_t __attribute__((hot)) shmimlog2D(
     const char *IDname,
     uint32_t    zsize,
     const char *logdir,
@@ -824,7 +297,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     printf("log data name = %s\n", IDlogdata_name);
 
 
-    logshimconf = COREMOD_MEMORY_logshim_create_SHMconf(IDname);
+    logshimconf = shmimlog_create_SHMconf(IDname);
 
 
     logshimconf[0].on = 1;
@@ -1285,7 +758,8 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
                 fflush(stdout);
             }
 
-            sprintf(fnameascii, "%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname,
+            sprintf(fnameascii, "%s/%s.%04d%02d%02dT%02d%02d%02ld.%09ldZ.txt", logdir, IDname,
+                    1900 + uttimeStart->tm_year, 1 + uttimeStart->tm_mon, uttimeStart->tm_mday,
                     uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60,
                     timenowStart.tv_nsec);
 
@@ -1295,7 +769,8 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
                 printf("%5d  Building file name: fits\n", __LINE__);
                 fflush(stdout);
             }
-            sprintf(fname, "%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname,
+            sprintf(fname, "%s/%s.%04d%02d%02dT%02d%02d%02ld.%09ldZ.fits", logdir, IDname,
+                    1900 + uttimeStart->tm_year, 1 + uttimeStart->tm_mon, uttimeStart->tm_mday,
                     uttimeStart->tm_hour, uttimeStart->tm_min, timenowStart.tv_sec % 60,
                     timenowStart.tv_nsec);
 
@@ -1476,6 +951,12 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+
+
 
 
 

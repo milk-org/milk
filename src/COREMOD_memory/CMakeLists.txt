@@ -36,6 +36,7 @@ set(SOURCEFILES
     read_shmim_size.c
     read_shmimall.c
     saveall.c
+    shmimlog.c
     shmim_purge.c
     shmim_setowner.c
     stream_ave.c
@@ -54,7 +55,6 @@ set(SOURCEFILES
 
 set(INCLUDEFILES
     ${SRCNAME}.h
-    logshmim_types.h
     clearall.h
     compute_image_memory.h
     compute_nb_image.h
@@ -80,10 +80,12 @@ set(INCLUDEFILES
     list_image.h
     list_variable.h
     logshmim.h
+    shmimlog_types.h
     read_shmim.h
     read_shmim_size.h
     read_shmimall.h
     saveall.h
+    shmimlog.h
     shmim_purge.h
     shmim_setowner.h
     stream_ave.h

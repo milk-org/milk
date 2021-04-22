@@ -58,6 +58,7 @@
 #include "list_image.h"
 #include "list_variable.h"
 #include "logshmim.h"
+#include "shmimlog.h"
 
 #include "read_shmim.h"
 #include "read_shmim_size.h"
@@ -171,7 +172,7 @@ static errno_t init_module_CLI()
     // DATA LOGGING
     logshmim_addCLIcmd();
 
-    CLIADDCMD_COREMOD_memory__shmimstreamlog();
+    CLIADDCMD_COREMOD_memory__shmimlog();
 
 
     // add atexit functions here
