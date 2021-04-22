@@ -52,7 +52,8 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
 
     function_parameter_getFPSargs_from_CLIfunc("streamDelay");
 
-    if(data.FPS_CMDCODE != 0) { // use FPS implementation
+    if(data.FPS_CMDCODE != 0)   // use FPS implementation
+    {
         // set pointers to CONF and RUN functions
         data.FPS_CONFfunc = COREMOD_MEMORY_streamDelay_FPCONF;
         data.FPS_RUNfunc  = COREMOD_MEMORY_streamDelay_RUN;
@@ -136,9 +137,9 @@ errno_t stream_delay_addCLIcmd()
 errno_t COREMOD_MEMORY_streamDelay_FPCONF()
 {
 
-    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);    
+    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);
     fps_add_processinfo_entries(&fps);
-    
+
     uint64_t FPFLAG;
 
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
@@ -181,12 +182,13 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF()
 
 
 
-	// start function parameter conf loop, defined in function_parameter.h
-    FPS_CONFLOOP_START 
+    // start function parameter conf loop, defined in function_parameter.h
+    FPS_CONFLOOP_START
 
 
     if(fps.parray[fp_option_timeavemode].val.i64[0] != 0)
-    { // time averaging enabled
+    {
+        // time averaging enabled
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_WRITERUN;
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_USED;
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_VISIBLE;
@@ -293,12 +295,12 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     // OPTIONAL SETTINGS
     // Measure timing
-    processinfo->MeasureTiming = 1; 
+    processinfo->MeasureTiming = 1;
     // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
-    processinfo->RT_priority = 20;  
-    
-        
-	fps_to_processinfo(&fps, processinfo);
+    processinfo->RT_priority = 20;
+
+
+    fps_to_processinfo(&fps, processinfo);
 
 
 
@@ -387,14 +389,14 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // Specify input stream trigger
 
     processinfo_waitoninputstream_init(processinfo, IDin,
-		PROCESSINFO_TRIGGERMODE_DELAY, -1);
-	processinfo->triggerdelay.tv_sec = 0;
-	processinfo->triggerdelay.tv_nsec = (long) (dtus*1000);
-	while(processinfo->triggerdelay.tv_nsec > 1000000000)
-	{
-		processinfo->triggerdelay.tv_nsec -= 1000000000;
-		processinfo->triggerdelay.tv_sec += 1;
-	}
+                                       PROCESSINFO_TRIGGERMODE_DELAY, -1);
+    processinfo->triggerdelay.tv_sec = 0;
+    processinfo->triggerdelay.tv_nsec = (long)(dtus * 1000);
+    while(processinfo->triggerdelay.tv_nsec > 1000000000)
+    {
+        processinfo->triggerdelay.tv_nsec -= 1000000000;
+        processinfo->triggerdelay.tv_sec += 1;
+    }
 
 
     // ===========================
@@ -414,7 +416,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
         DEBUG_TRACEPOINT(" ");
         loopOK = processinfo_loopstep(processinfo);
 
-        
+
         processinfo_waitoninputstream(processinfo);
         //usleep(dtus); // main loop wait
 
@@ -537,13 +539,13 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                     {
                         data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
                     }
-                    
+
                     processinfo_update_output_stream(processinfo, IDout);
                     /*
                     COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
                     data.image[IDout].md[0].cnt0++;
                     data.image[IDout].md[0].write = 0;
-*/
+                    */
                     break;
             }
             DEBUG_TRACEPOINT(" ");
@@ -560,9 +562,9 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     /// ### ENDING LOOP
     // ==================================
     processinfo_cleanExit(processinfo);
-    
+
     functionparameter_SaveFPS2disk(&fps);
-    
+
     function_parameter_RUNexit(&fps);
 
     DEBUG_TRACEPOINT(" ");

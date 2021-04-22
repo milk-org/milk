@@ -37,6 +37,7 @@
 #define PROCESSINFO_TRIGGERSTATUS_TIMEDOUT     3
 
 #include "CLIcore.h"
+#include "CommandLineInterface/IMGID.h"
 
 #include "processinfo.h"
 

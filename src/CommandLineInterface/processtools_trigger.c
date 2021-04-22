@@ -13,6 +13,7 @@
 
 
 #include "CLIcore.h"
+#include "CLIcore_utils.h"
 
 #include "processinfo.h"
 #include "processtools_trigger.h"
@@ -41,7 +42,7 @@ errno_t processinfo_waitoninputstream_init(
 )
 {
 
-
+    printf("======================= processinfo_waitoninputstream_init ====================\n");//test
     processinfo->triggerstreamID    = trigID;
 
 
@@ -233,6 +234,8 @@ errno_t processinfo_waitoninputstream(
         int semr;
         int tmpstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
 
+        DEBUG_TRACEPOINT("wait on semaphore");
+
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
         // get current time
@@ -244,11 +247,13 @@ errno_t processinfo_waitoninputstream(
         }
 
         // is semaphore at zero ?
+        DEBUG_TRACEPOINT("test sem status");
         semr = 0;
         while(semr == 0)
         {
             // this should only run once, returning semr = -1 with errno = EAGAIN
             // otherwise, we're potentially missing frames
+            DEBUG_TRACEPOINT("sem_trywait %ld", processinfo->triggerstreamID);
             semr = sem_trywait(
                        data.image[processinfo->triggerstreamID].semptr[processinfo->triggersem]);
             if(semr == 0)
@@ -259,9 +264,10 @@ errno_t processinfo_waitoninputstream(
 
         // expected state: NBmissedframe = 0, semr = -1, errno = EAGAIN
         // missed frame state: NBmissedframe>0, semr = -1, errno = EAGAIN
-
+        DEBUG_TRACEPOINT("triggermissedframe = %d", processinfo->triggermissedframe);
         if(processinfo->triggermissedframe == 0)
         {
+            DEBUG_TRACEPOINT("timedwait");
             // add timeout
             ts.tv_sec += processinfo->triggertimeout.tv_sec;
             ts.tv_nsec += processinfo->triggertimeout.tv_nsec;

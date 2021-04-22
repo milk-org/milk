@@ -145,24 +145,30 @@ if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 \
     processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
 \
-    processinfo->triggerstreamID = -1;\
+    processinfo->triggerstreamID = -2;\
     processinfo->triggermode = CLIcmddata.cmdsettings->triggermode;\
     strcpy(processinfo->triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname);\
     processinfo->triggerdelay = CLIcmddata.cmdsettings->triggerdelay;\
     processinfo->triggertimeout = CLIcmddata.cmdsettings->triggertimeout;\
+    processinfo->triggerstreamID = image_ID(processinfo->triggerstreamname); \
+    processinfo_waitoninputstream_init(processinfo, processinfo->triggerstreamID, \
+        CLIcmddata.cmdsettings->triggermode, -1); \
     processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;\
     processinfo->CPUmask = CLIcmddata.cmdsettings->CPUmask;\
  \
     processinfo->MeasureTiming =  CLIcmddata.cmdsettings->procinfo_MeasureTiming;\
 \
-    DEBUG_TRACEPOINT(" ");\
+    DEBUG_TRACEPOINT("loopstart");\
     processinfo_loopstart(processinfo);\
 }\
 while(processloopOK == 1) \
 { \
 	if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {\
+        DEBUG_TRACEPOINT("loopstep");\
         processloopOK = processinfo_loopstep(processinfo); \
+        DEBUG_TRACEPOINT("waitoninputstream");\
 	    processinfo_waitoninputstream(processinfo); \
+        DEBUG_TRACEPOINT("exec_start");\
 	    processinfo_exec_start(processinfo); \
     }\
     else {\
