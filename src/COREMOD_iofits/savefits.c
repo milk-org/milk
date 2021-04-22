@@ -13,7 +13,7 @@
 #include "COREMOD_iofits_common.h"
 #include "check_fitsio_status.h"
 #include "file_exists.h"
-
+#include "is_fits_file.h"
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
@@ -351,78 +351,81 @@ errno_t saveFITS(
     // Add FITS keywords from importheaderfile (optional)
     if(strlen(importheaderfile) > 0)
     {
-        printf("Importing FITS header entries from : %s\n", importheaderfile);
-
-        fitsfile *fptr_header = NULL;
-        int nkeys;
-
-        char *header;
-
-        fits_open_file(&fptr_header, importheaderfile, READONLY,
-                       &COREMOD_iofits_data.FITSIO_status);
-        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+        if(is_fits_file(importheaderfile) == 1)
         {
-            PRINT_ERROR("fits_open_file error on file %s", importheaderfile);
-            abort();
-        }
+            printf("Importing FITS header entries from : %s\n", importheaderfile);
 
+            fitsfile *fptr_header = NULL;
+            int nkeys;
 
+            char *header;
 
-        fits_hdr2str(fptr_header, 1, NULL, 0, &header, &nkeys,
-                     &COREMOD_iofits_data.FITSIO_status);
-        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-        {
-            PRINT_ERROR("fits_hdr2str erroron file %s", importheaderfile);
-            abort();
-        }
-        printf("imported %d header cards\n", nkeys);
-
-        char *hptr; // pointer to header
-        hptr = header;
-        while(*hptr)
-        {
-            char fitscard[81];
-            sprintf(fitscard, "%.80s", hptr);
-
-            // keywords to not overwrite
-            int writecard = 1;
-            char *keyexcl[] = {"BITPIX", "NAXIS", "SIMPLE", "EXTEND", 0};
-            int ki = 0;
-            while(keyexcl[ki])
+            fits_open_file(&fptr_header, importheaderfile, READONLY,
+                           &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
             {
-                if(strncmp(keyexcl[ki], fitscard, strlen(keyexcl[ki])) == 0)
-                {
-                    printf("EXCLUDING %s\n", fitscard);
-                    writecard = 0;
-                    break;
-                }
-                ki++;
+                PRINT_ERROR("fits_open_file error on file %s", importheaderfile);
+                abort();
             }
 
-            if(writecard == 1)
+
+
+            fits_hdr2str(fptr_header, 1, NULL, 0, &header, &nkeys,
+                         &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
             {
-                fits_write_record(fptr, fitscard, &COREMOD_iofits_data.FITSIO_status);
-                if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-                {
-                    PRINT_ERROR("fits_write_record error on file %s", importheaderfile);
-                    abort();
-                }
+                PRINT_ERROR("fits_hdr2str erroron file %s", importheaderfile);
+                abort();
             }
-            hptr += 80;
-        }
+            printf("imported %d header cards\n", nkeys);
 
-        fits_free_memory(header, &COREMOD_iofits_data.FITSIO_status);
-        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-        {
-            PRINT_ERROR("fits_free_memory error on file %s", importheaderfile);
-            abort();
-        }
+            char *hptr; // pointer to header
+            hptr = header;
+            while(*hptr)
+            {
+                char fitscard[81];
+                sprintf(fitscard, "%.80s", hptr);
 
-        fits_close_file(fptr_header, &COREMOD_iofits_data.FITSIO_status);
-        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-        {
-            PRINT_ERROR("fits_close_file error on file %s", importheaderfile);
-            abort();
+                // keywords to not overwrite
+                int writecard = 1;
+                char *keyexcl[] = {"BITPIX", "NAXIS", "SIMPLE", "EXTEND", 0};
+                int ki = 0;
+                while(keyexcl[ki])
+                {
+                    if(strncmp(keyexcl[ki], fitscard, strlen(keyexcl[ki])) == 0)
+                    {
+                        printf("EXCLUDING %s\n", fitscard);
+                        writecard = 0;
+                        break;
+                    }
+                    ki++;
+                }
+
+                if(writecard == 1)
+                {
+                    fits_write_record(fptr, fitscard, &COREMOD_iofits_data.FITSIO_status);
+                    if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+                    {
+                        PRINT_ERROR("fits_write_record error on file %s", importheaderfile);
+                        abort();
+                    }
+                }
+                hptr += 80;
+            }
+
+            fits_free_memory(header, &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                PRINT_ERROR("fits_free_memory error on file %s", importheaderfile);
+                abort();
+            }
+
+            fits_close_file(fptr_header, &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                PRINT_ERROR("fits_close_file error on file %s", importheaderfile);
+                abort();
+            }
         }
     }
 
