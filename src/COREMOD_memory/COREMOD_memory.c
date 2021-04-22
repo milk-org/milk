@@ -59,6 +59,7 @@
 #include "list_variable.h"
 #include "logshmim.h"
 #include "shmimlog.h"
+#include "shmimlogcmd.h"
 
 #include "read_shmim.h"
 #include "read_shmim_size.h"
@@ -173,6 +174,7 @@ static errno_t init_module_CLI()
     logshmim_addCLIcmd();
 
     CLIADDCMD_COREMOD_memory__shmimlog();
+    CLIADDCMD_COREMOD_memory__shmimlogcmd();
 
 
     // add atexit functions here
