@@ -11,28 +11,28 @@
 #ifndef _COREMODMEMORY_H
 #define _COREMODMEMORY_H
 
-// The number of images in the data structure is kept NB_IMAGES_BUFFER 
-// above the number of used images prior to the execution of any function. 
+// The number of images in the data structure is kept NB_IMAGES_BUFFER
+// above the number of used images prior to the execution of any function.
 // It means that no function should create more than 100 images.
 #define NB_IMAGES_BUFFER 500
 
-// When the number of free images in the data structure is below NB_IMAGES_BUFFER, 
+// When the number of free images in the data structure is below NB_IMAGES_BUFFER,
 // it is increased by  NB_IMAGES_BUFFER
 #define NB_IMAGES_BUFFER_REALLOC 600
 
 
-// The number of variables in the data structure is kept NB_VARIABLES_BUFFER 
-// above the number of used variables prior to the execution of any function. 
+// The number of variables in the data structure is kept NB_VARIABLES_BUFFER
+// above the number of used variables prior to the execution of any function.
 // It means that no function should create more than 100 variables.
 #define NB_VARIABLES_BUFFER 100
 
-// When the number of free variables in the data structure is below NB_VARIABLES_BUFFER, 
+// When the number of free variables in the data structure is below NB_VARIABLES_BUFFER,
 // it is increased by  NB_VARIABLES_BUFFER
 #define NB_VARIABLES_BUFFER_REALLOC 150
 
 
 
-#include "COREMOD_memory/logshmim_types.h"
+#include "COREMOD_memory/shmimlog_types.h"
 
 #include "COREMOD_memory/clearall.h"
 #include "COREMOD_memory/compute_image_memory.h"

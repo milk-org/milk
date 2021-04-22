@@ -11,9 +11,9 @@
 
 errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 {
-	struct tm *uttime;
+    struct tm *uttime;
     time_t tvsec0;
-    
+
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
@@ -27,8 +27,8 @@ errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 
 errno_t mkUTtimestring_nanosec_now(char *timestring)
 {
-    struct timespec tnow;    
-    
+    struct timespec tnow;
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     mkUTtimestring_nanosec(timestring, tnow);
 
@@ -44,16 +44,16 @@ errno_t mkUTtimestring_nanosec_now(char *timestring)
 
 errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
 {
-	struct tm *uttime;
+    struct tm *uttime;
     time_t tvsec0;
-    
-    
+
+
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
     sprintf(timestring, "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ",
             1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
-            uttime->tm_min,  uttime->tm_sec, (long) (tnow.tv_nsec/1000));
+            uttime->tm_min,  uttime->tm_sec, (long)(tnow.tv_nsec / 1000));
 
 
     return RETURN_SUCCESS;
@@ -62,8 +62,8 @@ errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
 
 errno_t mkUTtimestring_microsec_now(char *timestring)
 {
-    struct timespec tnow;    
-    
+    struct timespec tnow;
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     mkUTtimestring_microsec(timestring, tnow);
 
@@ -77,15 +77,15 @@ errno_t mkUTtimestring_microsec_now(char *timestring)
 
 errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
 {
-	struct tm *uttime;
+    struct tm *uttime;
     time_t tvsec0;
-        
+
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
     sprintf(timestring, "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ",
             1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
-            uttime->tm_min,  uttime->tm_sec, (long) (tnow.tv_nsec/1000000));
+            uttime->tm_min,  uttime->tm_sec, (long)(tnow.tv_nsec / 1000000));
 
 
     return RETURN_SUCCESS;
@@ -93,8 +93,8 @@ errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
 
 errno_t mkUTtimestring_millisec_now(char *timestring)
 {
-    struct timespec tnow;    
-    
+    struct timespec tnow;
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     mkUTtimestring_millisec(timestring, tnow);
 
@@ -109,10 +109,10 @@ errno_t mkUTtimestring_millisec_now(char *timestring)
 
 errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
 {
-	struct tm *uttime;
+    struct tm *uttime;
     time_t tvsec0;
-    
-    
+
+
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
@@ -126,8 +126,8 @@ errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
 
 errno_t mkUTtimestring_sec_now(char *timestring)
 {
-    struct timespec tnow;    
-    
+    struct timespec tnow;
+
     clock_gettime(CLOCK_REALTIME, &tnow);
     mkUTtimestring_sec(timestring, tnow);
 
