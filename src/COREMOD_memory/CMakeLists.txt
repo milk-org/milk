@@ -37,6 +37,7 @@ set(SOURCEFILES
     read_shmimall.c
     saveall.c
     shmimlog.c
+    shmimlogcmd.c
     shmim_purge.c
     shmim_setowner.c
     stream_ave.c
@@ -86,6 +87,7 @@ set(INCLUDEFILES
     read_shmimall.h
     saveall.h
     shmimlog.h
+    shmimlogcmd.h
     shmim_purge.h
     shmim_setowner.h
     stream_ave.h
