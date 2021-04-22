@@ -236,16 +236,19 @@ errno_t COREMOD_MEMORY_image_streamburst(
     if(data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
     {
         printf("ERROR: in and out have different size\n");
+        free(arraysize);
         return RETURN_FAILURE;
     }
     if(data.image[IDout].md[0].size[1] != data.image[IDin].md[0].size[1])
     {
         printf("ERROR: in and out have different size\n");
+        free(arraysize);
         return RETURN_FAILURE;
     }
     if(data.image[IDout].md[0].datatype != data.image[IDin].md[0].datatype)
     {
         printf("ERROR: in and out have different datatype\n");
+        free(arraysize);
         return RETURN_FAILURE;
     }
 
