@@ -68,7 +68,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
 // adding INSERT_STD_PROCINFO statements enable processinfo support
 static errno_t compute_function()
 {
-    printf("Running comp func %s %s %ld\n", instreamname, logdir, *logcubesize);
+    //printf("Running comp func %s %s %ld\n", instreamname, logdir, *logcubesize);
 
     shmimlog2D(instreamname, *logcubesize, logdir, "");
 
@@ -351,56 +351,45 @@ static errno_t __attribute__((hot)) shmimlog2D(
 
     switch(datatype)
     {
-
         case _DATATYPE_FLOAT:
             framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.F;
             break;
 
         case _DATATYPE_INT8:
             framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI8;
             break;
 
         case _DATATYPE_UINT8:
             framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI8;
             break;
 
         case _DATATYPE_INT16:
             framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI16;
             break;
 
         case _DATATYPE_UINT16:
             framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI16;
             break;
 
         case _DATATYPE_INT32:
             framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI32;
             break;
 
         case _DATATYPE_UINT32:
             framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI32;
             break;
 
         case _DATATYPE_INT64:
             framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI64;
             break;
 
         case _DATATYPE_UINT64:
             framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI64;
             break;
 
 
         case _DATATYPE_DOUBLE:
             framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.D;
             break;
 
         default:
@@ -409,52 +398,8 @@ static errno_t __attribute__((hot)) shmimlog2D(
             break;
     }
 
-
-
-    switch(datatype)
-    {
-
-        case _DATATYPE_FLOAT:
-            ptr1_0 = (char *) data.image[IDb].array.F;
-            break;
-
-        case _DATATYPE_INT8:
-            ptr1_0 = (char *) data.image[IDb].array.SI8;
-            break;
-
-        case _DATATYPE_UINT8:
-            ptr1_0 = (char *) data.image[IDb].array.UI8;
-            break;
-
-        case _DATATYPE_INT16:
-            ptr1_0 = (char *) data.image[IDb].array.SI16;
-            break;
-
-        case _DATATYPE_UINT16:
-            ptr1_0 = (char *) data.image[IDb].array.UI16;
-            break;
-
-        case _DATATYPE_INT32:
-            ptr1_0 = (char *) data.image[IDb].array.SI32;
-            break;
-
-        case _DATATYPE_UINT32:
-            ptr1_0 = (char *) data.image[IDb].array.UI32;
-            break;
-
-        case _DATATYPE_INT64:
-            ptr1_0 = (char *) data.image[IDb].array.SI64;
-            break;
-
-        case _DATATYPE_UINT64:
-            ptr1_0 = (char *) data.image[IDb].array.UI64;
-            break;
-
-        case _DATATYPE_DOUBLE:
-            ptr1_0 = (char *) data.image[IDb].array.D;
-            break;
-
-    }
+    ptr0_0 = (char *) data.image[ID].array.raw;
+    ptr1_0 = (char *) data.image[IDb].array.raw;
 
 
 
@@ -841,6 +786,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
 
             NBframemissing = (array_cnt0[index - 1] - array_cnt0[0]) - (index - 1);
 
+            printf("=== %6ld %6ld  %6ld   %6ld ====\n", array_cnt0[0], array_cnt0[index-1], index, array_cnt0[index - 1] - array_cnt0[0]);
             printf("===== CUBE %8lld   Number of missed frames = %8ld  / %ld  / %8ld ====\n",
                    logshimconf[0].filecnt, NBframemissing, index, (long) zsize);
 
