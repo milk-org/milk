@@ -347,8 +347,10 @@ imageID create_image_ID(
     if(image_ID(name) == -1)
     {
         ID = next_avail_image_ID();
+        DEBUG_TRACEPOINTLOG(" ");
         ImageStreamIO_createIm(&data.image[ID], name, naxis, size, datatype, shared,
                                NBkw);
+         DEBUG_TRACEPOINTLOG(" ");
     }
     else
     {
