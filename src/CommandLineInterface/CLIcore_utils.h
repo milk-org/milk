@@ -13,6 +13,9 @@ typedef const char *CONST_WORD;
 typedef const char *restrict  CONST_WORD;
 #endif
 
+
+#include <string.h>
+
 #include "CommandLineInterface/CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -286,21 +289,106 @@ INSERT_STD_FPSCLIfunction
 
 
 
-
+/** make IMGID from name
+ *
+ * Some settings can be embedded in the image name string for convenience :
+ *
+ * Examples:
+ * "im1" no optional setting, image name = im1
+ * "s>im1" : set shared memory flag
+ * "k10>im1" : number of keyword = 10
+ * "c10>im1" : 10-sized circular buffer
+ * "tD>im1" : datatype is double (64 bit floating point)
+*/
 static inline IMGID makeIMGID(
     CONST_WORD name
 )
 {
     IMGID img;
 
-    img.ID = -1;
-    strcpy(img.name, name);
+    // default values for image creation
+    img.datatype = _DATATYPE_FLOAT;
+    img.naxis = 2;
+    img.size[0] = 1;
+    img.size[1] = 1;
+    img.shared = 0;
+    img.NBkw = 100;
+    img.CBsize = 0;
 
+    char *pch;
+    char *pch1;
+    int nbword = 0;
+    char namestring[200];
+    strcpy(namestring, name);
+    pch = strtok(namestring, ">");
+    while(pch != NULL)
+    {
+        pch1 = pch;
+        //printf("[%2d] %s\n", nbword, pch);
+
+        if(strcmp(pch, "s") == 0)
+        {
+            printf("    shared memory\n");
+            img.shared = 1;
+        }
+
+        if(pch[0] == 'k')
+        {
+            int nbkw;
+            sscanf(pch, "k%d", &nbkw);
+            printf("    %d keywords\n", nbkw);
+            img.NBkw = nbkw;
+        }
+
+        if(pch[0] == 'c')
+        {
+            int cbsize;
+            sscanf(pch, "k%d", &cbsize);
+            printf("    %d circular buffer size\n", cbsize);
+            img.CBsize = cbsize;
+        }
+
+        pch = strtok(NULL, ">");
+        nbword ++;
+    }
+
+    img.ID = -1;
+    img.createcnt = -1;
+    strcpy(img.name, pch1);
     img.im = NULL;
     img.md = NULL;
-    img.createcnt = -1;
 
     return img;
+}
+
+
+/** Create image according to IMGID entries
+ *
+ */
+static inline imageID imcreateIMGID(
+    IMGID *img
+)
+{
+    if(img->ID == -1)
+    {
+        printf("create 2D image %s, shared = %d, kw = %d\n", img->name, img->shared, img->NBkw);
+
+        long naxis = img->naxis;
+        uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+        sizearray[0] = img->size[0];
+        sizearray[1] = img->size[1];
+
+        DEBUG_TRACEPOINT("Creating 2D image");
+        img->ID = create_image_ID(img->name, naxis, sizearray, img->datatype,
+                                  img->shared,
+                                  img->NBkw);
+        DEBUG_TRACEPOINT(" ");
+        img->im = &data.image[img->ID];
+        img->md = &data.image[img->ID].md[0];
+        img->createcnt = data.image[img->ID].createcnt;
+        free(sizearray);
+    }
+    return img->ID;
 }
 
 

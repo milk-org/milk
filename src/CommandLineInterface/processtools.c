@@ -1185,6 +1185,24 @@ errno_t processinfo_update_output_stream(
         data.image[outstreamID].md[0].cnt0++;
         data.image[outstreamID].md[0].write = 0;
         ImageStreamIO_sempost(&data.image[outstreamID], -1); // post all semaphores
+
+        // update circular buffer if applicable
+        if(data.image[outstreamID].md[0].CBsize > 0)
+        {
+            // write index
+            uint32_t CBindexWrite = data.image[outstreamID].md[0].CBindex + 1;
+            if(CBindexWrite >= data.image[outstreamID].md[0].CBsize)
+            {
+                CBindexWrite = 0;
+            }
+            // destination pointer
+            void * destptr;
+            destptr = data.image[outstreamID].CBimdata + data.image[outstreamID].md[0].imdatamemsize * CBindexWrite;
+
+            memcpy(destptr, data.image[outstreamID].array.raw, data.image[outstreamID].md[0].imdatamemsize);
+
+            data.image[outstreamID].md[0].CBindex = CBindexWrite;
+        }
     }
     return RETURN_SUCCESS;
 }
