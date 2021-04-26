@@ -152,15 +152,15 @@ errno_t load_module_shared(
 
 errno_t load_module_shared_ALL()
 {
-    char libname[500];
-    char dirname[200];
+    char libname[STRINGMAXLEN_FULLFILENAME];
+    char dirname[STRINGMAXLEN_DIRNAME];
     DIR           *d;
     struct dirent *dir;
     int iter;
     int loopOK;
     int itermax;
 
-    sprintf(dirname, "%s/lib", data.installdir);
+    WRITE_DIRNAME(dirname, "%s/lib", data.installdir);
 
     if(data.quiet == 0)
     {
@@ -181,7 +181,7 @@ errno_t load_module_shared_ALL()
                 char *dot = strrchr(dir->d_name, '.');
                 if(dot && !strcmp(dot, ".so"))
                 {
-                    sprintf(libname, "%s/lib/%s", data.installdir, dir->d_name);
+                    WRITE_FULLFILENAME(libname, "%s/lib/%s", data.installdir, dir->d_name);
                     //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
                     //fflush(stdout);
 
