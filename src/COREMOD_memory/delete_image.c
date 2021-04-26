@@ -121,7 +121,7 @@ errno_t delete_image_ID(
 {
     imageID ID;
     long    s;
-    char    fname[200];
+    char    fname[STRINGMAXLEN_FULLFILENAME];
 
     ID = image_ID(imname);
 
@@ -165,7 +165,7 @@ errno_t delete_image_ID(
             {
                 EXECUTE_SYSTEM_COMMAND("rm /dev/shm/sem.%s.%s_sem*",
                                        data.shmsemdirname, imname);
-                sprintf(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
+                WRITE_FULLFILENAME(fname, "/dev/shm/sem.%s.%s_semlog", data.shmsemdirname, imname);
                 remove(fname);
 
                 EXECUTE_SYSTEM_COMMAND("rm %s/%s.im.shm", data.shmdir, imname);
