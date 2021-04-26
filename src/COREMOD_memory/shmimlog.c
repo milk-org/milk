@@ -332,8 +332,8 @@ static errno_t __attribute__((hot)) shmimlog2D(
     sprintf(logb0name, "%s_logbuff0", IDname);
     sprintf(logb1name, "%s_logbuff1", IDname);
 
-    IDb0 = create_image_ID(logb0name, 3, imsizearray, datatype, 1, 1);
-    IDb1 = create_image_ID(logb1name, 3, imsizearray, datatype, 1, 1);
+    IDb0 = create_image_ID(logb0name, 3, imsizearray, datatype, 1, 1, 0);
+    IDb1 = create_image_ID(logb1name, 3, imsizearray, datatype, 1, 1, 0);
     COREMOD_MEMORY_image_set_semflush(logb0name, -1);
     COREMOD_MEMORY_image_set_semflush(logb1name, -1);
 

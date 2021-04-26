@@ -297,8 +297,10 @@ INSERT_STD_FPSCLIfunction
  * "im1" no optional setting, image name = im1
  * "s>im1" : set shared memory flag
  * "k10>im1" : number of keyword = 10
- * "c10>im1" : 10-sized circular buffer
+ * "c20>im1" : 20-sized circular buffer
  * "tD>im1" : datatype is double (64 bit floating point)
+ *      D double precision float (64)
+ *      F single precision float (32)
 */
 static inline IMGID makeIMGID(
     CONST_WORD name
@@ -332,6 +334,62 @@ static inline IMGID makeIMGID(
             img.shared = 1;
         }
 
+
+
+        if(strcmp(pch, "tui8") == 0)
+        {
+            printf("    data type unsigned 8-bit int\n");
+            img.datatype = _DATATYPE_UINT8;
+        }
+        if(strcmp(pch, "tsi8") == 0)
+        {
+            printf("    data type signed 8-bit int\n");
+            img.datatype = _DATATYPE_INT8;
+        }
+        if(strcmp(pch, "tui16") == 0)
+        {
+            printf("    data type unsigned 16-bit int\n");
+            img.datatype = _DATATYPE_UINT16;
+        }
+        if(strcmp(pch, "tsi16") == 0)
+        {
+            printf("    data type signed 16-bit int\n");
+            img.datatype = _DATATYPE_INT16;
+        }
+        if(strcmp(pch, "tui32") == 0)
+        {
+            printf("    data type unsigned 32-bit int\n");
+            img.datatype = _DATATYPE_UINT32;
+        }
+        if(strcmp(pch, "tsi32") == 0)
+        {
+            printf("    data type signed 32-bit int\n");
+            img.datatype = _DATATYPE_INT32;
+        }
+        if(strcmp(pch, "tui64") == 0)
+        {
+            printf("    data type unsigned 64-bit int\n");
+            img.datatype = _DATATYPE_UINT64;
+        }
+        if(strcmp(pch, "tsi64") == 0)
+        {
+            printf("    data type signed 64-bit int\n");
+            img.datatype = _DATATYPE_INT64;
+        }
+
+        if(strcmp(pch, "tf32") == 0)
+        {
+            printf("    data type double (32)\n");
+            img.datatype = _DATATYPE_FLOAT;
+        }
+        if(strcmp(pch, "tf64") == 0)
+        {
+            printf("    data type float (64)\n");
+            img.datatype = _DATATYPE_DOUBLE;
+        }
+
+
+
         if(pch[0] == 'k')
         {
             int nbkw;
@@ -343,10 +401,12 @@ static inline IMGID makeIMGID(
         if(pch[0] == 'c')
         {
             int cbsize;
-            sscanf(pch, "k%d", &cbsize);
+            sscanf(pch, "c%d", &cbsize);
             printf("    %d circular buffer size\n", cbsize);
             img.CBsize = cbsize;
         }
+
+
 
         pch = strtok(NULL, ">");
         nbword ++;
@@ -371,7 +431,8 @@ static inline imageID imcreateIMGID(
 {
     if(img->ID == -1)
     {
-        printf("create 2D image %s, shared = %d, kw = %d\n", img->name, img->shared, img->NBkw);
+        printf("create 2D image %s, shared = %d, kw = %d\n", img->name, img->shared,
+               img->NBkw);
 
         long naxis = img->naxis;
         uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
@@ -379,9 +440,15 @@ static inline imageID imcreateIMGID(
         sizearray[1] = img->size[1];
 
         DEBUG_TRACEPOINT("Creating 2D image");
-        img->ID = create_image_ID(img->name, naxis, sizearray, img->datatype,
-                                  img->shared,
-                                  img->NBkw);
+        img->ID = create_image_ID(
+                      img->name,
+                      naxis,
+                      sizearray,
+                      img->datatype,
+                      img->shared,
+                      img->NBkw,
+                      img->CBsize
+                  );
         DEBUG_TRACEPOINT(" ");
         img->im = &data.image[img->ID];
         img->md = &data.image[img->ID].md[0];

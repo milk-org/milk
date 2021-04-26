@@ -145,7 +145,7 @@ imageID COREMOD_MEMORY_streamAve(
             imsize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
             imsize[0] = xsize;
             imsize[1] = ysize;
-            IDout = create_image_ID(IDout_name, 2, imsize, _DATATYPE_FLOAT, 1, 0);
+            IDout = create_image_ID(IDout_name, 2, imsize, _DATATYPE_FLOAT, 1, 0, 0);
             COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
             free(imsize);
         }

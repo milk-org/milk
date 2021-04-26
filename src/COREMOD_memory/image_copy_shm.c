@@ -91,7 +91,7 @@ static errno_t image_copy_shm(
     if(IDshm == -1)
     {
         DEBUG_TRACEPOINT("Creating image");
-        IDshm = create_image_ID(outshmname, naxis, sizearray, datatype, 1, NBkw);
+        IDshm = create_image_ID(outshmname, naxis, sizearray, datatype, 1, NBkw, 0);
     }
     free(sizearray);
 

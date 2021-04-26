@@ -233,7 +233,7 @@ imageID copy_image_ID(
 
     if(IDout == -1)
     {
-        create_image_ID(newname, naxis, size, datatype, shared, data.NBKEYWORD_DFT);
+        create_image_ID(newname, naxis, size, datatype, shared, data.NBKEYWORD_DFT, 0);
         IDout = image_ID(newname);
     }
     else
@@ -440,7 +440,7 @@ errno_t COREMOD_MEMORY_cp2shm(
 
     if(IDshm == -1)
     {
-        IDshm = create_image_ID(IDshmname, naxis, sizearray, datatype, 1, 0);
+        IDshm = create_image_ID(IDshmname, naxis, sizearray, datatype, 1, 0, 0);
     }
     free(sizearray);
 

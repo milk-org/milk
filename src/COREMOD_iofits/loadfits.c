@@ -221,7 +221,7 @@ imageID load_fits(
         if(bitpix == -32)
         {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                                 data.NBKEYWORD_DFT);
+                                 data.NBKEYWORD_DFT, 0);
 
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
                           data.image[ID].array.F, &anynul, &FITSIOstatus);
@@ -232,7 +232,7 @@ imageID load_fits(
         if(bitpix == -64)
         {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                                 data.NBKEYWORD_DFT);
+                                 data.NBKEYWORD_DFT, 0);
 
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
                           data.image[ID].array.D, &anynul, &FITSIOstatus);
@@ -244,7 +244,7 @@ imageID load_fits(
         {
             // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_UINT16, data.SHARED_DFT,
-                                 data.NBKEYWORD_DFT);
+                                 data.NBKEYWORD_DFT, 0);
 
             //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
             fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[ID].array.UI16,
@@ -257,7 +257,7 @@ imageID load_fits(
         if(bitpix == 32)
         {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_INT32, data.SHARED_DFT,
-                                 data.NBKEYWORD_DFT);
+                                 data.NBKEYWORD_DFT, 0);
             larray = (long *) malloc(sizeof(long) * nelements);
             if(larray == NULL)
             {
@@ -283,7 +283,7 @@ imageID load_fits(
         if(bitpix == 64)
         {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_INT64, data.SHARED_DFT,
-                                 data.NBKEYWORD_DFT);
+                                 data.NBKEYWORD_DFT, 0);
             larray = (long *) malloc(sizeof(long) * nelements);
             if(larray == NULL)
             {
@@ -311,7 +311,7 @@ imageID load_fits(
         if(bitpix == 8)
         {
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                                 data.NBKEYWORD_DFT);
+                                 data.NBKEYWORD_DFT, 0);
             barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] * naxes[0]);
             if(barray == NULL)
             {

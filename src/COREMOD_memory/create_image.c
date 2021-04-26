@@ -21,7 +21,8 @@ imageID create_image_ID(
     uint32_t   *size,
     uint8_t     datatype,
     int         shared,
-    int         nbkw
+    int         nbkw,
+    int         CBsize
 );
 
 
@@ -58,11 +59,11 @@ static errno_t create_image__cli()
         {
             case 0:
                 create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_FLOAT,
-                                data.SHARED_DFT, data.NBKEYWORD_DFT);
+                                data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
                 break;
             case 1:
                 create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_DOUBLE,
-                                data.SHARED_DFT, data.NBKEYWORD_DFT);
+                                data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
                 break;
         }
         free(imsize);
@@ -149,7 +150,7 @@ static errno_t create_image__cli()
         }
 
         create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, datatype,
-                        data.SHARED_DFT, data.NBKEYWORD_DFT);
+                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
 
         free(imsize);
         return CLICMD_SUCCESS;
@@ -188,11 +189,11 @@ static errno_t create_image_shared__cli() // default precision
         {
             case 0:
                 create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_FLOAT,
-                                1, data.NBKEYWORD_DFT);
+                                1, data.NBKEYWORD_DFT, 0);
                 break;
             case 1:
                 create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_DOUBLE,
-                                1, data.NBKEYWORD_DFT);
+                                1, data.NBKEYWORD_DFT, 0);
                 break;
         }
         free(imsize);
@@ -232,7 +233,7 @@ static errno_t create_ushort_image_shared__cli() // default precision
             i++;
         }
         create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_UINT16,
-                        1, data.NBKEYWORD_DFT);
+                        1, data.NBKEYWORD_DFT, 0);
 
         free(imsize);
         return CLICMD_SUCCESS;
@@ -259,7 +260,7 @@ static errno_t create_3Dimage_float()
     imsize[2] = data.cmdargtoken[4].val.numl;
 
     create_image_ID(data.cmdargtoken[1].val.string, 3, imsize, _DATATYPE_FLOAT,
-                    data.SHARED_DFT, data.NBKEYWORD_DFT);
+                    data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
 
     free(imsize);
 
@@ -336,7 +337,8 @@ imageID create_image_ID(
     uint32_t   *size,
     uint8_t     datatype,
     int         shared,
-    int         NBkw
+    int         NBkw,
+    int         CBsize
 )
 {
     imageID ID;
@@ -348,9 +350,17 @@ imageID create_image_ID(
     {
         ID = next_avail_image_ID();
         DEBUG_TRACEPOINTLOG(" ");
-        ImageStreamIO_createIm(&data.image[ID], name, naxis, size, datatype, shared,
-                               NBkw);
-         DEBUG_TRACEPOINTLOG(" ");
+        ImageStreamIO_createIm(
+            &data.image[ID],
+            name,
+            naxis,
+            size,
+            datatype,
+            shared,
+            NBkw,
+            CBsize
+        );
+        DEBUG_TRACEPOINTLOG(" ");
     }
     else
     {
@@ -412,12 +422,12 @@ imageID create_1Dimage_ID(
     if(data.precision == 0)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT);    // single precision
+                             data.NBKEYWORD_DFT, 0);    // single precision
     }
     if(data.precision == 1)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT);    // double precision
+                             data.NBKEYWORD_DFT, 0);    // double precision
     }
 
     return ID;
@@ -439,12 +449,12 @@ imageID create_1DCimage_ID(
     if(data.precision == 0)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT);    // single precision
+                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0);    // single precision
     }
     if(data.precision == 1)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT);    // double precision
+                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0);    // double precision
     }
 
     return ID;
@@ -468,19 +478,19 @@ imageID create_2Dimage_ID(
     if(data.precision == 0)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT);    // single precision
+                             data.NBKEYWORD_DFT, 0);    // single precision
     }
     else if(data.precision == 1)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT);    // double precision
+                             data.NBKEYWORD_DFT, 0);    // double precision
     }
     else
     {
         printf("Default precision (%d) invalid value: assuming single precision\n",
                data.precision);
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT); // single precision
+                             data.NBKEYWORD_DFT, 0); // single precision
     }
 
     return ID;
@@ -503,7 +513,7 @@ imageID create_2Dimage_ID_double(
     naxes[1] = ysize;
 
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                         data.NBKEYWORD_DFT);
+                         data.NBKEYWORD_DFT, 0);
 
     return ID;
 }
@@ -526,12 +536,12 @@ imageID create_2DCimage_ID(
     if(data.precision == 0)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT);    // single precision
+                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0);    // single precision
     }
     if(data.precision == 1)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT);    // double precision
+                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0);    // double precision
     }
 
     return ID;
@@ -554,7 +564,7 @@ imageID create_2DCimage_ID_double(
     naxes[1] = ysize;
 
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                         data.SHARED_DFT, data.NBKEYWORD_DFT); // double precision
+                         data.SHARED_DFT, data.NBKEYWORD_DFT, 0); // double precision
 
     return ID;
 }
@@ -581,7 +591,7 @@ imageID create_3Dimage_ID_float(
     //  fflush(stdout);
 
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                         data.NBKEYWORD_DFT); // single precision
+                         data.NBKEYWORD_DFT, 0); // single precision
 
     //  printf("IMAGE CREATED WITH ID = %ld\n",ID);
     //  fflush(stdout);
@@ -607,7 +617,7 @@ imageID create_3Dimage_ID_double(
     naxes[2] = zsize;
 
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                         data.NBKEYWORD_DFT); // double precision
+                         data.NBKEYWORD_DFT, 0); // double precision
 
     return ID;
 }
@@ -635,13 +645,13 @@ imageID create_3Dimage_ID(
     if(data.precision == 0)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT); // single precision
+                             data.NBKEYWORD_DFT, 0); // single precision
     }
 
     if(data.precision == 1)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT); // double precision
+                             data.NBKEYWORD_DFT, 0); // double precision
     }
 
     free(naxes);
@@ -671,13 +681,13 @@ imageID create_3DCimage_ID(
     if(data.precision == 0)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT); // single precision
+                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0); // single precision
     }
 
     if(data.precision == 1)
     {
         ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT); // double precision
+                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0); // double precision
     }
 
     free(naxes);

@@ -66,7 +66,7 @@ errno_t statusstat_addCLIcmd()
         "monitors shared variable status",
         "<imname> <NBstep>",
         "ctsmstats imst 100000",
-        "long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)");    
+        "long COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)");
 
     return RETURN_SUCCESS;
 }
@@ -113,7 +113,7 @@ imageID COREMOD_TOOLS_statusStat(
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     sizearray[0] = indexmax;
     sizearray[1] = 1;
-    IDout = create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0);
+    IDout = create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0, 0);
     free(sizearray);
 
     for(st = 0; st < indexmax; st++)
