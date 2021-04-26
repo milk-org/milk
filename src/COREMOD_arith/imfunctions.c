@@ -79,7 +79,7 @@ errno_t arith_image_function_im_im__d_d(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -263,7 +263,7 @@ errno_t arith_image_function_imd_im__dd_d(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -450,7 +450,7 @@ errno_t arith_image_function_imdd_im__ddd_d(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -820,7 +820,7 @@ errno_t arith_image_function_1_1(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
@@ -1369,7 +1369,7 @@ errno_t arith_image_function_2_1(
 
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
 
 
 
@@ -4392,7 +4392,7 @@ errno_t arith_image_function_CF_CF__CF(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatype1, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
     nelement = data.image[ID1].md[0].nelement;
 
@@ -4452,7 +4452,7 @@ errno_t arith_image_function_CD_CD__CD(
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatype1, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
     nelement = data.image[ID1].md[0].nelement;
 
@@ -4516,7 +4516,7 @@ int arith_image_function_1f_1(const char *ID_name, double f1,
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
 
     free(naxes);
     nelement = data.image[ID].md[0].nelement;
@@ -4847,7 +4847,7 @@ int arith_image_function_1ff_1(const char *ID_name, double f1, double f2,
     }
 
     IDout = create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT);
+                            data.NBKEYWORD_DFT, 0);
     free(naxes);
     nelement = data.image[ID].md[0].nelement;
 
