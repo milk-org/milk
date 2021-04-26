@@ -395,7 +395,7 @@ int find_streams(
                 char fullname[STRINGMAXLEN_FULLFILENAME];
 
 
-                snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", SHAREDSHMDIR,
+                WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
                          dir->d_name);
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
@@ -415,7 +415,7 @@ int find_streams(
 
 
                     streaminfo[sindex].SymLink = 1;
-                    snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", SHAREDSHMDIR,
+                    WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
                              dir->d_name);
                     linknamefull = realpath(fullname, NULL);
 
@@ -686,7 +686,7 @@ void *streamCTRL_scan(
                             fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
                         }
 
-                        snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", SHAREDSHMDIR,
+                        WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
                                  dir->d_name);
                         retv = lstat(fullname, &buf);
                         if(retv == -1)
@@ -708,7 +708,7 @@ void *streamCTRL_scan(
 
 
                             streaminfo[sindex].SymLink = 1;
-                            snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", SHAREDSHMDIR,
+                            WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
                                      dir->d_name);
                             //                        readlink (fullname, linknamefull, 200-1);
                             linknamefull = realpath(fullname, NULL);
