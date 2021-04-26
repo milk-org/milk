@@ -519,7 +519,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(
     IDout = image_ID(IDoutname);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0);
+        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
@@ -830,7 +830,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     IDout = image_ID(IDoutname);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0);
+        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 

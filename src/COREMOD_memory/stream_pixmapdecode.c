@@ -161,14 +161,15 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     xsizein = data.image[IDin].md[0].size[0];
     ysizein = data.image[IDin].md[0].size[1];
-    
-    if(data.image[IDin].md[0].naxis > 2) {
-		NBslice = data.image[IDin].md[0].size[2];
-	}
-	else
-	{	
-		NBslice = 1;
-	}
+
+    if(data.image[IDin].md[0].naxis > 2)
+    {
+        NBslice = data.image[IDin].md[0].size[2];
+    }
+    else
+    {
+        NBslice = 1;
+    }
 
     char pinfoname[200];  // short name for the processinfo instance
     sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
@@ -197,34 +198,42 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(sizearray == NULL)
     {
-		PRINT_ERROR("malloc error");
-		abort();
-	}    
+        PRINT_ERROR("malloc error");
+        abort();
+    }
 
     int in_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], 0);
 
-    if (reverse == 0 && (xsizein != data.image[IDmap].md[0].size[0] || ysizein != data.image[IDmap].md[0].size[1])) {
+    if(reverse == 0 && (xsizein != data.image[IDmap].md[0].size[0]
+                        || ysizein != data.image[IDmap].md[0].size[1]))
+    {
         printf("ERROR: xsize, ysize for %s (%d, %d) does not match %s (%d, %d)\n",
-               inputstream_name, xsizein, ysizein, IDmap_name, data.image[IDmap].md[0].size[0], data.image[IDmap].md[0].size[0]);
+               inputstream_name, xsizein, ysizein, IDmap_name, data.image[IDmap].md[0].size[0],
+               data.image[IDmap].md[0].size[0]);
         exit(0);
     }
-    if (reverse == 1 && (xsizeim != data.image[IDmap].md[0].size[0] || ysizeim != data.image[IDmap].md[0].size[1])) {
+    if(reverse == 1 && (xsizeim != data.image[IDmap].md[0].size[0]
+                        || ysizeim != data.image[IDmap].md[0].size[1]))
+    {
         printf("ERROR: xsize, ysize for %s (%d, %d) does not match %s (%d, %d)\n",
-               IDout_name, xsizein, ysizein, IDmap_name, data.image[IDmap].md[0].size[0], data.image[IDmap].md[0].size[0]);
+               IDout_name, xsizein, ysizein, IDmap_name, data.image[IDmap].md[0].size[0],
+               data.image[IDmap].md[0].size[0]);
         exit(0);
     }
-    if (NBslice > 1 && reverse == 1) {
+    if(NBslice > 1 && reverse == 1)
+    {
         printf("ERROR: Cannot use reverse lookup decode with multiple slices\n");
     }
 
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
     IDout = create_image_ID(IDout_name, 2, sizearray,
-                            data.image[IDin].md[0].datatype, 1, 25);
+                            data.image[IDin].md[0].datatype, 1, 25, 0);
 
     // Copy the keywords over from IDin to IDout
     int NBkw = data.image[IDin].md[0].NBkw;
-    for (int kw =0; kw < NBkw; ++kw) {
+    for(int kw = 0; kw < NBkw; ++kw)
+    {
         strcpy(data.image[IDout].kw[kw].name, data.image[IDin].kw[kw].name);
         data.image[IDout].kw[kw].type = data.image[IDin].kw[kw].type;
         data.image[IDout].kw[kw].value = data.image[IDin].kw[kw].value;
@@ -238,25 +247,25 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     dtarray = (double *) malloc(sizeof(double) * NBslice);
     if(dtarray == NULL)
     {
-		PRINT_ERROR("malloc error");
-		abort();
-	}
+        PRINT_ERROR("malloc error");
+        abort();
+    }
 
     tarray = (struct timespec *) malloc(sizeof(struct timespec) * NBslice);
     if(tarray == NULL)
     {
-		PRINT_ERROR("malloc error");
-		abort();
-	}
+        PRINT_ERROR("malloc error");
+        abort();
+    }
 
 
     nbpixslice = (long *) malloc(sizeof(long) * NBslice);
     if(nbpixslice == NULL)
     {
-		PRINT_ERROR("malloc error");
-		abort();
-	}    
-    
+        PRINT_ERROR("malloc error");
+        abort();
+    }
+
     if((fp = fopen(NBpix_fname, "r")) == NULL)
     {
         printf("ERROR : cannot open file \"%s\"\n", NBpix_fname);
@@ -296,17 +305,19 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         printf("Slice %5ld   : %5ld pix\n", slice, nbpixslice[slice]);
     }
 
-    if (reverse == 0) { // Only for legacy mode
-        IDout_pixslice = create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0, 0);
+    if(reverse == 0)    // Only for legacy mode
+    {
+        IDout_pixslice = create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0,
+                                         0, 0);
         for(slice = 0; slice < NBslice; slice++)
         {
             sliceii = slice * data.image[IDmap].md[0].size[0] *
-                    data.image[IDmap].md[0].size[1];
+                      data.image[IDmap].md[0].size[1];
             for(ii = 0; ii < nbpixslice[slice]; ii++)
             {
                 // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in 240x240
                 data.image[IDout_pixslice].array.UI16[ data.image[IDmap].array.UI32[sliceii +
-                                                    ii] ] = (unsigned short) (1+slice);
+                                                       ii] ] = (unsigned short)(1 + slice);
             }
         }
 
@@ -382,24 +393,31 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
                 data.image[IDout].md[0].write = 1;
 
-                if (reverse == 0) { // legacy forward lookup mode
-                    if(slice < NBslice) {
+                if(reverse == 0)    // legacy forward lookup mode
+                {
+                    if(slice < NBslice)
+                    {
                         sliceii = slice * data.image[IDmap].md[0].size[0] *
-                                data.image[IDmap].md[0].size[1];
+                                  data.image[IDmap].md[0].size[1];
                         for(ii = 0; ii < nbpixslice[slice]; ii++)
                         {
                             data.image[IDout].array.UI16[data.image[IDmap].array.UI32[sliceii + ii] ] =
                                 data.image[IDin].array.UI16[sliceii + ii];
                         }
                     }
-                } else { // reverse == 1, full image assumed (at least given how ocam is scrambled)
-                    for(ii = 0; ii < nbpixout; ++ii) {
-                        data.image[IDout].array.UI16[ii] = data.image[IDin].array.UI16[data.image[IDmap].array.UI32[ii]];
+                }
+                else     // reverse == 1, full image assumed (at least given how ocam is scrambled)
+                {
+                    for(ii = 0; ii < nbpixout; ++ii)
+                    {
+                        data.image[IDout].array.UI16[ii] =
+                            data.image[IDin].array.UI16[data.image[IDmap].array.UI32[ii]];
                     }
                 }
 
                 // Copy the value of the keywords
-                for (int kw =0; kw < NBkw; ++kw) {
+                for(int kw = 0; kw < NBkw; ++kw)
+                {
                     data.image[IDout].kw[kw].value = data.image[IDin].kw[kw].value;
                 }
 

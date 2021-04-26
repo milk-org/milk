@@ -20,7 +20,8 @@ imageID create_image_ID(
     uint32_t   *size,
     uint8_t     datatype,
     int         shared,
-    int         nbkw
+    int         nbkw,
+    int         CBsize
 );
 
 

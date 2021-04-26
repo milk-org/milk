@@ -1052,7 +1052,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     {
         printf("IMAGE %s HAS TO BE CREATED\n", imgmd[0].name);
         ID = create_image_ID(imgmd[0].name, imgmd[0].naxis, imgmd[0].size,
-                             imgmd[0].datatype, imgmd[0].shared, 0);
+                             imgmd[0].datatype, imgmd[0].shared, 0, 0);
         printf("Created image stream %s - shared = %d\n", imgmd[0].name,
                imgmd[0].shared);
     }

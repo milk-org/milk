@@ -1,4 +1,4 @@
-/** 
+/**
  * @file stream_paste.c
  * @brief Paste two equal size 2D streams into an output 2D stream
 */
@@ -123,16 +123,16 @@ imageID COREMOD_MEMORY_streamPaste(
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     if(arraysize == NULL)
     {
-		PRINT_ERROR("malloc error");
-		abort();
-	}    
+        PRINT_ERROR("malloc error");
+        abort();
+    }
     arraysize[0] = 2 * xsize;
     arraysize[1] = ysize;
 
     IDout = image_ID(IDstreamout_name);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDstreamout_name, 2, arraysize, datatype, 1, 0);
+        IDout = create_image_ID(IDstreamout_name, 2, arraysize, datatype, 1, 0, 0);
         COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
     }
     free(arraysize);
