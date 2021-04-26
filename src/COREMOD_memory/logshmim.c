@@ -469,13 +469,13 @@ LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
 {
     int             SM_fd;
     size_t          sharedsize = 0; // shared memory size in bytes
-    char            SM_fname[200];
+    char            SM_fname[STRINGMAXLEN_FULLFILENAME];
     int             result;
     LOGSHIM_CONF   *map;
 
     sharedsize = sizeof(LOGSHIM_CONF);
 
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, logshimname);
+    WRITE_FULLFILENAME(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, logshimname);
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if(SM_fd == -1)
@@ -532,12 +532,12 @@ errno_t COREMOD_MEMORY_logshim_printstatus(
 )
 {
     LOGSHIM_CONF *map;
-    char          SM_fname[200];
+    char          SM_fname[STRINGMAXLEN_FULLFILENAME];
     int           SM_fd;
     struct        stat file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
+    WRITE_FULLFILENAME(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
     printf("Importing mmap file \"%s\"\n", SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -589,12 +589,12 @@ errno_t COREMOD_MEMORY_logshim_set_on(
 )
 {
     LOGSHIM_CONF  *map;
-    char           SM_fname[200];
+    char           SM_fname[STRINGMAXLEN_FULLFILENAME];
     int            SM_fd;
     struct stat    file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
+    WRITE_FULLFILENAME(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
     printf("Importing mmap file \"%s\"\n", SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
@@ -641,12 +641,12 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(
 )
 {
     LOGSHIM_CONF  *map;
-    char           SM_fname[200];
+    char           SM_fname[STRINGMAXLEN_FULLFILENAME];
     int            SM_fd;
     struct stat    file_stat;
 
     // read shared mem
-    sprintf(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
+    WRITE_FULLFILENAME(SM_fname, "%s/%s.logshimconf.shm", data.shmdir, IDname);
     printf("Importing mmap file \"%s\"\n", SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);

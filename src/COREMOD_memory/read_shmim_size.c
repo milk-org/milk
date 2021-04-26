@@ -74,7 +74,7 @@ imageID read_sharedmem_image_size(
 {
     int             SM_fd;
     struct          stat file_stat;
-    char            SM_fname[200];
+    char            SM_fname[STRINGMAXLEN_FULLFILENAME];
     IMAGE_METADATA *map;
     int             i;
     FILE           *fp;
@@ -83,7 +83,7 @@ imageID read_sharedmem_image_size(
 
     if((ID = image_ID(name)) == -1)
     {
-        sprintf(SM_fname, "%s/%s.im.shm", data.shmdir, name);
+        WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", data.shmdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
         if(SM_fd == -1)
