@@ -4,6 +4,8 @@
  */
 
 
+#include <stdlib.h>
+
 #include "CommandLineInterface/CLIcore.h"
 
 
