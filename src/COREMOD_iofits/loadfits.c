@@ -380,7 +380,7 @@ imageID load_fits(
                 if(kwtypeOK == 0)
                 {
                     // is this a float ?
-                    double kwdoubleval = strtof64(kwvaluestr, &tailstr);
+                    double kwdoubleval = strtold(kwvaluestr, &tailstr);
                     if(strlen(tailstr) == 0)
                     {
                         kwtypeOK = 1;
