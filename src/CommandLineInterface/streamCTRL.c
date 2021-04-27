@@ -77,6 +77,9 @@ typedef int errno_t;
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+// shared memory access permission
+#define FILEMODE 0666
+
 
 #define STRINGLENMAX  32
 
@@ -1524,8 +1527,8 @@ errno_t streamCTRL_CTRLscreen()
     WRITE_FULLFILENAME(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR,
                        CLIPID);
     //sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
-
-    newstderr = open(newstderrfname, O_WRONLY | O_CREAT, 0644);
+    umask(0);
+    newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
     dup2(newstderr, STDERR_FILENO);
     close(newstderr);
 

@@ -81,7 +81,8 @@ static int CTRLscreenExitLine = 0; // for debugging
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
+// shared memory access permission
+#define FILEMODE 0666
 
 
 // What do we want to compute/print ?
@@ -475,8 +476,8 @@ long processinfo_shm_list_create()
         int SM_fd; // shared memory file descriptor
 
         sharedsize = sizeof(PROCESSINFOLIST);
-
-        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+        umask(0);
+        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
         if(SM_fd == -1)
         {
             perror("Error opening file for writing");
@@ -584,8 +585,8 @@ PROCESSINFO *processinfo_shm_create(
 
     WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname, pname,
                        (int) PID);
-
-    SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+    umask(0);
+    SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
     if(SM_fd == -1)
     {
         perror("Error opening file for writing");
@@ -1198,10 +1199,12 @@ errno_t processinfo_update_output_stream(
                 CBcycleincrement = 1;
             }
             // destination pointer
-            void * destptr;
-            destptr = data.image[outstreamID].CBimdata + data.image[outstreamID].md[0].imdatamemsize * CBindexWrite;
+            void *destptr;
+            destptr = data.image[outstreamID].CBimdata +
+                      data.image[outstreamID].md[0].imdatamemsize * CBindexWrite;
 
-            memcpy(destptr, data.image[outstreamID].array.raw, data.image[outstreamID].md[0].imdatamemsize);
+            memcpy(destptr, data.image[outstreamID].array.raw,
+                   data.image[outstreamID].md[0].imdatamemsize);
 
             data.image[outstreamID].md[0].CBcycle += CBcycleincrement;
             data.image[outstreamID].md[0].CBindex = CBindexWrite;
