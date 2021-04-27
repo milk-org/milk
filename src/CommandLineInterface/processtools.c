@@ -1191,9 +1191,11 @@ errno_t processinfo_update_output_stream(
         {
             // write index
             uint32_t CBindexWrite = data.image[outstreamID].md[0].CBindex + 1;
+            int CBcycleincrement = 0;
             if(CBindexWrite >= data.image[outstreamID].md[0].CBsize)
             {
                 CBindexWrite = 0;
+                CBcycleincrement = 1;
             }
             // destination pointer
             void * destptr;
@@ -1201,6 +1203,7 @@ errno_t processinfo_update_output_stream(
 
             memcpy(destptr, data.image[outstreamID].array.raw, data.image[outstreamID].md[0].imdatamemsize);
 
+            data.image[outstreamID].md[0].CBcycle += CBcycleincrement;
             data.image[outstreamID].md[0].CBindex = CBindexWrite;
         }
     }
