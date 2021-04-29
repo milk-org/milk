@@ -48,6 +48,7 @@ project(lib_${LIBNAME}_project)
 #
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
+# note: set tp PUBLIC if other modules link to this one
 target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 

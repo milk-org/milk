@@ -1183,33 +1183,10 @@ errno_t processinfo_update_output_stream(
         }
         DEBUG_TRACEPOINT(" ");
 
-        data.image[outstreamID].md[0].cnt0++;
-        data.image[outstreamID].md[0].write = 0;
-        ImageStreamIO_sempost(&data.image[outstreamID], -1); // post all semaphores
-
-        // update circular buffer if applicable
-        if(data.image[outstreamID].md[0].CBsize > 0)
-        {
-            // write index
-            uint32_t CBindexWrite = data.image[outstreamID].md[0].CBindex + 1;
-            int CBcycleincrement = 0;
-            if(CBindexWrite >= data.image[outstreamID].md[0].CBsize)
-            {
-                CBindexWrite = 0;
-                CBcycleincrement = 1;
-            }
-            // destination pointer
-            void *destptr;
-            destptr = data.image[outstreamID].CBimdata +
-                      data.image[outstreamID].md[0].imdatamemsize * CBindexWrite;
-
-            memcpy(destptr, data.image[outstreamID].array.raw,
-                   data.image[outstreamID].md[0].imdatamemsize);
-
-            data.image[outstreamID].md[0].CBcycle += CBcycleincrement;
-            data.image[outstreamID].md[0].CBindex = CBindexWrite;
-        }
     }
+
+    ImageStreamIO_UpdateIm(&data.image[outstreamID]);
+
     return RETURN_SUCCESS;
 }
 
