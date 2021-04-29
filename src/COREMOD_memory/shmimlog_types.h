@@ -42,6 +42,12 @@ typedef struct
     long      interval;             /**<  log every x frames (default = 1) */
     int       logexit;              /**<  toggle to 1 when exiting */
     char      fname[200];
+
+    // circular buffer
+    uint32_t  CBsize;
+
+    uint32_t  CBindex; // last frame grabbed
+    uint64_t  CBcycle; // last frame grabbed
 } LOGSHIM_CONF;
 
 #endif
