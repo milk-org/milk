@@ -208,8 +208,8 @@ extern "C" {
 
 PROCESSINFO *processinfo_setup(
     char *pinfoname,
-    char descriptionstring[200],
-    char msgstring[200],
+    const char* descriptionstring,
+    const char *msgstring,
     const char *functionname,
     const char *filename,
     int   linenumber
