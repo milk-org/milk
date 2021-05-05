@@ -436,6 +436,10 @@ static inline imageID imcreateIMGID(
 
         long naxis = img->naxis;
         uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+        if(sizearray == NULL) {
+            PRINT_ERROR("malloc returns NULL pointer");
+            abort();
+        }
         sizearray[0] = img->size[0];
         sizearray[1] = img->size[1];
 
