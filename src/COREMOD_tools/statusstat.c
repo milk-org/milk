@@ -111,6 +111,11 @@ imageID COREMOD_TOOLS_statusStat(
     IDstat = image_ID(IDstat_name);
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+    if(sizearray == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer");
+        abort();
+    }
+
     sizearray[0] = indexmax;
     sizearray[1] = 1;
     IDout = create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0, 0);
