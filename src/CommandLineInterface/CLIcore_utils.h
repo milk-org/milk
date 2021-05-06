@@ -423,6 +423,23 @@ static inline IMGID makeIMGID(
 
 
 
+static inline IMGID makeIMGID_2D(
+    CONST_WORD name,
+    uint32_t xsize,
+    uint32_t ysize
+)
+{
+    IMGID img = makeIMGID(name);
+    img.naxis = 2;
+    img.size[0] = xsize;
+    img.size[1] = ysize;
+
+    return img;
+}
+
+
+
+
 /** Create image according to IMGID entries
  *
  */
