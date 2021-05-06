@@ -705,13 +705,28 @@ PROCESSINFO *processinfo_shm_create(
 
     clock_gettime(CLOCK_REALTIME, &tnow);
 
-    snprintf(pinfo->logfilename,
-             STRINGMAXLEN_PROCESSINFO_LOGFILENAME,
-             "%s/proc.%s.%06d.%09ld.logfile",
-             procdname,
-             pinfo->name,
-             (int) pinfo->PID,
-             tnow.tv_sec);
+    {
+        int slen =  snprintf(pinfo->logfilename,
+                             STRINGMAXLEN_PROCESSINFO_LOGFILENAME,
+                             "%s/proc.%s.%06d.%09ld.logfile",
+                             procdname,
+                             pinfo->name,
+                             (int) pinfo->PID,
+                             tnow.tv_sec);
+        if(slen < 1)
+        {
+            PRINT_ERROR("snprintf wrote <1 char");
+            abort();
+        }
+        if(slen >= STRINGMAXLEN_PROCESSINFO_LOGFILENAME)
+        {
+            PRINT_ERROR("snprintf string truncation");
+            abort();
+        }
+    }
+
+
+
 
     if(LogFileCreated == 0)
     {
@@ -976,7 +991,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
             PRINT_ERROR("snprintf wrote <1 char");
             abort(); // can't handle this error any other way
         }
-        if(slen >= STRINGMAXLEN_IMGNAME)
+        if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
         {
             PRINT_ERROR("snprintf string truncation");
             abort(); // can't handle this error any other way

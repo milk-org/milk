@@ -432,24 +432,14 @@ static inline imageID imcreateIMGID(
 {
     if(img->ID == -1)
     {
-        printf("create 2D image %s, shared = %d, kw = %d\n", img->name, img->shared,
+        printf("creating 2D image %s, shared = %d, kw = %d\n", img->name, img->shared,
                img->NBkw);
-
-        long naxis = img->naxis;
-        uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-        if(sizearray == NULL) {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
-        sizearray[0] = img->size[0];
-        sizearray[1] = img->size[1];
-
 
         DEBUG_TRACEPOINT("Creating 2D image");
         img->ID = create_image_ID(
                       img->name,
-                      naxis,
-                      sizearray,
+                      img->naxis,
+                      img->size,
                       img->datatype,
                       img->shared,
                       img->NBkw,
@@ -459,7 +449,6 @@ static inline imageID imcreateIMGID(
         img->im = &data.image[img->ID];
         img->md = &data.image[img->ID].md[0];
         img->createcnt = data.image[img->ID].createcnt;
-        free(sizearray);
     }
     return img->ID;
 }

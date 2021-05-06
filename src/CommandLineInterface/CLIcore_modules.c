@@ -307,9 +307,9 @@ errno_t RegisterModule(
     {
         OKmsg = 1;
         DEBUG_TRACEPOINT("  %02ld  Found unloaded shared object in ./libs/ -> LOADING %10s  module %40s\n",
-               data.NBmodule,
-               PackageName,
-               FileName);
+                         data.NBmodule,
+                         PackageName,
+                         FileName);
         fflush(stdout);
     }
 
@@ -419,8 +419,19 @@ uint32_t RegisterCLIcmd(
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            sprintf(data.cmd[data.NBcmd].key, "%s.%s",
-                    data.module[data.moduleindex].shortname, CLIcmddata.key);
+            int slen = snprintf(data.cmd[data.NBcmd].key, STRINGMAXLEN_CMD_KEY, "%s.%s",
+                                data.module[data.moduleindex].shortname, CLIcmddata.key);
+            if(slen < 1)
+            {
+                PRINT_ERROR("failed to write call key");
+                abort();
+            }
+            if(slen >= STRINGMAXLEN_CMD_KEY)
+            {
+                PRINT_ERROR("call key string too long");
+                abort();
+            }
+
         }
     }
 
@@ -471,26 +482,26 @@ uint32_t RegisterCLIcmd(
                    CLIcmddata.funcfpscliarg[argi].example);
             switch(data.cmd[data.NBcmd].argdata[argi].type)
             {
-                case CLIARG_FLOAT:
-                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
-                                CLIcmddata.funcfpscliarg[argi].example);
-                    break;
-                case CLIARG_LONG:
-                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                                CLIcmddata.funcfpscliarg[argi].example);
-                    break;
-                case CLIARG_STR_NOT_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                           CLIcmddata.funcfpscliarg[argi].example);
-                    break;
-                case CLIARG_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                           CLIcmddata.funcfpscliarg[argi].example);
-                    break;
-                case CLIARG_STR:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                           CLIcmddata.funcfpscliarg[argi].example);
-                    break;
+            case CLIARG_FLOAT:
+                data.cmd[data.NBcmd].argdata[argi].val.f = atof(
+                            CLIcmddata.funcfpscliarg[argi].example);
+                break;
+            case CLIARG_LONG:
+                data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                            CLIcmddata.funcfpscliarg[argi].example);
+                break;
+            case CLIARG_STR_NOT_IMG:
+                strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                       CLIcmddata.funcfpscliarg[argi].example);
+                break;
+            case CLIARG_IMG:
+                strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                       CLIcmddata.funcfpscliarg[argi].example);
+                break;
+            case CLIARG_STR:
+                strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                       CLIcmddata.funcfpscliarg[argi].example);
+                break;
             }
         }
     }

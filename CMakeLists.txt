@@ -120,7 +120,7 @@ endforeach()
 
 # Set Release build flags
 # option: add -fanalyzer if gcc10+
-set(CMAKE_C_FLAGS_DEBUG     "-O0 -fanalyzer -g -Wall -Wextra")
+set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra")
 
 # Set Release build flags
 set(CMAKE_C_FLAGS_RELEASE     "-Ofast -DNDEBUG")
