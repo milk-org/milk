@@ -20,9 +20,9 @@ typedef struct
     // 1 : Saving ascii: arraycnt0, arraycnt1, arraytime
     // 2 : ???
 
-    char      fname_auxFITSheader[200];
+    char      fname_auxFITSheader[STRINGMAXLEN_FILENAME];
 
-    char      fnameascii[200];  // name of frame to be saved
+    char      fnameascii[STRINGMAXLEN_FILENAME];  // name of frame to be saved
     uint64_t *arrayindex;
     uint64_t *arraycnt0;
     uint64_t *arraycnt1;
