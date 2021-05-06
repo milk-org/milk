@@ -1379,7 +1379,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
             tmsg->arraycnt0 = array_cnt0_cp;
             tmsg->arraycnt1 = array_cnt1_cp;
             tmsg->arraytime = array_time_cp;
-            sprintf(tmsg->fname_auxFITSheader,
+            WRITE_FILENAME(tmsg->fname_auxFITSheader,
                     "%s/%s.auxFITSheader.shm",
                     data.shmdir,
                     IDname);

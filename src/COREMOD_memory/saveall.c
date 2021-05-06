@@ -125,8 +125,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     long *IDarraycp;
     long i;
     long imcnt = 0;
-    char imnamecp[200];
-    char fnamecp[500];
+    char imnamecp[STRINGMAXLEN_IMGNAME];
+    char fnamecp[STRINGMAXLEN_FULLFILENAME];
     long ID;
 
 
@@ -141,19 +141,21 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
 
     imcnt = 0;
     for(i = 0; i < data.NB_MAX_IMAGE; i++)
+    {
         if(data.image[i].used == 1)
         {
             IDarray[imcnt] = i;
             imcnt++;
         }
+    }
 
-	EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
+    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
 
     // create array for each image
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        sprintf(imnamecp, "%s_cp", data.image[ID].name);
+        WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
         //printf("image %s\n", data.image[ID].name);
         IDarraycp[i] = copy_image_ID(data.image[ID].name, imnamecp, 0);
     }
@@ -163,8 +165,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        sprintf(imnamecp, "%s_cp", data.image[ID].name);
-        sprintf(fnamecp, "!./%s/%s.fits", dirname, data.image[ID].name);
+        WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
+        WRITE_FULLFILENAME(fnamecp, "!./%s/%s.fits", dirname, data.image[ID].name);
         save_fits(imnamecp, fnamecp);
     }
 
