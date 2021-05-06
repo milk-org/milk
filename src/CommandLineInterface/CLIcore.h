@@ -366,7 +366,7 @@ typedef struct
     // can be used to trace program execution for runtime profiling and debugging
 
     int    testpoint_line;
-    char   testpoint_file[STRINGMAXLEN_FILENAME];
+    char   testpoint_file[STRINGMAXLEN_FULLFILENAME];
     char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
     char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
     struct timespec testpoint_time;
@@ -423,7 +423,7 @@ typedef struct
     char           processname[100];
     char           processname0[100];
     int            processnameflag;
-    char           fifoname[100];
+    char           fifoname[STRINGMAXLEN_FULLFILENAME];
     uint32_t       NBcmd;
 
     CMD            cmd[DATA_NB_MAX_COMMAND];

@@ -19,8 +19,8 @@
 
 
 /** @brief scan and load FPSs
- * 
- */ 
+ *
+ */
 
 errno_t functionparameter_scan_fps(
     uint32_t mode,
@@ -219,7 +219,7 @@ errno_t functionparameter_scan_fps(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
-					TUI_exit();
+                    TUI_exit();
                     printf("File \"%s\"", dir->d_name);
                     perror("Error running lstat on file ");
                     printf("File %s line %d\n", __FILE__, __LINE__);
@@ -275,12 +275,12 @@ errno_t functionparameter_scan_fps(
                 long strcplen = strlen(dir->d_name) - strlen(".fps.shm");
                 int strcplen1 = STRINGMAXLEN_FPS_NAME-1;
                 if(strcplen < strcplen1) {
-					strcplen1 =  strcplen;
-				}
+                    strcplen1 =  strcplen;
+                }
 
-				strncpy(fpsname, dir->d_name, strcplen1);
-				fpsname[strcplen1] = '\0';
-				
+                strncpy(fpsname, dir->d_name, strcplen1);
+                fpsname[strcplen1] = '\0';
+
 
                 if(verbose > 0)
                 {

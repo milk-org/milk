@@ -92,7 +92,7 @@ clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
  */
 #define PRINT_WARNING(...) do { \
 char warnmessage[1000]; \
-sprintf(warnmessage, __VA_ARGS__); \
+snprintf(warnmessage, 1000, __VA_ARGS__); \
 fprintf(stderr, \
 "%c[%d;%dm WARNING [ FILE: %s   FUNCTION: %s  LINE: %d ]  %c[%d;m\n", \
 (char) 27, 1, 35, __FILE__, __func__, __LINE__, (char) 27, 0); \
@@ -123,11 +123,35 @@ C_ERRNO = 0; \
 #define DEBUG_TRACEPOINT(...)
 #else
 #define DEBUG_TRACEPOINT(...) do {                    \
-sprintf(data.testpoint_file, "%s", __FILE__);         \
-sprintf(data.testpoint_func, "%s", __func__);         \
+int slen = snprintf(data.testpoint_file, STRINGMAXLEN_FULLFILENAME, "%s", __FILE__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FULLFILENAME) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+slen = snprintf(data.testpoint_func, STRINGMAXLEN_FUNCTIONNAME, "%s", __func__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FUNCTIONNAME) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
 data.testpoint_line = __LINE__;                       \
 clock_gettime(CLOCK_REALTIME, &data.testpoint_time);  \
-sprintf(data.testpoint_msg, __VA_ARGS__);             \
+slen = snprintf(data.testpoint_msg, STRINGMAXLEN_FUNCTIONARGS, __VA_ARGS__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FUNCTIONARGS) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
 } while(0)
 #endif
 
@@ -139,16 +163,39 @@ sprintf(data.testpoint_msg, __VA_ARGS__);             \
 #if defined NDEBUG
 #define DEBUG_TRACEPOINTLOG(...)
 #else
-#define DEBUG_TRACEPOINTLOG(...) do {                \
-sprintf(data.testpoint_file, "%s", __FILE__);        \
-sprintf(data.testpoint_func, "%s", __func__);        \
-data.testpoint_line = __LINE__;                      \
-clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
-sprintf(data.testpoint_msg, __VA_ARGS__);            \
-write_process_log();                                 \
+#define DEBUG_TRACEPOINTLOG(...) do {                                      \
+int slen = snprintf(data.testpoint_file, STRINGMAXLEN_FULLFILENAME, "%s", __FILE__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FULLFILENAME) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+slen = snprintf(data.testpoint_func, STRINGMAXLEN_FUNCTIONNAME, "%s", __func__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FUNCTIONNAME) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+data.testpoint_line = __LINE__;                                            \
+clock_gettime(CLOCK_REALTIME, &data.testpoint_time);                       \
+slen = snprintf(data.testpoint_msg, STRINGMAXLEN_FUNCTIONARGS, __VA_ARGS__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FUNCTIONARGS) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+write_process_log();                                                       \
 } while(0)
 #endif
-
 
 
 //

@@ -500,6 +500,11 @@ errno_t functionparameter_CTRLscreen(
     //
     keywnode = (KEYWORD_TREE_NODE *) malloc(sizeof(KEYWORD_TREE_NODE) *
                                             NB_KEYWNODE_MAX);
+    if(keywnode == NULL)
+    {
+        PRINT_ERROR("malloc error: can't allocate keywnode");
+        abort();
+    }
     for(int kn = 0; kn < NB_KEYWNODE_MAX; kn++)
     {
         strcpy(keywnode[kn].keywordfull, "");
@@ -524,6 +529,11 @@ errno_t functionparameter_CTRLscreen(
     FPSCTRL_TASK_ENTRY *fpsctrltasklist;
     fpsctrltasklist = (FPSCTRL_TASK_ENTRY *) malloc(sizeof(FPSCTRL_TASK_ENTRY) *
                       NB_FPSCTRL_TASK_MAX);
+    if(fpsctrltasklist == NULL)
+    {
+        PRINT_ERROR("malloc error");
+        abort();
+    }
     for(int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++)
     {
         fpsctrltasklist[cmdindex].status = 0;
@@ -535,6 +545,11 @@ errno_t functionparameter_CTRLscreen(
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist;
     fpsctrlqueuelist = (FPSCTRL_TASK_QUEUE *) malloc(sizeof(
                            FPSCTRL_TASK_QUEUE) * NB_FPSCTRL_TASKQUEUE_MAX);
+    if(fpsctrlqueuelist == NULL)
+    {
+        PRINT_ERROR("malloc error");
+        abort();
+    }
     for(int queueindex = 0; queueindex < NB_FPSCTRL_TASKQUEUE_MAX; queueindex++)
     {
         fpsctrlqueuelist[queueindex].priority = 1; // 0 = not active
@@ -582,6 +597,10 @@ errno_t functionparameter_CTRLscreen(
         printf("No function parameter structure found\n");
         printf("File %s line %d\n", __FILE__, __LINE__);
         fflush(stdout);
+
+        free(fpsctrltasklist);
+        free(keywnode);
+        free(fpsctrlqueuelist);
 
         return RETURN_SUCCESS;
     }
@@ -1804,10 +1823,22 @@ errno_t functionparameter_CTRLscreen(
 
                 // Sort entries from most recent to most ancient, using inputindex
                 DEBUG_TRACEPOINT(" ");
+
                 double *sort_evalarray;
                 sort_evalarray = (double *) malloc(sizeof(double) * NB_FPSCTRL_TASK_MAX);
+                if(sort_evalarray == NULL)
+                {
+                    PRINT_ERROR("malloc error");
+                    abort();
+                }
+
                 long *sort_indexarray;
                 sort_indexarray = (long *) malloc(sizeof(long) * NB_FPSCTRL_TASK_MAX);
+                if(sort_indexarray == NULL)
+                {
+                    PRINT_ERROR("malloc error");
+                    abort();
+                }
 
                 long sortcnt = 0;
                 for(int fpscmdindex = 0; fpscmdindex < NB_FPSCTRL_TASK_MAX; fpscmdindex++)

@@ -141,8 +141,11 @@ errno_t functionparameter_outlog(
 
     if(strcmp(keyw, "LOGFILECLOSE") == 0)
     {
-        fclose(fpout);
-        LogOutOpen = 1;
+        if(LogOutOpen == 1)
+        {
+            fclose(fpout);
+            LogOutOpen = 0;
+        }
     }
 
     return RETURN_SUCCESS;
