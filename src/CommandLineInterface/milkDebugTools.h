@@ -52,10 +52,34 @@ typedef int errno_t;
  *  @ingroup errcheckmacro
  */
 #define PRINT_ERROR(...) do { \
-sprintf(data.testpoint_msg, __VA_ARGS__); \
+int print_error_slen = snprintf(data.testpoint_msg, STRINGMAXLEN_FUNCTIONARGS, __VA_ARGS__); \
+if(print_error_slen<1) {                                                    \
+    printf("snprintf in PRINT_ERROR: wrote <1 char");           \
+    abort();                                                    \
+}                                                               \
+if(print_error_slen >= STRINGMAXLEN_FUNCTIONARGS) {                         \
+    printf("snprintf in PRINT_ERROR: string truncation");       \
+    abort();                                                    \
+}\
 printf("ERROR: %c[%d;%dm %s %c[%d;m\n", (char) 27, 1, 31, data.testpoint_msg, (char) 27, 0); \
-sprintf(data.testpoint_file, "%s", __FILE__); \
-sprintf(data.testpoint_func, "%s", __func__); \
+print_error_slen = snprintf(data.testpoint_file, STRINGMAXLEN_FILENAME, "%s", __FILE__); \
+if(print_error_slen<1) {                                                    \
+    printf("snprintf in PRINT_ERROR: wrote <1 char");           \
+    abort();                                                    \
+}                                                               \
+if(print_error_slen >= STRINGMAXLEN_FILENAME) {                             \
+    printf("snprintf in PRINT_ERROR: string truncation");       \
+    abort();                                                    \
+}\
+print_error_slen = snprintf(data.testpoint_func, STRINGMAXLEN_FUNCTIONNAME, "%s", __func__); \
+if(print_error_slen<1) {                                                    \
+    printf("snprintf in PRINT_ERROR: wrote <1 char");           \
+    abort();                                                    \
+}                                                               \
+if(print_error_slen >= STRINGMAXLEN_FUNCTIONNAME) {                         \
+    printf("snprintf in PRINT_ERROR: string truncation");       \
+    abort();                                                    \
+}\
 data.testpoint_line = __LINE__; \
 clock_gettime(CLOCK_REALTIME, &data.testpoint_time); \
 } while(0)

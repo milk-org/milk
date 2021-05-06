@@ -1,7 +1,7 @@
 /**
  * @file fps_process_fpsCMDarray.c
  */
- 
+
 #include <limits.h>
 
 #include "CommandLineInterface/CLIcore.h"
@@ -10,7 +10,7 @@
 #include "fps_processcmdline.h"
 
 
- 
+
 /** @brief Find the next task to execute
  *
  * Tasks are arranged in execution queues.
@@ -163,12 +163,16 @@ int function_parameter_process_fpsCMDarray(
 
     // Remove old tasks
     //
-    double *completion_age; // completion time    
+    double *completion_age; // completion time
     long    oldest_index = 0;
     struct  timespec tnow;
     double  tnowd;
 
     completion_age = (double*) malloc(sizeof(double)*NB_FPSCTRL_TASK_MAX);
+    if(completion_age == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer");
+        abort();
+    }
 
     clock_gettime(CLOCK_REALTIME, &tnow);
     tnowd = 1.0*tnow.tv_sec + 1.0e-9*tnow.tv_nsec;
@@ -197,14 +201,14 @@ int function_parameter_process_fpsCMDarray(
         }
         if(taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE)
         {
-			fpsctrltasklist[oldest_index].status = 0;
-		}
+            fpsctrltasklist[oldest_index].status = 0;
+        }
     }
 
     free(completion_age);
 
 
-	
+
 
 
 
@@ -229,7 +233,7 @@ int function_parameter_process_fpsCMDarray(
     if( nexttask_cmdindex != -1 )
     {
         if(nexttask_priority > 0 )
-        { // execute task
+        {   // execute task
             int cmdindexExec = nexttask_cmdindex;
 
             uint64_t taskstatus = 0;
@@ -238,15 +242,15 @@ int function_parameter_process_fpsCMDarray(
                 functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring,
                         fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
             NBtaskLaunched++;
-            
+
             // update status form cmdline interpreter
             fpsctrltasklist[cmdindexExec].status |= taskstatus;
-            
+
             clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindexExec].activationtime);
-            
+
             // update status to running
             fpsctrltasklist[cmdindexExec].status |= FPSTASK_STATUS_RUNNING;
-            fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_WAITING; 
+            fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_WAITING;
         }
     }
 

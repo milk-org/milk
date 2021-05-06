@@ -422,6 +422,7 @@ static inline IMGID makeIMGID(
 }
 
 
+
 /** Create image according to IMGID entries
  *
  */
@@ -442,6 +443,7 @@ static inline imageID imcreateIMGID(
         }
         sizearray[0] = img->size[0];
         sizearray[1] = img->size[1];
+
 
         DEBUG_TRACEPOINT("Creating 2D image");
         img->ID = create_image_ID(

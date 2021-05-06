@@ -381,7 +381,13 @@ int fpsCTRLscreen_process_user_key(
                 char *context;
 
                 int inputLength = strlen(FPSline);
+
                 char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
+                if(inputCopy == NULL) {
+                    PRINT_ERROR("malloc returns NULL pointer");
+                    abort();
+                }
+
                 strncpy(inputCopy, FPSline, inputLength);
 
                 varname = strtok_r (inputCopy, delimiter, &context);
