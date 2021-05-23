@@ -30,9 +30,26 @@ Module inclues key frameworks :
 - **processinfo** : process management and control
 - **function parameter structure (FPS)** : reading/writing function parameters
 
-## Compilation
+## Download
+
+	git clone https://github.com/milk-org/milk.git
+	./fetch_milk_dev.sh
+
+
+## Compile
+
+Standard compile:
+
+	mkdir _build
+	cd _build
+	cmake ..
+	make
+	sudo make install
+
+Compile with Python module (check script content for details):
 
     ./compile.sh $PWD/local
+
 
 ## Adding plugins
 
