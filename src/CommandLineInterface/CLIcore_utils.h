@@ -437,6 +437,23 @@ static inline IMGID makeIMGID_2D(
     return img;
 }
 
+static inline IMGID makeIMGID_3D(
+    CONST_WORD name,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint32_t zsize
+)
+{
+    IMGID img = makeIMGID(name);
+    img.naxis = 3;
+    img.size[0] = xsize;
+    img.size[1] = ysize;
+    img.size[2] = zsize;
+
+    return img;
+}
+
+
 
 
 

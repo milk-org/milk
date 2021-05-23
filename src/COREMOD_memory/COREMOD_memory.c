@@ -48,6 +48,8 @@
 #include "image_keyword_addD.h"
 #include "image_keyword_addL.h"
 #include "image_keyword_addS.h"
+#include "image_make2D.h"
+#include "image_make3D.h"
 
 #include "image_set_counters.h"
 
@@ -130,6 +132,8 @@ static errno_t init_module_CLI()
 
     // CREATE IMAGE
     create_image_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__mk2Dim();
+    CLIADDCMD_COREMOD_memory__mk3Dim();
 
     // COPY IMAGE
     image_copy_addCLIcmd();
