@@ -49,6 +49,16 @@ static CLICMDDATA CLIcmddata =
 
 
 
+
+// detailed help
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
+
+
+
+
 static errno_t streamprocess(IMGID inimg, IMGID outimg)
 {
     // custom stream process function code

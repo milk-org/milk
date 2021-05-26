@@ -23,8 +23,6 @@ static char *inimname;
 
 
 
-
-
 static CLICMDARGDEF farg[] =
 {
     {
@@ -40,6 +38,14 @@ static CLICMDDATA CLIcmddata =
     "update stream without changing content",
     CLICMD_FIELDS_DEFAULTS
 };
+
+
+// detailed help
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
+
 
 
 
