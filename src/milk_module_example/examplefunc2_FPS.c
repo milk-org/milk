@@ -42,6 +42,15 @@ static CLICMDDATA CLIcmddata =
 
 
 
+// detailed help
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
+
+
+
+
 // Computation code
 static errno_t example_compute_2Dimage_total(
     IMGID img,

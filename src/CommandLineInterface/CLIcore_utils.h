@@ -270,6 +270,10 @@ if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
     compute_function();\
     return RETURN_SUCCESS;\
 }\
+else\
+{\
+help_function();\
+}\
 \
 return CLICMD_INVALID_ARG;\
 }

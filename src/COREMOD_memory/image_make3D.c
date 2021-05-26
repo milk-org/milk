@@ -45,6 +45,14 @@ static CLICMDDATA CLIcmddata =
 
 
 
+// detailed help
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
+
+
+
 
 static imageID make_3Dimage(
     IMGID *img
