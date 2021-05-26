@@ -31,13 +31,36 @@ static CLICMDARGDEF farg[] =
 static CLICMDDATA CLIcmddata =
 {
     "mk2Dim",
-    "make 2D image\n"
-    "attributes: s>    : shared\n"
-    "            k20>  : 20 keywords\n",
+    "make 2D image",
     CLICMD_FIELDS_DEFAULTS
 };
 
 
+
+// detailed help
+static errno_t help_function()
+{
+    printf(
+        "Create 2D image\n"
+        "File name can be appended with attribute:\n"
+        "For example: \"s>im1\", indicates a shared memory image (attribute \"s\")\n"
+        "Attributes list:\n"
+        "    s>      shared memory\n"
+        "    k20>    number of keyword=20\n"
+        "    c5>     5-deep circular buffer for logging\n"
+        "    tui8>   type unsigned int 8-bit\n"
+        "    tsi8>   type signed int 8-bit\n"
+        "    tui16>  type unsigned int 16-bit\n"
+        "    tsi16>  type signed int 16-bit\n"
+        "    tui32>  type unsigned int 32-bit\n"
+        "    tsi32>  type signed int 32-bit\n"
+        "    tui64>  type unsigned int 64-bit\n"
+        "    tf32>   type float 32-bit\n"
+        "    tf64>   type float 64-bit\n"
+    );
+
+    return RETURN_SUCCESS;
+}
 
 
 

@@ -64,6 +64,14 @@ static CLICMDDATA CLIcmddata =
 
 
 
+// detailed help
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
+
+
+
 
 
 /// if errcode = 0, do not show error messages
