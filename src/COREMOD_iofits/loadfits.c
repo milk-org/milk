@@ -85,7 +85,6 @@ imageID load_fits(
 )
 {
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
-    int FITSIOstatus;
     int       nulval, anynul;
     long      bitpixl = 0;
 
@@ -114,33 +113,39 @@ imageID load_fits(
     fileOK = 0;
     int NBtry = 3;
 
-    for(int try = 0;
-                try < NBtry;
-                    try++)
+
+
+    for(int tr=0; tr<NBtry; tr++)
+    {
+        if(fileOK == 0)
+        {
+            int status = 0;
+
+            fits_open_file(&fptr, file_name, READONLY, &status);
+
+            if(status != 0)
+            {
+                fits_report_error(stdout, status);
+                //void fits_get_errstatus(int status, char *err_text)
+                if(status != 0)
                 {
-                    if(fileOK == 0)
+                    FITSIO_CHECK_ERROR(status, errcode, "can't load %s", file_name);
+                    if(errcode == 2)
                     {
-                        if(fits_open_file(&fptr, file_name, READONLY,
-                                          &FITSIOstatus))
-                        {
-                            if(FITSIOstatus != 0)
-                            {
-                                FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "can't load %s", file_name);
-                                if(errcode == 2)
-                                {
-                                    abort();
-                                }
-                                if(try != NBtry - 1) // don't wait on last try
-                                        usleep(10000);
-                            }
-                            ID = -1;
-                        }
-                        else
-                        {
-                            fileOK = 1;
-                        }
+                        abort();
                     }
+                    if(tr != NBtry - 1) // don't wait on last try
+                            usleep(10000);
                 }
+                ID = -1;
+            }
+            else
+            {
+                fileOK = 1;
+            }
+        }
+    }
+
 
     if(fileOK == 0)
     {
@@ -161,14 +166,21 @@ imageID load_fits(
 
         // Keywords
         int nbFITSkeys = 0;
-        fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &FITSIOstatus);
-        FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_get_hdrspace error on %s",
-                           file_name);
+
+        {
+            int status = 0;
+            fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
+            FITSIO_CHECK_ERROR(status, errcode, "fits_get_hdrspace error on %s",
+                               file_name);
+        }
 
 
-        fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment,
-                      &FITSIOstatus);
-        FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "File %s has no NAXIS", file_name);
+        {
+            int status = 0;
+            fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment,
+                          &status);
+            FITSIO_CHECK_ERROR(status, errcode, "File %s has no NAXIS", file_name);
+        }
         printf("naxis = %ld\n", naxis);
 
 
@@ -176,39 +188,49 @@ imageID load_fits(
         {
             WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
 
-            fits_read_key(fptr, TLONG, keyword, &naxes[i], comment,
-                          &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "File %s has no NAXIS%ld", file_name,
-                               i);
+            {
+                int status = 0;
+                fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "File %s has no NAXIS%ld", file_name, i);
+            }
         }
 
-        fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, comment,
-                      &FITSIOstatus);
-        FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "File %s has no BITPIX", file_name);
+        {
+            int status = 0;
+            fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, comment, &status);
+            FITSIO_CHECK_ERROR(status, errcode, "File %s has no BITPIX", file_name);
+        }
 
 
         int bitpix = (int) bitpixl;
-        fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, comment,
-                      &FITSIOstatus);
-        if(FITSIOstatus != 0)
         {
-            FITSIOstatus = 0;
-            bscale = 1.0;
+            int status = 0;
+            fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, comment, &status);
+            if(status != 0)
+            {
+                bscale = 1.0;
+            }
         }
 
-        fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, comment,
-                      &FITSIOstatus);
-        if(FITSIOstatus != 0)
         {
-            FITSIOstatus = 0;
-            bzero = 0.0;
+            int status = 0;
+            fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, comment, &status);
+            if(status != 0)
+            {
+                bzero = 0.0;
+            }
         }
 
 
 
+        {
+            int status = 0;
+            fits_set_bscale(fptr, bscale, bzero, &status);
+            FITSIO_CHECK_ERROR(status, errcode, "bscake set errror");
+        }
 
-        fits_set_bscale(fptr, bscale, bzero, &COREMOD_iofits_data.FITSIO_status);
-        check_FITSIO_status(__FILE__, __func__, __LINE__, 1);
+
+        //check_FITSIO_status(__FILE__, __func__, __LINE__, 1);
 
         if(1)
         {
@@ -233,9 +255,12 @@ imageID load_fits(
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
                                  data.NBKEYWORD_DFT, 0);
 
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
-                          data.image[ID].array.F, &anynul, &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_read_img bitpix=%d", bitpix);
+            {
+                int status = 0;
+                fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
+                              data.image[ID].array.F, &anynul, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            }
         }
 
         /* bitpix = -64  TDOUBLE */
@@ -244,9 +269,12 @@ imageID load_fits(
             ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
                                  data.NBKEYWORD_DFT, 0);
 
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
-                          data.image[ID].array.D, &anynul, &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_read_img bitpix=%d", bitpix);
+            {
+                int status = 0;
+                fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
+                              data.image[ID].array.D, &anynul, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            }
         }
 
         /* bitpix = 16   TSHORT */
@@ -257,9 +285,12 @@ imageID load_fits(
                                  data.NBKEYWORD_DFT, 0);
 
             //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
-            fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[ID].array.UI16,
-                          &anynul, &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_read_img bitpix=%d", bitpix);
+            {
+                int status = 0;
+                fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[ID].array.UI16,
+                              &anynul, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            }
         }
 
 
@@ -274,10 +305,12 @@ imageID load_fits(
                 PRINT_ERROR("malloc error");
                 exit(0);
             }
-
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
-                          &anynul, &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_read_img bitpix=%d", bitpix);
+            {
+                int status = 0;
+                fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
+                              &anynul, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            }
 
             bzero = 0.0;
             for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
@@ -301,9 +334,12 @@ imageID load_fits(
                 abort();
             }
 
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
-                          &anynul, &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_read_img bitpix=%d", bitpix);
+            {
+                int status = 0;
+                fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
+                              &anynul, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            }
 
             bzero = 0.0;
             for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
@@ -329,9 +365,12 @@ imageID load_fits(
                 exit(0);
             }
 
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, barray,
-                          &anynul, &FITSIOstatus);
-            FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_read_img bitpix=%d", bitpix);
+            {
+                int status = 0;
+                fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, barray,
+                              &anynul, &status);
+                FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            }
 
             for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
             {
@@ -352,8 +391,10 @@ imageID load_fits(
             char keyname[9];
             char kwvaluestr[21];
             char kwcomment[81];
-            fits_read_keyn(fptr, kwnum+1, keyname, kwvaluestr, kwcomment,
-                           &COREMOD_iofits_data.FITSIO_status);
+            {
+                int status = 0;
+                fits_read_keyn(fptr, kwnum+1, keyname, kwvaluestr, kwcomment, &status);
+            }
 
             //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
 
@@ -413,10 +454,12 @@ imageID load_fits(
 
 
 
-
-        fits_close_file(fptr, &FITSIOstatus);
-        FITSIO_CHECK_ERROR(FITSIOstatus, errcode, "fits_close_file error in image %s",
-                           file_name);
+        {
+            int status = 0;
+            fits_close_file(fptr, &status);
+            FITSIO_CHECK_ERROR(status, errcode, "fits_close_file error in image %s",
+                               file_name);
+        }
     }
 
     return ID;

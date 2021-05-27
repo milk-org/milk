@@ -13,6 +13,7 @@
 // Local variables pointers
 // Within this translation unit, these point to the variables values
 static char *inimname;
+// float point variable should be double. single precision float not supported
 static double *scoeff;
 
 
@@ -45,6 +46,20 @@ static CLICMDDATA CLIcmddata =
     "compute total of image", // description of what the function does
     CLICMD_FIELDS_NOFPS
 };
+
+
+
+// detailed help
+static errno_t help_function()
+{
+    printf(
+        "Detailed help for function\n"
+    );
+
+    return RETURN_SUCCESS;
+}
+
+
 
 
 
