@@ -8,6 +8,7 @@
 #ifndef _MILKDEBUGTOOLS_H
 #define _MILKDEBUGTOOLS_H
 
+#include <errno.h>
 
 // define (custom) types for function return value
 
@@ -223,6 +224,27 @@ if(slen >= STRINGMAXLEN_COMMAND) {                                         \
 }                                                                          \
 data.retvalue = system(syscommandstring);                                  \
 } while(0)
+
+
+#define EXECUTE_SYSTEM_COMMAND_ERRCHECK(...) do {                          \
+char syscommandstring[STRINGMAXLEN_COMMAND];                               \
+int slen = snprintf(syscommandstring, STRINGMAXLEN_COMMAND, __VA_ARGS__);  \
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_COMMAND) {                                         \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+data.retvalue = system(syscommandstring);                                  \
+if(data.retvalue != 0)                                                     \
+{                                                                          \
+    PRINT_ERROR("system() error %d %s", data.retvalue, strerror(data.retvalue));\
+    abort();                                                               \
+}                                                                          \
+} while(0)
+
 
 
 
