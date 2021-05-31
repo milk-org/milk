@@ -75,6 +75,7 @@ typedef struct
 } CMDARGVAL;
 
 
+#define STRINGMAXLEN_CLICMDARG 256
 typedef struct
 {
     int type;
@@ -86,7 +87,7 @@ typedef struct
     {
         double f;
         long l;
-        char s[80];
+        char s[STRINGMAXLEN_CLICMDARG];
     } val;
 } CLICMDARGDATA;
 

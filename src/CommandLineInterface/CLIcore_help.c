@@ -417,25 +417,25 @@ int CLIhelp_make_argstring(
 
         switch(fpscliarg[arg].type)
         {
-            case CLIARG_FLOAT:
-                strcpy(typestring, "float");
-                break;
+        case CLIARG_FLOAT:
+            strcpy(typestring, "float");
+            break;
 
-            case CLIARG_LONG:
-                strcpy(typestring, "long");
-                break;
+        case CLIARG_LONG:
+            strcpy(typestring, "long");
+            break;
 
-            case CLIARG_STR_NOT_IMG:
-                strcpy(typestring, "string");
-                break;
+        case CLIARG_STR_NOT_IMG:
+            strcpy(typestring, "string");
+            break;
 
-            case CLIARG_IMG:
-                strcpy(typestring, "string");
-                break;
+        case CLIARG_IMG:
+            strcpy(typestring, "string");
+            break;
 
-            case CLIARG_STR:
-                strcpy(typestring, "string");
-                break;
+        case CLIARG_STR:
+            strcpy(typestring, "string");
+            break;
         }
 
         if(arg == 0)
@@ -560,24 +560,24 @@ errno_t help_command(
                            data.cmd[cmdi].cmdsettings.triggermode);
                     switch(data.cmd[cmdi].cmdsettings.triggermode)
                     {
-                        case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                            printf("IMMEDIATE");
-                            break;
-                        case PROCESSINFO_TRIGGERMODE_CNT0:
-                            printf("CNT0");
-                            break;
-                        case PROCESSINFO_TRIGGERMODE_CNT1:
-                            printf("CNT1");
-                            break;
-                        case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                            printf("SEMAPHORE");
-                            break;
-                        case PROCESSINFO_TRIGGERMODE_DELAY:
-                            printf("DELAY");
-                            break;
-                        default:
-                            printf("unknown");
-                            break;
+                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                        printf("IMMEDIATE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT0:
+                        printf("CNT0");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT1:
+                        printf("CNT1");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                        printf("SEMAPHORE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_DELAY:
+                        printf("DELAY");
+                        break;
+                    default:
+                        printf("unknown");
+                        break;
                     }
                     printf("\n");
 
@@ -627,29 +627,70 @@ errno_t help_command(
 
                     //colorcode = colorcodeargnotCLI;
 
-                    char valuestring[100] = "?";
+                    char valuestring[STRINGMAXLEN_CLICMDARG] = "?";
+                    int slen = 0;
 
                     switch(data.cmd[cmdi].argdata[argi].type)
                     {
-                        case CLIARG_FLOAT:
-                            sprintf(valuestring, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
-                            break;
+                    case CLIARG_FLOAT:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_LONG:
-                            sprintf(valuestring, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                            break;
+                    case CLIARG_LONG:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_STR_NOT_IMG:
-                            sprintf(valuestring, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
-                            break;
+                    case CLIARG_STR_NOT_IMG:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_IMG:
-                            sprintf(valuestring, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
-                            break;
+                    case CLIARG_IMG:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_STR:
-                            sprintf(valuestring, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
-                            break;
+                    case CLIARG_STR:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
                     }
 
 
@@ -672,29 +713,70 @@ errno_t help_command(
                     CLIargcnt++;
 
 
-                    char valuestring[100] = "?";
+                    char valuestring[STRINGMAXLEN_CLICMDARG] = "?";
+                    int slen = 0;
 
                     switch(data.cmd[cmdi].argdata[argi].type)
                     {
-                        case CLIARG_FLOAT:
-                            sprintf(valuestring, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
-                            break;
+                    case CLIARG_FLOAT:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[FLOAT] %f", data.cmd[cmdi].argdata[argi].val.f);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_LONG:
-                            sprintf(valuestring, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                            break;
+                    case CLIARG_LONG:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[LONG]  %ld", data.cmd[cmdi].argdata[argi].val.l);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_STR_NOT_IMG:
-                            sprintf(valuestring, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
-                            break;
+                    case CLIARG_STR_NOT_IMG:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[STRnI] %s", data.cmd[cmdi].argdata[argi].val.s);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_IMG:
-                            sprintf(valuestring, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
-                            break;
+                    case CLIARG_IMG:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[IMG]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
 
-                        case CLIARG_STR:
-                            sprintf(valuestring, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
-                            break;
+                    case CLIARG_STR:
+                        slen = snprintf(valuestring, STRINGMAXLEN_CLICMDARG, "[STR]   %s", data.cmd[cmdi].argdata[argi].val.s);
+                        if(slen<1) {
+                            PRINT_ERROR("snprintf wrote <1 char");
+                            abort();
+                        }
+                        if(slen >= STRINGMAXLEN_IMGNAME) {
+                            PRINT_ERROR("snprintf string truncation");
+                            abort();
+                        }
+                        break;
                     }
 
 
