@@ -44,7 +44,7 @@ static CLICMDARGDEF farg[] =
         (void **) &outimname
     },
     {
-        CLIARG_LONG, ".errcode", "FITSIO errors mode \n(0:ignore) (1:warning) (2:exit) (3:try)", "1",
+        CLIARG_LONG, ".errcode", "FITSIO errors mode \n(0:ignore) (1:warning) (2:exit)", "1",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &FITSIOerrmode
     }
@@ -67,6 +67,14 @@ static CLICMDDATA CLIcmddata =
 // detailed help
 static errno_t help_function()
 {
+
+    printf("Load FITS file from filesystem\n"
+           "Uses fitsio library, supports extended fitsio file syntax\n"
+           "File name should be in double quotes unless free of special chars\n"
+           "Examples:\n"
+           "   loadfits \"im1.fits\" im\n"
+          );
+
     return RETURN_SUCCESS;
 }
 
@@ -74,10 +82,9 @@ static errno_t help_function()
 
 
 
-/// if errcode = 0, do not show error messages
+/// if errcode = 0, print warning, do not show error messages, continue
 /// errcode = 1: print error, continue
 /// errcode = 2: exit program at error
-/// errcode = 3: do not show error message, try = 1, no wait
 imageID load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
@@ -121,23 +128,30 @@ imageID load_fits(
             if(fileOK == 0)
             {
                 int status = 0;
-
                 fits_open_file(&fptr, file_name, READONLY, &status);
 
                 if(status != 0)
                 {
-                    fits_report_error(stdout, status);
+                    if(errcode > 0)
+                    {
+
+                        printf("attempt # %d failed\n", tr);
+                    }
+
                     //void fits_get_errstatus(int status, char *err_text)
                     if(status != 0)
                     {
-                        FITSIO_CHECK_ERROR(status, errcode, "can't load %s", file_name);
-                        if(errcode == 2)
+                        if(errcode > 0)
                         {
-                            abort();
+                            if(tr == NBtry - 1)
+                            {
+                                FITSIO_CHECK_ERROR(status, errcode, "can't load %s (tried %d times)", file_name, NBtry);
+                            }
                         }
                         if(tr != NBtry - 1) // don't wait on last try
                             usleep(10000);
                     }
+
                     ID = -1;
                 }
                 else
@@ -150,9 +164,17 @@ imageID load_fits(
 
         if(fileOK == 0)
         {
-            PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
-                          ID_name,
-                          file_name);
+            if(errcode == 0)
+            {
+                PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
+                              ID_name,
+                              file_name);
+            }
+
+            if(errcode == 2)
+            {
+                abort();
+            }
             return -1;
         }
     }
