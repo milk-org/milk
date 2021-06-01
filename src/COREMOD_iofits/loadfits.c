@@ -109,6 +109,7 @@ imageID load_fits(
 
 
 
+    DEBUG_TRACEPOINT("Opening file \"%s\"", file_name);
 
     {
         // Open fitsio file pointer
@@ -156,6 +157,7 @@ imageID load_fits(
         }
     }
 
+    DEBUG_TRACEPOINT("File %s open", file_name);
 
 
     char  keyword[STRINGMAXLEN_FITSKEYWORDNAME];
@@ -183,6 +185,7 @@ imageID load_fits(
         FITSIO_CHECK_ERROR(status, errcode, "File %s has no NAXIS", file_name);
     }
     printf("naxis = %ld\n", naxis);
+    DEBUG_TRACEPOINT("naxis = %ld", naxis);
 
 
     for(long i = 0; i < naxis; i++)
@@ -252,8 +255,14 @@ imageID load_fits(
     /* bitpix = -32  TFLOAT */
     if(bitpix == -32)
     {
-        ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT, 0);
+        ID = create_image_ID(
+                 ID_name,
+                 naxis,
+                 naxes,
+                 _DATATYPE_FLOAT,
+                 data.SHARED_DFT,
+                 data.NBKEYWORD_DFT,
+                 0);
 
         {
             int status = 0;
@@ -266,8 +275,14 @@ imageID load_fits(
     /* bitpix = -64  TDOUBLE */
     if(bitpix == -64)
     {
-        ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT, 0);
+        ID = create_image_ID(
+                 ID_name,
+                 naxis,
+                 naxes,
+                 _DATATYPE_DOUBLE,
+                 data.SHARED_DFT,
+                 data.NBKEYWORD_DFT,
+                 0);
 
         {
             int status = 0;
@@ -276,6 +291,7 @@ imageID load_fits(
             FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
         }
     }
+
 
     /* bitpix = 16   TSHORT */
     if(bitpix == 16)
@@ -460,6 +476,8 @@ imageID load_fits(
         FITSIO_CHECK_ERROR(status, errcode, "fits_close_file error in image %s",
                            file_name);
     }
+
+    list_image_ID();
 
 
     return ID;
