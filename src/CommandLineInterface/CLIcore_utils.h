@@ -30,6 +30,14 @@ typedef const char *restrict  CONST_WORD;
 #define CLICMD_FIELDS_NOFPS     __FILE__,sizeof(farg)/sizeof(CLICMDARGDEF),farg,0,NULL
 
 
+
+// return codes for function CLI_checkarg_array
+#define RETURN_CLICHECKARGARRAY_SUCCESS      0
+#define RETURN_CLICHECKARGARRAY_FAILURE      1
+#define RETURN_CLICHECKARGARRAY_FUNCPARAMSET 2
+#define RETURN_CLICHECKARGARRAY_HELP         3
+
+
 // binding between variables and function args/params
 #define STD_FARG_LINKfunction \
 for(int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF)); argi++)\
@@ -263,16 +271,18 @@ if(data.FPS_CMDCODE != 0)\
 }\
 }\
 \
-if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
+int retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);\
+if(retval == RETURN_CLICHECKARGARRAY_SUCCESS)\
 {\
     data.fpsptr = NULL;\
     STD_FARG_LINKfunction\
     compute_function();\
     return RETURN_SUCCESS;\
 }\
-else\
+if(retval == RETURN_CLICHECKARGARRAY_HELP)\
 {\
-help_function();\
+    help_function();\
+    printf("\n");\
 }\
 \
 return CLICMD_INVALID_ARG;\
