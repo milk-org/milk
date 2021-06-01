@@ -348,6 +348,7 @@ imageID create_image_ID(
     ID = -1;
     if(image_ID(name) == -1)
     {
+        DEBUG_TRACEPOINTLOG(" ");
         ID = next_avail_image_ID();
         DEBUG_TRACEPOINTLOG(" ");
         ImageStreamIO_createIm(
