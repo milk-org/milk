@@ -133,7 +133,7 @@ void fnExit1(void);
 void runCLI_cmd_init();
 static void runCLI_free();
 
-
+static int sigwinch_received = 0;
 
 
 
@@ -554,6 +554,20 @@ static errno_t runCLI_initialize(
 
 
 
+
+
+
+/* Handle SIGWINCH and window size changes when readline is not active and
+   reading a character. */
+static void
+sighandler (int sig)
+{
+    rl_resize_terminal ();
+    //printf("RESIZE detected %d %d\n", COLS, LINES);
+    sigwinch_received = 1;
+}
+
+
 /**
  * @brief Command Line Interface (CLI) main\n
  *
@@ -593,8 +607,11 @@ errno_t runCLI(
     runCLI_prompt(promptstring, prompt);
 
 
+
     // CLI initialize
     runCLI_initialize();
+
+
 
 
     // set shared memory directory
@@ -607,10 +624,10 @@ errno_t runCLI(
     DEBUG_TRACEPOINT("set default fifo name");
     //sprintf(data.fifoname, "%s.fifo.%07d", data.processname, getpid());
     WRITE_FULLFILENAME(data.fifoname,
-             "%s/.%s.fifo.%07d",
-             data.shmdir,
-             data.processname,
-             getpid());
+                       "%s/.%s.fifo.%07d",
+                       data.shmdir,
+                       data.processname,
+                       getpid());
 
     DEBUG_TRACEPOINT("Get command-line options");
     command_line_process_options(argc, argv);
@@ -619,14 +636,10 @@ errno_t runCLI(
 
 
 
-    DEBUG_TRACEPOINT("initialize readline");
-    // Tell readline to use custom completion function
-    rl_attempted_completion_function = CLI_completion;
-    rl_initialize();
-
-
     data.progStatus = 1;
     printf("\n");
+
+
 
 
     // uncomment following two lines to auto-load all modules
@@ -673,7 +686,16 @@ errno_t runCLI(
 
 
     // initialize readline
+    DEBUG_TRACEPOINT("initialize readline");
+    // Tell readline to use custom completion function
+    rl_attempted_completion_function = CLI_completion;
+    rl_initialize();
+
+    /* Handle window size changes when readline is not active and reading
+         characters. */
+    signal (SIGWINCH, sighandler);
     rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
+
 
 
     // fifo
