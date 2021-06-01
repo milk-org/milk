@@ -14,6 +14,9 @@
 
 static int argcheck_process_flag = 1; // keep processing if 1
 
+static int functionhelp_called = 0; // toggles to 1 if function help called
+
+
 // check that input CLI argument matches required argument type
 
 static int CLI_checkarg0(
@@ -32,6 +35,7 @@ static int CLI_checkarg0(
         argcheck_process_flag = 0; // stop processing arguments, will call help
         help_command(data.cmdargtoken[0].val.string);
         sprintf(data.cmdargtoken[argnum].val.string, " "); // avoid re-running help
+        functionhelp_called = 1;
         return 1;
     }
 
@@ -391,6 +395,7 @@ int CLI_checkarg_noerrmsg(
 
 
 
+
 /** @brief Check array of command line (CLI) arguments
  *
  * Use list of arguments in fpscliarg[].
@@ -407,7 +412,10 @@ errno_t CLI_checkarg_array(
     argcheck_process_flag = 1; // initialize arg check
 
 
+
     int argindexmatch = -1;
+    // check if CLI argument 1 is one of the function parameters
+    // if it is, set argindexmatch to the function parameter index
     for(int arg = 0; arg < nbarg; arg++)
     {
         if(strcmp(data.cmdargtoken[1].val.string, fpscliarg[arg].fpstag) == 0)
@@ -415,6 +423,7 @@ errno_t CLI_checkarg_array(
             argindexmatch = arg;
         }
     }
+    // if CLI arg 1 is  a function parameter, set function parameter to value entered in CLI arg 2
     if(argindexmatch != -1)
     {
         //printf("match to arg %s\n", fpscliarg[argindexmatch].fpstag); //TEST
@@ -422,7 +431,7 @@ errno_t CLI_checkarg_array(
         if(data.cmdargtoken[2].type == CLIARG_MISSING)
         {
             printf("Setting arg %s : input missing\n", fpscliarg[argindexmatch].fpstag);
-            return RETURN_FAILURE;
+            return RETURN_CLICHECKARGARRAY_FAILURE;
         }
 
         DEBUG_TRACEPOINT("calling CLI_checkarg");
@@ -455,14 +464,14 @@ errno_t CLI_checkarg_array(
         else
         {
             printf("Setting arg %s : Wrong type\n", fpscliarg[argindexmatch].fpstag);
-            return RETURN_FAILURE;
+            return RETURN_CLICHECKARGARRAY_FAILURE;
         }
 
 
         printf("Argument %s value updated\n", fpscliarg[argindexmatch].fpstag);
 
         //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
-        return RETURN_FAILURE;
+        return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
     }
 
 
@@ -502,7 +511,7 @@ errno_t CLI_checkarg_array(
             int cmdi = data.cmdindex;
 
             DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
-                             fpscliarg[arg].fpstag);
+                                   fpscliarg[arg].fpstag);
 
             //printf("     arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
             //       fpscliarg[arg].fpstag);//TEST
@@ -577,6 +586,10 @@ errno_t CLI_checkarg_array(
             }
             else
             {
+                if(functionhelp_called == 1)
+                {
+                    return RETURN_CLICHECKARGARRAY_HELP;
+                }
                 nberr ++;
             }
             CLIarg++;
@@ -585,19 +598,21 @@ errno_t CLI_checkarg_array(
         {
             DEBUG_TRACEPOINT("argument not part of CLI");
             DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s\n", arg, argtypestring,
-                             fpscliarg[arg].fpstag);
+                                   fpscliarg[arg].fpstag);
         }
     }
+
+
 
     DEBUG_TRACEPOINT("Number of arg error(s): %d / %d\n", nberr, CLIarg);
 
     if(nberr == 0)
     {
-        return RETURN_SUCCESS;
+        return RETURN_CLICHECKARGARRAY_SUCCESS;
     }
     else
     {
-        return RETURN_FAILURE;
+        return RETURN_CLICHECKARGARRAY_FAILURE;
     }
 }
 
