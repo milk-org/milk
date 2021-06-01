@@ -108,7 +108,7 @@ typedef int errno_t;
 
 
 static int wrow, wcol;
-
+static int wresizecnt = 0;
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -121,6 +121,23 @@ static int wrow, wcol;
 
 
 
+static void handle_winch(int sig)
+{
+    wresizecnt++;
+
+    endwin();
+    // Needs to be called after an endwin() so ncurses will initialize
+    // itself with the new terminal dimensions.
+    refresh();
+    clear();
+
+    //mvprintw(0, 0, "COLS = %d, LINES = %d", COLS, LINES);
+    //for (int i = 0; i < COLS; i++)
+    //   mvaddch(1, i, '*');
+
+    refresh();
+}
+
 
 /**
  * INITIALIZE ncurses
@@ -132,7 +149,11 @@ static int initncurses()
         fprintf(stderr, "Error initialising ncurses.\n");
         exit(EXIT_FAILURE);
     }
-    getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
+    //getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
+    wrow = LINES;
+    wcol = COLS;
+
+
     cbreak();
     keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
     nodelay(stdscr, TRUE);
@@ -158,9 +179,15 @@ static int initncurses()
     init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
     init_pair( 12, COLOR_GREEN,  COLOR_WHITE  ); // highlighted version of #2
 
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = handle_winch;
+    sigaction(SIGWINCH, &sa, NULL);
 
     return 0;
 }
+
+
 
 
 
@@ -1579,6 +1606,18 @@ errno_t streamCTRL_CTRLscreen()
         //int selectedOK = 0; // goes to 1 if at least one process is selected
         switch(ch)
         {
+
+      /*  case KEY_RESIZE:
+            clear();
+            //endwin();
+            wrow = LINES;
+            wcol = COLS;
+            //getmaxyx(stdscr, wrow, wcol);
+            wresizecnt++;
+            refresh();
+            //initncurses();
+            break;
+*/
         case 'x':     // Exit control screen
             loopOK = 0;
             break;
@@ -1802,8 +1841,8 @@ errno_t streamCTRL_CTRLscreen()
         erase();
 
         attron(A_BOLD);
-        sprintf(monstring, "[PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP",
-                getpid());
+        sprintf(monstring, "%d [%d x %d] [%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP",
+                wresizecnt, wrow, wcol, LINES, COLS, getpid());
         streamCTRL__print_header(monstring, '-');
         attroff(A_BOLD);
 
