@@ -59,10 +59,13 @@ imageID read_sharedmem_image(
     imageID IDmem = 0;
     IMAGE *image;
 
+    DEBUG_TRACEPOINT("looking for next ID");
     IDmem = next_avail_image_ID();
+    DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
 
     image = &data.image[IDmem];
-    if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) == EXIT_FAILURE)
+
+    if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) != IMAGESTREAMIO_SUCCESS)
     {
         printf("read shared mem image failed -> ID = -1\n");
         fflush(stdout);
@@ -71,7 +74,9 @@ imageID read_sharedmem_image(
     else
     {
         IMGID img = makeIMGID(sname);
-        ID = resolveIMGID(&img, ERRMODE_ABORT);
+        //DEBUG_TRACEPOINT("resolving image");
+        //ID = resolveIMGID(&img, ERRMODE_ABORT);
+        img.ID = IDmem;
 
         //ID = image_ID(sname);
         printf("read shared mem image success -> ID = %ld\n", img.ID);
