@@ -157,6 +157,47 @@ if(slen >= STRINGMAXLEN_FUNCTIONARGS) {                                    \
 #endif
 
 
+
+#if defined NDEBUG
+#define DEBUG_TRACEPOINT_PRINT(...)
+#else
+#define DEBUG_TRACEPOINT_PRINT(...) do {                    \
+int slen = snprintf(data.testpoint_file, STRINGMAXLEN_FULLFILENAME, "%s", __FILE__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FULLFILENAME) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+slen = snprintf(data.testpoint_func, STRINGMAXLEN_FUNCTIONNAME, "%s", __func__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FUNCTIONNAME) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+data.testpoint_line = __LINE__;                       \
+clock_gettime(CLOCK_REALTIME, &data.testpoint_time);  \
+slen = snprintf(data.testpoint_msg, STRINGMAXLEN_FUNCTIONARGS, __VA_ARGS__);\
+if(slen<1) {                                                               \
+    PRINT_ERROR("snprintf wrote <1 char");                                 \
+    abort();                                                               \
+}                                                                          \
+if(slen >= STRINGMAXLEN_FUNCTIONARGS) {                                    \
+    PRINT_ERROR("snprintf string truncation");                             \
+    abort();                                                               \
+}                                                                          \
+printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint_file, data.testpoint_func, data.testpoint_line, data.testpoint_msg);   \
+} while(0)
+#endif
+
+
+
+
 /**
  * @ingroup debugmacro
  * @brief register and log trace point
@@ -441,7 +482,7 @@ fclose(fptmp);                                                              \
 #define RETURN_FAILURE       1   // generic error code
 #define RETURN_MISSINGFILE   2
 
-
+#define RETURN_OTHER         3
 
 
 
