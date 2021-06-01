@@ -138,7 +138,7 @@ static int initncurses()
     nodelay(stdscr, TRUE);
     curs_set(0);
     noecho();			/* Don't echo() while we do getch */
-	nonl();             // Do not translates newline into return and line-feed on output
+    nonl();             // Do not translates newline into return and line-feed on output
 
     init_color(COLOR_GREEN, 700, 1000, 700);
     init_color(COLOR_YELLOW, 1000, 1000, 700);
@@ -248,7 +248,7 @@ int get_process_name_by_pid(const int pid, char *pname)
 {
     char* fname = (char*) calloc(STRINGMAXLEN_FULLFILENAME, sizeof(char));
 
-	WRITE_FULLFILENAME(fname, "/proc/%d/cmdline", pid);
+    WRITE_FULLFILENAME(fname, "/proc/%d/cmdline", pid);
 //    sprintf(fname, "/proc/%d/cmdline", pid);
     FILE* fp = fopen(fname,"r");
     if(fp) {
@@ -398,7 +398,7 @@ int find_streams(
 
 
                 WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
-                         dir->d_name);
+                                   dir->d_name);
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
@@ -418,7 +418,7 @@ int find_streams(
 
                     streaminfo[sindex].SymLink = 1;
                     WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
-                             dir->d_name);
+                                       dir->d_name);
                     linknamefull = realpath(fullname, NULL);
 
                     if(linknamefull == NULL)
@@ -642,7 +642,7 @@ void *streamCTRL_scan(
         }
         else // candidate for removal
         {
-		//---------------------------------------
+            //---------------------------------------
             DIR *d;
             struct dirent *dir;
 
@@ -689,7 +689,7 @@ void *streamCTRL_scan(
                         }
 
                         WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
-                                 dir->d_name);
+                                           dir->d_name);
                         retv = lstat(fullname, &buf);
                         if(retv == -1)
                         {
@@ -711,7 +711,7 @@ void *streamCTRL_scan(
 
                             streaminfo[sindex].SymLink = 1;
                             WRITE_FULLFILENAME(fullname, "%s/%s", SHAREDSHMDIR,
-                                     dir->d_name);
+                                               dir->d_name);
                             //                        readlink (fullname, linknamefull, 200-1);
                             linknamefull = realpath(fullname, NULL);
 
@@ -842,7 +842,7 @@ void *streamCTRL_scan(
             {
                 fclose(fpfscan);
             }
-		//---------------------------------------
+            //---------------------------------------
         }
 
         streaminfoproc->WriteFlistToFile = 0;
@@ -1076,7 +1076,7 @@ static int streamCTRL_print_inode(
             printw("    ");
         }
 
-		printw("-");
+        printw("-");
 
         if(is_downstream)
         {
@@ -1121,7 +1121,7 @@ static int streamCTRL_print_procpid(
     int DispPID_NBchar = 8;
     int activitycolorcode = 0;
     int is_upstream = 0;
-	int upstreamindex = 0;
+    int upstreamindex = 0;
 
 
     if ( mode & PRINT_PID_FORCE_NOUPSTREAM )
@@ -1160,15 +1160,15 @@ static int streamCTRL_print_procpid(
 
     if ( is_upstream == 1 )
     {
-		if( activitycolorcode !=2 )
-		{
-			attron(A_REVERSE);
-		}
-		else
-		{
-			activitycolorcode = 12;
-		}
-	}
+        if( activitycolorcode !=2 )
+        {
+            attron(A_REVERSE);
+        }
+        else
+        {
+            activitycolorcode = 12;
+        }
+    }
 
 
 
@@ -1181,13 +1181,13 @@ static int streamCTRL_print_procpid(
 
     if(is_upstream)
     {
-		char upstreamstring[DispPID_NBchar+1];
-		sprintf(upstreamstring, "%2d >>", upstreamindex);
-		printw("%*s", DispPID_NBchar, upstreamstring);
-	}
-	else
-	{
-		printw("%*d", DispPID_NBchar, (int) procpid);
+        char upstreamstring[DispPID_NBchar+1];
+        sprintf(upstreamstring, "%2d >>", upstreamindex);
+        printw("%*s", DispPID_NBchar, upstreamstring);
+    }
+    else
+    {
+        printw("%*d", DispPID_NBchar, (int) procpid);
     }
 
 
@@ -1199,8 +1199,8 @@ static int streamCTRL_print_procpid(
 
     if( (activitycolorcode !=2 ) && (is_upstream == 1) )
     {
-		attroff(A_REVERSE);
-	}
+        attroff(A_REVERSE);
+    }
 
 
     return DispPID_NBchar;
@@ -1239,8 +1239,8 @@ static errno_t streamCTRL_print_SPTRACE_details(
     int Disp_trigstat_NBchar = 12;
 
 
-	// suppress unused parameter warning
-	(void) print_pid_mode;
+    // suppress unused parameter warning
+    (void) print_pid_mode;
 
     printw("\n");
     printw("   %*s %*s %*s\n",
@@ -1294,7 +1294,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
         Disp_PID_NBchar = streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
 
 
-		printw(" ");
+        printw(" ");
 
         switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
@@ -1323,7 +1323,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
             printw("%*s", Disp_type_NBchar, "UNKNOWN");
             break;
         }
-		printw(" ");
+        printw(" ");
 
         int print_timing = 0;
         switch (streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
@@ -1550,7 +1550,7 @@ errno_t streamCTRL_CTRLscreen()
     loopcnt = 0;
 
 
-	ino_t inodeselected = 0;
+    ino_t inodeselected = 0;
     int DisplayDetailLevel = 0;
     while(loopOK == 1)
     {
@@ -2228,6 +2228,9 @@ errno_t streamCTRL_CTRLscreen()
 
 
 
+
+
+
             // DISPLAY
 
             int DisplayFlag = 0;
@@ -2235,15 +2238,27 @@ errno_t streamCTRL_CTRLscreen()
             int print_pid_mode = PRINT_PID_DEFAULT;
             for(dindex = 0; dindex < NBsindex; dindex++)
             {
-                long ID;
+                imageID ID;
                 sindex = ssindex[dindex];
                 ID = streaminfo[sindex].ID;
 
-				int downstreammin = NO_DOWNSTREAM_INDEX; // minumum downstream index
-				// looks for inodeselected in the list of upstream inodes
-				// picks the smallest corresponding index
-				// for example, if equal to 3, the current inode is a 3-rd gen children of selected inode
-				// default initial value 100 is a placeholder indicating it is not a child
+                while((streamCTRLimages[streaminfo[sindex].ID].used == 0) && (dindex < NBsindex))
+                {
+                    // skip this entry, as it is no longer in use
+                    dindex ++;
+                    sindex = ssindex[dindex];
+                    ID = streaminfo[sindex].ID;
+                }
+
+
+
+                int downstreammin = NO_DOWNSTREAM_INDEX; // minumum downstream index
+                // looks for inodeselected in the list of upstream inodes
+                // picks the smallest corresponding index
+                // for example, if equal to 3, the current inode is a 3-rd gen children of selected inode
+                // default initial value 100 is a placeholder indicating it is not a child
+
+                DEBUG_TRACEPOINT(" ");
 
                 if((dindex > doffsetindex - 1) && (dindex < NBsinfodisp - 1 + doffsetindex))
                 {
@@ -2254,24 +2269,28 @@ errno_t streamCTRL_CTRLscreen()
                     DisplayFlag = 0;
                 }
 
-				if( DisplayDetailLevel == 1 )
-				{
-					if ( dindex == dindexSelected )
-					{
-						DisplayFlag = 1;
-					}
-					else
-					{
-						DisplayFlag = 0;
-					}
-				}
+                if( DisplayDetailLevel == 1 )
+                {
+                    if ( dindex == dindexSelected )
+                    {
+                        DisplayFlag = 1;
+                    }
+                    else
+                    {
+                        DisplayFlag = 0;
+                    }
+                }
 
-
+                DEBUG_TRACEPOINT(" ");
 
                 if(dindex == dindexSelected)
                 {
-					// currently selected inode
-					inodeselected = streamCTRLimages[streaminfo[sindex].ID].md[0].inode;
+                    DEBUG_TRACEPOINT("dindex %ld %d", dindex, streamCTRLimages[streaminfo[sindex].ID].used);
+
+                    // currently selected inode
+                    inodeselected = streamCTRLimages[streaminfo[sindex].ID].md[0].inode;
+
+                    DEBUG_TRACEPOINT("inode %lu %s", inodeselected, streamCTRLimages[streaminfo[sindex].ID].md[0].name);
 
                     // identify upstream inodes
                     NBupstreaminode = 0;
@@ -2288,6 +2307,8 @@ errno_t streamCTRL_CTRLscreen()
                         }
                     }
 
+                    DEBUG_TRACEPOINT(" ");
+
                     // identify upstream processes
                     print_pid_mode = PRINT_PID_FORCE_NOUPSTREAM;
                     NBupstreamproc = 0;
@@ -2302,29 +2323,35 @@ errno_t streamCTRL_CTRLscreen()
                                 NBupstreamproc ++;
                             }
                         }
+
+                        DEBUG_TRACEPOINT(" ");
                     }
 
                 }
                 else
                 {
+                    DEBUG_TRACEPOINT(" ");
                     print_pid_mode = PRINT_PID_DEFAULT;
 
                     for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
-                      {
-                            ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
-                            if(inode == inodeselected)
+                    {
+                        ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
+                        if(inode == inodeselected)
+                        {
+                            if(spti < downstreammin)
                             {
-								if(spti < downstreammin)
-								{
-									downstreammin = spti;
-								}
-							}
-						}
+                                downstreammin = spti;
+                            }
+                        }
+                    }
+                    DEBUG_TRACEPOINT(" ");
 
                 }
 
 
 
+
+                DEBUG_TRACEPOINT(" ");
 
 
                 //char line[200];
@@ -2348,6 +2375,7 @@ errno_t streamCTRL_CTRLscreen()
                 }
 
 
+                DEBUG_TRACEPOINT(" ");
 
                 if(DisplayFlag == 1)
                 {
@@ -2719,11 +2747,11 @@ errno_t streamCTRL_CTRLscreen()
                             printw(")> ");
                         }
 
-						if(DisplayDetailLevel == 1)
-						{
-							printw("\n");
-							streamCTRL_print_SPTRACE_details(streamCTRLimages, ID, upstreamproc, NBupstreamproc, PRINT_PID_DEFAULT);
-						}
+                        if(DisplayDetailLevel == 1)
+                        {
+                            printw("\n");
+                            streamCTRL_print_SPTRACE_details(streamCTRLimages, ID, upstreamproc, NBupstreamproc, PRINT_PID_DEFAULT);
+                        }
                     }
                 }
 
@@ -2824,6 +2852,8 @@ errno_t streamCTRL_CTRLscreen()
                         data.signal_INT = 0; // reset
                     }
                 }
+
+                DEBUG_TRACEPOINT(" ");
             }
 
 
