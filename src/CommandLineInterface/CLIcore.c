@@ -685,16 +685,7 @@ errno_t runCLI(
 
 
 
-    // initialize readline
-    DEBUG_TRACEPOINT("initialize readline");
-    // Tell readline to use custom completion function
-    rl_attempted_completion_function = CLI_completion;
-    rl_initialize();
 
-    /* Handle window size changes when readline is not active and reading
-         characters. */
-    signal (SIGWINCH, sighandler);
-    rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
 
 
 
@@ -726,6 +717,9 @@ errno_t runCLI(
 
 
     data.CLIloopON = 1; // start CLI loop
+
+
+    int realine_initialized = 0;
 
 
 
@@ -793,7 +787,7 @@ errno_t runCLI(
 
 
 
-        DEBUG_TRACEPOINT("Get user input"); //===============================
+        DEBUG_TRACEPOINT("Get user input fifo=%d", data.fifoON); //===============================
         tv.tv_sec = 0;
         tv.tv_usec = cliwaitus;
 
@@ -807,6 +801,21 @@ errno_t runCLI(
         FD_SET(fileno(stdin),
                &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
 
+
+        if(data.fifoON == 0)
+        {
+            realine_initialized = 1;
+            // initialize readline
+            DEBUG_TRACEPOINT("initialize readline");
+            // Tell readline to use custom completion function
+            rl_attempted_completion_function = CLI_completion;
+            rl_initialize();
+
+            /* Handle window size changes when readline is not active and reading
+                 characters. */
+            signal (SIGWINCH, sighandler);
+            rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
+        }
 
 
         while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
@@ -888,13 +897,37 @@ errno_t runCLI(
                 }
             }
 
+            if(blockCLIinput == 0) // fifo has been cleared
+            {
+                if(realine_initialized == 0)
+                {
+                    realine_initialized = 1;
+                    // initialize readline
+                    DEBUG_TRACEPOINT("initialize readline");
+                    // Tell readline to use custom completion function
+                    rl_attempted_completion_function = CLI_completion;
+                    rl_initialize();
 
-            if(blockCLIinput == 0)  // revert to default mode
+                    /* Handle window size changes when readline is not active and reading
+                         characters. */
+                    signal (SIGWINCH, sighandler);
+                    rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
+                }
+            }
+
+            //printf("fifo cleared, accepting user input through CLI\n");
+
+
+            if(blockCLIinput == 0)
+            {   // revert to default mode
                 if(FD_ISSET(fileno(stdin), &cli_fdin_set))
                 {
                     DEBUG_TRACEPOINT("readline callback");
                     rl_callback_read_char();
                 }
+            }
+
+
         }
         data.CLIexecuteCMDready = 0;
 
