@@ -125,15 +125,17 @@ static void handle_winch(int sig)
 {
     wresizecnt++;
 
+    (void) sig;
+
     endwin();
+
     // Needs to be called after an endwin() so ncurses will initialize
     // itself with the new terminal dimensions.
     refresh();
-    clear();
 
-    //mvprintw(0, 0, "COLS = %d, LINES = %d", COLS, LINES);
-    //for (int i = 0; i < COLS; i++)
-    //   mvaddch(1, i, '*');
+    clear();
+    wrow = LINES;
+    wcol = COLS;
 
     refresh();
 }
@@ -1139,13 +1141,14 @@ static int streamCTRL_print_inode(
  *
  */
 static int streamCTRL_print_procpid(
+    int DispPID_NBchar,
     pid_t procpid,
     pid_t *upstreamproc,
     int NBupstreamproc,
     uint32_t mode
 )
 {
-    int DispPID_NBchar = 8;
+    //int DispPID_NBchar = 8;
     int activitycolorcode = 0;
     int is_upstream = 0;
     int upstreamindex = 0;
@@ -1318,7 +1321,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
         printw(" %*llu", Disp_cnt0_NBchar, cnt0);
         printw(" ");
 
-        Disp_PID_NBchar = streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
+        Disp_PID_NBchar = streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
 
 
         printw(" ");
@@ -1606,18 +1609,6 @@ errno_t streamCTRL_CTRLscreen()
         //int selectedOK = 0; // goes to 1 if at least one process is selected
         switch(ch)
         {
-
-      /*  case KEY_RESIZE:
-            clear();
-            //endwin();
-            wrow = LINES;
-            wcol = COLS;
-            //getmaxyx(stdscr, wrow, wcol);
-            wresizecnt++;
-            refresh();
-            //initncurses();
-            break;
-*/
         case 'x':     // Exit control screen
             loopOK = 0;
             break;
@@ -1841,8 +1832,8 @@ errno_t streamCTRL_CTRLscreen()
         erase();
 
         attron(A_BOLD);
-        sprintf(monstring, "%d [%d x %d] [%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP",
-                wresizecnt, wrow, wcol, LINES, COLS, getpid());
+        sprintf(monstring, "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP",
+                wrow, wcol,  getpid());
         streamCTRL__print_header(monstring, '-');
         attroff(A_BOLD);
 
@@ -2527,7 +2518,7 @@ errno_t streamCTRL_CTRLscreen()
                         }
                     }
                     linecharcnt += charcnt;
-                    if(linecharcnt < wcol)
+                    if(linecharcnt < wcol-1)
                     {
                         printw(string);
                     }
@@ -2581,7 +2572,7 @@ errno_t streamCTRL_CTRLscreen()
 
                     charcnt = sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
                     linecharcnt += charcnt;
-                    if(linecharcnt < wcol)
+                    if(linecharcnt < wcol-1)
                     {
                         printw(string);
                     }
@@ -2596,7 +2587,7 @@ errno_t streamCTRL_CTRLscreen()
                         charcnt = sprintf(string, " %*ld ", Dispcnt0_NBchar, streamCTRLimages[ID].md[0].cnt0);
                     }
                     linecharcnt += charcnt;
-                    if(linecharcnt < wcol)
+                    if(linecharcnt < wcol-1)
                     {
                         if(streaminfo[sindex].deltacnt0 == 0)
                         {
@@ -2625,9 +2616,9 @@ errno_t streamCTRL_CTRLscreen()
                         cpid = streamCTRLimages[ID].md[0].creatorPID;
                         opid = streamCTRLimages[ID].md[0].ownerPID;
 
-                        linecharcnt += streamCTRL_print_procpid(cpid, upstreamproc, NBupstreamproc, print_pid_mode);
+                        linecharcnt += streamCTRL_print_procpid(8, cpid, upstreamproc, NBupstreamproc, print_pid_mode);
                         printw(" ");
-                        linecharcnt += streamCTRL_print_procpid(opid, upstreamproc, NBupstreamproc, print_pid_mode);
+                        linecharcnt += streamCTRL_print_procpid(8, opid, upstreamproc, NBupstreamproc, print_pid_mode);
                         printw(" ");
                         linecharcnt += 2;
                     }
@@ -2645,7 +2636,7 @@ errno_t streamCTRL_CTRLscreen()
                         charcnt = sprintf(string, " %*.2f Hz", Dispfreq_NBchar, streaminfo[sindex].updatevalue);
                     }
                     linecharcnt += charcnt;
-                    if(linecharcnt < wcol)
+                    if(linecharcnt < wcol-1)
                     {
                         printw(string);
                     }
@@ -2661,7 +2652,7 @@ errno_t streamCTRL_CTRLscreen()
 
                         charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
                         linecharcnt += charcnt;
-                        if(linecharcnt < wcol)
+                        if(linecharcnt < wcol-1)
                         {
                             printw(string);
                         }
@@ -2673,7 +2664,7 @@ errno_t streamCTRL_CTRLscreen()
                             sem_getvalue(streamCTRLimages[ID].semptr[s], &semval);
                             charcnt = sprintf(string, " %7d", semval);
                             linecharcnt += charcnt;
-                            if(linecharcnt < wcol)
+                            if(linecharcnt < wcol-1)
                             {
                                 printw(string);
                             }
@@ -2688,7 +2679,7 @@ errno_t streamCTRL_CTRLscreen()
                     {
                         charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
                         linecharcnt += charcnt;
-                        if(linecharcnt < wcol)
+                        if(linecharcnt < wcol-1)
                         {
                             printw(string);
                         }
@@ -2696,10 +2687,12 @@ errno_t streamCTRL_CTRLscreen()
                         int s;
                         for(s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
                         {
-                            pid_t pid = streamCTRLimages[ID].semWritePID[s];
-                            linecharcnt += 1 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                            printw(" ");
-
+                            if(linecharcnt < wcol-1-8)
+                            {
+                                pid_t pid = streamCTRLimages[ID].semWritePID[s];
+                                linecharcnt += 1 + streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                                printw(" ");
+                            }
                         }
                     }
                 }
@@ -2713,7 +2706,7 @@ errno_t streamCTRL_CTRLscreen()
                     {
                         charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
                         linecharcnt += charcnt;
-                        if(linecharcnt < wcol)
+                        if(linecharcnt < wcol-1)
                         {
                             printw(string);
                         }
@@ -2721,9 +2714,12 @@ errno_t streamCTRL_CTRLscreen()
                         int s;
                         for(s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
                         {
-                            pid_t pid = streamCTRLimages[ID].semReadPID[s];
-                            linecharcnt += 1 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                            printw(" ");
+                            if(linecharcnt < wcol-1-8)
+                            {
+                                pid_t pid = streamCTRLimages[ID].semReadPID[s];
+                                linecharcnt += 1 + streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                                printw(" ");
+                            }
                         }
                     }
                 }
@@ -2736,7 +2732,7 @@ errno_t streamCTRL_CTRLscreen()
                     {
                         charcnt = sprintf(string, " %2d ", streamCTRLimages[ID].md[0].NBproctrace);
                         linecharcnt += charcnt;
-                        if(linecharcnt < wcol)
+                        if(linecharcnt < wcol-1)
                         {
                             printw(string);
                         }
@@ -2776,14 +2772,13 @@ errno_t streamCTRL_CTRLscreen()
                                 charcnt = sprintf(string, "(%7lu ?? ", inode);
                                 break;
                             }
-                            linecharcnt += charcnt + 2;
-                            if(linecharcnt < wcol)
+                            if(linecharcnt < wcol-3-8-charcnt)
                             {
+                                linecharcnt += charcnt;
                                 printw(string);
+                                linecharcnt += 3 + streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                                printw(")> ");
                             }
-
-                            linecharcnt += 3 + streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                            printw(")> ");
                         }
 
                         if(DisplayDetailLevel == 1)
@@ -2817,7 +2812,7 @@ errno_t streamCTRL_CTRLscreen()
                         for(pidIndex = 0; pidIndex < streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
                         {
                             pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
-                            linecharcnt += streamCTRL_print_procpid(pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                            linecharcnt += streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
 
                             if((getpgid(pid) >= 0) && (pid != getpid()))
                             {
@@ -2825,7 +2820,7 @@ errno_t streamCTRL_CTRLscreen()
                                 charcnt = sprintf(string, ":%-*.*s",
                                                   PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
                                 linecharcnt += charcnt;
-                                if(linecharcnt < wcol)
+                                if(linecharcnt < -1)
                                 {
                                     printw(string);
                                 }
@@ -2842,7 +2837,7 @@ errno_t streamCTRL_CTRLscreen()
                     case 2:
                         charcnt = sprintf(string, "FAILED");
                         linecharcnt += charcnt;
-                        if(linecharcnt < wcol)
+                        if(linecharcnt < wcol-1)
                         {
                             printw(string);
                         }
@@ -2851,7 +2846,7 @@ errno_t streamCTRL_CTRLscreen()
                     default:
                         charcnt = sprintf(string, "NOT SCANNED");
                         linecharcnt += charcnt;
-                        if(linecharcnt < wcol)
+                        if(linecharcnt < wcol-1)
                         {
                             printw(string);
                         }
@@ -2870,7 +2865,7 @@ errno_t streamCTRL_CTRLscreen()
                         attroff(A_REVERSE);
                     }
 
-                    if(linecharcnt > wcol)
+                    if(linecharcnt > wcol-1)
                     {
                         attron(COLOR_PAIR(9));
                         printw("+");
