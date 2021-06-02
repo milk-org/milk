@@ -32,7 +32,10 @@
 
 
 
-inline static void print_help_entry(char *key, char *descr)
+inline static void print_help_entry(
+    char *key,
+    char *descr
+)
 {
     screenprint_setbold();
     printfw("    %4s", key);
@@ -168,12 +171,14 @@ inline static void fpsCTRLscreen_print_nodeinfo(
             fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
             fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
+
     printfw("   %d libs : ", fps[keywnode[nodeSelected].fpsindex].md->NBmodule);
     for(int m = 0; m < fps[keywnode[nodeSelected].fpsindex].md->NBmodule; m++)
     {
-        printfw(" [%s]", fps[keywnode[nodeSelected].fpsindex].md->modulename);
+        printfw(" [%s]", fps[keywnode[nodeSelected].fpsindex].md->modulename[m]);
     }
     printfw("\n");
+
 
     DEBUG_TRACEPOINT(" ");
     printfw("    FPS work     directory    : %s\n",
