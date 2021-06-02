@@ -19,7 +19,7 @@ static short unsigned int wrow, wcol;
 
 /*
  * Defines printfw output
- * 
+ *
  * SCREENPRINT_STDIO     printf to stdout
  * SCREENPRINT_NCURSES   printw
  * SCREENPRINT_NONE      don't print (silent)
@@ -48,22 +48,25 @@ static int printAECbgcolor = AEC_BGCOLOR_BLACK;
 
 
 
-void TUI_set_screenprintmode(int mode)
+void TUI_set_screenprintmode(
+    int mode
+)
 {
-	screenprintmode = mode;
+    screenprintmode = mode;
 }
 
 
 
 int TUI_get_screenprintmode()
 {
-	return screenprintmode;
+    return screenprintmode;
 }
 
 
 
-
-
+//
+// print to stdout or through ncurses
+//
 void printfw(const char *fmt, ...)
 {
     va_list args;
@@ -87,211 +90,211 @@ void printfw(const char *fmt, ...)
 
 void screenprint_setcolor( int colorcode )
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(COLOR_PAIR(colorcode));
-	}
-	else
-	{
-		switch (colorcode) 
-		{
-			case 1:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_BLACK;			
-			break;
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attron(COLOR_PAIR(colorcode));
+    }
+    else
+    {
+        switch (colorcode)
+        {
+        case 1:
+            printAECfgcolor = AEC_FGCOLOR_WHITE;
+            printAECbgcolor = AEC_BGCOLOR_BLACK;
+            break;
 
-			case 2:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_GREEN;			
-			break;
+        case 2:
+            printAECfgcolor = AEC_FGCOLOR_BLACK;
+            printAECbgcolor = AEC_BGCOLOR_GREEN;
+            break;
 
-			case 3:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_YELLOW;			
-			break;
+        case 3:
+            printAECfgcolor = AEC_FGCOLOR_BLACK;
+            printAECbgcolor = AEC_BGCOLOR_YELLOW;
+            break;
 
-			case 4:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_RED;			
-			break;
+        case 4:
+            printAECfgcolor = AEC_FGCOLOR_WHITE;
+            printAECbgcolor = AEC_BGCOLOR_RED;
+            break;
 
-			case 5:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_BLUE;			
-			break;
+        case 5:
+            printAECfgcolor = AEC_FGCOLOR_WHITE;
+            printAECbgcolor = AEC_BGCOLOR_BLUE;
+            break;
 
-			case 6:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_GREEN;			
-			break;
+        case 6:
+            printAECfgcolor = AEC_FGCOLOR_BLACK;
+            printAECbgcolor = AEC_BGCOLOR_GREEN;
+            break;
 
-			case 7:
-			printAECfgcolor = AEC_FGCOLOR_WHITE;
-			printAECbgcolor = AEC_BGCOLOR_YELLOW;			
-			break;
+        case 7:
+            printAECfgcolor = AEC_FGCOLOR_WHITE;
+            printAECbgcolor = AEC_BGCOLOR_YELLOW;
+            break;
 
-			case 8:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_RED;			
-			break;
+        case 8:
+            printAECfgcolor = AEC_FGCOLOR_BLACK;
+            printAECbgcolor = AEC_BGCOLOR_RED;
+            break;
 
-			case 9:
-			printAECfgcolor = AEC_FGCOLOR_RED;
-			printAECbgcolor = AEC_BGCOLOR_BLACK;			
-			break;
-			
-			case 10:
-			printAECfgcolor = AEC_FGCOLOR_BLACK;
-			printAECbgcolor = AEC_BGCOLOR_BLUE + 60;			
-			break;									
-		}
-		
-		printf( "\033[%d;%dm",  printAECfgcolor, printAECbgcolor);
-	}
+        case 9:
+            printAECfgcolor = AEC_FGCOLOR_RED;
+            printAECbgcolor = AEC_BGCOLOR_BLACK;
+            break;
+
+        case 10:
+            printAECfgcolor = AEC_FGCOLOR_BLACK;
+            printAECbgcolor = AEC_BGCOLOR_BLUE + 60;
+            break;
+        }
+
+        printf( "\033[%d;%dm",  printAECfgcolor, printAECbgcolor);
+    }
 }
 
 
 void screenprint_unsetcolor( int colorcode )
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(COLOR_PAIR(colorcode));
-	}
-	else
-	{
-		printAEC = AEC_NORMAL;
-		printAECfgcolor = AEC_FGCOLOR_WHITE;
-		printAECbgcolor = AEC_BGCOLOR_BLACK;	
-		printf( "\033[%dm", printAEC);//, printAECbgcolor);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attroff(COLOR_PAIR(colorcode));
+    }
+    else
+    {
+        printAEC = AEC_NORMAL;
+        printAECfgcolor = AEC_FGCOLOR_WHITE;
+        printAECbgcolor = AEC_BGCOLOR_BLACK;
+        printf( "\033[%dm", printAEC);//, printAECbgcolor);
+    }
 }
 
 
 void screenprint_setbold()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_BOLD);
-	}
-	else
-	{
-		printAEC = AEC_BOLD;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attron(A_BOLD);
+    }
+    else
+    {
+        printAEC = AEC_BOLD;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_unsetbold()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_BOLD);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_BOLDOFF;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attroff(A_BOLD);
+    }
+    else
+    {
+        printAEC = AEC_NORMAL; //AEC_BOLDOFF;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_setblink()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_BLINK);
-	}
-	else
-	{
-		printAEC = AEC_FASTBLINK;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attron(A_BLINK);
+    }
+    else
+    {
+        printAEC = AEC_FASTBLINK;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_unsetblink()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_BLINK);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_BLINKOFF;
-		printf( "\033[%dm", AEC_NORMAL);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attroff(A_BLINK);
+    }
+    else
+    {
+        printAEC = AEC_NORMAL; //AEC_BLINKOFF;
+        printf( "\033[%dm", AEC_NORMAL);
+    }
 }
 
 
 void screenprint_setdim()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_DIM);
-	}
-	else
-	{
-		printAEC = AEC_FAINT;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attron(A_DIM);
+    }
+    else
+    {
+        printAEC = AEC_FAINT;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_unsetdim()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_DIM);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_FAINTOFF;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attroff(A_DIM);
+    }
+    else
+    {
+        printAEC = AEC_NORMAL; //AEC_FAINTOFF;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_setreverse()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attron(A_REVERSE);
-	}
-	else
-	{
-		printAEC = AEC_REVERSE;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attron(A_REVERSE);
+    }
+    else
+    {
+        printAEC = AEC_REVERSE;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_unsetreverse()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		attroff(A_REVERSE);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL; //AEC_REVERSEOFF;
-		printf( "\033[%dm",  printAEC);
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        attroff(A_REVERSE);
+    }
+    else
+    {
+        printAEC = AEC_NORMAL; //AEC_REVERSEOFF;
+        printf( "\033[%dm",  printAEC);
+    }
 }
 
 
 void screenprint_setnormal()
 {
-	if(screenprintmode == SCREENPRINT_NCURSES)
-	{
-		//attron(A_REVERSE);
-	}
-	else
-	{
-		printAEC = AEC_NORMAL;
-		printAECfgcolor = AEC_FGCOLOR_WHITE;
-		printAECbgcolor = AEC_BGCOLOR_BLACK;
-		printf( "\033[%d;%d;%dm", printAEC, printAECfgcolor, printAECbgcolor );
-	}
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        //attron(A_REVERSE);
+    }
+    else
+    {
+        printAEC = AEC_NORMAL;
+        printAECfgcolor = AEC_FGCOLOR_WHITE;
+        printAECbgcolor = AEC_BGCOLOR_BLACK;
+        printf( "\033[%d;%d;%dm", printAEC, printAECfgcolor, printAECbgcolor );
+    }
 }
 
 
@@ -373,7 +376,7 @@ void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
         printf("\e[1;1H\e[2J");
         //printf("[%12lld  %d %d %d ]  ", loopcnt, buffd[0], buffd[1], buffd[2]);
 
-        // update terminal size        
+        // update terminal size
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
         *wrow = w.ws_row;
@@ -381,9 +384,9 @@ void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
     }
     else
     {
-		(void) *wrow;
-		(void) *wcol;
-	}
+        (void) *wrow;
+        (void) *wcol;
+    }
 }
 
 
@@ -395,33 +398,33 @@ void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
  */
 errno_t TUI_initncurses()
 {
-	DEBUG_TRACEPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
     if( screenprintmode == SCREENPRINT_NCURSES)
     {
-		DEBUG_TRACEPOINT(" test abort ");
-   
-        
+        DEBUG_TRACEPOINT(" test abort ");
+
+
         if(initscr() == NULL)
         {
             fprintf(stderr, "Error initialising ncurses.\n");
             exit(EXIT_FAILURE);
         }
         getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-		
+
         cbreak();
         // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
         // making characters typed by the user immediately available to the program
 
-		DEBUG_TRACEPOINT(" ");
-		
+        DEBUG_TRACEPOINT(" ");
+
         keypad(stdscr, TRUE);
         // enable F1, F2 etc..
 
-		DEBUG_TRACEPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         nodelay(stdscr, TRUE);
         curs_set(0);
 
-		DEBUG_TRACEPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         noecho();
         // Don't echo() while we do getch
 
@@ -430,10 +433,10 @@ errno_t TUI_initncurses()
         //nonl();
         // Do not translates newline into return and line-feed on output
 
-		DEBUG_TRACEPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         init_color(COLOR_GREEN, 400, 1000, 400);
         start_color();
-		DEBUG_TRACEPOINT(" ");
+        DEBUG_TRACEPOINT(" ");
         //  colored background
         init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
         init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
@@ -447,7 +450,7 @@ errno_t TUI_initncurses()
         init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
     }
 
-	DEBUG_TRACEPOINT(" ");
+    DEBUG_TRACEPOINT(" ");
 
     return RETURN_SUCCESS;
 }
@@ -468,7 +471,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolp
     {
         TUI_inittermios(wrowptr, wcolptr);
     }
-    
+
     return RETURN_SUCCESS;
 }
 
@@ -502,7 +505,7 @@ errno_t TUI_ncurses_refresh()
     {
         refresh();
     }
-    
+
     return RETURN_SUCCESS;
 }
 
@@ -612,8 +615,8 @@ int get_singlechar_nonblock()
 
 int get_singlechar_block()
 {
-	int ch;
-	
+    int ch;
+
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         ch = getchar();
