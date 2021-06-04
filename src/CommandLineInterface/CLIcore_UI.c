@@ -53,7 +53,6 @@ void rl_cb_linehandler(char *linein)
 
     // copy input into data.CLIcmdline
     strcpy(data.CLIcmdline, linein);
-
     CLI_execute_line();
 
     free(linein);
@@ -87,9 +86,6 @@ errno_t runCLI_prompt(
     {
         sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, data.processname);
     }
-
-
-
 
     return RETURN_SUCCESS;
 }
