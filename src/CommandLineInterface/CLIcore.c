@@ -728,7 +728,7 @@ errno_t runCLI(
     {
         FILE *fp;
 
-        DEBUG_TRACEPOINT_PRINT("Start CLI loop");
+        DEBUG_TRACEPOINT("Start CLI loop");
 
         data.CMDexecuted = 0;
 
@@ -806,17 +806,20 @@ errno_t runCLI(
 
         if(data.fifoON == 0)
         {
-            realine_initialized = 1;
-            // initialize readline
-            DEBUG_TRACEPOINT("initialize readline");
-            // Tell readline to use custom completion function
-            rl_attempted_completion_function = CLI_completion;
-            rl_initialize();
+            if(realine_initialized == 0)
+            {
+                realine_initialized = 1;
+                // initialize readline
+                DEBUG_TRACEPOINT("initialize readline");
+                // Tell readline to use custom completion function
+                rl_attempted_completion_function = CLI_completion;
+                rl_initialize();
 
-            /* Handle window size changes when readline is not active and reading
-                 characters. */
-            signal (SIGWINCH, sighandler);
-            rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
+                /* Handle window size changes when readline is not active and reading
+                     characters. */
+                signal (SIGWINCH, sighandler);
+                rl_callback_handler_install(prompt, (rl_vcpfunc_t *) &rl_cb_linehandler);
+            }
         }
 
 
@@ -854,7 +857,7 @@ errno_t runCLI(
                     return EXIT_FAILURE;
                 }
             }
-            DEBUG_TRACEPOINT_PRINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
             blockCLIinput = 0;
 
@@ -924,16 +927,16 @@ errno_t runCLI(
             {   // revert to default mode
                 if(FD_ISSET(fileno(stdin), &cli_fdin_set))
                 {
-                    DEBUG_TRACEPOINT_PRINT("readline callback");
+                    DEBUG_TRACEPOINT("readline callback");
                     rl_callback_read_char();
-                    DEBUG_TRACEPOINT_PRINT(" ");
+                    DEBUG_TRACEPOINT(" ");
                 }
             }
-            DEBUG_TRACEPOINT_PRINT(" ");
+            DEBUG_TRACEPOINT(" ");
 
         }
         data.CLIexecuteCMDready = 0;
-        DEBUG_TRACEPOINT_PRINT(" ");
+        DEBUG_TRACEPOINT(" ");
 
         //TEST data.CLIloopON = 0;
     }
