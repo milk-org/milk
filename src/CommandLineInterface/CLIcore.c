@@ -723,10 +723,12 @@ errno_t runCLI(
 
 
 
-    DEBUG_TRACEPOINT("Start CLI loop");
+
     while(data.CLIloopON == 1)
     {
         FILE *fp;
+
+        DEBUG_TRACEPOINT_PRINT("Start CLI loop");
 
         data.CMDexecuted = 0;
 
@@ -852,7 +854,7 @@ errno_t runCLI(
                     return EXIT_FAILURE;
                 }
             }
-            DEBUG_TRACEPOINT(" ");
+            DEBUG_TRACEPOINT_PRINT(" ");
 
             blockCLIinput = 0;
 
@@ -922,15 +924,16 @@ errno_t runCLI(
             {   // revert to default mode
                 if(FD_ISSET(fileno(stdin), &cli_fdin_set))
                 {
-                    DEBUG_TRACEPOINT("readline callback");
+                    DEBUG_TRACEPOINT_PRINT("readline callback");
                     rl_callback_read_char();
+                    DEBUG_TRACEPOINT_PRINT(" ");
                 }
             }
-
+            DEBUG_TRACEPOINT_PRINT(" ");
 
         }
         data.CLIexecuteCMDready = 0;
-
+        DEBUG_TRACEPOINT_PRINT(" ");
 
         //TEST data.CLIloopON = 0;
     }
