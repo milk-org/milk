@@ -203,9 +203,9 @@ printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint_file, data.testpoint_func, 
  * @brief register and log trace point
  */
 #if defined NDEBUG
-#define DEBUG_TRACEPOINTLOG(...)
+#define DEBUG_TRACEPOINT_LOG(...)
 #else
-#define DEBUG_TRACEPOINTLOG(...) do {                                      \
+#define DEBUG_TRACEPOINT_LOG(...) do {                                      \
 int slen = snprintf(data.testpoint_file, STRINGMAXLEN_FULLFILENAME, "%s", __FILE__);\
 if(slen<1) {                                                               \
     PRINT_ERROR("snprintf wrote <1 char");                                 \
