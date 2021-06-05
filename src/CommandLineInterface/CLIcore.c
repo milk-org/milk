@@ -822,10 +822,25 @@ errno_t runCLI(
             }
         }
 
-
+        DEBUG_TRACEPOINT("loop entry");
         while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
             DEBUG_TRACEPOINT("processing input command");
+
+            if (data.signal_INT == 1)
+            {
+                // stop CLI input loop
+                data.CLIloopON  = 0;
+            }
+
+            { // input loop delay to keep CPU load light
+                struct timespec nsts;
+                int ret;
+                nsts.tv_sec = 0;
+                nsts.tv_nsec = 10000000; // 100 Hz input
+                ret = nanosleep(&nsts, NULL);
+            }
+
             //printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
@@ -863,6 +878,7 @@ errno_t runCLI(
 
             if(data.fifoON == 1)
             {
+                DEBUG_TRACEPOINT("fifo ON");
                 if(FD_ISSET(fifofd, &cli_fdin_set))
                 {
                     total_bytes = 0;
@@ -904,6 +920,7 @@ errno_t runCLI(
 
             if(blockCLIinput == 0) // fifo has been cleared
             {
+                DEBUG_TRACEPOINT("fifo cleared");
                 if(realine_initialized == 0)
                 {
                     realine_initialized = 1;
