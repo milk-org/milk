@@ -266,6 +266,8 @@ void sig_handler(
     case SIGINT:
         printf("PID %d sig_handler received SIGINT\n", CLIPID);
         data.signal_INT = 1;
+        //set_terminal_echo_on();
+        //exit(EXIT_FAILURE);
         break;
 
     case SIGTERM:
@@ -311,7 +313,10 @@ void sig_handler(
 
     case SIGHUP:
         printf("PID %d sig_handler received SIGHUP\n", CLIPID);
+        write_process_exit_report("SIGHUP");
         data.signal_HUP = 1;
+        set_terminal_echo_on();
+        exit(EXIT_FAILURE);
         break;
 
     case SIGPIPE:
