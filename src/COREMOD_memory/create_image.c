@@ -348,9 +348,9 @@ imageID create_image_ID(
     ID = -1;
     if(image_ID(name) == -1)
     {
-        DEBUG_TRACEPOINTLOG(" ");
+        DEBUG_TRACEPOINT(" ");
         ID = next_avail_image_ID();
-        DEBUG_TRACEPOINTLOG(" ");
+        DEBUG_TRACEPOINT(" ");
         ImageStreamIO_createIm(
             &data.image[ID],
             name,
@@ -361,7 +361,7 @@ imageID create_image_ID(
             NBkw,
             CBsize
         );
-        DEBUG_TRACEPOINTLOG(" ");
+        DEBUG_TRACEPOINT(" ");
     }
     else
     {

@@ -434,7 +434,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
     }
 
 
-    DEBUG_TRACEPOINTLOG(" ");
+    DEBUG_TRACEPOINT(" ");
 
 
 
@@ -621,7 +621,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
             }
         }
 
-        DEBUG_TRACEPOINTLOG(" ");
+        DEBUG_TRACEPOINT(" ");
 
 
         if(index == 0)
@@ -646,7 +646,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
             printf("%5d  logshimconf[0].on = %d\n", __LINE__, logshimconf[0].on);
         }
 
-        DEBUG_TRACEPOINTLOG(" ");
+        DEBUG_TRACEPOINT(" ");
 
         if(likely(logshimconf[0].on == 1))
         {
@@ -657,7 +657,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
                     printf("%5d  Frame has arrived [index %ld]\n", __LINE__, index);
                 }
 
-                DEBUG_TRACEPOINTLOG(" ");
+                DEBUG_TRACEPOINT(" ");
 
                 long NBgrab = 0;
                 long grabSpan0 = 0;
@@ -824,7 +824,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
                 clock_gettime(CLOCK_REALTIME, &timenow);
 
 
-                DEBUG_TRACEPOINTLOG(" ");
+                DEBUG_TRACEPOINT(" ");
 
 
 
@@ -887,7 +887,7 @@ static errno_t __attribute__((hot)) shmimlog2D(
                 }
 
 
-                DEBUG_TRACEPOINTLOG(" ");
+                DEBUG_TRACEPOINT(" ");
 
 
             }
