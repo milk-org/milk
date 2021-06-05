@@ -837,7 +837,7 @@ errno_t runCLI(
                 struct timespec nsts;
                 int ret;
                 nsts.tv_sec = 0;
-                nsts.tv_nsec = 10000000; // 100 Hz input
+                nsts.tv_nsec = 30000000; // 30 ms delay
                 ret = nanosleep(&nsts, NULL);
             }
 
