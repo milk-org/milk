@@ -64,6 +64,9 @@ static int CTRLscreenExitLine = 0; // for debugging
 
 #include "CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
+#include "TUItools.h"
+
+
 #define SHAREDPROCDIR data.shmdir
 
 
@@ -111,15 +114,11 @@ static int CTRLscreenExitLine = 0; // for debugging
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
-
+static short unsigned int wrow, wcol;
 
 
 
 static PROCESSINFOLIST *pinfolist;
-
-static int wrow, wcol;
-static int wcolmax; // max number of cols
 
 
 
@@ -1379,86 +1378,6 @@ int processinfo_exec_end(
 
 
 
-static int processtools__print_header(const char *str, char c)
-{
-    long n;
-    long i;
-
-    attron(A_BOLD);
-    n = strlen(str);
-    for(i = 0; i < (wcol - n) / 2; i++)
-    {
-        printw("%c", c);
-    }
-    printw("%s", str);
-    for(i = 0; i < (wcol - n) / 2 - 1; i++)
-    {
-        printw("%c", c);
-    }
-    printw("\n");
-    attroff(A_BOLD);
-
-
-    return(0);
-}
-
-
-
-/**
- * INITIALIZE ncurses
- *
- */
-static errno_t initncurses()
-{
-    if(initscr() == NULL)
-    {
-        fprintf(stderr, "Error initialising ncurses.\n");
-        exit(EXIT_FAILURE);
-    }
-    getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-    wcolmax = wcol;
-
-    cbreak();
-    // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
-    // making characters typed by the user immediately available to the program
-
-    keypad(stdscr, TRUE);
-    // enable F1, F2 etc..
-
-    nodelay(stdscr, TRUE);
-    curs_set(0);
-
-
-    noecho();			/* Don't echo() while we do getch */
-
-
-
-    init_color(COLOR_GREEN, 700, 1000, 700);
-    init_color(COLOR_YELLOW, 1000, 1000, 700);
-
-    start_color();
-
-
-
-    //  color background
-    init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_BLACK, COLOR_GREEN);
-    init_pair(3, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(4, COLOR_WHITE, COLOR_RED);
-    init_pair(5, COLOR_WHITE, COLOR_BLUE);
-
-    init_pair(6, COLOR_GREEN, COLOR_BLACK);
-    init_pair(7, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(8, COLOR_RED, COLOR_BLACK);
-    init_pair(9, COLOR_BLACK, COLOR_RED);
-
-
-    return RETURN_SUCCESS;
-}
-
-
-
-
 /**
  * ## Purpose
  *
@@ -2603,7 +2522,7 @@ void *processinfo_scan(
                 {
                     indexarray[index] = pindex;
                     // minus sign for most recent first
-                    //printw("index  %ld  ->  pindex  %ld\n", index, pindex);
+                    //TUI_printfw("index  %ld  ->  pindex  %ld\n", index, pindex);
                     timearray[index] = -1.0 * pinfop->pinfoarray[pindex]->createtime.tv_sec - 1.0e-9
                                        * pinfop->pinfoarray[pindex]->createtime.tv_nsec;
                     listcnt++;
@@ -2819,7 +2738,7 @@ void processinfo_CTRLscreen_atexit()
 
 
 
-
+/*
 void processinfo_CTRLscreen_handle_winch(int __attribute__((unused)) sig)
 {
     endwin();
@@ -2837,7 +2756,7 @@ void processinfo_CTRLscreen_handle_winch(int __attribute__((unused)) sig)
         wcol = wcolmax;
     }
 }
-
+*/
 
 
 
@@ -2899,21 +2818,20 @@ errno_t processinfo_CTRLscreen()
 
     processinfo_CatchSignals();
 
+    /*
+        struct sigaction sa;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        sa.sa_handler = processinfo_CTRLscreen_handle_winch;
+        if(sigaction(SIGWINCH, &sa, NULL) == -1)
+        {
+            printf("can't handle SIGWINCH");
+            exit(EXIT_FAILURE);
+        }
 
-    struct sigaction sa;
 
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sa.sa_handler = processinfo_CTRLscreen_handle_winch;
-    if(sigaction(SIGWINCH, &sa, NULL) == -1)
-    {
-        printf("can't handle SIGWINCH");
-        exit(EXIT_FAILURE);
-    }
-
-
-    setlocale(LC_ALL, "");
-
+        setlocale(LC_ALL, "");
+    */
 
 
     // initialize procinfoproc entries
@@ -2983,17 +2901,29 @@ errno_t processinfo_CTRLscreen()
 
 
 
+    // default: use ncurses
+    TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
+    if(getenv("MILK_FPSCTRL_PRINT_STDIO"))
+    {
+        // use stdio instead of ncurses
+        TUI_set_screenprintmode(SCREENPRINT_STDIO);
+    }
+
+    if(getenv("MILK_FPSCTRL_NOPRINT"))
+    {
+        TUI_set_screenprintmode(SCREENPRINT_NONE);
+    }
+
+    TUI_init_terminal(&wrow, &wcol);
     // INITIALIZE ncurses
-    initncurses();
+    //initncurses();
 
 
     //atexit( processinfo_CTRLscreen_atexit );
 
     // set print string lengths
     char string[200]; // string to be printed. Used to keep track of total length
-    int pstrlen_total; // Used to keep track of total length
-    int pstrlen_total_max;
 
     int pstrlen_status  = 10;
     int pstrlen_pid     =  7;
@@ -3006,8 +2936,6 @@ errno_t processinfo_CTRLscreen()
     int pstrlen_descr   = 25;
 
     int pstrlen_msg     = 35;
-    int pstrlen_msg_min = 10;
-    int pstrlen_msg_max = 50;
 
     int pstrlen_cset    = 10;
 
@@ -3016,9 +2944,6 @@ errno_t processinfo_CTRLscreen()
     int pstrlen_missedfr  = 4;
     int pstrlen_missedfrc = 12;
     int pstrlen_tocnt     = 10;
-
-
-    //	int pstrlen_total = 28 + pstrlen_status + pstrlen_pid + pstrlen_pname + pstrlen_state + pstrlen_tmux + pstrlen_loopcnt + pstrlen_descr + pstrlen_msg;
 
 
 
@@ -3192,10 +3117,11 @@ errno_t processinfo_CTRLscreen()
 
         if(freeze == 0)
         {
-            attron(A_BOLD);
+            //attron(A_BOLD);
             sprintf(monstring, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
-            processtools__print_header(monstring, '-');
-            attroff(A_BOLD);
+            //processtools__print_header(monstring, '-');
+            TUI_print_header(monstring, '-');
+            //attroff(A_BOLD);
         }
 
         int selectedOK = 0; // goes to 1 if at least one process is selected
@@ -3513,38 +3439,38 @@ errno_t processinfo_CTRLscreen()
 
 
 
-        case '>': // move to other cpuset
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                endwin();
-                if(system("clear") != 0) // clear screen
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
-                printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
-                listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+        case '>': // move to other cpuset  //TODO
+            /*            pindex = pindexSelected;
+                        if(pinfolist->active[pindex] == 1)
+                        {
+                            endwin();
+                            if(system("clear") != 0) // clear screen
+                            {
+                                PRINT_ERROR("system() returns non-zero value");
+                            }
+                            printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
+                            listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
 
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex],
-                                       CPUsetList[listindex].name);
+                            EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex],
+                                                   CPUsetList[listindex].name);
 
-                initncurses();
-            }
+                            initncurses();
+                        }*/
             break;
 
-        case '<': // move to same cpuset
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                endwin();
+        case '<': // move to same cpuset //TODO
+            /*            pindex = pindexSelected;
+                        if(pinfolist->active[pindex] == 1)
+                        {
+                            endwin();
 
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
-                                       pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null",
-                                       pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
+                            EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
+                                                   pinfolist->PIDarray[pindex]);
+                            EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null",
+                                                   pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
 
-                initncurses();
-            }
+                            initncurses();
+                        }*/
             break;
 
 
@@ -3602,35 +3528,37 @@ errno_t processinfo_CTRLscreen()
             }
             break;
 
-        case 't':
-            endwin();
-            EXECUTE_SYSTEM_COMMAND("tmux a -t %s",
-                                   procinfoproc.pinfoarray[pindexSelected]->tmuxname);
-            initncurses();
+        case 't': //TODO
+            /*            endwin();
+                        EXECUTE_SYSTEM_COMMAND("tmux a -t %s",
+                                               procinfoproc.pinfoarray[pindexSelected]->tmuxname);
+                        initncurses();*/
             break;
 
-        case 'a':
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                endwin();
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
-                                       (int) pinfolist->PIDarray[pindex]);
-                initncurses();
-            }
+        case 'a': //TODO
+            /*
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    endwin();
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    initncurses();
+                }*/
             break;
 
-        case 'd':
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                endwin();
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                       (int) pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                       (int) pinfolist->PIDarray[pindex]);
-                initncurses();
-            }
+        case 'd': //TODO
+            /*
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    endwin();
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    initncurses();
+                }*/
             break;
 
 
@@ -3689,15 +3617,17 @@ errno_t processinfo_CTRLscreen()
             break;;
 
 
-        case 'm' : // message
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                endwin();
-                EXECUTE_SYSTEM_COMMAND("clear; tail -f %s",
-                                       procinfoproc.pinfoarray[pindex]->logfilename);
-                initncurses();
-            }
+        case 'm' : // message //TODO
+            /*
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    endwin();
+                    EXECUTE_SYSTEM_COMMAND("clear; tail -f %s",
+                                           procinfoproc.pinfoarray[pindex]->logfilename);
+                    initncurses();
+                }
+                */
             break;
 
 
@@ -3723,31 +3653,33 @@ errno_t processinfo_CTRLscreen()
             procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
             break;
 
-        case KEY_F(6): // htop
-            endwin();
-            if(system("htop") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            initncurses();
+        case KEY_F(6): // htop //TODO
+            /*            endwin();
+                        if(system("htop") != 0)
+                        {
+                            PRINT_ERROR("system() returns non-zero value");
+                        }
+                        initncurses();*/
             break;
 
-        case KEY_F(7): // iotop
-            endwin();
-            if(system("sudo iotop -o") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            initncurses();
+        case KEY_F(7): // iotop //TODO
+            /*
+                endwin();
+                if(system("sudo iotop -o") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                initncurses();*/
             break;
 
-        case KEY_F(8): // atop
-            endwin();
-            if(system("sudo atop") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            initncurses();
+        case KEY_F(8): // atop //TODO
+            /*
+                endwin();
+                if(system("sudo atop") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                initncurses();*/
             break;
 
 
@@ -3813,340 +3745,386 @@ errno_t processinfo_CTRLscreen()
                 int attrval = A_BOLD;
 
                 attron(attrval);
-                printw("    x");
+                TUI_printfw("    x");
                 attroff(attrval);
-                printw("    Exit\n");
+                TUI_printfw("    Exit");
+                TUI_newline();
 
 
-                printw("\n");
-                printw("============ SCREENS \n");
+                TUI_newline();
+                TUI_printfw("============ SCREENS");
+                TUI_newline();
 
                 attron(attrval);
-                printw("     h");
+                TUI_printfw("     h");
                 attroff(attrval);
-                printw("   Help screen\n");
+                TUI_printfw("   Help screen");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    F2");
+                TUI_printfw("    F2");
                 attroff(attrval);
-                printw("   Process control screen\n");
+                TUI_printfw("   Process control screen");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    F3");
+                TUI_printfw("    F3");
                 attroff(attrval);
-                printw("   Process CPU and MEM resources screen\n");
+                TUI_printfw("   Process CPU and MEM resources screen");
                 attron(attrval);
+                TUI_newline();
 
-                printw("    F4");
+                TUI_printfw("    F4");
                 attroff(attrval);
-                printw("   Process syncing\n");
+                TUI_printfw("   Process syncing");
+                TUI_newline();
 
-                printw("    F5");
+                TUI_printfw("    F5");
                 attroff(attrval);
-                printw("   Process timing screen\n");
-
-                attron(attrval);
-                printw("    F6");
-                attroff(attrval);
-                printw("   htop        Type F10 to exit\n");
+                TUI_printfw("   Process timing screen");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    F7");
+                TUI_printfw("    F6");
                 attroff(attrval);
-                printw("   iotop       Type q to exit\n");
+                TUI_printfw("   htop        Type F10 to exit");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    F8");
+                TUI_printfw("    F7");
                 attroff(attrval);
-                printw("   atop        Type q to exit\n");
-
-
-
-
-                printw("\n");
-                printw("============ SCANNING \n");
+                TUI_printfw("   iotop       Type q to exit");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    }");
+                TUI_printfw("    F8");
                 attroff(attrval);
-                printw("    Increase scan frequency\n");
+                TUI_printfw("   atop        Type q to exit");
+                TUI_newline();
+
+
+
+
+                TUI_newline();
+                TUI_printfw("============ SCANNING");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    {");
+                TUI_printfw("    }");
                 attroff(attrval);
-                printw("    Decrease scan frequency\n");
-
-
-
-
-                printw("\n");
-                printw("============ DISPLAY \n");
+                TUI_printfw("    Increase scan frequency");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    +");
+                TUI_printfw("    {");
                 attroff(attrval);
-                printw("    Increase display frequency\n");
+                TUI_printfw("    Decrease scan frequency");
+                TUI_newline();
+
+
+
+
+                TUI_newline();
+                TUI_printfw("============ DISPLAY");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    -");
+                TUI_printfw("    +");
                 attroff(attrval);
-                printw("    Decrease display frequency\n");
+                TUI_printfw("    Increase display frequency");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    f");
+                TUI_printfw("    -");
                 attroff(attrval);
-                printw("    Freeze\n");
+                TUI_printfw("    Decrease display frequency");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    r");
+                TUI_printfw("    f");
                 attroff(attrval);
-                printw("    Remove selected inactive process log\n");
+                TUI_printfw("    Freeze");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    R");
+                TUI_printfw("    r");
                 attroff(attrval);
-                printw("    Remove all inactive processes logs\n");
+                TUI_printfw("    Remove selected inactive process log");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    o");
+                TUI_printfw("    R");
                 attroff(attrval);
-                printw("    sort processes (toggle)\n");
+                TUI_printfw("    Remove all inactive processes logs");
+                TUI_newline();
 
                 attron(attrval);
-                printw("SPACE");
+                TUI_printfw("    o");
                 attroff(attrval);
-                printw("    Select this process\n");
+                TUI_printfw("    sort processes (toggle)");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    u");
+                TUI_printfw("SPACE");
                 attroff(attrval);
-                printw("    Unselect all processes\n");
-
-
-
-                printw("\n");
-                printw("============ PROCESS DETAILS \n");
+                TUI_printfw("    Select this process");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    t");
+                TUI_printfw("    u");
                 attroff(attrval);
-                printw("    Connect to tmux session\n");
+                TUI_printfw("    Unselect all processes");
+                TUI_newline();
+
+
+
+                TUI_newline();
+                TUI_printfw("============ PROCESS DETAILS");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    a");
+                TUI_printfw("    t");
                 attroff(attrval);
-                printw("    process stat\n");
+                TUI_printfw("    Connect to tmux session");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    d");
+                TUI_printfw("    a");
                 attroff(attrval);
-                printw("    process sched\n");
-
-
-
-
-                printw("\n");
-                printw("============ LOOP CONTROL \n");
+                TUI_printfw("    process stat");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    p");
+                TUI_printfw("    d");
                 attroff(attrval);
-                printw("    pause (toggle C0 - C1)\n");
+                TUI_printfw("    process sched");
+                TUI_newline();
+
+
+
+
+                TUI_newline();
+                TUI_printfw("============ LOOP CONTROL");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    c");
+                TUI_printfw("    p");
                 attroff(attrval);
-                printw("    compute on/off (toggle C0 - C5)\n");
+                TUI_printfw("    pause (toggle C0 - C1)");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    s");
+                TUI_printfw("    c");
                 attroff(attrval);
-                printw("    step\n");
+                TUI_printfw("    compute on/off (toggle C0 - C5)");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    e");
+                TUI_printfw("    s");
                 attroff(attrval);
-                printw("    clean exit\n");
+                TUI_printfw("    step");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    T");
+                TUI_printfw("    e");
                 attroff(attrval);
-                printw("    SIGTERM\n");
+                TUI_printfw("    clean exit");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    K");
+                TUI_printfw("    T");
                 attroff(attrval);
-                printw("    SIGKILL\n");
+                TUI_printfw("    SIGTERM");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    I");
+                TUI_printfw("    K");
                 attroff(attrval);
-                printw("    SIGINT\n");
-
-
-
-
-                printw("\n");
-                printw("============ COUNTERS, TIMERS \n");
+                TUI_printfw("    SIGKILL");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    z");
+                TUI_printfw("    I");
                 attroff(attrval);
-                printw("    zero this selected counter\n");
+                TUI_printfw("    SIGINT");
+                TUI_newline();
+
+
+
+
+                TUI_newline();
+                TUI_printfw("============ COUNTERS, TIMERS");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    Z");
+                TUI_printfw("    z");
                 attroff(attrval);
-                printw("    zero all selected counters\n");
+                TUI_printfw("    zero this selected counter");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    L");
+                TUI_printfw("    Z");
                 attroff(attrval);
-                printw("    Enable iteration time limit\n");
+                TUI_printfw("    zero all selected counters");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    M");
+                TUI_printfw("    L");
                 attroff(attrval);
-                printw("    Enable execution time limit\n");
-
-
-
-                printw("\n");
-                printw("============ AFFINITY \n");
+                TUI_printfw("    Enable iteration time limit");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    >");
+                TUI_printfw("    M");
                 attroff(attrval);
-                printw("    Move to other CPU set\n");
+                TUI_printfw("    Enable execution time limit");
+                TUI_newline();
+
+
+
+                TUI_newline();
+                TUI_printfw("============ AFFINITY");
+                TUI_newline();
 
                 attron(attrval);
-                printw("    <");
+                TUI_printfw("    >");
                 attroff(attrval);
-                printw("    Move back to same CPU set\n");
+                TUI_printfw("    Move to other CPU set");
+                TUI_newline();
+
+                attron(attrval);
+                TUI_printfw("    <");
+                attroff(attrval);
+                TUI_printfw("    Move back to same CPU set");
+                TUI_newline();
 
 
-                printw("\n\n");
+                TUI_newline();
+                TUI_newline();
             }
             else
             {
                 DEBUG_TRACEPOINT(" ");
 
-                printw("pindexSelected = %d    %d\n", pindexSelected, pindexSelectedOK);
+                TUI_printfw("pindexSelected = %d    %d", pindexSelected, pindexSelectedOK);
+                TUI_newline();
 
-                printw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d\n",
-                       CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus,
-                       procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+                TUI_printfw("[PID %d   SCAN TID %d]  %2d cpus   %2d processes tracked    Display Mode %d",
+                            CLIPID, (int) procinfoproc.scanPID, procinfoproc.NBcpus,
+                            procinfoproc.NBpindexActive, procinfoproc.DisplayMode);
+                TUI_newline();
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
                 {
                     attron(A_REVERSE);
-                    printw("[h] Help");
+                    TUI_printfw("[h] Help");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[h] Help");
+                    TUI_printfw("[h] Help");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                 {
                     attron(A_REVERSE);
-                    printw("[F2] CTRL");
+                    TUI_printfw("[F2] CTRL");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F2] CTRL");
+                    TUI_printfw("[F2] CTRL");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                 {
                     attron(A_REVERSE);
-                    printw("[F3] Resources");
+                    TUI_printfw("[F3] Resources");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F3] Resources");
+                    TUI_printfw("[F3] Resources");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                 {
                     attron(A_REVERSE);
-                    printw("[F4] Triggering");
+                    TUI_printfw("[F4] Triggering");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F4] Triggering");
+                    TUI_printfw("[F4] Triggering");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                 {
                     attron(A_REVERSE);
-                    printw("[F5] Timing");
+                    TUI_printfw("[F5] Timing");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F5] Timing");
+                    TUI_printfw("[F5] Timing");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HTOP)
                 {
                     attron(A_REVERSE);
-                    printw("[F6] htop (F10 to exit)");
+                    TUI_printfw("[F6] htop (F10 to exit)");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F6] htop (F10 to exit)");
+                    TUI_printfw("[F6] htop (F10 to exit)");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_IOTOP)
                 {
                     attron(A_REVERSE);
-                    printw("[F7] iotop (q to exit)");
+                    TUI_printfw("[F7] iotop (q to exit)");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F7] iotop (q to exit)");
+                    TUI_printfw("[F7] iotop (q to exit)");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_ATOP)
                 {
                     attron(A_REVERSE);
-                    printw("[F8] atop (q to exit)");
+                    TUI_printfw("[F8] atop (q to exit)");
                     attroff(A_REVERSE);
                 }
                 else
                 {
-                    printw("[F8] atop (q to exit)");
+                    TUI_printfw("[F8] atop (q to exit)");
                 }
-                printw("   ");
+                TUI_printfw("   ");
 
 
-                printw("\n");
+                TUI_newline();
 
                 DEBUG_TRACEPOINT(" ");
 
-                printw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )\n",
-                       (int)(frequ + 0.5),
-                       procinfoproc.loopcnt,
-                       1.0 / procinfoproc.dtscan,
-                       1000000.0 / procinfoproc.twaitus,
-                       100.0 * (procinfoproc.dtscan - 1.0e-6 * procinfoproc.twaitus) /
-                       procinfoproc.dtscan);
+                TUI_printfw("Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy )",
+                            (int)(frequ + 0.5),
+                            procinfoproc.loopcnt,
+                            1.0 / procinfoproc.dtscan,
+                            1000000.0 / procinfoproc.twaitus,
+                            100.0 * (procinfoproc.dtscan - 1.0e-6 * procinfoproc.twaitus) /
+                            procinfoproc.dtscan);
+                TUI_newline();
 
 
                 DEBUG_TRACEPOINT(" ");
@@ -4162,23 +4140,25 @@ errno_t processinfo_CTRLscreen()
                                procinfoproc.pinfoarray[pindexSelected]->source_FUNCTION);
                         pselected_LINE = procinfoproc.pinfoarray[pindexSelected]->source_LINE;
 
-                        printw("Source Code: %s line %d (function %s)\n", pselected_FILE,
-                               pselected_LINE, pselected_FUNCTION);
+                        TUI_printfw("Source Code: %s line %d (function %s)", pselected_FILE,
+                                    pselected_LINE, pselected_FUNCTION);
+                        TUI_newline();
                     }
                     else
                     {
                         sprintf(pselected_FILE, "?");
                         sprintf(pselected_FUNCTION, "?");
                         pselected_LINE = 0;
-                        printw("\n");
+                        TUI_newline();
                     }
                 }
                 else
                 {
-                    printw("---\n");
+                    TUI_printfw("---");
+                    TUI_newline();
                 }
 
-                printw("\n");
+                TUI_newline();
 
                 clock_gettime(CLOCK_REALTIME, &t02loop);
 
@@ -4237,37 +4217,38 @@ errno_t processinfo_CTRLscreen()
 
 
                     // List CPUs
-                    printw(" %*.*s %*.*s %-*.*s    %-*.*s              ",
-                           pstrlen_status,  pstrlen_status,  " ",
-                           pstrlen_pid,     pstrlen_pid,     " ",
-                           pstrlen_pname,   pstrlen_pname,   " ",
-                           pstrlen_cset,    pstrlen_cset,    " "
-                          );
+                    TUI_printfw(" %*.*s %*.*s %-*.*s    %-*.*s              ",
+                                pstrlen_status,  pstrlen_status,  " ",
+                                pstrlen_pid,     pstrlen_pid,     " ",
+                                pstrlen_pname,   pstrlen_pname,   " ",
+                                pstrlen_cset,    pstrlen_cset,    " "
+                               );
 
 
                     for(cpusocket = 0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
                         if(cpusocket > 0)
                         {
-                            printw("    ");
+                            TUI_printfw("    ");
                         }
                         for(cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
                             if(procinfoproc.CPUphys[cpu] == cpusocket)
                             {
-                                printw("|%02d", procinfoproc.CPUids[cpu]);
+                                TUI_printfw("|%02d", procinfoproc.CPUids[cpu]);
                             }
-                        printw("|");
+                        TUI_printfw("|");
                     }
-                    printw(" <- %2d sockets %2d CPUs\n", procinfoproc.NBcpusocket,
-                           procinfoproc.NBcpus);
+                    TUI_printfw(" <- %2d sockets %2d CPUs", procinfoproc.NBcpusocket,
+                                procinfoproc.NBcpus);
+                    TUI_newline();
 
                     // List CPU # processes
-                    printw(" %*.*s %*.*s %-*.*s    %-*.*s              ",
-                           pstrlen_status,  pstrlen_status,  " ",
-                           pstrlen_pid,     pstrlen_pid,     " ",
-                           pstrlen_pname,   pstrlen_pname,   " ",
-                           pstrlen_cset,    pstrlen_cset,    " "
-                          );
+                    TUI_printfw(" %*.*s %*.*s %-*.*s    %-*.*s              ",
+                                pstrlen_status,  pstrlen_status,  " ",
+                                pstrlen_pid,     pstrlen_pid,     " ",
+                                pstrlen_pname,   pstrlen_pname,   " ",
+                                pstrlen_cset,    pstrlen_cset,    " "
+                               );
 
 
 
@@ -4275,7 +4256,7 @@ errno_t processinfo_CTRLscreen()
                     {
                         if(cpusocket > 0)
                         {
-                            printw("    ");
+                            TUI_printfw("    ");
                         }
 
                         for(cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
@@ -4305,39 +4286,40 @@ errno_t processinfo_CTRLscreen()
                                     ColorCode = 5;
                                 }
 
-                                printw("|");
+                                TUI_printfw("|");
                                 if(ColorCode != 0)
                                 {
                                     attron(COLOR_PAIR(ColorCode));
                                 }
-                                printw("%02d", vint);
+                                TUI_printfw("%02d", vint);
                                 if(ColorCode != 0)
                                 {
                                     attroff(COLOR_PAIR(ColorCode));
                                 }
                             }
-                        printw("|");
+                        TUI_printfw("|");
                     }
 
-                    printw(" <- PROCESSES\n");
+                    TUI_printfw(" <- PROCESSES");
+                    TUI_newline();
 
 
                     DEBUG_TRACEPOINT(" ");
 
 
                     // Print CPU LOAD
-                    printw(" %*.*s %*.*s %-*.*s PR %-*.*s  #T  ctxsw   ",
-                           pstrlen_status,  pstrlen_status,  "STATUS",
-                           pstrlen_pid,     pstrlen_pid,     "PID",
-                           pstrlen_pname,   pstrlen_pname,   "pname",
-                           pstrlen_cset,    pstrlen_cset,    "cset",
-                           procinfoproc.NBcpus);
+                    TUI_printfw(" %*.*s %*.*s %-*.*s PR %-*.*s  #T  ctxsw   ",
+                                pstrlen_status,  pstrlen_status,  "STATUS",
+                                pstrlen_pid,     pstrlen_pid,     "PID",
+                                pstrlen_pname,   pstrlen_pname,   "pname",
+                                pstrlen_cset,    pstrlen_cset,    "cset",
+                                procinfoproc.NBcpus);
 
                     for(cpusocket = 0; cpusocket < procinfoproc.NBcpusocket; cpusocket++)
                     {
                         if(cpusocket > 0)
                         {
-                            printw("    ");
+                            TUI_printfw("    ");
                         }
                         for(cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
                             if(procinfoproc.CPUphys[cpu] == cpusocket)
@@ -4366,22 +4348,23 @@ errno_t processinfo_CTRLscreen()
                                     ColorCode = 5;
                                 }
 
-                                printw("|");
+                                TUI_printfw("|");
                                 if(ColorCode != 0)
                                 {
                                     attron(COLOR_PAIR(ColorCode));
                                 }
-                                printw("%02d", vint);
+                                TUI_printfw("%02d", vint);
                                 if(ColorCode != 0)
                                 {
                                     attroff(COLOR_PAIR(ColorCode));
                                 }
                             }
-                        printw("|");
+                        TUI_printfw("|");
                     }
 
-                    printw(" <- CPU LOAD\n");
-                    printw("\n");
+                    TUI_printfw(" <- CPU LOAD");
+                    TUI_newline();
+                    TUI_newline();
                 }
 
 
@@ -4390,19 +4373,20 @@ errno_t processinfo_CTRLscreen()
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                 {
                     DEBUG_TRACEPOINT(" ");
-                    printw("\n");
-                    printw("\n");
-                    printw(" %*.*s %*.*s %-*.*s %-*.*s C# tstart       %-*.*s %-*.*s   %-*.*s   %-*.*s\n",
-                           pstrlen_status,  pstrlen_status,  "STATUS",
-                           pstrlen_pid,     pstrlen_pid,     "PID",
-                           pstrlen_pname,   pstrlen_pname,   "pname",
-                           pstrlen_state,   pstrlen_state,   "state",
-                           pstrlen_tmux,    pstrlen_tmux,    "tmux sess",
-                           pstrlen_loopcnt, pstrlen_loopcnt, "loopcnt",
-                           pstrlen_descr,   pstrlen_descr,   "Description",
-                           pstrlen_msg,     pstrlen_msg,     "Message"
-                          );
-                    printw("\n");
+                    TUI_newline();
+                    TUI_newline();
+                    TUI_printfw(" %*.*s %*.*s %-*.*s %-*.*s C# tstart       %-*.*s %-*.*s   %-*.*s   %-*.*s",
+                                pstrlen_status,  pstrlen_status,  "STATUS",
+                                pstrlen_pid,     pstrlen_pid,     "PID",
+                                pstrlen_pname,   pstrlen_pname,   "pname",
+                                pstrlen_state,   pstrlen_state,   "state",
+                                pstrlen_tmux,    pstrlen_tmux,    "tmux sess",
+                                pstrlen_loopcnt, pstrlen_loopcnt, "loopcnt",
+                                pstrlen_descr,   pstrlen_descr,   "Description",
+                                pstrlen_msg,     pstrlen_msg,     "Message"
+                               );
+                    TUI_newline();
+                    TUI_newline();
                     DEBUG_TRACEPOINT(" ");
                 }
 
@@ -4411,19 +4395,20 @@ errno_t processinfo_CTRLscreen()
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                 {
                     DEBUG_TRACEPOINT(" ");
-                    printw("\n");
-                    printw("\n");
-                    printw(" %*.*s %*.*s %-*.*s %*.*s %*.*s mode sem %*.*s  %*.*s  %*.*s\n",
-                           pstrlen_status,   pstrlen_status,   "STATUS",
-                           pstrlen_pid,      pstrlen_pid,      "PID",
-                           pstrlen_pname,    pstrlen_pname,    "pname",
-                           pstrlen_inode,    pstrlen_inode,    "inode",
-                           pstrlen_trigstreamname,    pstrlen_trigstreamname,    "stream",
-                           pstrlen_missedfr, pstrlen_missedfr, "miss",
-                           pstrlen_missedfrc, pstrlen_missedfrc, "misscumul",
-                           pstrlen_tocnt,    pstrlen_tocnt,     "timeouts"
-                          );
-                    printw("\n");
+                    TUI_newline();
+                    TUI_newline();
+                    TUI_printfw("%*.*s %*.*s %-*.*s %*.*s %*.*s mode sem %*.*s  %*.*s  %*.*s",
+                                pstrlen_status,   pstrlen_status,   "STATUS",
+                                pstrlen_pid,      pstrlen_pid,      "PID",
+                                pstrlen_pname,    pstrlen_pname,    "pname",
+                                pstrlen_inode,    pstrlen_inode,    "inode",
+                                pstrlen_trigstreamname,    pstrlen_trigstreamname,    "stream",
+                                pstrlen_missedfr, pstrlen_missedfr, "miss",
+                                pstrlen_missedfrc, pstrlen_missedfrc, "misscumul",
+                                pstrlen_tocnt,    pstrlen_tocnt,     "timeouts"
+                               );
+                    TUI_newline();
+                    TUI_newline();
                     DEBUG_TRACEPOINT(" ");
                 }
 
@@ -4432,10 +4417,11 @@ errno_t processinfo_CTRLscreen()
                 if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                 {
                     DEBUG_TRACEPOINT(" ");
-                    printw("\n");
-                    printw("\n");
-                    printw("   STATUS    PID   process name                    \n");
-                    printw("\n");
+                    TUI_newline();
+                    TUI_newline();
+                    TUI_printfw("   STATUS    PID   process name                    ");
+                    TUI_newline();
+                    TUI_newline();
                     DEBUG_TRACEPOINT(" ");
                 }
 
@@ -4447,7 +4433,6 @@ errno_t processinfo_CTRLscreen()
                 // ===========================================================================
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
                 // ===========================================================================
-                pstrlen_total_max = 0;
                 pindexSelectedOK = 0;
 
 
@@ -4476,13 +4461,12 @@ errno_t processinfo_CTRLscreen()
 
                         if(procinfoproc.selectedarray[pindex] == 1)
                         {
-                            printw("*");
+                            TUI_printfw("*");
                         }
                         else
                         {
-                            printw(" ");
+                            TUI_printfw(" ");
                         }
-                        pstrlen_total = 1;
 
                         DEBUG_TRACEPOINT("procinfoproc.selectedarray[pindex] = %d",
                                          procinfoproc.selectedarray[pindex]);
@@ -4490,9 +4474,8 @@ errno_t processinfo_CTRLscreen()
                         if(pinfolist->active[pindex] == 1)
                         {
                             sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ACTIVE");
-                            pstrlen_total += strlen(string);
                             attron(COLOR_PAIR(2));
-                            printw("%s", string);
+                            TUI_printfw("%s", string);
                             attroff(COLOR_PAIR(2));
                         }
 
@@ -4506,25 +4489,22 @@ errno_t processinfo_CTRLscreen()
                             {
                             case 3: // clean exit
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "STOPPED");
-                                pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(3));
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
                                 attroff(COLOR_PAIR(3));
                                 break;
 
                             case 4: // error
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ERROR");
-                                pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(3));
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
                                 attroff(COLOR_PAIR(3));
                                 break;
 
                             default: // crashed
                                 sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
-                                pstrlen_total += strlen(string);
                                 attron(COLOR_PAIR(4));
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
                                 attroff(COLOR_PAIR(4));
                                 break;
                             }
@@ -4543,16 +4523,14 @@ errno_t processinfo_CTRLscreen()
 
                             sprintf(string, " %-*.*d", pstrlen_pid, pstrlen_pid,
                                     pinfolist->PIDarray[pindex]);
-                            pstrlen_total += strlen(string);
-                            printw("%s", string);
+                            TUI_printfw("%s", string);
 
 
                             attron(A_BOLD);
 
                             sprintf(string, " %-*.*s", pstrlen_pname, pstrlen_pname,
                                     procinfoproc.pinfodisp[pindex].name);
-                            pstrlen_total += strlen(string);
-                            printw("%s", string);
+                            TUI_printfw("%s", string);
                             attroff(A_BOLD);
 
 
@@ -4592,22 +4570,20 @@ errno_t processinfo_CTRLscreen()
                                 default:
                                     sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "??");
                                 }
-                                pstrlen_total += strlen(string);
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
 
 
 
                                 if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
                                 {
                                     attron(COLOR_PAIR(2));
-                                    printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval);
+                                    TUI_printfw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval);
                                     attroff(COLOR_PAIR(2));
                                 }
                                 else
                                 {
-                                    printw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval);
+                                    TUI_printfw(" C%d", procinfoproc.pinfoarray[pindex]->CTRLval);
                                 }
-                                pstrlen_total += 3;
 
 
                                 sprintf(string, " %02d:%02d:%02d.%03d",
@@ -4615,48 +4591,42 @@ errno_t processinfo_CTRLscreen()
                                         procinfoproc.pinfodisp[pindex].createtime_min,
                                         procinfoproc.pinfodisp[pindex].createtime_sec,
                                         (int)(0.000001 * (procinfoproc.pinfodisp[pindex].createtime_ns)));
-                                pstrlen_total += strlen(string);
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
 
 
 
                                 sprintf(string, " %-*.*s", pstrlen_tmux, pstrlen_tmux,
                                         procinfoproc.pinfoarray[pindex]->tmuxname);
-                                pstrlen_total += strlen(string);
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
 
 
                                 sprintf(string, " %- *.*ld", pstrlen_loopcnt, pstrlen_loopcnt,
                                         procinfoproc.pinfoarray[pindex]->loopcnt -
                                         procinfoproc.loopcntoffsetarray[pindex]);
-                                pstrlen_total += strlen(string);
                                 //if(procinfoproc.pinfoarray[pindex]->loopcnt == procinfoproc.loopcntarray[pindex])
                                 if(procinfoproc.pinfoarray[pindex]->loopcnt ==
                                         procinfoproc.loopcntarray[pindex])
                                 {
                                     // loopcnt has not changed
-                                    printw("%s", string);
+                                    TUI_printfw("%s", string);
                                 }
                                 else
                                 {
                                     // loopcnt has changed
                                     attron(COLOR_PAIR(2));
-                                    printw("%s", string);
+                                    TUI_printfw("%s", string);
                                     attroff(COLOR_PAIR(2));
                                 }
 
                                 procinfoproc.loopcntarray[pindex] = procinfoproc.pinfoarray[pindex]->loopcnt;
 
-                                printw(" | ");
-                                pstrlen_total += 3;
+                                TUI_printfw(" | ");
 
                                 sprintf(string, "%-*.*s", pstrlen_descr, pstrlen_descr,
                                         procinfoproc.pinfoarray[pindex]->description);
-                                pstrlen_total += strlen(string);
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
 
-                                printw(" | ");
-                                pstrlen_total += 3;
+                                TUI_printfw(" | ");
 
                                 if((procinfoproc.pinfoarray[pindex]->loopstat == 4)
                                         || (procinfoproc.pinfoarray[pindex]->loopstat == 6)) // ERROR or CRASH
@@ -4666,8 +4636,7 @@ errno_t processinfo_CTRLscreen()
 
                                 sprintf(string, "%-*.*s", pstrlen_msg, pstrlen_msg,
                                         procinfoproc.pinfoarray[pindex]->statusmsg);
-                                pstrlen_total += strlen(string);
-                                printw("%s", string);
+                                TUI_printfw("%s", string);
 
                                 if((procinfoproc.pinfoarray[pindex]->loopstat == 4)
                                         || (procinfoproc.pinfoarray[pindex]->loopstat == 6)) // ERROR
@@ -4686,9 +4655,9 @@ errno_t processinfo_CTRLscreen()
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
                                 {
-                                    sprintf(string, " no process info available\n");
-                                    pstrlen_total += strlen(string);
-                                    printw("%s", string);
+                                    sprintf(string, " no process info available");
+                                    TUI_printfw("%s", string);
+                                    TUI_newline();
                                 }
                                 else
                                 {
@@ -4711,8 +4680,7 @@ errno_t processinfo_CTRLscreen()
                                                     procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex],
                                                     pstrlen_pname, pstrlen_pname, procinfoproc.pinfodisp[pindex].name
                                                    );
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
                                         else
                                         {
@@ -4722,17 +4690,14 @@ errno_t processinfo_CTRLscreen()
                                         }
 
                                         sprintf(string, " %2d", procinfoproc.pinfodisp[pindex].rt_priority);
-                                        pstrlen_total += strlen(string);
-                                        printw("%s", string);
+                                        TUI_printfw("%s", string);
 
                                         sprintf(string, " %-*.*s", pstrlen_cset, pstrlen_cset,
                                                 procinfoproc.pinfodisp[pindex].cpuset);
-                                        pstrlen_total += strlen(string);
-                                        printw("%s", string);
+                                        TUI_printfw("%s", string);
 
                                         sprintf(string, " %2dx ", procinfoproc.pinfodisp[pindex].threads);
-                                        pstrlen_total += strlen(string);
-                                        printw("%s", string);
+                                        TUI_printfw("%s", string);
 
 
                                         // Context Switches
@@ -4754,8 +4719,7 @@ errno_t processinfo_CTRLscreen()
                                                 labs(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex] -
                                                      procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex]) % 100
                                                );
-                                        pstrlen_total += strlen(string);
-                                        printw("%s", string);
+                                        TUI_printfw("%s", string);
 
                                         if(procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spindex] !=
                                                 procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spindex])
@@ -4767,7 +4731,7 @@ errno_t processinfo_CTRLscreen()
                                         {
                                             attroff(COLOR_PAIR(3));
                                         }
-                                        printw(" ");
+                                        TUI_printfw(" ");
 #endif
 
 
@@ -4803,8 +4767,7 @@ errno_t processinfo_CTRLscreen()
                                         // First group of cores (physical CPU 0)
                                         for(cpu = 0; cpu < procinfoproc.NBcpus / procinfoproc.NBcpusocket; cpu++)
                                         {
-                                            printw("|");
-                                            pstrlen_total += 1;
+                                            TUI_printfw("|");
 
                                             if(procinfoproc.CPUids[cpu] ==
                                                     procinfoproc.pinfodisp[pindex].processorarray[spindex])
@@ -4814,13 +4777,12 @@ errno_t processinfo_CTRLscreen()
 
                                             if(procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] == 1)
                                             {
-                                                printw("%2d", procinfoproc.CPUids[cpu]);
+                                                TUI_printfw("%2d", procinfoproc.CPUids[cpu]);
                                             }
                                             else
                                             {
-                                                printw("  ");
+                                                TUI_printfw("  ");
                                             }
-                                            pstrlen_total += 2;
 
 
                                             if(procinfoproc.CPUids[cpu] ==
@@ -4831,16 +4793,14 @@ errno_t processinfo_CTRLscreen()
                                         }
 
                                         sprintf(string, "|    ");
-                                        pstrlen_total += strlen(string);
-                                        printw("%s", string);
+                                        TUI_printfw("%s", string);
 
 
                                         // Second group of cores (physical CPU 0)
                                         for(cpu = procinfoproc.NBcpus / procinfoproc.NBcpusocket;
                                                 cpu < procinfoproc.NBcpus; cpu++)
                                         {
-                                            printw("|");
-                                            pstrlen_total += 1;
+                                            TUI_printfw("|");
 
                                             if(procinfoproc.CPUids[cpu] ==
                                                     procinfoproc.pinfodisp[pindex].processorarray[spindex])
@@ -4850,13 +4810,12 @@ errno_t processinfo_CTRLscreen()
 
                                             if(procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] == 1)
                                             {
-                                                printw("%2d", procinfoproc.CPUids[cpu]);
+                                                TUI_printfw("%2d", procinfoproc.CPUids[cpu]);
                                             }
                                             else
                                             {
-                                                printw("  ");
+                                                TUI_printfw("  ");
                                             }
-                                            pstrlen_total += 2;
 
                                             if(procinfoproc.CPUids[cpu] ==
                                                     procinfoproc.pinfodisp[pindex].processorarray[spindex])
@@ -4864,16 +4823,14 @@ errno_t processinfo_CTRLscreen()
                                                 attroff(COLOR_PAIR(cpuColor));
                                             }
                                         }
-                                        printw("| ");
-                                        pstrlen_total += 2;
+                                        TUI_printfw("| ");
 
 
                                         attron(COLOR_PAIR(cpuColor));
                                         sprintf(string, "%5.1f %6.2f",
                                                 procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spindex],
                                                 procinfoproc.pinfodisp[pindex].subprocCPUloadarray_timeaveraged[spindex]);
-                                        pstrlen_total += strlen(string);
-                                        printw("%s", string);
+                                        TUI_printfw("%s", string);
                                         attroff(COLOR_PAIR(cpuColor));
 #endif
 
@@ -4911,47 +4868,40 @@ errno_t processinfo_CTRLscreen()
                                             memColor = 5;
                                         }
 
-                                        printw(" ");
-                                        pstrlen_total += 1;
+                                        TUI_printfw(" ");
 
                                         attron(COLOR_PAIR(memColor));
                                         if(GBcnt > 0)
                                         {
                                             sprintf(string, "%3d GB ", GBcnt);
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
                                         else
                                         {
                                             sprintf(string, "       ");
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
 
                                         if(MBcnt > 0)
                                         {
                                             sprintf(string, "%4d MB ", MBcnt);
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
                                         else
                                         {
                                             sprintf(string, "       ");
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
 
                                         if(kBcnt > 0)
                                         {
                                             sprintf(string, "%4d kB ", kBcnt);
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
                                         else
                                         {
                                             sprintf(string, "       ");
-                                            pstrlen_total += strlen(string);
-                                            printw("%s", string);
+                                            TUI_printfw("%s", string);
                                         }
                                         attroff(COLOR_PAIR(memColor));
 #endif
@@ -4961,22 +4911,13 @@ errno_t processinfo_CTRLscreen()
                                             attroff(A_REVERSE);
                                         }
 
-                                        printw("\n");
-                                        // end of line
-                                        if(pstrlen_total > pstrlen_total_max)
-                                        {
-                                            pstrlen_total_max = pstrlen_total;
-                                        }
-                                        //printw("len = %d %d / %d\n", pstrlen_total, pstrlen_total_max, wcol);
-                                        pstrlen_total = 0;
-
-
-
+                                        TUI_newline();
                                     }
                                     if(procinfoproc.pinfodisp[pindex].NBsubprocesses == 0)
                                     {
-                                        printw("  ERROR: procinfoproc.pinfodisp[pindex].NBsubprocesses = %d\n",
-                                               (int) procinfoproc.pinfodisp[pindex].NBsubprocesses);
+                                        TUI_printfw("  ERROR: procinfoproc.pinfodisp[pindex].NBsubprocesses = %d",
+                                                    (int) procinfoproc.pinfodisp[pindex].NBsubprocesses);
+                                        TUI_newline();
 
                                         if(pindex == pindexSelected)
                                         {
@@ -4994,47 +4935,47 @@ errno_t processinfo_CTRLscreen()
                             // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TRIGGER ==================
                             if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                             {
-                                printw("%*d ", pstrlen_inode,
-                                       procinfoproc.pinfoarray[pindex]->triggerstreaminode);
-                                printw("%*s ", pstrlen_trigstreamname,
-                                       procinfoproc.pinfoarray[pindex]->triggerstreamname);
+                                TUI_printfw("%*d ", pstrlen_inode,
+                                            procinfoproc.pinfoarray[pindex]->triggerstreaminode);
+                                TUI_printfw("%*s ", pstrlen_trigstreamname,
+                                            procinfoproc.pinfoarray[pindex]->triggerstreamname);
 
                                 switch(procinfoproc.pinfoarray[pindex]->triggermode)
                                 {
 
                                 case PROCESSINFO_TRIGGERMODE_IMMEDIATE :
-                                    printw(" IMME   ");
+                                    TUI_printfw(" IMME   ");
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_CNT0 :
-                                    printw(" CNT0   ");
+                                    TUI_printfw(" CNT0   ");
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_CNT1 :
-                                    printw(" CNT1   ");
+                                    TUI_printfw(" CNT1   ");
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_SEMAPHORE :
-                                    printw(" SEMA %2d",
-                                           procinfoproc.pinfoarray[pindex]->triggersem
-                                          );
+                                    TUI_printfw(" SEMA %2d",
+                                                procinfoproc.pinfoarray[pindex]->triggersem
+                                               );
 
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_DELAY :
-                                    printw(" DELA   ");
+                                    TUI_printfw(" DELA   ");
                                     break;
 
                                 default :
-                                    printw(" %04d   ",  procinfoproc.pinfoarray[pindex]->triggermode);
+                                    TUI_printfw(" %04d   ",  procinfoproc.pinfoarray[pindex]->triggermode);
                                 }
 
-                                printw("  %*d ", pstrlen_missedfr,
-                                       procinfoproc.pinfoarray[pindex]->triggermissedframe);
-                                printw("  %*llu ", pstrlen_missedfrc,
-                                       procinfoproc.pinfoarray[pindex]->triggermissedframe_cumul);
-                                printw("  %*llu ", pstrlen_tocnt,
-                                       procinfoproc.pinfoarray[pindex]->trigggertimeoutcnt);
+                                TUI_printfw("  %*d ", pstrlen_missedfr,
+                                            procinfoproc.pinfoarray[pindex]->triggermissedframe);
+                                TUI_printfw("  %*llu ", pstrlen_missedfrc,
+                                            procinfoproc.pinfoarray[pindex]->triggermissedframe_cumul);
+                                TUI_printfw("  %*llu ", pstrlen_tocnt,
+                                            procinfoproc.pinfoarray[pindex]->trigggertimeoutcnt);
                             }
 
 
@@ -5043,11 +4984,11 @@ errno_t processinfo_CTRLscreen()
                             {
                                 if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
                                 {
-                                    printw(" ON");
+                                    TUI_printfw(" ON");
                                 }
                                 else
                                 {
-                                    printw("OFF");
+                                    TUI_printfw("OFF");
                                 }
 
                                 if(procinfoproc.pinfoarray[pindex]->MeasureTiming == 1)
@@ -5057,8 +4998,8 @@ errno_t processinfo_CTRLscreen()
                                     //int dtindex;
 
 
-                                    printw(" %3d ..%02ld  ", procinfoproc.pinfoarray[pindex]->timerindex,
-                                           procinfoproc.pinfoarray[pindex]->timingbuffercnt % 100);
+                                    TUI_printfw(" %3d ..%02ld  ", procinfoproc.pinfoarray[pindex]->timerindex,
+                                                procinfoproc.pinfoarray[pindex]->timingbuffercnt % 100);
 
                                     // compute timing stat
                                     dtiter_array = (long *) malloc(sizeof(long) * (PROCESSINFO_NBtimer - 1));
@@ -5123,16 +5064,16 @@ errno_t processinfo_CTRLscreen()
                                         }
                                         attron(colorcode);
                                     }
-                                    printw("ITERlim %d/%5ld/%4ld",
-                                           procinfoproc.pinfoarray[pindex]->dtiter_limit_enable,
-                                           (long)(0.001 * procinfoproc.pinfoarray[pindex]->dtiter_limit_value),
-                                           procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt);
+                                    TUI_printfw("ITERlim %d/%5ld/%4ld",
+                                                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable,
+                                                (long)(0.001 * procinfoproc.pinfoarray[pindex]->dtiter_limit_value),
+                                                procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt);
                                     if(procinfoproc.pinfoarray[pindex]->dtiter_limit_enable != 0)
                                     {
                                         attroff(colorcode);
                                     }
 
-                                    printw("  ");
+                                    TUI_printfw("  ");
 
                                     if(procinfoproc.pinfoarray[pindex]->dtexec_limit_enable != 0)
                                     {
@@ -5147,10 +5088,10 @@ errno_t processinfo_CTRLscreen()
                                         attron(colorcode);
                                     }
 
-                                    printw("EXEClim %d/%5ld/%4ld ",
-                                           procinfoproc.pinfoarray[pindex]->dtexec_limit_enable,
-                                           (long)(0.001 * procinfoproc.pinfoarray[pindex]->dtexec_limit_value),
-                                           procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt);
+                                    TUI_printfw("EXEClim %d/%5ld/%4ld ",
+                                                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable,
+                                                (long)(0.001 * procinfoproc.pinfoarray[pindex]->dtexec_limit_value),
+                                                procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt);
                                     if(procinfoproc.pinfoarray[pindex]->dtexec_limit_enable != 0)
                                     {
                                         attroff(colorcode);
@@ -5164,31 +5105,31 @@ errno_t processinfo_CTRLscreen()
                                                 0.5 * PROCESSINFO_NBtimer)];
                                     if(tval > 9999.9)
                                     {
-                                        printw(" ITER    >10ms ");
+                                        TUI_printfw(" ITER    >10ms ");
                                     }
                                     else
                                     {
-                                        printw(" ITER %6.1fus ", tval);
+                                        TUI_printfw(" ITER %6.1fus ", tval);
                                     }
 
                                     tval = 0.001 * dtiter_array[0];
                                     if(tval > 9999.9)
                                     {
-                                        printw("[   >10ms -");
+                                        TUI_printfw("[   >10ms -");
                                     }
                                     else
                                     {
-                                        printw("[%6.1fus -", tval);
+                                        TUI_printfw("[%6.1fus -", tval);
                                     }
 
                                     tval = 0.001 * dtiter_array[PROCESSINFO_NBtimer - 2];
                                     if(tval > 9999.9)
                                     {
-                                        printw("    >10ms ]");
+                                        TUI_printfw("    >10ms ]");
                                     }
                                     else
                                     {
-                                        printw(" %6.1fus ]", tval);
+                                        TUI_printfw(" %6.1fus ]", tval);
                                     }
 
 
@@ -5197,46 +5138,46 @@ errno_t processinfo_CTRLscreen()
                                                 0.5 * PROCESSINFO_NBtimer)];
                                     if(tval > 9999.9)
                                     {
-                                        printw(" EXEC    >10ms ");
+                                        TUI_printfw(" EXEC    >10ms ");
                                     }
                                     else
                                     {
-                                        printw(" EXEC %6.1fus ", tval);
+                                        TUI_printfw(" EXEC %6.1fus ", tval);
                                     }
 
                                     tval = 0.001 * dtexec_array[0];
                                     if(tval > 9999.9)
                                     {
-                                        printw("[   >10ms -");
+                                        TUI_printfw("[   >10ms -");
                                     }
                                     else
                                     {
-                                        printw("[%6.1fus -", tval);
+                                        TUI_printfw("[%6.1fus -", tval);
                                     }
 
                                     tval = 0.001 * dtexec_array[PROCESSINFO_NBtimer - 2];
                                     if(tval > 9999.9)
                                     {
-                                        printw("    >10ms ]");
+                                        TUI_printfw("    >10ms ]");
                                     }
                                     else
                                     {
-                                        printw(" %6.1fus ]", tval);
+                                        TUI_printfw(" %6.1fus ]", tval);
                                     }
 
 
-                                    //	printw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
+                                    //	TUI_printfw(" ITER %9.3fus [%9.3f - %9.3f] ", 0.001*dtiter_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtiter_array[0], 0.001*dtiter_array[PROCESSINFO_NBtimer-2]);
 
 
 
 
 
-                                    //	printw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
+                                    //	TUI_printfw(" EXEC %9.3fus [%9.3f - %9.3f] ", 0.001*dtexec_array[(long) (0.5*PROCESSINFO_NBtimer)], 0.001*dtexec_array[0], 0.001*dtexec_array[PROCESSINFO_NBtimer-2]);
 
 
-                                    printw("  busy = %6.2f %%",
-                                           100.0 * dtexec_array[(long)(0.5 * PROCESSINFO_NBtimer)] / (dtiter_array[(long)(
-                                                       0.5 * PROCESSINFO_NBtimer)] + 1));
+                                    TUI_printfw("  busy = %6.2f %%",
+                                                100.0 * dtexec_array[(long)(0.5 * PROCESSINFO_NBtimer)] / (dtiter_array[(long)(
+                                                            0.5 * PROCESSINFO_NBtimer)] + 1));
 
                                     free(dtiter_array);
                                     free(dtexec_array);
@@ -5257,14 +5198,7 @@ errno_t processinfo_CTRLscreen()
                             || (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                             || (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING))
                     {
-                        printw("\n");
-                        // end of line
-                        if(pstrlen_total > pstrlen_total_max)
-                        {
-                            pstrlen_total_max = pstrlen_total;
-                        }
-                        //printw("len = %d %d / %d / %d\n", pstrlen_total, pstrlen_total_max, wcol, pstrlen_msg);
-                        pstrlen_total = 0;
+                        TUI_newline();
                     }
 
 
@@ -5293,40 +5227,10 @@ errno_t processinfo_CTRLscreen()
             tdiff = timespec_diff(t1loop, t2loop);
             double tdiffvloop = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-            printw("\nLoop time = %9.8f s  ( max rate = %7.2f Hz)\n", tdiffvloop,
-                   1.0 / tdiffvloop);
-
-
-
-
-            if(pstrlen_total_max > wcol - 1)
-            {
-                int testval;
-
-                testval = pstrlen_msg - (pstrlen_total_max - (wcol - 1));
-                if(testval < pstrlen_msg_min)
-                {
-                    testval = pstrlen_msg_min;
-                }
-
-                if(pstrlen_msg != testval)
-                {
-                    pstrlen_msg = testval;
-                    refresh();
-                    clear();
-                }
-            }
-
-            if(pstrlen_total_max < wcol - 2)
-            {
-                pstrlen_msg += (wcol - 2 - pstrlen_total_max);
-                if(pstrlen_msg > pstrlen_msg_max)
-                {
-                    pstrlen_msg = pstrlen_msg_max;
-                }
-            }
-
-
+            TUI_newline();
+            TUI_printfw("Loop time = %9.8f s  ( max rate = %7.2f Hz)", tdiffvloop,
+                        1.0 / tdiffvloop);
+            TUI_newline();
 
             refresh();
         }
@@ -5342,6 +5246,7 @@ errno_t processinfo_CTRLscreen()
 
     }
     endwin();
+
 
 
     // Why did we exit ?
