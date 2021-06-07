@@ -1420,7 +1420,7 @@ errno_t streamCTRL_CTRLscreen()
 
 
     TUI_init_terminal(&wrow, &wcol);
-    //DEBUG_TRACEPOINT_LOG("returned from TUI init %d %d", wrow, wcol);
+    //DEBUG_TRACEPOINT("returned from TUI init %d %d", wrow, wcol);
 
 
     /*
