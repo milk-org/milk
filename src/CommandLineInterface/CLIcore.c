@@ -833,7 +833,7 @@ errno_t runCLI(
                 data.CLIloopON  = 0;
             }
 
-            { // input loop delay to keep CPU load light
+            { // CLI loop delay to keep CPU load light
                 struct timespec nsts;
                 int ret;
                 nsts.tv_sec = 0;
@@ -841,7 +841,6 @@ errno_t runCLI(
                 ret = nanosleep(&nsts, NULL);
             }
 
-            //printf("CLI get user input %d  [%d]\n", __LINE__, data.CLIloopON );
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
             if(n == 0)   // nothing received, need to re-init and go back to select call
