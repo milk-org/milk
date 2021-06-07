@@ -88,7 +88,8 @@ int TUI_get_screenprintmode();
 
 
 
-void printfw(const char *fmt, ...);
+void TUI_printfw(const char *fmt, ...);
+void TUI_newline();
 
 void screenprint_setcolor( int colorcode );
 
@@ -122,9 +123,12 @@ errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol);
 
 void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol);
 
+void TUI_handle_winch(int sig);
+
 errno_t TUI_initncurses();
 
 errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolptr);
+errno_t TUI_get_terminal_size(short unsigned int *wrowptr, short unsigned int *wcolptr);
 
 errno_t TUI_exit();
 
@@ -135,7 +139,6 @@ errno_t TUI_ncurses_refresh();
 errno_t TUI_ncurses_erase();
 
 errno_t TUI_stdio_clear();
-
 
 
 

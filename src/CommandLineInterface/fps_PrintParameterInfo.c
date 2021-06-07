@@ -77,7 +77,7 @@ errno_t functionparameter_PrintParameterInfo(
 
 
     // print binary flag
-    printfw("FLAG : ");
+    TUI_printfw("FLAG : ");
     uint64_t mask = (uint64_t) 1 << (sizeof(uint64_t) * CHAR_BIT - 1);
     while(mask)
     {

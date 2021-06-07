@@ -28,7 +28,7 @@
 
 
 
-
+static short unsigned int wrow, wcol;
 
 
 
@@ -38,9 +38,10 @@ inline static void print_help_entry(
 )
 {
     screenprint_setbold();
-    printfw("    %4s", key);
+    TUI_printfw("    %4s", key);
     screenprint_unsetbold();
-    printfw("   %s\n", descr);
+    TUI_printfw("   %s", descr);
+    TUI_newline();
 }
 
 
@@ -58,50 +59,50 @@ inline static void fpsCTRLscreen_print_DisplayMode_status(
     screenprint_setbold();
 
     if(snprintf(monstring, stringmaxlen,
-                "FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP   PID %d  [%d FPS]",
-                (int) getpid(), NBfps) < 0)
+                "[%d x %d] [PID %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO STOP, (h) FOR HELP [%d FPS]",
+                wrow, wcol, (int) getpid(), NBfps) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
     TUI_print_header(monstring, '-');
     screenprint_unsetbold();
-    printfw("\n");
+    TUI_newline();
 
     if(fpsCTRL_DisplayMode == 1)
     {
         screenprint_setreverse();
-        printfw("[h] Help");
+        TUI_printfw("[h] Help");
         screenprint_unsetreverse();
     }
     else
     {
-        printfw("[h] Help");
+        TUI_printfw("[h] Help");
     }
-    printfw("   ");
+    TUI_printfw("   ");
 
     if(fpsCTRL_DisplayMode == 2)
     {
         screenprint_setreverse();
-        printfw("[F2] FPS CTRL");
+        TUI_printfw("[F2] FPS CTRL");
         screenprint_unsetreverse();
     }
     else
     {
-        printfw("[F2] FPS CTRL");
+        TUI_printfw("[F2] FPS CTRL");
     }
-    printfw("   ");
+    TUI_printfw("   ");
 
     if(fpsCTRL_DisplayMode == 3)
     {
         screenprint_setreverse();
-        printfw("[F3] Sequencer");
+        TUI_printfw("[F3] Sequencer");
         screenprint_unsetreverse();
     }
     else
     {
-        printfw("[F3] Sequencer");
+        TUI_printfw("[F3] Sequencer");
     }
-    printfw("\n");
+    TUI_newline();
 }
 
 
@@ -110,13 +111,17 @@ inline static void fpsCTRLscreen_print_help()
 {
     // int attrval = A_BOLD;
 
-    printfw("\n");
+    TUI_newline();
     print_help_entry("x", "Exit");
 
-    printfw("\n============ SCREENS \n");
+    TUI_newline();
+    TUI_printfw("============ SCREENS");
+    TUI_newline();
     print_help_entry("h/F2/F3", "Help/Control/Sequencer screen");
 
-    printfw("\n============ OTHER \n");
+    TUI_newline();
+    TUI_printfw("============ OTHER");
+    TUI_newline();
     print_help_entry("s",     "rescan");
     print_help_entry("T/t",   "initialize (T)mux session / kill (t)mux session");
     print_help_entry("E/e",   "(E)rase FPS and tmux sessions / (e)rase FPS only");
@@ -126,7 +131,8 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry(">",     "export fpsdatadir values fpsconfdir");
     print_help_entry("<",     "import/load values from fpsconfdir");
     print_help_entry("P",     "(P)rocess input file \"confscript\"");
-    printfw("        format: setval <paramfulname> <value>\n");
+    TUI_printfw("        format: setval <paramfulname> <value>");
+    TUI_newline();
 }
 
 
@@ -145,9 +151,9 @@ inline static void fpsCTRLscreen_print_nodeinfo(
                      nodeSelected,
                      keywnode[nodeSelected].fpsindex);
 
-    printfw("======== FPS info ( # %5d)\n",
-            keywnode[nodeSelected].fpsindex);
-
+    TUI_printfw("======== FPS info ( # %5d)",
+                keywnode[nodeSelected].fpsindex);
+    TUI_newline();
 
     char teststring[200];
     sprintf(teststring, "%s", fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
@@ -157,39 +163,43 @@ inline static void fpsCTRLscreen_print_nodeinfo(
     DEBUG_TRACEPOINT("TEST LINE : %d",
                      fps[keywnode[nodeSelected].fpsindex].md->sourceline);
 
-    printfw("    FPS call              : %s -> %s [",
-            fps[keywnode[nodeSelected].fpsindex].md->callprogname,
-            fps[keywnode[nodeSelected].fpsindex].md->callfuncname);
+    TUI_printfw("    FPS call              : %s -> %s [",
+                fps[keywnode[nodeSelected].fpsindex].md->callprogname,
+                fps[keywnode[nodeSelected].fpsindex].md->callfuncname);
 
     for(int i = 0; i < fps[keywnode[nodeSelected].fpsindex].md->NBnameindex; i++)
     {
-        printfw(" %s", fps[keywnode[nodeSelected].fpsindex].md->nameindexW[i]);
+        TUI_printfw(" %s", fps[keywnode[nodeSelected].fpsindex].md->nameindexW[i]);
     }
-    printfw(" ]\n");
+    TUI_printfw(" ]");
+    TUI_newline();
 
-    printfw("    FPS source            : %s %d\n",
-            fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
-            fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+    TUI_printfw("    FPS source            : %s %d",
+                fps[keywnode[nodeSelected].fpsindex].md->sourcefname,
+                fps[keywnode[nodeSelected].fpsindex].md->sourceline);
+    TUI_newline();
 
 
-    printfw("   %d libs : ", fps[keywnode[nodeSelected].fpsindex].md->NBmodule);
+    TUI_printfw("   %d libs : ", fps[keywnode[nodeSelected].fpsindex].md->NBmodule);
     for(int m = 0; m < fps[keywnode[nodeSelected].fpsindex].md->NBmodule; m++)
     {
-        printfw(" [%s]", fps[keywnode[nodeSelected].fpsindex].md->modulename[m]);
+        TUI_printfw(" [%s]", fps[keywnode[nodeSelected].fpsindex].md->modulename[m]);
     }
-    printfw("\n");
+    TUI_newline();
 
 
     DEBUG_TRACEPOINT(" ");
-    printfw("    FPS work     directory    : %s\n",
-            fps[keywnode[nodeSelected].fpsindex].md->workdir);
+    TUI_printfw("    FPS work     directory    : %s",
+                fps[keywnode[nodeSelected].fpsindex].md->workdir);
+    TUI_newline();
 
-    printfw("    ( FPS output data directory : %s )  ( FPS input conf directory : %s) \n",
-            fps[keywnode[nodeSelected].fpsindex].md->datadir,
-            fps[keywnode[nodeSelected].fpsindex].md->confdir);
+    TUI_printfw("    ( FPS output data directory : %s )  ( FPS input conf directory : %s)",
+                fps[keywnode[nodeSelected].fpsindex].md->datadir,
+                fps[keywnode[nodeSelected].fpsindex].md->confdir);
+    TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
-    printfw("    FPS tmux sessions     :  ");
+    TUI_printfw("    FPS tmux sessions     :  ");
 
 
     EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:ctrl 2> /dev/null",
@@ -237,50 +247,51 @@ inline static void fpsCTRLscreen_print_nodeinfo(
             FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL)
     {
         screenprint_setcolor(COLOR_OK);
-        printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
+        TUI_printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
         screenprint_unsetcolor(COLOR_OK);
     }
     else
     {
         screenprint_setcolor(COLOR_ERROR);
-        printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
+        TUI_printfw("%s:ctrl", fps[keywnode[nodeSelected].fpsindex].md->name);
         screenprint_unsetcolor(COLOR_ERROR);
     }
-    printfw(" ");
+    TUI_printfw(" ");
     if(fps[keywnode[nodeSelected].fpsindex].md->status &
             FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF)
     {
         screenprint_setcolor(COLOR_OK);
-        printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
+        TUI_printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
         screenprint_unsetcolor(COLOR_OK);
     }
     else
     {
         screenprint_setcolor(COLOR_ERROR);
-        printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
+        TUI_printfw("%s:conf", fps[keywnode[nodeSelected].fpsindex].md->name);
         screenprint_unsetcolor(COLOR_ERROR);
     }
-    printfw(" ");
+    TUI_printfw(" ");
     if(fps[keywnode[nodeSelected].fpsindex].md->status &
             FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN)
     {
         screenprint_setcolor(COLOR_OK);
-        printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
+        TUI_printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
         screenprint_unsetcolor(COLOR_OK);
     }
     else
     {
         screenprint_setcolor(COLOR_ERROR);
-        printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
+        TUI_printfw("%s:run", fps[keywnode[nodeSelected].fpsindex].md->name);
         screenprint_unsetcolor(COLOR_ERROR);
     }
-    printfw("\n");
+    TUI_newline();
 
 
 
     DEBUG_TRACEPOINT(" ");
-    printfw("======== NODE info ( # %5ld)\n", nodeSelected);
-    printfw("%-30s ", keywnode[nodeSelected].keywordfull);
+    TUI_printfw("======== NODE info ( # %5ld)", nodeSelected);
+    TUI_newline();
+    TUI_printfw("%-30s ", keywnode[nodeSelected].keywordfull);
 
     if(keywnode[nodeSelected].leaf > 0)   // If this is not a directory
     {
@@ -288,10 +299,11 @@ inline static void fpsCTRLscreen_print_nodeinfo(
         functionparameter_GetTypeString(
             fps[fpsindexSelected].parray[pindexSelected].type,
             typestring);
-        printfw("type %s\n", typestring);
+        TUI_printfw("type %s", typestring);
+        TUI_newline();
 
         // print binary flag
-        printfw("FLAG : ");
+        TUI_printfw("FLAG : ");
         uint64_t mask = (uint64_t) 1 << (sizeof(uint64_t) * CHAR_BIT - 1);
         while(mask)
         {
@@ -299,21 +311,23 @@ inline static void fpsCTRLscreen_print_nodeinfo(
             if(digit == 1)
             {
                 screenprint_setcolor(2);
-                printfw("%d", digit);
+                TUI_printfw("%d", digit);
                 screenprint_unsetcolor(2);
             }
             else
             {
-                printfw("%d", digit);
+                TUI_printfw("%d", digit);
             }
             mask >>= 1;
         }
     }
     else
     {
-        printfw("-DIRECTORY-\n");
+        TUI_printfw("-DIRECTORY-");
+        TUI_newline();
     }
-    printfw("\n\n");
+    TUI_newline();
+    TUI_newline();
 }
 
 
@@ -331,7 +345,7 @@ inline static void fpsCTRLscreen_level0node_summary(
     if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
-        printfw("%07d ", (int) pid);
+        TUI_printfw("%07d ", (int) pid);
         screenprint_unsetcolor(2);
     }
     else     // PID not active
@@ -340,13 +354,13 @@ inline static void fpsCTRLscreen_level0node_summary(
         {
             // not clean exit
             screenprint_setcolor(4);
-            printfw("%07d ", (int) pid);
+            TUI_printfw("%07d ", (int) pid);
             screenprint_unsetcolor(4);
         }
         else
         {
             // All OK
-            printfw("%07d ", (int) pid);
+            TUI_printfw("%07d ", (int) pid);
         }
     }
 
@@ -354,19 +368,19 @@ inline static void fpsCTRLscreen_level0node_summary(
     if(fps[fpsindex].md->conferrcnt > 99)
     {
         screenprint_setcolor(4);
-        printfw("[XX]");
+        TUI_printfw("[XX]");
         screenprint_unsetcolor(4);
     }
     if(fps[fpsindex].md->conferrcnt > 0)
     {
         screenprint_setcolor(4);
-        printfw("[%02d]", fps[fpsindex].md->conferrcnt);
+        TUI_printfw("[%02d]", fps[fpsindex].md->conferrcnt);
         screenprint_unsetcolor(4);
     }
     if(fps[fpsindex].md->conferrcnt == 0)
     {
         screenprint_setcolor(2);
-        printfw("[%02d]", fps[fpsindex].md->conferrcnt);
+        TUI_printfw("[%02d]", fps[fpsindex].md->conferrcnt);
         screenprint_unsetcolor(2);
     }
 
@@ -374,7 +388,7 @@ inline static void fpsCTRLscreen_level0node_summary(
     if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
-        printfw("%07d ", (int) pid);
+        TUI_printfw("%07d ", (int) pid);
         screenprint_unsetcolor(2);
     }
     else
@@ -383,13 +397,13 @@ inline static void fpsCTRLscreen_level0node_summary(
         {
             // not clean exit
             screenprint_setcolor(4);
-            printfw("%07d ", (int) pid);
+            TUI_printfw("%07d ", (int) pid);
             screenprint_unsetcolor(4);
         }
         else
         {
             // All OK
-            printfw("%07d ", (int) pid);
+            TUI_printfw("%07d ", (int) pid);
         }
     }
 
@@ -419,9 +433,6 @@ errno_t functionparameter_CTRLscreen(
     char *fpsCTRLfifoname
 )
 {
-    short unsigned int wrow, wcol;
-
-
     int fpsindex;
 
     FPSCTRL_PROCESS_VARS fpsCTRLvar;
@@ -641,6 +652,7 @@ errno_t functionparameter_CTRLscreen(
     if(run_display == 1)
     {
         TUI_init_terminal(&wrow, &wcol);
+        DEBUG_TRACEPOINT_LOG("returned from TUI init %d %d", wrow, wcol);
     }
 
 
@@ -797,17 +809,20 @@ errno_t functionparameter_CTRLscreen(
 
             DEBUG_TRACEPOINT(" ");
 
-            printfw("======== FPSCTRL info  ( screen refresh cnt %7ld  scan interval %7ld us)\n",
-                    loopcnt, getchardt_us);
-            printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d\n",
-                    fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
-                    NBtaskLaunched, NBtaskLaunchedcnt);
+            TUI_printfw("======== FPSCTRL info  ( screen refresh cnt %7ld  scan interval %7ld us)",
+                        loopcnt, getchardt_us);
+            TUI_newline();
+            TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d",
+                        fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
+                        NBtaskLaunched, NBtaskLaunchedcnt);
+            TUI_newline();
 
 
             DEBUG_TRACEPOINT(" ");
             char logfname[STRINGMAXLEN_FULLFILENAME];
             getFPSlogfname(logfname);
-            printfw("    OUTPUT LOG       :  %s\n", logfname);
+            TUI_printfw("    OUTPUT LOG       :  %s", logfname);
+            TUI_newline();
 
 
             DEBUG_TRACEPOINT(" ");
@@ -824,8 +839,10 @@ errno_t functionparameter_CTRLscreen(
 
 
                 DEBUG_TRACEPOINT("Check that selected node is OK");
-                /* printfw("node selected : %d\n", fpsCTRLvar.nodeSelected);
-                 printfw("full keyword :  %s\n", keywnode[fpsCTRLvar.nodeSelected].keywordfull);*/
+                /*TUI_printfw("node selected : %d", fpsCTRLvar.nodeSelected);
+                TUI_newline();
+                 TUI_printfw("full keyword :  %s", keywnode[fpsCTRLvar.nodeSelected].keywordfull);
+                 TUI_newline();*/
                 if(strlen(keywnode[fpsCTRLvar.nodeSelected].keywordfull) <
                         1)   // if not OK, set to last valid entry
                 {
@@ -852,22 +869,23 @@ errno_t functionparameter_CTRLscreen(
                 DEBUG_TRACEPOINT("trace back node chain");
                 nodechain[fpsCTRLvar.currentlevel] = fpsCTRLvar.directorynodeSelected;
 
-                printfw("[level %d %d] ", fpsCTRLvar.currentlevel + 1,
-                        nodechain[fpsCTRLvar.currentlevel + 1]);
+                TUI_printfw("[level %d %d] ", fpsCTRLvar.currentlevel + 1,
+                            nodechain[fpsCTRLvar.currentlevel + 1]);
 
                 if(fpsCTRLvar.currentlevel > 0)
                 {
-                    printfw("[level %d %d] ", fpsCTRLvar.currentlevel,
-                            nodechain[fpsCTRLvar.currentlevel]);
+                    TUI_printfw("[level %d %d] ", fpsCTRLvar.currentlevel,
+                                nodechain[fpsCTRLvar.currentlevel]);
                 }
                 level = fpsCTRLvar.currentlevel - 1;
                 while(level > 0)
                 {
                     nodechain[level] = keywnode[nodechain[level + 1]].parent_index;
-                    printfw("[level %d %d] ", level, nodechain[level]);
+                    TUI_printfw("[level %d %d] ", level, nodechain[level]);
                     level --;
                 }
-                printfw("[level 0 0]\n");
+                TUI_printfw("[level 0 0]");
+                TUI_newline();
                 nodechain[0] = 0; // root
 
                 DEBUG_TRACEPOINT("Get number of lines to be displayed");
@@ -883,30 +901,34 @@ errno_t functionparameter_CTRLscreen(
                     }
                 }
 
-                printfw("[node %d] level = %d   [%d] NB child = %d",
-                        fpsCTRLvar.nodeSelected,
-                        fpsCTRLvar.currentlevel,
-                        fpsCTRLvar.directorynodeSelected,
-                        keywnode[fpsCTRLvar.directorynodeSelected].NBchild
-                       );
+                TUI_printfw("[node %d] level = %d   [%d] NB child = %d",
+                            fpsCTRLvar.nodeSelected,
+                            fpsCTRLvar.currentlevel,
+                            fpsCTRLvar.directorynodeSelected,
+                            keywnode[fpsCTRLvar.directorynodeSelected].NBchild
+                           );
 
-                printfw("   fps %d",
-                        fpsCTRLvar.fpsindexSelected
-                       );
+                TUI_printfw("   fps %d",
+                            fpsCTRLvar.fpsindexSelected
+                           );
 
-                printfw("   pindex %d ",
-                        keywnode[fpsCTRLvar.nodeSelected].pindex
-                       );
+                TUI_printfw("   pindex %d ",
+                            keywnode[fpsCTRLvar.nodeSelected].pindex
+                           );
 
-                printfw("\n");
+                TUI_newline();
 
-                /*      printfw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d\n\n",
+                /*      TUI_printfw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d",
                              fpsCTRLvar.directorynodeSelected,
                              fpsCTRLvar.nodeSelected,
                              GUIlineMax);
-                      printfw("LINE: %d / %d\n\n",
+                    TUI_newline();
+                    TUI_newline();
+                      TUI_printfw("LINE: %d / %d",
                              fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel],
                              keywnode[fpsCTRLvar.directorynodeSelected].NBchild);
+                             TUI_newline();
+                             TUI_newline();
                 	*/
 
 
@@ -999,7 +1021,7 @@ errno_t functionparameter_CTRLscreen(
                             {
                                 PRINT_ERROR("snprintf error");
                             }
-                            printfw("%-10s ", pword);
+                            TUI_printfw("%-10s ", pword);
 
                             if(keywnode[knodeindex].leaf == 0)   // directory
                             {
@@ -1009,11 +1031,11 @@ errno_t functionparameter_CTRLscreen(
                             screenprint_setreverse();
                             if(snode == 1)
                             {
-                                printfw(">");
+                                TUI_printfw(">");
                             }
                             else
                             {
-                                printfw(" ");
+                                TUI_printfw(" ");
                             }
                             screenprint_unsetreverse();
                             screenprint_setnormal();
@@ -1023,9 +1045,9 @@ errno_t functionparameter_CTRLscreen(
                         {
                             if(level == 0)
                             {
-                                printfw("                    ");
+                                TUI_printfw("                    ");
                             }
-                            printfw("            ");
+                            TUI_printfw("            ");
                         }
                     }
 
@@ -1071,7 +1093,7 @@ errno_t functionparameter_CTRLscreen(
                             if(fpsCTRLvar.currentlevel > 0)
                             {
                                 screenprint_setreverse();
-                                printfw(" ");
+                                TUI_printfw(" ");
                                 screenprint_unsetreverse();
                             }
 
@@ -1091,7 +1113,7 @@ errno_t functionparameter_CTRLscreen(
                                     if((getpgid(pid) >= 0) && (pid > 0))
                                     {
                                         screenprint_setcolor(2);
-                                        printfw("%07d ", (int) pid);
+                                        TUI_printfw("%07d ", (int) pid);
                                         screenprint_unsetcolor(2);
                                     }
                                     else     // PID not active
@@ -1100,32 +1122,32 @@ errno_t functionparameter_CTRLscreen(
                                         {
                                             // not clean exit
                                             screenprint_setcolor(4);
-                                            printfw("%07d ", (int) pid);
+                                            TUI_printfw("%07d ", (int) pid);
                                             screenprint_unsetcolor(4);
                                         }
                                         else
                                         {
                                             // All OK
-                                            printfw("%07d ", (int) pid);
+                                            TUI_printfw("%07d ", (int) pid);
                                         }
                                     }
 
                                     if(data.fpsarray[fpsindex].md->conferrcnt > 99)
                                     {
                                         screenprint_setcolor(4);
-                                        printfw("[XX]");
+                                        TUI_printfw("[XX]");
                                         screenprint_unsetcolor(4);
                                     }
                                     if(data.fpsarray[fpsindex].md->conferrcnt > 0)
                                     {
                                         screenprint_setcolor(4);
-                                        printfw("[%02d]", data.fpsarray[fpsindex].md->conferrcnt);
+                                        TUI_printfw("[%02d]", data.fpsarray[fpsindex].md->conferrcnt);
                                         screenprint_unsetcolor(4);
                                     }
                                     if(data.fpsarray[fpsindex].md->conferrcnt == 0)
                                     {
                                         screenprint_setcolor(2);
-                                        printfw("[%02d]", data.fpsarray[fpsindex].md->conferrcnt);
+                                        TUI_printfw("[%02d]", data.fpsarray[fpsindex].md->conferrcnt);
                                         screenprint_unsetcolor(2);
                                     }
 
@@ -1133,7 +1155,7 @@ errno_t functionparameter_CTRLscreen(
                                     if((getpgid(pid) >= 0) && (pid > 0))
                                     {
                                         screenprint_setcolor(2);
-                                        printfw("%07d ", (int) pid);
+                                        TUI_printfw("%07d ", (int) pid);
                                         screenprint_unsetcolor(2);
                                     }
                                     else
@@ -1142,13 +1164,13 @@ errno_t functionparameter_CTRLscreen(
                                         {
                                             // not clean exit
                                             screenprint_setcolor(4);
-                                            printfw("%07d ", (int) pid);
+                                            TUI_printfw("%07d ", (int) pid);
                                             screenprint_unsetcolor(4);
                                         }
                                         else
                                         {
                                             // All OK
-                                            printfw("%07d ", (int) pid);
+                                            TUI_printfw("%07d ", (int) pid);
                                         }
                                     }
                                 }
@@ -1169,7 +1191,7 @@ errno_t functionparameter_CTRLscreen(
                                 {
                                     screenprint_setcolor(5);
                                     level = keywnode[knodeindex].keywordlevel;
-                                    printfw("%-16s", keywnode[knodeindex].keyword[level - 1]);
+                                    TUI_printfw("%-16s", keywnode[knodeindex].keyword[level - 1]);
                                     screenprint_unsetcolor(5);
 
                                     if(GUIline == fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel])
@@ -1179,7 +1201,7 @@ errno_t functionparameter_CTRLscreen(
                                 }
                                 else
                                 {
-                                    printfw("%-16s", " ");
+                                    TUI_printfw("%-16s", " ");
                                 }
 
 
@@ -1228,7 +1250,7 @@ errno_t functionparameter_CTRLscreen(
                                     {
                                         screenprint_setcolor(10);
                                         screenprint_setblink();
-                                        printfw("W "); // writable
+                                        TUI_printfw("W "); // writable
                                         screenprint_unsetcolor(10);
                                         screenprint_unsetblink();
                                     }
@@ -1236,14 +1258,14 @@ errno_t functionparameter_CTRLscreen(
                                     {
                                         screenprint_setcolor(4);
                                         screenprint_setblink();
-                                        printfw("NW"); // non writable
+                                        TUI_printfw("NW"); // non writable
                                         screenprint_unsetcolor(4);
                                         screenprint_unsetblink();
                                     }
                                 }
                                 else
                                 {
-                                    printfw("  ");
+                                    TUI_printfw("  ");
                                 }
 
                                 DEBUG_TRACEPOINT(" ");
@@ -1254,7 +1276,7 @@ errno_t functionparameter_CTRLscreen(
                                     screenprint_setreverse();
                                 }
 
-                                printfw(" %-20s", data.fpsarray[fpsindex].parray[pindex].keyword[level - 1]);
+                                TUI_printfw(" %-20s", data.fpsarray[fpsindex].parray[pindex].keyword[level - 1]);
 
                                 if(GUIline == fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel])
                                 {
@@ -1262,7 +1284,7 @@ errno_t functionparameter_CTRLscreen(
                                     screenprint_unsetreverse();
                                 }
                                 DEBUG_TRACEPOINT(" ");
-                                printfw("   ");
+                                TUI_printfw("   ");
 
                                 // VALUE
 
@@ -1279,7 +1301,7 @@ errno_t functionparameter_CTRLscreen(
 
                                 if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_UNDEF)
                                 {
-                                    printfw("  %s", "-undef-");
+                                    TUI_printfw("  %s", "-undef-");
                                 }
 
                                 DEBUG_TRACEPOINT(" ");
@@ -1303,7 +1325,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (int) data.fpsarray[fpsindex].parray[pindex].val.i64[0]);
+                                    TUI_printfw("  %10d", (int) data.fpsarray[fpsindex].parray[pindex].val.i64[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1351,7 +1373,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10f", (float) data.fpsarray[fpsindex].parray[pindex].val.f64[0]);
+                                    TUI_printfw("  %10f", (float) data.fpsarray[fpsindex].parray[pindex].val.f64[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1399,7 +1421,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10f", (float) data.fpsarray[fpsindex].parray[pindex].val.f32[0]);
+                                    TUI_printfw("  %10f", (float) data.fpsarray[fpsindex].parray[pindex].val.f32[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1428,7 +1450,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (float) data.fpsarray[fpsindex].parray[pindex].val.pid[0]);
+                                    TUI_printfw("  %10d", (float) data.fpsarray[fpsindex].parray[pindex].val.pid[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1438,7 +1460,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10d", (int) data.fpsarray[fpsindex].parray[pindex].val.pid[0]);
+                                    TUI_printfw("  %10d", (int) data.fpsarray[fpsindex].parray[pindex].val.pid[0]);
                                 }
 
 
@@ -1446,7 +1468,7 @@ errno_t functionparameter_CTRLscreen(
 
                                 if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
                                 {
-                                    printfw("  %10s", "-timespec-");
+                                    TUI_printfw("  %10s", "-timespec-");
                                 }
 
 
@@ -1469,7 +1491,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                    TUI_printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1500,7 +1522,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                    TUI_printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1530,7 +1552,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                    TUI_printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1560,7 +1582,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                    TUI_printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1589,24 +1611,24 @@ errno_t functionparameter_CTRLscreen(
                                                 }
                                             }
 
-                                    printfw("[%d]  %10s",
-                                            data.fpsarray[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
-                                            data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                    TUI_printfw("[%d]  %10s",
+                                                data.fpsarray[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
+                                                data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
                                     if(data.fpsarray[fpsindex].parray[pindex].info.stream.streamID > -1)
                                     {
 
-                                        printfw(" [ %d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+                                        TUI_printfw(" [ %d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
                                         if(data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 1)
                                         {
-                                            printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+                                            TUI_printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
                                         }
                                         if(data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 2)
                                         {
-                                            printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
+                                            TUI_printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
                                         }
 
-                                        printfw(" ]");
+                                        TUI_printfw(" ]");
                                         if(isVISIBLE == 1)
                                         {
                                             screenprint_unsetcolor(2);
@@ -1635,7 +1657,7 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                    TUI_printfw("  %10s", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1652,16 +1674,16 @@ errno_t functionparameter_CTRLscreen(
                                     if(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)
                                     {
                                         screenprint_setcolor(2);
-                                        printfw("  ON ");
+                                        TUI_printfw("  ON ");
                                         screenprint_unsetcolor(2);
-                                        printfw(" [%15s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                        TUI_printfw(" [%15s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
                                     }
                                     else
                                     {
                                         screenprint_setcolor(1);
-                                        printfw(" OFF ");
+                                        TUI_printfw(" OFF ");
                                         screenprint_unsetcolor(1);
-                                        printfw(" [%15s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                        TUI_printfw(" [%15s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
                                     }
                                 }
 
@@ -1692,11 +1714,11 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    printfw(" %10s [%ld %ld %ld]",
-                                            data.fpsarray[fpsindex].parray[pindex].val.string[0],
-                                            data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
-                                            data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
-                                            data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
+                                    TUI_printfw(" %10s [%ld %ld %ld]",
+                                                data.fpsarray[fpsindex].parray[pindex].val.string[0],
+                                                data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
+                                                data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
+                                                data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
 
                                     if(paramsync == 0)
                                     {
@@ -1726,7 +1748,7 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                 }
 
-                                printfw("    %s", data.fpsarray[fpsindex].parray[pindex].description);
+                                TUI_printfw("    %s", data.fpsarray[fpsindex].parray[pindex].description);
 
 
 
@@ -1761,7 +1783,7 @@ errno_t functionparameter_CTRLscreen(
                         }
                     }
 
-                    printfw("\n");
+                    TUI_newline();
                 }
 
                 DEBUG_TRACEPOINT(" ");
@@ -1776,34 +1798,37 @@ errno_t functionparameter_CTRLscreen(
 
                 DEBUG_TRACEPOINT(" ");
 
-                printfw("\n");
+                TUI_newline();
 
                 if(data.fpsarray[fpsCTRLvar.fpsindexSelected].md->status &
                         FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
                 {
                     screenprint_setcolor(2);
-                    printfw("[%ld] PARAMETERS OK - RUN function good to go\n",
-                            data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt);
+                    TUI_printfw("[%ld] PARAMETERS OK - RUN function good to go",
+                                data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt);
                     screenprint_unsetcolor(2);
+                    TUI_newline();
                 }
                 else
                 {
                     int msgi;
 
                     screenprint_setcolor(4);
-                    printfw("[%ld] %d PARAMETER SETTINGS ERROR(s) :\n",
-                            data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt,
-                            data.fpsarray[fpsCTRLvar.fpsindexSelected].md->conferrcnt);
+                    TUI_printfw("[%ld] %d PARAMETER SETTINGS ERROR(s) :",
+                                data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt,
+                                data.fpsarray[fpsCTRLvar.fpsindexSelected].md->conferrcnt);
                     screenprint_unsetcolor(4);
+                    TUI_newline();
 
                     screenprint_setbold();
 
                     for(msgi = 0; msgi < data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt; msgi++)
                     {
                         pindex = data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgpindex[msgi];
-                        printfw("%-40s %s\n",
-                                data.fpsarray[fpsCTRLvar.fpsindexSelected].parray[pindex].keywordfull,
-                                data.fpsarray[fpsCTRLvar.fpsindexSelected].md->message[msgi]);
+                        TUI_printfw("%-40s %s",
+                                    data.fpsarray[fpsCTRLvar.fpsindexSelected].parray[pindex].keywordfull,
+                                    data.fpsarray[fpsCTRLvar.fpsindexSelected].md->message[msgi]);
+                        TUI_newline();
                     }
 
                     screenprint_unsetbold();
@@ -1865,7 +1890,8 @@ errno_t functionparameter_CTRLscreen(
                 DEBUG_TRACEPOINT(" ");
 
 
-                printfw(" showing   %d / %d  tasks\n", wrow - 8, sortcnt);
+                TUI_printfw(" showing   %d / %d  tasks", wrow - 8, sortcnt);
+                TUI_newline();
 
                 for(int sortindex = 0; sortindex < sortcnt; sortindex++)
                 {
@@ -1901,14 +1927,14 @@ errno_t functionparameter_CTRLscreen(
                         // measure age since submission
                         tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
                         double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                        printfw("%6.2f s ", tdiffv);
+                        TUI_printfw("%6.2f s ", tdiffv);
 
                         if(fpsctrltasklist[fpscmdindex].status &
                                 FPSTASK_STATUS_RUNNING)   // run time (ongoing)
                         {
                             tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
                             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                            printfw(" %6.2f s ", tdiffv);
+                            TUI_printfw(" %6.2f s ", tdiffv);
                         }
                         else if(!(fpsctrltasklist[fpscmdindex].status &
                                   FPSTASK_STATUS_ACTIVE))      // run time (past)
@@ -1917,7 +1943,7 @@ errno_t functionparameter_CTRLscreen(
                                                    fpsctrltasklist[fpscmdindex].completiontime);
                             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                             screenprint_setcolor(3);
-                            printfw(" %6.2f s ", tdiffv);
+                            TUI_printfw(" %6.2f s ", tdiffv);
                             screenprint_unsetcolor(3);
                             // age since completion
                             tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].completiontime, tnow);
@@ -1930,53 +1956,53 @@ errno_t functionparameter_CTRLscreen(
                         }
                         else
                         {
-                            printfw("          ", tdiffv);
+                            TUI_printfw("          ", tdiffv);
                         }
 
 
                         if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE)
                         {
-                            printfw(">>");
+                            TUI_printfw(">>");
                         }
                         else
                         {
-                            printfw("  ");
+                            TUI_printfw("  ");
                         }
 
                         if(fpsctrltasklist[fpscmdindex].flag & FPSTASK_FLAG_WAITONRUN)
                         {
-                            printfw("WR ");
+                            TUI_printfw("WR ");
                         }
                         else
                         {
-                            printfw("   ");
+                            TUI_printfw("   ");
                         }
 
                         if(fpsctrltasklist[fpscmdindex].flag & FPSTASK_FLAG_WAITONCONF)
                         {
-                            printfw("WC ");
+                            TUI_printfw("WC ");
                         }
                         else
                         {
-                            printfw("   ");
+                            TUI_printfw("   ");
                         }
 
-                        printfw("[Q:%02d P:%02d] %4d",
-                                fpsctrltasklist[fpscmdindex].queue,
-                                fpsctrlqueuelist[fpsctrltasklist[fpscmdindex].queue].priority,
-                                fpscmdindex
-                               );
+                        TUI_printfw("[Q:%02d P:%02d] %4d",
+                                    fpsctrltasklist[fpscmdindex].queue,
+                                    fpsctrlqueuelist[fpsctrltasklist[fpscmdindex].queue].priority,
+                                    fpscmdindex
+                                   );
 
 
 
 
                         if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
                         {
-                            printfw(" R");
+                            TUI_printfw(" R");
                         }
                         else
                         {
-                            printfw(" -");
+                            TUI_printfw(" -");
                         }
 
 
@@ -1984,44 +2010,45 @@ errno_t functionparameter_CTRLscreen(
                         if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDNOTFOUND)
                         {
                             screenprint_setcolor(3);
-                            printfw(" NOTCMD");
+                            TUI_printfw(" NOTCMD");
                             screenprint_unsetcolor(3);
                         }
                         else if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDFAIL)
                         {
                             screenprint_setcolor(4);
-                            printfw(" FAILED");
+                            TUI_printfw(" FAILED");
                             screenprint_unsetcolor(4);
                         }
                         else if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_CMDOK)
                         {
                             screenprint_setcolor(2);
-                            printfw(" PROCOK");
+                            TUI_printfw(" PROCOK");
                             screenprint_unsetcolor(2);
                         }
                         else if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RECEIVED)
                         {
                             screenprint_setcolor(2);
-                            printfw(" RECVD ");
+                            TUI_printfw(" RECVD ");
                             screenprint_unsetcolor(2);
                         }
                         else if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_WAITING)
                         {
                             screenprint_setcolor(5);
-                            printfw("WAITING");
+                            TUI_printfw("WAITING");
                             screenprint_unsetcolor(5);
                         }
                         else
                         {
                             screenprint_setcolor(3);
-                            printfw(" ????  ");
+                            TUI_printfw(" ????  ");
                             screenprint_unsetcolor(3);
                         }
 
 
 
 
-                        printfw("  %s\n", fpsctrltasklist[fpscmdindex].cmdstring);
+                        TUI_printfw("  %s", fpsctrltasklist[fpscmdindex].cmdstring);
+                        TUI_newline();
 
 
                         if(attron2 == 1)

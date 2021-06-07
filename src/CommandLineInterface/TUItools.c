@@ -16,6 +16,7 @@
 
 static struct winsize w;
 static short unsigned int wrow, wcol;
+static int wresizecnt = 0;
 
 /*
  * Defines printfw output
@@ -67,7 +68,7 @@ int TUI_get_screenprintmode()
 //
 // print to stdout or through ncurses
 //
-void printfw(const char *fmt, ...)
+void TUI_printfw(const char *fmt, ...)
 {
     va_list args;
 
@@ -81,10 +82,29 @@ void printfw(const char *fmt, ...)
 
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
-        vw_printw(stdscr, fmt, args);
+        int x, y;
+        char prtstring[200];
+
+        getyx(stdscr, y, x);
+        vsnprintf(prtstring, wcol-(x), fmt, args);
+        printw("%s", prtstring);
+        //vw_printw(stdscr, fmt, args);
     }
 
     va_end(args);
+}
+
+
+void TUI_newline()
+{
+    if(screenprintmode == SCREENPRINT_STDIO)
+    {
+        printf("\n");
+    }
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        printw("\n");
+    }
 }
 
 
@@ -299,23 +319,23 @@ void screenprint_setnormal()
 
 
 
-errno_t TUI_print_header(const char *str, char c)
+errno_t TUI_print_header(
+    const char *str,
+    char c
+)
 {
-    long n;
-    long i;
-
     screenprint_setbold();
-    n = strlen(str);
-    for(i = 0; i < (wcol - n) / 2; i++)
+    long n = strlen(str);
+    for(long i = 0; i < (wcol - n) / 2; i++)
     {
-        printfw("%c", c);
+        TUI_printfw("%c", c);
     }
-    printfw("%s", str);
-    for(i = 0; i < (wcol - n) / 2 - 1; i++)
+    TUI_printfw("%s", str);
+    for(long i = 0; i < (wcol - n) / 2 - 1; i++)
     {
-        printfw("%c", c);
+        TUI_printfw("%c", c);
     }
-    printfw("\n");
+    TUI_newline();
     screenprint_unsetbold();
 
     return RETURN_SUCCESS;
@@ -337,7 +357,10 @@ void TUI_reset_terminal_mode()
 }
 
 
-errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol)
+errno_t TUI_inittermios(
+    short unsigned int *wrowptr,
+    short unsigned int *wcolptr
+)
 {
     tcgetattr(0, &orig_termios);
 
@@ -356,9 +379,8 @@ errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol)
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-    *wrow = w.ws_row;
-    *wcol = w.ws_col;
-
+    *wrowptr = w.ws_row;
+    *wcolptr = w.ws_col;
 
     atexit(TUI_reset_terminal_mode);
 
@@ -369,7 +391,10 @@ errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol)
 
 
 
-void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
+void TUI_clearscreen(
+    short unsigned int *wrowptr,
+    short unsigned int *wcolptr
+)
 {
     if(screenprintmode == SCREENPRINT_STDIO) // stdio mode
     {
@@ -379,24 +404,50 @@ void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol)
         // update terminal size
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-        *wrow = w.ws_row;
-        *wcol = w.ws_col;
+        *wrowptr = w.ws_row;
+        *wcolptr = w.ws_col;
     }
     else
     {
-        (void) *wrow;
-        (void) *wcol;
+        (void) *wrowptr;
+        (void) *wcolptr;
     }
+
 }
 
 
+
+
+void TUI_handle_winch(int sig)
+{
+    wresizecnt++;
+
+    (void) sig;
+
+    endwin();
+
+    // Needs to be called after an endwin() so ncurses will initialize
+    // itself with the new terminal dimensions.
+    refresh();
+
+    clear();
+    wrow = LINES;
+    wcol = COLS;
+
+    DEBUG_TRACEPOINT_LOG("window size %d %d", wrow, wcol);
+
+    refresh();
+}
 
 
 
 /** @brief INITIALIZE ncurses
  *
  */
-errno_t TUI_initncurses()
+errno_t TUI_initncurses(
+    short unsigned int *wrowptr,
+    short unsigned int *wcolptr
+)
 {
     DEBUG_TRACEPOINT(" ");
     if( screenprintmode == SCREENPRINT_NCURSES)
@@ -410,6 +461,9 @@ errno_t TUI_initncurses()
             exit(EXIT_FAILURE);
         }
         getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
+        *wrowptr = wrow;
+        *wcolptr = wcol;
+        DEBUG_TRACEPOINT_LOG("wrow wcol = %d %d", wrow, wcol);
 
         cbreak();
         // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
@@ -428,15 +482,19 @@ errno_t TUI_initncurses()
         noecho();
         // Don't echo() while we do getch
 
-
+        nonl();
+        // Do not translates newline into return and line-feed on output
 
         //nonl();
         // Do not translates newline into return and line-feed on output
 
         DEBUG_TRACEPOINT(" ");
-        init_color(COLOR_GREEN, 400, 1000, 400);
+        //init_color(COLOR_GREEN, 400, 1000, 400);
+        init_color(COLOR_GREEN, 700, 1000, 700);
+        init_color(COLOR_YELLOW, 1000, 1000, 700);
         start_color();
         DEBUG_TRACEPOINT(" ");
+
         //  colored background
         init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
         init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
@@ -448,6 +506,13 @@ errno_t TUI_initncurses()
         init_pair(  8, COLOR_RED,    COLOR_BLACK  );
         init_pair(  9, COLOR_BLACK,  COLOR_RED    );
         init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
+        init_pair( 12, COLOR_GREEN,  COLOR_WHITE  ); // highlighted version of #2
+
+        // handle window resize
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(struct sigaction));
+        sa.sa_handler = TUI_handle_winch;
+        sigaction(SIGWINCH, &sa, NULL);
     }
 
     DEBUG_TRACEPOINT(" ");
@@ -458,19 +523,35 @@ errno_t TUI_initncurses()
 
 
 
-errno_t TUI_init_terminal(short unsigned int *wrowptr, short unsigned int *wcolptr)
+errno_t TUI_init_terminal(
+    short unsigned int *wrowptr,
+    short unsigned int *wcolptr
+)
 {
-
     if( screenprintmode == SCREENPRINT_NCURSES) // ncurses mode
     {
         TUI_initncurses(wrowptr, wcolptr);
+        DEBUG_TRACEPOINT_LOG("init terminal ncurses mode %d %d", *wrowptr, *wcolptr);
         atexit(TUI_atexit);
         clear();
     }
     else
     {
         TUI_inittermios(wrowptr, wcolptr);
+        DEBUG_TRACEPOINT_LOG("init terminal stdio mode %d %d", *wrowptr, *wcolptr);
     }
+
+    return RETURN_SUCCESS;
+}
+
+
+errno_t TUI_get_terminal_size(
+    short unsigned int *wrowptr,
+    short unsigned int *wcolptr
+)
+{
+    *wrowptr = wrow;
+    *wcolptr = wcol;
 
     return RETURN_SUCCESS;
 }
