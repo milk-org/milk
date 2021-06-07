@@ -434,7 +434,7 @@ void TUI_handle_winch(int sig)
     wrow = LINES;
     wcol = COLS;
 
-    DEBUG_TRACEPOINT_LOG("window size %d %d", wrow, wcol);
+    DEBUG_TRACEPOINT("window size %d %d", wrow, wcol);
 
     refresh();
 }
@@ -463,7 +463,7 @@ errno_t TUI_initncurses(
         getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
         *wrowptr = wrow;
         *wcolptr = wcol;
-        DEBUG_TRACEPOINT_LOG("wrow wcol = %d %d", wrow, wcol);
+        DEBUG_TRACEPOINT("wrow wcol = %d %d", wrow, wcol);
 
         cbreak();
         // disables line buffering and erase/kill character-processing (interrupt and flow control characters are unaffected),
@@ -531,14 +531,14 @@ errno_t TUI_init_terminal(
     if( screenprintmode == SCREENPRINT_NCURSES) // ncurses mode
     {
         TUI_initncurses(wrowptr, wcolptr);
-        DEBUG_TRACEPOINT_LOG("init terminal ncurses mode %d %d", *wrowptr, *wcolptr);
+        DEBUG_TRACEPOINT("init terminal ncurses mode %d %d", *wrowptr, *wcolptr);
         atexit(TUI_atexit);
         clear();
     }
     else
     {
         TUI_inittermios(wrowptr, wcolptr);
-        DEBUG_TRACEPOINT_LOG("init terminal stdio mode %d %d", *wrowptr, *wcolptr);
+        DEBUG_TRACEPOINT("init terminal stdio mode %d %d", *wrowptr, *wcolptr);
     }
 
     return RETURN_SUCCESS;
