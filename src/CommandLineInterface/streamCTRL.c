@@ -68,7 +68,7 @@ typedef int errno_t;
 
 #include "streamCTRL.h"
 
-
+#include "TUItools.h"
 
 
 /* =============================================================================================== */
@@ -106,116 +106,14 @@ typedef int errno_t;
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+static short unsigned int wrow, wcol;
 
-static int wrow, wcol;
-static int wresizecnt = 0;
 
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                    FUNCTIONS SOURCE CODE                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
-
-
-
-
-
-
-static void handle_winch(int sig)
-{
-    wresizecnt++;
-
-    (void) sig;
-
-    endwin();
-
-    // Needs to be called after an endwin() so ncurses will initialize
-    // itself with the new terminal dimensions.
-    refresh();
-
-    clear();
-    wrow = LINES;
-    wcol = COLS;
-
-    refresh();
-}
-
-
-/**
- * INITIALIZE ncurses
- *
- */
-static int initncurses()
-{
-    if ( initscr() == NULL ) {
-        fprintf(stderr, "Error initialising ncurses.\n");
-        exit(EXIT_FAILURE);
-    }
-    //getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
-    wrow = LINES;
-    wcol = COLS;
-
-
-    cbreak();
-    keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
-    nodelay(stdscr, TRUE);
-    curs_set(0);
-    noecho();			/* Don't echo() while we do getch */
-    nonl();             // Do not translates newline into return and line-feed on output
-
-    init_color(COLOR_GREEN, 700, 1000, 700);
-    init_color(COLOR_YELLOW, 1000, 1000, 700);
-    start_color();
-
-    //  colored background
-
-    init_pair(  1, COLOR_BLACK,  COLOR_WHITE  );
-    init_pair(  2, COLOR_BLACK,  COLOR_GREEN  );  // all good
-    init_pair(  3, COLOR_BLACK,  COLOR_YELLOW );  // parameter out of sync
-    init_pair(  4, COLOR_WHITE,  COLOR_RED    );
-    init_pair(  5, COLOR_WHITE,  COLOR_BLUE   ); // DIRECTORY
-    init_pair(  6, COLOR_GREEN,  COLOR_BLACK  );
-    init_pair(  7, COLOR_YELLOW, COLOR_BLACK  );
-    init_pair(  8, COLOR_RED,    COLOR_BLACK  );
-    init_pair(  9, COLOR_BLACK,  COLOR_RED    );
-    init_pair( 10, COLOR_BLACK,  COLOR_CYAN   );
-    init_pair( 12, COLOR_GREEN,  COLOR_WHITE  ); // highlighted version of #2
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(struct sigaction));
-    sa.sa_handler = handle_winch;
-    sigaction(SIGWINCH, &sa, NULL);
-
-    return 0;
-}
-
-
-
-
-
-
-static errno_t streamCTRL__print_header(const char *str, char c)
-{
-    long n;
-    long i;
-
-    attron(A_BOLD);
-    n = strlen(str);
-    for(i = 0; i < (wcol - n) / 2; i++)
-    {
-        printw("%c", c);
-    }
-    printw("%s", str);
-    for(i = 0; i < (wcol - n) / 2 - 1; i++)
-    {
-        printw("%c", c);
-    }
-    printw("\n");
-    attroff(A_BOLD);
-
-    return RETURN_SUCCESS;
-}
-
 
 
 
@@ -1097,15 +995,15 @@ static int streamCTRL_print_inode(
         if(is_upstream)
         {
             attron(COLOR_PAIR(colorcode));
-            printw("%02d >", upstreamindex);
+            TUI_printfw("%02d >", upstreamindex);
             attroff(COLOR_PAIR(colorcode));
         }
         else
         {
-            printw("    ");
+            TUI_printfw("    ");
         }
 
-        printw("-");
+        TUI_printfw("-");
 
         if(is_downstream)
         {
@@ -1116,17 +1014,17 @@ static int streamCTRL_print_inode(
             }
 
             attron(COLOR_PAIR(colorcode));
-            printw("> %02d", downstreamindex);
+            TUI_printfw("> %02d", downstreamindex);
             attroff(COLOR_PAIR(colorcode));
         }
         else
         {
-            printw("    ");
+            TUI_printfw("    ");
         }
     }
     else
     {
-        printw("%*d", Dispinode_NBchar, (int) inode);
+        TUI_printfw("%*d", Dispinode_NBchar, (int) inode);
     }
 
     return Dispinode_NBchar;
@@ -1213,11 +1111,11 @@ static int streamCTRL_print_procpid(
     {
         char upstreamstring[DispPID_NBchar+1];
         sprintf(upstreamstring, "%2d >>", upstreamindex);
-        printw("%*s", DispPID_NBchar, upstreamstring);
+        TUI_printfw("%*s", DispPID_NBchar, upstreamstring);
     }
     else
     {
-        printw("%*d", DispPID_NBchar, (int) procpid);
+        TUI_printfw("%*d", DispPID_NBchar, (int) procpid);
     }
 
 
@@ -1272,14 +1170,15 @@ static errno_t streamCTRL_print_SPTRACE_details(
     // suppress unused parameter warning
     (void) print_pid_mode;
 
-    printw("\n");
-    printw("   %*s %*s %*s\n",
-           Disp_inode_NBchar, "inode",
-           Disp_sname_NBchar, "stream",
-           Disp_cnt0_NBchar, "cnt0",
-           Disp_PID_NBchar, "PID",
-           Disp_type_NBchar, "type"
-          );
+    TUI_newline();
+    TUI_printfw("   %*s %*s %*s",
+                Disp_inode_NBchar, "inode",
+                Disp_sname_NBchar, "stream",
+                Disp_cnt0_NBchar, "cnt0",
+                Disp_PID_NBchar, "PID",
+                Disp_type_NBchar, "type"
+               );
+    TUI_newline();
 
 
     for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
@@ -1290,9 +1189,9 @@ static errno_t streamCTRL_print_SPTRACE_details(
 
         uint64_t cnt0 = streamCTRLimages[ID].streamproctrace[spti].cnt0;
 
-        printw("%02d", spti);
+        TUI_printfw("%02d", spti);
 
-        printw(" %*lu", Disp_inode_NBchar, inode);
+        TUI_printfw(" %*lu", Disp_inode_NBchar, inode);
 
 
         // look for ID corresponding to inode
@@ -1311,80 +1210,80 @@ static errno_t streamCTRL_print_SPTRACE_details(
         }
         if(IDfound == -1)
         {
-            printw(" %*s", Disp_sname_NBchar, "???");
+            TUI_printfw(" %*s", Disp_sname_NBchar, "???");
         }
         else
         {
-            printw(" %*s", Disp_sname_NBchar, streamCTRLimages[IDfound].name);
+            TUI_printfw(" %*s", Disp_sname_NBchar, streamCTRLimages[IDfound].name);
         }
 
-        printw(" %*llu", Disp_cnt0_NBchar, cnt0);
-        printw(" ");
+        TUI_printfw(" %*llu", Disp_cnt0_NBchar, cnt0);
+        TUI_printfw(" ");
 
         Disp_PID_NBchar = streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, PRINT_PID_FORCE_NOUPSTREAM);
 
 
-        printw(" ");
+        TUI_printfw(" ");
 
         switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
         case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-            printw("%*s", Disp_type_NBchar, "IMMED");
+            TUI_printfw("%*s", Disp_type_NBchar, "IMMED");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT0:
-            printw("%*s", Disp_type_NBchar, "CNT0");
+            TUI_printfw("%*s", Disp_type_NBchar, "CNT0");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT1:
-            printw("%*s", Disp_type_NBchar, "CNT1");
+            TUI_printfw("%*s", Disp_type_NBchar, "CNT1");
             break;
 
         case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-            printw("%*s", Disp_type_NBchar-3, "SEM");
-            printw(" %2d", sem);
+            TUI_printfw("%*s", Disp_type_NBchar-3, "SEM");
+            TUI_printfw(" %2d", sem);
             break;
 
         case PROCESSINFO_TRIGGERMODE_DELAY:
-            printw("%*s", Disp_type_NBchar, "DELAY");
+            TUI_printfw("%*s", Disp_type_NBchar, "DELAY");
             break;
 
         default:
-            printw("%*s", Disp_type_NBchar, "UNKNOWN");
+            TUI_printfw("%*s", Disp_type_NBchar, "UNKNOWN");
             break;
         }
-        printw(" ");
+        TUI_printfw(" ");
 
         int print_timing = 0;
         switch (streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
         {
         case PROCESSINFO_TRIGGERSTATUS_WAITING:
-            printw("%*s", Disp_trigstat_NBchar, "WAITING");
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "WAITING");
             break;
 
         case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
             attron(COLOR_PAIR(2));
-            printw("%*s", Disp_trigstat_NBchar, "RECEIVED");
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "RECEIVED");
             attroff(COLOR_PAIR(2));
             print_timing = 1;
             break;
 
         case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
             attron(COLOR_PAIR(3));
-            printw("%*s", Disp_trigstat_NBchar, "TIMEOUT");
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "TIMEOUT");
             attroff(COLOR_PAIR(3));
             print_timing = 1;
             break;
 
         default :
-            printw("%*s", Disp_trigstat_NBchar, "unknown");
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "unknown");
             break;
         }
 
         // trigger time
         if(print_timing == 1)
         {
-            printw(" at %ld.%09ld s", streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec, streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_nsec);
+            TUI_printfw(" at %ld.%09ld s", streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_sec, streamCTRLimages[ID].streamproctrace[spti].ts_procstart.tv_nsec);
 
             struct timespec tnow;
             clock_gettime(CLOCK_REALTIME, &tnow);
@@ -1393,10 +1292,10 @@ static errno_t streamCTRL_print_SPTRACE_details(
             tdiff = timespec_diff(streamCTRLimages[ID].streamproctrace[spti].ts_procstart, tnow);
             double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-            printw("  %12.3f us ago", tdiffv*1.0e6);
+            TUI_printfw("  %12.3f us ago", tdiffv*1.0e6);
         }
 
-        printw("\n");
+        TUI_newline();
     }
 
 
@@ -1500,15 +1399,40 @@ errno_t streamCTRL_CTRLscreen()
     streamCTRLdata.streaminfoproc = &streaminfoproc;
     streamCTRLdata.images         = streamCTRLimages;
 
-    setlocale(LC_ALL, "");
 
 
-    streamCTRL_CatchSignals();
+    // default: use ncurses
+    TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
-    // INITIALIZE ncurses
-    initncurses();
+    if(getenv("MILK_FPSCTRL_PRINT_STDIO"))
+    {
+        // use stdio instead of ncurses
+        TUI_set_screenprintmode(SCREENPRINT_STDIO);
+    }
 
-    int NBsinfodisp = wrow - 7;
+    if(getenv("MILK_FPSCTRL_NOPRINT"))
+    {
+        TUI_set_screenprintmode(SCREENPRINT_NONE);
+    }
+
+
+
+
+
+    TUI_init_terminal(&wrow, &wcol);
+    //DEBUG_TRACEPOINT_LOG("returned from TUI init %d %d", wrow, wcol);
+
+
+    /*
+        setlocale(LC_ALL, "");
+
+        streamCTRL_CatchSignals();
+
+        // INITIALIZE ncurses
+        initncurses();
+    */
+
+
     int NBsindex = 0;
     int loopOK = 1;
     long long loopcnt = 0;
@@ -1584,6 +1508,13 @@ errno_t streamCTRL_CTRLscreen()
     int DisplayDetailLevel = 0;
     while(loopOK == 1)
     {
+        // get terminal size
+        TUI_get_terminal_size(&wrow, &wcol);
+
+        int NBsinfodisp = wrow - 7;
+
+
+
         //int pid;
         //char command[200];
 
@@ -1691,7 +1622,7 @@ errno_t streamCTRL_CTRLscreen()
 
             DisplayMode = DISPLAY_MODE_FUSER;
             //erase();
-            //printw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
+            //TUI_printfw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
             //refresh();
             break;
 
@@ -1786,8 +1717,8 @@ errno_t streamCTRL_CTRLscreen()
             }
             break;
 
-        case 'F': // set stream name filter string
-            endwin();
+        case 'F': // set stream name filter string //TBD
+            /*endwin();
             EXECUTE_SYSTEM_COMMAND("clear");
             printf("Enter string: ");
             fflush(stdout);
@@ -1809,7 +1740,7 @@ errno_t streamCTRL_CTRLscreen()
                 }
             }
             streaminfoproc.namefilter[stringindex] = '\0';
-            initncurses();
+            initncurses();*/
             break;
 
 
@@ -1834,7 +1765,8 @@ errno_t streamCTRL_CTRLscreen()
         attron(A_BOLD);
         sprintf(monstring, "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP",
                 wrow, wcol,  getpid());
-        streamCTRL__print_header(monstring, '-');
+        //streamCTRL__print_header(monstring, '-');
+        TUI_print_header(monstring, '-');
         attroff(A_BOLD);
 
 
@@ -1847,111 +1779,134 @@ errno_t streamCTRL_CTRLscreen()
             DEBUG_TRACEPOINT(" ");
 
             attron(attrval);
-            printw("    x");
+            TUI_printfw("    x");
             attroff(attrval);
-            printw("    Exit\n");
+            TUI_printfw("    Exit");
+            TUI_newline();
 
 
-            printw("\n");
-            printw("============ SCREENS \n");
+            TUI_newline();
+            TUI_printfw("============ SCREENS");
+            TUI_newline();
 
             attron(attrval);
-            printw("     h");
+            TUI_printfw("     h");
             attroff(attrval);
-            printw("   Help screen\n");
+            TUI_printfw("   Help screen");
+            TUI_newline();
 
             attron(attrval);
-            printw("    F2");
+            TUI_printfw("    F2");
             attroff(attrval);
-            printw("   Display semaphore values\n");
+            TUI_printfw("   Display semaphore values");
+            TUI_newline();
 
             attron(attrval);
-            printw("    F3");
+            TUI_printfw("    F3");
             attroff(attrval);
-            printw("   Display semaphore write PIDs\n");
+            TUI_printfw("   Display semaphore write PIDs");
+            TUI_newline();
 
             attron(attrval);
-            printw("    F4");
+            TUI_printfw("    F4");
             attroff(attrval);
-            printw("   Display semaphore read PIDs\n");
+            TUI_printfw("   Display semaphore read PIDs");
+            TUI_newline();
 
             attron(attrval);
-            printw("    F5");
+            TUI_printfw("    F5");
             attroff(attrval);
-            printw("   stream process trace\n");
+            TUI_printfw("   stream process trace");
+            TUI_newline();
 
             attron(attrval);
-            printw("    F6");
+            TUI_printfw("    F6");
             attroff(attrval);
-            printw("   stream open by processes ...\n");
+            TUI_printfw("   stream open by processes ...");
+            TUI_newline();
 
-            printw("\n");
-            printw("============ ACTIONS \n");
+            TUI_newline();
+            TUI_printfw("============ ACTIONS");
+            TUI_newline();
 
             attron(attrval);
-            printw("    R");
+            TUI_printfw("    R");
             attroff(attrval);
-            printw("    Remove stream\n");
+            TUI_printfw("    Remove stream");
+            TUI_newline();
 
-            printw("\n");
-            printw("============ SCANNING \n");
+            TUI_newline();
+            TUI_printfw("============ SCANNING");
+            TUI_newline();
 
             attron(attrval);
-            printw("    }");
+            TUI_printfw("    }");
             attroff(attrval);
-            printw("    Increase scan frequency\n");
+            TUI_printfw("    Increase scan frequency");
+            TUI_newline();
 
             attron(attrval);
-            printw("    {");
+            TUI_printfw("    {");
             attroff(attrval);
-            printw("    Decrease scan frequency\n");
+            TUI_printfw("    Decrease scan frequency");
+            TUI_newline();
 
             attron(attrval);
-            printw("    o");
+            TUI_printfw("    o");
             attroff(attrval);
-            printw("    output next scan to file\n");
+            TUI_printfw("    output next scan to file");
+            TUI_newline();
 
 
-            printw("\n");
-            printw("============ DISPLAY \n");
+            TUI_newline();
+            TUI_printfw("============ DISPLAY");
+            TUI_newline();
 
             attron(attrval);
-            printw("    +");
+            TUI_printfw("    +");
             attroff(attrval);
-            printw("    Increase display frequency\n");
+            TUI_printfw("    Increase display frequency");
+            TUI_newline();
 
             attron(attrval);
-            printw("    -");
+            TUI_printfw("    -");
             attroff(attrval);
-            printw("    Decrease display frequency\n");
+            TUI_printfw("    Decrease display frequency");
+            TUI_newline();
 
             attron(attrval);
-            printw("    1");
+            TUI_printfw("    1");
             attroff(attrval);
-            printw("    Sort by stream name (alphabetical)\n");
+            TUI_printfw("    Sort by stream name (alphabetical)");
+            TUI_newline();
 
             attron(attrval);
-            printw("    2");
+            TUI_printfw("    2");
             attroff(attrval);
-            printw("    Sort by recently updated\n");
+            TUI_printfw("    Sort by recently updated");
+            TUI_newline();
 
             attron(attrval);
-            printw("    3");
+            TUI_printfw("    3");
             attroff(attrval);
-            printw("    Sort by processes access\n");
+            TUI_printfw("    Sort by processes access");
+            TUI_newline();
 
             attron(attrval);
-            printw("    F");
+            TUI_printfw("    F");
             attroff(attrval);
-            printw("    Set match string pattern\n");
+            TUI_printfw("    Set match string pattern");
+            TUI_newline();
 
             attron(attrval);
-            printw("    f");
+            TUI_printfw("    f");
             attroff(attrval);
-            printw("    Toggle apply match string to stream\n");
+            TUI_printfw("    Toggle apply match string to stream");
+            TUI_newline();
 
 
-            printw("\n\n");
+            TUI_newline();
+            TUI_newline();
         }
         else
         {
@@ -1959,108 +1914,110 @@ errno_t streamCTRL_CTRLscreen()
             if(DisplayMode == DISPLAY_MODE_HELP)
             {
                 attron(A_REVERSE);
-                printw("[h] Help");
+                TUI_printfw("[h] Help");
                 attroff(A_REVERSE);
             }
             else
             {
-                printw("[h] Help");
+                TUI_printfw("[h] Help");
             }
-            printw("   ");
+            TUI_printfw("   ");
 
             if(DisplayMode == DISPLAY_MODE_SEMVAL)
             {
                 attron(A_REVERSE);
-                printw("[F2] sem values");
+                TUI_printfw("[F2] sem values");
                 attroff(A_REVERSE);
             }
             else
             {
-                printw("[F2] sem values");
+                TUI_printfw("[F2] sem values");
             }
-            printw("   ");
+            TUI_printfw("   ");
 
             if(DisplayMode == DISPLAY_MODE_WRITE)
             {
                 attron(A_REVERSE);
-                printw("[F3] write PIDs");
+                TUI_printfw("[F3] write PIDs");
                 attroff(A_REVERSE);
             }
             else
             {
-                printw("[F3] write PIDs");
+                TUI_printfw("[F3] write PIDs");
             }
-            printw("   ");
+            TUI_printfw("   ");
 
             if(DisplayMode == DISPLAY_MODE_READ)
             {
                 attron(A_REVERSE);
-                printw("[F4] read PIDs");
+                TUI_printfw("[F4] read PIDs");
                 attroff(A_REVERSE);
             }
             else
             {
-                printw("[F4] read PIDs");
+                TUI_printfw("[F4] read PIDs");
             }
-            printw("   ");
+            TUI_printfw("   ");
 
             if(DisplayMode == DISPLAY_MODE_SPTRACE)
             {
                 attron(A_REVERSE);
-                printw("[F5] process traces");
+                TUI_printfw("[F5] process traces");
                 attroff(A_REVERSE);
             }
             else
             {
-                printw("[F5] process traces");
+                TUI_printfw("[F5] process traces");
             }
-            printw("   ");
+            TUI_printfw("   ");
 
             if(DisplayMode == DISPLAY_MODE_FUSER)
             {
                 attron(A_REVERSE);
-                printw("[F6] access");
+                TUI_printfw("[F6] access");
                 attroff(A_REVERSE);
             }
             else
             {
-                printw("[F6] access");
+                TUI_printfw("[F6] access");
             }
-            printw("   ");
-            printw("\n");
+            TUI_printfw("   ");
+            TUI_newline();
 
 
-            printw("PIDmax = %d    Update frequ = %2d Hz  fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy ) ",
-                   PIDmax,
-                   (int)(frequ + 0.5),
-                   1.0 / streaminfoproc.dtscan,
-                   1000000.0 / streaminfoproc.twaitus,
-                   100.0 * (streaminfoproc.dtscan - 1.0e-6 * streaminfoproc.twaitus) /
-                   streaminfoproc.dtscan
-                  );
+            TUI_printfw("PIDmax = %d    Update frequ = %2d Hz  fscan=%5.2f Hz ( %5.2f Hz %5.2f %% busy ) ",
+                        PIDmax,
+                        (int)(frequ + 0.5),
+                        1.0 / streaminfoproc.dtscan,
+                        1000000.0 / streaminfoproc.twaitus,
+                        100.0 * (streaminfoproc.dtscan - 1.0e-6 * streaminfoproc.twaitus) /
+                        streaminfoproc.dtscan
+                       );
 
             if(streaminfoproc.fuserUpdate == 1)
             {
                 attron(COLOR_PAIR(9));
-                printw("fuser scan ongoing  %4d  / %4d   ", streaminfoproc.sindexscan,
-                       NBsindex);
+                TUI_printfw("fuser scan ongoing  %4d  / %4d   ", streaminfoproc.sindexscan,
+                            NBsindex);
                 attroff(COLOR_PAIR(9));
             }
             if(DisplayMode == DISPLAY_MODE_FUSER)
             {
                 if(fuserScan == 1)
                 {
-                    printw("Last scan on  %02d:%02d:%02d  - Press F6 again to re-scan    C-c to stop scan\n",
-                           uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
+                    TUI_printfw("Last scan on  %02d:%02d:%02d  - Press F6 again to re-scan    C-c to stop scan",
+                                uttime_lastScan->tm_hour, uttime_lastScan->tm_min,  uttime_lastScan->tm_sec);
+                    TUI_newline();
                 }
                 else
                 {
-                    printw("Last scan on  XX:XX:XX  - Press F6 again to scan             C-c to stop scan\n");
+                    TUI_printfw("Last scan on  XX:XX:XX  - Press F6 again to scan             C-c to stop scan");
+                    TUI_newline();
                 }
             }
             else
             {
-                printw("\n");
+                TUI_newline();
             }
 
             int lastindex;
@@ -2075,56 +2032,61 @@ errno_t streamCTRL_CTRLscreen()
                 lastindex = 0;
             }
 
-            printw("%4d streams    Currently displaying %4d-%4d   Selected %d  ID = %d  inode = %d", NBsindex,
-                   doffsetindex, lastindex, dindexSelected, ssindex[dindexSelected], (int) inodeselected);
+            TUI_printfw("%4d streams    Currently displaying %4d-%4d   Selected %d  ID = %d  inode = %d", NBsindex,
+                        doffsetindex, lastindex, dindexSelected, ssindex[dindexSelected], (int) inodeselected);
 
             if(streaminfoproc.filter == 1)
             {
                 attron(COLOR_PAIR(9));
-                printw("  Filter = \"%s\"", streaminfoproc.namefilter);
+                TUI_printfw("  Filter = \"%s\"", streaminfoproc.namefilter);
                 attroff(COLOR_PAIR(9));
             }
 
-            printw("\n");
+            TUI_newline();
 
 
 
             attron(A_BOLD);
 
-            printw("%*s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
-                   9, "inode",
-                   DispName_NBchar, "name",
-                   DispSize_NBchar, "type",
-                   Dispcnt0_NBchar, "cnt0",
-                   DispPID_NBchar,  "creaPID",
-                   DispPID_NBchar,  "ownPID",
-                   Dispfreq_NBchar, "   frequ ",
-                   "#sem"
-                  );
+            TUI_printfw("%*s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
+                        9, "inode",
+                        DispName_NBchar, "name",
+                        DispSize_NBchar, "type",
+                        Dispcnt0_NBchar, "cnt0",
+                        DispPID_NBchar,  "creaPID",
+                        DispPID_NBchar,  "ownPID",
+                        Dispfreq_NBchar, "   frequ ",
+                        "#sem"
+                       );
 
             switch (DisplayMode) {
             case DISPLAY_MODE_SEMVAL:
-                printw("     Semaphore values ....\n");
+                TUI_printfw("     Semaphore values ....");
+                TUI_newline();
                 break;
 
             case DISPLAY_MODE_WRITE:
-                printw("     write PIDs ....\n");
+                TUI_printfw("     write PIDs ....");
+                TUI_newline();
                 break;
 
             case DISPLAY_MODE_READ:
-                printw("     read PIDs ....\n");
+                TUI_printfw("     read PIDs ....");
+                TUI_newline();
                 break;
 
             case DISPLAY_MODE_SPTRACE:
-                printw("     stream process traces:   \"(INODE TYPE/SEM PID)>\"\n");
+                TUI_printfw("     stream process traces:   \"(INODE TYPE/SEM PID)>\"");
+                TUI_newline();
                 break;
 
             case DISPLAY_MODE_FUSER:
-                printw("     connected processes\n");
+                TUI_printfw("     connected processes");
+                TUI_newline();
                 break;
 
             default:
-                printw("\n");
+                TUI_newline();
                 break;
             }
 
@@ -2384,21 +2346,16 @@ errno_t streamCTRL_CTRLscreen()
                 DEBUG_TRACEPOINT(" ");
 
 
-                //char line[200];
                 char string[200];
-                int charcnt = 0;        // how many chars are about to be printed
-                int linecharcnt = 0;    // keeping track of number of characters in line
 
 
                 if(DisplayFlag == 1)
                 {
                     // print file inode
-                    linecharcnt += 1+streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode, upstreaminode, NBupstreaminode, downstreammin);
-                    printw(" ");
+                    streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode, upstreaminode, NBupstreaminode, downstreammin);
+                    TUI_printfw(" ");
                 }
 
-
-                charcnt = DispName_NBchar + 1;
                 if((dindex == dindexSelected) && ( DisplayDetailLevel == 0 ))
                 {
                     attron(A_REVERSE);
@@ -2417,25 +2374,24 @@ errno_t streamCTRL_CTRLscreen()
                                  streaminfo[sindex].linkname);
 
                         attron(COLOR_PAIR(5));
-                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
+                        TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
                         attroff(COLOR_PAIR(5));
                     }
                     else
                     {
-                        printw("%-*.*s", DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
+                        TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
                     }
 
                     if((int) strlen(streaminfo[sindex].sname) > DispName_NBchar)
                     {
                         attron(COLOR_PAIR(9));
-                        printw("+");
+                        TUI_printfw("+");
                         attroff(COLOR_PAIR(9));
                     }
                     else
                     {
-                        printw(" ");
+                        TUI_printfw(" ");
                     }
-                    linecharcnt += charcnt;
                 }
 
 
@@ -2452,76 +2408,72 @@ errno_t streamCTRL_CTRLscreen()
 
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        charcnt = sprintf(string, " ???");
+                        sprintf(string, " ???");
                     }
                     else
                     {
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT8)
                         {
-                            charcnt = sprintf(string, " UI8");
+                            sprintf(string, " UI8");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT8)
                         {
-                            charcnt = sprintf(string, "  I8");
+                            sprintf(string, "  I8");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT16)
                         {
-                            charcnt = sprintf(string, "UI16");
+                            sprintf(string, "UI16");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT16)
                         {
-                            charcnt = sprintf(string, " I16");
+                            sprintf(string, " I16");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT32)
                         {
-                            charcnt = sprintf(string, "UI32");
+                            sprintf(string, "UI32");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT32)
                         {
-                            charcnt = sprintf(string, " I32");
+                            sprintf(string, " I32");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT64)
                         {
-                            charcnt = sprintf(string, "UI64");
+                            sprintf(string, "UI64");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT64)
                         {
-                            charcnt = sprintf(string, " I64");
+                            sprintf(string, " I64");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_HALF)
                         {
-                            charcnt = sprintf(string, " HLF");
+                            sprintf(string, " HLF");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_FLOAT)
                         {
-                            charcnt = sprintf(string, " FLT");
+                            sprintf(string, " FLT");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_DOUBLE)
                         {
-                            charcnt = sprintf(string, " DBL");
+                            sprintf(string, " DBL");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_COMPLEX_FLOAT)
                         {
-                            charcnt = sprintf(string, "CFLT");
+                            sprintf(string, "CFLT");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_COMPLEX_DOUBLE)
                         {
-                            charcnt = sprintf(string, "CDBL");
+                            sprintf(string, "CDBL");
                         }
                     }
-                    linecharcnt += charcnt;
-                    if(linecharcnt < wcol-1)
-                    {
-                        printw(string);
-                    }
+                    TUI_printfw(string);
 
                     DEBUG_TRACEPOINT(" ");
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
@@ -2570,35 +2522,27 @@ errno_t streamCTRL_CTRLscreen()
                     DEBUG_TRACEPOINT(" ");
 
 
-                    charcnt = sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
-                    linecharcnt += charcnt;
-                    if(linecharcnt < wcol-1)
-                    {
-                        printw(string);
-                    }
+                    sprintf(string, "%-*.*s ", DispSize_NBchar, DispSize_NBchar, str);
+                    TUI_printfw(string);
 
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        charcnt = sprintf(string, "???");
+                        sprintf(string, "???");
                     }
                     else
                     {
 
-                        charcnt = sprintf(string, " %*ld ", Dispcnt0_NBchar, streamCTRLimages[ID].md[0].cnt0);
+                        sprintf(string, " %*ld ", Dispcnt0_NBchar, streamCTRLimages[ID].md[0].cnt0);
                     }
-                    linecharcnt += charcnt;
-                    if(linecharcnt < wcol-1)
+                    if(streaminfo[sindex].deltacnt0 == 0)
                     {
-                        if(streaminfo[sindex].deltacnt0 == 0)
-                        {
-                            printw(string);
-                        }
-                        else
-                        {
-                            attron(COLOR_PAIR(2));
-                            printw(string);
-                            attroff(COLOR_PAIR(2));
-                        }
+                        TUI_printfw(string);
+                    }
+                    else
+                    {
+                        attron(COLOR_PAIR(2));
+                        TUI_printfw(string);
+                        attroff(COLOR_PAIR(2));
                     }
 
 
@@ -2606,7 +2550,7 @@ errno_t streamCTRL_CTRLscreen()
                     // ownerPID
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        charcnt = sprintf(string, "???");
+                        sprintf(string, "???");
                     }
                     else
                     {
@@ -2616,11 +2560,10 @@ errno_t streamCTRL_CTRLscreen()
                         cpid = streamCTRLimages[ID].md[0].creatorPID;
                         opid = streamCTRLimages[ID].md[0].ownerPID;
 
-                        linecharcnt += streamCTRL_print_procpid(8, cpid, upstreamproc, NBupstreamproc, print_pid_mode);
-                        printw(" ");
-                        linecharcnt += streamCTRL_print_procpid(8, opid, upstreamproc, NBupstreamproc, print_pid_mode);
-                        printw(" ");
-                        linecharcnt += 2;
+                        streamCTRL_print_procpid(8, cpid, upstreamproc, NBupstreamproc, print_pid_mode);
+                        TUI_printfw(" ");
+                        streamCTRL_print_procpid(8, opid, upstreamproc, NBupstreamproc, print_pid_mode);
+                        TUI_printfw(" ");
                     }
 
 
@@ -2629,17 +2572,13 @@ errno_t streamCTRL_CTRLscreen()
                     //
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        charcnt = sprintf(string, "???");
+                        sprintf(string, "???");
                     }
                     else
                     {
-                        charcnt = sprintf(string, " %*.2f Hz", Dispfreq_NBchar, streaminfo[sindex].updatevalue);
+                        sprintf(string, " %*.2f Hz", Dispfreq_NBchar, streaminfo[sindex].updatevalue);
                     }
-                    linecharcnt += charcnt;
-                    if(linecharcnt < wcol-1)
-                    {
-                        printw(string);
-                    }
+                    TUI_printfw(string);
 
                 }
 
@@ -2650,24 +2589,16 @@ errno_t streamCTRL_CTRLscreen()
                     if((DisplayMode == DISPLAY_MODE_SEMVAL) && (DisplayFlag == 1))   // sem vals
                     {
 
-                        charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
-                        linecharcnt += charcnt;
-                        if(linecharcnt < wcol-1)
-                        {
-                            printw(string);
-                        }
+                        sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
+                        TUI_printfw(string);
 
                         int s;
                         for(s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
                         {
                             int semval;
                             sem_getvalue(streamCTRLimages[ID].semptr[s], &semval);
-                            charcnt = sprintf(string, " %7d", semval);
-                            linecharcnt += charcnt;
-                            if(linecharcnt < wcol-1)
-                            {
-                                printw(string);
-                            }
+                            sprintf(string, " %7d", semval);
+                            TUI_printfw(string);
                         }
                     }
                 }
@@ -2677,22 +2608,15 @@ errno_t streamCTRL_CTRLscreen()
                 {
                     if((DisplayMode == DISPLAY_MODE_WRITE) && (DisplayFlag == 1))   // sem write PIDs
                     {
-                        charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
-                        linecharcnt += charcnt;
-                        if(linecharcnt < wcol-1)
-                        {
-                            printw(string);
-                        }
+                        sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
+                        TUI_printfw(string);
 
                         int s;
                         for(s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
                         {
-                            if(linecharcnt < wcol-1-8)
-                            {
-                                pid_t pid = streamCTRLimages[ID].semWritePID[s];
-                                linecharcnt += 1 + streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                                printw(" ");
-                            }
+                            pid_t pid = streamCTRLimages[ID].semWritePID[s];
+                            streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                            TUI_printfw(" ");
                         }
                     }
                 }
@@ -2704,22 +2628,15 @@ errno_t streamCTRL_CTRLscreen()
                 {
                     if((DisplayMode == DISPLAY_MODE_READ) && (DisplayFlag == 1))   // sem read PIDs
                     {
-                        charcnt = sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
-                        linecharcnt += charcnt;
-                        if(linecharcnt < wcol-1)
-                        {
-                            printw(string);
-                        }
+                        sprintf(string, " %3d sems ", streamCTRLimages[ID].md[0].sem);
+                        TUI_printfw(string);
 
                         int s;
                         for(s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
                         {
-                            if(linecharcnt < wcol-1-8)
-                            {
-                                pid_t pid = streamCTRLimages[ID].semReadPID[s];
-                                linecharcnt += 1 + streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                                printw(" ");
-                            }
+                            pid_t pid = streamCTRLimages[ID].semReadPID[s];
+                            streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                            TUI_printfw(" ");
                         }
                     }
                 }
@@ -2730,12 +2647,8 @@ errno_t streamCTRL_CTRLscreen()
                 {
                     if((DisplayMode == DISPLAY_MODE_SPTRACE) && (DisplayFlag == 1))   // sem read PIDs
                     {
-                        charcnt = sprintf(string, " %2d ", streamCTRLimages[ID].md[0].NBproctrace);
-                        linecharcnt += charcnt;
-                        if(linecharcnt < wcol-1)
-                        {
-                            printw(string);
-                        }
+                        sprintf(string, " %2d ", streamCTRLimages[ID].md[0].NBproctrace);
+                        TUI_printfw(string);
 
                         for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
                         {
@@ -2749,41 +2662,37 @@ errno_t streamCTRL_CTRLscreen()
                             switch( streamCTRLimages[ID].streamproctrace[spti].triggermode)
                             {
                             case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                                charcnt = sprintf(string, "(%7lu IM ", inode);
+                                sprintf(string, "(%7lu IM ", inode);
                                 break;
 
                             case PROCESSINFO_TRIGGERMODE_CNT0:
-                                charcnt = sprintf(string, "(%7lu C0 ", inode);
+                                sprintf(string, "(%7lu C0 ", inode);
                                 break;
 
                             case PROCESSINFO_TRIGGERMODE_CNT1:
-                                charcnt = sprintf(string, "(%7lu C1 ", inode);
+                                sprintf(string, "(%7lu C1 ", inode);
                                 break;
 
                             case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                                charcnt = sprintf(string, "(%7lu %02d ", inode, sem);
+                                sprintf(string, "(%7lu %02d ", inode, sem);
                                 break;
 
                             case PROCESSINFO_TRIGGERMODE_DELAY:
-                                charcnt = sprintf(string, "(%7lu DL ", inode);
+                                sprintf(string, "(%7lu DL ", inode);
                                 break;
 
                             default:
-                                charcnt = sprintf(string, "(%7lu ?? ", inode);
+                                sprintf(string, "(%7lu ?? ", inode);
                                 break;
                             }
-                            if(linecharcnt < wcol-3-8-charcnt)
-                            {
-                                linecharcnt += charcnt;
-                                printw(string);
-                                linecharcnt += 3 + streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
-                                printw(")> ");
-                            }
+                            TUI_printfw(string);
+                            streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                            TUI_printfw(")> ");
                         }
 
                         if(DisplayDetailLevel == 1)
                         {
-                            printw("\n");
+                            TUI_newline();
                             streamCTRL_print_SPTRACE_details(streamCTRLimages, ID, upstreamproc, NBupstreamproc, PRINT_PID_DEFAULT);
                         }
                     }
@@ -2812,44 +2721,28 @@ errno_t streamCTRL_CTRLscreen()
                         for(pidIndex = 0; pidIndex < streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
                         {
                             pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
-                            linecharcnt += streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+                            streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
 
                             if((getpgid(pid) >= 0) && (pid != getpid()))
                             {
 
-                                charcnt = sprintf(string, ":%-*.*s",
-                                                  PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
-                                linecharcnt += charcnt;
-                                if(linecharcnt < -1)
-                                {
-                                    printw(string);
-                                }
+                                sprintf(string, ":%-*.*s",
+                                        PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                TUI_printfw(string);
 
                                 streaminfo[sindex].streamOpenPID_cnt1 ++;
                             }
                         }
-
-                        //const chtype * lstring1 = "This is a test";
-                        //addchstr(lstring1);
-
                         break;
 
                     case 2:
-                        charcnt = sprintf(string, "FAILED");
-                        linecharcnt += charcnt;
-                        if(linecharcnt < wcol-1)
-                        {
-                            printw(string);
-                        }
+                        sprintf(string, "FAILED");
+                        TUI_printfw(string);
                         break;
 
                     default:
-                        charcnt = sprintf(string, "NOT SCANNED");
-                        linecharcnt += charcnt;
-                        if(linecharcnt < wcol-1)
-                        {
-                            printw(string);
-                        }
+                        sprintf(string, "NOT SCANNED");
+                        TUI_printfw(string);
                         break;
 
                     }
@@ -2865,13 +2758,10 @@ errno_t streamCTRL_CTRLscreen()
                         attroff(A_REVERSE);
                     }
 
-                    if(linecharcnt > wcol-1)
-                    {
-                        attron(COLOR_PAIR(9));
-                        printw("+");
-                        attroff(COLOR_PAIR(9));
-                    }
-                    printw("\n");
+                    attron(COLOR_PAIR(9));
+                    TUI_printfw("+");
+                    attroff(COLOR_PAIR(9));
+                    TUI_newline();
                 }
 
 
