@@ -3439,38 +3439,38 @@ errno_t processinfo_CTRLscreen()
 
 
 
-        case '>': // move to other cpuset  //TODO
-            /*            pindex = pindexSelected;
-                        if(pinfolist->active[pindex] == 1)
-                        {
-                            endwin();
-                            if(system("clear") != 0) // clear screen
-                            {
-                                PRINT_ERROR("system() returns non-zero value");
-                            }
-                            printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
-                            listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+        case '>': // move to other cpuset
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex] == 1)
+            {
+                TUI_exit();
+                if(system("clear") != 0) // clear screen
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
+                listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
 
-                            EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex],
-                                                   CPUsetList[listindex].name);
+                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex],
+                                       CPUsetList[listindex].name);
 
-                            initncurses();
-                        }*/
+                TUI_init_terminal(&wrow, &wcol);
+            }
             break;
 
-        case '<': // move to same cpuset //TODO
-            /*            pindex = pindexSelected;
-                        if(pinfolist->active[pindex] == 1)
-                        {
-                            endwin();
+        case '<': // move to same cpuset
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex] == 1)
+            {
+                TUI_exit();
 
-                            EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
-                                                   pinfolist->PIDarray[pindex]);
-                            EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null",
-                                                   pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
+                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
+                                       pinfolist->PIDarray[pindex]);
+                EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null",
+                                       pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
 
-                            initncurses();
-                        }*/
+                TUI_init_terminal(&wrow, &wcol);
+            }
             break;
 
 
@@ -3528,37 +3528,35 @@ errno_t processinfo_CTRLscreen()
             }
             break;
 
-        case 't': //TODO
-            /*            endwin();
-                        EXECUTE_SYSTEM_COMMAND("tmux a -t %s",
-                                               procinfoproc.pinfoarray[pindexSelected]->tmuxname);
-                        initncurses();*/
+        case 't':
+            TUI_exit();
+            EXECUTE_SYSTEM_COMMAND("tmux a -t %s",
+                                   procinfoproc.pinfoarray[pindexSelected]->tmuxname);
+            TUI_init_terminal(&wrow, &wcol);
             break;
 
-        case 'a': //TODO
-            /*
-                pindex = pindexSelected;
-                if(pinfolist->active[pindex] == 1)
-                {
-                    endwin();
-                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
-                                           (int) pinfolist->PIDarray[pindex]);
-                    initncurses();
-                }*/
+        case 'a':
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex] == 1)
+            {
+                TUI_exit();
+                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
+                                       (int) pinfolist->PIDarray[pindex]);
+                TUI_init_terminal(&wrow, &wcol);
+            }
             break;
 
-        case 'd': //TODO
-            /*
-                pindex = pindexSelected;
-                if(pinfolist->active[pindex] == 1)
-                {
-                    endwin();
-                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                           (int) pinfolist->PIDarray[pindex]);
-                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                           (int) pinfolist->PIDarray[pindex]);
-                    initncurses();
-                }*/
+        case 'd':
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex] == 1)
+            {
+                TUI_exit();
+                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                       (int) pinfolist->PIDarray[pindex]);
+                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                       (int) pinfolist->PIDarray[pindex]);
+                TUI_init_terminal(&wrow, &wcol);
+            }
             break;
 
 
@@ -3617,17 +3615,15 @@ errno_t processinfo_CTRLscreen()
             break;;
 
 
-        case 'm' : // message //TODO
-            /*
-                pindex = pindexSelected;
-                if(pinfolist->active[pindex] == 1)
-                {
-                    endwin();
-                    EXECUTE_SYSTEM_COMMAND("clear; tail -f %s",
-                                           procinfoproc.pinfoarray[pindex]->logfilename);
-                    initncurses();
-                }
-                */
+        case 'm' : // message
+            pindex = pindexSelected;
+            if(pinfolist->active[pindex] == 1)
+            {
+                TUI_exit();
+                EXECUTE_SYSTEM_COMMAND("clear; tail -f %s",
+                                       procinfoproc.pinfoarray[pindex]->logfilename);
+                TUI_init_terminal(&wrow, &wcol);
+            }
             break;
 
 
@@ -3653,33 +3649,31 @@ errno_t processinfo_CTRLscreen()
             procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
             break;
 
-        case KEY_F(6): // htop //TODO
-            /*            endwin();
-                        if(system("htop") != 0)
-                        {
-                            PRINT_ERROR("system() returns non-zero value");
-                        }
-                        initncurses();*/
+        case KEY_F(6): // htop
+            TUI_exit();
+            if(system("htop") != 0)
+            {
+                PRINT_ERROR("system() returns non-zero value");
+            }
+            TUI_init_terminal(&wrow, &wcol);
             break;
 
-        case KEY_F(7): // iotop //TODO
-            /*
-                endwin();
-                if(system("sudo iotop -o") != 0)
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
-                initncurses();*/
+        case KEY_F(7): // iotop
+            TUI_exit();
+            if(system("sudo iotop -o") != 0)
+            {
+                PRINT_ERROR("system() returns non-zero value");
+            }
+            TUI_init_terminal(&wrow, &wcol);
             break;
 
-        case KEY_F(8): // atop //TODO
-            /*
-                endwin();
-                if(system("sudo atop") != 0)
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
-                initncurses();*/
+        case KEY_F(8): // atop
+            TUI_exit();
+            if(system("sudo atop") != 0)
+            {
+                PRINT_ERROR("system() returns non-zero value");
+            }
+            TUI_init_terminal(&wrow, &wcol);
             break;
 
 
