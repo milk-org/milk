@@ -2345,13 +2345,14 @@ void *processinfo_scan(
             if(pinfop->loop == 1)
             {
 
-                DEBUG_TRACEPOINT(" ");
+                DEBUG_TRACEPOINT("pindex %ld / %ld", pindex, pinfop->NBpinfodisp);
 
                 char SM_fname[STRINGMAXLEN_FULLFILENAME];    // shared memory file name
                 struct stat file_stat;
 
                 pinfop->scandebugline = __LINE__;
                 pinfop->PIDarray[pindex] = pinfolist->PIDarray[pindex];
+                DEBUG_TRACEPOINT("pindex %ld / %ld", pindex, pinfop->NBpinfodisp);
 
                 // SHOULD WE (RE)LOAD ?
                 if(pinfolist->active[pindex] == 0)   // inactive
@@ -2882,15 +2883,16 @@ errno_t processinfo_CTRLscreen()
         abort();
     }
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
-
+    DEBUG_TRACEPOINT("%d CPU set", NBCPUset);
 
     // Create / read process list
     //
     if(processinfo_shm_list_create() == 0)
     {
-        printf("==== NO PROCESS TO DISPLAY -> EXITING ====\n");
-        return(0);
+        printf("==== NO PROCESS TO DISPLAY ====\n");
+        //return(0);
     }
+
 
 
     // copy pointer
