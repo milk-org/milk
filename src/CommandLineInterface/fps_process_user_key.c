@@ -26,6 +26,8 @@
 #include "fps_WriteParameterToDisk.h"
 
 
+static short unsigned int wrow, wcol;
+
 
 int fpsCTRLscreen_process_user_key(
     int ch,
@@ -208,9 +210,10 @@ int fpsCTRLscreen_process_user_key(
         break;
 
     case 10 : // enter key
+        DEBUG_TRACEPOINT_LOG("exiting TUI screen");
         if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)   // this is a leaf
         {
-            DEBUG_TRACEPOINT(" ");
+            DEBUG_TRACEPOINT_LOG("exiting TUI screen");
             TUI_exit();
 
             if(system("clear") != 0)   // clear screen
@@ -221,9 +224,8 @@ int fpsCTRLscreen_process_user_key(
                     fpsCTRLvar->pindexSelected);
 
             DEBUG_TRACEPOINT(" ");
-            TUI_initncurses();
-            DEBUG_TRACEPOINT(" ");
-            TUI_stdio_clear();
+
+            TUI_init_terminal(&wrow, &wcol);
             DEBUG_TRACEPOINT(" ");
         }
         break;

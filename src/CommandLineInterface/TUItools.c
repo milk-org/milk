@@ -452,7 +452,7 @@ errno_t TUI_initncurses(
     DEBUG_TRACEPOINT(" ");
     if( screenprintmode == SCREENPRINT_NCURSES)
     {
-        DEBUG_TRACEPOINT(" test abort ");
+        DEBUG_TRACEPOINT("Initializing TUI ncurses ");
 
 
         if(initscr() == NULL)
@@ -460,6 +460,8 @@ errno_t TUI_initncurses(
             fprintf(stderr, "Error initialising ncurses.\n");
             exit(EXIT_FAILURE);
         }
+        DEBUG_TRACEPOINT("Initializing TUI ncurses ");
+
         getmaxyx(stdscr, wrow, wcol);		/* get the number of rows and columns */
         *wrowptr = wrow;
         *wcolptr = wcol;
@@ -482,16 +484,13 @@ errno_t TUI_initncurses(
         noecho();
         // Don't echo() while we do getch
 
-        nonl();
-        // Do not translates newline into return and line-feed on output
-
         //nonl();
         // Do not translates newline into return and line-feed on output
 
         DEBUG_TRACEPOINT(" ");
         //init_color(COLOR_GREEN, 400, 1000, 400);
-        init_color(COLOR_GREEN, 700, 1000, 700);
-        init_color(COLOR_YELLOW, 1000, 1000, 700);
+        //init_color(COLOR_GREEN, 700, 1000, 700);
+        //init_color(COLOR_YELLOW, 1000, 1000, 700);
         start_color();
         DEBUG_TRACEPOINT(" ");
 

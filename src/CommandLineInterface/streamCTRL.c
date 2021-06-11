@@ -198,40 +198,6 @@ int get_process_name_by_pid(const int pid, char *pname)
 
 
 
-
-
-
-int streamCTRL_CatchSignals()
-{
-
-    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGTERM\n");
-
-    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGINT\n");
-
-    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGABRT\n");
-
-    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGBUS\n");
-
-    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGSEGV\n");
-
-    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGHUP\n");
-
-    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-        printf("\ncan't catch SIGPIPE\n");
-
-    return 0;
-}
-
-
-
-
-
 static int get_PIDmax() {
     FILE *fp;
     int PIDmax;
@@ -1420,17 +1386,6 @@ errno_t streamCTRL_CTRLscreen()
 
 
     TUI_init_terminal(&wrow, &wcol);
-    //DEBUG_TRACEPOINT("returned from TUI init %d %d", wrow, wcol);
-
-
-    /*
-        setlocale(LC_ALL, "");
-
-        streamCTRL_CatchSignals();
-
-        // INITIALIZE ncurses
-        initncurses();
-    */
 
 
     int NBsindex = 0;
@@ -1509,6 +1464,7 @@ errno_t streamCTRL_CTRLscreen()
     while(loopOK == 1)
     {
         // get terminal size
+        DEBUG_TRACEPOINT(" ");
         TUI_get_terminal_size(&wrow, &wcol);
 
         int NBsinfodisp = wrow - 7;
@@ -1530,7 +1486,7 @@ errno_t streamCTRL_CTRLscreen()
 
         usleep((long)(1000000.0 / frequ));
         int ch = getch();
-
+        DEBUG_TRACEPOINT(" ");
 
         NBsindex = streaminfoproc.NBstream;
 
@@ -1717,13 +1673,13 @@ errno_t streamCTRL_CTRLscreen()
             }
             break;
 
-        case 'F': // set stream name filter string //TBD
-            /*endwin();
+        case 'F': // set stream name filter string
+            TUI_exit();
             EXECUTE_SYSTEM_COMMAND("clear");
             printf("Enter string: ");
             fflush(stdout);
             stringindex = 0;
-            while(((c = getchar()) != 13) && (stringindex < STRINGLENMAX - 2))
+            while(((c = getchar()) != '\n') && (stringindex < STRINGLENMAX - 2))
             {
                 streaminfoproc.namefilter[stringindex] = c;
                 if(c == 127)   // delete key
@@ -1735,12 +1691,14 @@ errno_t streamCTRL_CTRLscreen()
                 }
                 else
                 {
+                    //printf("[%d]", (int) c);
                     putchar(c);  // echo on screen
                     stringindex++;
                 }
             }
+            printf("string entered\n");
             streaminfoproc.namefilter[stringindex] = '\0';
-            initncurses();*/
+            TUI_init_terminal(&wrow, &wcol);
             break;
 
 
@@ -2382,7 +2340,7 @@ errno_t streamCTRL_CTRLscreen()
                         TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar, streaminfo[sindex].sname);
                     }
 
-                    if((int) strlen(streaminfo[sindex].sname) > DispName_NBchar)
+                    /*if((int) strlen(streaminfo[sindex].sname) > DispName_NBchar)
                     {
                         attron(COLOR_PAIR(9));
                         TUI_printfw("+");
@@ -2391,7 +2349,7 @@ errno_t streamCTRL_CTRLscreen()
                     else
                     {
                         TUI_printfw(" ");
-                    }
+                    }*/
                 }
 
 
@@ -2758,9 +2716,9 @@ errno_t streamCTRL_CTRLscreen()
                         attroff(A_REVERSE);
                     }
 
-                    attron(COLOR_PAIR(9));
+                    /*attron(COLOR_PAIR(9));
                     TUI_printfw("+");
-                    attroff(COLOR_PAIR(9));
+                    attroff(COLOR_PAIR(9));*/
                     TUI_newline();
                 }
 
