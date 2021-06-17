@@ -86,6 +86,7 @@ void TUI_printfw(const char *fmt, ...)
         char prtstring[200];
 
         getyx(stdscr, y, x);
+        (void) y;
         vsnprintf(prtstring, wcol-(x), fmt, args);
         printw("%s", prtstring);
         //vw_printw(stdscr, fmt, args);
@@ -421,7 +422,7 @@ void TUI_clearscreen(
 void TUI_handle_winch(int sig)
 {
     wresizecnt++;
-
+    DEBUG_TRACEPOINT("wresizecnt = %d", wresizecnt);
     (void) sig;
 
     endwin();

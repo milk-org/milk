@@ -82,9 +82,12 @@ static errno_t help_function()
 
 
 
-/// if errcode = 0, print warning, do not show error messages, continue
-/// errcode = 1: print error, continue
-/// errcode = 2: exit program at error
+/// errcode values :
+/// LOADFITS_ERRCODE_IGNORE  (0) print warning, do not show error messages, continue
+/// LOADFITS_ERRCODE_WARNING (1) print error, continue
+/// LOADFITS_ERRCODE_EXIT    (2): exit program at error
+/// LOADFITS_ERRCODE_RETRY   (3)
+
 imageID load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
