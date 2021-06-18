@@ -61,9 +61,10 @@ if(errormsg_slen >= STRINGMAXLEN_FUNCERRORMSG) {                   \
     printf("snprintf in FUNC_RETURN_FAILURE: string truncation");  \
     abort();                                                       \
 }                                                                  \
+printf("\n");                                                      \
 printf("%c[%d;%dm ERROR %c[%dm [ %s %s %d ]\n", (char) 27, 1, 31, (char) 27, 0, __FILE__, __func__, __LINE__);     \
-printf("    %c[%d;%dm%s %c[%d;m\n", (char) 27, 1, 31, data.testpoint_msg, (char) 27, 0); \
-printf("    Function %s returns FAILURE\n", __func__); \
+printf("%c[%d;%dm ***** %c[%d;m %s\n", (char) 27, 1, 31, (char) 27, 0, data.testpoint_msg); \
+printf("%c[%d;%dm ***** %c[%d;m -> Function %s returns RETURN_FAILURE\n", (char) 27, 1, 31, (char) 27, 0, __func__); \
 return RETURN_FAILURE; \
 } while(0)
 

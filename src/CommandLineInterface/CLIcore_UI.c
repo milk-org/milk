@@ -479,7 +479,22 @@ errno_t CLI_execute_line()
                     printf("EXECUTING COMMAND %ld (%s)\n", data.cmdindex,
                            data.cmd[data.cmdindex].key);
                 }
-                data.cmd[data.cmdindex].fp();
+                // Execute CLI command
+
+                data.CMDerrstatus = data.cmd[data.cmdindex].fp();
+
+                if(data.CMDerrstatus != RETURN_SUCCESS)
+                {
+                    // CLI function returns error
+                    // print function key name and error code
+                    printf("%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n", (char) 27, 1, 31, (char) 27, 0, data.cmd[data.cmdindex].key, data.CMDerrstatus);
+                    if(data.errorexit == 1)
+                    {
+                        printf("%c[%d;%dm -> EXIT CLI %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
+                        data.exitcode = data.CMDerrstatus;
+                    }
+                }
+
                 data.CMDexecuted = 1;
             }
         }

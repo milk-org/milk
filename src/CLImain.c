@@ -43,8 +43,17 @@ int main(
     }
     else
     {
-		data.quiet = 0;
-	}
+        data.quiet = 0;
+    }
+
+    if(getenv("MILK_ERROREXIT"))
+    {
+        data.errorexit = 1;
+    }
+    else
+    {
+        data.errorexit = 0;
+    }
 
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
     snprintf(versionstring, STRINGMAXLEN_VERSIONSTRING, "%d.%02d.%02d%s",
@@ -86,11 +95,17 @@ int main(
         printf("        \n");
     }
 
+    // default exit code
+    data.exitcode = RETURN_SUCCESS;
+
     runCLI(argc, argv, AppName);
 
-	if(data.quiet == 0) {
-		printf("NORMAL EXIT\n");
-	}
+
+    //errno_t CLIretval = RETURN_SUCCESS;
+
+    if(data.quiet == 0) {
+        printf("EXIT CODE %d\n", data.exitcode);
+    }
     else
     {
         printf("\n");
@@ -100,5 +115,5 @@ int main(
     // clean-up calling thread
     //pthread_exit(NULL);
 
-    return RETURN_SUCCESS;
+    return data.exitcode;
 }

@@ -65,9 +65,7 @@ static errno_t CLIfunction(void)\
     if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
     {\
         STD_FARG_LINKfunction\
-        compute_function();\
-\
-        return RETURN_SUCCESS;\
+        return compute_function();\
     }\
     else\
     {\
@@ -238,10 +236,10 @@ static errno_t FPSRUNfunction()\
     FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);\
     data.fpsptr = &fps;\
     STD_FARG_LINKfunction\
-    compute_function();\
+    errno_t fret = compute_function();\
     data.fpsptr = NULL;\
     function_parameter_RUNexit(&fps);\
-    return RETURN_SUCCESS;\
+    return fret;\
 }
 
 
@@ -276,8 +274,7 @@ if(retval == RETURN_CLICHECKARGARRAY_SUCCESS)\
 {\
     data.fpsptr = NULL;\
     STD_FARG_LINKfunction\
-    compute_function();\
-    return RETURN_SUCCESS;\
+    return compute_function();\
 }\
 if(retval == RETURN_CLICHECKARGARRAY_HELP)\
 {\

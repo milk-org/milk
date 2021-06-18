@@ -833,7 +833,7 @@ errno_t runCLI(
                 data.CLIloopON  = 0;
             }
 
-            { // CLI loop delay to keep CPU load light
+            {   // CLI loop delay to keep CPU load light
                 struct timespec nsts;
                 int ret;
                 nsts.tv_sec = 0;
@@ -905,9 +905,11 @@ errno_t runCLI(
                         {
                             buf1[total_bytes - 1] = '\0';
                             strcpy(data.CLIcmdline, buf1);
+
                             DEBUG_TRACEPOINT("CLI executing line: %s", data.CLIcmdline);
                             CLI_execute_line();
                             DEBUG_TRACEPOINT("CLI line executed");
+
                             printf("%s", prompt);
                             fflush(stdout);
                             break;
@@ -949,6 +951,11 @@ errno_t runCLI(
                 }
             }
             DEBUG_TRACEPOINT(" ");
+
+            if(data.exitcode != 0)
+            {
+                exitCLI();
+            }
 
         }
         data.CLIexecuteCMDready = 0;
