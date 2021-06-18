@@ -397,6 +397,10 @@ typedef struct
 
     int            Debug;
     int            quiet;
+
+    int            errorexit;       // exit on error
+    int            exitcode;        // CLI exit code
+
     int            overwrite;		// automatically overwrite FITS files
     int            rmSHMfile;       // remove shared memory files upon delete
     double         INVRANDMAX;
@@ -443,7 +447,8 @@ typedef struct
     long           calctmp_imindex;
     // 0 if command has not been executed, 1 otherwise
     int            CMDexecuted;
-
+    // 0 if command successfull, 1+ otherwise
+    errno_t        CMDerrstatus;
 
 
     // MODULES
