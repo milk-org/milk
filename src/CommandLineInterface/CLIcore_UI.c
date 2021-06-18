@@ -487,7 +487,7 @@ errno_t CLI_execute_line()
                 {
                     // CLI function returns error
                     // print function key name and error code
-                    printf("%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n", (char) 27, 1, 31, (char) 27, 0, data.cmd[data.cmdindex].key, data.CMDerrstatus);
+                    printf("\n%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n", (char) 27, 1, 31, (char) 27, 0, data.cmd[data.cmdindex].key, data.CMDerrstatus);
                     if(data.errorexit == 1)
                     {
                         printf("%c[%d;%dm -> EXIT CLI %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
