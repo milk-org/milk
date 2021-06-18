@@ -40,6 +40,14 @@ COMMAND LINE OPTIONS
 	requires the -f option, as the script is loaded into fifo
 
 -----------------------------------------------------------------------------------
+ENVIRONMENT VARIABLES
+  
+  MILKCLI_APPNAME   Application name, displayed in prompt
+  MILKCLI_ADD_LIBS  Shared libraries to be loaded upon startup
+  MILK_QUIET        Quiet mode (non-verbose) if set
+  MILK_ERROREXIT    Exit on command error if set
+
+-----------------------------------------------------------------------------------
 SYNTAX RULES, PARSER
 
 Spaces are used to separate arguments. Number of spaces irrelevant.
