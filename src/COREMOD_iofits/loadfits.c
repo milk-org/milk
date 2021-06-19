@@ -85,13 +85,14 @@ static errno_t help_function()
 /// errcode values :
 /// LOADFITS_ERRCODE_IGNORE  (0) print warning, do not show error messages, continue
 /// LOADFITS_ERRCODE_WARNING (1) print error, continue
-/// LOADFITS_ERRCODE_EXIT    (2): exit program at error
-/// LOADFITS_ERRCODE_RETRY   (3)
+/// LOADFITS_ERRCODE_ERROR   (2) return error
+/// LOADFITS_ERRCODE_EXIT    (3) exit program at error
 
-imageID load_fits(
+errno_t load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
-    int         errcode
+    int         errcode,
+    imageID   * IDout
 )
 {
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
@@ -99,7 +100,6 @@ imageID load_fits(
     long      bitpixl = 0;
 
     uint32_t  naxes[3];
-    imageID   ID;
 
     double    bscale;
     double    bzero;
@@ -107,6 +107,8 @@ imageID load_fits(
     long     *larray = NULL;
     //    unsigned short *sarray = NULL;
     //    long      NDR = 1; /* non-destructive reads */
+
+    imageID ID;
 
     nulval = 0;
     anynul = 0;
@@ -144,7 +146,7 @@ imageID load_fits(
                     //void fits_get_errstatus(int status, char *err_text)
                     if(status != 0)
                     {
-                        if(errcode > 0)
+                        if(errcode > 1)
                         {
                             if(tr == NBtry - 1)
                             {
@@ -163,18 +165,32 @@ imageID load_fits(
                 }
             }
         }
-
+        printf("fileOK = %d\n", fileOK);
 
         if(fileOK == 0)
         {
             if(errcode == 0)
             {
+                return RETURN_SUCCESS;
+            }
+
+            if(errcode == 1)
+            {
                 PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
                               ID_name,
                               file_name);
+                return RETURN_SUCCESS;
             }
 
             if(errcode == 2)
+            {
+                PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
+                              ID_name,
+                              file_name);
+                return RETURN_FAILURE;
+            }
+
+            if(errcode == 3)
             {
                 abort();
             }
@@ -505,7 +521,13 @@ imageID load_fits(
     list_image_ID();
 
 
-    return ID;
+    if(IDout != NULL)
+    {
+        *IDout = ID;
+    }
+
+
+    return RETURN_SUCCESS;
 }
 
 
@@ -513,17 +535,21 @@ imageID load_fits(
 
 static errno_t compute_function()
 {
+//    imageID ID;
+    errno_t ret = 0;
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    load_fits(
-        infilename,
-        outimname,
-        *FITSIOerrmode
-    );
+    ret = load_fits(
+              infilename,
+              outimname,
+              *FITSIOerrmode,
+              NULL
+          );
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 

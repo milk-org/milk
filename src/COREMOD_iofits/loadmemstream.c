@@ -160,7 +160,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
             // search CONFFITS
             char fname[STRINGMAXLEN_FULLFILENAME];
             WRITE_FULLFILENAME(fname, "./conf/shmim.%s.fits", sname);
-            ID = load_fits(fname, sname, 0);
+            load_fits(fname, sname, 0, &ID);
             if(ID == -1)
             {
                 *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
@@ -265,7 +265,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
                 if(fscanfcnt > 0)
                 {
                     {
-                        ID = load_fits(streamfname, sname, 0);
+                        load_fits(streamfname, sname, 0, &ID);
                         if(ID == -1)
                         {
                             *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
@@ -395,7 +395,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
             //printf("imLOC = %d\n", *imLOC);
             char fname[STRINGMAXLEN_FULLFILENAME];
             WRITE_FULLFILENAME(fname, "./conf/shmim.%s.fits", sname);
-            ID = load_fits(fname, sname, 0);
+            load_fits(fname, sname, 0, &ID);
             if(ID != -1)
             {
                 *imLOC = STREAM_LOAD_SOURCE_CONFFITS;
@@ -506,7 +506,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
                         SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                        "%s LOADING %s", sname, streamfname);
                         functionparameter_outlog("LOADMEMSTREAM", msg);
-                        ID = load_fits(streamfname, sname, 0);
+                        load_fits(streamfname, sname, 0, &ID);
                         if(ID != -1)
                         {
                             *imLOC = STREAM_LOAD_SOURCE_CONFNAME;

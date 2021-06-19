@@ -62,15 +62,21 @@ for(int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF)); argi++)\
 #define INSERT_STD_CLIfunction \
 static errno_t CLIfunction(void)\
 {\
-    if(CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)\
+errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);\
+    if(retval == RETURN_SUCCESS)\
     {\
         STD_FARG_LINKfunction\
         return compute_function();\
     }\
-    else\
+    if(retval == RETURN_CLICHECKARGARRAY_HELP)\
     {\
-        return CLICMD_INVALID_ARG;\
+        return RETURN_SUCCESS;\
     }\
+    if(retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)\
+    {\
+        return RETURN_SUCCESS;\
+    }\
+    return retval;\
 }
 
 
@@ -269,7 +275,7 @@ if(data.FPS_CMDCODE != 0)\
 }\
 }\
 \
-int retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);\
+errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);\
 if(retval == RETURN_CLICHECKARGARRAY_SUCCESS)\
 {\
     data.fpsptr = NULL;\
@@ -280,9 +286,14 @@ if(retval == RETURN_CLICHECKARGARRAY_HELP)\
 {\
     help_function();\
     printf("\n");\
+    return RETURN_SUCCESS;\
+}\
+if(retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)\
+{\
+return RETURN_SUCCESS;\
 }\
 \
-return CLICMD_INVALID_ARG;\
+return retval;\
 }
 
 

@@ -480,7 +480,6 @@ errno_t CLI_execute_line()
                            data.cmd[data.cmdindex].key);
                 }
                 // Execute CLI command
-
                 data.CMDerrstatus = data.cmd[data.cmdindex].fp();
 
                 if(data.CMDerrstatus != RETURN_SUCCESS)
