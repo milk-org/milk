@@ -91,7 +91,7 @@ static errno_t image_copy_shm(
 
         if(shmOK == 0)
         {
-            delete_image_ID(outshmname);
+            delete_image_ID(outshmname, DELETE_IMAGE_ERRMODE_WARNING);
             IDshm = -1;
         }
     }

@@ -508,7 +508,7 @@ errno_t CLI_execute_line()
                 {
                     printf("Deleting %s\n", calctmpimname);
                 }
-                delete_image_ID(calctmpimname);
+                delete_image_ID(calctmpimname, DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
 

@@ -569,7 +569,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     DEBUG_TRACEPOINT(" ");
 
-    delete_image_ID("_tmpc");
+    delete_image_ID("_tmpc", DELETE_IMAGE_ERRMODE_WARNING);
 
     free(t0array);
     free(arraytmpf);

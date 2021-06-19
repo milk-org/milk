@@ -6,17 +6,17 @@
 #ifndef MILK_COREMOD_IOFIT_LOADFITS_H
 #define MILK_COREMOD_IOFIT_LOADFITS_H
 
-#define LOADFITS_ERRCODE_IGNORE  0
-#define LOADFITS_ERRCODE_WARNING 1
-#define LOADFITS_ERRCODE_EXIT    2
-#define LOADFITS_ERRCODE_RETRY   3
+#define LOADFITS_ERRMODE_IGNORE  0
+#define LOADFITS_ERRMODE_WARNING 1
+#define LOADFITS_ERRMODE_ERROR   2
+#define LOADFITS_ERRMODE_EXIT    3
 
 errno_t CLIADDCMD_COREMOD_iofits__loadfits();
 
 errno_t load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
-    int         errcode,
+    int         errmode,
     imageID    *ID
 );
 

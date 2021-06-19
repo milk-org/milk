@@ -851,7 +851,7 @@ int execute_arith(const char *cmd1)
                                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                                            name1);
                         arith_image_cstmult(name1, (double) -1.0, name);
-                        delete_image_ID(name1);
+                        delete_image_ID(name1, DELETE_IMAGE_ERRMODE_WARNING);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -985,7 +985,7 @@ int execute_arith(const char *cmd1)
                                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                                            name1);
                         arith_image_pow(name1, word[highest_priority_index + 1], name);
-                        delete_image_ID(name1);
+                        delete_image_ID(name1, DELETE_IMAGE_ERRMODE_WARNING);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -1757,7 +1757,7 @@ int execute_arith(const char *cmd1)
                 }
                 if(image_ID(word[0]) != -1)
                 {
-                    delete_image_ID(word[0]);
+                    delete_image_ID(word[0], DELETE_IMAGE_ERRMODE_WARNING);
                 }
 
                 if(word_type[2] == 2)
@@ -1785,7 +1785,7 @@ int execute_arith(const char *cmd1)
             }
             if(image_ID(name) != -1)
             {
-                delete_image_ID(name);
+                delete_image_ID(name, DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
     }

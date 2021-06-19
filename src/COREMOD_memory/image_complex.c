@@ -696,7 +696,7 @@ errno_t mk_reim_from_amph(
 {
     mk_complex_from_amph(am_name, ph_name, "Ctmp", 0);
     mk_reim_from_complex("Ctmp", re_out_name, im_out_name, sharedmem);
-    delete_image_ID("Ctmp");
+    delete_image_ID("Ctmp", DELETE_IMAGE_ERRMODE_WARNING);
 
     return RETURN_SUCCESS;
 }
@@ -713,7 +713,7 @@ errno_t mk_amph_from_reim(
 {
     mk_complex_from_reim(re_name, im_name, "Ctmp", 0);
     mk_amph_from_complex("Ctmp", am_out_name, ph_out_name, sharedmem);
-    delete_image_ID("Ctmp");
+    delete_image_ID("Ctmp", DELETE_IMAGE_ERRMODE_WARNING);
 
     return RETURN_SUCCESS;
 }

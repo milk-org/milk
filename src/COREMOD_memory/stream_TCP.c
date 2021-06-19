@@ -1041,7 +1041,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
 
         if(OKim == 0)
         {
-            delete_image_ID(imgmd[0].name);
+            delete_image_ID(imgmd[0].name, DELETE_IMAGE_ERRMODE_WARNING);
             ID = -1;
         }
     }
