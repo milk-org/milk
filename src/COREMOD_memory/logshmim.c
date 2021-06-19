@@ -403,7 +403,7 @@ void *save_fits_function(
         saveFITS("tmpsavecube", tmsg->fname, 0, tmsg->fname_auxFITSheader);
 
 
-        delete_image_ID("tmpsavecube");
+        delete_image_ID("tmpsavecube", DELETE_IMAGE_ERRMODE_WARNING);
     }
 
     if(tmsg->saveascii == 1)

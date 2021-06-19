@@ -140,7 +140,7 @@ expd:      TKNUMd      { $$ = $1;        if(data.Debug>0){printf("this is a doub
 exps:    TKNVAR         {strcpy($$, $1);        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_STRING; if(data.Debug>0){printf("this is a string (new variable/image)\n");}}
 | TKIMAGE               {strcpy($$, $1);        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE; if(data.Debug>0){printf("this is a string (existing image)\n");}}
 | TKCOMMAND             {strcpy($$, $1);        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_COMMAND; if(data.Debug>0){printf("this is a string (command)\n");}}
-| TKIMAGE '=' exps    {strcpy($$, $1);        delete_image_ID($1); chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
+| TKIMAGE '=' exps    {strcpy($$, $1);        delete_image_ID($1,1); chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
 | TKNVAR '=' exps    {strcpy($$, $1);        chname_image_ID($3,$1); if(data.Debug>0){printf("changing name\n");}}
 | exps '+' exps      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_add($1, $3, calctmpimname); strcpy($$, calctmpimname); if(data.Debug>0){printf("image + image\n");}}
 | exps '+' expd      {sprintf(calctmpimname,"_tmpcalc%ld",data.calctmp_imindex); data.calctmp_imindex++; arith_image_cstadd($1,(double) $3, calctmpimname); strcpy($$, calctmpimname);  if(data.Debug>0){printf("image + double\n");}}

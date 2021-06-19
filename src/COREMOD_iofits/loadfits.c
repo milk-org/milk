@@ -44,7 +44,7 @@ static CLICMDARGDEF farg[] =
         (void **) &outimname
     },
     {
-        CLIARG_LONG, ".errcode", "FITSIO errors mode \n(0:ignore) (1:warning) (2:exit)", "1",
+        CLIARG_LONG, ".errmode", "FITSIO errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)", "1",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &FITSIOerrmode
     }
@@ -82,16 +82,16 @@ static errno_t help_function()
 
 
 
-/// errcode values :
-/// LOADFITS_ERRCODE_IGNORE  (0) print warning, do not show error messages, continue
-/// LOADFITS_ERRCODE_WARNING (1) print error, continue
-/// LOADFITS_ERRCODE_ERROR   (2) return error
-/// LOADFITS_ERRCODE_EXIT    (3) exit program at error
+/// errmode values :
+/// LOADFITS_ERRMODE_IGNORE  (0) print warning, do not show error messages, continue
+/// LOADFITS_ERRMODE_WARNING (1) print error, continue
+/// LOADFITS_ERRMODE_ERROR   (2) return error
+/// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
 errno_t load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
-    int         errcode,
+    int         errmode,
     imageID   * IDout
 )
 {
@@ -137,7 +137,7 @@ errno_t load_fits(
 
                 if(status != 0)
                 {
-                    if(errcode > 0)
+                    if(errmode > 0)
                     {
 
                         printf("attempt # %d failed\n", tr);
@@ -146,11 +146,11 @@ errno_t load_fits(
                     //void fits_get_errstatus(int status, char *err_text)
                     if(status != 0)
                     {
-                        if(errcode > 1)
+                        if(errmode > 1)
                         {
                             if(tr == NBtry - 1)
                             {
-                                FITSIO_CHECK_ERROR(status, errcode, "can't load %s (tried %d times)", file_name, NBtry);
+                                FITSIO_CHECK_ERROR(status, errmode, "can't load %s (tried %d times)", file_name, NBtry);
                             }
                         }
                         if(tr != NBtry - 1) // don't wait on last try
@@ -169,12 +169,12 @@ errno_t load_fits(
 
         if(fileOK == 0)
         {
-            if(errcode == 0)
+            if(errmode == 0)
             {
                 return RETURN_SUCCESS;
             }
 
-            if(errcode == 1)
+            if(errmode == 1)
             {
                 PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
                               ID_name,
@@ -182,7 +182,7 @@ errno_t load_fits(
                 return RETURN_SUCCESS;
             }
 
-            if(errcode == 2)
+            if(errmode == 2)
             {
                 PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
                               ID_name,
@@ -190,7 +190,7 @@ errno_t load_fits(
                 return RETURN_FAILURE;
             }
 
-            if(errcode == 3)
+            if(errmode == 3)
             {
                 abort();
             }
@@ -214,7 +214,7 @@ errno_t load_fits(
     {
         int status = 0;
         fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
-        FITSIO_CHECK_ERROR(status, errcode, "fits_get_hdrspace error on %s",
+        FITSIO_CHECK_ERROR(status, errmode, "fits_get_hdrspace error on %s",
                            file_name);
     }
 
@@ -223,7 +223,7 @@ errno_t load_fits(
         int status = 0;
         fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment,
                       &status);
-        FITSIO_CHECK_ERROR(status, errcode, "File %s has no NAXIS", file_name);
+        FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS", file_name);
     }
     printf("naxis = %ld\n", naxis);
     DEBUG_TRACEPOINT("naxis = %ld", naxis);
@@ -236,14 +236,14 @@ errno_t load_fits(
         {
             int status = 0;
             fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "File %s has no NAXIS%ld", file_name, i);
+            FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS%ld", file_name, i);
         }
     }
 
     {
         int status = 0;
         fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, comment, &status);
-        FITSIO_CHECK_ERROR(status, errcode, "File %s has no BITPIX", file_name);
+        FITSIO_CHECK_ERROR(status, errmode, "File %s has no BITPIX", file_name);
     }
 
 
@@ -271,7 +271,7 @@ errno_t load_fits(
     {
         int status = 0;
         fits_set_bscale(fptr, bscale, bzero, &status);
-        FITSIO_CHECK_ERROR(status, errcode, "bscake set errror");
+        FITSIO_CHECK_ERROR(status, errmode, "bscake set errror");
     }
 
 
@@ -309,7 +309,7 @@ errno_t load_fits(
             int status = 0;
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
                           data.image[ID].array.F, &anynul, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
     }
 
@@ -329,7 +329,7 @@ errno_t load_fits(
             int status = 0;
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
                           data.image[ID].array.D, &anynul, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
     }
 
@@ -346,7 +346,7 @@ errno_t load_fits(
             int status = 0;
             fits_read_img(fptr, 20, fpixel, nelements, &nulval, data.image[ID].array.UI16,
                           &anynul, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
     }
 
@@ -366,7 +366,7 @@ errno_t load_fits(
             int status = 0;
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
                           &anynul, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
 
         bzero = 0.0;
@@ -395,7 +395,7 @@ errno_t load_fits(
             int status = 0;
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray,
                           &anynul, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
 
         bzero = 0.0;
@@ -426,7 +426,7 @@ errno_t load_fits(
             int status = 0;
             fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, barray,
                           &anynul, &status);
-            FITSIO_CHECK_ERROR(status, errcode, "fits_read_img bitpix=%d", bitpix);
+            FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
 
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
@@ -514,7 +514,7 @@ errno_t load_fits(
     {
         int status = 0;
         fits_close_file(fptr, &status);
-        FITSIO_CHECK_ERROR(status, errcode, "fits_close_file error in image %s",
+        FITSIO_CHECK_ERROR(status, errmode, "fits_close_file error in image %s",
                            file_name);
     }
 

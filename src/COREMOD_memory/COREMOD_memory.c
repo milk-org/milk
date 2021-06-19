@@ -38,6 +38,7 @@
 #include "create_image.h"
 #include "create_variable.h"
 #include "delete_image.h"
+#include "delete_sharedmem_image.h"
 #include "image_ID.h"
 #include "image_complex.h"
 #include "image_copy.h"
@@ -116,7 +117,6 @@ static errno_t init_module_CLI()
 
     clearall_addCLIcmd();
     list_image_addCLIcmd();
-    delete_image_addCLIcmd();
 
     //KEYWORDS
     image_keyword_addCLIcmd();
@@ -138,6 +138,11 @@ static errno_t init_module_CLI()
     // COPY IMAGE
     image_copy_addCLIcmd();
     CLIADDCMD_COREMOD_memory__image_copy_shm();
+
+    // DELETE IMAGE
+    CLIADDCMD_COREMOD_memory__delete_image();
+    CLIADDCMD_COREMOD_memory__delete_sharedmem_image();
+
 
     list_variable_addCLIcmd();
 

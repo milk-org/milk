@@ -322,7 +322,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         }
 
         save_fits("outpixsl", IDout_pixslice_fname);
-        delete_image_ID("outpixsl");
+        delete_image_ID("outpixsl", DELETE_IMAGE_ERRMODE_WARNING);
     }
 
 

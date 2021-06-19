@@ -270,7 +270,7 @@ imageID COREMOD_MEMORY_streamAve(
         usleep(dtus);
     }
 
-    delete_image_ID("_streamAve_tmp");
+    delete_image_ID("_streamAve_tmp", DELETE_IMAGE_ERRMODE_WARNING);
 
     return IDout;
 }

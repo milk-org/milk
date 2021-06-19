@@ -14,6 +14,7 @@ set(SOURCEFILES
     create_image.c
     create_variable.c
     delete_image.c
+    delete_sharedmem_image.c
     delete_variable.c
     fps_create.c
     fps_ID.c
@@ -65,6 +66,7 @@ set(INCLUDEFILES
     create_image.h
     create_variable.h
     delete_image.h
+    delete_sharedmem_image.h
     delete_variable.h
     fps_create.h
     fps_ID.h
