@@ -57,7 +57,7 @@ errno_t clearall()
     {
         if(data.image[ID].used == 1)
         {
-            delete_image_ID(data.image[ID].name);
+            delete_image_ID(data.image[ID].name, DELETE_IMAGE_ERRMODE_WARNING);
         }
     }
 

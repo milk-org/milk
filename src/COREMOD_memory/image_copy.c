@@ -223,7 +223,7 @@ imageID copy_image_ID(
 
         if(newim == 1)
         {
-            delete_image_ID(newname);
+            delete_image_ID(newname, DELETE_IMAGE_ERRMODE_WARNING);
             IDout = -1;
         }
     }
@@ -433,7 +433,7 @@ errno_t COREMOD_MEMORY_cp2shm(
 
         if(shmOK == 0)
         {
-            delete_image_ID(IDshmname);
+            delete_image_ID(IDshmname, DELETE_IMAGE_ERRMODE_WARNING);
             IDshm = -1;
         }
     }
