@@ -13,10 +13,11 @@
 
 errno_t CLIADDCMD_COREMOD_iofits__loadfits();
 
-imageID load_fits(
+errno_t load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
-    int         errcode
+    int         errcode,
+    imageID    *ID
 );
 
 #endif

@@ -54,7 +54,7 @@ if ((status != 0) && (errmode !=0)) { \
         "%c[%d;%dmFITSIO error %d [%s, %s, %d]: %s%c[%d;m\n\a", \
         (char) 27, 1, 31, status, __FILE__, __func__, __LINE__, errstr, (char) 27, 0); \
     PRINT_ERROR(__VA_ARGS__); \
-    if(errmode > 1) { \
+    if(errmode > 2) { \
         abort(); \
         } \
     } \

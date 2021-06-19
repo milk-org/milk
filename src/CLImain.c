@@ -67,6 +67,10 @@ int main(
         printf("        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===\n");
 #endif
         printf(STYLE_NO_BOLD);
+        if(data.errorexit == 1)
+        {
+            printf("        EXIT-ON-ERROR mode\n");
+        }
     }
 
     strcpy(data.package_name, PACKAGE_NAME);
