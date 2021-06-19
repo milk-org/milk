@@ -117,9 +117,6 @@ errno_t CLIADDCMD_COREMOD_memory__delete_image()
 
 
 
-
-
-
 /* deletes an ID */
 errno_t delete_image_ID(
     const char *__restrict__ imname,
@@ -132,7 +129,34 @@ errno_t delete_image_ID(
 
     ID = image_ID(imname);
 
-    if(ID != -1)
+    if(ID == -1)
+    {
+        if(errmode == 0)
+        {
+            return RETURN_SUCCESS;
+        }
+
+        if(errmode == 1)
+        {
+            PRINT_WARNING("Image \"%s\" does not exist",
+                          imname);
+            return RETURN_SUCCESS;
+        }
+
+        if(errmode == 2)
+        {
+            PRINT_WARNING("Image \"%s\" does not exist",
+                          imname);
+            return RETURN_FAILURE;
+        }
+
+        if(errmode == 3)
+        {
+            abort();
+        }
+        return -1;
+    }
+    else
     {
         data.image[ID].used = 0;
 
@@ -262,12 +286,7 @@ errno_t delete_image_ID(
         /*      free(data.image[ID].size);*/
         //      data.image[ID].md[0].last_access = 0;
     }
-    else
-    {
-        fprintf(stderr,
-                "%c[%d;%dm WARNING: image %s does not exist [ %s  %s  %d ] %c[%d;m\n",
-                (char) 27, 1, 31, imname, __FILE__, __func__, __LINE__, (char) 27, 0);
-    }
+
 
     if(data.MEM_MONITOR == 1)
     {
