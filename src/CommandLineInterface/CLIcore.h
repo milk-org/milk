@@ -324,9 +324,22 @@ typedef struct
 } VARIABLE;
 
 
+/**
+ * @brief Test point structure
+ *
+ */
+typedef struct
+{
+    uint64_t        loopcnt;
+    int             line;
+    char            file[STRINGMAXLEN_FULLFILENAME];
+    char            func[STRINGMAXLEN_FUNCTIONNAME];
+    char            msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+    struct timespec time;
+} CODETESTPOINT;
 
-
-
+// number of entries stored in testpoint trace array
+#define CODETESTPOINTARRAY_NBCNT  10000
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
@@ -365,12 +378,24 @@ typedef struct
     // =================================================
     // can be used to trace program execution for runtime profiling and debugging
 
-    int    testpoint_line;
+    // current or last test point
+    CODETESTPOINT testpoint;
+
+    // code test point array, circular buffer
+    CODETESTPOINT *testpointarray;
+
+    // Loop counter. Starts at 0, increments when reaching end of circular buffer
+    uint64_t testpointloopcnt;
+    // Index counter, indicates position of last written testpoint in circ buffer
+    uint64_t testpointcnt;
+
+
+    /*int    testpoint_line;
     char   testpoint_file[STRINGMAXLEN_FULLFILENAME];
     char   testpoint_func[STRINGMAXLEN_FUNCTIONNAME];
     char   testpoint_msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
     struct timespec testpoint_time;
-
+    */
 
 
 
