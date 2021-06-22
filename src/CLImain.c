@@ -55,6 +55,21 @@ int main(
         data.errorexit = 0;
     }
 
+
+    // Allocate data.testpointarray
+#ifndef NDEBUG
+    printf("        [ENABLED]  Code test point tracing\n");
+// allocate circular buffer memory
+    data.testpointarray = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
+// initialize loop counter
+// loop counter increments when reaching end of circular buffer
+    data.testpointloopcnt = 0;
+// set current entry index to zero
+    data.testpointcnt = 0;
+#endif
+
+
+
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
     snprintf(versionstring, STRINGMAXLEN_VERSIONSTRING, "%d.%02d.%02d%s",
              VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_OPTION);

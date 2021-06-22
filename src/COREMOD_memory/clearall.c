@@ -87,7 +87,6 @@ errno_t clearall()
     }
 
 
-
     return RETURN_SUCCESS;
 }
 

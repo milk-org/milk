@@ -970,18 +970,14 @@ errno_t runCLI(
 
     DEBUG_TRACEPOINT("images and variables cleared");
 
+
     runCLI_free();
-
-    DEBUG_TRACEPOINT("memory freed");
-
 
 #if ( RL_READLINE_VERSION > 0x602 )
     rl_clear_history();
 #endif
 
     rl_callback_handler_remove();
-
-    DEBUG_TRACEPOINT("exit from runCLI function");
 
     return RETURN_SUCCESS;
 }
@@ -1263,12 +1259,14 @@ static void runCLI_free()
         free(data.fpsarray);
     }
 
-
-
 #endif
     //  free(data.cmd);
     DEBUG_TRACEPOINT("free data.rndgen");
     gsl_rng_free(data.rndgen);
+
+#ifndef NDEBUG
+    free(data.testpointarray);
+#endif
 }
 
 

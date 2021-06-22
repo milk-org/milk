@@ -59,10 +59,10 @@ errno_t write_process_log()
                 1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
                 uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
 
-        fprintf(fplog, " %s", data.testpoint_file);
-        fprintf(fplog, " %s", data.testpoint_func);
-        fprintf(fplog, " %4d", data.testpoint_line);
-        fprintf(fplog, "  %s\n", data.testpoint_msg);
+        fprintf(fplog, " %s", data.testpoint.file);
+        fprintf(fplog, " %s", data.testpoint.func);
+        fprintf(fplog, " %4d", data.testpoint.line);
+        fprintf(fplog, "  %s\n", data.testpoint.msg);
 
         logcnt++;
 
@@ -178,10 +178,10 @@ errno_t write_process_exit_report(
 
     printf("EXIT CONDITION < %s >: See report in file %s\n", errortypestring,
            fname);
-    printf("    File    : %s\n", data.testpoint_file);
-    printf("    Function: %s\n", data.testpoint_func);
-    printf("    Line    : %d\n", data.testpoint_line);
-    printf("    Message : %s\n", data.testpoint_msg);
+    printf("    File    : %s\n", data.testpoint.file);
+    printf("    Function: %s\n", data.testpoint.func);
+    printf("    Line    : %d\n", data.testpoint.line);
+    printf("    Message : %s\n", data.testpoint.msg);
     fflush(stdout);
 
     struct tm *uttime;
@@ -203,20 +203,20 @@ errno_t write_process_exit_report(
                        uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
 
         fprintf_stdout(fpexit, "Last encountered test point\n");
-        tvsec1 = data.testpoint_time.tv_sec;
+        tvsec1 = data.testpoint.time.tv_sec;
         uttime = gmtime(&tvsec1);
         fprintf_stdout(fpexit, "    Time    : %04d%02d%02dT%02d%02d%02d.%09ld\n",
                        1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
-                       uttime->tm_min,  uttime->tm_sec, data.testpoint_time.tv_nsec);
+                       uttime->tm_min,  uttime->tm_sec, data.testpoint.time.tv_nsec);
 
         double timediff = 1.0 * (tvsec0 - tvsec1) + 1.0e-9 * (tnow.tv_nsec -
-                          data.testpoint_time.tv_nsec);
+                          data.testpoint.time.tv_nsec);
         fprintf_stdout(fpexit, "              %.9f sec ago\n", timediff);
 
-        fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint_file);
-        fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint_func);
-        fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint_line);
-        fprintf_stdout(fpexit, "    Message : %s\n", data.testpoint_msg);
+        fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint.file);
+        fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint.func);
+        fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint.line);
+        fprintf_stdout(fpexit, "    Message : %s\n", data.testpoint.msg);
         fprintf_stdout(fpexit, "\n");
 
         // Check open file descriptors

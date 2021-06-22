@@ -111,7 +111,6 @@ void CLI_data_init()
 
 
 
-
     // Allocate data.fps
     data.fpsarray = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
 

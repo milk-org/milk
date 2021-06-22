@@ -18,6 +18,7 @@
 
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "timeutils.h"
 
 
 #define CLICOMPLETIONMODE_COMMANDS 0
@@ -274,7 +275,43 @@ char **CLI_completion(
 
 
 
+static errno_t write_tracedebugfile()
+{
+    char fname[STRINGMAXLEN_FILENAME];
+    WRITE_FILENAME(
+        fname,
+        "milk-codetracepoint.log"
+    );
 
+    FILE * fp = fopen(fname, "w");
+    if(fp != NULL)
+    {
+        for(uint64_t i=0; i<CODETESTPOINTARRAY_NBCNT; i++)
+        {
+            int j = (i + data.testpointcnt) % CODETESTPOINTARRAY_NBCNT;
+            uint64_t index = data.testpointarray[j].loopcnt*CODETESTPOINTARRAY_NBCNT+j;
+
+            if(data.testpointarray[j].line != 0)
+            {
+                char timestring[20];
+                mkUTtimestring_nanosec(timestring, data.testpointarray[j].time);
+                fprintf(
+                    fp,
+                    "%12ld %s %20s %20s %8d %s\n",
+                    index,
+                    timestring,
+                    data.testpointarray[j].file,
+                    data.testpointarray[j].func,
+                    data.testpointarray[j].line,
+                    data.testpointarray[j].msg
+                );
+            }
+        }
+        fclose(fp);
+    }
+
+    return RETURN_SUCCESS;
+}
 
 
 
@@ -486,11 +523,16 @@ errno_t CLI_execute_line()
                 {
                     // CLI function returns error
                     // print function key name and error code
-                    printf("\n%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n", (char) 27, 1, 31, (char) 27, 0, data.cmd[data.cmdindex].key, data.CMDerrstatus);
+                    printf("\n%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n",
+                           (char) 27, 1, 31, (char) 27, 0, data.cmd[data.cmdindex].key, data.CMDerrstatus);
+
                     if(data.errorexit == 1)
                     {
                         printf("%c[%d;%dm -> EXIT CLI %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                         data.exitcode = data.CMDerrstatus;
+
+                        // output trace debug
+                        write_tracedebugfile();
                     }
                 }
 

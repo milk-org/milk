@@ -510,7 +510,7 @@ errno_t CLI_checkarg_array(
         {
             int cmdi = data.cmdindex;
 
-            DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
+            DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s", arg, CLIarg, argtypestring,
                                    fpscliarg[arg].fpstag);
 
             //printf("     arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
@@ -597,14 +597,14 @@ errno_t CLI_checkarg_array(
         else
         {
             DEBUG_TRACEPOINT("argument not part of CLI");
-            DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s\n", arg, argtypestring,
+            DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s", arg, argtypestring,
                                    fpscliarg[arg].fpstag);
         }
     }
 
 
 
-    DEBUG_TRACEPOINT("Number of arg error(s): %d / %d\n", nberr, CLIarg);
+    DEBUG_TRACEPOINT("Number of arg error(s): %d / %d", nberr, CLIarg);
 
     if(nberr == 0)
     {
