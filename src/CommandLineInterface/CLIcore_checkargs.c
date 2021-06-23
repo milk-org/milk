@@ -25,6 +25,8 @@ static int CLI_checkarg0(
     int errmsg
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int rval; // 0 if OK, 1 if not, 2: do not process other args
     imageID IDv;
 
@@ -36,6 +38,7 @@ static int CLI_checkarg0(
         help_command(data.cmdargtoken[0].val.string);
         sprintf(data.cmdargtoken[argnum].val.string, " "); // avoid re-running help
         functionhelp_called = 1;
+        DEBUG_TRACE_FEXIT();
         return 1;
     }
 
@@ -335,6 +338,7 @@ static int CLI_checkarg0(
         rval = 1;
     }
 
+    DEBUG_TRACE_FEXIT();
     return rval;
 }
 
@@ -346,6 +350,8 @@ int CLI_checkarg(
     int argtype
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int rval;
 
     if(argnum == 1)
@@ -362,6 +368,7 @@ int CLI_checkarg(
         rval = 1;
     }
 
+    DEBUG_TRACE_FEXIT();
     return rval;
 }
 
@@ -373,6 +380,8 @@ int CLI_checkarg_noerrmsg(
     int argtype
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int rval;
 
     if(argnum == 1)
@@ -388,6 +397,8 @@ int CLI_checkarg_noerrmsg(
     {
         rval = 1;
     }
+
+    DEBUG_TRACE_FEXIT();
     return rval;
 }
 
@@ -409,6 +420,8 @@ errno_t CLI_checkarg_array(
     int nbarg
 )
 {
+    DEBUG_TRACE_FSTART();
+
     argcheck_process_flag = 1; // initialize arg check
 
 
@@ -431,6 +444,7 @@ errno_t CLI_checkarg_array(
         if(data.cmdargtoken[2].type == CLIARG_MISSING)
         {
             printf("Setting arg %s : input missing\n", fpscliarg[argindexmatch].fpstag);
+            DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
 
@@ -464,6 +478,7 @@ errno_t CLI_checkarg_array(
         else
         {
             printf("Setting arg %s : Wrong type\n", fpscliarg[argindexmatch].fpstag);
+            DEBUG_TRACE_FEXIT();
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
 
@@ -471,6 +486,7 @@ errno_t CLI_checkarg_array(
         printf("Argument %s value updated\n", fpscliarg[argindexmatch].fpstag);
 
         //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
+        DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
     }
 
@@ -511,7 +527,7 @@ errno_t CLI_checkarg_array(
             int cmdi = data.cmdindex;
 
             DEBUG_TRACEPOINT("  arg %d  CLI %2d  [%7s]  %s", arg, CLIarg, argtypestring,
-                                   fpscliarg[arg].fpstag);
+                             fpscliarg[arg].fpstag);
 
             //printf("     arg %d  CLI %2d  [%7s]  %s\n", arg, CLIarg, argtypestring,
             //       fpscliarg[arg].fpstag);//TEST
@@ -588,6 +604,7 @@ errno_t CLI_checkarg_array(
             {
                 if(functionhelp_called == 1)
                 {
+                    DEBUG_TRACE_FEXIT();
                     return RETURN_CLICHECKARGARRAY_HELP;
                 }
                 nberr ++;
@@ -598,7 +615,7 @@ errno_t CLI_checkarg_array(
         {
             DEBUG_TRACEPOINT("argument not part of CLI");
             DEBUG_TRACEPOINT("  arg %d  IGNORED [%7s]  %s", arg, argtypestring,
-                                   fpscliarg[arg].fpstag);
+                             fpscliarg[arg].fpstag);
         }
     }
 
@@ -608,10 +625,12 @@ errno_t CLI_checkarg_array(
 
     if(nberr == 0)
     {
+        DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_SUCCESS;
     }
     else
     {
+        DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_FAILURE;
     }
 }
@@ -633,6 +652,8 @@ int CLIargs_to_FPSparams_setval(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int NBarg_processed = 0;
 
     for(int arg = 0; arg < nbarg; arg++)
@@ -676,6 +697,7 @@ int CLIargs_to_FPSparams_setval(
         }
     }
 
+    DEBUG_TRACE_FEXIT();
     return NBarg_processed;
 }
 
@@ -686,6 +708,8 @@ int CMDargs_to_FPSparams_create(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int NBarg_processed = 0;
 
     for(int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
@@ -743,6 +767,7 @@ int CMDargs_to_FPSparams_create(
         }
     }
 
+    DEBUG_TRACE_FEXIT();
     return NBarg_processed;
 }
 
@@ -753,6 +778,8 @@ void *get_farg_ptr(
     char *tag
 )
 {
+    DEBUG_TRACE_FSTART();
+
     void *ptr = NULL;
 
     DEBUG_TRACEPOINT("looking for pointer %s", tag);
@@ -773,5 +800,6 @@ void *get_farg_ptr(
         }
     }
 
+    DEBUG_TRACE_FEXIT();
     return ptr;
 }

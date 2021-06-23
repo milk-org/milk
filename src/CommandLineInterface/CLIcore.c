@@ -707,6 +707,7 @@ errno_t runCLI(
         {
             perror("open");
             printf("File name : %s\n", data.fifoname);
+            DEBUG_TRACE_FEXIT();
             return EXIT_FAILURE;
         }
         if(fifofd > fdmax)
@@ -829,8 +830,6 @@ errno_t runCLI(
         DEBUG_TRACEPOINT("loop entry");
         while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
-            DEBUG_TRACEPOINT("processing input command");
-
             if (data.signal_INT == 1)
             {
                 // stop CLI input loop
@@ -872,6 +871,7 @@ errno_t runCLI(
                 else
                 {
                     perror("select");
+                    DEBUG_TRACE_FEXIT();
                     return EXIT_FAILURE;
                 }
             }
@@ -902,6 +902,7 @@ errno_t runCLI(
                             else
                             {
                                 perror("read");
+                                DEBUG_TRACE_FEXIT();
                                 return EXIT_FAILURE;
                             }
                         }
@@ -951,10 +952,8 @@ errno_t runCLI(
                 {
                     DEBUG_TRACEPOINT("readline callback");
                     rl_callback_read_char();
-                    DEBUG_TRACEPOINT(" ");
                 }
             }
-            DEBUG_TRACEPOINT(" ");
 
             if(data.exitcode != 0)
             {
@@ -963,7 +962,6 @@ errno_t runCLI(
 
         }
         data.CLIexecuteCMDready = 0;
-        DEBUG_TRACEPOINT(" ");
 
         //TEST data.CLIloopON = 0;
     }

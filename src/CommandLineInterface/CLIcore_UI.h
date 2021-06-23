@@ -26,5 +26,6 @@ char **CLI_completion(const char *, int, int);
 
 errno_t CLI_execute_line();
 
+errno_t write_tracedebugfile();
 
 #endif
