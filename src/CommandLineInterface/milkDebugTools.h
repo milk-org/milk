@@ -62,7 +62,7 @@ if(errormsg_slen >= STRINGMAXLEN_FUNCERRORMSG) {                   \
     printf("snprintf in FUNC_RETURN_FAILURE: string truncation");  \
     abort();                                                       \
 }                                                                  \
-DEBUG_TRACEPOINT("FERR %s", errmsg_funcretfailure); \
+DEBUG_TRACEPOINT("%c[%d;%dm FERR %c[%dm %s", (char) 27, 1, 31, (char) 27, 0, errmsg_funcretfailure); \
 printf("\n");                                                      \
 printf("%c[%d;%dm ERROR %c[%dm [ %s %s %d ]\n", (char) 27, 1, 31, (char) 27, 0, __FILE__, __func__, __LINE__);     \
 printf("%c[%d;%dm ***** %c[%d;m %s\n", (char) 27, 1, 31, (char) 27, 0, data.testpoint.msg); \
