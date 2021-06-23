@@ -249,6 +249,8 @@ static errno_t create_ushort_image_shared__cli() // default precision
 
 static errno_t create_3Dimage_float()
 {
+    DEBUG_TRACE_FSTART();
+
     uint32_t *imsize;
 
     // CHECK ARGS
@@ -264,6 +266,7 @@ static errno_t create_3Dimage_float()
 
     free(imsize);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -341,6 +344,8 @@ imageID create_image_ID(
     int         CBsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID;
     long    i;
 
@@ -410,6 +415,7 @@ imageID create_image_ID(
         list_image_ID_ncurses();
     }
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -421,6 +427,8 @@ imageID create_1Dimage_ID(
     uint32_t    xsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 1;
     uint32_t naxes[1];
@@ -438,6 +446,7 @@ imageID create_1Dimage_ID(
                              data.NBKEYWORD_DFT, 0);    // double precision
     }
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -448,6 +457,8 @@ imageID create_1DCimage_ID(
     uint32_t    xsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 1;
     uint32_t naxes[1];
@@ -465,6 +476,7 @@ imageID create_1DCimage_ID(
                              data.SHARED_DFT, data.NBKEYWORD_DFT, 0);    // double precision
     }
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -476,6 +488,8 @@ imageID create_2Dimage_ID(
     uint32_t    ysize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 2;
     uint32_t naxes[2];
@@ -501,6 +515,7 @@ imageID create_2Dimage_ID(
                              data.NBKEYWORD_DFT, 0); // single precision
     }
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -513,6 +528,8 @@ imageID create_2Dimage_ID_double(
     uint32_t    ysize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 2;
     uint32_t naxes[2];
@@ -523,6 +540,7 @@ imageID create_2Dimage_ID_double(
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
                          data.NBKEYWORD_DFT, 0);
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -534,6 +552,8 @@ imageID create_2DCimage_ID(
     uint32_t    ysize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 2;
     uint32_t naxes[2];
@@ -552,6 +572,7 @@ imageID create_2DCimage_ID(
                              data.SHARED_DFT, data.NBKEYWORD_DFT, 0);    // double precision
     }
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -564,6 +585,8 @@ imageID create_2DCimage_ID_double(
     uint32_t       ysize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 2;
     uint32_t naxes[2];
@@ -574,6 +597,7 @@ imageID create_2DCimage_ID_double(
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
                          data.SHARED_DFT, data.NBKEYWORD_DFT, 0); // double precision
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -587,6 +611,8 @@ imageID create_3Dimage_ID_float(
     uint32_t zsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 3;
     uint32_t naxes[3];
@@ -604,6 +630,7 @@ imageID create_3Dimage_ID_float(
     //  printf("IMAGE CREATED WITH ID = %ld\n",ID);
     //  fflush(stdout);
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -616,6 +643,8 @@ imageID create_3Dimage_ID_double(
     uint32_t zsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID;
     long naxis = 3;
     uint32_t naxes[3];
@@ -627,6 +656,7 @@ imageID create_3Dimage_ID_double(
     ID = create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
                          data.NBKEYWORD_DFT, 0); // double precision
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -640,6 +670,8 @@ imageID create_3Dimage_ID(
     uint32_t zsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 3;
     uint32_t *naxes;
@@ -664,6 +696,7 @@ imageID create_3Dimage_ID(
 
     free(naxes);
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -676,6 +709,8 @@ imageID create_3DCimage_ID(
     uint32_t zsize
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID = -1;
     long naxis = 3;
     uint32_t *naxes;
@@ -700,6 +735,7 @@ imageID create_3DCimage_ID(
 
     free(naxes);
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 

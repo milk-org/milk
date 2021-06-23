@@ -95,6 +95,8 @@ errno_t load_fits(
     imageID   * IDout
 )
 {
+    DEBUG_TRACE_FSTART();
+
     fitsfile *fptr = NULL;       /* pointer to the FITS file; defined in fitsio.h */
     int       nulval, anynul;
     long      bitpixl = 0;
@@ -171,6 +173,7 @@ errno_t load_fits(
         {
             if(errmode == 0)
             {
+                DEBUG_TRACE_FEXIT();
                 return RETURN_SUCCESS;
             }
 
@@ -179,6 +182,7 @@ errno_t load_fits(
                 PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
                               ID_name,
                               file_name);
+                DEBUG_TRACE_FEXIT();
                 return RETURN_SUCCESS;
             }
 
@@ -187,6 +191,7 @@ errno_t load_fits(
                 PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
                               ID_name,
                               file_name);
+                DEBUG_TRACE_FEXIT();
                 return RETURN_FAILURE;
             }
 
@@ -194,6 +199,7 @@ errno_t load_fits(
             {
                 abort();
             }
+            DEBUG_TRACE_FEXIT();
             return -1;
         }
     }
@@ -526,8 +532,9 @@ errno_t load_fits(
         *IDout = ID;
     }
 
-    DEBUG_TRACEPOINT("FOUT IDout %ld", *IDout);
+    DEBUG_TRACEPOINT("FOUT IDout %ld", ID);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -536,7 +543,6 @@ errno_t load_fits(
 
 static errno_t compute_function()
 {
-//    imageID ID;
     errno_t ret = 0;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

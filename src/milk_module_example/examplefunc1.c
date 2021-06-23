@@ -74,6 +74,8 @@ static errno_t example_compute_2Dimage_total(
     IMGID img,
     double scalingcoeff)
 {
+    DEBUG_TRACE_FSTART();
+
     resolveIMGID(&img, ERRMODE_ABORT);
 
     uint_fast32_t xsize = img.md->size[0];
@@ -89,6 +91,7 @@ static errno_t example_compute_2Dimage_total(
 
     printf("image total = %lf, scaling coeff %lf\n", total, scalingcoeff);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -98,10 +101,14 @@ static errno_t example_compute_2Dimage_total(
 // Always local to this translation unit
 static errno_t compute_function()
 {
+    DEBUG_TRACE_FSTART();
+
     example_compute_2Dimage_total(
         makeIMGID(inimname),
         *scoeff
     );
+
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 

@@ -278,13 +278,18 @@ char **CLI_completion(
 
 
 
-static errno_t write_tracedebugfile()
+errno_t write_tracedebugfile()
 {
+    pid_t thisPID = getpid();
+
     char fname[STRINGMAXLEN_FILENAME];
     WRITE_FILENAME(
         fname,
-        "milk-codetracepoint.log"
+        "milk-codetracepoint.%05d.log",
+        thisPID
     );
+
+    printf("Writing output trace to file %s\n", fname);
 
     FILE * fp = fopen(fname, "w");
     if(fp != NULL)
@@ -338,6 +343,8 @@ static errno_t write_tracedebugfile()
 
 errno_t CLI_execute_line()
 {
+    DEBUG_TRACE_FSTART();
+
     char   *cmdargstring;
     char    str[200];
     FILE   *fp;
@@ -592,5 +599,6 @@ errno_t CLI_execute_line()
 
     free(thetime);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
