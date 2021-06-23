@@ -324,6 +324,15 @@ typedef struct
 } VARIABLE;
 
 
+
+
+// CODE EXECUTION TRACING
+
+// maximum number of functions in stack
+#define MAXNB_FUNCSTACK  100
+// maximum string len per function
+#define STRINGMAXLEN_FUNCSTAK_FUNCNAME 100
+
 /**
  * @brief Test point structure
  *
@@ -334,7 +343,11 @@ typedef struct
     int             line;
     char            file[STRINGMAXLEN_FULLFILENAME];
     char            func[STRINGMAXLEN_FUNCTIONNAME];
-    char            msg[STRINGMAXLEN_FUNCTIONARGS]; // function arguments
+
+    int             funclevel;
+    char            funcstack[MAXNB_FUNCSTACK][STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+
+    char            msg[STRINGMAXLEN_FUNCTIONARGS]; // user message
     struct timespec time;
 } CODETESTPOINT;
 
@@ -383,6 +396,7 @@ typedef struct
 
     // code test point array, circular buffer
     CODETESTPOINT *testpointarray;
+    int testpointarrayinit; // toggles to 1 when mem allocated
 
     // Loop counter. Starts at 0, increments when reaching end of circular buffer
     uint64_t testpointloopcnt;

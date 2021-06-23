@@ -137,6 +137,38 @@ C_ERRNO = 0; \
 
 
 
+
+
+
+
+
+// Enter function
+#if defined NDEBUG
+#define DEBUG_TRACE_FSTART(...)
+#else
+#define DEBUG_TRACE_FSTART(...) do { \
+if(data.testpoint.funclevel < MAXNB_FUNCSTACK) { \
+strncpy(data.testpoint.funcstack[data.testpoint.funclevel], __func__, STRINGMAXLEN_FUNCSTAK_FUNCNAME-1);\
+}\
+data.testpoint.funclevel++; \
+} while(0)
+#endif
+
+// Exit function
+#if defined NDEBUG
+#define DEBUG_TRACE_FEXIT(...)
+#else
+#define DEBUG_TRACE_FEXIT(...) do { \
+if(data.testpoint.funclevel>0) {\
+data.testpoint.funclevel--; \
+}\
+} while(0)
+#endif
+
+
+
+
+
 /**
  * @ingroup debugmacro
  * @brief register trace point
@@ -175,14 +207,27 @@ if(slen >= STRINGMAXLEN_FUNCTIONARGS) {                                    \
     abort();                                                               \
 }                                                                          \
 data.testpoint.loopcnt = data.testpointloopcnt;                            \
+if(data.testpointarrayinit == 1) {                                         \
 memcpy(&data.testpointarray[data.testpointcnt], &data.testpoint, sizeof(CODETESTPOINT));\
 data.testpointcnt++;                                                       \
 if(data.testpointcnt == CODETESTPOINTARRAY_NBCNT) {                        \
 data.testpointcnt = 0;                                                     \
 data.testpointloopcnt++;                                                   \
 }\
+}\
 } while(0)
 #endif
+
+
+
+
+
+
+
+
+
+
+
 
 
 

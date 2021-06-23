@@ -275,6 +275,9 @@ char **CLI_completion(
 
 
 
+
+
+
 static errno_t write_tracedebugfile()
 {
     char fname[STRINGMAXLEN_FILENAME];
@@ -295,16 +298,34 @@ static errno_t write_tracedebugfile()
             {
                 char timestring[20];
                 mkUTtimestring_nanosec(timestring, data.testpointarray[j].time);
+
+                // extract last word
+                char str[STRINGMAXLEN_FULLFILENAME];
+                strcpy(str, data.testpointarray[j].file);
+                char *lastword = strrchr(str, '/') + 1;
+
+
                 fprintf(
                     fp,
-                    "%12ld %s %20s %20s %8d %s\n",
+                    "T %6ld %s %-20s %-20s %6d  %s\n",
                     index,
                     timestring,
-                    data.testpointarray[j].file,
+                    lastword,
                     data.testpointarray[j].func,
                     data.testpointarray[j].line,
                     data.testpointarray[j].msg
                 );
+                fprintf(
+                    fp,
+                    "       FTRACE %d ", data.testpointarray[j].funclevel
+                );
+                for(int level = 0; level < data.testpointarray[j].funclevel; level++)
+                {
+                    fprintf(fp, " >> %s", data.testpointarray[j].funcstack[level]);
+                }
+                fprintf(fp, "\n\n");
+
+                //printf("%s\n", p + 1);
             }
         }
         fclose(fp);

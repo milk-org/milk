@@ -406,6 +406,8 @@ void fnExit_fifoclose()
 static errno_t runCLI_initialize(
 )
 {
+    DEBUG_TRACE_FSTART();
+
     // NOTE: change to function call to ImageStreamIO_typename
     /* TYPESIZE[_DATATYPE_UINT8]                  = SIZEOF_DATATYPE_UINT8;
      TYPESIZE[_DATATYPE_INT8]                   = SIZEOF_DATATYPE_INT8;
@@ -543,7 +545,7 @@ static errno_t runCLI_initialize(
 
     set_signal_catch();
 
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -582,6 +584,8 @@ errno_t runCLI(
     char *promptstring
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int     fdmax;
     int     n;
 
@@ -979,6 +983,7 @@ errno_t runCLI(
 
     rl_callback_handler_remove();
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
