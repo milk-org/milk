@@ -188,11 +188,7 @@ errno_t load_fits(
 
             if(errmode == 2)
             {
-                PRINT_WARNING("Image \"%s\" could not be loaded from file \"%s\"",
-                              ID_name,
-                              file_name);
-                DEBUG_TRACE_FEXIT();
-                return RETURN_FAILURE;
+                FUNC_RETURN_FAILURE("Image \"%s\" could not be loaded from file \"%s\"", ID_name, file_name);
             }
 
             if(errmode == 3)
