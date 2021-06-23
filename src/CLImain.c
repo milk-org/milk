@@ -56,17 +56,20 @@ int main(
     }
 
 
+
     // Allocate data.testpointarray
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
 // allocate circular buffer memory
     data.testpointarray = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) * CODETESTPOINTARRAY_NBCNT);
+    data.testpointarrayinit = 1;
 // initialize loop counter
 // loop counter increments when reaching end of circular buffer
     data.testpointloopcnt = 0;
 // set current entry index to zero
     data.testpointcnt = 0;
 #endif
+
 
 
 

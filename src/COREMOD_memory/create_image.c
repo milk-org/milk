@@ -57,14 +57,14 @@ static errno_t create_image__cli()
         }
         switch(data.precision)
         {
-            case 0:
-                create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_FLOAT,
-                                data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
-                break;
-            case 1:
-                create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_DOUBLE,
-                                data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
-                break;
+        case 0:
+            create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_FLOAT,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
+            break;
+        case 1:
+            create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_DOUBLE,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0);
+            break;
         }
         free(imsize);
         return CLICMD_SUCCESS;
@@ -187,14 +187,14 @@ static errno_t create_image_shared__cli() // default precision
         }
         switch(data.precision)
         {
-            case 0:
-                create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_FLOAT,
-                                1, data.NBKEYWORD_DFT, 0);
-                break;
-            case 1:
-                create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_DOUBLE,
-                                1, data.NBKEYWORD_DFT, 0);
-                break;
+        case 0:
+            create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_FLOAT,
+                            1, data.NBKEYWORD_DFT, 0);
+            break;
+        case 1:
+            create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_DOUBLE,
+                            1, data.NBKEYWORD_DFT, 0);
+            break;
         }
         free(imsize);
         printf("Creating 10 semaphores\n");
@@ -344,13 +344,21 @@ imageID create_image_ID(
     imageID ID;
     long    i;
 
+    DEBUG_TRACEPOINT(
+        "FUNC %s %ld %d %d %d %d",
+        name,
+        naxis,
+        (int) datatype,
+        shared,
+        NBkw,
+        CBsize
+    );
+
 
     ID = -1;
     if(image_ID(name) == -1)
     {
-        DEBUG_TRACEPOINT(" ");
         ID = next_avail_image_ID();
-        DEBUG_TRACEPOINT(" ");
         ImageStreamIO_createIm(
             &data.image[ID],
             name,
@@ -361,7 +369,6 @@ imageID create_image_ID(
             NBkw,
             CBsize
         );
-        DEBUG_TRACEPOINT(" ");
     }
     else
     {

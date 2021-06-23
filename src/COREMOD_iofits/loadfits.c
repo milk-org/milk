@@ -121,7 +121,7 @@ errno_t load_fits(
 
 
 
-    DEBUG_TRACEPOINT("Opening file \"%s\"", file_name);
+    DEBUG_TRACEPOINT("FARG \"%s\" %s %d", file_name, ID_name, errmode);
 
     {
         // Open fitsio file pointer
@@ -526,6 +526,7 @@ errno_t load_fits(
         *IDout = ID;
     }
 
+    DEBUG_TRACEPOINT("FOUT IDout %ld", *IDout);
 
     return RETURN_SUCCESS;
 }
