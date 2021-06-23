@@ -52,7 +52,8 @@ typedef int errno_t;
 #define STRINGMAXLEN_FUNCERRORMSG  2000
 
 #define FUNC_RETURN_FAILURE(...) do { \
-int errormsg_slen = snprintf(data.testpoint.msg, STRINGMAXLEN_FUNCERRORMSG, __VA_ARGS__); \
+char errmsg_funcretfailure[STRINGMAXLEN_FUNCERRORMSG]; \
+int errormsg_slen = snprintf(errmsg_funcretfailure, STRINGMAXLEN_FUNCERRORMSG, __VA_ARGS__); \
 if(errormsg_slen<1) {                                              \
     printf("snprintf in FUNC_RETURN_FAILURE: wrote <1 char");      \
     abort();                                                       \
@@ -61,12 +62,17 @@ if(errormsg_slen >= STRINGMAXLEN_FUNCERRORMSG) {                   \
     printf("snprintf in FUNC_RETURN_FAILURE: string truncation");  \
     abort();                                                       \
 }                                                                  \
+DEBUG_TRACEPOINT("FERR %s", errmsg_funcretfailure); \
 printf("\n");                                                      \
 printf("%c[%d;%dm ERROR %c[%dm [ %s %s %d ]\n", (char) 27, 1, 31, (char) 27, 0, __FILE__, __func__, __LINE__);     \
 printf("%c[%d;%dm ***** %c[%d;m %s\n", (char) 27, 1, 31, (char) 27, 0, data.testpoint.msg); \
 printf("%c[%d;%dm ***** %c[%d;m -> Function %s returns RETURN_FAILURE\n", (char) 27, 1, 31, (char) 27, 0, __func__); \
+DEBUG_TRACE_FEXIT();\
 return RETURN_FAILURE; \
 } while(0)
+
+
+
 
 
 
