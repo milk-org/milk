@@ -13,6 +13,8 @@ imageID image_ID(
     const char *name
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID    i;
     int        loopOK;
     imageID    tmpID = 0;
@@ -40,6 +42,7 @@ imageID image_ID(
         }
     }
 
+    DEBUG_TRACE_FEXIT();
     return tmpID;
 }
 
@@ -49,6 +52,8 @@ imageID image_ID_noaccessupdate(
     const char *name
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID   i;
     imageID   tmpID = 0;
     int       loopOK;
@@ -75,6 +80,7 @@ imageID image_ID_noaccessupdate(
         }
     }
 
+    DEBUG_TRACE_FEXIT();
     return tmpID;
 }
 
@@ -84,10 +90,10 @@ imageID image_ID_noaccessupdate(
 /* next available ID number */
 imageID next_avail_image_ID()
 {
+    DEBUG_TRACE_FSTART();
+
     imageID i;
     imageID ID = -1;
-
-    DEBUG_TRACEPOINT("FUNC");
 
 # ifdef _OPENMP
     #pragma omp critical
@@ -114,7 +120,8 @@ imageID next_avail_image_ID()
         exit(0);
     }
 
-    DEBUG_TRACEPOINT("ID : %ld", ID);
+    DEBUG_TRACEPOINT("FOUT ID : %ld", ID);
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }

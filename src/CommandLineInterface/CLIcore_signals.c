@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 
 #include "CommandLineInterface/CLIcore.h"
-
+#include "CLIcore_UI.h"
 
 
 
@@ -218,6 +218,10 @@ errno_t write_process_exit_report(
         fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint.line);
         fprintf_stdout(fpexit, "    Message : %s\n", data.testpoint.msg);
         fprintf_stdout(fpexit, "\n");
+
+
+        // write function trace
+        write_tracedebugfile();
 
         // Check open file descriptors
         struct rlimit rlimits;
