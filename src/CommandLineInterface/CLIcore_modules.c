@@ -37,6 +37,8 @@ errno_t load_sharedobj(
     const char *restrict libname
 )
 {
+    DEBUG_TRACE_FSTART();
+
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
     strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME);
 
@@ -74,7 +76,7 @@ errno_t load_sharedobj(
         DLib_index ++;
     }
 
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -85,6 +87,7 @@ errno_t load_module_shared(
     const char *restrict modulename
 )
 {
+    DEBUG_TRACE_FSTART();
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
@@ -143,6 +146,7 @@ errno_t load_module_shared(
     strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME);
     strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -152,6 +156,8 @@ errno_t load_module_shared(
 
 errno_t load_module_shared_ALL()
 {
+    DEBUG_TRACE_FSTART();
+
     char libname[STRINGMAXLEN_FULLFILENAME];
     char dirname[STRINGMAXLEN_DIRNAME];
     DIR           *d;
@@ -225,7 +231,7 @@ errno_t load_module_shared_ALL()
 
     //printf("All libraries successfully loaded\n");
 
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -242,6 +248,8 @@ errno_t RegisterModule(
     int versionpatch
 )
 {
+    DEBUG_TRACE_FSTART();
+
     int OKmsg = 0;
 
     //printf("REGISTERING MODULE %s\n", FileName);
@@ -325,6 +333,7 @@ errno_t RegisterModule(
     data.NBmodule++;
 
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -343,6 +352,11 @@ uint32_t RegisterCLIcommand(
     const char *restrict CLICcall
 )
 {
+    DEBUG_TRACE_FSTART();
+
+    DEBUG_TRACEPOINT("FARG CLIkey %s", CLIkey);
+
+
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
 
     if(data.cmd[data.NBcmd].moduleindex == -1)
@@ -384,6 +398,7 @@ uint32_t RegisterCLIcommand(
     data.cmd[data.NBcmd].nbarg = 0;
     data.NBcmd++;
 
+    DEBUG_TRACE_FEXIT();
     return(data.NBcmd);
 }
 
@@ -398,6 +413,8 @@ uint32_t RegisterCLIcmd(
     errno_t (*CLIfptr)()
 )
 {
+    DEBUG_TRACE_FSTART();
+
     //printf("============== REGISTERING FUNCTION\n");
 
     //printf(" nbarg =  %d\n", CLIcmddata.nbarg);
@@ -514,6 +531,7 @@ uint32_t RegisterCLIcmd(
 
     data.NBcmd++;
 
+    DEBUG_TRACE_FEXIT();
     return(data.NBcmd - 1);
 }
 
