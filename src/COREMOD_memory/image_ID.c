@@ -95,8 +95,6 @@ imageID next_avail_image_ID()
     imageID i;
     imageID ID = -1;
 
-    DEBUG_TRACEPOINT("FUNC");
-
 # ifdef _OPENMP
     #pragma omp critical
     {
@@ -122,7 +120,7 @@ imageID next_avail_image_ID()
         exit(0);
     }
 
-    DEBUG_TRACEPOINT("ID : %ld", ID);
+    DEBUG_TRACEPOINT("FOUT ID : %ld", ID);
 
     DEBUG_TRACE_FEXIT();
     return ID;
