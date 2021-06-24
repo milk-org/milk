@@ -42,6 +42,7 @@ imageID image_ID(
         }
     }
 
+    DEBUG_TRACEPOINT("FOUT %s -> %ld", name, tmpID);
     DEBUG_TRACE_FEXIT();
     return tmpID;
 }
