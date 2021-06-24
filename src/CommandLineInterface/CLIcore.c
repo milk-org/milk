@@ -664,7 +664,7 @@ errno_t runCLI(
 
         while(libname != NULL)
         {
-            DEBUG_TRACEPOINT("--- CLI Adding library: %s\n", libname);
+            DEBUG_TRACEPOINT("--- CLI Adding library: %s", libname);
             // load_sharedobj(libname);
             load_module_shared(libname);
             libname = strtok(NULL, " ,;");
