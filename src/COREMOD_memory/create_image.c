@@ -345,12 +345,8 @@ imageID create_image_ID(
 )
 {
     DEBUG_TRACE_FSTART();
-
-    imageID ID;
-    long    i;
-
     DEBUG_TRACEPOINT(
-        "FUNC %s %ld %d %d %d %d",
+        "FARG %s %ld %d %d %d %d",
         name,
         naxis,
         (int) datatype,
@@ -359,11 +355,14 @@ imageID create_image_ID(
         CBsize
     );
 
+    imageID ID;
+
 
     ID = -1;
     if(image_ID(name) == -1)
     {
         ID = next_avail_image_ID();
+
         ImageStreamIO_createIm(
             &data.image[ID],
             name,
@@ -382,31 +381,19 @@ imageID create_image_ID(
 
         if(data.image[ID].md[0].datatype != datatype)
         {
-            fprintf(stderr, "%c[%d;%dm ERROR: [ %s %s %d ] %c[%d;m\n", (char) 27, 1, 31,
-                    __FILE__, __func__, __LINE__, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Pre-existing image \"%s\" has wrong type %c[%d;m\n",
-                    (char) 27, 1, 31, name, (char) 27, 0);
-            exit(0);
+            FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong type", name);
         }
         if(data.image[ID].md[0].naxis != naxis)
         {
-            fprintf(stderr, "%c[%d;%dm ERROR: [ %s %s %d ] %c[%d;m\n", (char) 27, 1, 31,
-                    __FILE__, __func__, __LINE__, (char) 27, 0);
-            fprintf(stderr, "%c[%d;%dm Pre-existing image \"%s\" has wrong naxis %c[%d;m\n",
-                    (char) 27, 1, 31, name, (char) 27, 0);
-            exit(0);
+            FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong naxis", name);
         }
 
-        for(i = 0; i < naxis; i++)
+        for(int i = 0; i < naxis; i++)
             if(data.image[ID].md[0].size[i] != size[i])
             {
-                fprintf(stderr, "%c[%d;%dm ERROR: [ %s %s %d ] %c[%d;m\n", (char) 27, 1, 31,
-                        __FILE__, __func__, __LINE__, (char) 27, 0);
-                fprintf(stderr, "%c[%d;%dm Pre-existing image \"%s\" has wrong size %c[%d;m\n",
-                        (char) 27, 1, 31, name, (char) 27, 0);
-                fprintf(stderr, "Axis %ld :  %ld  %ld\n", i,
-                        (long) data.image[ID].md[0].size[i], (long) size[i]);
-                exit(0);
+                FUNC_RETURN_FAILURE(
+                    "Pre-existing image \"%s\" has wrong size: axis %d :  %ld  %ld",
+                    name, i, (long) data.image[ID].md[0].size[i], (long) size[i]);
             }
     }
 
