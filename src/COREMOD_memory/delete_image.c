@@ -117,7 +117,15 @@ errno_t CLIADDCMD_COREMOD_memory__delete_image()
 
 
 
-/* deletes an ID */
+/** @brief deletes an ID
+ *
+ * errmode values:
+ * DELETE_IMAGE_ERRMODE_IGNORE
+ * DELETE_IMAGE_ERRMODE_WARNING
+ * DELETE_IMAGE_ERRMODE_ERROR
+ * DELETE_IMAGE_ERRMODE_EXIT
+ *
+ */
 errno_t delete_image_ID(
     const char *__restrict__ imname,
     int errmode
@@ -131,26 +139,26 @@ errno_t delete_image_ID(
 
     if(ID == -1)
     {
-        if(errmode == 0)
+        if(errmode == DELETE_IMAGE_ERRMODE_IGNORE)
         {
             return RETURN_SUCCESS;
         }
 
-        if(errmode == 1)
+        if(errmode == DELETE_IMAGE_ERRMODE_WARNING)
         {
             PRINT_WARNING("Image \"%s\" does not exist",
                           imname);
             return RETURN_SUCCESS;
         }
 
-        if(errmode == 2)
+        if(errmode == DELETE_IMAGE_ERRMODE_ERROR)
         {
             PRINT_WARNING("Image \"%s\" does not exist",
                           imname);
             return RETURN_FAILURE;
         }
 
-        if(errmode == 3)
+        if(errmode == DELETE_IMAGE_ERRMODE_EXIT)
         {
             abort();
         }
