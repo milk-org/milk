@@ -255,76 +255,76 @@ errno_t COREMOD_MEMORY_image_streamburst(
 
     switch(datatype)
     {
-        case _DATATYPE_INT8:
-            ptr0s = (char *) data.image[IDin].array.SI8;
-            ptr1 = (char *) data.image[IDout].array.SI8;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
-            break;
+    case _DATATYPE_INT8:
+        ptr0s = (char *) data.image[IDin].array.SI8;
+        ptr1 = (char *) data.image[IDout].array.SI8;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
+        break;
 
-        case _DATATYPE_UINT8:
-            ptr0s = (char *) data.image[IDin].array.UI8;
-            ptr1 = (char *) data.image[IDout].array.UI8;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
-            break;
+    case _DATATYPE_UINT8:
+        ptr0s = (char *) data.image[IDin].array.UI8;
+        ptr1 = (char *) data.image[IDout].array.UI8;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
+        break;
 
-        case _DATATYPE_INT16:
-            ptr0s = (char *) data.image[IDin].array.SI16;
-            ptr1 = (char *) data.image[IDout].array.SI16;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
-            break;
+    case _DATATYPE_INT16:
+        ptr0s = (char *) data.image[IDin].array.SI16;
+        ptr1 = (char *) data.image[IDout].array.SI16;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
+        break;
 
-        case _DATATYPE_UINT16:
-            ptr0s = (char *) data.image[IDin].array.UI16;
-            ptr1 = (char *) data.image[IDout].array.UI16;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
-            break;
+    case _DATATYPE_UINT16:
+        ptr0s = (char *) data.image[IDin].array.UI16;
+        ptr1 = (char *) data.image[IDout].array.UI16;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
+        break;
 
-        case _DATATYPE_INT32:
-            ptr0s = (char *) data.image[IDin].array.SI32;
-            ptr1 = (char *) data.image[IDout].array.SI32;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
-            break;
+    case _DATATYPE_INT32:
+        ptr0s = (char *) data.image[IDin].array.SI32;
+        ptr1 = (char *) data.image[IDout].array.SI32;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
+        break;
 
-        case _DATATYPE_UINT32:
-            ptr0s = (char *) data.image[IDin].array.UI32;
-            ptr1 = (char *) data.image[IDout].array.UI32;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
-            break;
+    case _DATATYPE_UINT32:
+        ptr0s = (char *) data.image[IDin].array.UI32;
+        ptr1 = (char *) data.image[IDout].array.UI32;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
+        break;
 
-        case _DATATYPE_INT64:
-            ptr0s = (char *) data.image[IDin].array.SI64;
-            ptr1 = (char *) data.image[IDout].array.SI64;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
-            break;
+    case _DATATYPE_INT64:
+        ptr0s = (char *) data.image[IDin].array.SI64;
+        ptr1 = (char *) data.image[IDout].array.SI64;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
+        break;
 
-        case _DATATYPE_UINT64:
-            ptr0s = (char *) data.image[IDin].array.UI64;
-            ptr1 = (char *) data.image[IDout].array.UI64;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
-            break;
+    case _DATATYPE_UINT64:
+        ptr0s = (char *) data.image[IDin].array.UI64;
+        ptr1 = (char *) data.image[IDout].array.UI64;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
+        break;
 
 
-        case _DATATYPE_FLOAT:
-            ptr0s = (char *) data.image[IDin].array.F;
-            ptr1 = (char *) data.image[IDout].array.F;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * sizeof(float);
-            break;
+    case _DATATYPE_FLOAT:
+        ptr0s = (char *) data.image[IDin].array.F;
+        ptr1 = (char *) data.image[IDout].array.F;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * sizeof(float);
+        break;
 
-        case _DATATYPE_DOUBLE:
-            ptr0s = (char *) data.image[IDin].array.D;
-            ptr1 = (char *) data.image[IDout].array.D;
-            framesize = data.image[IDin].md[0].size[0] *
-                        data.image[IDin].md[0].size[1] * sizeof(double);
-            break;
+    case _DATATYPE_DOUBLE:
+        ptr0s = (char *) data.image[IDin].array.D;
+        ptr1 = (char *) data.image[IDout].array.D;
+        framesize = data.image[IDin].md[0].size[0] *
+                    data.image[IDin].md[0].size[1] * sizeof(double);
+        break;
 
     }
 
@@ -519,7 +519,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(
     IDout = image_ID(IDoutname);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0);
+        create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
@@ -605,76 +605,76 @@ imageID COREMOD_MEMORY_image_streamupdateloop(
         switch(datatype)
         {
 
-            case _DATATYPE_INT8:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.SI8;
-                ptr1 = (char *) data.image[IDout].array.SI8;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT8;
-                break;
+        case _DATATYPE_INT8:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.SI8;
+            ptr1 = (char *) data.image[IDout].array.SI8;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT8;
+            break;
 
-            case _DATATYPE_UINT8:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.UI8;
-                ptr1 = (char *) data.image[IDout].array.UI8;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
-                break;
+        case _DATATYPE_UINT8:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.UI8;
+            ptr1 = (char *) data.image[IDout].array.UI8;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
+            break;
 
-            case _DATATYPE_INT16:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.SI16;
-                ptr1 = (char *) data.image[IDout].array.SI16;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT16;
-                break;
+        case _DATATYPE_INT16:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.SI16;
+            ptr1 = (char *) data.image[IDout].array.SI16;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT16;
+            break;
 
-            case _DATATYPE_UINT16:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.UI16;
-                ptr1 = (char *) data.image[IDout].array.UI16;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
-                break;
+        case _DATATYPE_UINT16:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.UI16;
+            ptr1 = (char *) data.image[IDout].array.UI16;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
+            break;
 
-            case _DATATYPE_INT32:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.SI32;
-                ptr1 = (char *) data.image[IDout].array.SI32;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT32;
-                break;
+        case _DATATYPE_INT32:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.SI32;
+            ptr1 = (char *) data.image[IDout].array.SI32;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT32;
+            break;
 
-            case _DATATYPE_UINT32:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.UI32;
-                ptr1 = (char *) data.image[IDout].array.UI32;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
-                break;
+        case _DATATYPE_UINT32:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.UI32;
+            ptr1 = (char *) data.image[IDout].array.UI32;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
+            break;
 
-            case _DATATYPE_INT64:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.SI64;
-                ptr1 = (char *) data.image[IDout].array.SI64;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT64;
-                break;
+        case _DATATYPE_INT64:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.SI64;
+            ptr1 = (char *) data.image[IDout].array.SI64;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_INT64;
+            break;
 
-            case _DATATYPE_UINT64:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.UI64;
-                ptr1 = (char *) data.image[IDout].array.UI64;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
-                break;
+        case _DATATYPE_UINT64:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.UI64;
+            ptr1 = (char *) data.image[IDout].array.UI64;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
+            break;
 
 
-            case _DATATYPE_FLOAT:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.F;
-                ptr1 = (char *) data.image[IDout].array.F;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * sizeof(float);
-                break;
+        case _DATATYPE_FLOAT:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.F;
+            ptr1 = (char *) data.image[IDout].array.F;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * sizeof(float);
+            break;
 
-            case _DATATYPE_DOUBLE:
-                ptr0s = (char *) data.image[IDin[cubeindex]].array.D;
-                ptr1 = (char *) data.image[IDout].array.D;
-                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                            data.image[IDin[cubeindex]].md[0].size[1] * sizeof(double);
-                break;
+        case _DATATYPE_DOUBLE:
+            ptr0s = (char *) data.image[IDin[cubeindex]].array.D;
+            ptr1 = (char *) data.image[IDout].array.D;
+            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                        data.image[IDin[cubeindex]].md[0].size[1] * sizeof(double);
+            break;
 
         }
 
@@ -830,83 +830,83 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     IDout = image_ID(IDoutname);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0);
+        create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
     switch(datatype)
     {
 
-        case _DATATYPE_INT8:
-            ptr0s = (char *) data.image[IDin].array.SI8;
-            ptr1 = (char *) data.image[IDout].array.SI8;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT8;
-            break;
+    case _DATATYPE_INT8:
+        ptr0s = (char *) data.image[IDin].array.SI8;
+        ptr1 = (char *) data.image[IDout].array.SI8;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_INT8;
+        break;
 
-        case _DATATYPE_UINT8:
-            ptr0s = (char *) data.image[IDin].array.UI8;
-            ptr1 = (char *) data.image[IDout].array.UI8;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT8;
-            break;
+    case _DATATYPE_UINT8:
+        ptr0s = (char *) data.image[IDin].array.UI8;
+        ptr1 = (char *) data.image[IDout].array.UI8;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_UINT8;
+        break;
 
-        case _DATATYPE_INT16:
-            ptr0s = (char *) data.image[IDin].array.SI16;
-            ptr1 = (char *) data.image[IDout].array.SI16;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT16;
-            break;
+    case _DATATYPE_INT16:
+        ptr0s = (char *) data.image[IDin].array.SI16;
+        ptr1 = (char *) data.image[IDout].array.SI16;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_INT16;
+        break;
 
-        case _DATATYPE_UINT16:
-            ptr0s = (char *) data.image[IDin].array.UI16;
-            ptr1 = (char *) data.image[IDout].array.UI16;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT16;
-            break;
+    case _DATATYPE_UINT16:
+        ptr0s = (char *) data.image[IDin].array.UI16;
+        ptr1 = (char *) data.image[IDout].array.UI16;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_UINT16;
+        break;
 
-        case _DATATYPE_INT32:
-            ptr0s = (char *) data.image[IDin].array.SI32;
-            ptr1 = (char *) data.image[IDout].array.SI32;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT32;
-            break;
+    case _DATATYPE_INT32:
+        ptr0s = (char *) data.image[IDin].array.SI32;
+        ptr1 = (char *) data.image[IDout].array.SI32;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_INT32;
+        break;
 
-        case _DATATYPE_UINT32:
-            ptr0s = (char *) data.image[IDin].array.UI32;
-            ptr1 = (char *) data.image[IDout].array.UI32;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT32;
-            break;
+    case _DATATYPE_UINT32:
+        ptr0s = (char *) data.image[IDin].array.UI32;
+        ptr1 = (char *) data.image[IDout].array.UI32;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_UINT32;
+        break;
 
-        case _DATATYPE_INT64:
-            ptr0s = (char *) data.image[IDin].array.SI64;
-            ptr1 = (char *) data.image[IDout].array.SI64;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT64;
-            break;
+    case _DATATYPE_INT64:
+        ptr0s = (char *) data.image[IDin].array.SI64;
+        ptr1 = (char *) data.image[IDout].array.SI64;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_INT64;
+        break;
 
-        case _DATATYPE_UINT64:
-            ptr0s = (char *) data.image[IDin].array.UI64;
-            ptr1 = (char *) data.image[IDout].array.UI64;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT64;
-            break;
+    case _DATATYPE_UINT64:
+        ptr0s = (char *) data.image[IDin].array.UI64;
+        ptr1 = (char *) data.image[IDout].array.UI64;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    SIZEOF_DATATYPE_UINT64;
+        break;
 
 
-        case _DATATYPE_FLOAT:
-            ptr0s = (char *) data.image[IDin].array.F;
-            ptr1 = (char *) data.image[IDout].array.F;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        sizeof(float);
-            break;
+    case _DATATYPE_FLOAT:
+        ptr0s = (char *) data.image[IDin].array.F;
+        ptr1 = (char *) data.image[IDout].array.F;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    sizeof(float);
+        break;
 
-        case _DATATYPE_DOUBLE:
-            ptr0s = (char *) data.image[IDin].array.D;
-            ptr1 = (char *) data.image[IDout].array.D;
-            framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
-                        sizeof(double);
-            break;
+    case _DATATYPE_DOUBLE:
+        ptr0s = (char *) data.image[IDin].array.D;
+        ptr1 = (char *) data.image[IDout].array.D;
+        framesize = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] *
+                    sizeof(double);
+        break;
     }
 
 

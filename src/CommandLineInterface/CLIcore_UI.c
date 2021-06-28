@@ -278,6 +278,7 @@ char **CLI_completion(
 
 
 
+
 errno_t write_tracedebugfile()
 {
     pid_t thisPID = getpid();
@@ -290,13 +291,15 @@ errno_t write_tracedebugfile()
     );
 
     printf("Writing output trace to file %s\n", fname);
+    printf("data.testpointarrayinit = %d\n", data.testpointarrayinit);
 
     FILE * fp = fopen(fname, "w");
     if(fp != NULL)
     {
         for(uint64_t i=0; i<CODETESTPOINTARRAY_NBCNT; i++)
         {
-            int j = (i + data.testpointcnt) % CODETESTPOINTARRAY_NBCNT;
+            long j = (i + data.testpointcnt) % CODETESTPOINTARRAY_NBCNT;
+
             uint64_t index = data.testpointarray[j].loopcnt*CODETESTPOINTARRAY_NBCNT+j;
 
             if(data.testpointarray[j].line != 0)
@@ -559,8 +562,10 @@ errno_t CLI_execute_line()
                         printf("%c[%d;%dm -> EXIT CLI %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                         data.exitcode = data.CMDerrstatus;
 
+                        #ifndef NDEBUG
                         // output trace debug
                         write_tracedebugfile();
+                        #endif
                     }
                 }
 

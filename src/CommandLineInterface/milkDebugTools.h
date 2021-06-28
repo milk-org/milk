@@ -41,7 +41,8 @@ typedef int errno_t;
 #define STRINGMAXLEN_FPSPROCESSTYPE 64
 
 
-
+#define xstr(a) str(a)
+#define str(a) #a
 
 
 
@@ -72,6 +73,32 @@ return RETURN_FAILURE; \
 } while(0)
 
 
+
+// Check function call return value.
+// If not RETURN_SUCCESS, fail current (caller) function
+//
+#define FUNC_CHECK_RETURN(errval) do {                        \
+errno_t retcheckvalue = errval;                                    \
+if(retcheckvalue != RETURN_SUCCESS) {                          \
+    char errmsg_funcretfailure[STRINGMAXLEN_FUNCERRORMSG]; \
+    int errormsg_slen = snprintf(errmsg_funcretfailure, STRINGMAXLEN_FUNCERRORMSG, "[%d] %s", retcheckvalue, xstr(errval)); \
+    if(errormsg_slen<1) {                                              \
+        printf("snprintf in FUNC_RETURN_FAILURE: wrote <1 char");      \
+        abort();                                                       \
+    }                                                                  \
+    if(errormsg_slen >= STRINGMAXLEN_FUNCERRORMSG) {                   \
+        printf("snprintf in FUNC_RETURN_FAILURE: string truncation");  \
+        abort();                                                       \
+    }                                                                    \
+    DEBUG_TRACEPOINT("%c[%d;%dm FCALLERR %c[%dm %s", (char) 27, 1, 31, (char) 27, 0, errmsg_funcretfailure); \
+    printf("\n");                                                      \
+printf("%c[%d;%dm > > > FCALLERR %c[%dm [ %s %s %d ]\n", (char) 27, 1, 31, (char) 27, 0, __FILE__, __func__, __LINE__); \
+    printf("%c[%d;%dm ***** %c[%d;m [rval = %d] %s\n", (char) 27, 1, 31, (char) 27, 0, retcheckvalue, xstr(errval)); \
+    printf("%c[%d;%dm ***** %c[%d;m -> Function %s returns RETURN_FAILURE\n", (char) 27, 1, 31, (char) 27, 0, __func__); \
+    DEBUG_TRACE_FEXIT();                                               \
+    return RETURN_FAILURE;                                             \
+}                                                                  \
+} while(0)
 
 
 

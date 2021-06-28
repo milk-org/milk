@@ -118,7 +118,7 @@ imageID COREMOD_TOOLS_statusStat(
 
     sizearray[0] = indexmax;
     sizearray[1] = 1;
-    IDout = create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0, 0);
+    create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0, 0, &IDout);
     free(sizearray);
 
     for(st = 0; st < indexmax; st++)

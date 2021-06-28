@@ -94,6 +94,7 @@ errno_t saveFITS(
            inputimname,
            outputFITSname,
            outputbitpix);
+    fflush(stdout);
 
 
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -102,7 +103,6 @@ errno_t saveFITS(
     pthread_t self_id = pthread_self();
 
     char fnametmp[STRINGMAXLEN_FILENAME];
-    char savename[STRINGMAXLEN_FILENAME];
 
     WRITE_FILENAME(fnametmp,
                    "_savefits_atomic_%s_%d_%ld.tmp.fits",
@@ -110,7 +110,6 @@ errno_t saveFITS(
                    (int) getpid(),
                    (long) self_id);
 
-    WRITE_FILENAME(savename, "%s", fnametmp);
 
 
     IMGID imgin = makeIMGID(inputimname);
@@ -121,6 +120,8 @@ errno_t saveFITS(
                       inputimname);
         return RETURN_SUCCESS;
     }
+
+    DEBUG_TRACEPOINT("choosing datatype");
 
     // data types
     uint8_t datatype = imgin.md->datatype;
@@ -197,6 +198,8 @@ errno_t saveFITS(
         break;
     }
 
+    DEBUG_TRACEPOINT("bitpix = %d", bitpix);
+
     switch(outputbitpix)
     {
     case 8:
@@ -245,10 +248,15 @@ errno_t saveFITS(
         break;
     }
 
+    DEBUG_TRACEPOINT("bitpix = %d", bitpix);
+
 
     fitsfile *fptr;
     COREMOD_iofits_data.FITSIO_status = 0;
+    DEBUG_TRACEPOINT("creating FITS file %s", fnametmp);
     fits_create_file(&fptr, fnametmp, &COREMOD_iofits_data.FITSIO_status);
+    DEBUG_TRACEPOINT(" ");
+
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
     {
         char errstring[200];
@@ -286,6 +294,7 @@ errno_t saveFITS(
         return RETURN_FAILURE;
     }
 
+    DEBUG_TRACEPOINT(" ");
 
     long fpixel = 1;
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -309,7 +318,7 @@ errno_t saveFITS(
     COREMOD_iofits_data.FITSIO_status = 0;
     fits_write_date(fptr, &COREMOD_iofits_data.FITSIO_status);
 
-
+    DEBUG_TRACEPOINT("Adding optional header");
     // HEADER
 
 

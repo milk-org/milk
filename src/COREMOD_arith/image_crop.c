@@ -222,8 +222,8 @@ imageID arith_image_crop(
         naxes[i] = data.image[IDin].md[0].size[i];
         naxesout[i] = end[i] - start[i];
     }
-    IDout = create_image_ID(ID_out, naxis, naxesout, datatype, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT, 0);
+     create_image_ID(ID_out, naxis, naxesout, datatype, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &IDout);
 
     start_c[0] = start[0];
     if(start_c[0] < 0)

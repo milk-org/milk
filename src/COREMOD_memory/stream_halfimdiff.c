@@ -167,7 +167,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
     IDout = image_ID(IDstreamout_name);
     if(IDout == -1)
     {
-        IDout = create_image_ID(IDstreamout_name, 2, arraysize, datatypeout, 1, 0, 0);
+        create_image_ID(IDstreamout_name, 2, arraysize, datatypeout, 1, 0, 0, &IDout);
         COREMOD_MEMORY_image_set_createsem(IDstreamout_name, IMAGE_NB_SEMAPHORE);
     }
 
