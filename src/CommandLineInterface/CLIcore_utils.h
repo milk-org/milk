@@ -493,15 +493,16 @@ static inline imageID imcreateIMGID(
                img->NBkw);
 
         DEBUG_TRACEPOINT("Creating 2D image");
-        img->ID = create_image_ID(
-                      img->name,
-                      img->naxis,
-                      img->size,
-                      img->datatype,
-                      img->shared,
-                      img->NBkw,
-                      img->CBsize
-                  );
+        create_image_ID(
+            img->name,
+            img->naxis,
+            img->size,
+            img->datatype,
+            img->shared,
+            img->NBkw,
+            img->CBsize,
+            &img->ID
+        );
         DEBUG_TRACEPOINT(" ");
         img->im = &data.image[img->ID];
         img->md = &data.image[img->ID].md[0];

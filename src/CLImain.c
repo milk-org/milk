@@ -137,5 +137,12 @@ int main(
     // clean-up calling thread
     //pthread_exit(NULL);
 
+#ifndef NDEBUG
+    printf("De-allocating test circular buffer\n");
+    fflush(stdout);
+    data.testpointarrayinit = 0;
+    free(data.testpointarray);
+#endif
+
     return data.exitcode;
 }

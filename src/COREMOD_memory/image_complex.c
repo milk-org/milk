@@ -272,8 +272,8 @@ errno_t mk_complex_from_reim(
     if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         for(ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CF[ii].re = data.image[IDre].array.F[ii];
@@ -283,8 +283,8 @@ errno_t mk_complex_from_reim(
     else if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         for(ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.F[ii];
@@ -294,8 +294,8 @@ errno_t mk_complex_from_reim(
     else if((datatype_re == _DATATYPE_DOUBLE) && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         for(ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
@@ -305,8 +305,8 @@ errno_t mk_complex_from_reim(
     else if((datatype_re == _DATATYPE_DOUBLE) && (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         for(ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
@@ -362,8 +362,8 @@ errno_t mk_complex_from_amph(
     if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
 
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
@@ -388,8 +388,8 @@ errno_t mk_complex_from_amph(
     else if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -412,8 +412,8 @@ errno_t mk_complex_from_amph(
     else if((datatype_am == _DATATYPE_DOUBLE) && (datatype_ph == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -437,8 +437,8 @@ errno_t mk_complex_from_amph(
     else if((datatype_am == _DATATYPE_DOUBLE) && (datatype_ph == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        IDout = create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                                data.NBKEYWORD_DFT, 0);
+        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDout);
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -497,10 +497,10 @@ errno_t mk_reim_from_complex(
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
-        IDre = create_image_ID(re_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
-        IDim = create_image_ID(im_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
+        create_image_ID(re_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDre);
+        create_image_ID(im_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDim);
 
         data.image[IDre].md[0].write = 1;
         data.image[IDim].md[0].write = 1;
@@ -529,10 +529,10 @@ errno_t mk_reim_from_complex(
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
     {
-        IDre = create_image_ID(re_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
-        IDim = create_image_ID(im_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
+        create_image_ID(re_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDre);
+        create_image_ID(im_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDim);
         data.image[IDre].md[0].write = 1;
         data.image[IDim].md[0].write = 1;
 # ifdef _OPENMP
@@ -605,10 +605,10 @@ errno_t mk_amph_from_complex(
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
-        IDam = create_image_ID(am_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
-        IDph = create_image_ID(ph_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
+        create_image_ID(am_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDam);
+        create_image_ID(ph_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDph);
         data.image[IDam].md[0].write = 1;
         data.image[IDph].md[0].write = 1;
 # ifdef _OPENMP
@@ -641,10 +641,10 @@ errno_t mk_amph_from_complex(
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
     {
-        IDam = create_image_ID(am_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
-        IDph = create_image_ID(ph_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                               data.NBKEYWORD_DFT, 0);
+        create_image_ID(am_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDam);
+        create_image_ID(ph_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                        data.NBKEYWORD_DFT, 0, &IDph);
         data.image[IDam].md[0].write = 1;
         data.image[IDph].md[0].write = 1;
 # ifdef _OPENMP

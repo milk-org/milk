@@ -352,7 +352,7 @@ typedef struct
 } CODETESTPOINT;
 
 // number of entries stored in testpoint trace array
-#define CODETESTPOINTARRAY_NBCNT  10000
+#define CODETESTPOINTARRAY_NBCNT  100000
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
