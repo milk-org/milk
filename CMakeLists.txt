@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.14)
 # Examples :
 # cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON
 # cmake .. -DUSE_CUDA=ON -DUSE_MAGMA=ON
+# cmake .. -DCMAKE_BUILD_TYPE=Debug
 
 option(build_python_module "Compile Python Wrappers" OFF)
 

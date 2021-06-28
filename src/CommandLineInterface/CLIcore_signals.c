@@ -167,6 +167,7 @@ errno_t write_process_exit_report(
     const char *restrict errortypestring
 )
 {
+#ifndef NDEBUG
     FILE *fpexit;
     char fname[STRINGMAXLEN_FILENAME];
     pid_t thisPID;
@@ -247,6 +248,7 @@ errno_t write_process_exit_report(
 
         fclose(fpexit);
     }
+#endif
 
     return RETURN_SUCCESS;
 }

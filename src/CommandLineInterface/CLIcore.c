@@ -448,8 +448,8 @@ static errno_t runCLI_initialize(
 # ifdef _OPENMP
     if(data.quiet == 0)
     {
-        printf("        Running with openMP, max threads = %d  (OMP_NUM_THREADS)\n",
-               omp_get_max_threads());
+        printf("        Running with openMP %d, max threads = %d  (OMP_NUM_THREADS)\n",
+               _OPENMP, omp_get_max_threads());
     }
 # else
     if(data.quiet == 0)
@@ -1266,10 +1266,6 @@ static void runCLI_free()
     //  free(data.cmd);
     DEBUG_TRACEPOINT("free data.rndgen");
     gsl_rng_free(data.rndgen);
-
-#ifndef NDEBUG
-    free(data.testpointarray);
-#endif
 }
 
 

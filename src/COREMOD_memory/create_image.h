@@ -14,14 +14,15 @@ errno_t create_image_addCLIcmd();
 
 
 
-imageID create_image_ID(
+errno_t create_image_ID(
     const char *name,
     long        naxis,
     uint32_t   *size,
     uint8_t     datatype,
     int         shared,
     int         nbkw,
-    int         CBsize
+    int         CBsize,
+    imageID    *outID
 );
 
 

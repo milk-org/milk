@@ -325,7 +325,7 @@ void *save_fits_function(
 
 
 
-        IDc = create_image_ID("tmpsavecube", 3, imsizearray, datatype, 0, 1, 0);
+         create_image_ID("tmpsavecube", 3, imsizearray, datatype, 0, 1, 0, &IDc);
 
         // list_image_ID();
 
@@ -859,8 +859,8 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     sprintf(logb0name, "%s_logbuff0", IDname);
     sprintf(logb1name, "%s_logbuff1", IDname);
 
-    IDb0 = create_image_ID(logb0name, 3, imsizearray, datatype, 1, 1, 0);
-    IDb1 = create_image_ID(logb1name, 3, imsizearray, datatype, 1, 1, 0);
+    create_image_ID(logb0name, 3, imsizearray, datatype, 1, 1, 0, &IDb0);
+    create_image_ID(logb1name, 3, imsizearray, datatype, 1, 1, 0, &IDb1);
     COREMOD_MEMORY_image_set_semflush(logb0name, -1);
     COREMOD_MEMORY_image_set_semflush(logb1name, -1);
 

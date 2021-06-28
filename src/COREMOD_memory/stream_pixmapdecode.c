@@ -227,8 +227,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
-    IDout = create_image_ID(IDout_name, 2, sizearray,
-                            data.image[IDin].md[0].datatype, 1, 25, 0);
+    create_image_ID(IDout_name, 2, sizearray,
+                    data.image[IDin].md[0].datatype, 1, 25, 0, &IDout);
 
     // Copy the keywords over from IDin to IDout
     int NBkw = data.image[IDin].md[0].NBkw;
@@ -307,8 +307,9 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     if(reverse == 0)    // Only for legacy mode
     {
-        IDout_pixslice = create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0,
-                                         0, 0);
+        create_image_ID("outpixsl", 2, sizearray, _DATATYPE_UINT16, 0,
+                        0, 0, &IDout_pixslice);
+
         for(slice = 0; slice < NBslice; slice++)
         {
             sliceii = slice * data.image[IDmap].md[0].size[0] *
