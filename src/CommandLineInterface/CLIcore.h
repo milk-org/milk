@@ -346,6 +346,7 @@ typedef struct
 
     int             funclevel;
     char            funcstack[MAXNB_FUNCSTACK][STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+    int             linestack[MAXNB_FUNCSTACK]; // caller line number
 
     char            msg[STRINGMAXLEN_FUNCTIONARGS]; // user message
     struct timespec time;

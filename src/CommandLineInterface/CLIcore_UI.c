@@ -329,7 +329,9 @@ errno_t write_tracedebugfile()
                 );
                 for(int level = 0; level < data.testpointarray[j].funclevel; level++)
                 {
-                    fprintf(fp, " >> %s", data.testpointarray[j].funcstack[level]);
+                    fprintf(fp, " (%d) >> %s",
+                            data.testpointarray[j].linestack[level],
+                            data.testpointarray[j].funcstack[level]);
                 }
                 fprintf(fp, "\n\n");
 
@@ -562,10 +564,10 @@ errno_t CLI_execute_line()
                         printf("%c[%d;%dm -> EXIT CLI %c[%d;m\n", (char) 27, 1, 31, (char) 27, 0);
                         data.exitcode = data.CMDerrstatus;
 
-                        #ifndef NDEBUG
+#ifndef NDEBUG
                         // output trace debug
                         write_tracedebugfile();
-                        #endif
+#endif
                     }
                 }
 
