@@ -95,6 +95,8 @@ imageID arith_image_merge3D(
     const char *IDout_name
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID1;
     imageID ID2;
     imageID IDout;
@@ -137,7 +139,8 @@ imageID arith_image_merge3D(
         exit(0);
     }
 
-    IDout = create_3Dimage_ID(IDout_name, xsize, ysize, zsize1 + zsize2);
+    FUNC_CHECK_RETURN(
+        create_3Dimage_ID(IDout_name, xsize, ysize, zsize1 + zsize2, &IDout));
 
     mapv = (void *) data.image[IDout].array.F;
 
@@ -147,5 +150,6 @@ imageID arith_image_merge3D(
     mapv += sizeof(float) * xsize * ysize * zsize1;
     memcpy(mapv, data.image[ID2].array.F, sizeof(float)*xsize * ysize * zsize2);
 
+    DEBUG_TRACE_FEXIT();
     return IDout;
 }

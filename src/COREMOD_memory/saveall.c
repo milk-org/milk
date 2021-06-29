@@ -245,9 +245,11 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
                data.image[IDarray[i]].md[0].size[0], data.image[IDarray[i]].md[0].size[1],
                NBframes);
         fflush(stdout);
-        IDarrayout[i] = create_3Dimage_ID(imnameout,
-                                          data.image[IDarray[i]].md[0].size[0], data.image[IDarray[i]].md[0].size[1],
-                                          NBframes);
+        create_3Dimage_ID(imnameout,
+                          data.image[IDarray[i]].md[0].size[0],
+                          data.image[IDarray[i]].md[0].size[1],
+                          NBframes,
+                          &(IDarrayout[i]));
     }
     list_image_ID();
 

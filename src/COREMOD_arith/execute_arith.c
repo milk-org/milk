@@ -226,6 +226,8 @@ int isfunction_sev_var(const char *word)
 
 int isanumber(const char *word)
 {
+    DEBUG_TRACE_FSTART();
+
     int value = 1; // 1 if number, 0 otherwise
     char *endptr;
     __attribute__((unused)) double v1;
@@ -240,6 +242,7 @@ int isanumber(const char *word)
         value = 0;
     }
 
+    DEBUG_TRACE_FEXIT();
     return(value);
 }
 
@@ -254,12 +257,14 @@ imageID arith_make_slopexy(
     double sy
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID;
     uint32_t naxes[2];
     double coeff;
 
-    create_2Dimage_ID(ID_name, l1, l2);
-    ID = image_ID(ID_name);
+
+    create_2Dimage_ID(ID_name, l1, l2, &ID);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -271,6 +276,7 @@ imageID arith_make_slopexy(
             data.image[ID].array.F[jj * naxes[0] + ii] = sx * ii + sy * jj - coeff;
         }
 
+    DEBUG_TRACE_FEXIT();
     return ID;
 }
 
@@ -388,40 +394,17 @@ int execute_arith(const char *cmd1)
         switch(cmd[i])
         {
 
-            case '+':
-            case '-':
-                if(((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) && (isdigit(cmd[i - 2]))
-                        && (isdigit(cmd[i + 1])))
-                {
-                    // + or - is part of exponent
-                    word[w][l] = cmd[i];
-                    l++;
-                }
-                else
-                {
-                    if(l > 0)
-                    {
-                        word[w][l] = '\0';
-                        w++;
-                    }
-                    l = 0;
-                    word[w][l] = cmd[i];
-                    word[w][1] = '\0';
-                    if(i < (signed)(strlen(cmd) - 1))
-                    {
-                        w++;
-                    }
-                    l = 0;
-                }
-                break;
-
-            case '*':
-            case '/':
-            case '^':
-            case '(':
-            case ')':
-            case '=':
-            case ',':
+        case '+':
+        case '-':
+            if(((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) && (isdigit(cmd[i - 2]))
+                    && (isdigit(cmd[i + 1])))
+            {
+                // + or - is part of exponent
+                word[w][l] = cmd[i];
+                l++;
+            }
+            else
+            {
                 if(l > 0)
                 {
                     word[w][l] = '\0';
@@ -435,22 +418,45 @@ int execute_arith(const char *cmd1)
                     w++;
                 }
                 l = 0;
-                break;
+            }
+            break;
 
-            case ' ':
+        case '*':
+        case '/':
+        case '^':
+        case '(':
+        case ')':
+        case '=':
+        case ',':
+            if(l > 0)
+            {
                 word[w][l] = '\0';
                 w++;
-                l = 0;
+            }
+            l = 0;
+            word[w][l] = cmd[i];
+            word[w][1] = '\0';
+            if(i < (signed)(strlen(cmd) - 1))
+            {
+                w++;
+            }
+            l = 0;
+            break;
 
-                /*word[w][l] = '\0';
-                  w++;
-                  l = 0;*/
-                break;
+        case ' ':
+            word[w][l] = '\0';
+            w++;
+            l = 0;
 
-            default:
-                word[w][l] = cmd[i];
-                l++;
-                break;
+            /*word[w][l] = '\0';
+              w++;
+              l = 0;*/
+            break;
+
+        default:
+            word[w][l] = cmd[i];
+            l++;
+            break;
         }
     }
 
