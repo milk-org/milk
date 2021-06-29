@@ -507,7 +507,12 @@ errno_t save_fits(
     const char *restrict outputFITSname
 )
 {
-    return saveFITS(savedirname, outputFITSname, 0, "");
+    DEBUG_TRACE_FSTART();
+
+    FUNC_CHECK_RETURN(
+        saveFITS(savedirname, outputFITSname, 0, ""));
+
+    DEBUG_TRACE_FEXIT();
 }
 
 
@@ -516,7 +521,12 @@ errno_t save_fl_fits(
     const char *restrict outputFITSname
 )
 {
-    return saveFITS(savedirname, outputFITSname, -32, "");
+    DEBUG_TRACE_FSTART();
+
+    FUNC_CHECK_RETURN(
+        saveFITS(savedirname, outputFITSname, -32, ""));
+
+    DEBUG_TRACE_FEXIT();
 }
 
 
