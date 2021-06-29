@@ -27,64 +27,74 @@ errno_t create_image_ID(
 
 
 
-imageID create_1Dimage_ID(
-    const char *ID_name,
-    uint32_t    xsize
-);
-
-imageID create_1DCimage_ID(
-    const char *ID_name,
-    uint32_t    xsize
-);
-
-imageID create_2Dimage_ID(
+errno_t create_1Dimage_ID(
     const char *ID_name,
     uint32_t    xsize,
-    uint32_t    ysize
+    imageID    *outID
 );
 
-imageID create_2Dimage_ID_double(
+errno_t create_1DCimage_ID(
     const char *ID_name,
     uint32_t    xsize,
-    uint32_t    ysize
+    imageID    *outID
 );
 
-imageID create_2DCimage_ID(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize
-);
-
-imageID create_2DCimage_ID_double(
-    const char *ID_name,
-    uint32_t    xsize,
-    uint32_t    ysize
-);
-
-imageID create_3Dimage_ID(
+errno_t create_2Dimage_ID(
     const char *ID_name,
     uint32_t    xsize,
     uint32_t    ysize,
-    uint32_t    zsize
+    imageID    *outID
 );
 
-imageID create_3Dimage_ID_float(
+errno_t create_2Dimage_ID_double(
+    const char *ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID
+);
+
+errno_t create_2DCimage_ID(
+    const char *ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID
+);
+
+errno_t create_2DCimage_ID_double(
+    const char *ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID
+);
+
+errno_t create_3Dimage_ID(
+    const char *ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    uint32_t    zsize,
+    imageID    *outID
+);
+
+errno_t create_3Dimage_ID_float(
     const char *ID_name,
     uint32_t xsize,
     uint32_t ysize,
-    uint32_t zsize
+    uint32_t zsize,
+    imageID    *outID
 );
 
-imageID create_3Dimage_ID_double(
+errno_t create_3Dimage_ID_double(
     const char *ID_name,
     uint32_t    xsize,
     uint32_t    ysize,
-    uint32_t    zsize
+    uint32_t    zsize,
+    imageID    *outID
 );
 
-imageID create_3DCimage_ID(
+errno_t create_3DCimage_ID(
     const char *ID_name,
     uint32_t    xsize,
     uint32_t    ysize,
-    uint32_t    zsize
+    uint32_t    zsize,
+    imageID    *outID
 );

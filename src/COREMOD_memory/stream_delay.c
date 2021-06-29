@@ -353,7 +353,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     t0array = (struct timespec *) malloc(sizeof(struct timespec) * *zsize);
 
-    IDimc = create_3Dimage_ID("_tmpc", xsize, ysize, *zsize);
+    create_3Dimage_ID("_tmpc", xsize, ysize, *zsize, &IDimc);
 
 
 

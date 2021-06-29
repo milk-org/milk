@@ -416,70 +416,88 @@ errno_t create_image_ID(
 
 
 
-imageID create_1Dimage_ID(
-    const char *ID_name,
-    uint32_t    xsize
-)
-{
-    DEBUG_TRACE_FSTART();
-
-    imageID ID = -1;
-    long naxis = 1;
-    uint32_t naxes[1];
-
-    naxes[0] = xsize;
-
-    if(data.precision == 0)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT, 0, &ID);    // single precision
-    }
-    if(data.precision == 1)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                             data.NBKEYWORD_DFT, 0, &ID);    // double precision
-    }
-
-    DEBUG_TRACE_FEXIT();
-    return ID;
-}
-
-
-
-imageID create_1DCimage_ID(
-    const char *ID_name,
-    uint32_t    xsize
-)
-{
-    DEBUG_TRACE_FSTART();
-
-    imageID ID = -1;
-    long naxis = 1;
-    uint32_t naxes[1];
-
-    naxes[0] = xsize;
-
-    if(data.precision == 0)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
-                             data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID);    // single precision
-    }
-    if(data.precision == 1)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID);    // double precision
-    }
-
-    DEBUG_TRACE_FEXIT();
-    return ID;
-}
-
-
-
-imageID create_2Dimage_ID(
+errno_t create_1Dimage_ID(
     const char *ID_name,
     uint32_t    xsize,
-    uint32_t    ysize
+    imageID    *outID
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    imageID ID = -1;
+    long naxis = 1;
+    uint32_t naxes[1];
+
+    naxes[0] = xsize;
+
+    if(data.precision == 0)
+    {   // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(
+                ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
+                data.NBKEYWORD_DFT, 0, &ID));
+    }
+    if(data.precision == 1)
+    {   // double precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &ID));
+    }
+
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+
+errno_t create_1DCimage_ID(
+    const char *ID_name,
+    uint32_t    xsize,
+    imageID    *outID
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    imageID ID = -1;
+    long naxis = 1;
+    uint32_t naxes[1];
+
+    naxes[0] = xsize;
+
+    if(data.precision == 0)
+    {   // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
+    }
+    if(data.precision == 1)
+    {   // double precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
+    }
+
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+
+errno_t create_2Dimage_ID(
+    const char *ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -492,34 +510,43 @@ imageID create_2Dimage_ID(
     naxes[1] = ysize;
 
     if(data.precision == 0)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                        data.NBKEYWORD_DFT, 0, &ID);    // single precision
+    {   // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &ID));
     }
     else if(data.precision == 1)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                        data.NBKEYWORD_DFT, 0, &ID);    // double precision
+    {   // double precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &ID));
     }
     else
-    {
+    {   // single precision
         printf("Default precision (%d) invalid value: assuming single precision\n",
                data.precision);
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                        data.NBKEYWORD_DFT, 0, &ID); // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &ID));
+    }
+
+    if(outID != NULL)
+    {
+        *outID = ID;
     }
 
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 
 
-imageID create_2Dimage_ID_double(
+errno_t create_2Dimage_ID_double(
     const char *ID_name,
     uint32_t    xsize,
-    uint32_t    ysize
+    uint32_t    ysize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -531,19 +558,26 @@ imageID create_2Dimage_ID_double(
     naxes[0] = xsize;
     naxes[1] = ysize;
 
-    create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                    data.NBKEYWORD_DFT, 0, &ID);
+    FUNC_CHECK_RETURN(
+        create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
+                        data.NBKEYWORD_DFT, 0, &ID));
+
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
 
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 /* 2D complex image */
-imageID create_2DCimage_ID(
+errno_t create_2DCimage_ID(
     const char *ID_name,
     uint32_t    xsize,
-    uint32_t    ysize
+    uint32_t    ysize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -556,27 +590,35 @@ imageID create_2DCimage_ID(
     naxes[1] = ysize;
 
     if(data.precision == 0)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
-                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID);    // single precision
+    {   // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
     }
     if(data.precision == 1)
+    {   // double precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
+    }
+
+    if(outID != NULL)
     {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID);    // double precision
+        *outID = ID;
     }
 
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 
 /* 2D complex image */
-imageID create_2DCimage_ID_double(
+errno_t create_2DCimage_ID_double(
     const char    *ID_name,
     uint32_t       xsize,
-    uint32_t       ysize
+    uint32_t       ysize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -588,21 +630,28 @@ imageID create_2DCimage_ID_double(
     naxes[0] = xsize;
     naxes[1] = ysize;
 
-    create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                    data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID); // double precision
+    FUNC_CHECK_RETURN(
+        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
+                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
+
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
 
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 
 /* 3D image, single precision */
-imageID create_3Dimage_ID_float(
+errno_t create_3Dimage_ID_float(
     const char *ID_name,
     uint32_t xsize,
     uint32_t ysize,
-    uint32_t zsize
+    uint32_t zsize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -618,23 +667,30 @@ imageID create_3Dimage_ID_float(
     //  printf("CREATING 3D IMAGE: %s %ld %ld %ld\n", ID_name, xsize, ysize, zsize);
     //  fflush(stdout);
 
-    create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                    data.NBKEYWORD_DFT, 0, &ID); // single precision
+    FUNC_CHECK_RETURN(
+        create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
+                        data.NBKEYWORD_DFT, 0, &ID));
 
     //  printf("IMAGE CREATED WITH ID = %ld\n",ID);
     //  fflush(stdout);
 
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
+
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 /* 3D image, double precision */
-imageID create_3Dimage_ID_double(
+errno_t create_3Dimage_ID_double(
     const char *ID_name,
     uint32_t xsize,
     uint32_t ysize,
-    uint32_t zsize
+    uint32_t zsize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -647,21 +703,28 @@ imageID create_3Dimage_ID_double(
     naxes[1] = ysize;
     naxes[2] = zsize;
 
-    create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                    data.NBKEYWORD_DFT, 0, &ID); // double precision
+    FUNC_CHECK_RETURN(
+        create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
+                        data.NBKEYWORD_DFT, 0, &ID));
+
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
 
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 
 /* 3D image, default precision */
-imageID create_3Dimage_ID(
+errno_t create_3Dimage_ID(
     const char *ID_name,
     uint32_t xsize,
     uint32_t ysize,
-    uint32_t zsize
+    uint32_t zsize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -677,30 +740,38 @@ imageID create_3Dimage_ID(
     naxes[2] = zsize;
 
     if(data.precision == 0)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
-                        data.NBKEYWORD_DFT, 0, &ID); // single precision
+    {   // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_FLOAT, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &ID));
     }
 
     if(data.precision == 1)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
-                        data.NBKEYWORD_DFT, 0, &ID); // double precision
+    {   // double precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_DOUBLE, data.SHARED_DFT,
+                            data.NBKEYWORD_DFT, 0, &ID));
     }
 
     free(naxes);
 
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
+
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 
 /* 3D complex image */
-imageID create_3DCimage_ID(
+errno_t create_3DCimage_ID(
     const char *ID_name,
     uint32_t xsize,
     uint32_t ysize,
-    uint32_t zsize
+    uint32_t zsize,
+    imageID    *outID
 )
 {
     DEBUG_TRACE_FSTART();
@@ -716,21 +787,27 @@ imageID create_3DCimage_ID(
     naxes[2] = zsize;
 
     if(data.precision == 0)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
-                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID); // single precision
+    {   // single precision
+        FUNC_CHECK_RETURN(
+            create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_FLOAT,
+                            data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
     }
 
     if(data.precision == 1)
-    {
-        create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
-                        data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID); // double precision
+    {   // double precision
+        FUNC_CHECK_RETURN(create_image_ID(ID_name, naxis, naxes, _DATATYPE_COMPLEX_DOUBLE,
+                                          data.SHARED_DFT, data.NBKEYWORD_DFT, 0, &ID));
     }
 
     free(naxes);
 
+    if(outID != NULL)
+    {
+        *outID = ID;
+    }
+
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return RETURN_SUCCESS;
 }
 
 

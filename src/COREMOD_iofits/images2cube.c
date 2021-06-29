@@ -61,7 +61,7 @@ errno_t images2cube_addCLIcmd()
         "int images_to_cube(char *img_name, long nbframes, char *cube_name)"
     );
 
-	return RETURN_SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 
@@ -76,6 +76,7 @@ errno_t images_to_cube(
     const char *restrict cube_name
 )
 {
+    DEBUG_TRACE_FSTART();
     imageID ID;
     imageID ID1;
     long frame;
@@ -83,7 +84,7 @@ errno_t images_to_cube(
     uint32_t xsize, ysize;
 
     frame = 0;
-    
+
     CREATE_IMAGENAME(imname, "%s%05ld", img_name, frame);
 
     ID1 = image_ID(imname);
@@ -100,7 +101,10 @@ errno_t images_to_cube(
     printf("SIZE = %ld %ld %ld\n", (long) naxes[0], (long) naxes[1],
            (long) nbframes);
     fflush(stdout);
-    ID = create_3Dimage_ID(cube_name, naxes[0], naxes[1], nbframes);
+
+    FUNC_CHECK_RETURN(
+        create_3Dimage_ID(cube_name, naxes[0], naxes[1], nbframes, &ID));
+
     for(uint32_t ii = 0; ii < naxes[0]; ii++)
         for(uint32_t jj = 0; jj < naxes[1]; jj++)
         {
@@ -139,6 +143,7 @@ errno_t images_to_cube(
         fflush(stdout);
     }
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 

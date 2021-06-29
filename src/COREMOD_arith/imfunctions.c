@@ -450,7 +450,7 @@ errno_t arith_image_function_imdd_im__ddd_d(
     }
 
     create_image_ID(ID_out, naxis, naxes, datatypeout, data.SHARED_DFT,
-                            data.NBKEYWORD_DFT, 0, IDout);
+                            data.NBKEYWORD_DFT, 0, &IDout);
     free(naxes);
 
     nelement = data.image[ID].md[0].nelement;
