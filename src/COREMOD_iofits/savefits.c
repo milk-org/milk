@@ -90,6 +90,7 @@ errno_t saveFITS(
     const char *restrict importheaderfile
 )
 {
+    DEBUG_TRACE_FSTART();
     printf("Saving image %s to file %s, bitpix = %d\n",
            inputimname,
            outputFITSname,
@@ -118,6 +119,7 @@ errno_t saveFITS(
     {
         PRINT_WARNING("Image %s does not exist in memory - cannot save to FITS",
                       inputimname);
+        DEBUG_TRACE_FEXIT();
         return RETURN_SUCCESS;
     }
 
@@ -291,7 +293,7 @@ errno_t saveFITS(
     {
         PRINT_ERROR("fits_create_img error on file %s", fnametmp);
         EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
-        return RETURN_FAILURE;
+        FUNC_RETURN_FAILURE(" ");
     }
 
     DEBUG_TRACEPOINT(" ");
@@ -311,7 +313,7 @@ errno_t saveFITS(
         {
             PRINT_ERROR("fits_write_img error %d on file %s", errcode, fnametmp);
             EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
-            return RETURN_FAILURE;
+            FUNC_RETURN_FAILURE(" ");
         }
     }
 
@@ -470,11 +472,12 @@ errno_t saveFITS(
     {
         PRINT_ERROR("fits_close_file error on file %s", fnametmp);
         EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
-        return RETURN_FAILURE;
+        FUNC_RETURN_FAILURE(" ");
     }
 
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("mv %s %s", fnametmp, outputFITSname);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -484,6 +487,7 @@ errno_t saveall_fits(
     const char *restrict savedirname
 )
 {
+    DEBUG_TRACE_FSTART();
     char fname[STRINGMAXLEN_FULLFILENAME];
 
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", savedirname);
@@ -496,6 +500,7 @@ errno_t saveall_fits(
             saveFITS(data.image[i].name, fname, 0, "");
         }
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -510,9 +515,11 @@ errno_t save_fits(
     DEBUG_TRACE_FSTART();
 
     FUNC_CHECK_RETURN(
-        saveFITS(savedirname, outputFITSname, 0, ""));
+        saveFITS(savedirname, outputFITSname, 0, "")
+    );
 
     DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
 }
 
 
@@ -527,6 +534,7 @@ errno_t save_fl_fits(
         saveFITS(savedirname, outputFITSname, -32, ""));
 
     DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
 }
 
 

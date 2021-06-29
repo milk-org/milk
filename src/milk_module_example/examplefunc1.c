@@ -69,14 +69,35 @@ static errno_t help_function()
  *
  * Can be made non-static and called from outside this translation unit(TU)
  * Minimizes use of variables local to this TU.
+ *
+ * Functions should return error code of type errno_t (= int).
+ * On success, return value is RETURN_SUCCESS (=0).
  */
 static errno_t example_compute_2Dimage_total(
     IMGID img,
     double scalingcoeff)
 {
+    // entering function, updating trace accordingly
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(&img, ERRMODE_ABORT);
+
+
+    // If function fails and error cannot be recovered from, use :
+
+    // abort();
+
+
+    // If error, return from function with error code and have
+    // caller handle it :
+
+    // FUNC_RETURN_FAILURE("error description");
+
+
+    // If calling other milk function, use following macro
+    // to test and handle possible error return :
+
+    // FUNC_CHECK_RETURN(othermilkfunc(img));
 
     uint_fast32_t xsize = img.md->size[0];
     uint_fast32_t ysize = img.md->size[1];
@@ -91,6 +112,7 @@ static errno_t example_compute_2Dimage_total(
 
     printf("image total = %lf, scaling coeff %lf\n", total, scalingcoeff);
 
+    // normal successful return from function :
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

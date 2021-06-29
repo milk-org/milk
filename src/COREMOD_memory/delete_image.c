@@ -131,6 +131,8 @@ errno_t delete_image_ID(
     int errmode
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID ID;
     long    s;
     char    fname[STRINGMAXLEN_FULLFILENAME];
@@ -141,6 +143,7 @@ errno_t delete_image_ID(
     {
         if(errmode == DELETE_IMAGE_ERRMODE_IGNORE)
         {
+            DEBUG_TRACE_FEXIT();
             return RETURN_SUCCESS;
         }
 
@@ -148,6 +151,7 @@ errno_t delete_image_ID(
         {
             PRINT_WARNING("Image \"%s\" does not exist",
                           imname);
+            DEBUG_TRACE_FEXIT();
             return RETURN_SUCCESS;
         }
 
@@ -155,7 +159,7 @@ errno_t delete_image_ID(
         {
             PRINT_WARNING("Image \"%s\" does not exist",
                           imname);
-            return RETURN_FAILURE;
+            FUNC_RETURN_FAILURE("Image \"%s\" does not exist", imname);
         }
 
         if(errmode == DELETE_IMAGE_ERRMODE_EXIT)
@@ -217,8 +221,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.UI8 == NULL)
                 {
-                    PRINT_ERROR("data array pointer is null\n");
-                    exit(EXIT_FAILURE);
+                    FUNC_RETURN_FAILURE("data array pointer is null");
                 }
                 free(data.image[ID].array.UI8);
                 data.image[ID].array.UI8 = NULL;
@@ -227,8 +230,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.SI32 == NULL)
                 {
-                    PRINT_ERROR("data array pointer is null\n");
-                    exit(EXIT_FAILURE);
+                    FUNC_RETURN_FAILURE("data array pointer is null");
                 }
                 free(data.image[ID].array.SI32);
                 data.image[ID].array.SI32 = NULL;
@@ -237,8 +239,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.F == NULL)
                 {
-                    PRINT_ERROR("data array pointer is null\n");
-                    exit(EXIT_FAILURE);
+                    FUNC_RETURN_FAILURE("data array pointer is null");
                 }
                 free(data.image[ID].array.F);
                 data.image[ID].array.F = NULL;
@@ -247,8 +248,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.D == NULL)
                 {
-                    PRINT_ERROR("data array pointer is null\n");
-                    exit(EXIT_FAILURE);
+                    FUNC_RETURN_FAILURE("data array pointer is null");
                 }
                 free(data.image[ID].array.D);
                 data.image[ID].array.D = NULL;
@@ -257,8 +257,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.CF == NULL)
                 {
-                    PRINT_ERROR("data array pointer is null\n");
-                    exit(EXIT_FAILURE);
+                    FUNC_RETURN_FAILURE("data array pointer is null");
                 }
                 free(data.image[ID].array.CF);
                 data.image[ID].array.CF = NULL;
@@ -267,8 +266,7 @@ errno_t delete_image_ID(
             {
                 if(data.image[ID].array.CD == NULL)
                 {
-                    PRINT_ERROR("data array pointer is null\n");
-                    exit(EXIT_FAILURE);
+                    FUNC_RETURN_FAILURE("data array pointer is null");
                 }
                 free(data.image[ID].array.CD);
                 data.image[ID].array.CD = NULL;
@@ -276,8 +274,7 @@ errno_t delete_image_ID(
 
             if(data.image[ID].md == NULL)
             {
-                PRINT_ERROR("data array pointer is null\n");
-                exit(0);
+                FUNC_RETURN_FAILURE("data array pointer is null");
             }
             free(data.image[ID].md);
             data.image[ID].md = NULL;
@@ -301,6 +298,7 @@ errno_t delete_image_ID(
         list_image_ID_ncurses();
     }
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
