@@ -78,6 +78,7 @@ return RETURN_FAILURE; \
 // If not RETURN_SUCCESS, fail current (caller) function
 //
 #define FUNC_CHECK_RETURN(errval) do {                        \
+data.testpoint.linestack[data.testpoint.funclevel] = __LINE__; \
 errno_t retcheckvalue = errval;                                    \
 if(retcheckvalue != RETURN_SUCCESS) {                          \
     char errmsg_funcretfailure[STRINGMAXLEN_FUNCERRORMSG]; \
