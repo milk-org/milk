@@ -577,7 +577,7 @@ PROCESSINFO *processinfo_shm_create(
     pindex = processinfo_shm_list_create();
 
     pinfolist->PIDarray[pindex] = PID;
-    strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME);
+    strncpy(pinfolist->pnamearray[pindex], pname, STRINGMAXLEN_PROCESSINFO_NAME-1);
 
     char  procdname[STRINGMAXLEN_FULLFILENAME];
     processinfo_procdirname(procdname);
@@ -789,7 +789,7 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
     {
         struct timespec tstop;
         struct tm *tstoptm;
-        char msgstring[200];
+        char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
         clock_gettime(CLOCK_REALTIME, &tstop);
         tstoptm = gmtime(&tstop.tv_sec);
@@ -798,14 +798,14 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
         {
             sprintf(msgstring, "CTRLexit %02d:%02d:%02d.%03d", tstoptm->tm_hour,
                     tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
-            strncpy(processinfo->statusmsg, msgstring, 200);
+            strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG-1);
         }
 
         if(processinfo->loopstat == 1)
         {
             sprintf(msgstring, "Loop exit %02d:%02d:%02d.%03d", tstoptm->tm_hour,
                     tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
-            strncpy(processinfo->statusmsg, msgstring, 200);
+            strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG-1);
         }
 
         processinfo->loopstat = 3; // clean exit

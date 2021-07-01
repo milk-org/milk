@@ -122,12 +122,12 @@ long function_parameter_struct_connect(
     char *pch;
 
 
-    strncpy(tmpstring, name, stringmaxlen);
+    strncpy(tmpstring, name, stringmaxlen-1);
     NBi = -1;
     pch = strtok(tmpstring, "-");
     while(pch != NULL)
     {
-        strncpy(tmpstring1, pch, stringmaxlen);
+        strncpy(tmpstring1, pch, stringmaxlen-1);
 
         if(NBi == -1)
         {

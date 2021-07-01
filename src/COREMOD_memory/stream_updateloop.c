@@ -737,14 +737,14 @@ imageID COREMOD_MEMORY_image_streamupdateloop(
             {
                 struct timespec tstop;
                 struct tm *tstoptm;
-                char msgstring[200];
+                char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
                 clock_gettime(CLOCK_REALTIME, &tstop);
                 tstoptm = gmtime(&tstop.tv_sec);
 
                 sprintf(msgstring, "CTRLexit at %02d:%02d:%02d.%03d", tstoptm->tm_hour,
                         tstoptm->tm_min, tstoptm->tm_sec, (int)(0.000001 * (tstop.tv_nsec)));
-                strncpy(processinfo->statusmsg, msgstring, 200);
+                strncpy(processinfo->statusmsg, msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG-1);
 
                 processinfo->loopstat = 3; // clean exit
             }

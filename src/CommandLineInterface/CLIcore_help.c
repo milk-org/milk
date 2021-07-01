@@ -281,12 +281,13 @@ errno_t printInfo()
 
 errno_t list_commands()
 {
-    char cmdinfoshort[38];
+    int cmdinfoslen=38;
+    char cmdinfoshort[cmdinfoslen];
 
     printf("----------- LIST OF COMMANDS ---------\n");
     for(unsigned int i = 0; i < data.NBcmd; i++)
     {
-        strncpy(cmdinfoshort, data.cmd[i].info, 38);
+        strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen-1);
         printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, data.cmd[i].module,
                cmdinfoshort, data.cmd[i].example);
     }
@@ -305,7 +306,8 @@ errno_t list_commands_module(
 )
 {
     int mOK = 0;
-    char cmdinfoshort[38];
+    int cmdinfoslen = 38;
+    char cmdinfoshort[cmdinfoslen];
 
     int moduleindex = -1;
     for(int m = 0; m < data.NBmodule; m++)
@@ -346,7 +348,7 @@ errno_t list_commands_module(
                     printf("---- MODULE %s COMMANDS ---------\n", modulename);
                 }
 
-                strncpy(cmdinfoshort, data.cmd[i].info, 38);
+                strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen-1);
                 printf(COLORCMD "   %-24s" COLORRESET COLORINFO "  %-40s\n" COLORRESET,
                        data.cmd[i].key, cmdinfoshort);
 //                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
