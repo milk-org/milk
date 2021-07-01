@@ -2,10 +2,10 @@
 /**
  * @file streamCTRL.h
  * @brief Data streams control panel
- * 
+ *
  * Manages data streams
- * 
- * 
+ *
+ *
  */
 
 #ifndef _STREAMCTRL_H
@@ -18,7 +18,7 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-#include <stdint.h>    
+#include <stdint.h>
 #include <unistd.h>    // getpid()
 
 
@@ -49,7 +49,7 @@
 
 typedef struct
 {
-	char sname[STRINGMAXLEN_STREAMINFO_NAME];      // stream name
+    char sname[STRINGMAXLEN_STREAMINFO_NAME];      // stream name
     int SymLink;
     char linkname[STRINGMAXLEN_STREAMINFO_NAME];   // if stream is sym link, resolve link name
 
@@ -67,31 +67,31 @@ typedef struct
 
     long long cnt0; // used to check if cnt0 has changed
     long deltacnt0;
-	
+
 } STREAMINFO;
 
 
 
 typedef struct
 {
-	int twaitus; // sleep time between scans
-	double dtscan; // measured time interval between scans [s]
-		
-	int loop;   // 1 : loop     0 : exit
-	long loopcnt;
-	
-	int filter;           // 1 if applying filter to name
-	char namefilter[STRINGLENMAX];
-	
-	int WriteFlistToFile; // 1 if output to file
-	
-	STREAMINFO *sinfo;
-	long NBstream;
-	int fuserUpdate;
-	int fuserUpdate0;
-	int sindexscan;
-	char **PIDtable; // stores names of PIDs
-	
+    int twaitus; // sleep time between scans
+    double dtscan; // measured time interval between scans [s]
+
+    int loop;   // 1 : loop     0 : exit
+    long loopcnt;
+
+    int filter;           // 1 if applying filter to name
+    char namefilter[STRINGLENMAX];
+
+    int WriteFlistToFile; // 1 if output to file
+
+    STREAMINFO *sinfo;
+    long NBstream;
+    int fuserUpdate;
+    int fuserUpdate0;
+    int sindexscan;
+    char **PIDtable; // stores names of PIDs
+
 } STREAMINFOPROC;
 
 

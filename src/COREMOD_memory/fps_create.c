@@ -169,15 +169,15 @@ errno_t function_parameter_struct_create(
     }
 
 
-    strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME);
-    strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN);
+    strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME-1);
+    strncpy(fps.md->callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN-1);
     strncpy(fps.md->callfuncname, data.cmdargtoken[0].val.string,
-            FPS_CALLFUNCNAME_STRMAXLEN);
+            FPS_CALLFUNCNAME_STRMAXLEN-1);
 
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
     {
-        strncpy(fps.md->workdir, cwd, FPS_CWD_STRLENMAX);
+        strncpy(fps.md->workdir, cwd, FPS_CWD_STRLENMAX-1);
     }
     else
     {
@@ -185,7 +185,7 @@ errno_t function_parameter_struct_create(
         return 1;
     }
 
-    strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX);
+    strncpy(fps.md->sourcefname, "NULL", FPS_SRCDIR_STRLENMAX-1);
     fps.md->sourceline = 0;
 
     // set default fpsdatadir
@@ -207,7 +207,7 @@ errno_t function_parameter_struct_create(
         if(data.module[m].type ==  MODULE_TYPE_CUSTOMLOAD) // custom loaded module
         {
             strncpy(fps.md->modulename[fps.md->NBmodule], data.module[m].loadname,
-                    FPS_MODULE_STRMAXLEN);
+                    FPS_MODULE_STRMAXLEN-1);
             fps.md->NBmodule++;
         }
     }

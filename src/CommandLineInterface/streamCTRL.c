@@ -342,7 +342,7 @@ int find_streams(
                             }
                             ii++;
                         }
-                        strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
+                        strncpy(streaminfo[sindex].linkname, linkname, STRINGMAXLEN_STREAMINFO_NAME-1);
                     }
 
                     if(linknamefull != NULL)
@@ -641,7 +641,7 @@ void *streamCTRL_scan(
                                     }
                                     ii++;
                                 }
-                                strncpy(streaminfo[sindex].linkname, linkname, nameNBchar);
+                                strncpy(streaminfo[sindex].linkname, linkname, STRINGMAXLEN_STREAMINFO_NAME-1);
                             }
 
                             if(linknamefull != NULL)

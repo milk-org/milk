@@ -256,13 +256,13 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // parameters are addressed by their tag name
     // These parameters are read once, before running the loop
     //
-    char IDin_name[200];
+    char IDin_name[FUNCTION_PARAMETER_STRMAXLEN];
     strncpy(IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_name"),
-            FUNCTION_PARAMETER_STRMAXLEN);
+            FUNCTION_PARAMETER_STRMAXLEN-1);
 
-    char IDout_name[200];
+    char IDout_name[FUNCTION_PARAMETER_STRMAXLEN];
     strncpy(IDout_name, functionparameter_GetParamPtr_STRING(&fps, ".out_name"),
-            FUNCTION_PARAMETER_STRMAXLEN);
+            FUNCTION_PARAMETER_STRMAXLEN-1);
 
     long delayus = functionparameter_GetParamValue_INT64(&fps, ".delayus");
 

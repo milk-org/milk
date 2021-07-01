@@ -248,7 +248,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
                     abort(); // can't handle this error any other way
                 }
 
-                strncpy(data.FPS_name, fpsname1, FUNCTION_PARAMETER_STRMAXLEN);
+                strncpy(data.FPS_name, fpsname1, FUNCTION_PARAMETER_STRMAXLEN-1);
                 argindex ++;
             }
         }
