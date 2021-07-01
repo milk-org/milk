@@ -579,6 +579,8 @@ errno_t mk_amph_from_complex(
     int         sharedmem
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID    IDam;
     imageID    IDph;
     imageID    IDin;
@@ -605,10 +607,16 @@ errno_t mk_amph_from_complex(
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
-        create_image_ID(am_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDam);
-        create_image_ID(ph_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDph);
+        FUNC_CHECK_RETURN(
+            create_image_ID(am_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDam)
+        );
+
+        FUNC_CHECK_RETURN(
+            create_image_ID(ph_name, naxis, naxes,  _DATATYPE_FLOAT, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDph)
+        );
+
         data.image[IDam].md[0].write = 1;
         data.image[IDph].md[0].write = 1;
 # ifdef _OPENMP
@@ -631,8 +639,13 @@ errno_t mk_amph_from_complex(
 # endif
         if(sharedmem == 1)
         {
-            COREMOD_MEMORY_image_set_sempost_byID(IDam, -1);
-            COREMOD_MEMORY_image_set_sempost_byID(IDph, -1);
+            FUNC_CHECK_RETURN(
+                COREMOD_MEMORY_image_set_sempost_byID(IDam, -1)
+            );
+
+            FUNC_CHECK_RETURN(
+                COREMOD_MEMORY_image_set_sempost_byID(IDph, -1)
+            );
         }
         data.image[IDam].md[0].cnt0++;
         data.image[IDph].md[0].cnt0++;
@@ -641,10 +654,16 @@ errno_t mk_amph_from_complex(
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
     {
-        create_image_ID(am_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDam);
-        create_image_ID(ph_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDph);
+        FUNC_CHECK_RETURN(
+            create_image_ID(am_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDam)
+        );
+
+        FUNC_CHECK_RETURN(
+            create_image_ID(ph_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDph)
+        );
+
         data.image[IDam].md[0].write = 1;
         data.image[IDph].md[0].write = 1;
 # ifdef _OPENMP
@@ -680,6 +699,7 @@ errno_t mk_amph_from_complex(
         exit(0);
     }
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
