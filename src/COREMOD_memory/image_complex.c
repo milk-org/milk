@@ -236,14 +236,13 @@ errno_t mk_complex_from_reim(
     int         sharedmem
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID     IDre;
     imageID     IDim;
     imageID     IDout;
     uint32_t   *naxes = NULL;
-    long        naxis;
-    long        nelement;
-    long        ii;
-    long        i;
+    int8_t      naxis;
     uint8_t     datatype_re;
     uint8_t     datatype_im;
     uint8_t     datatype_out;
@@ -259,22 +258,24 @@ errno_t mk_complex_from_reim(
     if(naxes == NULL)
     {
         PRINT_ERROR("malloc error");
-        exit(0);
+        abort();
     }
 
-    for(i = 0; i < naxis; i++)
+    for(int8_t i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[IDre].md[0].size[i];
     }
-    nelement = data.image[IDre].md[0].nelement;
+    uint64_t nelement = data.image[IDre].md[0].nelement;
 
 
     if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
-        for(ii = 0; ii < nelement; ii++)
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CF[ii].re = data.image[IDre].array.F[ii];
             data.image[IDout].array.CF[ii].im = data.image[IDim].array.F[ii];
@@ -283,9 +284,11 @@ errno_t mk_complex_from_reim(
     else if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
-        for(ii = 0; ii < nelement; ii++)
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.F[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
@@ -294,9 +297,11 @@ errno_t mk_complex_from_reim(
     else if((datatype_re == _DATATYPE_DOUBLE) && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
-        for(ii = 0; ii < nelement; ii++)
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.F[ii];
@@ -305,9 +310,11 @@ errno_t mk_complex_from_reim(
     else if((datatype_re == _DATATYPE_DOUBLE) && (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
-        for(ii = 0; ii < nelement; ii++)
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
@@ -316,12 +323,13 @@ errno_t mk_complex_from_reim(
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");
-        exit(0);
+        abort();
     }
     // Note: openMP doesn't help here
 
     free(naxes);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -336,6 +344,8 @@ errno_t mk_complex_from_amph(
     int         sharedmem
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID    IDam;
     imageID    IDph;
     imageID    IDout;
@@ -362,8 +372,10 @@ errno_t mk_complex_from_amph(
     if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
 
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
@@ -388,8 +400,10 @@ errno_t mk_complex_from_amph(
     else if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -412,8 +426,10 @@ errno_t mk_complex_from_amph(
     else if((datatype_am == _DATATYPE_DOUBLE) && (datatype_ph == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -437,8 +453,10 @@ errno_t mk_complex_from_amph(
     else if((datatype_am == _DATATYPE_DOUBLE) && (datatype_ph == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDout);
+        FUNC_CHECK_RETURN(
+            create_image_ID(out_name, naxis, naxes, datatype_out, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDout)
+        );
         data.image[IDout].md[0].write = 1;
 # ifdef _OPENMP
         #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
@@ -461,9 +479,10 @@ errno_t mk_complex_from_amph(
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");
-        exit(0);
+        abort();
     }
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -477,6 +496,8 @@ errno_t mk_reim_from_complex(
     int         sharedmem
 )
 {
+    DEBUG_TRACE_FSTART();
+
     imageID     IDre;
     imageID     IDim;
     imageID     IDin;
@@ -497,10 +518,15 @@ errno_t mk_reim_from_complex(
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
-        create_image_ID(re_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDre);
-        create_image_ID(im_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDim);
+        FUNC_CHECK_RETURN(
+            create_image_ID(re_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDre)
+        );
+
+        FUNC_CHECK_RETURN(
+            create_image_ID(im_name, naxis, naxes, _DATATYPE_FLOAT, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDim)
+        );
 
         data.image[IDre].md[0].write = 1;
         data.image[IDim].md[0].write = 1;
@@ -529,10 +555,15 @@ errno_t mk_reim_from_complex(
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
     {
-        create_image_ID(re_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDre);
-        create_image_ID(im_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
-                        data.NBKEYWORD_DFT, 0, &IDim);
+        FUNC_CHECK_RETURN(
+            create_image_ID(re_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDre)
+        );
+
+        FUNC_CHECK_RETURN(
+            create_image_ID(im_name, naxis, naxes, _DATATYPE_DOUBLE, sharedmem,
+                            data.NBKEYWORD_DFT, 0, &IDim)
+        );
         data.image[IDre].md[0].write = 1;
         data.image[IDim].md[0].write = 1;
 # ifdef _OPENMP
@@ -565,7 +596,7 @@ errno_t mk_reim_from_complex(
         exit(0);
     }
 
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -585,25 +616,17 @@ errno_t mk_amph_from_complex(
     imageID    IDph;
     imageID    IDin;
     uint32_t   naxes[3];
-    long       naxis;
-    uint64_t       nelement;
-    uint64_t   ii;
-    long       i;
-    float      amp_f;
-    float      pha_f;
-    double     amp_d;
-    double     pha_d;
     uint8_t    datatype;
 
     IDin = image_ID(in_name);
     datatype = data.image[IDin].md[0].datatype;
-    naxis = data.image[IDin].md[0].naxis;
+    uint8_t naxis = data.image[IDin].md[0].naxis;
 
-    for(i = 0; i < naxis; i++)
+    for(uint8_t i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[IDin].md[0].size[i];
     }
-    nelement = data.image[IDin].md[0].nelement;
+    uint64_t nelement = data.image[IDin].md[0].nelement;
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
     {
@@ -624,12 +647,12 @@ errno_t mk_amph_from_complex(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                amp_f = (float) sqrt(data.image[IDin].array.CF[ii].re *
+                float amp_f = (float) sqrt(data.image[IDin].array.CF[ii].re *
                                      data.image[IDin].array.CF[ii].re + data.image[IDin].array.CF[ii].im *
                                      data.image[IDin].array.CF[ii].im);
-                pha_f = (float) atan2(data.image[IDin].array.CF[ii].im,
+                float pha_f = (float) atan2(data.image[IDin].array.CF[ii].im,
                                       data.image[IDin].array.CF[ii].re);
                 data.image[IDam].array.F[ii] = amp_f;
                 data.image[IDph].array.F[ii] = pha_f;
@@ -671,11 +694,11 @@ errno_t mk_amph_from_complex(
         {
             #pragma omp for
 # endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                amp_d = sqrt(data.image[IDin].array.CD[ii].re * data.image[IDin].array.CD[ii].re
+                double amp_d = sqrt(data.image[IDin].array.CD[ii].re * data.image[IDin].array.CD[ii].re
                              + data.image[IDin].array.CD[ii].im * data.image[IDin].array.CD[ii].im);
-                pha_d = atan2(data.image[IDin].array.CD[ii].im,
+                double pha_d = atan2(data.image[IDin].array.CD[ii].im,
                               data.image[IDin].array.CD[ii].re);
                 data.image[IDam].array.D[ii] = amp_d;
                 data.image[IDph].array.D[ii] = pha_d;
@@ -714,10 +737,21 @@ errno_t mk_reim_from_amph(
     int         sharedmem
 )
 {
-    mk_complex_from_amph(am_name, ph_name, "Ctmp", 0);
-    mk_reim_from_complex("Ctmp", re_out_name, im_out_name, sharedmem);
-    delete_image_ID("Ctmp", DELETE_IMAGE_ERRMODE_WARNING);
+    DEBUG_TRACE_FSTART();
 
+    FUNC_CHECK_RETURN(
+        mk_complex_from_amph(am_name, ph_name, "Ctmp", 0)
+    );
+
+    FUNC_CHECK_RETURN(
+        mk_reim_from_complex("Ctmp", re_out_name, im_out_name, sharedmem)
+    );
+
+    FUNC_CHECK_RETURN(
+        delete_image_ID("Ctmp", DELETE_IMAGE_ERRMODE_WARNING)
+    );
+
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -731,10 +765,21 @@ errno_t mk_amph_from_reim(
     int         sharedmem
 )
 {
-    mk_complex_from_reim(re_name, im_name, "Ctmp", 0);
-    mk_amph_from_complex("Ctmp", am_out_name, ph_out_name, sharedmem);
-    delete_image_ID("Ctmp", DELETE_IMAGE_ERRMODE_WARNING);
+    DEBUG_TRACE_FSTART();
 
+    FUNC_CHECK_RETURN(
+        mk_complex_from_reim(re_name, im_name, "Ctmp", 0)
+    );
+
+    FUNC_CHECK_RETURN(
+        mk_amph_from_complex("Ctmp", am_out_name, ph_out_name, sharedmem)
+    );
+
+    FUNC_CHECK_RETURN(
+        delete_image_ID("Ctmp", DELETE_IMAGE_ERRMODE_WARNING)
+    );
+
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
