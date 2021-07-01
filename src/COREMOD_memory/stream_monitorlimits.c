@@ -1,7 +1,7 @@
 /** @file stream_monitorlimits.c
- * 
+ *
  * Monitors stream to fit within limits.
- * 
+ *
  * Can take actions if limits are exceeded.
  */
 
@@ -123,7 +123,7 @@ errno_t stream_monitorlimits_addCLIcmd()
  *
  */
 errno_t stream_monitorlimits_FPCONF()
-{	
+{
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);
     uint64_t FPFLAG;
 
@@ -154,9 +154,9 @@ errno_t stream_monitorlimits_FPCONF()
 
 
 
-	
-	long fpi_maxON = function_parameter_add_entry(&fps, ".maxON", "max toggle",
-                       FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, NULL);
+
+    long fpi_maxON = function_parameter_add_entry(&fps, ".maxON", "max toggle",
+                     FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, NULL);
     (void) fpi_maxON;
 
     long fpi_maxVal = function_parameter_add_entry(&fps, ".minVal", "min value",
@@ -173,7 +173,7 @@ errno_t stream_monitorlimits_FPCONF()
     // stop function parameter conf loop, defined in function_parameter.h
     FPS_CONFLOOP_END
 
-	printf("CONF EXIT CONDITION MET\n");
+    printf("CONF EXIT CONDITION MET\n");
 
 
     return RETURN_SUCCESS;
@@ -205,7 +205,7 @@ errno_t stream_monitorlimits_RUN()
     // ===========================
     /// ### CONNECT TO FPS
     // ===========================
-	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
+    FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
 
     // ===============================
     /// ### GET FUNCTION PARAMETER VALUES
@@ -215,12 +215,12 @@ errno_t stream_monitorlimits_RUN()
     //
     char IDin_name[FUNCTION_PARAMETER_STRMAXLEN];
     strncpy(IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_sname"),
-            FUNCTION_PARAMETER_STRMAXLEN);
+            FUNCTION_PARAMETER_STRMAXLEN-1);
 
-	long dtus    = functionparameter_GetParamValue_INT64(&fps, ".dtus");
-	
-	
-	
+    long dtus    = functionparameter_GetParamValue_INT64(&fps, ".dtus");
+
+
+
 
     // ===========================
     /// ### processinfo support
@@ -228,11 +228,11 @@ errno_t stream_monitorlimits_RUN()
     PROCESSINFO *processinfo;
 
     processinfo = processinfo_setup(
-        data.FPS_name,	             // re-use fpsname as processinfo name
-        "monitor stream limits",     // description
-        "starting monitor",          // message on startup
-        __FUNCTION__, __FILE__, __LINE__
-        );
+                      data.FPS_name,	             // re-use fpsname as processinfo name
+                      "monitor stream limits",     // description
+                      "starting monitor",          // message on startup
+                      __FUNCTION__, __FILE__, __LINE__
+                  );
 
 
     // =============================================
@@ -241,27 +241,27 @@ errno_t stream_monitorlimits_RUN()
     // Pre-loop testing, anything that would prevent loop from starting should issue message
     int loopOK = 1;
 
-	
-	
+
+
     // Specify input stream trigger
-	imageID IDin = image_ID(IDin_name);
-	
+    imageID IDin = image_ID(IDin_name);
+
     processinfo_waitoninputstream_init(processinfo, IDin,
-		PROCESSINFO_TRIGGERMODE_DELAY, -1);
-	processinfo->triggerdelay.tv_sec = 0;
-	processinfo->triggerdelay.tv_nsec = (long) (dtus*1000);
-	while(processinfo->triggerdelay.tv_nsec > 1000000000)
-	{
-		processinfo->triggerdelay.tv_nsec -= 1000000000;
-		processinfo->triggerdelay.tv_sec += 1;
-	}
+                                       PROCESSINFO_TRIGGERMODE_DELAY, -1);
+    processinfo->triggerdelay.tv_sec = 0;
+    processinfo->triggerdelay.tv_nsec = (long) (dtus*1000);
+    while(processinfo->triggerdelay.tv_nsec > 1000000000)
+    {
+        processinfo->triggerdelay.tv_nsec -= 1000000000;
+        processinfo->triggerdelay.tv_sec += 1;
+    }
 
 
     // ===========================
     /// ### START LOOP
     // ===========================
-    
-	// Notify processinfo that we are entering loop
+
+    // Notify processinfo that we are entering loop
     processinfo_loopstart(processinfo);
 
 
@@ -276,9 +276,9 @@ errno_t stream_monitorlimits_RUN()
 
         if(processinfo_compute_status(processinfo) == 1)
         {
-            
+
         }
-        
+
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
     }
@@ -306,19 +306,19 @@ errno_t stream_monitorlimits(
 )
 {
     FUNCTION_PARAMETER_STRUCT fps;
-		
+
     // create and initialize FPS
     // specify name
     sprintf(data.FPS_name, "%s-%s", "streammlim", instreamname);
     data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
     stream_monitorlimits_FPCONF();
 
-	// initialize parameters
-	function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
-	functionparameter_SetParamValue_STRING(&fps, "in_sname", instreamname);
-	function_parameter_struct_disconnect(&fps);
+    // initialize parameters
+    function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
+    functionparameter_SetParamValue_STRING(&fps, "in_sname", instreamname);
+    function_parameter_struct_disconnect(&fps);
 
-	// run
+    // run
     stream_monitorlimits_RUN();
 
     return RETURN_SUCCESS;

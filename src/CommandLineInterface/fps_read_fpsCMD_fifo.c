@@ -66,12 +66,12 @@ int functionparameter_read_fpsCMD_fifo(
             DEBUG_TRACEPOINT(" ");
 
 
-            if(buf0[0] == '\n')    
+            if(buf0[0] == '\n')
             {
-				// reached end of line
-				// -> process command
-				//
-				
+                // reached end of line
+                // -> process command
+                //
+
                 buff[total_bytes - 1] = '\0';
                 FPScmdline = buff;
 
@@ -195,16 +195,16 @@ int functionparameter_read_fpsCMD_fifo(
                 if(cmdFOUND == 0)
                 {
                     strncpy(fpsctrltasklist[cmdindex].cmdstring, FPScmdline,
-                            STRINGMAXLEN_FPS_CMDLINE);
+                            STRINGMAXLEN_FPS_CMDLINE-1);
 
                     fpsctrltasklist[cmdindex].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
                     fpsctrltasklist[cmdindex].queue = queue;
                     clock_gettime(CLOCK_REALTIME, &fpsctrltasklist[cmdindex].creationtime);
-                    
+
                     // waiting to be processed
                     fpsctrltasklist[cmdindex].status |= FPSTASK_STATUS_WAITING;
-                    
+
 
                     if(waitonrun == 1)
                     {

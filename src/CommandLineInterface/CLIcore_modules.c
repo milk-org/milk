@@ -40,7 +40,7 @@ errno_t load_sharedobj(
     DEBUG_TRACE_FSTART();
 
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
-    strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME);
+    strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME-1);
 
 
     // check if already loaded
@@ -135,16 +135,16 @@ errno_t load_module_shared(
     // a custom module is about to be loaded, so we set the type accordingly
     // this variable will be written by module register function into module struct
     data.moduletype = MODULE_TYPE_CUSTOMLOAD;
-    strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME);
-    strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME);
+    strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME-1);
+    strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME-1);
     if(load_sharedobj(libname) == RETURN_SUCCESS)
     {
         //
     }
     // reset to default for next load
     data.moduletype = MODULE_TYPE_STARTUP;
-    strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME);
-    strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME);
+    strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME-1);
+    strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME-1);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -292,13 +292,13 @@ errno_t RegisterModule(
     data.module[data.NBmodule].type = data.moduletype;
 
     strncpy(data.module[data.NBmodule].loadname, data.moduleloadname,
-            STRINGMAXLEN_MODULE_LOADNAME);
+            STRINGMAXLEN_MODULE_LOADNAME-1);
     strncpy(data.module[data.NBmodule].sofilename, data.modulesofilename,
-            STRINGMAXLEN_MODULE_SOFILENAME);
+            STRINGMAXLEN_MODULE_SOFILENAME-1);
 
     //printf("--- libnameloaded : %s\n", libnameloaded);
     strncpy(data.module[data.NBmodule].sofilename, libnameloaded,
-            STRINGMAXLEN_MODULE_SOFILENAME);
+            STRINGMAXLEN_MODULE_SOFILENAME-1);
 
     if(data.progStatus == 0)
     {

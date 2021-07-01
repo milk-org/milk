@@ -98,15 +98,15 @@ int function_parameter_add_entry(
 
         // break full keyword into keywords
         strncpy(funcparamarray[pindex].keywordfull, keywordstringC,
-                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL -1);
         strncpy(tmpstring, keywordstringC,
-                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL);
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL - 1);
         funcparamarray[pindex].keywordlevel = 0;
         pch = strtok(tmpstring, ".");
         while(pch != NULL)
         {
             strncpy(funcparamarray[pindex].keyword[funcparamarray[pindex].keywordlevel],
-                    pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN);
+                    pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN-1);
             funcparamarray[pindex].keywordlevel++;
             pch = strtok(NULL, ".");
         }
@@ -114,7 +114,7 @@ int function_parameter_add_entry(
 
         // Write description
         strncpy(funcparamarray[pindex].description, descriptionstring,
-                FUNCTION_PARAMETER_DESCR_STRMAXLEN);
+                FUNCTION_PARAMETER_DESCR_STRMAXLEN-1);
 
         // type
         funcparamarray[pindex].type = type;
@@ -319,37 +319,37 @@ int function_parameter_add_entry(
 
             case FPTYPE_FILENAME :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_FITSFILENAME :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_EXECFILENAME :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_DIRNAME :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_STREAMNAME :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
 
             case FPTYPE_STRING :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
 
@@ -358,7 +358,7 @@ int function_parameter_add_entry(
 
             case FPTYPE_FPSNAME :
                 strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                        FUNCTION_PARAMETER_STRMAXLEN);
+                        FUNCTION_PARAMETER_STRMAXLEN-1);
                 funcparamarray[pindex].cnt0++;
                 break;
             }
