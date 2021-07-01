@@ -56,7 +56,6 @@ int main(
     }
 
 
-
     // Allocate data.testpointarray
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
@@ -138,6 +137,11 @@ int main(
     //pthread_exit(NULL);
 
 #ifndef NDEBUG
+
+    if(getenv("MILK_WRITECODETRACE"))
+    {
+        write_tracedebugfile();
+    }
     printf("De-allocating test circular buffer\n");
     fflush(stdout);
     data.testpointarrayinit = 0;
