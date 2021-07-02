@@ -9,6 +9,11 @@
 
 #include <pthread.h>
 
+// Handle old fitsios
+#ifndef ULONGLONG_IMG
+#define ULONGLONG_IMG (80)
+#endif
+
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits_common.h"
 #include "check_fitsio_status.h"
@@ -569,4 +574,3 @@ errno_t CLIADDCMD_COREMOD_iofits__saveFITS()
 
     return RETURN_SUCCESS;
 }
-
