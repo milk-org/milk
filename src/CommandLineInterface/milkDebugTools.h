@@ -180,10 +180,16 @@ C_ERRNO = 0; \
 #if defined NDEBUG
 #define DEBUG_TRACE_FSTART(...)
 #else
-#define DEBUG_TRACE_FSTART(...) do { \
+#define DEBUG_TRACE_FSTART(...) \
+int funclevel = data.testpoint.funclevel; \
+static int funccallcnt; \
+do { \
 if(data.testpoint.funclevel < MAXNB_FUNCSTACK) { \
-strncpy(data.testpoint.funcstack[data.testpoint.funclevel], __func__, STRINGMAXLEN_FUNCSTAK_FUNCNAME-1);\
+    strncpy(data.testpoint.funcstack[data.testpoint.funclevel], __func__, STRINGMAXLEN_FUNCSTAK_FUNCNAME-1);\
+    data.testpoint.fcntstack[data.testpoint.funclevel] = funccallcnt; \
+    data.testpoint.funccallcnt = funccallcnt; \
 }\
+funccallcnt++; \
 data.testpoint.funclevel++; \
 } while(0)
 #endif
@@ -193,8 +199,13 @@ data.testpoint.funclevel++; \
 #define DEBUG_TRACE_FEXIT(...)
 #else
 #define DEBUG_TRACE_FEXIT(...) do { \
-if(data.testpoint.funclevel>0) {\
 data.testpoint.funclevel--; \
+data.testpoint.funccallcnt = data.testpoint.fcntstack[data.testpoint.funclevel];\
+if(data.testpoint.funclevel>0) {\
+    if (data.testpoint.funclevel != funclevel) { \
+    PRINT_ERROR("function level mismatch - check source code"); \
+    abort(); \
+} \
 }\
 } while(0)
 #endif

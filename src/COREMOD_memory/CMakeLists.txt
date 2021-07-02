@@ -31,6 +31,10 @@ set(SOURCEFILES
     image_keyword_list.c
     image_make2D.c
     image_make3D.c
+    image_mk_complex_from_amph.c
+    image_mk_complex_from_reim.c
+    image_mk_amph_from_complex.c
+    image_mk_reim_from_complex.c
     image_set_counters.c
     list_image.c
     list_variable.c
@@ -83,6 +87,10 @@ set(INCLUDEFILES
     image_keyword_list.h
     image_make2D.h
     image_make3D.h
+    image_mk_complex_from_amph.h
+    image_mk_complex_from_reim.h
+    image_mk_amph_from_complex.h
+    image_mk_reim_from_complex.h
     image_set_counters.h
     list_image.h
     list_variable.h

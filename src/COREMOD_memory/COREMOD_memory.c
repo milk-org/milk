@@ -34,16 +34,22 @@
 
 #include "CommandLineInterface/timeutils.h"
 
+
 #include "clearall.h"
 #include "create_image.h"
 #include "create_variable.h"
+
 #include "delete_image.h"
 #include "delete_sharedmem_image.h"
+
+#include "fps_ID.h"
+#include "fps_create.h"
+#include "fps_list.h"
+
 #include "image_ID.h"
 #include "image_complex.h"
 #include "image_copy.h"
 #include "image_copy_shm.h"
-
 #include "image_keyword.h"
 #include "image_keyword_list.h"
 #include "image_keyword_addD.h"
@@ -51,22 +57,23 @@
 #include "image_keyword_addS.h"
 #include "image_make2D.h"
 #include "image_make3D.h"
-
+#include "image_mk_complex_from_amph.h"
+#include "image_mk_complex_from_reim.h"
+#include "image_mk_amph_from_complex.h"
+#include "image_mk_reim_from_complex.h"
 #include "image_set_counters.h"
 
-#include "fps_ID.h"
-#include "fps_create.h"
-#include "fps_list.h"
 
 #include "list_image.h"
 #include "list_variable.h"
 #include "logshmim.h"
-#include "shmimlog.h"
-#include "shmimlogcmd.h"
 
 #include "read_shmim.h"
 #include "read_shmim_size.h"
 #include "read_shmimall.h"
+
+#include "shmimlog.h"
+#include "shmimlogcmd.h"
 
 #include "saveall.h"
 #include "shmim_purge.h"
@@ -153,7 +160,10 @@ static errno_t init_module_CLI()
 
 
     // TYPE CONVERSIONS TO AND FROM COMPLEX
-    image_complex_addCLIcmd();
+    CLIADDCMD_COREMOD__mk_complex_from_reim();
+    CLIADDCMD_COREMOD__mk_complex_from_amph();
+    CLIADDCMD_COREMOD__mk_reim_from_complex();
+    CLIADDCMD_COREMOD__mk_amph_from_complex();
 
     // SET IMAGE FLAGS / COUNTERS
     image_set_counters_addCLIcmd();
