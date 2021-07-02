@@ -345,7 +345,10 @@ typedef struct
     char            func[STRINGMAXLEN_FUNCTIONNAME];
 
     int             funclevel;
+    long            funccallcnt; // how many times has this function been called ?
+
     char            funcstack[MAXNB_FUNCSTACK][STRINGMAXLEN_FUNCSTAK_FUNCNAME];
+    long            fcntstack[MAXNB_FUNCSTACK]; // function call count
     int             linestack[MAXNB_FUNCSTACK]; // caller line number
 
     char            msg[STRINGMAXLEN_FUNCTIONARGS]; // user message

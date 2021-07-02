@@ -329,8 +329,9 @@ errno_t write_tracedebugfile()
                 );
                 for(int level = 0; level < data.testpointarray[j].funclevel; level++)
                 {
-                    fprintf(fp, " (%d) >> %s",
+                    fprintf(fp, " (%d) >> %ld:%s",
                             data.testpointarray[j].linestack[level],
+                            data.testpointarray[j].fcntstack[level],
                             data.testpointarray[j].funcstack[level]);
                 }
                 fprintf(fp, "\n\n");
