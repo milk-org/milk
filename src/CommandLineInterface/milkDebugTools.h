@@ -41,8 +41,8 @@ typedef int errno_t;
 #define STRINGMAXLEN_FPSPROCESSTYPE 64
 
 
-#define xstr(a) str(a)
-#define str(a) #a
+#define xstr(a) zstr(a)
+#define zstr(a) #a
 
 
 
