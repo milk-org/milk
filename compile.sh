@@ -26,8 +26,8 @@ fi
 
 echo "using python at ${pythonexec}"
 
-
-cmake .. -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT -DCMAKE_BUILD_TYPE=Debug
+# CMAKE_OPT could be "-DUSE_CUDA=ON" : CMAKE_OPT="-DUSE_CUDA=ON" ./compile.sh
+cmake .. $CMAKE_OPT -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT -DCMAKE_BUILD_TYPE=Debug
 # cmake .. -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
