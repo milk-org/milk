@@ -8,8 +8,9 @@
 #include <omp.h>
 #include <assert.h>
 #include <pthread.h>
-#include <CommandLineInterface/CLIcore.h>
 
+#include <CommandLineInterface/CLIcore.h>
+#include "CLIcore_UI.h"
 
 
 #define STYLE_BOLD    "\033[1m"

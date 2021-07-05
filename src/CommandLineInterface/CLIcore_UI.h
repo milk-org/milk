@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_UI.h
- * 
+ *
  * @brief User input
  *
  *
