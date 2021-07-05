@@ -564,6 +564,8 @@ static errno_t runCLI_initialize(
 static void
 sighandler (int sig)
 {
+
+    (void) sig;
     rl_resize_terminal ();
     //printf("RESIZE detected %d %d\n", COLS, LINES);
     sigwinch_received = 1;
@@ -838,10 +840,9 @@ errno_t runCLI(
 
             {   // CLI loop delay to keep CPU load light
                 struct timespec nsts;
-                int ret;
                 nsts.tv_sec = 0;
                 nsts.tv_nsec = 30000000; // 30 ms delay
-                ret = nanosleep(&nsts, NULL);
+                nanosleep(&nsts, NULL);
             }
 
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
