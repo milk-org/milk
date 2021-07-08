@@ -16,6 +16,7 @@
 typedef int errno_t;
 #endif
 
+#include "CommandLineInterface/CLIcore_signals.h"
 
 // error mode
 // defines function behavior on error
@@ -219,9 +220,9 @@ if(data.testpoint.funclevel>0) {\
  * @brief register trace point
  */
 #if defined NDEBUG
-#define DEBUG_TRACEPOINT(...)
+#define DEBUG_TRACEPOINTRAW(...)
 #else
-#define DEBUG_TRACEPOINT(...) do {                    \
+#define DEBUG_TRACEPOINTRAW(...) do {                    \
 int slen = snprintf(data.testpoint.file, STRINGMAXLEN_FULLFILENAME, "%s", __FILE__);\
 if(slen<1) {                                                               \
     PRINT_ERROR("snprintf wrote <1 char");                                 \
@@ -264,30 +265,51 @@ data.testpointloopcnt++;                                                   \
 #endif
 
 
-
 #if defined NDEBUG
 #define DEBUG_TRACEPOINT_PRINT(...)
 #else
 #define DEBUG_TRACEPOINT_PRINT(...) do {                    \
-DEBUG_TRACEPOINT(__VA_ARGS__);                              \
+DEBUG_TRACEPOINTRAW(__VA_ARGS__);                              \
 printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint.file, data.testpoint.func, data.testpoint.line, data.testpoint.msg);   \
 } while(0)
 #endif
 
 
-
-/**
- * @ingroup debugmacro
- * @brief register and log trace point
- */
 #if defined NDEBUG
 #define DEBUG_TRACEPOINT_LOG(...)
 #else
 #define DEBUG_TRACEPOINT_LOG(...) do {  \
-DEBUG_TRACEPOINT(__VA_ARGS__);          \
+DEBUG_TRACEPOINTRAW(__VA_ARGS__);          \
 write_process_log();                    \
 } while(0)
 #endif
+
+
+
+#if defined NDEBUG
+#define DEBUG_TRACEPOINT(...)
+#else
+#if defined DEBUGLOG
+#define DEBUG_TRACEPOINT(...) do {                    \
+DEBUG_TRACEPOINT_LOG(__VA_ARGS__);                              \
+} while(0)
+#else
+#define DEBUG_TRACEPOINT(...) do {                    \
+DEBUG_TRACEPOINTRAW(__VA_ARGS__);                              \
+} while(0)
+#endif
+#endif
+
+
+/*
+#if defined DEBUGLOG \
+write_process_log(); \
+#endif \
+#if defined DEBUGPRINT \
+printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint.file, data.testpoint.func, data.testpoint.line, data.testpoint.msg);   \
+#endif \
+*/
+
 
 
 //

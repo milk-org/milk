@@ -38,18 +38,18 @@ errno_t write_process_log()
     struct tm *uttime;
     time_t tvsec0;
 
-    static int fplogstatus = 0;
+    //static int fplogstatus = 0;
 
-    if(fplogstatus == 0)
-    {
-        fplog = fopen(fname, "w");
-    }
+    //if(fplogstatus == 0)
+    //{
+    fplog = fopen(fname, "a");
+    //}
 
     if(fplog != NULL)
     {
         struct timespec tnow;
 
-        fplogstatus = 1;
+        //fplogstatus = 1;
         //        time_t now;
         clock_gettime(CLOCK_REALTIME, &tnow);
         tvsec0 = tnow.tv_sec;
@@ -66,7 +66,7 @@ errno_t write_process_log()
 
         logcnt++;
 
-        //fclose(fplog);
+        fclose(fplog);
     }
 
     return RETURN_SUCCESS;
