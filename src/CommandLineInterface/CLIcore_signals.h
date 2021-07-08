@@ -1,6 +1,6 @@
 /**
  * @file CLIcore_signals.h
- * 
+ *
  * @brief signals and debugging
  *
  */
@@ -11,6 +11,7 @@
 #define CLICORE_SIGNALS_H
 
 
+errno_t write_process_log();
 
 errno_t set_signal_catch();
 
