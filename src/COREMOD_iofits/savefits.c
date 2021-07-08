@@ -96,11 +96,10 @@ errno_t saveFITS(
 )
 {
     DEBUG_TRACE_FSTART();
-    printf("Saving image %s to file %s, bitpix = %d\n",
+    DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d",
            inputimname,
            outputFITSname,
            outputbitpix);
-    fflush(stdout);
 
 
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -128,7 +127,6 @@ errno_t saveFITS(
         return RETURN_SUCCESS;
     }
 
-    DEBUG_TRACEPOINT("choosing datatype");
 
     // data types
     uint8_t datatype = imgin.md->datatype;
@@ -137,7 +135,7 @@ errno_t saveFITS(
 
     char *datainptr;
 
-    printf("datatype = %d\n", (int) datatype);
+    DEBUG_TRACEPOINT("datatype = %d", (int) datatype);
     switch(datatype)
     {
     case _DATATYPE_UINT8:
