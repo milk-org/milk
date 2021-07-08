@@ -171,6 +171,12 @@ errno_t load_fits(
 
         if(fileOK == 0)
         {
+            // if image not loaded, set output identifier to -1
+            if(IDout != NULL)
+            {
+                *IDout = -1;
+            }
+
             if(errmode == 0)
             {
                 DEBUG_TRACE_FEXIT();
