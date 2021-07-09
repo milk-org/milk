@@ -47,7 +47,7 @@ if(${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
   target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
 
 target_include_directories(${LIBNAME} PUBLIC ${PROJECT_SOURCE_DIR}/..)
