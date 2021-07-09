@@ -59,6 +59,7 @@ message("Found cfitsio")
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
   target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
 endif()
 
 target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
