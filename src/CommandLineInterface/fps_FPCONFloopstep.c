@@ -85,7 +85,7 @@ uint16_t function_parameter_FPCONFloopstep(
 
     prev_status = fps->md->status;
 
-		
+
     return updateFLAG;
 }
 
