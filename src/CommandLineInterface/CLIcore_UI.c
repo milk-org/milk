@@ -315,12 +315,12 @@ errno_t write_tracedebugfile()
 
                 fprintf(
                     fp,
-                    "T %6ld %s %-20s %-20s %6d  %s\n",
+                    "T %6ld %s %-20s %6d %-20s  %s\n",
                     index,
                     timestring,
                     lastword,
-                    data.testpointarray[j].func,
                     data.testpointarray[j].line,
+                    data.testpointarray[j].func,
                     data.testpointarray[j].msg
                 );
                 fprintf(
