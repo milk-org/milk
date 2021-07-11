@@ -13,7 +13,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 #include "CLIcore_UI.h"
-
+#include "timeutils.h"
 
 
 
@@ -35,33 +35,33 @@ errno_t write_process_log()
     thisPID = getpid();
     WRITE_FILENAME(fname, "logreport.%05d.log", thisPID);
 
-    struct tm *uttime;
-    time_t tvsec0;
+    //struct tm *uttime;
+    //time_t tvsec0;
 
     //static int fplogstatus = 0;
 
-    //if(fplogstatus == 0)
-    //{
     fplog = fopen(fname, "a");
-    //}
 
     if(fplog != NULL)
     {
-        struct timespec tnow;
+        char timestring[20];
+        mkUTtimestring_nanosec(timestring, data.testpoint.time);
 
-        //fplogstatus = 1;
-        //        time_t now;
-        clock_gettime(CLOCK_REALTIME, &tnow);
-        tvsec0 = tnow.tv_sec;
-        uttime = gmtime(&tvsec0);
-        fprintf(fplog, "%18ld  %04d%02d%02dT%02d%02d%02d.%09ld ",
+
+        fprintf(fplog, "%18ld  %s ",
                 logcnt,
-                1900 + uttime->tm_year, 1 + uttime->tm_mon, uttime->tm_mday, uttime->tm_hour,
-                uttime->tm_min,  uttime->tm_sec, tnow.tv_nsec);
+                timestring
+               );
 
-        fprintf(fplog, " %s", data.testpoint.file);
-        fprintf(fplog, " %s", data.testpoint.func);
+        {   // extract last word
+            char str[STRINGMAXLEN_FULLFILENAME];
+            strcpy(str, data.testpoint.file);
+            char *lastword = strrchr(str, '/') + 1;
+            fprintf(fplog, " %s", lastword);
+        }
+
         fprintf(fplog, " %4d", data.testpoint.line);
+        fprintf(fplog, " %s", data.testpoint.func);
         fprintf(fplog, "  %s\n", data.testpoint.msg);
 
         logcnt++;
