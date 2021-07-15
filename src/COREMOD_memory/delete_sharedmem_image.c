@@ -54,7 +54,7 @@ static errno_t help_function()
 
 
 errno_t destroy_shared_image_ID(
-    const char *__restrict__ imname
+    const char *__restrict imname
 )
 {
     imageID ID;

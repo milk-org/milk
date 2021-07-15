@@ -15,7 +15,7 @@
 
 // Forward declaration(s)
 errno_t delete_image_ID(
-    const char *__restrict__ imname,
+    const char *__restrict imname,
     int errmode
 );
 
@@ -127,7 +127,7 @@ errno_t CLIADDCMD_COREMOD_memory__delete_image()
  *
  */
 errno_t delete_image_ID(
-    const char *__restrict__ imname,
+    const char *__restrict imname,
     int errmode
 )
 {
