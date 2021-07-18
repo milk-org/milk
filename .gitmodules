@@ -11,6 +11,9 @@
 [submodule "plugins/milk-extra-src/ZernikePolyn"]
 	path = plugins/milk-extra-src/ZernikePolyn
 	url = ""
+[submodule "plugins/milk-extra-src/clustering"]
+	path = plugins/milk-extra-src/clustering
+	url = ""
 [submodule "plugins/milk-extra-src/image_gen"]
 	path = plugins/milk-extra-src/image_gen
 	url = ""
