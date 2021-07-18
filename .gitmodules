@@ -2,6 +2,12 @@
 	path = src/ImageStreamIO
 	url = https://github.com/milk-org/ImageStreamIO.git
 	branch = dev
+[submodule "plugins/milk-extra-src/AtmosphereModel"]
+	path = plugins/milk-extra-src/AtmosphereModel
+	url = ""
+[submodule "plugins/milk-extra-src/AtmosphericTurbulence"]
+	path = plugins/milk-extra-src/AtmosphericTurbulence
+	url = ""
 [submodule "plugins/milk-extra-src/ZernikePolyn"]
 	path = plugins/milk-extra-src/ZernikePolyn
 	url = ""
