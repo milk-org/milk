@@ -12,21 +12,25 @@ errno_t CLIADDCMD_COREMOD_iofits__saveFITS();
 
 
 errno_t saveFITS(
-    const char *restrict inputimname,
-    const char *restrict outputFITSname,
+    const char *__restrict inputimname,
+    const char *__restrict outputFITSname,
     int outputbitpix,
-    const char *restrict importheaderfile
+    const char *__restrict importheaderfile
 );
 
 errno_t save_fits(
-    const char *restrict inputimname,
-    const char *restrict outputFITSname
+    const char *__restrict inputimname,
+    const char *__restrict outputFITSname
 );
 
 errno_t save_fl_fits(
-    const char *restrict inputimname,
-    const char *restrict outputFITSname
+    const char *__restrict inputimname,
+    const char *__restrict outputFITSname
 );
 
+errno_t save_db_fits(
+    const char *__restrict inputimname,
+    const char *__restrict outputFITSname
+);
 
 #endif

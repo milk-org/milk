@@ -89,10 +89,10 @@ static errno_t help_function()
 
 
 errno_t saveFITS(
-    const char *restrict inputimname,
-    const char *restrict outputFITSname,
+    const char *__restrict inputimname,
+    const char *__restrict outputFITSname,
     int outputbitpix,
-    const char *restrict importheaderfile
+    const char *__restrict importheaderfile
 )
 {
     DEBUG_TRACE_FSTART();
@@ -487,7 +487,7 @@ errno_t saveFITS(
 
 
 errno_t saveall_fits(
-    const char *restrict savedirname
+    const char *__restrict savedirname
 )
 {
     DEBUG_TRACE_FSTART();
@@ -511,8 +511,8 @@ errno_t saveall_fits(
 
 
 errno_t save_fits(
-    const char *restrict savedirname,
-    const char *restrict outputFITSname
+    const char *__restrict savedirname,
+    const char *__restrict outputFITSname
 )
 {
     DEBUG_TRACE_FSTART();
@@ -527,14 +527,29 @@ errno_t save_fits(
 
 
 errno_t save_fl_fits(
-    const char *restrict savedirname,
-    const char *restrict outputFITSname
+    const char *__restrict savedirname,
+    const char *__restrict outputFITSname
 )
 {
     DEBUG_TRACE_FSTART();
 
     FUNC_CHECK_RETURN(
         saveFITS(savedirname, outputFITSname, -32, ""));
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+errno_t save_db_fits(
+    const char *__restrict savedirname,
+    const char *__restrict outputFITSname
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    FUNC_CHECK_RETURN(
+        saveFITS(savedirname, outputFITSname, -64, ""));
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
