@@ -17,7 +17,7 @@ errno_t set_signal_catch();
 
 
 errno_t write_process_exit_report(
-    const char *restrict errortypestring
+    const char *__restrict errortypestring
 );
 
 
