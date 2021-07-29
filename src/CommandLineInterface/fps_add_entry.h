@@ -19,14 +19,14 @@ int function_parameter_add_entry(
 
 
 // =====================================================================
-// INPUT 
+// INPUT
 // =====================================================================
 
 /** @brief Add 32-bit float parameter entry
- * 
+ *
  * Default setting for input parameter\n
  * Also creates function parameter index (fp_##key), type long
- * 
+ *
  * (void) statement suppresses compiler unused parameter warning
  */
 #define FPS_ADDPARAM_FLT32_IN(key, pname, pdescr, dflt) \
@@ -112,7 +112,7 @@ do{ \
 
 
 // =====================================================================
-// OUTPUT 
+// OUTPUT
 // =====================================================================
 
 /** @brief Add FLT32 output parameter entry

@@ -11,12 +11,12 @@
 
 
 /** @brief FPS start CONF process
- * 
+ *
  * Requires setup performed by milk-fpsinit, which performs the following setup
  * - creates the FPS shared memory
  * - create up tmux sessions
  * - create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
- */ 
+ */
 
 errno_t functionparameter_CONFstart(
     FUNCTION_PARAMETER_STRUCT *fps
