@@ -302,7 +302,7 @@ errno_t list_commands()
 
 
 errno_t list_commands_module(
-    const char *restrict modulename
+    const char *__restrict modulename
 )
 {
     int mOK = 0;
@@ -526,7 +526,7 @@ static int checkFlag64(
  */
 
 errno_t help_command(
-    const char *restrict cmdkey
+    const char *__restrict cmdkey
 )
 {
     int cOK = 0;

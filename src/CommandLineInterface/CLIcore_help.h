@@ -12,7 +12,7 @@
 #ifdef __cplusplus
 typedef const char * CONST_WORD;
 #else
-typedef const char *restrict  CONST_WORD;
+typedef const char *__restrict  CONST_WORD;
 #endif
 
 

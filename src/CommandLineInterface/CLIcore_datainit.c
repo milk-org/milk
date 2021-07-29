@@ -21,8 +21,9 @@
 |
 |
 +-----------------------------------------------------------------------------*/
-void CLI_data_init()
+errno_t CLI_data_init()
 {
+    DEBUG_TRACE_FSTART();
 
     long tmplong;
     //  int i;
@@ -113,6 +114,10 @@ void CLI_data_init()
 
     // Allocate data.fps
     data.fpsarray = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
+    if(data.fpsarray==NULL)
+    {
+        FUNC_RETURN_FAILURE("memory allocation error");
+    }
 
     // Initialize file descriptors to -1
     //
@@ -141,4 +146,7 @@ void CLI_data_init()
     srand(t1.tv_usec * t1.tv_sec);
     //	printf("RAND: %ld\n", t1.tv_usec * t1.tv_sec);
     //  srand(time(NULL));
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
 }

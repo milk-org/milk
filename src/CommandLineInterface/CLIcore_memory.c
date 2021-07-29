@@ -17,12 +17,12 @@ errno_t memory_re_alloc()
     //fflush(stdout);
 #else
     //printf("image dynamic allocation mode\n");
-    //fflush(stdout);	
-    
+    //fflush(stdout);
+
     int current_NBimage = compute_nb_image();
 
-   	//printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %ld\n", current_NBimage, NB_IMAGES_BUFFER, data.NB_MAX_IMAGE);
-   	//fflush(stdout);
+    //printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %ld\n", current_NBimage, NB_IMAGES_BUFFER, data.NB_MAX_IMAGE);
+    //fflush(stdout);
 
     if((current_NBimage + NB_IMAGES_BUFFER) > data.NB_MAX_IMAGE)
     {

@@ -34,7 +34,7 @@ static char libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
 errno_t load_sharedobj(
-    const char *restrict libname
+    const char *__restrict libname
 )
 {
     DEBUG_TRACE_FSTART();
@@ -84,7 +84,7 @@ errno_t load_sharedobj(
 
 
 errno_t load_module_shared(
-    const char *restrict modulename
+    const char *__restrict modulename
 )
 {
     DEBUG_TRACE_FSTART();
@@ -240,9 +240,9 @@ errno_t load_module_shared_ALL()
 
 
 errno_t RegisterModule(
-    const char *restrict FileName,
-    const char *restrict PackageName,
-    const char *restrict InfoString,
+    const char *__restrict FileName,
+    const char *__restrict PackageName,
+    const char *__restrict InfoString,
     int versionmajor,
     int versionminor,
     int versionpatch
@@ -343,13 +343,13 @@ errno_t RegisterModule(
 // Legacy function
 //
 uint32_t RegisterCLIcommand(
-    const char *restrict CLIkey,
-    const char *restrict CLImodulesrc,
+    const char *__restrict CLIkey,
+    const char *__restrict CLImodulesrc,
     errno_t (*CLIfptr)(),
-    const char *restrict CLIinfo,
-    const char *restrict CLIsyntax,
-    const char *restrict CLIexample,
-    const char *restrict CLICcall
+    const char *__restrict CLIinfo,
+    const char *__restrict CLIsyntax,
+    const char *__restrict CLIexample,
+    const char *__restrict CLICcall
 )
 {
     DEBUG_TRACE_FSTART();
