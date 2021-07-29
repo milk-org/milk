@@ -18,17 +18,17 @@ int functionparameter_GetFileName(
     char ffname[STRINGMAXLEN_FULLFILENAME]; // full filename
     char fname1[stringmaxlen];
     int l;
-	char fpsconfdirname[STRINGMAXLEN_DIRNAME];
-	
+    char fpsconfdirname[STRINGMAXLEN_DIRNAME];
+
     if(snprintf(fpsconfdirname, stringmaxlen, "%s/fpsconf", fps->md->workdir) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
-    
-    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
-    
 
-	// build up directory name
+    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
+
+
+    // build up directory name
     for(l = 0; l < fparam->keywordlevel - 1; l++)
     {
         if(snprintf(fname1, stringmaxlen, "/%s", fparam->keyword[l]) < 0)
@@ -36,7 +36,7 @@ int functionparameter_GetFileName(
             PRINT_ERROR("snprintf error");
         }
         strncat(fpsconfdirname, fname1, STRINGMAXLEN_DIRNAME-1);
-        
+
         EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
     }
 
@@ -45,7 +45,7 @@ int functionparameter_GetFileName(
     {
         PRINT_ERROR("snprintf error");
     }
-    
+
     snprintf(ffname, STRINGMAXLEN_FULLFILENAME, "%s%s", fpsconfdirname, fname1);
 
     strcpy(outfname, ffname);
