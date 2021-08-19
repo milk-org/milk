@@ -100,7 +100,7 @@ imageID arith_image_merge3D(
     imageID ID1;
     imageID ID2;
     imageID IDout;
-    long xsize, ysize, zsize1, zsize2;
+    uint32_t xsize, ysize, zsize1, zsize2;
     void *mapv;
 
     ID1 = image_ID(ID_name1);
@@ -139,16 +139,57 @@ imageID arith_image_merge3D(
         exit(0);
     }
 
+    uint32_t * sizearray = (uint32_t *) malloc(sizeof(uint32_t)*3);
+    sizearray[0] = xsize;
+    sizearray[1] = xsize;
+    sizearray[2] = zsize1+zsize2;
+
+    uint8_t datatype = data.image[ID1].md[0].datatype;
+
     FUNC_CHECK_RETURN(
-        create_3Dimage_ID(IDout_name, xsize, ysize, zsize1 + zsize2, &IDout));
+        create_image_ID(IDout_name, 3, sizearray, datatype, 0, 0, 0, &IDout)
+    );
 
-    mapv = (void *) data.image[IDout].array.F;
 
-    memcpy(mapv, (void *) data.image[ID1].array.F,
-           sizeof(float)*xsize * ysize * zsize1);
+    switch (datatype)
+    {
+    case _DATATYPE_FLOAT :
+        mapv = (void *) data.image[IDout].array.F;
+        memcpy(mapv, (void *) data.image[ID1].array.F,
+               sizeof(float)*xsize * ysize * zsize1);
+        mapv += sizeof(float) * xsize * ysize * zsize1;
+        memcpy(mapv, data.image[ID2].array.F, sizeof(float)*xsize * ysize * zsize2);
+        break;
 
-    mapv += sizeof(float) * xsize * ysize * zsize1;
-    memcpy(mapv, data.image[ID2].array.F, sizeof(float)*xsize * ysize * zsize2);
+    case _DATATYPE_DOUBLE :
+        mapv = (void *) data.image[IDout].array.D;
+        memcpy(mapv, (void *) data.image[ID1].array.D,
+               sizeof(double)*xsize * ysize * zsize1);
+        mapv += sizeof(double) * xsize * ysize * zsize1;
+        memcpy(mapv, data.image[ID2].array.D, sizeof(double)*xsize * ysize * zsize2);
+        break;
+
+    case _DATATYPE_INT16 :
+        mapv = (void *) data.image[IDout].array.SI16;
+        memcpy(mapv, (void *) data.image[ID1].array.SI16,
+               sizeof(int16_t)*xsize * ysize * zsize1);
+        mapv += sizeof(int16_t) * xsize * ysize * zsize1;
+        memcpy(mapv, data.image[ID2].array.SI16, sizeof(int16_t)*xsize * ysize * zsize2);
+        break;
+
+    case _DATATYPE_UINT16 :
+        mapv = (void *) data.image[IDout].array.UI16;
+        memcpy(mapv, (void *) data.image[ID1].array.UI16,
+               sizeof(uint16_t)*xsize * ysize * zsize1);
+        mapv += sizeof(uint16_t) * xsize * ysize * zsize1;
+        memcpy(mapv, data.image[ID2].array.UI16, sizeof(uint16_t)*xsize * ysize * zsize2);
+        break;
+
+    default:
+        printf("dataypte not supported\n");
+    }
+
+
 
     DEBUG_TRACE_FEXIT();
     return IDout;
