@@ -116,7 +116,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(int pid, const char *csetname, int rtprio)
         }
     }
 
-    if (setuid(data.ruid) != 0) //Go back to normal privileges
+    if (seteuid(data.ruid) != 0) //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
