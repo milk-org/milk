@@ -89,9 +89,12 @@ int COREMOD_TOOLS_mvProcCPUsetExt(int pid, const char *csetname, int rtprio)
 {
     char command[200];
 
-    if (seteuid(data.euid) != 0) //This goes up to maximum privileges
+    // Must make TWO calls
+    // First promote the EUID to root, then this will make setuid promote the RUID to root
+    // Which is what we need for the cset call to pass without a sudo password prompt.
+    if (seteuid(data.euid) != 0 || setuid(data.euid) != 0) //This goes up to maximum privileges
     {
-        PRINT_ERROR("seteuid error");
+        PRINT_ERROR("seteuid/setuid error");
     }
 
     sprintf(command, "sudo -n cset proc --threads --force -m -p %d -t %s\n", pid, csetname);
@@ -104,7 +107,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(int pid, const char *csetname, int rtprio)
 
     if (rtprio > 0)
     {
-        sprintf(command, "sudo chrt -f -p %d %d\n", rtprio, pid);
+        sprintf(command, "sudo -n chrt -f -p %d %d\n", rtprio, pid);
         printf("Executing command: %s\n", command);
 
         if (system(command) != 0)
@@ -113,7 +116,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(int pid, const char *csetname, int rtprio)
         }
     }
 
-    if (seteuid(data.ruid) != 0) //Go back to normal privileges
+    if (setuid(data.ruid) != 0) //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
