@@ -387,7 +387,8 @@ errno_t CLI_execute_line()
         data.calctmp_imindex = 0;
         for(int i = 0; i < NB_ARG_MAX; i++)
         {
-            data.cmdargtoken[0].type = CMDARGTOKEN_TYPE_UNSOLVED;
+            data.cmdargtoken[i].type = CMDARGTOKEN_TYPE_UNSOLVED;
+            data.cmdargtoken[i].val.string[0] = '\0';
         }
 
 
