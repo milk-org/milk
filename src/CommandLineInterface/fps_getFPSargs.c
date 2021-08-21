@@ -32,12 +32,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     int argpreprocess = 1; // by default, pre-process argument
     switch(data.cmdargtoken[1].type)
     {
-        case CLIARG_FLOAT:
-            argpreprocess = 0;
-            break;
-        case CLIARG_LONG:
-            argpreprocess = 0;
-            break;
+    case CLIARG_FLOAT:
+        argpreprocess = 0;
+        break;
+    case CLIARG_LONG:
+        argpreprocess = 0;
+        break;
     }
 
     if(argpreprocess == 1)
@@ -204,7 +204,9 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
         else   // otherwise, construct name as follows
         {
             // Adopt default name for fpsname
-            int slen = snprintf(data.FPS_name, FUNCTION_PARAMETER_STRMAXLEN, "%s",
+            int slen = snprintf(data.FPS_name,
+                                FUNCTION_PARAMETER_STRMAXLEN,
+                                "%s",
                                 fpsname_default);
             if(slen < 1)
             {
@@ -230,8 +232,11 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             {
                 char fpsname1[FUNCTION_PARAMETER_STRMAXLEN];
 
-                int slen = snprintf(fpsname1, FUNCTION_PARAMETER_STRMAXLEN,
-                                    "%s-%s", data.FPS_name, data.cmdargtoken[argindex].val.string);
+                int slen = snprintf(fpsname1,
+                                    FUNCTION_PARAMETER_STRMAXLEN,
+                                    "%s-%s",
+                                    data.FPS_name,
+                                    data.cmdargtoken[argindex].val.string);
                 if(slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
