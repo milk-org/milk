@@ -18,37 +18,31 @@
  * This function is typically called within the FPCONF fps creation step.
  *
  */
-errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t fps_add_processinfo_entries(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
 {
-
-    //void *pNull = NULL;
     uint64_t FPFLAG;
-
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
 
-    // value = -1 indicates no RT priority
-    long RTprio_default[4] = { -1, -1, 49, 20 };
-    function_parameter_add_entry(fps, ".conf.procinfo.RTprio", "RTprio",
-                                 FPTYPE_INT64, FPFLAG, &RTprio_default);
+    // taskset
+    function_parameter_add_entry(fps, ".conf.taskset", "CPUs mask",
+                                 FPTYPE_STRING, FPFLAG, "0-127", NULL);
 
     // value = 0 indicates process will adjust to available nb cores
     long maxNBthread_default[4] = { 1, 0, 50, 1 };
-    function_parameter_add_entry(fps, ".conf.procinfo.NBthread", "max NB threads",
-                                 FPTYPE_INT64, FPFLAG, &maxNBthread_default);
-
-    // taskset
-    function_parameter_add_entry(fps, ".conf.taskset", "CPUs mask",
-                                 FPTYPE_STRING, FPFLAG, "0-127");
+    function_parameter_add_entry(fps, ".conf.NBthread", "max NB threads",
+                                 FPTYPE_INT64, FPFLAG, &maxNBthread_default, NULL);
 
     // run time string
     function_parameter_add_entry(fps, ".conf.timestring", "runstart time string",
-                                 FPTYPE_STRING, FPFLAG, "undef");
+                                 FPTYPE_STRING, FPFLAG, "undef", NULL);
 
 
     // custom label
     function_parameter_add_entry(fps, ".conf.label", "custom label",
-                                 FPTYPE_STRING, FPFLAG, "");
+                                 FPTYPE_STRING, FPFLAG, "", NULL);
 
 
     // output directory where results are saved
@@ -56,21 +50,64 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
 //	char outdir[FPS_DIR_STRLENMAX];
 //	snprintf(outdir, FPS_DIR_STRLENMAX, "fps.%s", fps->md->name);
     function_parameter_add_entry(fps, ".conf.datadir", "data directory",
-                                 FPTYPE_DIRNAME, FPFLAG, fps->md->datadir);
+                                 FPTYPE_DIRNAME, FPFLAG, fps->md->datadir, NULL);
 
     // input directory, FPS configuration files ready by FPSsync operation
     //
 //	char confdir[FPS_DIR_STRLENMAX];
 //	snprintf(confdir, FPS_DIR_STRLENMAX, "fpsconfdir-%s", fps->md->name);
     function_parameter_add_entry(fps, ".conf.confdir", "conf directory",
-                                 FPTYPE_DIRNAME, FPFLAG, fps->md->confdir);
+                                 FPTYPE_DIRNAME, FPFLAG, fps->md->confdir, NULL);
 
 
 
     // Where results are archived
     //
     function_parameter_add_entry(fps, ".conf.archivedir", "archive directory",
-                                 FPTYPE_DIRNAME, FPFLAG, NULL);
+                                 FPTYPE_DIRNAME, FPFLAG, NULL, NULL);
+
+
+
+
+
+
+    // PROCESSINFO
+    long fp_pinfoenabled = 0;
+    function_parameter_add_entry(fps, ".procinfo.enabled", "procinfo mode",
+                                 FPTYPE_ONOFF, FPFLAG, NULL, &fp_pinfoenabled);
+    fps->parray[fp_pinfoenabled].fpflag |= FPFLAG_ONOFF;
+
+
+
+    // value = -1 indicates no RT priority
+    long RTprio_default[4] = { fps->cmdset.RT_priority, -1, 49, 20 };
+    function_parameter_add_entry(fps, ".procinfo.RTprio", "RTprio",
+                                 FPTYPE_INT64, FPFLAG, &RTprio_default, NULL);
+
+
+    // no max limit
+    FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
+    FPFLAG &= ~FPFLAG_WRITERUN;
+    // value = -1 indicates infinite loop
+    long loopcntMax_default[4] = { fps->cmdset.procinfo_loopcntMax, -1, 5000000, 1 };
+    function_parameter_add_entry(fps, ".procinfo.loopcntMax", "max loop cnt",
+                                 FPTYPE_INT64, FPFLAG, &loopcntMax_default, NULL);
+
+
+    long triggermode_default[4] = { fps->cmdset.triggermode, -1, 10, 0 };
+    function_parameter_add_entry(fps, ".procinfo.triggermode", "trigger mode",
+                                 FPTYPE_INT64, FPFLAG, &triggermode_default, NULL);
+
+    function_parameter_add_entry(fps, ".procinfo.triggerstreamname", "trigger stream name",
+                                 FPTYPE_STREAMNAME, FPFLAG, NULL, NULL);
+
+    struct timespec triggerdelay_default[2] = { {0,0}, {0,0}};
+    function_parameter_add_entry(fps, ".procinfo.triggerdelay", "trigger delay",
+                                 FPTYPE_TIMESPEC, FPFLAG, &triggerdelay_default, NULL);
+
+    struct timespec triggertimeout_default[2] = { {0,0}, {0,0}};
+    function_parameter_add_entry(fps, ".procinfo.triggertimeout", "trigger timeout",
+                                 FPTYPE_TIMESPEC, FPFLAG, &triggertimeout_default, NULL);
 
 
     return RETURN_SUCCESS;
@@ -78,8 +115,10 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
 
 
 
-errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
-                           PROCESSINFO *procinfo)
+errno_t fps_to_processinfo(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    PROCESSINFO *procinfo
+)
 {
     DEBUG_TRACEPOINT("Checking fps pointer");
     if ( fps == NULL )
@@ -87,13 +126,33 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
         PRINT_ERROR("Null pointer - cannot proceed\n");
         abort();
     }
+
     // set RT_priority if applicable
-    long pindex = functionparameter_GetParamIndex(fps, ".conf.procinfo.RTprio");
-    if(pindex > -1)
     {
-        long RTprio = functionparameter_GetParamValue_INT64(fps,
-                      ".conf.procinfo.RTprio");
-        procinfo->RT_priority = RTprio;
+        long pindex = functionparameter_GetParamIndex(
+                          fps,
+                          ".conf.procinfo.RTprio");
+        if(pindex > -1)
+        {
+            long RTprio = functionparameter_GetParamValue_INT64(
+                              fps,
+                              ".conf.procinfo.RTprio");
+            procinfo->RT_priority = RTprio;
+        }
+    }
+
+    // set loopcntMax if applicable
+    {
+        long pindex = functionparameter_GetParamIndex(
+                          fps,
+                          ".conf.procinfo.loopcntMax");
+        if(pindex > -1)
+        {
+            long loopcntMax = functionparameter_GetParamValue_INT64(
+                                  fps,
+                                  ".conf.procinfo.loopcntMax");
+            procinfo->loopcntMax = loopcntMax;
+        }
     }
 
     return RETURN_SUCCESS;

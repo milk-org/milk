@@ -724,7 +724,7 @@ errno_t functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].type == FPTYPE_TIMESPEC)
     {
-        printf("  %10s", "-timespec-");
+        printf("  %10f", 1.0*fpsentry->parray[pindex].val.ts[0].tv_sec + 1e-9*fpsentry->parray[pindex].val.ts[0].tv_nsec);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FILENAME)

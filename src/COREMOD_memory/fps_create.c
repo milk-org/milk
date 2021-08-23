@@ -157,7 +157,7 @@ errno_t function_parameter_struct_create(
 
 
 
-    printf("shared memory space = %ld bytes\n", sharedsize); //TEST
+    //printf("shared memory space = %ld bytes\n", sharedsize); //TEST
 
 
     fps.md->NBparamMAX = NBparamMAX;
