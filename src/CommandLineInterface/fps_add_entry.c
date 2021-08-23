@@ -21,7 +21,8 @@ int function_parameter_add_entry(
     const char                *descriptionstring,
     uint64_t                   type,
     uint64_t                   fpflag,
-    void                      *valueptr
+    void                      *valueptr,
+    long                      *pindexptr
 )
 {
     long pindex = 0;
@@ -618,6 +619,11 @@ int function_parameter_add_entry(
             functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
         }
     */
+
+    if(pindexptr != NULL)
+    {
+        *pindexptr = pindex;
+    }
 
     return pindex;
 }

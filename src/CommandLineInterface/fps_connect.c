@@ -187,23 +187,69 @@ long function_parameter_struct_connect(
     }
 
 
-    // update time
-    //
+
+    // if available, get process settings from FPS entries
     if(fpsconnectmode == FPSCONNECT_RUN)
     {
+        // update time
+        //
         // set timestring if applicable
         //
-        int pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
-        if(pindex > -1)
         {
-            char timestring[100];
-            mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
-            if(snprintf(fps->parray[pindex].val.string[0],
-                        FUNCTION_PARAMETER_STRMAXLEN, "%s", timestring) < 0)
+            int pindex = functionparameter_GetParamIndex(fps, ".conf.timestring");
+            if(pindex > -1)
             {
-                PRINT_ERROR("snprintf error");
+                char timestring[100];
+                mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
+                if(snprintf(fps->parray[pindex].val.string[0],
+                            FUNCTION_PARAMETER_STRMAXLEN, "%s", timestring) < 0)
+                {
+                    PRINT_ERROR("snprintf error");
+                }
             }
         }
+
+        {   // check if processinfo is enabled
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.enabled");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_ONOFF)
+                {
+                    if(fps->parray[pindex].fpflag & FPFLAG_ONOFF)
+                    {
+                        //printf("<<<<<<<<<<<<<<< FPS PROCESSINFO ENABLED\n");
+                        fps->cmdset.flags |= CLICMDFLAG_PROCINFO;
+                    }
+                    else
+                    {
+                        //printf("<<<<<<<<<<<<<<< FPS PROCESSINFO DISABLED\n");
+                        fps->cmdset.flags &= ~(CLICMDFLAG_PROCINFO);
+                    }
+                }
+            }
+        }
+
+
+        {   // procinfo_loopcntMax
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_INT64)
+                {
+                    fps->cmdset.procinfo_loopcntMax = fps->parray[pindex].val.i64[0];
+                }
+            }
+        }
+
+
+        {   // RT_priority
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_INT64)
+                {
+                    fps->cmdset.RT_priority = fps->parray[pindex].val.i64[0];
+                }
+            }
+        }
+
     }
 
     return(NBparamMAX);

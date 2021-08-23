@@ -133,8 +133,9 @@ errno_t stream_monitorlimits_FPCONF()
     FPS_ADDPARAM_STREAM_IN(streaminname,   ".in_sname",  "input stream", NULL);
 
     long dtus_default[4] = { 50, 1, 1000000000, 50 };
-    long fp_dtus    = function_parameter_add_entry(&fps, ".dtus",
-                      "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
+    long fp_dtus    = 0;
+    function_parameter_add_entry(&fps, ".dtus",
+                      "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default, &fp_dtus);
     (void) fp_dtus; // suppresses unused parameter compiler warning
 
 
@@ -144,23 +145,27 @@ errno_t stream_monitorlimits_FPCONF()
     FPFLAG = FPFLAG_DEFAULT_INPUT;
     FPFLAG |= FPFLAG_WRITERUN;
 
-    long fpi_minON = function_parameter_add_entry(&fps, ".minON", "min toggle",
-                     FPTYPE_ONOFF, FPFLAG, NULL);
+    long fpi_minON = 0;
+    function_parameter_add_entry(&fps, ".minON", "min toggle",
+                     FPTYPE_ONOFF, FPFLAG, NULL, &fpi_minON);
     (void) fpi_minON;
 
-    long fpi_minVal = function_parameter_add_entry(&fps, ".minVal", "min value",
-                      FPTYPE_FLOAT32, FPFLAG, NULL);
+    long fpi_minVal = 0;
+    function_parameter_add_entry(&fps, ".minVal", "min value",
+                      FPTYPE_FLOAT32, FPFLAG, NULL, &fpi_minVal);
     (void) fpi_minVal;
 
 
 
 
-    long fpi_maxON = function_parameter_add_entry(&fps, ".maxON", "max toggle",
-                     FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, NULL);
+    long fpi_maxON = 0;
+    function_parameter_add_entry(&fps, ".maxON", "max toggle",
+                     FPTYPE_ONOFF, FPFLAG_DEFAULT_INPUT, NULL, &fpi_maxON);
     (void) fpi_maxON;
 
-    long fpi_maxVal = function_parameter_add_entry(&fps, ".minVal", "min value",
-                      FPTYPE_FLOAT32, FPFLAG, NULL);
+    long fpi_maxVal = 0;
+    function_parameter_add_entry(&fps, ".minVal", "min value",
+                      FPTYPE_FLOAT32, FPFLAG, NULL, &fpi_maxVal);
     (void) fpi_maxVal;
 
 
