@@ -155,6 +155,7 @@ install(FILES CLIcore.h
               CLIcore_modules.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
+              cmdsettings.h
               milkDebugTools.h
               processinfo.h
               processtools.h

@@ -1468,7 +1468,8 @@ errno_t functionparameter_CTRLscreen(
 
                                 if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
                                 {
-                                    TUI_printfw("  %10s", "-timespec-");
+                                    TUI_printfw("  %10f",
+                                                1.0*data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_sec + 1e-9*data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_nsec);
                                 }
 
 

@@ -78,6 +78,16 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             return RETURN_SUCCESS;
         }
 
+        if(strcmp(data.cmdargtoken[1].val.string, "..RTprio") == 0)
+        {
+            printf("Command %ld: updating RTprio to value %ld\n", data.cmdindex,
+                   data.cmdargtoken[2].val.numl);
+            data.cmd[data.cmdindex].cmdsettings.RT_priority =
+                data.cmdargtoken[2].val.numl;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
         if(strcmp(data.cmdargtoken[1].val.string, "..loopcntMax") == 0)
         {
             printf("Command %ld: updating loopcntMax to value %ld\n", data.cmdindex,
@@ -257,7 +267,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
                 argindex ++;
             }
         }
-        printf(">>>>> %s >>>>>>> FPS name : %s\n", fpsname_default, data.FPS_name);
+        //printf(">>>>> %s >>>>>>> FPS name : %s\n", fpsname_default, data.FPS_name);
     }
 
     return RETURN_SUCCESS;

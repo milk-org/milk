@@ -120,6 +120,9 @@ static errno_t FPSCONFfunction()\
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);\
     if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO )\
     {\
+        fps.cmdset.flags = CLIcmddata.cmdsettings->flags;\
+        fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;\
+        fps.cmdset.procinfo_loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
         fps_add_processinfo_entries(&fps);\
     }\
     data.fpsptr = &fps;\
@@ -135,6 +138,12 @@ static errno_t FPSCONFfunction()\
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START \
 int processloopOK = 1;\
 PROCESSINFO *processinfo = NULL;\
+if(data.fpsptr != NULL)\
+{   /* if FPS mode, then FPS settings override defaults*/ \
+    CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;\
+    CLIcmddata.cmdsettings->RT_priority = data.fpsptr->cmdset.RT_priority;\
+    CLIcmddata.cmdsettings->procinfo_loopcntMax = data.fpsptr->cmdset.procinfo_loopcntMax;\
+}\
 if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 {\
     char pinfodescr[200];\
@@ -159,7 +168,6 @@ if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
     }\
 \
     processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
-\
     processinfo->triggerstreamID = -2;\
     processinfo->triggermode = CLIcmddata.cmdsettings->triggermode;\
     strcpy(processinfo->triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname);\
@@ -175,6 +183,10 @@ if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 \
     DEBUG_TRACEPOINT("loopstart");\
     processinfo_loopstart(processinfo);\
+}\
+else\
+{\
+printf(">>>>>>>>>>>>>>> PROCESSINFO DISABLED\n");\
 }\
 while(processloopOK == 1) \
 { \

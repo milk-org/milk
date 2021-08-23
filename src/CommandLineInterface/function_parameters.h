@@ -12,7 +12,7 @@
 #define FUNCTION_PARAMETERS_H
 
 
-
+#include "cmdsettings.h"
 
 
 #define STRINGMAXLEN_FPS_LOGMSG       1000
@@ -323,7 +323,7 @@ typedef struct
     union
     {
         // value, min (inclusive), max (inclusive), current state (if different from request)
-        int64_t i64[4];
+        int64_t  i64[4];
 
         // value, min, max, current state (if different from request)
         double f64[4];
@@ -523,6 +523,7 @@ typedef struct
     long      NBparam;        // number of parameters in array
     long      NBparamActive;  // number of active parameters
 
+   CMDSETTINGS cmdset; // local copy of cmd settings
 } FUNCTION_PARAMETER_STRUCT;
 
 

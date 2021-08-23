@@ -79,13 +79,13 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)   // (re-)create fps even if it exists
     {
-        printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
+        //printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
     else     // load existing fps if exists
     {
-        printf("=== CHECK IF FPS EXISTS\n");
+        //printf("=== CHECK IF FPS EXISTS\n");
 
 
         FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
@@ -96,14 +96,14 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
         if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1)
         {
-            printf("=== FPS DOES NOT EXISTS -> CREATE\n");
+            //printf("=== FPS DOES NOT EXISTS -> CREATE\n");
             function_parameter_struct_create(NBparamMAX, fpsname);
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
-        else
+/*        else
         {
             printf("=== FPS EXISTS\n");
-        }
+        }*/
     }
 
     if(CMDmode & FPSCMDCODE_CONFSTOP)   // stop conf

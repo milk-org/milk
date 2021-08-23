@@ -345,7 +345,7 @@ errno_t processinfo_loopstart(
         // Set realtime priority
         // ===========================
         schedpar.sched_priority = processinfo->RT_priority;
-#ifndef __MACH__
+
         if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
         {
             PRINT_ERROR("seteuid error");
@@ -356,7 +356,6 @@ errno_t processinfo_loopstart(
         {
             PRINT_ERROR("seteuid error");
         }
-#endif
     }
 
 

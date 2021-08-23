@@ -726,7 +726,8 @@ int CMDargs_to_FPSparams_create(
                 tmpvalf = data.cmd[data.cmdindex].argdata[argi].val.f;
                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                              data.cmd[data.cmdindex].argdata[argi].descr,
-                                             FPTYPE_FLOAT64, FPFLAG_DEFAULT_INPUT, &tmpvalf);
+                                             FPTYPE_FLOAT64, FPFLAG_DEFAULT_INPUT, &tmpvalf,
+                                             NULL);
                 NBarg_processed++;
                 break;
 
@@ -734,7 +735,8 @@ int CMDargs_to_FPSparams_create(
                 tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                              data.cmd[data.cmdindex].argdata[argi].descr,
-                                             FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall);
+                                             FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall,
+                                             NULL);
                 NBarg_processed++;
                 break;
 
@@ -742,7 +744,8 @@ int CMDargs_to_FPSparams_create(
                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                              data.cmd[data.cmdindex].argdata[argi].descr,
                                              FPTYPE_STRING, FPFLAG_DEFAULT_INPUT,
-                                             data.cmd[data.cmdindex].argdata[argi].val.s);
+                                             data.cmd[data.cmdindex].argdata[argi].val.s,
+                                             NULL);
                 NBarg_processed++;
                 break;
 
@@ -750,7 +753,8 @@ int CMDargs_to_FPSparams_create(
                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                              data.cmd[data.cmdindex].argdata[argi].descr,
                                              FPTYPE_STREAMNAME, FPFLAG_DEFAULT_INPUT,
-                                             data.cmd[data.cmdindex].argdata[argi].val.s);
+                                             data.cmd[data.cmdindex].argdata[argi].val.s,
+                                             NULL);
                 NBarg_processed++;
                 break;
 
@@ -758,7 +762,8 @@ int CMDargs_to_FPSparams_create(
                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                              data.cmd[data.cmdindex].argdata[argi].descr,
                                              FPTYPE_STRING, FPFLAG_DEFAULT_INPUT,
-                                             data.cmd[data.cmdindex].argdata[argi].val.s);
+                                             data.cmd[data.cmdindex].argdata[argi].val.s,
+                                             NULL);
                 NBarg_processed++;
                 break;
 

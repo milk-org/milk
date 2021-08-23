@@ -146,13 +146,15 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF()
     FPFLAG &= ~FPFLAG_WRITERUN;
 
     long delayus_default[4] = { 1000, 1, 10000, 1000 };
-    long fp_delayus = function_parameter_add_entry(&fps, ".delayus", "Delay [us]",
-                      FPTYPE_INT64, FPFLAG, &delayus_default);
+    long fp_delayus = 0;
+    function_parameter_add_entry(&fps, ".delayus", "Delay [us]",
+                      FPTYPE_INT64, FPFLAG, &delayus_default, &fp_delayus);
     (void) fp_delayus; // suppresses unused parameter compiler warning
 
     long dtus_default[4] = { 50, 1, 200, 50 };
-    long fp_dtus    = function_parameter_add_entry(&fps, ".dtus",
-                      "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default);
+    long fp_dtus    = 0;
+    function_parameter_add_entry(&fps, ".dtus",
+                      "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default, &fp_dtus);
     (void) fp_dtus; // suppresses unused parameter compiler warning
 
 

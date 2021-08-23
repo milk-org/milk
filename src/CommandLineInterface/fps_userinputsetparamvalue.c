@@ -4,7 +4,7 @@
  */
 
 
-
+#include <math.h>
 #include <limits.h>
 
 
@@ -167,6 +167,35 @@ int functionparameter_UserInputSetParamValue(
                 }
                 break;
 
+            case FPTYPE_TIMESPEC:
+                errno = 0;    /* To distinguish success/failure after call */
+                fval = strtod(buff, &endptr);
+
+                /* Check for various possible errors */
+                if((errno == ERANGE)
+                        || (errno != 0 && fval == 0.0))
+                {
+                    perror("strtod");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(endptr == buff)
+                {
+                    fprintf(stderr, "\nERROR: No digits were found\n");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(vOK == 1)
+                {
+                    double finteger;
+                    double fractional = modf(fval, &finteger);
+
+                    fpsentry->parray[pindex].val.ts[0].tv_sec = (long) (finteger+0.1);
+                    fpsentry->parray[pindex].val.ts[0].tv_nsec = (long) (1.0e9 * fractional + 0.1);
+                }
+                break;
 
             case FPTYPE_PID :
                 errno = 0;    /* To distinguish success/failure after call */
