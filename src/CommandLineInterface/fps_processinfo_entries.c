@@ -100,8 +100,13 @@ errno_t fps_add_processinfo_entries(
     function_parameter_add_entry(fps, ".procinfo.triggermode", "trigger mode",
                                  FPTYPE_INT64, FPFLAG, &triggermode_default, NULL);
 
-    function_parameter_add_entry(fps, ".procinfo.triggerstreamname", "trigger stream name",
-                                 FPTYPE_STREAMNAME, FPFLAG, NULL, NULL);
+    function_parameter_add_entry(fps, ".procinfo.triggersname", "trigger stream name",
+                                 FPTYPE_STREAMNAME, FPFLAG, fps->cmdset.triggerstreamname, NULL);
+
+    // -1 : auto (recommended)
+    long semindexrequested_default[4] = { fps->cmdset.semindexrequested, -1, 10, 0 };
+    function_parameter_add_entry(fps, ".procinfo.semindexrequested", "trigger requested semaphore index",
+                                 FPTYPE_INT64, FPFLAG, &semindexrequested_default, NULL);
 
     struct timespec triggerdelay_default[2] = { fps->cmdset.triggerdelay, {0,0}};
     function_parameter_add_entry(fps, ".procinfo.triggerdelay", "trigger delay",
