@@ -128,7 +128,7 @@ errno_t processinfo_waitoninputstream_init(
                          PROCESSINFO_TRIGGERMODE_SEMAPHORE,
                          semindexrequested,
                          trigID);
-        if(semindexrequested == -1)
+        if(semindexrequested < -1)
         {
             FUNC_RETURN_FAILURE("invalid semaphore index %d", semindexrequested);
         }
