@@ -4939,30 +4939,31 @@ errno_t processinfo_CTRLscreen()
                                 {
 
                                 case PROCESSINFO_TRIGGERMODE_IMMEDIATE :
-                                    TUI_printfw(" IMME   ");
+                                    TUI_printfw("%2d:IMME ", procinfoproc.pinfoarray[pindex]->triggermode);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_CNT0 :
-                                    TUI_printfw(" CNT0   ");
+                                    TUI_printfw("%2d:CNT0 ", procinfoproc.pinfoarray[pindex]->triggermode);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_CNT1 :
-                                    TUI_printfw(" CNT1   ");
+                                    TUI_printfw("%2d:CNT1 ",procinfoproc.pinfoarray[pindex]->triggermode);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_SEMAPHORE :
-                                    TUI_printfw(" SEMA %2d",
+                                    TUI_printfw("%2d:S:%02d ",
+                                                procinfoproc.pinfoarray[pindex]->triggermode,
                                                 procinfoproc.pinfoarray[pindex]->triggersem
                                                );
 
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_DELAY :
-                                    TUI_printfw(" DELA   ");
+                                    TUI_printfw("%2d:DELA ", procinfoproc.pinfoarray[pindex]->triggermode);
                                     break;
 
                                 default :
-                                    TUI_printfw(" %04d   ",  procinfoproc.pinfoarray[pindex]->triggermode);
+                                    TUI_printfw("%2d:UNKN ",  procinfoproc.pinfoarray[pindex]->triggermode);
                                 }
 
                                 TUI_printfw("  %*d ", pstrlen_missedfr,

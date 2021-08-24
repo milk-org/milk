@@ -81,17 +81,20 @@ errno_t destroy_shared_image_ID(
 
 static errno_t compute_function()
 {
-    errno_t ret = 0;
+    DEBUG_TRACE_FSTART();
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    ret = destroy_shared_image_ID(
-              imname
-          );
+    FUNC_CHECK_RETURN(
+        destroy_shared_image_ID(
+            imname
+        )
+    );
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    return ret;
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
 }
 
 

@@ -22,6 +22,8 @@ errno_t fps_add_processinfo_entries(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
+    DEBUG_TRACE_FSTART();
+
     uint64_t FPFLAG;
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
@@ -101,15 +103,16 @@ errno_t fps_add_processinfo_entries(
     function_parameter_add_entry(fps, ".procinfo.triggerstreamname", "trigger stream name",
                                  FPTYPE_STREAMNAME, FPFLAG, NULL, NULL);
 
-    struct timespec triggerdelay_default[2] = { {0,0}, {0,0}};
+    struct timespec triggerdelay_default[2] = { fps->cmdset.triggerdelay, {0,0}};
     function_parameter_add_entry(fps, ".procinfo.triggerdelay", "trigger delay",
                                  FPTYPE_TIMESPEC, FPFLAG, &triggerdelay_default, NULL);
 
-    struct timespec triggertimeout_default[2] = { {0,0}, {0,0}};
+    struct timespec triggertimeout_default[2] = { fps->cmdset.triggertimeout, {0,0}};
     function_parameter_add_entry(fps, ".procinfo.triggertimeout", "trigger timeout",
                                  FPTYPE_TIMESPEC, FPFLAG, &triggertimeout_default, NULL);
 
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -120,6 +123,8 @@ errno_t fps_to_processinfo(
     PROCESSINFO *procinfo
 )
 {
+    DEBUG_TRACE_FSTART();
+
     DEBUG_TRACEPOINT("Checking fps pointer");
     if ( fps == NULL )
     {
@@ -127,33 +132,51 @@ errno_t fps_to_processinfo(
         abort();
     }
 
-    // set RT_priority if applicable
+    DEBUG_TRACEPOINT("set RT_priority if applicable");
     {
         long pindex = functionparameter_GetParamIndex(
                           fps,
-                          ".conf.procinfo.RTprio");
+                          ".procinfo.RTprio");
         if(pindex > -1)
         {
             long RTprio = functionparameter_GetParamValue_INT64(
                               fps,
-                              ".conf.procinfo.RTprio");
+                              ".procinfo.RTprio");
             procinfo->RT_priority = RTprio;
         }
     }
 
-    // set loopcntMax if applicable
+    DEBUG_TRACEPOINT("set loopcntMax if applicable");
     {
         long pindex = functionparameter_GetParamIndex(
                           fps,
-                          ".conf.procinfo.loopcntMax");
+                          ".procinfo.loopcntMax");
         if(pindex > -1)
         {
             long loopcntMax = functionparameter_GetParamValue_INT64(
                                   fps,
-                                  ".conf.procinfo.loopcntMax");
+                                  ".procinfo.loopcntMax");
             procinfo->loopcntMax = loopcntMax;
         }
     }
 
+    DEBUG_TRACEPOINT("set triggermode if applicable");
+    {
+
+        long pindex = functionparameter_GetParamIndex(
+                          fps,
+                          ".procinfo.triggermode");
+        if(pindex > -1)
+        {
+            long triggermode = functionparameter_GetParamValue_INT64(
+                                   fps,
+                                   ".procinfo.triggermode");
+            procinfo->triggermode = triggermode;
+            printf(">>>>>>>>>>>>> SET TRIGGERMODE = %ld\n", triggermode);
+        }
+    }
+
+
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

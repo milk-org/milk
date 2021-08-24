@@ -133,7 +133,7 @@ imageID arith_image_merge3D(
             || (ysize != data.image[ID2].md[0].size[1]))
     {
         printf("ERROR: input images must have same x y sizes\n");
-        printf("%s :  %ld %ld\n", ID_name1, xsize, ysize);
+        printf("%s :  %u %u\n", ID_name1, xsize, ysize);
         printf("%s :  %ld %ld\n", ID_name2, (long) data.image[ID2].md[0].size[0],
                (long) data.image[ID2].md[0].size[1]);
         exit(0);

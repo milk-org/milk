@@ -216,12 +216,10 @@ long function_parameter_struct_connect(
                 {
                     if(fps->parray[pindex].fpflag & FPFLAG_ONOFF)
                     {
-                        //printf("<<<<<<<<<<<<<<< FPS PROCESSINFO ENABLED\n");
                         fps->cmdset.flags |= CLICMDFLAG_PROCINFO;
                     }
                     else
                     {
-                        //printf("<<<<<<<<<<<<<<< FPS PROCESSINFO DISABLED\n");
                         fps->cmdset.flags &= ~(CLICMDFLAG_PROCINFO);
                     }
                 }
@@ -246,6 +244,38 @@ long function_parameter_struct_connect(
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
                     fps->cmdset.RT_priority = fps->parray[pindex].val.i64[0];
+                }
+            }
+        }
+
+        {   // triggermode
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_INT64)
+                {
+                    fps->cmdset.triggermode = fps->parray[pindex].val.i64[0];
+                }
+            }
+        }
+
+        {   // triggerdelay
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_TIMESPEC)
+                {
+                    fps->cmdset.triggerdelay.tv_sec  = fps->parray[pindex].val.ts[0].tv_sec;
+                    fps->cmdset.triggerdelay.tv_nsec = fps->parray[pindex].val.ts[0].tv_nsec;
+                }
+            }
+        }
+
+        {   // triggertimeout
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggertimeout");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_TIMESPEC)
+                {
+                    fps->cmdset.triggertimeout.tv_sec  = fps->parray[pindex].val.ts[0].tv_sec;
+                    fps->cmdset.triggertimeout.tv_nsec = fps->parray[pindex].val.ts[0].tv_nsec;
                 }
             }
         }

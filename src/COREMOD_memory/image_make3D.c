@@ -68,6 +68,8 @@ static imageID make_3Dimage(
 
 static errno_t compute_function()
 {
+    DEBUG_TRACE_FSTART();
+
     IMGID img = makeIMGID_3D(outimname, *imxsize, *imysize, *imzsize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -79,6 +81,7 @@ static errno_t compute_function()
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 

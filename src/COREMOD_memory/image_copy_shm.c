@@ -211,6 +211,8 @@ static errno_t image_copy_shm(
 // adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()
 {
+    DEBUG_TRACE_FSTART();
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     image_copy_shm(
@@ -220,6 +222,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
