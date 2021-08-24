@@ -148,6 +148,7 @@ if(data.fpsptr != NULL)\
     CLIcmddata.cmdsettings->RT_priority            = data.fpsptr->cmdset.RT_priority;\
     CLIcmddata.cmdsettings->procinfo_loopcntMax    = data.fpsptr->cmdset.procinfo_loopcntMax;\
     CLIcmddata.cmdsettings->triggermode            = data.fpsptr->cmdset.triggermode;\
+    strcpy(CLIcmddata.cmdsettings->triggerstreamname, data.fpsptr->cmdset.triggerstreamname);\
     CLIcmddata.cmdsettings->triggerdelay.tv_sec    = data.fpsptr->cmdset.triggerdelay.tv_sec;\
     CLIcmddata.cmdsettings->triggerdelay.tv_nsec   = data.fpsptr->cmdset.triggerdelay.tv_nsec;\
     CLIcmddata.cmdsettings->triggertimeout.tv_sec  = data.fpsptr->cmdset.triggertimeout.tv_sec;\
