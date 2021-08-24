@@ -3746,7 +3746,6 @@ errno_t processinfo_CTRLscreen()
                 TUI_newline();
 
 
-                TUI_newline();
                 TUI_printfw("============ SCREENS");
                 TUI_newline();
 
@@ -3757,100 +3756,39 @@ errno_t processinfo_CTRLscreen()
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    F2");
+                TUI_printfw("F2 F3 F4 F5");
                 attroff(attrval);
-                TUI_printfw("   Process control screen");
+                TUI_printfw("   control / resources / triggering / timing screens");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    F3");
+                TUI_printfw("F6 F7 F8");
                 attroff(attrval);
-                TUI_printfw("   Process CPU and MEM resources screen");
-                attron(attrval);
+                TUI_printfw("   htop (F10 to exit) / iotop (q to exit) / atop (q to exit)");
                 TUI_newline();
 
-                TUI_printfw("    F4");
-                attroff(attrval);
-                TUI_printfw("   Process syncing");
-                TUI_newline();
-
-                TUI_printfw("    F5");
-                attroff(attrval);
-                TUI_printfw("   Process timing screen");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    F6");
-                attroff(attrval);
-                TUI_printfw("   htop        Type F10 to exit");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    F7");
-                attroff(attrval);
-                TUI_printfw("   iotop       Type q to exit");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    F8");
-                attroff(attrval);
-                TUI_printfw("   atop        Type q to exit");
-                TUI_newline();
-
-
-
-
-                TUI_newline();
                 TUI_printfw("============ SCANNING");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    }");
+                TUI_printfw("  } {");
                 attroff(attrval);
-                TUI_printfw("    Increase scan frequency");
+                TUI_printfw("    Increase/decrease scan frequency");
                 TUI_newline();
 
-                attron(attrval);
-                TUI_printfw("    {");
-                attroff(attrval);
-                TUI_printfw("    Decrease scan frequency");
-                TUI_newline();
-
-
-
-
-                TUI_newline();
                 TUI_printfw("============ DISPLAY");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    +");
+                TUI_printfw("+ - f");
                 attroff(attrval);
-                TUI_printfw("    Increase display frequency");
+                TUI_printfw("    Increase/decrease display frequency, (f)reeze display");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    -");
+                TUI_printfw("  r R");
                 attroff(attrval);
-                TUI_printfw("    Decrease display frequency");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    f");
-                attroff(attrval);
-                TUI_printfw("    Freeze");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    r");
-                attroff(attrval);
-                TUI_printfw("    Remove selected inactive process log");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    R");
-                attroff(attrval);
-                TUI_printfw("    Remove all inactive processes logs");
+                TUI_printfw("    Remove selected (r) or all (R) inactive process(es) log");
                 TUI_newline();
 
                 attron(attrval);
@@ -3860,20 +3798,11 @@ errno_t processinfo_CTRLscreen()
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("SPACE");
+                TUI_printfw("SPACE; u");
                 attroff(attrval);
-                TUI_printfw("    Select this process");
+                TUI_printfw("    Select this process; (u)nselect all processes");
                 TUI_newline();
 
-                attron(attrval);
-                TUI_printfw("    u");
-                attroff(attrval);
-                TUI_printfw("    Unselect all processes");
-                TUI_newline();
-
-
-
-                TUI_newline();
                 TUI_printfw("============ PROCESS DETAILS");
                 TUI_newline();
 
@@ -3884,118 +3813,50 @@ errno_t processinfo_CTRLscreen()
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    a");
+                TUI_printfw("  a/d");
                 attroff(attrval);
-                TUI_printfw("    process stat");
+                TUI_printfw("    process st(a)t / sche(d)");
                 TUI_newline();
 
-                attron(attrval);
-                TUI_printfw("    d");
-                attroff(attrval);
-                TUI_printfw("    process sched");
-                TUI_newline();
-
-
-
-
-                TUI_newline();
                 TUI_printfw("============ LOOP CONTROL");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    p");
+                TUI_printfw("p c s");
                 attroff(attrval);
-                TUI_printfw("    pause (toggle C0 - C1)");
+                TUI_printfw("    (p)ause (toggle C0 - C1); (c)ompute on/off (toggle C0 - C5); (s)tep");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    c");
+                TUI_printfw("e T K I");
                 attroff(attrval);
-                TUI_printfw("    compute on/off (toggle C0 - C5)");
+                TUI_printfw("    clean (e)xit; SIG(T)ERM; SIG(K)ILL; SIG(I)NT");
                 TUI_newline();
 
-                attron(attrval);
-                TUI_printfw("    s");
-                attroff(attrval);
-                TUI_printfw("    step");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    e");
-                attroff(attrval);
-                TUI_printfw("    clean exit");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    T");
-                attroff(attrval);
-                TUI_printfw("    SIGTERM");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    K");
-                attroff(attrval);
-                TUI_printfw("    SIGKILL");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    I");
-                attroff(attrval);
-                TUI_printfw("    SIGINT");
-                TUI_newline();
-
-
-
-
-                TUI_newline();
                 TUI_printfw("============ COUNTERS, TIMERS");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    z");
+                TUI_printfw(" z Z");
                 attroff(attrval);
-                TUI_printfw("    zero this selected counter");
+                TUI_printfw("    zero this (z) or all (Z) selected counter");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    Z");
+                TUI_printfw(" L H ");
                 attroff(attrval);
-                TUI_printfw("    zero all selected counters");
+                TUI_printfw("    Enable iteration/execution time limit");
                 TUI_newline();
 
-                attron(attrval);
-                TUI_printfw("    L");
-                attroff(attrval);
-                TUI_printfw("    Enable iteration time limit");
-                TUI_newline();
-
-                attron(attrval);
-                TUI_printfw("    M");
-                attroff(attrval);
-                TUI_printfw("    Enable execution time limit");
-                TUI_newline();
-
-
-
-                TUI_newline();
                 TUI_printfw("============ AFFINITY");
                 TUI_newline();
 
                 attron(attrval);
-                TUI_printfw("    >");
+                TUI_printfw(" > <");
                 attroff(attrval);
-                TUI_printfw("    Move to other CPU set");
+                TUI_printfw("    Move to other CPU set / back to same CPU set");
                 TUI_newline();
 
-                attron(attrval);
-                TUI_printfw("    <");
-                attroff(attrval);
-                TUI_printfw("    Move back to same CPU set");
-                TUI_newline();
-
-
-                TUI_newline();
-                TUI_newline();
             }
             else
             {
