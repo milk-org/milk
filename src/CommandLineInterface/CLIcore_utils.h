@@ -120,12 +120,16 @@ static errno_t FPSCONFfunction()\
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);\
     if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO )\
     {\
-        fps.cmdset.flags = CLIcmddata.cmdsettings->flags;\
-        fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;\
-        fps.cmdset.procinfo_loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
-        fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;\
-        fps.cmdset.triggerdelay = CLIcmddata.cmdsettings->triggerdelay;\
-        fps.cmdset.triggertimeout = CLIcmddata.cmdsettings->triggertimeout;\
+        fps.cmdset.flags                  = CLIcmddata.cmdsettings->flags;\
+        fps.cmdset.RT_priority            = CLIcmddata.cmdsettings->RT_priority;\
+        fps.cmdset.procinfo_loopcntMax    = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
+        fps.cmdset.triggermode            = CLIcmddata.cmdsettings->triggermode;\
+        strcpy(fps.cmdset.triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname);\
+        fps.cmdset.semindexrequested      = CLIcmddata.cmdsettings->semindexrequested;\
+        fps.cmdset.triggerdelay.tv_sec    = CLIcmddata.cmdsettings->triggerdelay.tv_sec;\
+        fps.cmdset.triggerdelay.tv_nsec   = CLIcmddata.cmdsettings->triggerdelay.tv_nsec;\
+        fps.cmdset.triggertimeout.tv_sec  = CLIcmddata.cmdsettings->triggertimeout.tv_sec;\
+        fps.cmdset.triggertimeout.tv_nsec = CLIcmddata.cmdsettings->triggertimeout.tv_nsec;\
         fps_add_processinfo_entries(&fps);\
     }\
     data.fpsptr = &fps;\
@@ -149,6 +153,7 @@ if(data.fpsptr != NULL)\
     CLIcmddata.cmdsettings->procinfo_loopcntMax    = data.fpsptr->cmdset.procinfo_loopcntMax;\
     CLIcmddata.cmdsettings->triggermode            = data.fpsptr->cmdset.triggermode;\
     strcpy(CLIcmddata.cmdsettings->triggerstreamname, data.fpsptr->cmdset.triggerstreamname);\
+    CLIcmddata.cmdsettings->semindexrequested      = data.fpsptr->cmdset.semindexrequested;\
     CLIcmddata.cmdsettings->triggerdelay.tv_sec    = data.fpsptr->cmdset.triggerdelay.tv_sec;\
     CLIcmddata.cmdsettings->triggerdelay.tv_nsec   = data.fpsptr->cmdset.triggerdelay.tv_nsec;\
     CLIcmddata.cmdsettings->triggertimeout.tv_sec  = data.fpsptr->cmdset.triggertimeout.tv_sec;\
