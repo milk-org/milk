@@ -80,6 +80,7 @@ static errno_t example_compute_2Dimage_total(
 // adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()
 {
+    DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     example_compute_2Dimage_total(
@@ -88,7 +89,7 @@ static errno_t compute_function()
     );
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 

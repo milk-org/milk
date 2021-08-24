@@ -52,6 +52,8 @@ static errno_t help_function()
 // Wrapper function, used by all CLI calls
 static errno_t compute_function()
 {
+    DEBUG_TRACE_FSTART();
+
     IMGID img = makeIMGID(inimname);
     resolveIMGID(&img, ERRMODE_ABORT);
 
@@ -59,6 +61,7 @@ static errno_t compute_function()
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 

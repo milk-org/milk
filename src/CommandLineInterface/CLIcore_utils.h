@@ -123,6 +123,9 @@ static errno_t FPSCONFfunction()\
         fps.cmdset.flags = CLIcmddata.cmdsettings->flags;\
         fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;\
         fps.cmdset.procinfo_loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
+        fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;\
+        fps.cmdset.triggerdelay = CLIcmddata.cmdsettings->triggerdelay;\
+        fps.cmdset.triggertimeout = CLIcmddata.cmdsettings->triggertimeout;\
         fps_add_processinfo_entries(&fps);\
     }\
     data.fpsptr = &fps;\
@@ -139,10 +142,16 @@ static errno_t FPSCONFfunction()\
 int processloopOK = 1;\
 PROCESSINFO *processinfo = NULL;\
 if(data.fpsptr != NULL)\
-{   /* if FPS mode, then FPS settings override defaults*/ \
-    CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;\
-    CLIcmddata.cmdsettings->RT_priority = data.fpsptr->cmdset.RT_priority;\
-    CLIcmddata.cmdsettings->procinfo_loopcntMax = data.fpsptr->cmdset.procinfo_loopcntMax;\
+{   /* If FPS mode, then FPS settings override defaults*/ \
+    /* data.fpsptr->cmset entries are read by fps_connect */ \
+    CLIcmddata.cmdsettings->flags                  = data.fpsptr->cmdset.flags;\
+    CLIcmddata.cmdsettings->RT_priority            = data.fpsptr->cmdset.RT_priority;\
+    CLIcmddata.cmdsettings->procinfo_loopcntMax    = data.fpsptr->cmdset.procinfo_loopcntMax;\
+    CLIcmddata.cmdsettings->triggermode            = data.fpsptr->cmdset.triggermode;\
+    CLIcmddata.cmdsettings->triggerdelay.tv_sec    = data.fpsptr->cmdset.triggerdelay.tv_sec;\
+    CLIcmddata.cmdsettings->triggerdelay.tv_nsec   = data.fpsptr->cmdset.triggerdelay.tv_nsec;\
+    CLIcmddata.cmdsettings->triggertimeout.tv_sec  = data.fpsptr->cmdset.triggertimeout.tv_sec;\
+    CLIcmddata.cmdsettings->triggertimeout.tv_nsec = data.fpsptr->cmdset.triggertimeout.tv_nsec;\
 }\
 if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
 {\
@@ -166,16 +175,18 @@ if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
         processinfo = processinfo_setup(CLIcmddata.key, pinfodescr,\
             "startup", __FUNCTION__, __FILE__, __LINE__ );\
     }\
-\
+    DEBUG_TRACEPOINT("setting processinfo parameters");\
     processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;\
     processinfo->triggerstreamID = -2;\
     processinfo->triggermode = CLIcmddata.cmdsettings->triggermode;\
     strcpy(processinfo->triggerstreamname, CLIcmddata.cmdsettings->triggerstreamname);\
     processinfo->triggerdelay = CLIcmddata.cmdsettings->triggerdelay;\
     processinfo->triggertimeout = CLIcmddata.cmdsettings->triggertimeout;\
-    processinfo->triggerstreamID = image_ID(processinfo->triggerstreamname); \
-    processinfo_waitoninputstream_init(processinfo, processinfo->triggerstreamID, \
-        CLIcmddata.cmdsettings->triggermode, -1); \
+    processinfo->triggerstreamID = image_ID(processinfo->triggerstreamname);\
+    DEBUG_TRACEPOINT("triggerstreamID = %ld", processinfo->triggerstreamID);\
+    FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(processinfo, processinfo->triggerstreamID, \
+        CLIcmddata.cmdsettings->triggermode, -1)); \
+    DEBUG_TRACEPOINT("setting RT priority to %d", CLIcmddata.cmdsettings->RT_priority);\
     processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;\
     processinfo->CPUmask = CLIcmddata.cmdsettings->CPUmask;\
  \
