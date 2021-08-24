@@ -195,10 +195,6 @@ if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)\
     DEBUG_TRACEPOINT("loopstart");\
     processinfo_loopstart(processinfo);\
 }\
-else\
-{\
-printf(">>>>>>>>>>>>>>> PROCESSINFO DISABLED\n");\
-}\
 while(processloopOK == 1) \
 { \
 	if( CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {\
