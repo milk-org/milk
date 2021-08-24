@@ -71,7 +71,12 @@ errno_t processinfo_waitoninputstream_init(
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = cnt0", PROCESSINFO_TRIGGERMODE_CNT0);
+        DEBUG_TRACEPOINT("trigger mode %d = cnt0 of ID %ld", PROCESSINFO_TRIGGERMODE_CNT0, trigID);
+
+        if(trigID == -1)
+        {
+            FUNC_RETURN_FAILURE("missing tigger ID");
+        }
         // trigger on cnt0 increment
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
         processinfo->triggerstreamcnt =
@@ -81,7 +86,12 @@ errno_t processinfo_waitoninputstream_init(
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_CNT1)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = cnt1", PROCESSINFO_TRIGGERMODE_CNT1);
+        DEBUG_TRACEPOINT("trigger mode %d = cnt1 of ID %ld", PROCESSINFO_TRIGGERMODE_CNT1, trigID);
+
+        if(trigID == -1)
+        {
+            FUNC_RETURN_FAILURE("missing tigger ID");
+        }
         // trigger on cnt1 increment
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
         processinfo->triggerstreamcnt =
@@ -124,7 +134,7 @@ errno_t processinfo_waitoninputstream_init(
         }
         if(trigID == -1)
         {
-            FUNC_RETURN_FAILURE("invalide image ID %ld", trigID);
+            FUNC_RETURN_FAILURE("invalid image ID %ld", trigID);
         }
         processinfo->triggersem = ImageStreamIO_getsemwaitindex(&data.image[trigID],
                                   semindexrequested);
@@ -140,7 +150,6 @@ errno_t processinfo_waitoninputstream_init(
             data.image[trigID].semReadPID[processinfo->triggersem] = getpid();
         }
     }
-
 
 
     // set default timeout to 2 sec
