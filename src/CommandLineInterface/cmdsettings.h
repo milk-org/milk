@@ -19,10 +19,12 @@ typedef struct
 
     long procinfo_loopcntMax;
 
+    // triggering
     int  triggermode;
     char triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
     struct timespec triggerdelay;
     struct timespec triggertimeout;
+    int semindexrequested;
 
     int RT_priority;    // -1 if unused. 0-99 for higher priority
     cpu_set_t CPUmask;
