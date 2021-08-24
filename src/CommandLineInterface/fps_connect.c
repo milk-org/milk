@@ -248,6 +248,16 @@ long function_parameter_struct_connect(
             }
         }
 
+        {   // triggerstreamname
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerstreamname");
+            if(pindex > -1) {
+                if(fps->parray[pindex].type == FPTYPE_STREAMNAME)
+                {
+                    strcpy(fps->cmdset.triggerstreamname, fps->parray[pindex].val.string[0]);
+                }
+            }
+        }
+
         {   // triggermode
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
             if(pindex > -1) {
