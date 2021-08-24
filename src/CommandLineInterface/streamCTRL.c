@@ -1194,28 +1194,28 @@ static errno_t streamCTRL_print_SPTRACE_details(
         switch (streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
         case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-            TUI_printfw("%*s", Disp_type_NBchar, "IMMED");
+            TUI_printfw("%d%*s",  streamCTRLimages[ID].streamproctrace[spti].triggermode, Disp_type_NBchar-1, "IMME");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT0:
-            TUI_printfw("%*s", Disp_type_NBchar, "CNT0");
+            TUI_printfw("%d%*s",  streamCTRLimages[ID].streamproctrace[spti].triggermode, Disp_type_NBchar-1, "CNT0");
             break;
 
         case PROCESSINFO_TRIGGERMODE_CNT1:
-            TUI_printfw("%*s", Disp_type_NBchar, "CNT1");
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode, Disp_type_NBchar-1, "CNT1");
             break;
 
         case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-            TUI_printfw("%*s", Disp_type_NBchar-3, "SEM");
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode, Disp_type_NBchar-4, "SM");
             TUI_printfw(" %2d", sem);
             break;
 
         case PROCESSINFO_TRIGGERMODE_DELAY:
-            TUI_printfw("%*s", Disp_type_NBchar, "DELAY");
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode, Disp_type_NBchar-1, "DELA");
             break;
 
         default:
-            TUI_printfw("%*s", Disp_type_NBchar, "UNKNOWN");
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode, Disp_type_NBchar-1, "UNKN");
             break;
         }
         TUI_printfw(" ");

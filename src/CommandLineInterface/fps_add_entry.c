@@ -15,7 +15,7 @@
  *
  */
 
-int function_parameter_add_entry(
+errno_t function_parameter_add_entry(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char                *keywordstring,
     const char                *descriptionstring,
@@ -25,6 +25,8 @@ int function_parameter_add_entry(
     long                      *pindexptr
 )
 {
+    DEBUG_TRACE_FSTART("%s %s", keywordstring, descriptionstring);
+
     long pindex = 0;
     char *pch;
     char tmpstring[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
@@ -625,7 +627,9 @@ int function_parameter_add_entry(
         *pindexptr = pindex;
     }
 
-    return pindex;
+    DEBUG_TRACE_FEXIT();
+
+    return RETURN_SUCCESS;
 }
 
 

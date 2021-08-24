@@ -547,20 +547,22 @@ errno_t load_fits(
 
 static errno_t compute_function()
 {
-    errno_t ret = 0;
+    DEBUG_TRACE_FSTART();
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    ret = load_fits(
-              infilename,
-              outimname,
-              *FITSIOerrmode,
-              NULL
-          );
+    FUNC_CHECK_RETURN(load_fits(
+                          infilename,
+                          outimname,
+                          *FITSIOerrmode,
+                          NULL
+                      )
+                     );
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    return ret;
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
 }
 
 
