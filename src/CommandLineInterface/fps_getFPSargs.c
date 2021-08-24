@@ -109,10 +109,10 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
         }
 
 
-        if(strcmp(data.cmdargtoken[1].val.string, "..triggerstreamname") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggersname") == 0)
         {
-            printf("Command %ld: updating triggermode to value %ld\n", data.cmdindex,
-                   data.cmdargtoken[2].val.numl);
+            printf("Command %ld: updating triggerstreamname to value %s\n", data.cmdindex,
+                   data.cmdargtoken[2].val.string);
             strcpy(data.cmd[data.cmdindex].cmdsettings.triggerstreamname,
                    data.cmdargtoken[2].val.string);
             data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
@@ -150,7 +150,6 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             return RETURN_SUCCESS;
         }
 
-        // TODO: add other function attributes
 
 
 
