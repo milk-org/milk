@@ -38,6 +38,52 @@ typedef const char *__restrict  CONST_WORD;
 #define RETURN_CLICHECKARGARRAY_HELP         3
 
 
+
+
+typedef struct
+{
+    char     *name;
+    uint32_t *xsize;
+    uint32_t *ysize;
+    int      *shared;
+    int      *NBkw;
+    int      *CBsize;
+} LOCVAR_OUTIMG2D;
+
+#define FARG_OUTIM2D(imkey) \
+    { \
+        CLIARG_STR, "."#imkey".name", "output image", #imkey,\
+        CLIARG_VISIBLE_DEFAULT,\
+        (void **) &imkey.name\
+    },\
+    {\
+        CLIARG_LONG, "."#imkey".xsize", "x size", "512",\
+        CLIARG_VISIBLE_DEFAULT,\
+        (void **) &imkey.xsize\
+    },\
+    {\
+        CLIARG_LONG, "."#imkey".ysize", "y size", "512",\
+        CLIARG_VISIBLE_DEFAULT,\
+        (void **) &imkey.ysize\
+    },\
+    {\
+        CLIARG_LONG, "."#imkey".shared", "shared flag", "0",\
+        CLIARG_HIDDEN_DEFAULT,\
+        (void **) &imkey.shared\
+    },\
+    {\
+        CLIARG_LONG, "."#imkey".NBkw", "number keywords", "10",\
+        CLIARG_HIDDEN_DEFAULT,\
+        (void **) &imkey.NBkw\
+    },\
+    {\
+        CLIARG_LONG, "."#imkey".CBsize", "circ buffer size", "0",\
+        CLIARG_HIDDEN_DEFAULT,\
+        (void **) &imkey.CBsize\
+    }
+
+
+
 // binding between variables and function args/params
 #define STD_FARG_LINKfunction \
 for(int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF)); argi++)\
