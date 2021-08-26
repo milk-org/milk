@@ -148,7 +148,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             data.cmd[data.cmdindex].cmdsettings.triggertimeout.tv_nsec = x_nsec;
             data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
-                   }
+        }
 
 
 
