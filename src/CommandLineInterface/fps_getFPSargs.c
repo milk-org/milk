@@ -32,12 +32,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     int argpreprocess = 1; // by default, pre-process argument
     switch(data.cmdargtoken[1].type)
     {
-    case CLIARG_FLOAT:
-        argpreprocess = 0;
-        break;
-    case CLIARG_LONG:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT:
+            argpreprocess = 0;
+            break;
+        case CLIARG_LONG:
+            argpreprocess = 0;
+            break;
     }
 
     if(argpreprocess == 1)
@@ -148,15 +148,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
             data.cmd[data.cmdindex].cmdsettings.triggertimeout.tv_nsec = x_nsec;
             data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
-        }
-
-
-
+                   }
 
 
 
         // check that first arg is a string
-             // if it isn't, the non-FPS implementation should be called
+        // if it isn't, the non-FPS implementation should be called
 
         // check if recognized FPSCMDCODE
         if(strcmp(data.cmdargtoken[1].val.string,
@@ -262,7 +259,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
                     abort(); // can't handle this error any other way
                 }
 
-                strncpy(data.FPS_name, fpsname1, FUNCTION_PARAMETER_STRMAXLEN-1);
+                strncpy(data.FPS_name, fpsname1, FUNCTION_PARAMETER_STRMAXLEN - 1);
                 argindex ++;
             }
         }
