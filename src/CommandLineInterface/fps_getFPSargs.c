@@ -156,7 +156,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
 
         // check that first arg is a string
-        // if it isn't, the non-FPS implementation should be called
+             // if it isn't, the non-FPS implementation should be called
 
         // check if recognized FPSCMDCODE
         if(strcmp(data.cmdargtoken[1].val.string,
