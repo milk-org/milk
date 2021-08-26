@@ -75,7 +75,7 @@ errno_t processinfo_waitoninputstream_init(
 
         if(trigID == -1)
         {
-            FUNC_RETURN_FAILURE("missing tigger ID");
+            FUNC_RETURN_FAILURE("missing trigger ID");
         }
         // trigger on cnt0 increment
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
@@ -90,7 +90,7 @@ errno_t processinfo_waitoninputstream_init(
 
         if(trigID == -1)
         {
-            FUNC_RETURN_FAILURE("missing tigger ID");
+            FUNC_RETURN_FAILURE("missing trigger ID");
         }
         // trigger on cnt1 increment
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
