@@ -46,7 +46,7 @@ Standard compile:
 	make
 	sudo make install
 
-Compile with Python module (check script content for details):
+Compile with Python module (check script help with -h option for details):
 
     ./compile.sh $PWD/local
 
