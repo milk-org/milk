@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
         git \
-	make \        
+	make \
 	dpkg-dev \
 	libc6-dev \
         cmake \
@@ -21,14 +21,15 @@ RUN apt-get update && \
         libreadline-dev \
 	pkg-config \
 	gcc-10 \
-	g++-10 
+	g++-10
 
 RUN rm /usr/bin/gcc /usr/bin/g++
 RUN ln /usr/bin/gcc-10 /usr/bin/gcc
 RUN ln /usr/bin/g++-10 /usr/bin/g++
 RUN git clone https://github.com/milk-org/milk.git /build
 WORKDIR /build
-RUN bash MILK_PYTHON="OFF" ./compile.sh
+ENV MILK_PYTHON="OFF"
+RUN bash ./compile.sh
 WORKDIR /build/_build
 RUN make install
 RUN mkdir /work
