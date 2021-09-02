@@ -28,8 +28,7 @@ RUN ln /usr/bin/gcc-10 /usr/bin/gcc
 RUN ln /usr/bin/g++-10 /usr/bin/g++
 RUN git clone https://github.com/milk-org/milk.git /build
 WORKDIR /build
-RUN bash ./fetch_coffee_dev.sh
-RUN bash ./compile.sh
+RUN bash MILK_PYTHON="OFF" ./compile.sh
 WORKDIR /build/_build
 RUN make install
 RUN mkdir /work
