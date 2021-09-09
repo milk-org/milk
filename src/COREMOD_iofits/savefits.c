@@ -96,9 +96,9 @@ errno_t saveFITS(
 {
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d",
-           inputimname,
-           outputFITSname,
-           outputbitpix);
+                     inputimname,
+                     outputFITSname,
+                     outputbitpix);
 
 
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -137,119 +137,119 @@ errno_t saveFITS(
     DEBUG_TRACEPOINT("datatype = %d", (int) datatype);
     switch(datatype)
     {
-    case _DATATYPE_UINT8:
-        FITSIOdatatype = TBYTE;
-        bitpix = BYTE_IMG;
-        datainptr = (char *) imgin.im->array.UI8;
-        break;
+        case _DATATYPE_UINT8:
+            FITSIOdatatype = TBYTE;
+            bitpix = BYTE_IMG;
+            datainptr = (char *) imgin.im->array.UI8;
+            break;
 
-    case _DATATYPE_INT8:
-        FITSIOdatatype = TSBYTE;
-        bitpix = SBYTE_IMG;
-        datainptr = (char *) imgin.im->array.SI8;
-        break;
-
-
-    case _DATATYPE_UINT16:
-        FITSIOdatatype = TUSHORT;
-        bitpix = SHORT_IMG;
-        datainptr = (char *) imgin.im->array.UI16;
-        break;
-
-    case _DATATYPE_INT16:
-        FITSIOdatatype = TUSHORT;
-        bitpix = SHORT_IMG;
-        datainptr = (char *) imgin.im->array.SI16;
-        break;
+        case _DATATYPE_INT8:
+            FITSIOdatatype = TSBYTE;
+            bitpix = SBYTE_IMG;
+            datainptr = (char *) imgin.im->array.SI8;
+            break;
 
 
-    case _DATATYPE_UINT32:
-        FITSIOdatatype = TUINT;
-        bitpix = ULONG_IMG;
-        datainptr = (char *) imgin.im->array.UI32;
-        break;
+        case _DATATYPE_UINT16:
+            FITSIOdatatype = TUSHORT;
+            bitpix = SHORT_IMG;
+            datainptr = (char *) imgin.im->array.UI16;
+            break;
 
-    case _DATATYPE_INT32:
-        FITSIOdatatype = TINT;
-        bitpix = LONG_IMG;
-        datainptr = (char *) imgin.im->array.SI32;
-        break;
-
-
-    case _DATATYPE_UINT64:
-        FITSIOdatatype = TULONG;
-        bitpix = ULONGLONG_IMG;
-        datainptr = (char *) imgin.im->array.UI64;
-        break;
-
-    case _DATATYPE_INT64:
-        FITSIOdatatype = TLONG;
-        bitpix = LONGLONG_IMG;
-        datainptr = (char *) imgin.im->array.SI64;
-        break;
+        case _DATATYPE_INT16:
+            FITSIOdatatype = TUSHORT;
+            bitpix = SHORT_IMG;
+            datainptr = (char *) imgin.im->array.SI16;
+            break;
 
 
-    case _DATATYPE_FLOAT:
-        FITSIOdatatype = TFLOAT;
-        bitpix = FLOAT_IMG;
-        datainptr = (char *) imgin.im->array.F;
-        break;
+        case _DATATYPE_UINT32:
+            FITSIOdatatype = TUINT;
+            bitpix = ULONG_IMG;
+            datainptr = (char *) imgin.im->array.UI32;
+            break;
 
-    case _DATATYPE_DOUBLE:
-        FITSIOdatatype = TDOUBLE;
-        bitpix = DOUBLE_IMG;
-        datainptr = (char *) imgin.im->array.D;
-        break;
+        case _DATATYPE_INT32:
+            FITSIOdatatype = TINT;
+            bitpix = LONG_IMG;
+            datainptr = (char *) imgin.im->array.SI32;
+            break;
+
+
+        case _DATATYPE_UINT64:
+            FITSIOdatatype = TULONG;
+            bitpix = ULONGLONG_IMG;
+            datainptr = (char *) imgin.im->array.UI64;
+            break;
+
+        case _DATATYPE_INT64:
+            FITSIOdatatype = TLONG;
+            bitpix = LONGLONG_IMG;
+            datainptr = (char *) imgin.im->array.SI64;
+            break;
+
+
+        case _DATATYPE_FLOAT:
+            FITSIOdatatype = TFLOAT;
+            bitpix = FLOAT_IMG;
+            datainptr = (char *) imgin.im->array.F;
+            break;
+
+        case _DATATYPE_DOUBLE:
+            FITSIOdatatype = TDOUBLE;
+            bitpix = DOUBLE_IMG;
+            datainptr = (char *) imgin.im->array.D;
+            break;
     }
 
     DEBUG_TRACEPOINT("bitpix = %d", bitpix);
 
     switch(outputbitpix)
     {
-    case 8:
-        bitpix = BYTE_IMG;
-        printf("    output data type: BYTE_IMG\n");
-        break;
-    case 10:
-        bitpix = SBYTE_IMG;
-        printf("    output data type: SBYTE_IMG\n");
-        break;
+        case 8:
+            bitpix = BYTE_IMG;
+            printf("    output data type: BYTE_IMG\n");
+            break;
+        case 10:
+            bitpix = SBYTE_IMG;
+            printf("    output data type: SBYTE_IMG\n");
+            break;
 
-    case 16:
-        bitpix = SHORT_IMG;
-        printf("    output data type: SHORT_IMG\n");
-        break;
-    case 20:
-        bitpix = USHORT_IMG;
-        printf("    output data type: USHORT_IMG\n");
-        break;
+        case 16:
+            bitpix = SHORT_IMG;
+            printf("    output data type: SHORT_IMG\n");
+            break;
+        case 20:
+            bitpix = USHORT_IMG;
+            printf("    output data type: USHORT_IMG\n");
+            break;
 
-    case 32:
-        bitpix = LONG_IMG;
-        printf("    output data type: LONG_IMG\n");
-        break;
-    case 40:
-        bitpix = ULONG_IMG;
-        printf("    output data type: ULONG_IMG\n");
-        break;
+        case 32:
+            bitpix = LONG_IMG;
+            printf("    output data type: LONG_IMG\n");
+            break;
+        case 40:
+            bitpix = ULONG_IMG;
+            printf("    output data type: ULONG_IMG\n");
+            break;
 
-    case 64:
-        bitpix = LONGLONG_IMG;
-        printf("    output data type: LONGLONG_IMG\n");
-        break;
-    case 80:
-        bitpix = ULONGLONG_IMG;
-        printf("    output data type: ULONGLONG_IMG\n");
-        break;
+        case 64:
+            bitpix = LONGLONG_IMG;
+            printf("    output data type: LONGLONG_IMG\n");
+            break;
+        case 80:
+            bitpix = ULONGLONG_IMG;
+            printf("    output data type: ULONGLONG_IMG\n");
+            break;
 
-    case -32:
-        bitpix = FLOAT_IMG;
-        printf("    output data type: FLOAT_IMG\n");
-        break;
-    case -64:
-        bitpix = DOUBLE_IMG;
-        printf("    output data type: DOUBLE_IMG\n");
-        break;
+        case -32:
+            bitpix = FLOAT_IMG;
+            printf("    output data type: FLOAT_IMG\n");
+            break;
+        case -64:
+            bitpix = DOUBLE_IMG;
+            printf("    output data type: DOUBLE_IMG\n");
+            break;
     }
 
     DEBUG_TRACEPOINT("bitpix = %d", bitpix);
@@ -264,10 +264,12 @@ errno_t saveFITS(
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
     {
         char errstring[200];
-        if( access( fnametmp, F_OK ) == 0 ) {
+        if(access(fnametmp, F_OK) == 0)
+        {
             sprintf(errstring, "File already exists");
         }
-        PRINT_ERROR("fits_create_file error %d on file %s %s", COREMOD_iofits_data.FITSIO_status, fnametmp, errstring);
+        PRINT_ERROR("fits_create_file error %d on file %s %s",
+                    COREMOD_iofits_data.FITSIO_status, fnametmp, errstring);
         abort();
     }
 
@@ -300,27 +302,7 @@ errno_t saveFITS(
 
     DEBUG_TRACEPOINT(" ");
 
-    long fpixel = 1;
-    COREMOD_iofits_data.FITSIO_status = 0;
-    fits_write_img(fptr, FITSIOdatatype, fpixel, nelements, datainptr,
-                   &COREMOD_iofits_data.FITSIO_status);
-    int errcode = check_FITSIO_status(__FILE__, __func__, __LINE__, 1);
-    if(errcode != 0)
-    {
-        if(errcode == 412)
-        {
-            PRINT_WARNING("data trucated");
-        }
-        else
-        {
-            PRINT_ERROR("fits_write_img error %d on file %s", errcode, fnametmp);
-            EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
-            FUNC_RETURN_FAILURE(" ");
-        }
-    }
 
-    COREMOD_iofits_data.FITSIO_status = 0;
-    fits_write_date(fptr, &COREMOD_iofits_data.FITSIO_status);
 
     DEBUG_TRACEPOINT("Adding optional header");
     // HEADER
@@ -336,39 +318,39 @@ errno_t saveFITS(
             char tmpkwvalstr[81];
             switch(imgin.im->kw[kw].type)
             {
-            case 'L':
-                printf("writing keyword [L] %-8s= %20ld / %s\n", imgin.im->kw[kw].name,
-                       imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr, TLONG, imgin.im->kw[kw].name,
-                                &imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                kwcnt++;
-                break;
+                case 'L':
+                    printf("writing keyword [L] %-8s= %20ld / %s\n", imgin.im->kw[kw].name,
+                           imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    fits_update_key(fptr, TLONG, imgin.im->kw[kw].name,
+                                    &imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    kwcnt++;
+                    break;
 
-            case 'D':
-                printf("writing keyword [D] %-8s= %20g / %s\n", imgin.im->kw[kw].name,
-                       imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr, TDOUBLE, imgin.im->kw[kw].name,
-                                &imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                kwcnt++;
-                break;
+                case 'D':
+                    printf("writing keyword [D] %-8s= %20g / %s\n", imgin.im->kw[kw].name,
+                           imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    fits_update_key(fptr, TDOUBLE, imgin.im->kw[kw].name,
+                                    &imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    kwcnt++;
+                    break;
 
-            case 'S':
-                sprintf(tmpkwvalstr, "'%s'", imgin.im->kw[kw].value.valstr);
-                printf("writing keyword [S] %-8s= %20s / %s\n", imgin.im->kw[kw].name,
-                       tmpkwvalstr, imgin.im->kw[kw].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr, TSTRING, imgin.im->kw[kw].name,
-                                imgin.im->kw[kw].value.valstr, imgin.im->kw[kw].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                kwcnt++;
-                break;
+                case 'S':
+                    sprintf(tmpkwvalstr, "'%s'", imgin.im->kw[kw].value.valstr);
+                    printf("writing keyword [S] %-8s= %20s / %s\n", imgin.im->kw[kw].name,
+                           tmpkwvalstr, imgin.im->kw[kw].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    fits_update_key(fptr, TSTRING, imgin.im->kw[kw].name,
+                                    imgin.im->kw[kw].value.valstr, imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    kwcnt++;
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -466,7 +448,27 @@ errno_t saveFITS(
 
 
 
+    long fpixel = 1;
+    COREMOD_iofits_data.FITSIO_status = 0;
+    fits_write_img(fptr, FITSIOdatatype, fpixel, nelements, datainptr,
+                   &COREMOD_iofits_data.FITSIO_status);
+    int errcode = check_FITSIO_status(__FILE__, __func__, __LINE__, 1);
+    if(errcode != 0)
+    {
+        if(errcode == 412)
+        {
+            PRINT_WARNING("data trucated");
+        }
+        else
+        {
+            PRINT_ERROR("fits_write_img error %d on file %s", errcode, fnametmp);
+            EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
+            FUNC_RETURN_FAILURE(" ");
+        }
+    }
 
+    COREMOD_iofits_data.FITSIO_status = 0;
+    fits_write_date(fptr, &COREMOD_iofits_data.FITSIO_status);
 
 
     COREMOD_iofits_data.FITSIO_status = 0;

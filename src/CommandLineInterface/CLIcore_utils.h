@@ -386,70 +386,70 @@ static inline IMGID makeIMGID(
     char namestring[200];
     strcpy(namestring, name);
     pch = strtok(namestring, ">");
-    while (pch != NULL)
+    while(pch != NULL)
     {
         pch1 = pch;
         //printf("[%2d] %s\n", nbword, pch);
 
-        if (strcmp(pch, "s") == 0)
+        if(strcmp(pch, "s") == 0)
         {
             printf("    shared memory\n");
             img.shared = 1;
         }
 
-        if (strcmp(pch, "tui8") == 0)
+        if(strcmp(pch, "tui8") == 0)
         {
             printf("    data type unsigned 8-bit int\n");
             img.datatype = _DATATYPE_UINT8;
         }
-        if (strcmp(pch, "tsi8") == 0)
+        if(strcmp(pch, "tsi8") == 0)
         {
             printf("    data type signed 8-bit int\n");
             img.datatype = _DATATYPE_INT8;
         }
-        if (strcmp(pch, "tui16") == 0)
+        if(strcmp(pch, "tui16") == 0)
         {
             printf("    data type unsigned 16-bit int\n");
             img.datatype = _DATATYPE_UINT16;
         }
-        if (strcmp(pch, "tsi16") == 0)
+        if(strcmp(pch, "tsi16") == 0)
         {
             printf("    data type signed 16-bit int\n");
             img.datatype = _DATATYPE_INT16;
         }
-        if (strcmp(pch, "tui32") == 0)
+        if(strcmp(pch, "tui32") == 0)
         {
             printf("    data type unsigned 32-bit int\n");
             img.datatype = _DATATYPE_UINT32;
         }
-        if (strcmp(pch, "tsi32") == 0)
+        if(strcmp(pch, "tsi32") == 0)
         {
             printf("    data type signed 32-bit int\n");
             img.datatype = _DATATYPE_INT32;
         }
-        if (strcmp(pch, "tui64") == 0)
+        if(strcmp(pch, "tui64") == 0)
         {
             printf("    data type unsigned 64-bit int\n");
             img.datatype = _DATATYPE_UINT64;
         }
-        if (strcmp(pch, "tsi64") == 0)
+        if(strcmp(pch, "tsi64") == 0)
         {
             printf("    data type signed 64-bit int\n");
             img.datatype = _DATATYPE_INT64;
         }
 
-        if (strcmp(pch, "tf32") == 0)
+        if(strcmp(pch, "tf32") == 0)
         {
             printf("    data type double (32)\n");
             img.datatype = _DATATYPE_FLOAT;
         }
-        if (strcmp(pch, "tf64") == 0)
+        if(strcmp(pch, "tf64") == 0)
         {
             printf("    data type float (64)\n");
             img.datatype = _DATATYPE_DOUBLE;
         }
 
-        if (pch[0] == 'k')
+        if(pch[0] == 'k')
         {
             int nbkw;
             sscanf(pch, "k%d", &nbkw);
@@ -457,7 +457,7 @@ static inline IMGID makeIMGID(
             img.NBkw = nbkw;
         }
 
-        if (pch[0] == 'c')
+        if(pch[0] == 'c')
         {
             int cbsize;
             sscanf(pch, "c%d", &cbsize);
@@ -512,16 +512,18 @@ static inline imageID imcreatelikewiseIMGID(
     IMGID *target_img,
     IMGID *source_img)
 {
-    if (target_img->ID == -1)
+    if(target_img->ID == -1)
     {
-        if (target_img != source_img)
+        if(target_img != source_img)
         {
-            printf("Creating image %s from %s, shared = %d, kw = %d\n", target_img->name, source_img->name,
+            printf("Creating image %s from %s, shared = %d, kw = %d\n", target_img->name,
+                   source_img->name,
                    source_img->shared, source_img->NBkw);
         }
         else
         {
-            printf("Creating image %s, shared = %d, kw = %d\n", source_img->name, source_img->shared,
+            printf("Creating image %s, shared = %d, kw = %d\n", source_img->name,
+                   source_img->shared,
                    source_img->NBkw);
         }
 
@@ -557,8 +559,10 @@ static inline errno_t updateIMGIDcreationparams(
 {
     img->datatype = img->md->datatype;
     img->naxis = img->md->naxis;
-    for (int ii = 0; ii < 3; ++ii)
+    for(int ii = 0; ii < 3; ++ii)
+    {
         img->size[ii] = img->md->size[ii];
+    }
     img->shared = img->md->shared;
     img->NBkw = img->md->NBkw;
     img->CBsize = img->md->CBsize;
@@ -589,12 +593,12 @@ static inline imageID resolveIMGID(
 
     // IF:
     // Not resolved before OR create counter mismatch OR not used
-    if (img->ID == -1 ||
+    if(img->ID == -1 ||
             (img->createcnt != data.image[img->ID].createcnt) ||
             (data.image[img->ID].used != 1))
     {
         img->ID = image_ID(img->name);
-        if (img->ID > -1) // Resolve success !
+        if(img->ID > -1)  // Resolve success !
         {
             img->im = &data.image[img->ID];
             img->md = &data.image[img->ID].md[0];
@@ -604,15 +608,15 @@ static inline imageID resolveIMGID(
         }
     }
 
-    if (img->ID == -1)
+    if(img->ID == -1)
     {
-        if ((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
+        if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
             printf("ERROR: %c[%d;%dm Cannot resolve image %s %c[%d;m\n", (char)27, 1, 31,
                    img->name, (char)27, 0);
             abort();
         }
-        else if (ERRMODE == ERRMODE_WARN)
+        else if(ERRMODE == ERRMODE_WARN)
         {
             printf("WARNING: %c[%d;%dm Cannot resolve image %s %c[%d;m\n", (char)27, 1, 35,
                    img->name, (char)27, 0);
