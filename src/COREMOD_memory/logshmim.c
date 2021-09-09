@@ -325,7 +325,7 @@ void *save_fits_function(
 
 
 
-         create_image_ID("tmpsavecube", 3, imsizearray, datatype, 0, 1, 0, &IDc);
+        create_image_ID("tmpsavecube", 3, imsizearray, datatype, 0, 1, 0, &IDc);
 
         // list_image_ID();
 
@@ -691,7 +691,8 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(
  * uses semlog semaphore
  *
  * uses data cube buffer to store frames
- * if an image name logdata exists (should ideally be in shared mem), then this will be included in the timing txt file
+ * if an image name logdata exists (should ideally be in shared mem),
+ * then this will be included in the timing txt file
  */
 errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     const char *IDname,
@@ -798,7 +799,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
 
 
     schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
+
     if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
@@ -809,7 +810,6 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     {
         PRINT_ERROR("seteuid error");
     }
-#endif
 
 
 
@@ -859,8 +859,16 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     sprintf(logb0name, "%s_logbuff0", IDname);
     sprintf(logb1name, "%s_logbuff1", IDname);
 
-    create_image_ID(logb0name, 3, imsizearray, datatype, 1, 1, 0, &IDb0);
-    create_image_ID(logb1name, 3, imsizearray, datatype, 1, 1, 0, &IDb1);
+    create_image_ID(logb0name, 3, imsizearray, datatype, 1, data.image[ID].md[0].NBkw, 0, &IDb0);
+    create_image_ID(logb1name, 3, imsizearray, datatype, 1, data.image[ID].md[0].NBkw, 0, &IDb1);
+
+    // copy keywords
+    {
+        memcpy(data.image[IDb0].kw, data.image[ID].kw, sizeof(IMAGE_KEYWORD)*data.image[ID].md[0].NBkw);
+        memcpy(data.image[IDb1].kw, data.image[ID].kw, sizeof(IMAGE_KEYWORD)*data.image[ID].md[0].NBkw);
+    }
+
+
     COREMOD_MEMORY_image_set_semflush(logb0name, -1);
     COREMOD_MEMORY_image_set_semflush(logb1name, -1);
 
@@ -1278,6 +1286,9 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
                 IDb = IDb1;
             }
 
+            // update buffer content
+            memcpy(data.image[IDb].kw, data.image[ID].kw, sizeof(IMAGE_KEYWORD)*data.image[ID].md[0].NBkw);
+
 
             if(VERBOSE > 0)
             {
@@ -1366,7 +1377,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
 
             NBframemissing = (array_cnt0[index - 1] - array_cnt0[0]) - (index - 1);
 
-            printf("===== CUBE %8lld   Number of missed frames = %8ld  / %ld  / %8ld ====\n",
+            printf("=>=>=>=>= CUBE %8lld   Number of missed frames = %8ld  / %ld  / %8ld ====\n",
                    logshimconf[0].filecnt, NBframemissing, index, (long) zsize);
 
             if(VERBOSE > 0)
@@ -1380,9 +1391,9 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
             tmsg->arraycnt1 = array_cnt1_cp;
             tmsg->arraytime = array_time_cp;
             WRITE_FILENAME(tmsg->fname_auxFITSheader,
-                    "%s/%s.auxFITSheader.shm",
-                    data.shmdir,
-                    IDname);
+                           "%s/%s.auxFITSheader.shm",
+                           data.shmdir,
+                           IDname);
             iret_savefits = pthread_create(&thread_savefits, NULL, save_fits_function,
                                            tmsg);
 
