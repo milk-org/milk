@@ -590,8 +590,8 @@ static inline imageID resolveIMGID(
     // IF:
     // Not resolved before OR create counter mismatch OR not used
     if (img->ID == -1 ||
-        (img->createcnt != data.image[img->ID].createcnt) ||
-        (data.image[img->ID].used != 1))
+            (img->createcnt != data.image[img->ID].createcnt) ||
+            (data.image[img->ID].used != 1))
     {
         img->ID = image_ID(img->name);
         if (img->ID > -1) // Resolve success !
