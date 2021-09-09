@@ -788,7 +788,7 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     int semval;
 
 
-    int VERBOSE = 1;
+    int VERBOSE = 0;
     // 0: don't print
     // 1: print statements outside fast loop
     // 2: print everything
