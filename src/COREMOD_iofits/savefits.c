@@ -87,7 +87,6 @@ static errno_t help_function()
 
 
 
-
 errno_t saveFITS(
     const char *__restrict inputimname,
     const char *__restrict outputFITSname,
@@ -331,6 +330,7 @@ errno_t saveFITS(
     {
         int NBkw = imgin.md->NBkw;
         int kwcnt = 0;
+        printf("----------- NUMBER KW = %d ---------------\n", NBkw);
         for(int kw = 0; kw < NBkw; kw++)
         {
             char tmpkwvalstr[81];
