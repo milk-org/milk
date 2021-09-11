@@ -16,7 +16,7 @@ errno_t saveFITS(
     const char *__restrict outputFITSname,
     int outputbitpix,
     const char *__restrict importheaderfile,
-    IMAGE_KEYWORD * kwarray,
+    IMAGE_KEYWORD *kwarray,
     int kwarraysize
 );
 
