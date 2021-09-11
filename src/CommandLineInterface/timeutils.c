@@ -247,7 +247,7 @@ double timespec_diff_double(struct timespec start, struct timespec end)
  * @param timedouble Unix time
  * @return char*
  */
-char * timedouble_to_UTC_timeofdaystring(
+char *timedouble_to_UTC_timeofdaystring(
     double timedouble
 )
 {
@@ -255,15 +255,15 @@ char * timedouble_to_UTC_timeofdaystring(
 
 
     time_t timet = (time_t) timedouble;
-    struct tm * timetm = gmtime ( &timet );
+    struct tm *timetm = gmtime(&timet);
 
-    float sec = 1.0*timetm->tm_sec + timedouble - (long) timedouble;
+    float sec = 1.0 * timetm->tm_sec + timedouble - (long) timedouble;
 
     printf("TIME double     : %lf\n", timedouble);
 
     struct timespec tsnow;
     clock_gettime(CLOCK_REALTIME, &tsnow);
-    double tdoublenow = 1.0*tsnow.tv_sec + 1.0e-9*tsnow.tv_nsec;
+    double tdoublenow = 1.0 * tsnow.tv_sec + 1.0e-9 * tsnow.tv_nsec;
     printf("TIME double NOW : %lf\n", tdoublenow);
 
 
