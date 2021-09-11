@@ -305,9 +305,12 @@ void *save_fits_function(
 
 
     // Add custom keywords
-    int NBcustomKW = 6;
+    int NBcustomKW = 9;
     IMAGE_KEYWORD *imkwarray = (IMAGE_KEYWORD *) malloc(sizeof(
                                    IMAGE_KEYWORD) * NBcustomKW);
+
+
+
 
 
     // UT time
@@ -331,6 +334,8 @@ void *save_fits_function(
            timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
     strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure start");
 
+
+
     // Modified Julian Date (MJD)
 
     strcpy(imkwarray[3].name, "MJD");
@@ -349,6 +354,44 @@ void *save_fits_function(
     imkwarray[5].value.numf = (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) +
                               40587.0;
     strcpy(imkwarray[5].comment, "Modified Julian Day at exposure start");
+
+
+    // Local time
+
+    // get time zone
+    time_t t = time(NULL);
+    struct tm lt = {0};
+    localtime_r(&t, &lt);
+    //printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
+    //printf("The time zone is '%s'.\n", lt.tm_zone);
+
+    sprintf(imkwarray[6].name, "%s", lt.tm_zone);
+    imkwarray[6].type = 'S';
+    strcpy(imkwarray[6].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
+               lt.tm_gmtoff
+           ));
+    sprintf(imkwarray[6].comment, "HH:MM:SS.SS typical %s at exposure", lt.tm_zone);
+
+    sprintf(imkwarray[7].name, "%s-STR", lt.tm_zone);
+    imkwarray[7].type = 'S';
+    strcpy(imkwarray[7].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               tmsg->arraytime[0] + lt.tm_gmtoff
+           ));
+    sprintf(imkwarray[7].comment, "HH:MM:SS.SS typical %s at exposure", lt.tm_zone);
+
+    sprintf(imkwarray[8].name, "%s-END", lt.tm_zone);
+    imkwarray[8].type = 'S';
+    strcpy(imkwarray[8].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               tmsg->arraytime[tmsg->cubesize - 1] + lt.tm_gmtoff
+           ));
+    sprintf(imkwarray[8].comment, "HH:MM:SS.SS typical %s at exposure", lt.tm_zone);
+
+
+
 
 
     if(tmsg->partial == 0) // full image
