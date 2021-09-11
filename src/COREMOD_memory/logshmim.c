@@ -305,9 +305,12 @@ void *save_fits_function(
 
 
     // Add custom keywords
-    int NBcustomKW = 6;
+    int NBcustomKW = 9;
     IMAGE_KEYWORD *imkwarray = (IMAGE_KEYWORD *) malloc(sizeof(
                                    IMAGE_KEYWORD) * NBcustomKW);
+
+
+
 
 
     // UT time
@@ -331,6 +334,8 @@ void *save_fits_function(
            timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
     strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure start");
 
+
+
     // Modified Julian Date (MJD)
 
     strcpy(imkwarray[3].name, "MJD");
@@ -349,6 +354,43 @@ void *save_fits_function(
     imkwarray[5].value.numf = (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) +
                               40587.0;
     strcpy(imkwarray[5].comment, "Modified Julian Day at exposure start");
+
+
+    // Local time
+
+    // get time zone
+    time_t t = time(NULL);
+    struct tm lt = {0};
+    localtime_r(&t, &lt);
+    //printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
+    //printf("The time zone is '%s'.\n", lt.tm_zone);
+
+    sprintf(imkwarray[6].name, "%s", lt.tm_zone);
+    imkwarray[6].type = 'S';
+    strcpy(imkwarray[6].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               (0.5*tmsg->arraytime[0] + 0.5*tmsg->arraytime[tmsg->cubesize - 1]) + lt.tm_gmtoff
+           ));
+    sprintf(imkwarray[6].comment, "HH:MM:SS.SS typical %s at exposure", lt.tm_zone);
+
+    sprintf(imkwarray[7].name, "%s-STR", lt.tm_zone);
+    imkwarray[7].type = 'S';
+    strcpy(imkwarray[7].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               tmsg->arraytime[0] + lt.tm_gmtoff
+           ));
+    sprintf(imkwarray[7].comment, "HH:MM:SS.SS typical %s at exposure", lt.tm_zone);
+
+    sprintf(imkwarray[8].name, "%s-END", lt.tm_zone);
+    imkwarray[8].type = 'S';
+    strcpy(imkwarray[8].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               tmsg->arraytime[tmsg->cubesize - 1] + lt.tm_gmtoff
+           ));
+    sprintf(imkwarray[8].comment, "HH:MM:SS.SS typical %s at exposure", lt.tm_zone);
+
+
+
 
 
     if(tmsg->partial == 0) // full image
@@ -391,67 +433,67 @@ void *save_fits_function(
         switch(datatype)
         {
 
-            case _DATATYPE_UINT8:
-                framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI8; // source
-                ptr1 = (char *) data.image[IDc].array.UI8; // destination
-                break;
-            case _DATATYPE_INT8:
-                framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI8; // source
-                ptr1 = (char *) data.image[IDc].array.SI8; // destination
-                break;
+        case _DATATYPE_UINT8:
+            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.UI8; // source
+            ptr1 = (char *) data.image[IDc].array.UI8; // destination
+            break;
+        case _DATATYPE_INT8:
+            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.SI8; // source
+            ptr1 = (char *) data.image[IDc].array.SI8; // destination
+            break;
 
-            case _DATATYPE_UINT16:
-                framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI16; // source
-                ptr1 = (char *) data.image[IDc].array.UI16; // destination
-                break;
-            case _DATATYPE_INT16:
-                framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI16; // source
-                ptr1 = (char *) data.image[IDc].array.SI16; // destination
-                break;
+        case _DATATYPE_UINT16:
+            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.UI16; // source
+            ptr1 = (char *) data.image[IDc].array.UI16; // destination
+            break;
+        case _DATATYPE_INT16:
+            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.SI16; // source
+            ptr1 = (char *) data.image[IDc].array.SI16; // destination
+            break;
 
-            case _DATATYPE_UINT32:
-                framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI32; // source
-                ptr1 = (char *) data.image[IDc].array.UI32; // destination
-                break;
-            case _DATATYPE_INT32:
-                framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI32; // source
-                ptr1 = (char *) data.image[IDc].array.SI32; // destination
-                break;
+        case _DATATYPE_UINT32:
+            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.UI32; // source
+            ptr1 = (char *) data.image[IDc].array.UI32; // destination
+            break;
+        case _DATATYPE_INT32:
+            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.SI32; // source
+            ptr1 = (char *) data.image[IDc].array.SI32; // destination
+            break;
 
-            case _DATATYPE_UINT64:
-                framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.UI64; // source
-                ptr1 = (char *) data.image[IDc].array.UI64; // destination
-                break;
-            case _DATATYPE_INT64:
-                framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.SI64; // source
-                ptr1 = (char *) data.image[IDc].array.SI64; // destination
-                break;
+        case _DATATYPE_UINT64:
+            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.UI64; // source
+            ptr1 = (char *) data.image[IDc].array.UI64; // destination
+            break;
+        case _DATATYPE_INT64:
+            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.SI64; // source
+            ptr1 = (char *) data.image[IDc].array.SI64; // destination
+            break;
 
-            case _DATATYPE_FLOAT:
-                framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.F; // source
-                ptr1 = (char *) data.image[IDc].array.F; // destination
-                break;
-            case _DATATYPE_DOUBLE:
-                framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-                ptr0 = (char *) data.image[ID].array.D; // source
-                ptr1 = (char *) data.image[IDc].array.D; // destination
-                break;
+        case _DATATYPE_FLOAT:
+            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.F; // source
+            ptr1 = (char *) data.image[IDc].array.F; // destination
+            break;
+        case _DATATYPE_DOUBLE:
+            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+            ptr0 = (char *) data.image[ID].array.D; // source
+            ptr1 = (char *) data.image[IDc].array.D; // destination
+            break;
 
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                free(imsizearray);
-                free(tmsg);
-                exit(0);
-                break;
+        default:
+            printf("ERROR: WRONG DATA TYPE\n");
+            free(imsizearray);
+            free(tmsg);
+            exit(0);
+            break;
         }
 
 
@@ -954,61 +996,61 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     switch(datatype)
     {
 
-        case _DATATYPE_FLOAT:
-            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.F;
-            break;
+    case _DATATYPE_FLOAT:
+        framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.F;
+        break;
 
-        case _DATATYPE_INT8:
-            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI8;
-            break;
+    case _DATATYPE_INT8:
+        framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.SI8;
+        break;
 
-        case _DATATYPE_UINT8:
-            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI8;
-            break;
+    case _DATATYPE_UINT8:
+        framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.UI8;
+        break;
 
-        case _DATATYPE_INT16:
-            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI16;
-            break;
+    case _DATATYPE_INT16:
+        framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.SI16;
+        break;
 
-        case _DATATYPE_UINT16:
-            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI16;
-            break;
+    case _DATATYPE_UINT16:
+        framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.UI16;
+        break;
 
-        case _DATATYPE_INT32:
-            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI32;
-            break;
+    case _DATATYPE_INT32:
+        framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.SI32;
+        break;
 
-        case _DATATYPE_UINT32:
-            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI32;
-            break;
+    case _DATATYPE_UINT32:
+        framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.UI32;
+        break;
 
-        case _DATATYPE_INT64:
-            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.SI64;
-            break;
+    case _DATATYPE_INT64:
+        framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.SI64;
+        break;
 
-        case _DATATYPE_UINT64:
-            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.UI64;
-            break;
+    case _DATATYPE_UINT64:
+        framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.UI64;
+        break;
 
 
-        case _DATATYPE_DOUBLE:
-            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            ptr0_0 = (char *) data.image[ID].array.D;
-            break;
+    case _DATATYPE_DOUBLE:
+        framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+        ptr0_0 = (char *) data.image[ID].array.D;
+        break;
 
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            exit(0);
-            break;
+    default:
+        printf("ERROR: WRONG DATA TYPE\n");
+        exit(0);
+        break;
     }
 
 
@@ -1016,45 +1058,45 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
     switch(datatype)
     {
 
-        case _DATATYPE_FLOAT:
-            ptr1_0 = (char *) data.image[IDb].array.F;
-            break;
+    case _DATATYPE_FLOAT:
+        ptr1_0 = (char *) data.image[IDb].array.F;
+        break;
 
-        case _DATATYPE_INT8:
-            ptr1_0 = (char *) data.image[IDb].array.SI8;
-            break;
+    case _DATATYPE_INT8:
+        ptr1_0 = (char *) data.image[IDb].array.SI8;
+        break;
 
-        case _DATATYPE_UINT8:
-            ptr1_0 = (char *) data.image[IDb].array.UI8;
-            break;
+    case _DATATYPE_UINT8:
+        ptr1_0 = (char *) data.image[IDb].array.UI8;
+        break;
 
-        case _DATATYPE_INT16:
-            ptr1_0 = (char *) data.image[IDb].array.SI16;
-            break;
+    case _DATATYPE_INT16:
+        ptr1_0 = (char *) data.image[IDb].array.SI16;
+        break;
 
-        case _DATATYPE_UINT16:
-            ptr1_0 = (char *) data.image[IDb].array.UI16;
-            break;
+    case _DATATYPE_UINT16:
+        ptr1_0 = (char *) data.image[IDb].array.UI16;
+        break;
 
-        case _DATATYPE_INT32:
-            ptr1_0 = (char *) data.image[IDb].array.SI32;
-            break;
+    case _DATATYPE_INT32:
+        ptr1_0 = (char *) data.image[IDb].array.SI32;
+        break;
 
-        case _DATATYPE_UINT32:
-            ptr1_0 = (char *) data.image[IDb].array.UI32;
-            break;
+    case _DATATYPE_UINT32:
+        ptr1_0 = (char *) data.image[IDb].array.UI32;
+        break;
 
-        case _DATATYPE_INT64:
-            ptr1_0 = (char *) data.image[IDb].array.SI64;
-            break;
+    case _DATATYPE_INT64:
+        ptr1_0 = (char *) data.image[IDb].array.SI64;
+        break;
 
-        case _DATATYPE_UINT64:
-            ptr1_0 = (char *) data.image[IDb].array.UI64;
-            break;
+    case _DATATYPE_UINT64:
+        ptr1_0 = (char *) data.image[IDb].array.UI64;
+        break;
 
-        case _DATATYPE_DOUBLE:
-            ptr1_0 = (char *) data.image[IDb].array.D;
-            break;
+    case _DATATYPE_DOUBLE:
+        ptr1_0 = (char *) data.image[IDb].array.D;
+        break;
 
     }
 
@@ -1494,45 +1536,45 @@ errno_t __attribute__((hot)) COREMOD_MEMORY_sharedMem_2Dim_log(
             switch(datatype)
             {
 
-                case _DATATYPE_FLOAT:
-                    ptr1_0 = (char *) data.image[IDb].array.F;
-                    break;
+            case _DATATYPE_FLOAT:
+                ptr1_0 = (char *) data.image[IDb].array.F;
+                break;
 
-                case _DATATYPE_INT8:
-                    ptr1_0 = (char *) data.image[IDb].array.SI8;
-                    break;
+            case _DATATYPE_INT8:
+                ptr1_0 = (char *) data.image[IDb].array.SI8;
+                break;
 
-                case _DATATYPE_UINT8:
-                    ptr1_0 = (char *) data.image[IDb].array.UI8;
-                    break;
+            case _DATATYPE_UINT8:
+                ptr1_0 = (char *) data.image[IDb].array.UI8;
+                break;
 
-                case _DATATYPE_INT16:
-                    ptr1_0 = (char *) data.image[IDb].array.SI16;
-                    break;
+            case _DATATYPE_INT16:
+                ptr1_0 = (char *) data.image[IDb].array.SI16;
+                break;
 
-                case _DATATYPE_UINT16:
-                    ptr1_0 = (char *) data.image[IDb].array.UI16;
-                    break;
+            case _DATATYPE_UINT16:
+                ptr1_0 = (char *) data.image[IDb].array.UI16;
+                break;
 
-                case _DATATYPE_INT32:
-                    ptr1_0 = (char *) data.image[IDb].array.SI32;
-                    break;
+            case _DATATYPE_INT32:
+                ptr1_0 = (char *) data.image[IDb].array.SI32;
+                break;
 
-                case _DATATYPE_UINT32:
-                    ptr1_0 = (char *) data.image[IDb].array.UI32;
-                    break;
+            case _DATATYPE_UINT32:
+                ptr1_0 = (char *) data.image[IDb].array.UI32;
+                break;
 
-                case _DATATYPE_INT64:
-                    ptr1_0 = (char *) data.image[IDb].array.SI64;
-                    break;
+            case _DATATYPE_INT64:
+                ptr1_0 = (char *) data.image[IDb].array.SI64;
+                break;
 
-                case _DATATYPE_UINT64:
-                    ptr1_0 = (char *) data.image[IDb].array.UI64;
-                    break;
+            case _DATATYPE_UINT64:
+                ptr1_0 = (char *) data.image[IDb].array.UI64;
+                break;
 
-                case _DATATYPE_DOUBLE:
-                    ptr1_0 = (char *) data.image[IDb].array.D;
-                    break;
+            case _DATATYPE_DOUBLE:
+                ptr1_0 = (char *) data.image[IDb].array.D;
+                break;
 
             }
 
