@@ -25,6 +25,6 @@ double timespec_diff_double(
     struct timespec end
 );
 
-char * timedouble_to_UTC_timeofdaystring(
+char *timedouble_to_UTC_timeofdaystring(
     double timedouble
 );
