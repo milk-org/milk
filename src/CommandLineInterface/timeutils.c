@@ -239,3 +239,50 @@ double timespec_diff_double(struct timespec start, struct timespec end)
 
     return val;
 }
+
+
+/**
+ * @brief Returns time string in form of HH:MM:SS.SS
+ *
+ * @param timedouble Unix time
+ * @return char*
+ */
+char * timedouble_to_UTC_timeofdaystring(
+    double timedouble
+)
+{
+    char *tstring = malloc(12);
+
+
+    time_t timet = (time_t) timedouble;
+    struct tm * timetm = gmtime ( &timet );
+
+    float sec = 1.0*timetm->tm_sec + timedouble - (long) timedouble;
+
+    printf("TIME double     : %lf\n", timedouble);
+
+    struct timespec tsnow;
+    clock_gettime(CLOCK_REALTIME, &tsnow);
+    double tdoublenow = 1.0*tsnow.tv_sec + 1.0e-9*tsnow.tv_nsec;
+    printf("TIME double NOW : %lf\n", tdoublenow);
+
+
+    printf("DATE: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
+           1900 + timetm->tm_year,
+           1 + timetm->tm_mon,
+           1 + timetm->tm_mday,
+           timetm->tm_hour,
+           timetm->tm_min,
+           timetm->tm_sec,
+           sec
+          );
+
+    sprintf(tstring,
+            "%02d:%02d:%05.2f",
+            timetm->tm_hour,
+            timetm->tm_min,
+            sec
+           );
+
+    return tstring;
+}
