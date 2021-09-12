@@ -539,6 +539,7 @@ errno_t saveFITS(
         FUNC_RETURN_FAILURE(" ");
     }
 
+
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("mv %s %s", fnametmp, outputFITSname);
 
     DEBUG_TRACE_FEXIT();
