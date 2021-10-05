@@ -1118,7 +1118,8 @@ errno_t functionparameter_CTRLscreen(
                                     }
                                     else     // PID not active
                                     {
-                                        if(data.fpsarray[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+                                        if(data.fpsarray[fpsindex].md->status &
+                                                FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
                                         {
                                             // not clean exit
                                             screenprint_setcolor(4);
@@ -1276,7 +1277,8 @@ errno_t functionparameter_CTRLscreen(
                                     screenprint_setreverse();
                                 }
 
-                                TUI_printfw(" %-20s", data.fpsarray[fpsindex].parray[pindex].keyword[level - 1]);
+                                TUI_printfw(" %-20s", data.fpsarray[fpsindex].parray[pindex].keyword[level -
+                                            1]);
 
                                 if(GUIline == fpsCTRLvar.GUIlineSelected[fpsCTRLvar.currentlevel])
                                 {
@@ -1373,7 +1375,8 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    TUI_printfw("  %10f", (float) data.fpsarray[fpsindex].parray[pindex].val.f64[0]);
+                                    TUI_printfw("  %10f", (float)
+                                                data.fpsarray[fpsindex].parray[pindex].val.f64[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1421,7 +1424,8 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    TUI_printfw("  %10f", (float) data.fpsarray[fpsindex].parray[pindex].val.f32[0]);
+                                    TUI_printfw("  %10f", (float)
+                                                data.fpsarray[fpsindex].parray[pindex].val.f32[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1450,7 +1454,8 @@ errno_t functionparameter_CTRLscreen(
                                         }
                                     }
 
-                                    TUI_printfw("  %10d", (float) data.fpsarray[fpsindex].parray[pindex].val.pid[0]);
+                                    TUI_printfw("  %10d", (float)
+                                                data.fpsarray[fpsindex].parray[pindex].val.pid[0]);
 
                                     if(paramsync == 0)
                                     {
@@ -1469,7 +1474,8 @@ errno_t functionparameter_CTRLscreen(
                                 if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
                                 {
                                     TUI_printfw("  %10f",
-                                                1.0*data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_sec + 1e-9*data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_nsec);
+                                                1.0 * data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_sec + 1e-9 *
+                                                data.fpsarray[fpsindex].parray[pindex].val.ts[0].tv_nsec);
                                 }
 
 
@@ -1619,14 +1625,17 @@ errno_t functionparameter_CTRLscreen(
                                     if(data.fpsarray[fpsindex].parray[pindex].info.stream.streamID > -1)
                                     {
 
-                                        TUI_printfw(" [ %d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+                                        TUI_printfw(" [ %d",
+                                                    data.fpsarray[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
                                         if(data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 1)
                                         {
-                                            TUI_printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+                                            TUI_printfw("x%d",
+                                                        data.fpsarray[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
                                         }
                                         if(data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 2)
                                         {
-                                            TUI_printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
+                                            TUI_printfw("x%d",
+                                                        data.fpsarray[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
                                         }
 
                                         TUI_printfw(" ]");
@@ -1823,7 +1832,8 @@ errno_t functionparameter_CTRLscreen(
 
                     screenprint_setbold();
 
-                    for(msgi = 0; msgi < data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt; msgi++)
+                    for(msgi = 0; msgi < data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgcnt;
+                            msgi++)
                     {
                         pindex = data.fpsarray[fpsCTRLvar.fpsindexSelected].md->msgpindex[msgi];
                         TUI_printfw("%-40s %s",
