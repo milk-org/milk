@@ -65,9 +65,16 @@ int TUI_get_screenprintmode()
 
 
 
-//
-// print to stdout or through ncurses
-//
+/**
+ * @brief print to stdout or through ncurses
+ *
+ * If screenprintmode :\n
+ * is SCREENPRINT_STDIO, use stdio\n
+ * is SCREENPRINT_NCURSES, use ncurses\n
+ *
+ * @param fmt
+ * @param ...
+ */
 void TUI_printfw(const char *fmt, ...)
 {
     va_list args;

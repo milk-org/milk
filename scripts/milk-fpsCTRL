@@ -101,10 +101,10 @@ while getopts :hlmDf:o:sq FLAG; do
 		MODE="1"
     ;;
     s) # use stdio instead of ncurses
-		export MILK_FPSCTRL_PRINT_STDIO=1
+		export MILK_TUIPRINT_STDIO=1
     ;;
     q) # quiet mode - don't print status
-		export MILK_FPSCTRL_NOPRINT=1
+		export MILK_TUIPRINT_NONE=1
     ;;
     D)
 		DEBUG="1"

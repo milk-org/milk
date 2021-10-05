@@ -586,6 +586,8 @@ static inline IMGID makesetIMGID(
     return img;
 }
 
+
+
 static inline imageID resolveIMGID(
     IMGID *img,
     int ERRMODE)
