@@ -632,13 +632,13 @@ errno_t functionparameter_CTRLscreen(
     // default: use ncurses
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
-    if(getenv("MILK_FPSCTRL_PRINT_STDIO"))
+    if(getenv("MILK_TUIPRINT_STDIO"))
     {
         // use stdio instead of ncurses
         TUI_set_screenprintmode(SCREENPRINT_STDIO);
     }
 
-    if(getenv("MILK_FPSCTRL_NOPRINT"))
+    if(getenv("MILK_TUIPRINT_NONE"))
     {
         TUI_set_screenprintmode(SCREENPRINT_NONE);
     }
