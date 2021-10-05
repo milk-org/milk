@@ -120,11 +120,16 @@ static short unsigned int wrow, wcol;
 
 
 
-/*
- * returns ID number corresponding to a name
+
+/**
+ * @brief Returns ID number corresponding to a name
+ *
+ * @param images   pointer to array of images
+ * @param name     input image name to be matched
+ * @return imageID
  */
 imageID image_ID_from_images(
-    IMAGE* images,
+    IMAGE*               images,
     const char* restrict name
 )
 {
@@ -149,7 +154,12 @@ imageID image_ID_from_images(
 
 
 
-
+/**
+ * @brief Returns first available ID in image array
+ *
+ * @param images     pointer to image array
+ * @return imageID
+ */
 imageID image_get_first_ID_available_from_images(
     IMAGE* images
 )
@@ -166,12 +176,23 @@ imageID image_get_first_ID_available_from_images(
     } while(i != streamNBID_MAX);
     printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
     printf("NB_MAX_IMAGE should be increased above current value (%d)\n", streamNBID_MAX);
+
     return -1;
 }
 
 
 
-int get_process_name_by_pid(const int pid, char *pname)
+/**
+ * @brief Get the process name by pid
+ *
+ * @param pid
+ * @param pname
+ * @return error code
+ */
+errno_t get_process_name_by_pid(
+    const int  pid,
+    char      *pname
+)
 {
     char* fname = (char*) calloc(STRINGMAXLEN_FULLFILENAME, sizeof(char));
 
@@ -190,22 +211,24 @@ int get_process_name_by_pid(const int pid, char *pname)
 
     free(fname);
 
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 
 
 
 
-
+/**
+ * @brief Get the maximum PID value from system
+ *
+ * @return int
+ */
 static int get_PIDmax() {
     FILE *fp;
-    int PIDmax;
-    int fscanfcnt;
+    int   PIDmax;
+    int   fscanfcnt;
 
     fp = fopen("/proc/sys/kernel/pid_max", "r");
-
-
 
     fscanfcnt = fscanf(fp, "%d", &PIDmax);
     if(fscanfcnt == EOF) {
@@ -235,6 +258,7 @@ struct streamCTRLarg_struct {
     STREAMINFOPROC* streaminfoproc;
     IMAGE *images;
 };
+
 
 
 
@@ -1370,13 +1394,13 @@ errno_t streamCTRL_CTRLscreen()
     // default: use ncurses
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
-    if(getenv("MILK_FPSCTRL_PRINT_STDIO"))
+    if(getenv("MILK_TUIPRINT_STDIO"))
     {
         // use stdio instead of ncurses
         TUI_set_screenprintmode(SCREENPRINT_STDIO);
     }
 
-    if(getenv("MILK_FPSCTRL_NOPRINT"))
+    if(getenv("MILK_TUIPRINT_NONE"))
     {
         TUI_set_screenprintmode(SCREENPRINT_NONE);
     }

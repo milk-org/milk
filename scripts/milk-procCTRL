@@ -20,6 +20,8 @@ echo "     $0 [-hD]"
 echo ""
 echo " $(tput bold)OPTIONS:$(tput sgr0)"
 echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
+echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
+echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
 echo ""
 echo "------------------------------------------------------------------------"
 }
@@ -53,7 +55,7 @@ done
 
 DEBUG="0"
 
-while getopts :hD FLAG; do
+while getopts :hDsq FLAG; do
   case $FLAG in
     h)  #show help
       if [ "$singlelinehelp" -eq "0" ]; then
@@ -63,6 +65,12 @@ while getopts :hD FLAG; do
       fi
       exit
       ;;
+    s) # use stdio instead of ncurses
+		export MILK_TUIPRINT_STDIO=1
+    ;;
+    q) # quiet mode - don't print status
+		export MILK_TUIPRINT_NONE=1
+    ;;
     D)
 		DEBUG="1"
 	;;
