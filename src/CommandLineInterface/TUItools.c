@@ -126,55 +126,55 @@ void screenprint_setcolor(int colorcode)
     {
         switch(colorcode)
         {
-        case 1:
-            printAECfgcolor = AEC_FGCOLOR_WHITE;
-            printAECbgcolor = AEC_BGCOLOR_BLACK;
-            break;
+            case 1:
+                printAECfgcolor = AEC_FGCOLOR_WHITE;
+                printAECbgcolor = AEC_BGCOLOR_BLACK;
+                break;
 
-        case 2:
-            printAECfgcolor = AEC_FGCOLOR_BLACK;
-            printAECbgcolor = AEC_BGCOLOR_GREEN;
-            break;
+            case 2:
+                printAECfgcolor = AEC_FGCOLOR_BLACK;
+                printAECbgcolor = AEC_BGCOLOR_GREEN;
+                break;
 
-        case 3:
-            printAECfgcolor = AEC_FGCOLOR_BLACK;
-            printAECbgcolor = AEC_BGCOLOR_YELLOW;
-            break;
+            case 3:
+                printAECfgcolor = AEC_FGCOLOR_BLACK;
+                printAECbgcolor = AEC_BGCOLOR_YELLOW;
+                break;
 
-        case 4:
-            printAECfgcolor = AEC_FGCOLOR_WHITE;
-            printAECbgcolor = AEC_BGCOLOR_RED;
-            break;
+            case 4:
+                printAECfgcolor = AEC_FGCOLOR_WHITE;
+                printAECbgcolor = AEC_BGCOLOR_RED;
+                break;
 
-        case 5:
-            printAECfgcolor = AEC_FGCOLOR_WHITE;
-            printAECbgcolor = AEC_BGCOLOR_BLUE;
-            break;
+            case 5:
+                printAECfgcolor = AEC_FGCOLOR_WHITE;
+                printAECbgcolor = AEC_BGCOLOR_BLUE;
+                break;
 
-        case 6:
-            printAECfgcolor = AEC_FGCOLOR_BLACK;
-            printAECbgcolor = AEC_BGCOLOR_GREEN;
-            break;
+            case 6:
+                printAECfgcolor = AEC_FGCOLOR_BLACK;
+                printAECbgcolor = AEC_BGCOLOR_GREEN;
+                break;
 
-        case 7:
-            printAECfgcolor = AEC_FGCOLOR_WHITE;
-            printAECbgcolor = AEC_BGCOLOR_YELLOW;
-            break;
+            case 7:
+                printAECfgcolor = AEC_FGCOLOR_WHITE;
+                printAECbgcolor = AEC_BGCOLOR_YELLOW;
+                break;
 
-        case 8:
-            printAECfgcolor = AEC_FGCOLOR_BLACK;
-            printAECbgcolor = AEC_BGCOLOR_RED;
-            break;
+            case 8:
+                printAECfgcolor = AEC_FGCOLOR_BLACK;
+                printAECbgcolor = AEC_BGCOLOR_RED;
+                break;
 
-        case 9:
-            printAECfgcolor = AEC_FGCOLOR_RED;
-            printAECbgcolor = AEC_BGCOLOR_BLACK;
-            break;
+            case 9:
+                printAECfgcolor = AEC_FGCOLOR_RED;
+                printAECbgcolor = AEC_BGCOLOR_BLACK;
+                break;
 
-        case 10:
-            printAECfgcolor = AEC_FGCOLOR_BLACK;
-            printAECbgcolor = AEC_BGCOLOR_BLUE + 60;
-            break;
+            case 10:
+                printAECfgcolor = AEC_FGCOLOR_BLACK;
+                printAECbgcolor = AEC_BGCOLOR_BLUE + 60;
+                break;
         }
 
         printf("\033[%d;%dm",  printAECfgcolor, printAECbgcolor);
@@ -342,10 +342,10 @@ errno_t TUI_print_header(
 
     screenprint_setbold();
 
-    int strl = wcol-1;
+    int strl = wcol - 1;
     if(n > wcol)
     {
-        strl = n+1;
+        strl = n + 1;
     }
     char linestring[strl];
     int spos = 0;
@@ -358,7 +358,7 @@ errno_t TUI_print_header(
     }
 
 
-    for(int i=0; i < strlen(str); i++)
+    for(int i = 0; i < strlen(str); i++)
     {
         linestring[spos] = str[i];
         spos++;
@@ -694,19 +694,19 @@ int get_singlechar_nonblock()
                 {
                     switch(buff[2])
                     {
-                    // the real value
-                    case 'A':
-                        ch = KEY_UP; // code for arrow up
-                        break;
-                    case 'B':
-                        ch = KEY_DOWN; // code for arrow down
-                        break;
-                    case 'C':
-                        ch = KEY_RIGHT; // code for arrow right
-                        break;
-                    case 'D':
-                        ch = KEY_LEFT; // code for arrow left
-                        break;
+                        // the real value
+                        case 'A':
+                            ch = KEY_UP; // code for arrow up
+                            break;
+                        case 'B':
+                            ch = KEY_DOWN; // code for arrow down
+                            break;
+                        case 'C':
+                            ch = KEY_RIGHT; // code for arrow right
+                            break;
+                        case 'D':
+                            ch = KEY_LEFT; // code for arrow left
+                            break;
                     }
                 }
 
@@ -715,15 +715,15 @@ int get_singlechar_nonblock()
                 {
                     switch(buff[2])
                     {
-                    case 80:
-                        ch = KEY_F(1);
-                        break;
-                    case 81:
-                        ch = KEY_F(2);
-                        break;
-                    case 82:
-                        ch = KEY_F(3);
-                        break;
+                        case 80:
+                            ch = KEY_F(1);
+                            break;
+                        case 81:
+                            ch = KEY_F(2);
+                            break;
+                        case 82:
+                            ch = KEY_F(3);
+                            break;
                     }
                 }
             }
