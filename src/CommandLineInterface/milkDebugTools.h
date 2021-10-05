@@ -219,9 +219,6 @@ if(data.testpoint.funclevel>0) {\
  * @ingroup debugmacro
  * @brief register trace point
  */
-#if defined NDEBUG
-#define DEBUG_TRACEPOINTRAW(...)
-#else
 #define DEBUG_TRACEPOINTRAW(...) do {                    \
 int slen = snprintf(data.testpoint.file, STRINGMAXLEN_FULLFILENAME, "%s", __FILE__);\
 if(slen<1) {                                                               \
@@ -262,7 +259,7 @@ data.testpointloopcnt++;                                                   \
 }\
 }\
 } while(0)
-#endif
+
 
 
 #if defined NDEBUG
