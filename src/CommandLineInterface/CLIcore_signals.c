@@ -49,7 +49,8 @@ errno_t write_process_log()
                 timestring
                );
 
-        {   // extract last word
+        {
+            // extract last word
             char str[STRINGMAXLEN_FULLFILENAME];
             strcpy(str, data.testpoint.file);
             char *lastword = strrchr(str, '/') + 1;
@@ -265,66 +266,66 @@ void sig_handler(
     switch(signo)
     {
 
-    case SIGINT:
-        printf("PID %d sig_handler received SIGINT\n", CLIPID);
-        data.signal_INT = 1;
-        //set_terminal_echo_on();
-        //exit(EXIT_FAILURE);
-        break;
+        case SIGINT:
+            printf("PID %d sig_handler received SIGINT\n", CLIPID);
+            data.signal_INT = 1;
+            //set_terminal_echo_on();
+            //exit(EXIT_FAILURE);
+            break;
 
-    case SIGTERM:
-        printf("PID %d sig_handler received SIGTERM\n", CLIPID);
-        data.signal_TERM = 1;
-        set_terminal_echo_on();
-        exit(EXIT_FAILURE);
-        break;
+        case SIGTERM:
+            printf("PID %d sig_handler received SIGTERM\n", CLIPID);
+            data.signal_TERM = 1;
+            set_terminal_echo_on();
+            exit(EXIT_FAILURE);
+            break;
 
-    case SIGUSR1:
-        printf("PID %d sig_handler received SIGUSR1\n", CLIPID);
-        data.signal_USR1 = 1;
-        break;
+        case SIGUSR1:
+            printf("PID %d sig_handler received SIGUSR1\n", CLIPID);
+            data.signal_USR1 = 1;
+            break;
 
-    case SIGUSR2:
-        printf("PID %d sig_handler received SIGUSR2\n", CLIPID);
-        data.signal_USR2 = 1;
-        break;
+        case SIGUSR2:
+            printf("PID %d sig_handler received SIGUSR2\n", CLIPID);
+            data.signal_USR2 = 1;
+            break;
 
-    case SIGBUS: // exit program after SIGSEGV
-        printf("PID %d sig_handler received SIGBUS \n", CLIPID);
-        write_process_exit_report("SIGBUS");
-        data.signal_BUS = 1;
-        set_terminal_echo_on();
-        exit(EXIT_FAILURE);
-        break;
+        case SIGBUS: // exit program after SIGSEGV
+            printf("PID %d sig_handler received SIGBUS \n", CLIPID);
+            write_process_exit_report("SIGBUS");
+            data.signal_BUS = 1;
+            set_terminal_echo_on();
+            exit(EXIT_FAILURE);
+            break;
 
-    case SIGABRT:
-        printf("PID %d sig_handler received SIGABRT\n", CLIPID);
-        write_process_exit_report("SIGABRT");
-        data.signal_ABRT = 1;
-        set_terminal_echo_on();
-        exit(EXIT_FAILURE);
-        break;
+        case SIGABRT:
+            printf("PID %d sig_handler received SIGABRT\n", CLIPID);
+            write_process_exit_report("SIGABRT");
+            data.signal_ABRT = 1;
+            set_terminal_echo_on();
+            exit(EXIT_FAILURE);
+            break;
 
-    case SIGSEGV: // exit program after SIGSEGV
-        printf("PID %d sig_handler received SIGSEGV\n", CLIPID);
-        write_process_exit_report("SIGSEGV");
-        data.signal_SEGV = 1;
-        set_terminal_echo_on();
-        exit(EXIT_FAILURE);
-        break;
+        case SIGSEGV: // exit program after SIGSEGV
+            printf("PID %d sig_handler received SIGSEGV\n", CLIPID);
+            write_process_exit_report("SIGSEGV");
+            data.signal_SEGV = 1;
+            set_terminal_echo_on();
+            exit(EXIT_FAILURE);
+            break;
 
-    case SIGHUP:
-        printf("PID %d sig_handler received SIGHUP\n", CLIPID);
-        write_process_exit_report("SIGHUP");
-        data.signal_HUP = 1;
-        set_terminal_echo_on();
-        exit(EXIT_FAILURE);
-        break;
+        case SIGHUP:
+            printf("PID %d sig_handler received SIGHUP\n", CLIPID);
+            write_process_exit_report("SIGHUP");
+            data.signal_HUP = 1;
+            set_terminal_echo_on();
+            exit(EXIT_FAILURE);
+            break;
 
-    case SIGPIPE:
-        printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
-        data.signal_PIPE = 1;
-        break;
+        case SIGPIPE:
+            printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
+            data.signal_PIPE = 1;
+            break;
     }
 }
 

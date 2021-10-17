@@ -129,7 +129,7 @@ int find_streams(
     const char *namefilter
 );
 
-void *streamCTRL_scan(void* thptr);
+void *streamCTRL_scan(void *thptr);
 
 /**
  * ## Purpose
@@ -146,9 +146,9 @@ void *streamCTRL_scan(void* thptr);
 errno_t streamCTRL_CTRLscreen();
 
 
-long image_ID_from_images(IMAGE* images, const char *name);
+long image_ID_from_images(IMAGE *images, const char *name);
 
-long image_get_first_ID_available_from_images(IMAGE* images);
+long image_get_first_ID_available_from_images(IMAGE *images);
 
 
 #ifdef __cplusplus
