@@ -523,7 +523,7 @@ typedef struct
     long      NBparam;        // number of parameters in array
     long      NBparamActive;  // number of active parameters
 
-   CMDSETTINGS cmdset; // local copy of cmd settings
+    CMDSETTINGS cmdset; // local copy of cmd settings
 } FUNCTION_PARAMETER_STRUCT;
 
 
