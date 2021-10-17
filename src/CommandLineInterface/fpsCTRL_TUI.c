@@ -18,7 +18,7 @@
 #include "fps_GetTypeString.h"
 #include "fps_outlog.h"
 #include "fps_process_fpsCMDarray.h"
-#include "fps_process_user_key.h"
+#include "fpsCTRL_TUI_process_user_key.h"
 #include "fps_read_fpsCMD_fifo.h"
 #include "fps_scan.h"
 
@@ -571,7 +571,8 @@ errno_t functionparameter_CTRLscreen(
         fpsctrlqueuelist[queueindex].priority = 1; // 0 = not active
     }
 
-
+    // catch signals (CTRL-C etc)
+    //
     set_signal_catch();
 
 
@@ -683,6 +684,7 @@ errno_t functionparameter_CTRLscreen(
     }
 
     int refresh_screen = 1; // 1 if screen should be refreshed
+
     while(loopOK == 1)
     {
         int NBtaskLaunched = 0;
@@ -764,7 +766,7 @@ errno_t functionparameter_CTRLscreen(
 
         DEBUG_TRACEPOINT(" ");
 
-        loopOK = fpsCTRLscreen_process_user_key(
+        loopOK = fpsCTRL_TUI_process_user_key(
                      ch,
                      data.fpsarray,
                      keywnode,
@@ -772,6 +774,7 @@ errno_t functionparameter_CTRLscreen(
                      fpsctrlqueuelist,
                      &fpsCTRLvar
                  );
+
 
         DEBUG_TRACEPOINT(" ");
 

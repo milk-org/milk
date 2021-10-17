@@ -62,7 +62,7 @@ typedef int errno_t;
 #include "COREMOD_memory/COREMOD_memory.h"
 #define SHAREDSHMDIR    data.shmdir  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 
-#include "streamCTRL.h"
+#include "streamCTRL_TUI.h"
 
 #include "TUItools.h"
 
@@ -1003,9 +1003,11 @@ static int streamCTRL_print_inode(
 
         if(is_upstream)
         {
-            attron(COLOR_PAIR(colorcode));
+            //attron(COLOR_PAIR(colorcode));
+            screenprint_setcolor(colorcode);
             TUI_printfw("%02d >", upstreamindex);
-            attroff(COLOR_PAIR(colorcode));
+            //attroff(COLOR_PAIR(colorcode));
+            screenprint_unsetcolor(colorcode);
         }
         else
         {
@@ -1022,9 +1024,11 @@ static int streamCTRL_print_inode(
                 colorcode = 7;
             }
 
-            attron(COLOR_PAIR(colorcode));
+            //attron(COLOR_PAIR(colorcode));
+            screenprint_setcolor(colorcode);
             TUI_printfw("> %02d", downstreamindex);
-            attroff(COLOR_PAIR(colorcode));
+            //attroff(COLOR_PAIR(colorcode));
+            screenprint_unsetcolor(colorcode);
         }
         else
         {
@@ -1099,7 +1103,8 @@ static int streamCTRL_print_procpid(
     {
         if(activitycolorcode != 2)
         {
-            attron(A_REVERSE);
+            screenprint_setreverse();
+            //attron(A_REVERSE);
         }
         else
         {
@@ -1112,7 +1117,8 @@ static int streamCTRL_print_procpid(
 
     if(activitycolorcode > 0)
     {
-        attron(COLOR_PAIR(activitycolorcode));
+        screenprint_setcolor(activitycolorcode);
+        //attron(COLOR_PAIR(activitycolorcode));
     }
 
 
@@ -1130,13 +1136,15 @@ static int streamCTRL_print_procpid(
 
     if(activitycolorcode > 0)
     {
-        attroff(COLOR_PAIR(activitycolorcode));
+        screenprint_unsetcolor(activitycolorcode);
+        //attroff(COLOR_PAIR(activitycolorcode));
     }
 
 
     if((activitycolorcode != 2) && (is_upstream == 1))
     {
-        attroff(A_REVERSE);
+        screenprint_unsetreverse();
+        //attroff(A_REVERSE);
     }
 
 
@@ -1237,63 +1245,67 @@ static errno_t streamCTRL_print_SPTRACE_details(
 
         switch(streamCTRLimages[ID].streamproctrace[spti].triggermode)
         {
-            case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                TUI_printfw("%d%*s",  streamCTRLimages[ID].streamproctrace[spti].triggermode,
-                            Disp_type_NBchar - 1, "IMME");
-                break;
+        case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+            TUI_printfw("%d%*s",  streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 1, "IMME");
+            break;
 
-            case PROCESSINFO_TRIGGERMODE_CNT0:
-                TUI_printfw("%d%*s",  streamCTRLimages[ID].streamproctrace[spti].triggermode,
-                            Disp_type_NBchar - 1, "CNT0");
-                break;
+        case PROCESSINFO_TRIGGERMODE_CNT0:
+            TUI_printfw("%d%*s",  streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 1, "CNT0");
+            break;
 
-            case PROCESSINFO_TRIGGERMODE_CNT1:
-                TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
-                            Disp_type_NBchar - 1, "CNT1");
-                break;
+        case PROCESSINFO_TRIGGERMODE_CNT1:
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 1, "CNT1");
+            break;
 
-            case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
-                            Disp_type_NBchar - 4, "SM");
-                TUI_printfw(" %2d", sem);
-                break;
+        case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 4, "SM");
+            TUI_printfw(" %2d", sem);
+            break;
 
-            case PROCESSINFO_TRIGGERMODE_DELAY:
-                TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
-                            Disp_type_NBchar - 1, "DELA");
-                break;
+        case PROCESSINFO_TRIGGERMODE_DELAY:
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 1, "DELA");
+            break;
 
-            default:
-                TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
-                            Disp_type_NBchar - 1, "UNKN");
-                break;
+        default:
+            TUI_printfw("%d%*s", streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 1, "UNKN");
+            break;
         }
         TUI_printfw(" ");
 
         int print_timing = 0;
         switch(streamCTRLimages[ID].streamproctrace[spti].triggerstatus)
         {
-            case PROCESSINFO_TRIGGERSTATUS_WAITING:
-                TUI_printfw("%*s", Disp_trigstat_NBchar, "WAITING");
-                break;
+        case PROCESSINFO_TRIGGERSTATUS_WAITING:
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "WAITING");
+            break;
 
-            case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
-                attron(COLOR_PAIR(2));
-                TUI_printfw("%*s", Disp_trigstat_NBchar, "RECEIVED");
-                attroff(COLOR_PAIR(2));
-                print_timing = 1;
-                break;
+        case PROCESSINFO_TRIGGERSTATUS_RECEIVED:
+            screenprint_setcolor(2);
+            //attron(COLOR_PAIR(2));
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "RECEIVED");
+            screenprint_unsetcolor(2);
+            //attroff(COLOR_PAIR(2));
+            print_timing = 1;
+            break;
 
-            case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
-                attron(COLOR_PAIR(3));
-                TUI_printfw("%*s", Disp_trigstat_NBchar, "TIMEOUT");
-                attroff(COLOR_PAIR(3));
-                print_timing = 1;
-                break;
+        case PROCESSINFO_TRIGGERSTATUS_TIMEDOUT:
+            //attron(COLOR_PAIR(3));
+            screenprint_setcolor(3);
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "TIMEOUT");
+            //attroff(COLOR_PAIR(3));
+            screenprint_unsetcolor(3);
+            print_timing = 1;
+            break;
 
-            default :
-                TUI_printfw("%*s", Disp_trigstat_NBchar, "unknown");
-                break;
+        default :
+            TUI_printfw("%*s", Disp_trigstat_NBchar, "unknown");
+            break;
         }
 
         // trigger time
@@ -1364,8 +1376,8 @@ errno_t streamCTRL_CTRLscreen()
     int DispName_NBchar = 36;
     int DispSize_NBchar = 20;
     int Dispcnt0_NBchar = 10;
-    int Dispfreq_NBchar = 8;
-    int DispPID_NBchar = 8;
+    int Dispfreq_NBchar =  8;
+    int DispPID_NBchar  =  8;
 
     // create PID name table
     char **PIDname_array;
@@ -1413,6 +1425,12 @@ errno_t streamCTRL_CTRLscreen()
     streamCTRLdata.streaminfoproc = &streaminfoproc;
     streamCTRLdata.images         = streamCTRLimages;
 
+
+
+
+    // catch signals (CTRL-C etc)
+    //
+    set_signal_catch();
 
 
     // default: use ncurses
@@ -1473,6 +1491,10 @@ errno_t streamCTRL_CTRLscreen()
     clear();
     DEBUG_TRACEPOINT(" ");
 
+
+
+
+
     // redirect stderr to /dev/null
 
     int backstderr;
@@ -1509,7 +1531,8 @@ errno_t streamCTRL_CTRLscreen()
     while(loopOK == 1)
     {
         DEBUG_TRACEPOINT("get terminal size");
-        TUI_get_terminal_size(&wrow, &wcol);
+        TUI_init_terminal(&wrow, &wcol);
+//        TUI_get_terminal_size(&wrow, &wcol);
 
         int NBsinfodisp = wrow - 7;
 
@@ -1523,219 +1546,222 @@ errno_t streamCTRL_CTRLscreen()
         //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
 
         usleep((long)(1000000.0 / frequ));
-        int ch = getch();
+        //int ch = getch();
+        int ch = get_singlechar_nonblock();
 
         NBsindex = streaminfoproc.NBstream;
+
+        TUI_clearscreen(&wrow, &wcol);
 
 
         DEBUG_TRACEPOINT("Process input character");
         //int selectedOK = 0; // goes to 1 if at least one process is selected
         switch(ch)
         {
-            case 'x':     // Exit control screen
-                loopOK = 0;
-                break;
+        case 'x':     // Exit control screen
+            loopOK = 0;
+            break;
 
 
-            case KEY_UP:
-                dindexSelected --;
-                if(dindexSelected < 0)
+        case KEY_UP:
+            dindexSelected --;
+            if(dindexSelected < 0)
+            {
+                dindexSelected = 0;
+            }
+            break;
+
+        case KEY_DOWN:
+            dindexSelected ++;
+            if(dindexSelected > NBsindex - 1)
+            {
+                dindexSelected = NBsindex - 1;
+            }
+            break;
+
+        case KEY_PPAGE:
+            dindexSelected -= 10;
+            if(dindexSelected < 0)
+            {
+                dindexSelected = 0;
+            }
+            break;
+
+        case KEY_LEFT:
+            DisplayDetailLevel = 0;
+            break;
+
+        case KEY_RIGHT:
+            DisplayDetailLevel = 1;
+            break;
+
+
+        case KEY_NPAGE:
+            dindexSelected += 10;
+            if(dindexSelected > NBsindex - 1)
+            {
+                dindexSelected = NBsindex - 1;
+            }
+            break;
+
+
+
+        // ============ SCREENS
+
+        case 'h': // help
+            DisplayMode = DISPLAY_MODE_HELP;
+            break;
+
+        case KEY_F(2): // semvals
+            DisplayMode = DISPLAY_MODE_SEMVAL;
+            break;
+
+        case KEY_F(3): // write PIDs
+            DisplayMode = DISPLAY_MODE_WRITE;
+            break;
+
+        case KEY_F(4): // read PIDs
+            DisplayMode = DISPLAY_MODE_READ;
+            break;
+
+        case KEY_F(5): // read PIDs
+            DisplayMode = DISPLAY_MODE_SPTRACE;
+            break;
+
+        case KEY_F(6): // open files
+            if((DisplayMode == DISPLAY_MODE_FUSER) || (streaminfoproc.fuserUpdate0 == 1))
+            {
+                streaminfoproc.fuserUpdate = 1;
+                time(&rawtime);
+                uttime_lastScan = gmtime(&rawtime);
+                fuserScan = 1;
+                streaminfoproc.sindexscan = 0;
+            }
+
+            DisplayMode = DISPLAY_MODE_FUSER;
+            //erase();
+            //TUI_printfw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
+            //refresh();
+            break;
+
+
+
+        // ============ ACTIONS
+
+        case 'R': // remove stream
+            DEBUG_TRACEPOINT(" ");
+            sindex = ssindex[dindexSelected];
+
+            ImageStreamIO_destroyIm(&streamCTRLimages[streaminfo[sindex].ID]);
+
+
+            DEBUG_TRACEPOINT("%d", dindexSelected);
+            break;
+
+
+
+        // ============ SCANNING
+
+        case '{': // slower scan update
+            streaminfoproc.twaitus = (int)(1.2 * streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus > 1000000)
+            {
+                streaminfoproc.twaitus = 1000000;
+            }
+            break;
+
+        case '}': // faster scan update
+            streaminfoproc.twaitus = (int)(0.83333333333333333333 * streaminfoproc.twaitus);
+            if(streaminfoproc.twaitus < 1000)
+            {
+                streaminfoproc.twaitus = 1000;
+            }
+            break;
+
+        case 'o': // output next scan to file
+            streaminfoproc.WriteFlistToFile = 1;
+            break;
+
+        // ============ DISPLAY
+
+        case '-': // slower display update
+            frequ *= 0.5;
+            if(frequ < 1.0)
+            {
+                frequ = 1.0;
+            }
+            if(frequ > 64.0)
+            {
+                frequ = 64.0;
+            }
+            break;
+
+
+        case '+': // faster display update
+            frequ *= 2.0;
+            if(frequ < 1.0)
+            {
+                frequ = 1.0;
+            }
+            if(frequ > 64.0)
+            {
+                frequ = 64.0;
+            }
+            break;
+
+        case '1': // sorting by stream name
+            SORTING = 1;
+            break;
+
+        case '2': // sorting by update freq (default)
+            SORTING = 2;
+            SORT_TOGGLE = 1;
+            break;
+
+        case '3': // sort by number of processes accessing
+            SORTING = 3;
+            SORT_TOGGLE = 1;
+            break;
+
+
+        case 'f': // stream name filter toggle
+            if(streaminfoproc.filter == 0)
+            {
+                streaminfoproc.filter = 1;
+            }
+            else
+            {
+                streaminfoproc.filter = 0;
+            }
+            break;
+
+        case 'F': // set stream name filter string
+            TUI_exit();
+            EXECUTE_SYSTEM_COMMAND("clear");
+            printf("Enter string: ");
+            fflush(stdout);
+            stringindex = 0;
+            while(((c = getchar()) != '\n') && (stringindex < STRINGLENMAX - 2))
+            {
+                streaminfoproc.namefilter[stringindex] = c;
+                if(c == 127)   // delete key
                 {
-                    dindexSelected = 0;
-                }
-                break;
-
-            case KEY_DOWN:
-                dindexSelected ++;
-                if(dindexSelected > NBsindex - 1)
-                {
-                    dindexSelected = NBsindex - 1;
-                }
-                break;
-
-            case KEY_PPAGE:
-                dindexSelected -= 10;
-                if(dindexSelected < 0)
-                {
-                    dindexSelected = 0;
-                }
-                break;
-
-            case KEY_LEFT:
-                DisplayDetailLevel = 0;
-                break;
-
-            case KEY_RIGHT:
-                DisplayDetailLevel = 1;
-                break;
-
-
-            case KEY_NPAGE:
-                dindexSelected += 10;
-                if(dindexSelected > NBsindex - 1)
-                {
-                    dindexSelected = NBsindex - 1;
-                }
-                break;
-
-
-
-            // ============ SCREENS
-
-            case 'h': // help
-                DisplayMode = DISPLAY_MODE_HELP;
-                break;
-
-            case KEY_F(2): // semvals
-                DisplayMode = DISPLAY_MODE_SEMVAL;
-                break;
-
-            case KEY_F(3): // write PIDs
-                DisplayMode = DISPLAY_MODE_WRITE;
-                break;
-
-            case KEY_F(4): // read PIDs
-                DisplayMode = DISPLAY_MODE_READ;
-                break;
-
-            case KEY_F(5): // read PIDs
-                DisplayMode = DISPLAY_MODE_SPTRACE;
-                break;
-
-            case KEY_F(6): // open files
-                if((DisplayMode == DISPLAY_MODE_FUSER) || (streaminfoproc.fuserUpdate0 == 1))
-                {
-                    streaminfoproc.fuserUpdate = 1;
-                    time(&rawtime);
-                    uttime_lastScan = gmtime(&rawtime);
-                    fuserScan = 1;
-                    streaminfoproc.sindexscan = 0;
-                }
-
-                DisplayMode = DISPLAY_MODE_FUSER;
-                //erase();
-                //TUI_printfw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
-                //refresh();
-                break;
-
-
-
-            // ============ ACTIONS
-
-            case 'R': // remove stream
-                DEBUG_TRACEPOINT(" ");
-                sindex = ssindex[dindexSelected];
-
-                ImageStreamIO_destroyIm(&streamCTRLimages[streaminfo[sindex].ID]);
-
-
-                DEBUG_TRACEPOINT("%d", dindexSelected);
-                break;
-
-
-
-            // ============ SCANNING
-
-            case '{': // slower scan update
-                streaminfoproc.twaitus = (int)(1.2 * streaminfoproc.twaitus);
-                if(streaminfoproc.twaitus > 1000000)
-                {
-                    streaminfoproc.twaitus = 1000000;
-                }
-                break;
-
-            case '}': // faster scan update
-                streaminfoproc.twaitus = (int)(0.83333333333333333333 * streaminfoproc.twaitus);
-                if(streaminfoproc.twaitus < 1000)
-                {
-                    streaminfoproc.twaitus = 1000;
-                }
-                break;
-
-            case 'o': // output next scan to file
-                streaminfoproc.WriteFlistToFile = 1;
-                break;
-
-            // ============ DISPLAY
-
-            case '-': // slower display update
-                frequ *= 0.5;
-                if(frequ < 1.0)
-                {
-                    frequ = 1.0;
-                }
-                if(frequ > 64.0)
-                {
-                    frequ = 64.0;
-                }
-                break;
-
-
-            case '+': // faster display update
-                frequ *= 2.0;
-                if(frequ < 1.0)
-                {
-                    frequ = 1.0;
-                }
-                if(frequ > 64.0)
-                {
-                    frequ = 64.0;
-                }
-                break;
-
-            case '1': // sorting by stream name
-                SORTING = 1;
-                break;
-
-            case '2': // sorting by update freq (default)
-                SORTING = 2;
-                SORT_TOGGLE = 1;
-                break;
-
-            case '3': // sort by number of processes accessing
-                SORTING = 3;
-                SORT_TOGGLE = 1;
-                break;
-
-
-            case 'f': // stream name filter toggle
-                if(streaminfoproc.filter == 0)
-                {
-                    streaminfoproc.filter = 1;
+                    putchar(0x8);
+                    putchar(' ');
+                    putchar(0x8);
+                    stringindex --;
                 }
                 else
                 {
-                    streaminfoproc.filter = 0;
+                    //printf("[%d]", (int) c);
+                    putchar(c);  // echo on screen
+                    stringindex++;
                 }
-                break;
-
-            case 'F': // set stream name filter string
-                TUI_exit();
-                EXECUTE_SYSTEM_COMMAND("clear");
-                printf("Enter string: ");
-                fflush(stdout);
-                stringindex = 0;
-                while(((c = getchar()) != '\n') && (stringindex < STRINGLENMAX - 2))
-                {
-                    streaminfoproc.namefilter[stringindex] = c;
-                    if(c == 127)   // delete key
-                    {
-                        putchar(0x8);
-                        putchar(' ');
-                        putchar(0x8);
-                        stringindex --;
-                    }
-                    else
-                    {
-                        //printf("[%d]", (int) c);
-                        putchar(c);  // echo on screen
-                        stringindex++;
-                    }
-                }
-                printf("string entered\n");
-                streaminfoproc.namefilter[stringindex] = '\0';
-                TUI_init_terminal(&wrow, &wcol);
-                break;
+            }
+            printf("string entered\n");
+            streaminfoproc.namefilter[stringindex] = '\0';
+            TUI_init_terminal(&wrow, &wcol);
+            break;
 
 
 
@@ -1755,14 +1781,16 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT("Erase screen");
         erase();
 
-        attron(A_BOLD);
+        //attron(A_BOLD);
+        screenprint_setbold();
         sprintf(monstring,
                 "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP",
                 wrow, wcol,  getpid());
         //streamCTRL__print_header(monstring, '-');
         DEBUG_TRACEPOINT("Print header");
         TUI_print_header(monstring, '-');
-        attroff(A_BOLD);
+        //attroff(A_BOLD);
+        screenprint_unsetbold();
 
 
         DEBUG_TRACEPOINT("Start display");
@@ -1773,9 +1801,11 @@ errno_t streamCTRL_CTRLscreen()
 
             DEBUG_TRACEPOINT(" ");
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    x");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Exit");
             TUI_newline();
 
@@ -1784,39 +1814,51 @@ errno_t streamCTRL_CTRLscreen()
             TUI_printfw("============ SCREENS");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("     h");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("   Help screen");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    F2");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("   Display semaphore values");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    F3");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("   Display semaphore write PIDs");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    F4");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("   Display semaphore read PIDs");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    F5");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("   stream process trace");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    F6");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("   stream open by processes ...");
             TUI_newline();
 
@@ -1824,9 +1866,11 @@ errno_t streamCTRL_CTRLscreen()
             TUI_printfw("============ ACTIONS");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    R");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Remove stream");
             TUI_newline();
 
@@ -1834,21 +1878,27 @@ errno_t streamCTRL_CTRLscreen()
             TUI_printfw("============ SCANNING");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    }");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Increase scan frequency");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    {");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Decrease scan frequency");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    o");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    output next scan to file");
             TUI_newline();
 
@@ -1857,45 +1907,59 @@ errno_t streamCTRL_CTRLscreen()
             TUI_printfw("============ DISPLAY");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    +");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Increase display frequency");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    -");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Decrease display frequency");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    1");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Sort by stream name (alphabetical)");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    2");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Sort by recently updated");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    3");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Sort by processes access");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    F");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Set match string pattern");
             TUI_newline();
 
-            attron(attrval);
+            //attron(attrval);
+            screenprint_setbold();
             TUI_printfw("    f");
-            attroff(attrval);
+            //attroff(attrval);
+            screenprint_unsetbold();
             TUI_printfw("    Toggle apply match string to stream");
             TUI_newline();
 
@@ -1908,9 +1972,9 @@ errno_t streamCTRL_CTRLscreen()
             DEBUG_TRACEPOINT(" ");
             if(DisplayMode == DISPLAY_MODE_HELP)
             {
-                attron(A_REVERSE);
+                screenprint_setreverse();
                 TUI_printfw("[h] Help");
-                attroff(A_REVERSE);
+                screenprint_unsetreverse();
             }
             else
             {
@@ -1920,9 +1984,9 @@ errno_t streamCTRL_CTRLscreen()
 
             if(DisplayMode == DISPLAY_MODE_SEMVAL)
             {
-                attron(A_REVERSE);
+                screenprint_setreverse();
                 TUI_printfw("[F2] sem values");
-                attroff(A_REVERSE);
+                screenprint_unsetreverse();
             }
             else
             {
@@ -1932,9 +1996,9 @@ errno_t streamCTRL_CTRLscreen()
 
             if(DisplayMode == DISPLAY_MODE_WRITE)
             {
-                attron(A_REVERSE);
+                screenprint_setreverse();
                 TUI_printfw("[F3] write PIDs");
-                attroff(A_REVERSE);
+                screenprint_unsetreverse();
             }
             else
             {
@@ -1944,9 +2008,9 @@ errno_t streamCTRL_CTRLscreen()
 
             if(DisplayMode == DISPLAY_MODE_READ)
             {
-                attron(A_REVERSE);
+                screenprint_setreverse();
                 TUI_printfw("[F4] read PIDs");
-                attroff(A_REVERSE);
+                screenprint_unsetreverse();
             }
             else
             {
@@ -1956,9 +2020,9 @@ errno_t streamCTRL_CTRLscreen()
 
             if(DisplayMode == DISPLAY_MODE_SPTRACE)
             {
-                attron(A_REVERSE);
+                screenprint_setreverse();
                 TUI_printfw("[F5] process traces");
-                attroff(A_REVERSE);
+                screenprint_unsetreverse();
             }
             else
             {
@@ -1968,9 +2032,9 @@ errno_t streamCTRL_CTRLscreen()
 
             if(DisplayMode == DISPLAY_MODE_FUSER)
             {
-                attron(A_REVERSE);
+                screenprint_setreverse();
                 TUI_printfw("[F6] access");
-                attroff(A_REVERSE);
+                screenprint_unsetreverse();
             }
             else
             {
@@ -1991,10 +2055,12 @@ errno_t streamCTRL_CTRLscreen()
 
             if(streaminfoproc.fuserUpdate == 1)
             {
-                attron(COLOR_PAIR(9));
+                //attron(COLOR_PAIR(9));
+                screenprint_setcolor(9);
                 TUI_printfw("fuser scan ongoing  %4d  / %4d   ", streaminfoproc.sindexscan,
                             NBsindex);
-                attroff(COLOR_PAIR(9));
+                //attroff(COLOR_PAIR(9));
+                screenprint_unsetcolor(9);
             }
             if(DisplayMode == DISPLAY_MODE_FUSER)
             {
@@ -2034,9 +2100,11 @@ errno_t streamCTRL_CTRLscreen()
 
             if(streaminfoproc.filter == 1)
             {
-                attron(COLOR_PAIR(9));
+                //attron(COLOR_PAIR(9));
+                screenprint_setcolor(9);
                 TUI_printfw("  Filter = \"%s\"", streaminfoproc.namefilter);
-                attroff(COLOR_PAIR(9));
+                //attroff(COLOR_PAIR(9));
+                screenprint_unsetcolor(9);
             }
 
             TUI_newline();
@@ -2058,39 +2126,39 @@ errno_t streamCTRL_CTRLscreen()
 
             switch(DisplayMode)
             {
-                case DISPLAY_MODE_SEMVAL:
-                    TUI_printfw("     Semaphore values ....");
-                    TUI_newline();
-                    break;
+            case DISPLAY_MODE_SEMVAL:
+                TUI_printfw("     Semaphore values ....");
+                TUI_newline();
+                break;
 
-                case DISPLAY_MODE_WRITE:
-                    TUI_printfw("     write PIDs ....");
-                    TUI_newline();
-                    break;
+            case DISPLAY_MODE_WRITE:
+                TUI_printfw("     write PIDs ....");
+                TUI_newline();
+                break;
 
-                case DISPLAY_MODE_READ:
-                    TUI_printfw("     read PIDs ....");
-                    TUI_newline();
-                    break;
+            case DISPLAY_MODE_READ:
+                TUI_printfw("     read PIDs ....");
+                TUI_newline();
+                break;
 
-                case DISPLAY_MODE_SPTRACE:
-                    TUI_printfw("     stream process traces:   \"(INODE TYPE/SEM PID)>\"");
-                    TUI_newline();
-                    break;
+            case DISPLAY_MODE_SPTRACE:
+                TUI_printfw("     stream process traces:   \"(INODE TYPE/SEM PID)>\"");
+                TUI_newline();
+                break;
 
-                case DISPLAY_MODE_FUSER:
-                    TUI_printfw("     connected processes");
-                    TUI_newline();
-                    break;
+            case DISPLAY_MODE_FUSER:
+                TUI_printfw("     connected processes");
+                TUI_newline();
+                break;
 
-                default:
-                    TUI_newline();
-                    break;
+            default:
+                TUI_newline();
+                break;
             }
 
 
-
-            attroff(A_BOLD);
+            screenprint_unsetbold();
+            //attroff(A_BOLD);
 
 
 
@@ -2145,6 +2213,7 @@ errno_t streamCTRL_CTRLscreen()
             DEBUG_TRACEPOINT(" ");
 
 
+
             if((SORTING == 2) || (SORTING == 3))   // recent update and process access
             {
                 long *larray;
@@ -2194,7 +2263,6 @@ errno_t streamCTRL_CTRLscreen()
             }
 
 
-
             DEBUG_TRACEPOINT(" ");
 
             // compute doffsetindex
@@ -2213,11 +2281,6 @@ errno_t streamCTRL_CTRLscreen()
             {
                 doffsetindex = 0;
             }
-
-
-
-
-
 
 
 
@@ -2349,7 +2412,6 @@ errno_t streamCTRL_CTRLscreen()
 
                 char string[200];
 
-
                 if(DisplayFlag == 1)
                 {
                     // print file inode
@@ -2360,7 +2422,8 @@ errno_t streamCTRL_CTRLscreen()
 
                 if((dindex == dindexSelected) && (DisplayDetailLevel == 0))
                 {
-                    attron(A_REVERSE);
+                    //attron(A_REVERSE);
+                    screenprint_setreverse();
                 }
 
 
@@ -2375,9 +2438,11 @@ errno_t streamCTRL_CTRLscreen()
                         snprintf(namestring, stringmaxlen, "%s->%s", streaminfo[sindex].sname,
                                  streaminfo[sindex].linkname);
 
-                        attron(COLOR_PAIR(5));
+                        //attron(COLOR_PAIR(5));
+                        screenprint_setcolor(5);
                         TUI_printfw("%-*.*s", DispName_NBchar, DispName_NBchar, namestring);
-                        attroff(COLOR_PAIR(5));
+                        //attroff(COLOR_PAIR(5));
+                        screenprint_unsetcolor(5);
                     }
                     else
                     {
@@ -2543,9 +2608,11 @@ errno_t streamCTRL_CTRLscreen()
                     }
                     else
                     {
-                        attron(COLOR_PAIR(2));
+                        //attron(COLOR_PAIR(2));
+                        screenprint_setcolor(2);
                         TUI_printfw(string);
-                        attroff(COLOR_PAIR(2));
+                        //attroff(COLOR_PAIR(2));
+                        screenprint_unsetcolor(2);
                     }
 
 
@@ -2666,29 +2733,29 @@ errno_t streamCTRL_CTRLscreen()
 
                             switch(streamCTRLimages[ID].streamproctrace[spti].triggermode)
                             {
-                                case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                                    sprintf(string, "(%7lu IM ", inode);
-                                    break;
+                            case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                                sprintf(string, "(%7lu IM ", inode);
+                                break;
 
-                                case PROCESSINFO_TRIGGERMODE_CNT0:
-                                    sprintf(string, "(%7lu C0 ", inode);
-                                    break;
+                            case PROCESSINFO_TRIGGERMODE_CNT0:
+                                sprintf(string, "(%7lu C0 ", inode);
+                                break;
 
-                                case PROCESSINFO_TRIGGERMODE_CNT1:
-                                    sprintf(string, "(%7lu C1 ", inode);
-                                    break;
+                            case PROCESSINFO_TRIGGERMODE_CNT1:
+                                sprintf(string, "(%7lu C1 ", inode);
+                                break;
 
-                                case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                                    sprintf(string, "(%7lu %02d ", inode, sem);
-                                    break;
+                            case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                                sprintf(string, "(%7lu %02d ", inode, sem);
+                                break;
 
-                                case PROCESSINFO_TRIGGERMODE_DELAY:
-                                    sprintf(string, "(%7lu DL ", inode);
-                                    break;
+                            case PROCESSINFO_TRIGGERMODE_DELAY:
+                                sprintf(string, "(%7lu DL ", inode);
+                                break;
 
-                                default:
-                                    sprintf(string, "(%7lu ?? ", inode);
-                                    break;
+                            default:
+                                sprintf(string, "(%7lu ?? ", inode);
+                                break;
                             }
                             TUI_printfw(string);
                             streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
@@ -2722,34 +2789,34 @@ errno_t streamCTRL_CTRLscreen()
                     switch(streaminfo[sindex].streamOpenPID_status)
                     {
 
-                        case 1:
-                            streaminfo[sindex].streamOpenPID_cnt1 = 0;
-                            for(pidIndex = 0; pidIndex < streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
+                    case 1:
+                        streaminfo[sindex].streamOpenPID_cnt1 = 0;
+                        for(pidIndex = 0; pidIndex < streaminfo[sindex].streamOpenPID_cnt ; pidIndex++)
+                        {
+                            pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
+                            streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
+
+                            if((getpgid(pid) >= 0) && (pid != getpid()))
                             {
-                                pid_t pid = streaminfo[sindex].streamOpenPID[pidIndex];
-                                streamCTRL_print_procpid(8, pid, upstreamproc, NBupstreamproc, print_pid_mode);
 
-                                if((getpgid(pid) >= 0) && (pid != getpid()))
-                                {
+                                sprintf(string, ":%-*.*s",
+                                        PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
+                                TUI_printfw(string);
 
-                                    sprintf(string, ":%-*.*s",
-                                            PIDnameStringLen, PIDnameStringLen, PIDname_array[pid]);
-                                    TUI_printfw(string);
-
-                                    streaminfo[sindex].streamOpenPID_cnt1 ++;
-                                }
+                                streaminfo[sindex].streamOpenPID_cnt1 ++;
                             }
-                            break;
+                        }
+                        break;
 
-                        case 2:
-                            sprintf(string, "FAILED");
-                            TUI_printfw(string);
-                            break;
+                    case 2:
+                        sprintf(string, "FAILED");
+                        TUI_printfw(string);
+                        break;
 
-                        default:
-                            sprintf(string, "NOT SCANNED");
-                            TUI_printfw(string);
-                            break;
+                    default:
+                        sprintf(string, "NOT SCANNED");
+                        TUI_printfw(string);
+                        break;
 
                     }
 
@@ -2761,7 +2828,8 @@ errno_t streamCTRL_CTRLscreen()
                 {
                     if(dindex == dindexSelected)
                     {
-                        attroff(A_REVERSE);
+                        screenprint_unsetreverse();
+                        //attroff(A_REVERSE);
                     }
 
                     /*attron(COLOR_PAIR(9));
@@ -2785,8 +2853,6 @@ errno_t streamCTRL_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
             }
-
-
 
         }
 

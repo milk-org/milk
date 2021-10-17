@@ -1,5 +1,5 @@
 /**
- * @file    fps_process_user_key.c
+ * @file    fpsCTRL_TUI_process_user_key.c
  * @brief   TUI key input processing
  */
 
@@ -29,7 +29,7 @@
 static short unsigned int wrow, wcol;
 
 
-int fpsCTRLscreen_process_user_key(
+int fpsCTRL_TUI_process_user_key(
     int ch,
     FUNCTION_PARAMETER_STRUCT *fps,
     KEYWORD_TREE_NODE *keywnode,
@@ -52,6 +52,10 @@ int fpsCTRLscreen_process_user_key(
 
     switch(ch)
     {
+    case 3: // CTRL-C
+        loopOK = 0;
+        break;
+
     case 'x':     // Exit control screen
         loopOK = 0;
         break;
