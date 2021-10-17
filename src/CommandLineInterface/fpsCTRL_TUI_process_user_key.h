@@ -1,5 +1,5 @@
 /**
- * @file    fps_process_user_key.h
+ * @file    fpsCTRL_TUI_process_user_key.h
  * @brief   TUI key input processing
  */
 
@@ -8,7 +8,7 @@
 
 #include "function_parameters.h"
 
-int fpsCTRLscreen_process_user_key(
+int fpsCTRL_TUI_process_user_key(
     int ch,
     FUNCTION_PARAMETER_STRUCT *fps,
     KEYWORD_TREE_NODE *keywnode,
