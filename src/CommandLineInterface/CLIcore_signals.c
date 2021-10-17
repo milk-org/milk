@@ -35,10 +35,6 @@ errno_t write_process_log()
     thisPID = getpid();
     WRITE_FILENAME(fname, "logreport.%05d.log", thisPID);
 
-    //struct tm *uttime;
-    //time_t tvsec0;
-
-    //static int fplogstatus = 0;
 
     fplog = fopen(fname, "a");
 

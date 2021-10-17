@@ -45,9 +45,11 @@ link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
 # main
 add_library(CLIcore
             SHARED
-            processtools.c
+            fpsCTRL_TUI.c
+            fpsCTRL_TUI_process_user_key.c
+            procCTRL_TUI.c
+            streamCTRL_TUI.c
             processtools_trigger.c
-            streamCTRL.c
             timeutils.c
             fps_add_entry.c
             fps_checkparameter.c
@@ -55,7 +57,6 @@ add_library(CLIcore
             fps_connectExternalFPS.c
             fps_CONFstart.c
             fps_CONFstop.c
-            fps_CTRLscreen.c
             fps_disconnect.c
             fps_execFPScmd.c
             fps_FPCONFexit.c
@@ -75,7 +76,6 @@ add_library(CLIcore
             fps_printparameter_valuestring.c
             fps_processcmdline.c
             fps_process_fpsCMDarray.c
-            fps_process_user_key.c
             fps_processinfo_entries.c
             fps_read_fpsCMD_fifo.c
             fps_RUNexit.c
@@ -155,12 +155,14 @@ install(FILES CLIcore.h
               CLIcore_modules.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
+              fpsCTRL_TUI.h
+              fpsCTRL_TUI_process_user_key.h
+              processinfo.h
+              streamCTRL_TUI.h
               cmdsettings.h
               milkDebugTools.h
               processinfo.h
-              processtools.h
               processtools_trigger.h
-              streamCTRL.h
               timeutils.h
               function_parameters.h
               fps_add_entry.h
@@ -169,7 +171,6 @@ install(FILES CLIcore.h
               fps_CONFstop.h
               fps_connect.h
               fps_connectExternalFPS.h
-              fps_CTRLscreen.h
               fps_disconnect.h
               fps_execFPScmd.h
               fps_FPCONFexit.h
@@ -189,7 +190,6 @@ install(FILES CLIcore.h
               fps_processcmdline.h
               fps_process_fpsCMDarray.h
               fps_processinfo_entries.h
-              fps_process_user_key.h
               fps_read_fpsCMD_fifo.h
               fps_RUNexit.h
               fps_RUNstart.h

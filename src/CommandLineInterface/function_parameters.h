@@ -670,7 +670,7 @@ typedef struct
 #include "fps_checkparameter.h"
 #include "fps_connect.h"
 #include "fps_connectExternalFPS.h"
-#include "fps_CTRLscreen.h"
+#include "fpsCTRL_TUI.h"
 #include "fps_disconnect.h"
 #include "fps_execFPScmd.h"
 #include "fps_FPCONFexit.h"
