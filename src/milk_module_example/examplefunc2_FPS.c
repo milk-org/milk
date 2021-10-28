@@ -11,13 +11,18 @@
 
 
 // Local variables pointers
+
+//static LOCVAR_INIMG inim;
+
 static char *inimname;
+
 static double *scoeff;
 
 
 // List of arguments to function
 static CLICMDARGDEF farg[] =
 {
+//    FARG_INPUTIM(inim),
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
         CLIARG_VISIBLE_DEFAULT,
@@ -32,56 +37,78 @@ static CLICMDARGDEF farg[] =
 };
 
 
-// flag CLICMDFLAG_FPS enabled FPS capability
 static CLICMDDATA CLIcmddata =
 {
-    "simplefuncFPS",
-    "compute total of image using FPS",
+    "imsum2",
+    "compute total of image example2, FPS-compatible",
     CLICMD_FIELDS_DEFAULTS
 };
 
 
 
-// detailed help
+
 static errno_t help_function()
 {
+    printf("\n");
+
     return RETURN_SUCCESS;
 }
 
 
 
 
-// Computation code
+/**
+ * @brief Sum pixel values
+ *
+ * @param img
+ * @param scalingcoeff
+ * @return errno_t
+ */
 static errno_t example_compute_2Dimage_total(
-    IMGID img,
-    double scalingcoeff
+    IMGID  img,
+    double  scalingcoeff
 )
 {
+    DEBUG_TRACE_FSTART();
+
     resolveIMGID(&img, ERRMODE_ABORT);
 
-    uint_fast32_t xsize = img.md->size[0];
-    uint_fast32_t ysize = img.md->size[1];
-    uint_fast64_t xysize = xsize * ysize;
+    uint32_t xsize = img.md->size[0];
+    uint32_t ysize = img.md->size[1];
+    uint64_t xysize = xsize * ysize;
 
     double total = 0.0;
-    for(uint_fast64_t ii = 0; ii < xysize; ii++)
+    for(uint64_t ii = 0; ii < xysize; ii++)
     {
         total += img.im->array.F[ii];
     }
     total *= scalingcoeff;
 
-    printf("image %s total = %lf (scaling coeff %lf)\n", img.im->name, total,
+    printf("image %s total = %lf (scaling coeff %lf)\n",
+           img.im->name,
+           total,
            scalingcoeff);
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
-// adding INSERT_STD_PROCINFO statements enables processinfo support
+
+/**
+ * @brief Wrapper function, used by all CLI calls
+ *
+ * INSERT_STD_PROCINFO statements enable processinfo support
+ */
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
+
+//    IMGID img = makeIMGID(inimname);
+    //inim.name);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
 
     example_compute_2Dimage_total(
         makeIMGID(inimname),
@@ -89,6 +116,9 @@ static errno_t compute_function()
     );
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -97,12 +127,13 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+
+
 errno_t CLIADDCMD_milk_module_example__simplefunc_FPS()
 {
     INSERT_STD_CLIREGISTERFUNC
 
-    // Optional custom settings for this function
+    // Optional custom settings for this function can be included
     // CLIcmddata.cmdsettings->procinfo_loopcntMax = 9;
 
     return RETURN_SUCCESS;

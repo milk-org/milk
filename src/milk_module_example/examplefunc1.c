@@ -1,5 +1,5 @@
 /**
- * @file    simplefunc.c
+ * @file    examplefunc1.c
  * @brief   simple function example
  *
  * Example 1
@@ -42,18 +42,26 @@ static CLICMDARGDEF farg[] =
 // CLI function initialization data
 static CLICMDDATA CLIcmddata =
 {
-    "simplefunc",             // keyword to call function in CLI
-    "compute total of image", // description of what the function does
+    "imsum1",                  // keyword to call function in CLI
+    "compute total of image example1", // description of what the function does
     CLICMD_FIELDS_NOFPS
 };
 
 
 
-// detailed help
+
+/**
+ * @brief Detailed help
+ *
+ * @return errno_t
+ */
 static errno_t help_function()
 {
     printf(
-        "Detailed help for function\n"
+        "Example function demonstrating basic CLI interface\n"
+        "Adds pixel values of an image with a global scaling parameter\n"
+        "Input is image, output is scalar\n"
+        "This function does not support fps or procinfo\n"
     );
 
     return RETURN_SUCCESS;
@@ -74,12 +82,13 @@ static errno_t help_function()
  * On success, return value is RETURN_SUCCESS (=0).
  */
 static errno_t example_compute_2Dimage_total(
-    IMGID img,
+    IMGID  img,
     double scalingcoeff)
 {
     // entering function, updating trace accordingly
     DEBUG_TRACE_FSTART();
 
+    // Resolve image if not already resolved
     resolveIMGID(&img, ERRMODE_ABORT);
 
 
@@ -99,18 +108,21 @@ static errno_t example_compute_2Dimage_total(
 
     // FUNC_CHECK_RETURN(othermilkfunc(img));
 
-    uint_fast32_t xsize = img.md->size[0];
-    uint_fast32_t ysize = img.md->size[1];
-    uint_fast64_t xysize = xsize * ysize;
+    uint32_t xsize = img.md->size[0];
+    uint32_t ysize = img.md->size[1];
+    uint64_t xysize = xsize * ysize;
 
     double total = 0.0;
-    for(uint_fast64_t ii = 0; ii < xysize; ii++)
+    for(uint64_t ii = 0; ii < xysize; ii++)
     {
         total += img.im->array.F[ii];
     }
     total *= scalingcoeff;
 
-    printf("image total = %lf, scaling coeff %lf\n", total, scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n",
+           img.im->name,
+           total,
+           scalingcoeff);
 
     // normal successful return from function :
     DEBUG_TRACE_FEXIT();
@@ -118,9 +130,15 @@ static errno_t example_compute_2Dimage_total(
 }
 
 
-// Wrapper function, used by all CLI calls
-// Defines how local variables are fed to computation code
-// Always local to this translation unit
+
+/**
+ * @brief Wrapper function, used by all CLI calls
+ *
+ * Defines how local variables are fed to computation code.
+ * Always local to this translation unit.
+ *
+ * @return errno_t
+ */
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();

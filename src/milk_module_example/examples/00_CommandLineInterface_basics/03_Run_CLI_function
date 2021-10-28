@@ -21,10 +21,10 @@ mload milkimagegen
 imgen.mkdisk imd1 256 256 128 128 50
 
 # get function info
-cmd? modex.simplefunc
+cmd? modex.imsum1
 
 # Run function
-modex.simplefunc imd1
+modex.imsum1 imd1
 
 # Exit CLI
 exitCLI

@@ -65,7 +65,7 @@ long function_parameter_struct_connect(
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1)
     {
-        printf("ERROR [%s %s %d]: cannot connect to %s\n", __FILE__, __func__, __LINE__,
+        printf("cannot connect to %s\n",
                SM_fname);
         return(-1);
     }
