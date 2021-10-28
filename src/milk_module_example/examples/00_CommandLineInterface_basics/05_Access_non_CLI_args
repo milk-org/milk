@@ -19,23 +19,23 @@ MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 imgen.mkdisk imd1 256 256 128 128 50
 
 # Set non-CLI argument value
-modex.simplefunc .scaling 0.31
+modex.imsum1 .scaling 0.31
 
 # Get function help to print value of non-CLI argument(s)
-cmd? modex.simplefunc
+cmd? modex.imsum1
 
 # Run function
-modex.simplefunc imd1
+modex.imsum1 imd1
 
 # Create second disk image
 imgen.mkdisk imd2 256 256 128 128 10
 
 # Set new value for CLI-visible argument
 # Note: tab complete after dot lists all possible parameters
-modex.simplefunc .in_name imd2
+modex.imsum1 .in_name imd2
 
 # Run function
-modex.simplefunc .
+modex.imsum1 .
 
 # Exit CLI
 exitCLI

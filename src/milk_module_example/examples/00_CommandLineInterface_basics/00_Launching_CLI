@@ -3,7 +3,7 @@ examplestring="Launching CLI"
 exampleDescription="
 Launching Command Line Interpreter.
 
-milk's CLI processes input command.
+Demonstrates how milk's CLI processes input command.
 "
 
 CLIinput="
@@ -17,7 +17,7 @@ exitCLI
 # clear screen
 clear
 
-# Quiet mode
+# Launch milk in quiet mode
 MILK_QUIET=1 milk
 
 # exit milk CLI
@@ -26,8 +26,11 @@ exitCLI
 # clear screen
 clear
 
-# Rename prompt
+# Rename milk prompt
 MILK_QUIET=1 MILKCLI_APPNAME=\"milk-example\" milk
+
+# Send command to upstream terminal
+!date -u
 
 # exit milk CLI
 exitCLI

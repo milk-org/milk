@@ -32,6 +32,21 @@ typedef const char *__restrict CONST_WORD;
 #define RETURN_CLICHECKARGARRAY_FUNCPARAMSET 2
 #define RETURN_CLICHECKARGARRAY_HELP 3
 
+
+
+
+typedef struct
+{
+    char *name;
+} LOCVAR_INIMG;
+
+#define FARG_INPUTIM(imkey)                                         \
+        {CLIARG_STR, "." #imkey ".name", "input image", #imkey,     \
+        CLIARG_VISIBLE_DEFAULT,                                     \
+        (void **)&imkey.name}
+
+
+
 typedef struct
 {
     char *name;
@@ -42,28 +57,34 @@ typedef struct
     int *CBsize;
 } LOCVAR_OUTIMG2D;
 
+/** @brief Template for ouput image argument to CLI function
+ *
+ */
 #define FARG_OUTIM2D(imkey)                                         \
-    {                                                               \
-        CLIARG_STR, "." #imkey ".name", "output image", #imkey,     \
+        {CLIARG_STR, "." #imkey ".name", "output image", #imkey,    \
         CLIARG_VISIBLE_DEFAULT,                                     \
         (void **)&imkey.name},                                      \
-        {CLIARG_LONG, "." #imkey ".xsize", "x size", "512",         \
-         CLIARG_VISIBLE_DEFAULT,                                    \
-         (void **)&imkey.xsize},                                    \
-        {CLIARG_LONG, "." #imkey ".ysize", "y size", "512",         \
-         CLIARG_VISIBLE_DEFAULT,                                    \
-         (void **)&imkey.ysize},                                    \
+        {CLIARG_LONG, "." #imkey ".xsize", "x size", "256",         \
+        CLIARG_VISIBLE_DEFAULT,                                     \
+        (void **)&imkey.xsize},                                     \
+        {CLIARG_LONG, "." #imkey ".ysize", "y size", "256",         \
+        CLIARG_VISIBLE_DEFAULT,                                     \
+        (void **)&imkey.ysize},                                     \
         {CLIARG_LONG, "." #imkey ".shared", "shared flag", "0",     \
          CLIARG_HIDDEN_DEFAULT,                                     \
-         (void **)&imkey.shared},                                   \
+        (void **)&imkey.shared},                                    \
         {CLIARG_LONG, "." #imkey ".NBkw", "number keywords", "10",  \
-         CLIARG_HIDDEN_DEFAULT,                                     \
-         (void **)&imkey.NBkw},                                     \
-    {                                                               \
-        CLIARG_LONG, "." #imkey ".CBsize", "circ buffer size", "0", \
-            CLIARG_HIDDEN_DEFAULT,                                  \
-            (void **)&imkey.CBsize                                  \
-    }
+        CLIARG_HIDDEN_DEFAULT,                                      \
+        (void **)&imkey.NBkw},                                      \
+        {CLIARG_LONG, "." #imkey ".CBsize", "circ buffer size", "0",\
+        CLIARG_HIDDEN_DEFAULT,                                      \
+        (void **)&imkey.CBsize}
+
+
+
+
+
+
 
 // binding between variables and function args/params
 #define STD_FARG_LINKfunction                                                     \
@@ -135,7 +156,9 @@ typedef struct
  * ### STOP CONFLOOP
  * stop function parameter conf loop\n
  * macro defined in function_parameter.h
+ *
  */
+
 #define INSERT_STD_FPSCONFfunction                                                              \
     static errno_t FPSCONFfunction()                                                            \
     {                                                                                           \
@@ -163,13 +186,14 @@ typedef struct
         return RETURN_SUCCESS;                                                                  \
     }
 
+
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START                                                           \
     int processloopOK = 1;                                                                              \
     PROCESSINFO *processinfo = NULL;                                                                    \
     if (data.fpsptr != NULL)                                                                            \
     { /* If FPS mode, then FPS settings override defaults*/                                             \
         /* data.fpsptr->cmset entries are read by fps_connect */                                        \
-        CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;                                      \
+        /*CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;*/                                  \
         CLIcmddata.cmdsettings->RT_priority = data.fpsptr->cmdset.RT_priority;                          \
         CLIcmddata.cmdsettings->procinfo_loopcntMax = data.fpsptr->cmdset.procinfo_loopcntMax;          \
         CLIcmddata.cmdsettings->triggermode = data.fpsptr->cmdset.triggermode;                          \

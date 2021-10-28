@@ -13,7 +13,7 @@ MILK_QUIET="1" milk
 fpslist
 
 # Load FPS
-fpsload \"simplefuncFPS-03\"
+fpsload \"imsum2-03\"
 
 # list FPSs on system
 fpslist

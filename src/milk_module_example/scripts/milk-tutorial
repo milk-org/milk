@@ -39,27 +39,28 @@ set +e
 
 # create tmux session
 echo ""
-echo "======== SETTING UP TMUX SESSION ========"
-echo "List of current tmux sessions:"
-tmux ls
+#echo "======== SETTING UP TMUX SESSION ========"
+#echo "List of current tmux sessions:"
+#tmux ls
 echo "Ceating tmux session ${TMUXSESSIONNAME}"
 tmux new -d -s ${TMUXSESSIONNAME}
-echo "list of current tmux sessions:"
-tmux ls
-echo "========================================="
+#echo "list of current tmux sessions:"
+#tmux ls
+#echo "========================================="
 echo ""
 
 tmux send-keys -t ${TMUXSESSIONNAME} C-c
 tmux send-keys -t ${TMUXSESSIONNAME} "clear" C-m
 set -e
-echo
 echo "This tool navigates through a series of examples demonstrating milk use."
 echo "Use arrow keys to navigate and select example script."
 echo ""
 echo "All examples will run in tmux session ${TMUXSESSIONNAME}"
-echo "$(tput bold)Run \"tmux a -t ${TMUXSESSIONNAME}\" to connect$(tput sgr0)"
+echo ""
+echo "$(tput bold)====== DO THIS NOW =======" 
+echo "Run \"tmux a -t ${TMUXSESSIONNAME}\" in a separate terminal to view examples$(tput sgr0)"
 echo
-read -s -p "Press [ENTER] to proceed to navigator, [CTRL-C] to exit at any time"
+read -s -p "When done, press [ENTER] to proceed to navigator, [CTRL-C] to exit"
 
 
 
@@ -77,7 +78,7 @@ function ProbeUserRunExample {
             echo "$(tput setaf 2)${CLIline} $(tput sgr0)"
         else
             echo "$(tput bold)$(tput setaf 3)${CLIline} $(tput sgr0)"
-            read -p "   Press [ENTER] to run this command in tmux session ${TMUXSESSIONNAME} "
+            read -p "   [ENTER] to run this command "
             tmux send-keys -t ${TMUXSESSIONNAME} "${CLIline}" C-m
             echo ""
         fi
