@@ -122,12 +122,12 @@ long function_parameter_struct_connect(
     char *pch;
 
 
-    strncpy(tmpstring, name, stringmaxlen-1);
+    strncpy(tmpstring, name, stringmaxlen - 1);
     NBi = -1;
     pch = strtok(tmpstring, "-");
     while(pch != NULL)
     {
-        strncpy(tmpstring1, pch, stringmaxlen-1);
+        strncpy(tmpstring1, pch, stringmaxlen - 1);
 
         if(NBi == -1)
         {
@@ -209,9 +209,11 @@ long function_parameter_struct_connect(
             }
         }
 
-        {   // check if processinfo is enabled
+        {
+            // check if processinfo is enabled
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.enabled");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_ONOFF)
                 {
                     if(fps->parray[pindex].fpflag & FPFLAG_ONOFF)
@@ -227,9 +229,11 @@ long function_parameter_struct_connect(
         }
 
 
-        {   // procinfo_loopcntMax
+        {
+            // procinfo_loopcntMax
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
                     fps->cmdset.procinfo_loopcntMax = fps->parray[pindex].val.i64[0];
@@ -238,9 +242,11 @@ long function_parameter_struct_connect(
         }
 
 
-        {   // RT_priority
+        {
+            // RT_priority
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
                     fps->cmdset.RT_priority = fps->parray[pindex].val.i64[0];
@@ -248,9 +254,11 @@ long function_parameter_struct_connect(
             }
         }
 
-        {   // triggerstreamname
+        {
+            // triggerstreamname
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggersname");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_STREAMNAME)
                 {
                     strcpy(fps->cmdset.triggerstreamname, fps->parray[pindex].val.string[0]);
@@ -258,9 +266,11 @@ long function_parameter_struct_connect(
             }
         }
 
-        {   // triggermode
+        {
+            // triggermode
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
                     fps->cmdset.triggermode = fps->parray[pindex].val.i64[0];
@@ -268,9 +278,11 @@ long function_parameter_struct_connect(
             }
         }
 
-        {   // triggerdelay
+        {
+            // triggerdelay
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_TIMESPEC)
                 {
                     fps->cmdset.triggerdelay.tv_sec  = fps->parray[pindex].val.ts[0].tv_sec;
@@ -279,9 +291,11 @@ long function_parameter_struct_connect(
             }
         }
 
-        {   // triggertimeout
+        {
+            // triggertimeout
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggertimeout");
-            if(pindex > -1) {
+            if(pindex > -1)
+            {
                 if(fps->parray[pindex].type == FPTYPE_TIMESPEC)
                 {
                     fps->cmdset.triggertimeout.tv_sec  = fps->parray[pindex].val.ts[0].tv_sec;
