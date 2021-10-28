@@ -19,16 +19,16 @@ imgen.mkdisk imd1 256 256 128 128 50
 imgen.mkdisk imd2 256 256 128 128 10
 
 # Run function on image imd1
-modex.simplefunc imd1
+modex.imsum1 imd1
 
 # Run function again, recall argument from last call
-modex.simplefunc .
+modex.imsum1 .
 
 # Run function on image imd2
-modex.simplefunc imd2
+modex.imsum1 imd2
 
 # Run function again, recall argument from last call
-modex.simplefunc .
+modex.imsum1 .
 
 exitCLI
 "
