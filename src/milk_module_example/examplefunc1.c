@@ -31,7 +31,8 @@ static CLICMDARGDEF farg[] =
         CLIARG_VISIBLE_DEFAULT,
         (void **) &inimname
     },
-    {   // hidden argument is not part of CLI call, FPFLAG ignored
+    {
+        // hidden argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &scoeff
