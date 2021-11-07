@@ -3,12 +3,16 @@ examplestring="Update Stream Loop"
 exampleDescription="
 Update stream in a loop
 
-Script milk-streampoke performs similar function
+This example demonstrates use of a function updating a stream.
+The function has a stream input and no stream output.
+
+Note: script milk-streampoke performs similar function. For more info:
+milk-streampoke -h
 "
 
 CLIinput="
 # Start milk CLI with required modules
-MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image named imd1
 imgen.mkdisk imd1 256 256 128 128 50
@@ -38,7 +42,8 @@ modex.streamupdate ..triggerdelay 0.1
 # Check settings
 modex.streamupdate ?
 
-# Run function on image imd1
+# Run function on image ims1
+# Feel free to run several time, monitoring process in milk-procCTRL
 modex.streamupdate ims1
 
 # exit milk CLI

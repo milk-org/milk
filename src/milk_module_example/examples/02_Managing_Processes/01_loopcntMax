@@ -9,22 +9,28 @@ loopcntMax (default 0) specifies how many times the function should run:
 
 CLIinput="
 # Start milk CLI with required modules
-MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image named imd1
 imgen.mkdisk imd1 256 256 128 128 50
 
 # Activate processinfo
-modex.simplefuncFPS ..procinfo 1
+modex.imsum2 ..procinfo 1
 
 # Run computation 1000 times
-modex.simplefuncFPS ..loopcntMax 999
+modex.imsum2 ..loopcntMax 999
 
-# Check settings
-modex.simplefuncFPS ?
+# Check settings.
+# Notice that loopcntMax is set to 999.
+# Notice also that triggermode is \"IMMEDIATE\", indicating
+# that loop iterations will not be waiting for synchronization input.
+modex.imsum2 ?
 
-# Run function on image imd1
-modex.simplefuncFPS imd1
+# Run function on image imd1.
+# The function will run 1000 times.
+# Note that any function running with processinfo appears in the milk-procCTRL tool
+# (to be covered later).
+modex.imsum2 imd1
 
 # exit milk CLI
 exitCLI
