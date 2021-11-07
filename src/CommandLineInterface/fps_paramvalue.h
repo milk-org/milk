@@ -12,18 +12,18 @@
 // INT32
 // =====================================================================
 
-int functionparameter_SetParamValue_INT32(
+errno_t functionparameter_SetParamValue_INT32(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
-    long value
+    int32_t value
 );
 
-long functionparameter_GetParamValue_INT32(
+int32_t functionparameter_GetParamValue_INT32(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
 );
 
-long *functionparameter_GetParamPtr_INT32(
+int32_t *functionparameter_GetParamPtr_INT32(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
 );
@@ -40,6 +40,39 @@ do{ \
 
 
 
+// =====================================================================
+// UINT32
+// =====================================================================
+
+errno_t functionparameter_SetParamValue_UINT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    uint32_t value
+);
+
+uint32_t functionparameter_GetParamValue_UINT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+);
+
+uint32_t *functionparameter_GetParamPtr_UINT32(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+);
+
+
+// Creates variable "_varname"
+//
+#define FPS_GETPARAM_UINT32(varname, pname) \
+int32_t _##varname = 0; \
+do{ \
+   _##varname = functionparameter_GetParamValue_UINT32(&fps, pname);\
+  (void) _##varname;\
+} while(0)
+
+
+
+
 
 
 
@@ -47,18 +80,18 @@ do{ \
 // INT64
 // =====================================================================
 
-int functionparameter_SetParamValue_INT64(
+errno_t functionparameter_SetParamValue_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
-    long value
+    int64_t value
 );
 
-long functionparameter_GetParamValue_INT64(
+int64_t functionparameter_GetParamValue_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
 );
 
-long *functionparameter_GetParamPtr_INT64(
+int64_t *functionparameter_GetParamPtr_INT64(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
 );
@@ -70,6 +103,38 @@ long *functionparameter_GetParamPtr_INT64(
 int64_t _##varname = 0; \
 do{ \
    _##varname = functionparameter_GetParamValue_INT64(&fps, pname);\
+  (void) _##varname;\
+} while(0)
+
+
+
+// =====================================================================
+// UINT64
+// =====================================================================
+
+errno_t functionparameter_SetParamValue_UINT64(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    uint64_t value
+);
+
+uint64_t functionparameter_GetParamValue_UINT64(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+);
+
+uint64_t *functionparameter_GetParamPtr_UINT64(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+);
+
+
+// Creates variable "_varname"
+//
+#define FPS_GETPARAM_UINT64(varname, pname) \
+int64_t _##varname = 0; \
+do{ \
+   _##varname = functionparameter_GetParamValue_UINT64(&fps, pname);\
   (void) _##varname;\
 } while(0)
 
@@ -87,7 +152,7 @@ float functionparameter_GetParamValue_FLOAT32(
 );
 
 
-int functionparameter_SetParamValue_FLOAT32(
+errno_t functionparameter_SetParamValue_FLOAT32(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
     float value
@@ -124,7 +189,7 @@ double functionparameter_GetParamValue_FLOAT64(
 );
 
 
-int functionparameter_SetParamValue_FLOAT64(
+errno_t functionparameter_SetParamValue_FLOAT64(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
     double value
@@ -150,7 +215,7 @@ char *functionparameter_GetParamPtr_STRING(
 );
 
 
-int functionparameter_SetParamValue_STRING(
+errno_t functionparameter_SetParamValue_STRING(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
     const char *stringvalue
@@ -169,7 +234,7 @@ int functionparameter_GetParamValue_ONOFF(
 );
 
 
-int functionparameter_SetParamValue_ONOFF(
+errno_t functionparameter_SetParamValue_ONOFF(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname,
     int ONOFFvalue

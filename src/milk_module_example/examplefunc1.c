@@ -111,10 +111,10 @@ static errno_t example_compute_2Dimage_total(
 
     uint32_t xsize = img.md->size[0];
     uint32_t ysize = img.md->size[1];
-    uint64_t xysize = xsize * ysize;
+    uint_fast64_t xysize = xsize * ysize;
 
     double total = 0.0;
-    for(uint64_t ii = 0; ii < xysize; ii++)
+    for(uint_fast64_t ii = 0; ii < xysize; ii++)
     {
         total += img.im->array.F[ii];
     }
