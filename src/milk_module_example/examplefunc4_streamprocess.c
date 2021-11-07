@@ -42,7 +42,7 @@ static CLICMDARGDEF farg[] =
 
 static CLICMDDATA CLIcmddata =
 {
-    "streamupdate",
+    "streamprocess",
     "process input stream to output stream",
     CLICMD_FIELDS_DEFAULTS
 };

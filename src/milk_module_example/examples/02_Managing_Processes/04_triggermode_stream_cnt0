@@ -1,36 +1,56 @@
-examplestring="processinfo loopcntMax"
+examplestring="processinfo triggermode stream"
 
 exampleDescription="
-loopcntMax (default 0) specifies how many times the function should run:
--  0: run only once
--  N: run N+1 times
-- -1: run in infinite loop
+Update stream in a loop.
+Each loop iteration is triggered by a another stream update.
+
+
 "
 
 CLIinput="
 # Start milk CLI with required modules
-MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image named imd1
 imgen.mkdisk imd1 256 256 128 128 50
 
-# Activate processinfo
-modex.simplefuncFPS ..procinfo 1
+# Make it a stream
+cpsh imd1 ims1
 
-# Run computation 5 times
-modex.simplefuncFPS ..loopcntMax 6
+# Make a separate stream which will be used as trigger input
+cpsh imd1 imtrig
 
-# Change triggermode to 4 : DELAY
-modex.simplefuncFPS ..triggermode 4
+# Set up imsum2 function with processinfo
+modex.imsum2 ..procinfo 1
 
-# set delay to 0.1 sec
-modex.simplefuncFPS ..triggerdelay 0.1
+# Set triggermode to stream counter 0
+modex.imsum2 ..triggermode 1
 
-# Check settings
-modex.simplefuncFPS ?
+# specify stream that will trigger function
+modex.imsum2 ..triggersname imtrig
 
-# Run function on image imd1
-modex.simplefuncFPS imd1
+# Run computation 20 times
+modex.imsum2 ..loopcntMax 19
+
+
+
+
+# Check memory content
+listim
+
+# Call script milk-streampoke to update stream imtrig every 0.2 sec,
+# running script as background task.
+# This will run for 20 sec at 5 Hz.
+# Feel free to change delay (-d option) or number of iteration (-n option),
+# and monitor status in milk-procCTRL and milk-streamCTRL.
+# IMPORTANT: run this command an the next one back-to-back without long delay.
+!milk-streampoke -n 100 -d 0.2 imtrig > /dev/null &
+
+
+# Each increment of imtrig counter cnt0 will trigger an iteration.
+# Monitoring process in milk-procCTRL
+modex.imsum2 ims1
+
 
 # exit milk CLI
 exitCLI

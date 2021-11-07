@@ -12,6 +12,7 @@ CLIinput="
 milk
 
 # exit milk CLI
+# \"exit\" and \"quit\" will also work
 exitCLI
 
 # clear screen
@@ -29,7 +30,8 @@ clear
 # Rename milk prompt
 MILK_QUIET=1 MILKCLI_APPNAME=\"milk-example\" milk
 
-# Send command to upstream terminal
+# Use ! character to send command to upstream terminal
+# String following ! is executed by C system()
 !date -u
 
 # exit milk CLI

@@ -24,6 +24,7 @@ modex.imsum2 imd1
 modex.imsum2 .scaling 0.31
 
 # Create FPS
+# We append here \"03\" to the fps name, so the FPS name will be \"imsum2-03\"
 # To view FPSs in memory, run milk-fpsCTRL in a separate terminal
 modex.imsum2 _FPSINIT_ \"03\"
 

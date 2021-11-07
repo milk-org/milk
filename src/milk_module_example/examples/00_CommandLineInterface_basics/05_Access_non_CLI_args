@@ -13,15 +13,22 @@ The same syntax also holds for arguments accessible by the CLI call.
 
 CLIinput="
 # Start milk CLI with required modules
+# Note comma-separated syntax to load multiple modules
 MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image
 imgen.mkdisk imd1 256 256 128 128 50
 
+# Check for command syntax
+# Parameter \"scaling\" is listed as \"(hidded)\", indicating that
+# it should be set by a dedicated CLI call
+modex.imsum1 ?
+
 # Set non-CLI argument value
 modex.imsum1 .scaling 0.31
 
 # Get function help to print value of non-CLI argument(s)
+# This shows the updated scaling value
 cmd? modex.imsum1
 
 # Run function
@@ -35,6 +42,7 @@ imgen.mkdisk imd2 256 256 128 128 10
 modex.imsum1 .in_name imd2
 
 # Run function
+# \".\" indicates: use preset parameter value
 modex.imsum1 .
 
 # Exit CLI

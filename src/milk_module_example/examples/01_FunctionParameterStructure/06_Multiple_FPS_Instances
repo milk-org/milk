@@ -28,7 +28,7 @@ modex.imsum2 .scaling 0.5
 modex.imsum2 _FPSINIT_ \"05\"
 
 # Run function with current parameter values
-modex.imsum2 _RUNSTART_
+modex.imsum2 .
 
 # Run function with parameters from FPS 03
 modex.imsum2 _RUNSTART_ \"03\"
