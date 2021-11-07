@@ -3,26 +3,29 @@ examplestring="Introduction to processinfo"
 exampleDescription="
 The processinfo shared memory structure manages deployment of functions
 into processes.
+
+While running examples in this section, keep a running instance of milk-procCTRL
+to monitor progress. To run the tool, type \"milk-procCTRL\" in a terminal.
 "
 
 CLIinput="
 
 # Start milk command line interpreter (CLI)
-milk
+MILK_QUIET="1" milk
 
 # Load module
 mload milkmoduleexample
 
 # Get function help
 # Notice that processinfo is currently OFF
-modex.simplefuncFPS ?
+modex.imsum2 ?
 
 # Activate processinfo
-modex.simplefuncFPS ..procinfo 1
+modex.imsum2 ..procinfo 1
 
 # Check that processinfo is now activated
 # Multiple additional function attributes appear
-modex.simplefuncFPS ?
+modex.imsum2 ?
 
 # exit milk CLI
 exitCLI

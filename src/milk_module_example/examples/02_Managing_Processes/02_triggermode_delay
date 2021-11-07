@@ -1,36 +1,34 @@
-examplestring="processinfo loopcntMax"
+examplestring="processinfo triggermode delay"
 
 exampleDescription="
-loopcntMax (default 0) specifies how many times the function should run:
--  0: run only once
--  N: run N+1 times
-- -1: run in infinite loop
+Configuration parameter triggermode_delay controls the time delay 
+between loop iterations.
 "
 
 CLIinput="
 # Start milk CLI with required modules
-MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
+MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 
 # Create disk image named imd1
 imgen.mkdisk imd1 256 256 128 128 50
 
 # Activate processinfo
-modex.simplefuncFPS ..procinfo 1
+modex.imsum2 ..procinfo 1
 
 # Run computation 20 times
-modex.simplefuncFPS ..loopcntMax 19
+modex.imsum2 ..loopcntMax 19
 
 # Change triggermode to 4 : DELAY
-modex.simplefuncFPS ..triggermode 4
+modex.imsum2 ..triggermode 4
 
 # set delay to 0.1 sec
-modex.simplefuncFPS ..triggerdelay 0.1
+modex.imsum2 ..triggerdelay 0.1
 
 # Check settings
-modex.simplefuncFPS ?
+modex.imsum2 ?
 
 # Run function on image imd1
-modex.simplefuncFPS imd1
+modex.imsum2 imd1
 
 # exit milk CLI
 exitCLI
