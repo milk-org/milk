@@ -40,7 +40,7 @@ errno_t load_sharedobj(
     DEBUG_TRACE_FSTART();
 
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
-    strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME-1);
+    strncpy(libnameloaded, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
 
     // check if already loaded
@@ -56,7 +56,8 @@ errno_t load_sharedobj(
     }
     if(mmatch > -1)
     {
-        printf("    Shared object %s already loaded - no action taken\n", libnameloaded);
+        printf("    Shared object %s already loaded - no action taken\n",
+               libnameloaded);
         return RETURN_FAILURE;
     }
 
@@ -111,7 +112,8 @@ errno_t load_module_shared(
 
     // Assemble absolute path module filename
     //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
-    DEBUG_TRACEPOINT("Searching for shared object in directory [data.installdir]/lib : %s/lib", data.installdir);
+    DEBUG_TRACEPOINT("Searching for shared object in directory [data.installdir]/lib : %s/lib",
+                     data.installdir);
 
     {
         int slen = snprintf(libname, STRINGMAXLEN_MODULE_SOFILENAME,
@@ -135,16 +137,16 @@ errno_t load_module_shared(
     // a custom module is about to be loaded, so we set the type accordingly
     // this variable will be written by module register function into module struct
     data.moduletype = MODULE_TYPE_CUSTOMLOAD;
-    strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME-1);
-    strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME-1);
+    strncpy(data.moduleloadname, modulenameLC, STRINGMAXLEN_MODULE_LOADNAME - 1);
+    strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
     if(load_sharedobj(libname) == RETURN_SUCCESS)
     {
         //
     }
     // reset to default for next load
     data.moduletype = MODULE_TYPE_STARTUP;
-    strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME-1);
-    strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME-1);
+    strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME - 1);
+    strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -292,13 +294,13 @@ errno_t RegisterModule(
     data.module[data.NBmodule].type = data.moduletype;
 
     strncpy(data.module[data.NBmodule].loadname, data.moduleloadname,
-            STRINGMAXLEN_MODULE_LOADNAME-1);
+            STRINGMAXLEN_MODULE_LOADNAME - 1);
     strncpy(data.module[data.NBmodule].sofilename, data.modulesofilename,
-            STRINGMAXLEN_MODULE_SOFILENAME-1);
+            STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
     //printf("--- libnameloaded : %s\n", libnameloaded);
     strncpy(data.module[data.NBmodule].sofilename, libnameloaded,
-            STRINGMAXLEN_MODULE_SOFILENAME-1);
+            STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
     if(data.progStatus == 0)
     {
@@ -502,61 +504,61 @@ uint32_t RegisterCLIcmd(
             switch(data.cmd[data.NBcmd].argdata[argi].type)
             {
 
-            case CLIARG_FLOAT:
-                data.cmd[data.NBcmd].argdata[argi].val.f = atof(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_FLOAT:
+                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_FLOAT32:
-                data.cmd[data.NBcmd].argdata[argi].val.f = atof(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_FLOAT32:
+                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_FLOAT64:
-                data.cmd[data.NBcmd].argdata[argi].val.f = atof(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_FLOAT64:
+                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_LONG:
-                data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_LONG:
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_INT32:
-                data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_INT32:
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_UINT32:
-                data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_UINT32:
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_INT64:
-                data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_INT64:
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_UINT64:
-                data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                            CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_UINT64:
+                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
+                                CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
 
-            case CLIARG_STR_NOT_IMG:
-                strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                       CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_STR_NOT_IMG:
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                           CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_IMG:
-                strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                       CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_IMG:
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                           CLIcmddata.funcfpscliarg[argi].example);
+                    break;
 
-            case CLIARG_STR:
-                strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                       CLIcmddata.funcfpscliarg[argi].example);
-                break;
+                case CLIARG_STR:
+                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                           CLIcmddata.funcfpscliarg[argi].example);
+                    break;
             }
         }
     }

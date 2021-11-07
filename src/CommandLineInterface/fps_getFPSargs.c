@@ -32,37 +32,37 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
     int argpreprocess = 1; // by default, pre-process argument
     switch(data.cmdargtoken[1].type)
     {
-    case CLIARG_FLOAT:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_FLOAT32:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT32:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_FLOAT64:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT64:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_LONG:
-        argpreprocess = 0;
-        break;
+        case CLIARG_LONG:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_INT32:
-        argpreprocess = 0;
-        break;
+        case CLIARG_INT32:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_UINT32:
-        argpreprocess = 0;
-        break;
+        case CLIARG_UINT32:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_INT64:
-        argpreprocess = 0;
-        break;
+        case CLIARG_INT64:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_UINT64:
-        argpreprocess = 0;
-        break;
+        case CLIARG_UINT64:
+            argpreprocess = 0;
+            break;
     }
 
     if(argpreprocess == 1)
