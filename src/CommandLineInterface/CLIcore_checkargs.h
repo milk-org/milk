@@ -73,7 +73,7 @@ typedef struct
     // see FPFLAG_  in function_parameters.h
     uint64_t fpflag;
 
-    void** valptr;
+    void **valptr;
 
 } CLICMDARGDEF;
 

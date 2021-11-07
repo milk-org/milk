@@ -281,13 +281,13 @@ errno_t printInfo()
 
 errno_t list_commands()
 {
-    int cmdinfoslen=38;
+    int cmdinfoslen = 38;
     char cmdinfoshort[cmdinfoslen];
 
     printf("----------- LIST OF COMMANDS ---------\n");
     for(unsigned int i = 0; i < data.NBcmd; i++)
     {
-        strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen-1);
+        strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
         printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, data.cmd[i].module,
                cmdinfoshort, data.cmd[i].example);
     }
@@ -348,7 +348,7 @@ errno_t list_commands_module(
                     printf("---- MODULE %s COMMANDS ---------\n", modulename);
                 }
 
-                strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen-1);
+                strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
                 printf(COLORCMD "   %-24s" COLORRESET COLORINFO "  %-40s\n" COLORRESET,
                        data.cmd[i].key, cmdinfoshort);
 //                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
@@ -419,25 +419,25 @@ int CLIhelp_make_argstring(
 
         switch(fpscliarg[arg].type)
         {
-        case CLIARG_FLOAT:
-            strcpy(typestring, "float");
-            break;
+            case CLIARG_FLOAT:
+                strcpy(typestring, "float");
+                break;
 
-        case CLIARG_LONG:
-            strcpy(typestring, "long");
-            break;
+            case CLIARG_LONG:
+                strcpy(typestring, "long");
+                break;
 
-        case CLIARG_STR_NOT_IMG:
-            strcpy(typestring, "string");
-            break;
+            case CLIARG_STR_NOT_IMG:
+                strcpy(typestring, "string");
+                break;
 
-        case CLIARG_IMG:
-            strcpy(typestring, "string");
-            break;
+            case CLIARG_IMG:
+                strcpy(typestring, "string");
+                break;
 
-        case CLIARG_STR:
-            strcpy(typestring, "string");
-            break;
+            case CLIARG_STR:
+                strcpy(typestring, "string");
+                break;
         }
 
         if(arg == 0)
@@ -562,24 +562,24 @@ errno_t help_command(
                            data.cmd[cmdi].cmdsettings.triggermode);
                     switch(data.cmd[cmdi].cmdsettings.triggermode)
                     {
-                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                        printf("IMMEDIATE");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_CNT0:
-                        printf("CNT0");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_CNT1:
-                        printf("CNT1");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                        printf("SEMAPHORE");
-                        break;
-                    case PROCESSINFO_TRIGGERMODE_DELAY:
-                        printf("DELAY");
-                        break;
-                    default:
-                        printf("unknown");
-                        break;
+                        case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                            printf("IMMEDIATE");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_CNT0:
+                            printf("CNT0");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_CNT1:
+                            printf("CNT1");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                            printf("SEMAPHORE");
+                            break;
+                        case PROCESSINFO_TRIGGERMODE_DELAY:
+                            printf("DELAY");
+                            break;
+                        default:
+                            printf("unknown");
+                            break;
                     }
                     printf("\n");
 
@@ -637,51 +637,62 @@ errno_t help_command(
 
                 char valuestring[STRINGMAXLEN_CLICMDARG] = "???";
 
-                switch( data.cmd[cmdi].argdata[argi].type )
+                switch(data.cmd[cmdi].argdata[argi].type)
                 {
-                case CLIARG_FLOAT:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]  %f", data.cmd[cmdi].argdata[argi].val.f);
-                    break;
+                    case CLIARG_FLOAT:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]  %f",
+                                       data.cmd[cmdi].argdata[argi].val.f);
+                        break;
 
-                case CLIARG_FLOAT32:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float32]  %f", data.cmd[cmdi].argdata[argi].val.f);
-                    break;
+                    case CLIARG_FLOAT32:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float32]  %f",
+                                       data.cmd[cmdi].argdata[argi].val.f);
+                        break;
 
-                case CLIARG_FLOAT64:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float64]  %lf", data.cmd[cmdi].argdata[argi].val.f);
-                    break;
+                    case CLIARG_FLOAT64:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[float64]  %lf",
+                                       data.cmd[cmdi].argdata[argi].val.f);
+                        break;
 
-                case CLIARG_LONG:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                    break;
+                    case CLIARG_LONG:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld",
+                                       data.cmd[cmdi].argdata[argi].val.l);
+                        break;
 
-                case CLIARG_INT32:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int32 ]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                    break;
+                    case CLIARG_INT32:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int32 ]  %ld",
+                                       data.cmd[cmdi].argdata[argi].val.l);
+                        break;
 
-                case CLIARG_UINT32:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint32 ]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                    break;
+                    case CLIARG_UINT32:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint32 ]  %ld",
+                                       data.cmd[cmdi].argdata[argi].val.l);
+                        break;
 
-                case CLIARG_INT64:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int64 ]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                    break;
+                    case CLIARG_INT64:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int64 ]  %ld",
+                                       data.cmd[cmdi].argdata[argi].val.l);
+                        break;
 
-                case CLIARG_UINT64:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint64 ]  %ld", data.cmd[cmdi].argdata[argi].val.l);
-                    break;
+                    case CLIARG_UINT64:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint64 ]  %ld",
+                                       data.cmd[cmdi].argdata[argi].val.l);
+                        break;
 
-                case CLIARG_STR_NOT_IMG:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ STRnI ]  %s", data.cmd[cmdi].argdata[argi].val.s);
-                    break;
+                    case CLIARG_STR_NOT_IMG:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ STRnI ]  %s",
+                                       data.cmd[cmdi].argdata[argi].val.s);
+                        break;
 
-                case CLIARG_IMG:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[  IMG  ]  %s", data.cmd[cmdi].argdata[argi].val.s);
-                    break;
+                    case CLIARG_IMG:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[  IMG  ]  %s",
+                                       data.cmd[cmdi].argdata[argi].val.s);
+                        break;
 
-                case CLIARG_STR:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[  STR  ]  %s", data.cmd[cmdi].argdata[argi].val.s);
-                    break;
+                    case CLIARG_STR:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[  STR  ]  %s",
+                                       data.cmd[cmdi].argdata[argi].val.s);
+                        break;
                 }
 
 

@@ -66,12 +66,12 @@ errno_t function_parameter_SetValue_int64(
 
     // break full keyword into keywords
     strncpy(tmpstring, keywordfull,
-            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL -1);
+            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL - 1);
     keywordlevel = 0;
     pch = strtok(tmpstring, ".");
     while(pch != NULL)
     {
-        strncpy(keyword[keywordlevel], pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN-1);
+        strncpy(keyword[keywordlevel], pch, FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
         keywordlevel++;
         pch = strtok(NULL, ".");
     }
@@ -388,7 +388,7 @@ int functionparameter_SetParamValue_STRING(
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
 
     strncpy(fps->parray[fpsi].val.string[0], stringvalue,
-            FUNCTION_PARAMETER_STRMAXLEN-1);
+            FUNCTION_PARAMETER_STRMAXLEN - 1);
     fps->parray[fpsi].cnt0++;
 
     return EXIT_SUCCESS;
