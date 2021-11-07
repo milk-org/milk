@@ -13,12 +13,26 @@
 
 
 // testing argument type for command line interface
-#define CLIARG_MISSING          0
-#define CLIARG_FLOAT            1  // floating point number
-#define CLIARG_LONG             2  // integer (int or long)
-#define CLIARG_STR_NOT_IMG      3  // string, not existing image
-#define CLIARG_IMG              4  // existing image
-#define CLIARG_STR              5  // string
+// CLI ARGS consist of two 16-bit fields
+// lower 16-bit is format input type in CLI
+// higher 16-bit can be more specific and used for conversion
+
+#define CLIARG_MISSING          0x00000000
+#define CLIARG_FLOAT            0x00000001  // floating point number, defaults to float64
+#define CLIARG_LONG             0x00000002  // integer, default to int64
+#define CLIARG_STR_NOT_IMG      0x00000003  // string, not existing image
+#define CLIARG_IMG              0x00000004  // existing image
+#define CLIARG_STR              0x00000005  // string
+
+#define CLIARG_FLOAT32          0x00010001
+#define CLIARG_FLOAT64          0x00020001 // same as FLOAT
+
+#define CLIARG_INT32            0x00010002
+#define CLIARG_UINT32           0x00110002
+#define CLIARG_INT64            0x00020002 // same as LONG
+#define CLIARG_UINT64           0x00120002
+
+
 
 
 #define STRINGMAXLEN_FPSCLIARG_TAG       100
@@ -132,9 +146,9 @@ typedef struct
 
 //int CLI_checkarg0(int argnum, int argtype, int errmsg);
 
-int CLI_checkarg(int argnum, int argtype);
+int CLI_checkarg(int argnum, uint32_t argtype);
 
-int CLI_checkarg_noerrmsg(int argnum, int argtype);
+int CLI_checkarg_noerrmsg(int argnum, uint32_t argtype);
 
 errno_t CLI_checkarg_array(
     CLICMDARGDEF fpscliarg[],

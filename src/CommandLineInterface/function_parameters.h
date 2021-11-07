@@ -323,7 +323,10 @@ typedef struct
     union
     {
         // value, min (inclusive), max (inclusive), current state (if different from request)
+        int32_t  i32[4];
+        uint32_t ui32[4];
         int64_t  i64[4];
+        uint64_t ui64[4];
 
         // value, min, max, current state (if different from request)
         double f64[4];

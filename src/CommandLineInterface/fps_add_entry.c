@@ -130,11 +130,32 @@ errno_t function_parameter_add_entry(
         // Default values
         switch(funcparamarray[pindex].type)
         {
+        case FPTYPE_INT32 :
+            funcparamarray[pindex].val.i32[0] = 0;
+            funcparamarray[pindex].val.i32[1] = 0;
+            funcparamarray[pindex].val.i32[2] = 0;
+            funcparamarray[pindex].val.i32[3] = 0;
+            break;
+
+        case FPTYPE_UINT32 :
+            funcparamarray[pindex].val.ui32[0] = 0;
+            funcparamarray[pindex].val.ui32[1] = 0;
+            funcparamarray[pindex].val.ui32[2] = 0;
+            funcparamarray[pindex].val.ui32[3] = 0;
+            break;
+
         case FPTYPE_INT64 :
             funcparamarray[pindex].val.i64[0] = 0;
             funcparamarray[pindex].val.i64[1] = 0;
             funcparamarray[pindex].val.i64[2] = 0;
             funcparamarray[pindex].val.i64[3] = 0;
+            break;
+
+        case FPTYPE_UINT64 :
+            funcparamarray[pindex].val.ui64[0] = 0;
+            funcparamarray[pindex].val.ui64[1] = 0;
+            funcparamarray[pindex].val.ui64[2] = 0;
+            funcparamarray[pindex].val.ui64[3] = 0;
             break;
 
         case FPTYPE_FLOAT64 :
@@ -157,115 +178,51 @@ errno_t function_parameter_add_entry(
             break;
 
         case FPTYPE_TIMESPEC :
-            funcparamarray[pindex].val.ts[0].tv_sec = 0;
+            funcparamarray[pindex].val.ts[0].tv_sec  = 0;
             funcparamarray[pindex].val.ts[0].tv_nsec = 0;
-            funcparamarray[pindex].val.ts[1].tv_sec = 0;
+            funcparamarray[pindex].val.ts[1].tv_sec  = 0;
             funcparamarray[pindex].val.ts[1].tv_nsec = 0;
             break;
 
         case FPTYPE_FILENAME :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_FITSFILENAME :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_EXECFILENAME :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_DIRNAME :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_STREAMNAME :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_STRING :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
 
         case FPTYPE_ONOFF :
             funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF; // initialize state to OFF
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "OFF state") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        " ON state") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "OFF state");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, " ON state");
             break;
 
         case FPTYPE_FPSNAME :
-            if(snprintf(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            if(snprintf(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN,
-                        "NULL") < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1], FUNCTION_PARAMETER_STRMAXLEN, "NULL");
             break;
         }
 
@@ -273,13 +230,34 @@ errno_t function_parameter_add_entry(
 
         if(valueptr != NULL)  // allocate value requested by function call
         {
-            int64_t *valueptr_INT64;
-            double  *valueptr_FLOAT64;
-            float   *valueptr_FLOAT32;
+            int32_t  *valueptr_INT32;
+            uint32_t *valueptr_UINT32;
+            int64_t  *valueptr_INT64;
+            uint64_t *valueptr_UINT64;
+            double   *valueptr_FLOAT64;
+            float    *valueptr_FLOAT32;
             struct timespec *valueptr_ts;
 
             switch(funcparamarray[pindex].type)
             {
+
+            case FPTYPE_INT32 :
+                valueptr_INT32 = (int32_t *) valueptr;
+                funcparamarray[pindex].val.i32[0] = valueptr_INT32[0];
+                funcparamarray[pindex].val.i32[1] = valueptr_INT32[1];
+                funcparamarray[pindex].val.i32[2] = valueptr_INT32[2];
+                funcparamarray[pindex].val.i32[3] = valueptr_INT32[3];
+                funcparamarray[pindex].cnt0++;
+                break;
+
+            case FPTYPE_UINT32 :
+                valueptr_UINT32 = (uint32_t *) valueptr;
+                funcparamarray[pindex].val.ui32[0] = valueptr_UINT32[0];
+                funcparamarray[pindex].val.ui32[1] = valueptr_UINT32[1];
+                funcparamarray[pindex].val.ui32[2] = valueptr_UINT32[2];
+                funcparamarray[pindex].val.ui32[3] = valueptr_UINT32[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
             case FPTYPE_INT64 :
                 valueptr_INT64 = (int64_t *) valueptr;
@@ -287,6 +265,15 @@ errno_t function_parameter_add_entry(
                 funcparamarray[pindex].val.i64[1] = valueptr_INT64[1];
                 funcparamarray[pindex].val.i64[2] = valueptr_INT64[2];
                 funcparamarray[pindex].val.i64[3] = valueptr_INT64[3];
+                funcparamarray[pindex].cnt0++;
+                break;
+
+            case FPTYPE_UINT64 :
+                valueptr_UINT64 = (uint64_t *) valueptr;
+                funcparamarray[pindex].val.ui64[0] = valueptr_UINT64[0];
+                funcparamarray[pindex].val.ui64[1] = valueptr_UINT64[1];
+                funcparamarray[pindex].val.ui64[2] = valueptr_UINT64[2];
+                funcparamarray[pindex].val.ui64[3] = valueptr_UINT64[3];
                 funcparamarray[pindex].cnt0++;
                 break;
 
