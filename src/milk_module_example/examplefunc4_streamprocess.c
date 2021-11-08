@@ -64,7 +64,7 @@ static errno_t customCONFsetup()
     // increment counter at every configuration check
     *cntindex = *cntindex + 1;
 
-    if( *cntindex >= *cntindexmax)
+    if(*cntindex >= *cntindexmax)
     {
         *cntindex = 0;
     }
@@ -89,7 +89,7 @@ static errno_t customCONFcheck()
     // increment counter at every configuration check
     *cntindex = *cntindex + 1;
 
-    if( *cntindex >= *cntindexmax)
+    if(*cntindex >= *cntindexmax)
     {
         *cntindex = 0;
     }
