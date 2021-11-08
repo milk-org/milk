@@ -88,6 +88,66 @@ int functionparameter_UserInputSetParamValue(
             switch(fpsentry->parray[pindex].type)
             {
 
+            case FPTYPE_INT32:
+                errno = 0;    /* To distinguish success/failure after call */
+                lval = strtol(buff, &endptr, 10);
+
+                /* Check for various possible errors */
+                if((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
+                        || (errno != 0 && lval == 0))
+                {
+                    perror("strtol");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(endptr == buff)
+                {
+                    fprintf(stderr, "\nERROR: No digits were found\n");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(vOK == 1)
+                {
+                    fpsentry->parray[pindex].val.i32[0] = lval;
+                }
+                break;
+
+            case FPTYPE_UINT32:
+                errno = 0;    /* To distinguish success/failure after call */
+                lval = strtol(buff, &endptr, 10);
+
+                /* Check for various possible errors */
+                if((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
+                        || (errno != 0 && lval == 0))
+                {
+                    perror("strtol");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(endptr == buff)
+                {
+                    fprintf(stderr, "\nERROR: No digits were found\n");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(lval < 0)
+                {
+                    fprintf(stderr, "\nERROR: must be positive\n");
+                    vOK = 0;
+                }
+
+                if(vOK == 1)
+                {
+                    fpsentry->parray[pindex].val.ui32[0] = lval;
+                }
+                break;
+
+
+
             case FPTYPE_INT64:
                 errno = 0;    /* To distinguish success/failure after call */
                 lval = strtol(buff, &endptr, 10);
@@ -113,6 +173,41 @@ int functionparameter_UserInputSetParamValue(
                     fpsentry->parray[pindex].val.i64[0] = lval;
                 }
                 break;
+
+            case FPTYPE_UINT64:
+                errno = 0;    /* To distinguish success/failure after call */
+                lval = strtol(buff, &endptr, 10);
+
+                /* Check for various possible errors */
+                if((errno == ERANGE && (lval == LONG_MAX || lval == LONG_MIN))
+                        || (errno != 0 && lval == 0))
+                {
+                    perror("strtol");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(endptr == buff)
+                {
+                    fprintf(stderr, "\nERROR: No digits were found\n");
+                    vOK = 0;
+                    sleep(1);
+                }
+
+                if(lval < 0)
+                {
+                    fprintf(stderr, "\nERROR: must be positive\n");
+                    vOK = 0;
+                }
+
+                if(vOK == 1)
+                {
+                    fpsentry->parray[pindex].val.ui64[0] = lval;
+                }
+                break;
+
+
+
 
             case FPTYPE_FLOAT64:
                 errno = 0;    /* To distinguish success/failure after call */

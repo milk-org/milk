@@ -23,8 +23,8 @@ typedef const char *__restrict CONST_WORD;
 #define CLIARG_VISIBLE_DEFAULT CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
 #define CLIARG_HIDDEN_DEFAULT CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
 
-#define CLICMD_FIELDS_DEFAULTS __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS, NULL
-#define CLICMD_FIELDS_NOFPS __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL
+#define CLICMD_FIELDS_DEFAULTS __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS, NULL, NULL, NULL
+#define CLICMD_FIELDS_NOFPS __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL, NULL, NULL
 
 // return codes for function CLI_checkarg_array
 #define RETURN_CLICHECKARGARRAY_SUCCESS 0
@@ -180,8 +180,13 @@ typedef struct
         data.fpsptr = &fps;                                                                     \
         CMDargs_to_FPSparams_create(&fps);                                                      \
         STD_FARG_LINKfunction                                                                   \
+        if (CLIcmddata.FPS_customCONFsetup != NULL) {                                           \
+            CLIcmddata.FPS_customCONFsetup();                                                   \
+        }                                                                                       \
             FPS_CONFLOOP_START                                                                  \
                 data.fpsptr = NULL;                                                             \
+                if (CLIcmddata.FPS_customCONFcheck != NULL)                                     \
+                    CLIcmddata.FPS_customCONFcheck();                                           \
         FPS_CONFLOOP_END                                                                        \
         return RETURN_SUCCESS;                                                                  \
     }

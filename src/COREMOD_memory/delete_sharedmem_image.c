@@ -37,9 +37,7 @@ static CLICMDDATA CLIcmddata =
 {
     "rmshmim",
     "remove shared image and files",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 

@@ -53,9 +53,7 @@ static CLICMDDATA CLIcmddata =
 {
     "rm",
     "remove image",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 
