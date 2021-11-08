@@ -1694,14 +1694,14 @@ errno_t functionparameter_CTRLscreen(
                                         screenprint_setcolor(2);
                                         TUI_printfw("  ON ");
                                         screenprint_unsetcolor(2);
-                                        TUI_printfw(" [%15s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                        //TUI_printfw(" [ON  :%3s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
                                     }
                                     else
                                     {
                                         screenprint_setcolor(1);
                                         TUI_printfw(" OFF ");
                                         screenprint_unsetcolor(1);
-                                        TUI_printfw(" [%15s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+                                        //TUI_printfw(" [OFF :%3s]", data.fpsarray[fpsindex].parray[pindex].val.string[1]);
                                     }
                                 }
 
