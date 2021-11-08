@@ -128,8 +128,10 @@ typedef struct
     // pointer to CMD struct initialized by CLI function registration
     CMDSETTINGS *cmdsettings;
 
-    errno_t (*FPS_customCONFsetup)();    // pointer to optional custom FPS conf setup function
-    errno_t (*FPS_customCONFcheck)();    // pointer to optional custom FPS conf check function
+    errno_t (*FPS_customCONFsetup)
+    ();    // pointer to optional custom FPS conf setup function
+    errno_t (*FPS_customCONFcheck)
+    ();    // pointer to optional custom FPS conf check function
 
 } CLICMDDATA;
 
