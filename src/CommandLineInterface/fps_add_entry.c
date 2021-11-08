@@ -132,116 +132,113 @@ errno_t function_parameter_add_entry(
         // Default values
         switch(funcparamarray[pindex].type)
         {
-            case FPTYPE_INT32 :
-                funcparamarray[pindex].val.i32[0] = 0;
-                funcparamarray[pindex].val.i32[1] = 0;
-                funcparamarray[pindex].val.i32[2] = 0;
-                funcparamarray[pindex].val.i32[3] = 0;
-                break;
+        case FPTYPE_INT32 :
+            funcparamarray[pindex].val.i32[0] = 0;
+            funcparamarray[pindex].val.i32[1] = 0;
+            funcparamarray[pindex].val.i32[2] = 0;
+            funcparamarray[pindex].val.i32[3] = 0;
+            break;
 
-            case FPTYPE_UINT32 :
-                funcparamarray[pindex].val.ui32[0] = 0;
-                funcparamarray[pindex].val.ui32[1] = 0;
-                funcparamarray[pindex].val.ui32[2] = 0;
-                funcparamarray[pindex].val.ui32[3] = 0;
-                break;
+        case FPTYPE_UINT32 :
+            funcparamarray[pindex].val.ui32[0] = 0;
+            funcparamarray[pindex].val.ui32[1] = 0;
+            funcparamarray[pindex].val.ui32[2] = 0;
+            funcparamarray[pindex].val.ui32[3] = 0;
+            break;
 
-            case FPTYPE_INT64 :
-                funcparamarray[pindex].val.i64[0] = 0;
-                funcparamarray[pindex].val.i64[1] = 0;
-                funcparamarray[pindex].val.i64[2] = 0;
-                funcparamarray[pindex].val.i64[3] = 0;
-                break;
+        case FPTYPE_INT64 :
+            funcparamarray[pindex].val.i64[0] = 0;
+            funcparamarray[pindex].val.i64[1] = 0;
+            funcparamarray[pindex].val.i64[2] = 0;
+            funcparamarray[pindex].val.i64[3] = 0;
+            break;
 
-            case FPTYPE_UINT64 :
-                funcparamarray[pindex].val.ui64[0] = 0;
-                funcparamarray[pindex].val.ui64[1] = 0;
-                funcparamarray[pindex].val.ui64[2] = 0;
-                funcparamarray[pindex].val.ui64[3] = 0;
-                break;
+        case FPTYPE_UINT64 :
+            funcparamarray[pindex].val.ui64[0] = 0;
+            funcparamarray[pindex].val.ui64[1] = 0;
+            funcparamarray[pindex].val.ui64[2] = 0;
+            funcparamarray[pindex].val.ui64[3] = 0;
+            break;
 
-            case FPTYPE_FLOAT64 :
-                funcparamarray[pindex].val.f64[0] = 0.0;
-                funcparamarray[pindex].val.f64[1] = 0.0;
-                funcparamarray[pindex].val.f64[2] = 0.0;
-                funcparamarray[pindex].val.f64[3] = 0.0;
-                break;
+        case FPTYPE_FLOAT64 :
+            funcparamarray[pindex].val.f64[0] = 0.0;
+            funcparamarray[pindex].val.f64[1] = 0.0;
+            funcparamarray[pindex].val.f64[2] = 0.0;
+            funcparamarray[pindex].val.f64[3] = 0.0;
+            break;
 
-            case FPTYPE_FLOAT32 :
-                funcparamarray[pindex].val.f32[0] = 0.0;
-                funcparamarray[pindex].val.f32[1] = 0.0;
-                funcparamarray[pindex].val.f32[2] = 0.0;
-                funcparamarray[pindex].val.f32[3] = 0.0;
-                break;
+        case FPTYPE_FLOAT32 :
+            funcparamarray[pindex].val.f32[0] = 0.0;
+            funcparamarray[pindex].val.f32[1] = 0.0;
+            funcparamarray[pindex].val.f32[2] = 0.0;
+            funcparamarray[pindex].val.f32[3] = 0.0;
+            break;
 
-            case FPTYPE_PID :
-                funcparamarray[pindex].val.pid[0] = 0;
-                funcparamarray[pindex].val.pid[1] = 0;
-                break;
+        case FPTYPE_PID :
+            funcparamarray[pindex].val.pid[0] = 0;
+            funcparamarray[pindex].val.pid[1] = 0;
+            break;
 
-            case FPTYPE_TIMESPEC :
-                funcparamarray[pindex].val.ts[0].tv_sec  = 0;
-                funcparamarray[pindex].val.ts[0].tv_nsec = 0;
-                funcparamarray[pindex].val.ts[1].tv_sec  = 0;
-                funcparamarray[pindex].val.ts[1].tv_nsec = 0;
-                break;
+        case FPTYPE_TIMESPEC :
+            funcparamarray[pindex].val.ts[0].tv_sec  = 0;
+            funcparamarray[pindex].val.ts[0].tv_nsec = 0;
+            funcparamarray[pindex].val.ts[1].tv_sec  = 0;
+            funcparamarray[pindex].val.ts[1].tv_nsec = 0;
+            break;
 
-            case FPTYPE_FILENAME :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_FILENAME :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
 
-            case FPTYPE_FITSFILENAME :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_FITSFILENAME :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
 
-            case FPTYPE_EXECFILENAME :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_EXECFILENAME :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
 
-            case FPTYPE_DIRNAME :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_DIRNAME :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
 
-            case FPTYPE_STREAMNAME :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_STREAMNAME :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
 
-            case FPTYPE_STRING :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_STRING :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
 
-            case FPTYPE_ONOFF :
-                funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF; // initialize state to OFF
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "OFF state");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, " ON state");
-                break;
+        case FPTYPE_ONOFF :
+            funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF; // initialize state to OFF
+            funcparamarray[pindex].val.ui64[0] = 0;
+            break;
 
-            case FPTYPE_FPSNAME :
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
-                break;
+        case FPTYPE_FPSNAME :
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
+                           FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+            break;
         }
 
 
@@ -259,116 +256,118 @@ errno_t function_parameter_add_entry(
             switch(funcparamarray[pindex].type)
             {
 
-                case FPTYPE_INT32 :
-                    valueptr_INT32 = (int32_t *) valueptr;
-                    funcparamarray[pindex].val.i32[0] = valueptr_INT32[0];
-                    funcparamarray[pindex].val.i32[1] = valueptr_INT32[1];
-                    funcparamarray[pindex].val.i32[2] = valueptr_INT32[2];
-                    funcparamarray[pindex].val.i32[3] = valueptr_INT32[3];
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_INT32 :
+                valueptr_INT32 = (int32_t *) valueptr;
+                funcparamarray[pindex].val.i32[0] = valueptr_INT32[0];
+                funcparamarray[pindex].val.i32[1] = valueptr_INT32[1];
+                funcparamarray[pindex].val.i32[2] = valueptr_INT32[2];
+                funcparamarray[pindex].val.i32[3] = valueptr_INT32[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_UINT32 :
-                    valueptr_UINT32 = (uint32_t *) valueptr;
-                    funcparamarray[pindex].val.ui32[0] = valueptr_UINT32[0];
-                    funcparamarray[pindex].val.ui32[1] = valueptr_UINT32[1];
-                    funcparamarray[pindex].val.ui32[2] = valueptr_UINT32[2];
-                    funcparamarray[pindex].val.ui32[3] = valueptr_UINT32[3];
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_UINT32 :
+                valueptr_UINT32 = (uint32_t *) valueptr;
+                funcparamarray[pindex].val.ui32[0] = valueptr_UINT32[0];
+                funcparamarray[pindex].val.ui32[1] = valueptr_UINT32[1];
+                funcparamarray[pindex].val.ui32[2] = valueptr_UINT32[2];
+                funcparamarray[pindex].val.ui32[3] = valueptr_UINT32[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_INT64 :
-                    valueptr_INT64 = (int64_t *) valueptr;
-                    funcparamarray[pindex].val.i64[0] = valueptr_INT64[0];
-                    funcparamarray[pindex].val.i64[1] = valueptr_INT64[1];
-                    funcparamarray[pindex].val.i64[2] = valueptr_INT64[2];
-                    funcparamarray[pindex].val.i64[3] = valueptr_INT64[3];
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_INT64 :
+                valueptr_INT64 = (int64_t *) valueptr;
+                funcparamarray[pindex].val.i64[0] = valueptr_INT64[0];
+                funcparamarray[pindex].val.i64[1] = valueptr_INT64[1];
+                funcparamarray[pindex].val.i64[2] = valueptr_INT64[2];
+                funcparamarray[pindex].val.i64[3] = valueptr_INT64[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_UINT64 :
-                    valueptr_UINT64 = (uint64_t *) valueptr;
-                    funcparamarray[pindex].val.ui64[0] = valueptr_UINT64[0];
-                    funcparamarray[pindex].val.ui64[1] = valueptr_UINT64[1];
-                    funcparamarray[pindex].val.ui64[2] = valueptr_UINT64[2];
-                    funcparamarray[pindex].val.ui64[3] = valueptr_UINT64[3];
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_UINT64 :
+                valueptr_UINT64 = (uint64_t *) valueptr;
+                funcparamarray[pindex].val.ui64[0] = valueptr_UINT64[0];
+                funcparamarray[pindex].val.ui64[1] = valueptr_UINT64[1];
+                funcparamarray[pindex].val.ui64[2] = valueptr_UINT64[2];
+                funcparamarray[pindex].val.ui64[3] = valueptr_UINT64[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_FLOAT64 :
-                    valueptr_FLOAT64 = (double *) valueptr;
-                    funcparamarray[pindex].val.f64[0] = valueptr_FLOAT64[0];
-                    funcparamarray[pindex].val.f64[1] = valueptr_FLOAT64[1];
-                    funcparamarray[pindex].val.f64[2] = valueptr_FLOAT64[2];
-                    funcparamarray[pindex].val.f64[3] = valueptr_FLOAT64[3];
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_FLOAT64 :
+                valueptr_FLOAT64 = (double *) valueptr;
+                funcparamarray[pindex].val.f64[0] = valueptr_FLOAT64[0];
+                funcparamarray[pindex].val.f64[1] = valueptr_FLOAT64[1];
+                funcparamarray[pindex].val.f64[2] = valueptr_FLOAT64[2];
+                funcparamarray[pindex].val.f64[3] = valueptr_FLOAT64[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_FLOAT32 :
-                    valueptr_FLOAT32 = (float *) valueptr;
-                    funcparamarray[pindex].val.f32[0] = valueptr_FLOAT32[0];
-                    funcparamarray[pindex].val.f32[1] = valueptr_FLOAT32[1];
-                    funcparamarray[pindex].val.f32[2] = valueptr_FLOAT32[2];
-                    funcparamarray[pindex].val.f32[3] = valueptr_FLOAT32[3];
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_FLOAT32 :
+                valueptr_FLOAT32 = (float *) valueptr;
+                funcparamarray[pindex].val.f32[0] = valueptr_FLOAT32[0];
+                funcparamarray[pindex].val.f32[1] = valueptr_FLOAT32[1];
+                funcparamarray[pindex].val.f32[2] = valueptr_FLOAT32[2];
+                funcparamarray[pindex].val.f32[3] = valueptr_FLOAT32[3];
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_PID :
-                    valueptr_INT64 = (int64_t *) valueptr;
-                    funcparamarray[pindex].val.pid[0] = (pid_t)(*valueptr_INT64);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_PID :
+                valueptr_INT64 = (int64_t *) valueptr;
+                funcparamarray[pindex].val.pid[0] = (pid_t)(*valueptr_INT64);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_TIMESPEC:
-                    valueptr_ts = (struct timespec *) valueptr;
-                    funcparamarray[pindex].val.ts[0] = *valueptr_ts;
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_TIMESPEC:
+                valueptr_ts = (struct timespec *) valueptr;
+                funcparamarray[pindex].val.ts[0] = *valueptr_ts;
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_FILENAME :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_FILENAME :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_FITSFILENAME :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_FITSFILENAME :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_EXECFILENAME :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_EXECFILENAME :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_DIRNAME :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_DIRNAME :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_STREAMNAME :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_STREAMNAME :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_STRING :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_STRING :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_ONOFF : // already allocated through the status flag
-                    break;
+            case FPTYPE_ONOFF :
+                funcparamarray[pindex].val.ui64[0] = 0;
+                funcparamarray[pindex].cnt0++;
+                break;
 
-                case FPTYPE_FPSNAME :
-                    strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
-                            FUNCTION_PARAMETER_STRMAXLEN - 1);
-                    funcparamarray[pindex].cnt0++;
-                    break;
+            case FPTYPE_FPSNAME :
+                strncpy(funcparamarray[pindex].val.string[0], (char *) valueptr,
+                        FUNCTION_PARAMETER_STRMAXLEN - 1);
+                funcparamarray[pindex].cnt0++;
+                break;
             }
 
             // RVAL = 2;  // default value entered
@@ -377,255 +376,6 @@ errno_t function_parameter_add_entry(
     }
 
 
-
-
-
-    /*
-
-    	// READING PARAMETER FROM DISK
-
-
-        // attempt to read value for filesystem
-        char fname[200];
-        FILE *fp;
-        long tmpl;
-
-        int RVAL = 0;
-        // 0: parameter initialized to default value
-        // 1: initialized using file value (read from disk)
-        // 2: initialized to function argument value
-
-
-        int index;
-        // index = 0  : setval
-        // index = 1  : minval
-        // index = 2  : maxval
-
-
-        for(index = 0; index < 3; index++)
-        {
-            switch(index)
-            {
-                case 0 :
-                    functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "setval");
-                    break;
-
-                case 1 :
-                    functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "minval");
-                    break;
-
-                case 2 :
-                    functionparameter_GetFileName(fps, &funcparamarray[pindex], fname, "maxval");
-                    break;
-
-            }
-
-
-            if((fp = fopen(fname, "r")) != NULL)
-            {
-                switch(funcparamarray[pindex].type)
-                {
-
-                    case FPTYPE_INT64 :
-                        if(fscanf(fp, "%ld", &funcparamarray[pindex].val.l[index]) == 1)
-                            if(index ==
-                                    0)     // return value is set by setval, cnt0 tracks updates to setval, not to minval or maxval
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        break;
-
-                    case FPTYPE_FLOAT64 :
-                        if(fscanf(fp, "%lf", &funcparamarray[pindex].val.f[index]) == 1)
-                            if(index == 0)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        break;
-
-                    case FPTYPE_FLOAT32 :
-                        if(fscanf(fp, "%f", &funcparamarray[pindex].val.s[index]) == 1)
-                            if(index == 0)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        break;
-
-                    case FPTYPE_PID :
-                        if(index == 0) // PID does not have min / max
-                        {
-                            if(fscanf(fp, "%d", &funcparamarray[pindex].val.pid[index]) == 1)
-                            {
-                                RVAL = 1;
-                            }
-                            funcparamarray[pindex].cnt0++;
-                        }
-                        break;
-
-                    case FPTYPE_TIMESPEC :
-                        if(fscanf(fp, "%ld %ld", &funcparamarray[pindex].val.ts[index].tv_sec,
-                                  &funcparamarray[pindex].val.ts[index].tv_nsec) == 2)
-                            if(index == 0)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        break;
-
-                    case FPTYPE_FILENAME :
-                        if(index == 0)    // FILENAME does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-                    case FPTYPE_FITSFILENAME :
-                        if(index == 0)    // FITSFILENAME does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-                    case FPTYPE_EXECFILENAME :
-                        if(index == 0)    // EXECFILENAME does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-
-                    case FPTYPE_DIRNAME :
-                        if(index == 0)    // DIRNAME does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-                    case FPTYPE_STREAMNAME :
-                        if(index == 0)    // STREAMNAME does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-                    case FPTYPE_STRING :
-                        if(index == 0)    // STRING does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-                    case FPTYPE_ONOFF :
-                        if(index == 0)
-                        {
-                            if(fscanf(fp, "%ld", &tmpl) == 1)
-                            {
-                                if(tmpl == 1)
-                                {
-                                    funcparamarray[pindex].fpflag |= FPFLAG_ONOFF;
-                                }
-                                else
-                                {
-                                    funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF;
-                                }
-
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-
-                    case FPTYPE_FPSNAME :
-                        if(index == 0)    // FPSNAME does not have min / max
-                        {
-                            if(fscanf(fp, "%s", funcparamarray[pindex].val.string[0]) == 1)
-                            {
-                                RVAL = 1;
-                                funcparamarray[pindex].cnt0++;
-                            }
-                        }
-                        break;
-
-                }
-                fclose(fp);
-
-
-            }
-
-        }
-
-
-
-
-    	// WRITING PARAMETER TO DISK
-    	//
-
-        if(RVAL == 0)
-        {
-            functionparameter_WriteParameterToDisk(fps, pindex, "setval",
-                                                   "AddEntry created");
-            if(funcparamarray[pindex].fpflag |= FPFLAG_MINLIMIT)
-            {
-                functionparameter_WriteParameterToDisk(fps, pindex, "minval",
-                                                       "AddEntry created");
-            }
-            if(funcparamarray[pindex].fpflag |= FPFLAG_MAXLIMIT)
-            {
-                functionparameter_WriteParameterToDisk(fps, pindex, "maxval",
-                                                       "AddEntry created");
-            }
-        }
-
-        if(RVAL == 2)
-        {
-            functionparameter_WriteParameterToDisk(fps, pindex, "setval",
-                                                   "AddEntry argument");
-            if(funcparamarray[pindex].fpflag |= FPFLAG_MINLIMIT)
-            {
-                functionparameter_WriteParameterToDisk(fps, pindex, "minval",
-                                                       "AddEntry argument");
-            }
-            if(funcparamarray[pindex].fpflag |= FPFLAG_MAXLIMIT)
-            {
-                functionparameter_WriteParameterToDisk(fps, pindex, "maxval",
-                                                       "AddEntry argument");
-            }
-        }
-
-        if(RVAL != 0)
-        {
-            functionparameter_WriteParameterToDisk(fps, pindex, "fpsname", "AddEntry");
-            functionparameter_WriteParameterToDisk(fps, pindex, "fpsdir", "AddEntry");
-            functionparameter_WriteParameterToDisk(fps, pindex, "status", "AddEntry");
-        }
-    */
 
     if(pindexptr != NULL)
     {

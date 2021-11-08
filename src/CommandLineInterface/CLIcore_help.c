@@ -654,6 +654,11 @@ errno_t help_command(
                                        data.cmd[cmdi].argdata[argi].val.f);
                         break;
 
+                    case CLIARG_ONOFF:
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ ONOFF ]  %ld",
+                                       data.cmd[cmdi].argdata[argi].val.l);
+                        break;
+
                     case CLIARG_LONG:
                         SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld",
                                        data.cmd[cmdi].argdata[argi].val.l);

@@ -27,6 +27,8 @@
 #define CLIARG_FLOAT32          0x00010001
 #define CLIARG_FLOAT64          0x00020001 // same as FLOAT
 
+// integer types
+#define CLIARG_ONOFF            0x00030002
 #define CLIARG_INT32            0x00010002
 #define CLIARG_UINT32           0x00110002
 #define CLIARG_INT64            0x00020002 // same as LONG
