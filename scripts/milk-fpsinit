@@ -321,7 +321,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
       if [ ${TESTMODE} == 0 ]; then
 
         # initialize FPS
-        cmdstring="${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""
+        cmdstring="MILK_FPSPROCINFO=1 ${EXECNAME}-exec -n ${FPSNAMEARRAY[$i]} \"${MODULELOADSTRING[$i]}${CLINAMEARRAY[$i]} _FPSINIT_ ${ARGSTRINGARRAY[$i]}\""
 		printf "    command: %s\n" "${cmdstring}"
         if [ ${LOGMODE} == 1 ]; then
           eval "${cmdstring} &> ${pname}.${FPSNAMEARRAY[$i]}.log"
