@@ -1311,130 +1311,135 @@ errno_t functionparameter_CTRLscreen(
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_INT64)
-                                {
-                                    if(data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                            FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                            if(data.fpsarray[fpsindex].parray[pindex].val.i64[0] !=
-                                                    data.fpsarray[fpsindex].parray[pindex].val.i64[3])
-                                            {
-                                                paramsync = 0;
-                                            }
 
-                                    if(paramsync == 0)
+                                // integer types
+                                {
+                                    long val0 = 0;
+                                    long val3 = 0;
+                                    int intflag = 0; // toggles to 1 if int type
+                                    switch(data.fpsarray[fpsindex].parray[pindex].type)
                                     {
-                                        if(isVISIBLE == 1)
-                                        {
-                                            screenprint_setcolor(3);
-                                        }
+                                    case FPTYPE_INT32:
+                                        val0 = data.fpsarray[fpsindex].parray[pindex].val.i32[0];
+                                        val3 = data.fpsarray[fpsindex].parray[pindex].val.i32[3];
+                                        intflag = 1;
+                                        break;
+                                    case FPTYPE_UINT32:
+                                        val0 = data.fpsarray[fpsindex].parray[pindex].val.ui32[0];
+                                        val3 = data.fpsarray[fpsindex].parray[pindex].val.ui32[3];
+                                        intflag = 1;
+                                        break;
+                                    case FPTYPE_INT64:
+                                        val0 = data.fpsarray[fpsindex].parray[pindex].val.i64[0];
+                                        val3 = data.fpsarray[fpsindex].parray[pindex].val.i64[3];
+                                        intflag = 1;
+                                        break;
+                                    case FPTYPE_UINT64:
+                                        val0 = data.fpsarray[fpsindex].parray[pindex].val.ui64[0];
+                                        val3 = data.fpsarray[fpsindex].parray[pindex].val.ui64[3];
+                                        intflag = 1;
+                                        break;
                                     }
 
-                                    TUI_printfw("  %10d", (int) data.fpsarray[fpsindex].parray[pindex].val.i64[0]);
-
-                                    if(paramsync == 0)
+                                    if(intflag == 1)
                                     {
-                                        if(isVISIBLE == 1)
+                                        if(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)
                                         {
-                                            screenprint_unsetcolor(3);
+                                            // Check value feedback if available
+                                            if(!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+                                                if(val0 != val3)
+                                                {
+                                                    paramsync = 0;
+                                                }
+                                        }
+
+                                        if(paramsync == 0)
+                                        {
+                                            if(isVISIBLE == 1)
+                                            {
+                                                screenprint_setcolor(3);
+                                            }
+                                        }
+
+                                        TUI_printfw("  %10d", (int) val0);
+
+                                        if(paramsync == 0)
+                                        {
+                                            if(isVISIBLE == 1)
+                                            {
+                                                screenprint_unsetcolor(3);
+                                            }
                                         }
                                     }
                                 }
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FLOAT64)
+
+                                // float types
                                 {
-                                    if(data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                            FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                        {
-                                            double absdiff;
-                                            double abssum;
-                                            double epsrel = 1.0e-6;
-                                            double epsabs = 1.0e-10;
+                                    double val0 = 0.0;
+                                    double val3 = 0.0;
+                                    int floatflag = 0; // toggles to 1 if int type
+                                    switch(data.fpsarray[fpsindex].parray[pindex].type)
+                                    {
+                                    case FPTYPE_FLOAT32:
+                                        val0 = data.fpsarray[fpsindex].parray[pindex].val.f32[0];
+                                        val3 = data.fpsarray[fpsindex].parray[pindex].val.f32[3];
+                                        floatflag = 1;
+                                        break;
+                                    case FPTYPE_FLOAT64:
+                                        val0 = data.fpsarray[fpsindex].parray[pindex].val.f64[0];
+                                        val3 = data.fpsarray[fpsindex].parray[pindex].val.f64[3];
+                                        floatflag = 1;
+                                        break;
+                                    }
 
-                                            absdiff = fabs(data.fpsarray[fpsindex].parray[pindex].val.f64[0] -
-                                                           data.fpsarray[fpsindex].parray[pindex].val.f64[3]);
-                                            abssum = fabs(data.fpsarray[fpsindex].parray[pindex].val.f64[0]) + fabs(
-                                                         data.fpsarray[fpsindex].parray[pindex].val.f64[3]);
-
-
-                                            if((absdiff < epsrel * abssum) || (absdiff < epsabs))
+                                    if(floatflag == 1)
+                                    {
+                                        if(data.fpsarray[fpsindex].parray[pindex].fpflag &
+                                                FPFLAG_FEEDBACK)   // Check value feedback if available
+                                            if(!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
                                             {
-                                                paramsync = 1;
+                                                double absdiff;
+                                                double abssum;
+                                                double epsrel = 1.0e-6;
+                                                double epsabs = 1.0e-10;
+
+                                                absdiff = fabs(val0 - val3);
+                                                abssum = fabs(val0) + fabs(val3);
+
+                                                if((absdiff < epsrel * abssum) || (absdiff < epsabs))
+                                                {
+                                                    paramsync = 1;
+                                                }
+                                                else
+                                                {
+                                                    paramsync = 0;
+                                                }
                                             }
-                                            else
+
+                                        if(paramsync == 0)
+                                        {
+                                            if(isVISIBLE == 1)
                                             {
-                                                paramsync = 0;
+                                                screenprint_setcolor(3);
                                             }
                                         }
 
-                                    if(paramsync == 0)
-                                    {
-                                        if(isVISIBLE == 1)
+                                        TUI_printfw("  %10f", (float) val0);
+
+                                        if(paramsync == 0)
                                         {
-                                            screenprint_setcolor(3);
+                                            if(isVISIBLE == 1)
+                                            {
+                                                screenprint_unsetcolor(3);
+                                            }
                                         }
                                     }
 
-                                    TUI_printfw("  %10f", (float)
-                                                data.fpsarray[fpsindex].parray[pindex].val.f64[0]);
-
-                                    if(paramsync == 0)
-                                    {
-                                        if(isVISIBLE == 1)
-                                        {
-                                            screenprint_unsetcolor(3);
-                                        }
-                                    }
                                 }
 
-                                DEBUG_TRACEPOINT(" ");
-
-                                if(data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FLOAT32)
-                                {
-                                    if(data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                            FPFLAG_FEEDBACK)   // Check value feedback if available
-                                        if(!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                        {
-                                            double absdiff;
-                                            double abssum;
-                                            double epsrel = 1.0e-6;
-                                            double epsabs = 1.0e-10;
-
-                                            absdiff = fabs(data.fpsarray[fpsindex].parray[pindex].val.f32[0] -
-                                                           data.fpsarray[fpsindex].parray[pindex].val.f32[3]);
-                                            abssum = fabs(data.fpsarray[fpsindex].parray[pindex].val.f32[0]) + fabs(
-                                                         data.fpsarray[fpsindex].parray[pindex].val.f32[3]);
-
-
-                                            if((absdiff < epsrel * abssum) || (absdiff < epsabs))
-                                            {
-                                                paramsync = 1;
-                                            }
-                                            else
-                                            {
-                                                paramsync = 0;
-                                            }
-                                        }
-
-                                    if(paramsync == 0)
-                                    {
-                                        if(isVISIBLE == 1)
-                                        {
-                                            screenprint_setcolor(3);
-                                        }
-                                    }
-
-                                    TUI_printfw("  %10f", (float)
-                                                data.fpsarray[fpsindex].parray[pindex].val.f32[0]);
-
-                                    if(paramsync == 0)
-                                    {
-                                        screenprint_unsetcolor(3);
-                                    }
-                                }
 
 
                                 DEBUG_TRACEPOINT(" ");

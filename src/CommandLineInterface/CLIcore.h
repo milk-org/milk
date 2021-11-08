@@ -539,7 +539,6 @@ typedef struct
 
 
 
-
     // IMAGES
     // =================================================
     long           NB_MAX_IMAGE;
