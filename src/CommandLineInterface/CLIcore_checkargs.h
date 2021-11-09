@@ -21,7 +21,7 @@
 #define CLIARG_FLOAT            0x00000001  // floating point number, defaults to float64
 #define CLIARG_LONG             0x00000002  // integer, default to int64
 #define CLIARG_STR_NOT_IMG      0x00000003  // string, not existing image
-#define CLIARG_IMG              0x00000004  // existing image
+#define CLIARG_IMG              0x00000004  // existing image or stream
 #define CLIARG_STR              0x00000005  // string
 
 #define CLIARG_FLOAT32          0x00010001
@@ -34,6 +34,8 @@
 #define CLIARG_INT64            0x00020002 // same as LONG
 #define CLIARG_UINT64           0x00120002
 
+// image/stream types
+#define CLIARG_STREAM           0x00010004 // stream
 
 
 
@@ -75,7 +77,11 @@ typedef struct
     // see FPFLAG_  in function_parameters.h
     uint64_t fpflag;
 
+    // pointer to value
     void **valptr;
+
+    // pointer to parameter index in fps
+    long *indexptr;
 
 } CLICMDARGDEF;
 
@@ -177,7 +183,8 @@ int CMDargs_to_FPSparams_create(
 
 
 void *get_farg_ptr(
-    char *tag
+    char *tag,
+    long *fpsi
 );
 
 

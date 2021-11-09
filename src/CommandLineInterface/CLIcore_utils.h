@@ -91,8 +91,12 @@ typedef struct
 #define STD_FARG_LINKfunction                                                     \
     for (int argi = 0; argi < (int)(sizeof(farg) / sizeof(CLICMDARGDEF)); argi++) \
     {                                                                             \
-        void *ptr = get_farg_ptr(farg[argi].fpstag);                              \
+        long fpsi = -1;                                                           \
+        void *ptr = get_farg_ptr(farg[argi].fpstag, &fpsi);                       \
         *(farg[argi].valptr) = ptr;                                               \
+        if(farg[argi].indexptr != NULL) {                                         \
+           *(farg[argi].indexptr) = fpsi;                                         \
+        }                                                                         \
     }
 
 /** @brief Standard Function call wrapper
@@ -185,10 +189,10 @@ typedef struct
             CLIcmddata.FPS_customCONFsetup();                                                   \
         }                                                                                       \
             FPS_CONFLOOP_START                                                                  \
-                data.fpsptr = NULL;                                                             \
                 if (CLIcmddata.FPS_customCONFcheck != NULL)                                     \
                     CLIcmddata.FPS_customCONFcheck();                                           \
         FPS_CONFLOOP_END                                                                        \
+        data.fpsptr = NULL;                                                                     \
         return RETURN_SUCCESS;                                                                  \
     }
 
