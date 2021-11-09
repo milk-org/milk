@@ -65,7 +65,8 @@ imageID read_sharedmem_image(
 
     image = &data.image[IDmem];
 
-    if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) != IMAGESTREAMIO_SUCCESS)
+    if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname,
+            image) != IMAGESTREAMIO_SUCCESS)
     {
         printf("read shared mem image failed -> ID = -1\n");
         fflush(stdout);

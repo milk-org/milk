@@ -90,7 +90,7 @@ errno_t load_fits(
     const char *restrict file_name,
     const char *restrict ID_name,
     int         errmode,
-    imageID   * IDout
+    imageID    *IDout
 )
 {
     DEBUG_TRACE_FSTART();
@@ -128,7 +128,7 @@ errno_t load_fits(
         // tyr 3 consecutive times and then give up if not successful
         int fileOK = 0;
         int NBtry = 3;
-        for(int tr=0; tr<NBtry; tr++)
+        for(int tr = 0; tr < NBtry; tr++)
         {
             if(fileOK == 0)
             {
@@ -150,11 +150,14 @@ errno_t load_fits(
                         {
                             if(tr == NBtry - 1)
                             {
-                                FITSIO_CHECK_ERROR(status, errmode, "can't load %s (tried %d times)", file_name, NBtry);
+                                FITSIO_CHECK_ERROR(status, errmode, "can't load %s (tried %d times)", file_name,
+                                                   NBtry);
                             }
                         }
                         if(tr != NBtry - 1) // don't wait on last try
+                        {
                             usleep(10000);
+                        }
                     }
 
                     ID = -1;
@@ -192,7 +195,8 @@ errno_t load_fits(
 
             if(errmode == 2)
             {
-                FUNC_RETURN_FAILURE("Image \"%s\" could not be loaded from file \"%s\"", ID_name, file_name);
+                FUNC_RETURN_FAILURE("Image \"%s\" could not be loaded from file \"%s\"",
+                                    ID_name, file_name);
             }
 
             if(errmode == 3)
@@ -458,7 +462,7 @@ errno_t load_fits(
         char kwcomment[81];
         {
             int status = 0;
-            fits_read_keyn(fptr, kwnum+1, keyname, kwvaluestr, kwcomment, &status);
+            fits_read_keyn(fptr, kwnum + 1, keyname, kwvaluestr, kwcomment, &status);
         }
 
         //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
@@ -487,7 +491,8 @@ errno_t load_fits(
             if(strlen(tailstr) == 0)
             {
                 kwtypeOK = 1;
-                printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n", kwnum, keyname, kwlongval, kwcomment);
+                printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n", kwnum, keyname, kwlongval,
+                       kwcomment);
                 image_keyword_addL(img, keyname, kwlongval, kwcomment);
             }
 
@@ -498,18 +503,20 @@ errno_t load_fits(
                 if(strlen(tailstr) == 0)
                 {
                     kwtypeOK = 1;
-                    printf("%3d FITS KEYW [D] %-8s= %20g / %s\n", kwnum, keyname, kwdoubleval, kwcomment);
+                    printf("%3d FITS KEYW [D] %-8s= %20g / %s\n", kwnum, keyname, kwdoubleval,
+                           kwcomment);
                     image_keyword_addD(img, keyname, kwdoubleval, kwcomment);
                 }
 
                 if(kwtypeOK == 0)
                 {
                     // default to string
-                    printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
+                    printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n", kwnum, keyname, kwvaluestr,
+                           kwcomment);
                     // remove leading and trailing '
-                    kwvaluestr[strlen(kwvaluestr)-1] = '\0';
+                    kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
-                    kwvaluestr1 = kwvaluestr+1;
+                    kwvaluestr1 = kwvaluestr + 1;
                     image_keyword_addS(img, keyname, kwvaluestr1, kwcomment);
                 }
 

@@ -97,10 +97,10 @@ errno_t mk_amph_from_complex(
             for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 float amp_f = (float) sqrt(data.image[IDin].array.CF[ii].re *
-                                     data.image[IDin].array.CF[ii].re + data.image[IDin].array.CF[ii].im *
-                                     data.image[IDin].array.CF[ii].im);
+                                           data.image[IDin].array.CF[ii].re + data.image[IDin].array.CF[ii].im *
+                                           data.image[IDin].array.CF[ii].im);
                 float pha_f = (float) atan2(data.image[IDin].array.CF[ii].im,
-                                      data.image[IDin].array.CF[ii].re);
+                                            data.image[IDin].array.CF[ii].re);
                 data.image[IDam].array.F[ii] = amp_f;
                 data.image[IDph].array.F[ii] = pha_f;
             }
@@ -143,10 +143,11 @@ errno_t mk_amph_from_complex(
 # endif
             for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                double amp_d = sqrt(data.image[IDin].array.CD[ii].re * data.image[IDin].array.CD[ii].re
-                             + data.image[IDin].array.CD[ii].im * data.image[IDin].array.CD[ii].im);
+                double amp_d = sqrt(data.image[IDin].array.CD[ii].re *
+                                    data.image[IDin].array.CD[ii].re
+                                    + data.image[IDin].array.CD[ii].im * data.image[IDin].array.CD[ii].im);
                 double pha_d = atan2(data.image[IDin].array.CD[ii].im,
-                              data.image[IDin].array.CD[ii].re);
+                                     data.image[IDin].array.CD[ii].re);
                 data.image[IDam].array.D[ii] = amp_d;
                 data.image[IDph].array.D[ii] = pha_d;
             }
