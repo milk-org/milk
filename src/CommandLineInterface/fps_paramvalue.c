@@ -16,6 +16,42 @@
 
 
 
+
+/**
+ * @brief  Get pointer to value and FPS index
+ *
+ */
+int64_t *functionparameter_GetParamPtr_generic(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    long *paramindex
+)
+{
+    int64_t *ptr;
+
+    long fpsi = functionparameter_GetParamIndex(fps, paramname);
+
+    // type is arbitrary
+    ptr = &fps->parray[fpsi].val.i64[0];
+
+    if(paramindex != NULL)
+    {
+        *paramindex = fpsi;
+    }
+
+    return ptr;
+}
+
+
+
+
+
+
+
+
+
+
+
 // INT64
 
 
@@ -96,7 +132,7 @@ int64_t *functionparameter_GetParamPtr_INT64(
 {
     int64_t *ptr;
 
-    int fpsi = functionparameter_GetParamIndex(fps, paramname);
+    long fpsi = functionparameter_GetParamIndex(fps, paramname);
     ptr = &fps->parray[fpsi].val.i64[0];
 
     return ptr;
