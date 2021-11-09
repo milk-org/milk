@@ -64,22 +64,22 @@ typedef struct
 #define FARG_OUTIM2D(imkey)                                         \
         {CLIARG_STR, "." #imkey ".name", "output image", #imkey,    \
         CLIARG_VISIBLE_DEFAULT,                                     \
-        (void **)&imkey.name},                                      \
+        (void **)&imkey.name, NULL},                                \
         {CLIARG_LONG, "." #imkey ".xsize", "x size", "256",         \
         CLIARG_VISIBLE_DEFAULT,                                     \
-        (void **)&imkey.xsize},                                     \
+        (void **)&imkey.xsize, NULL},                               \
         {CLIARG_LONG, "." #imkey ".ysize", "y size", "256",         \
         CLIARG_VISIBLE_DEFAULT,                                     \
-        (void **)&imkey.ysize},                                     \
+        (void **)&imkey.ysize, NULL},                               \
         {CLIARG_LONG, "." #imkey ".shared", "shared flag", "0",     \
          CLIARG_HIDDEN_DEFAULT,                                     \
-        (void **)&imkey.shared},                                    \
+        (void **)&imkey.shared, NULL},                              \
         {CLIARG_LONG, "." #imkey ".NBkw", "number keywords", "10",  \
         CLIARG_HIDDEN_DEFAULT,                                      \
-        (void **)&imkey.NBkw},                                      \
+        (void **)&imkey.NBkw, NULL},                                \
         {CLIARG_LONG, "." #imkey ".CBsize", "circ buffer size", "0",\
         CLIARG_HIDDEN_DEFAULT,                                      \
-        (void **)&imkey.CBsize}
+        (void **)&imkey.CBsize, NULL}
 
 
 

@@ -19,12 +19,12 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_STR, ".in_sname", "input stream name", "im1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &logstreamname
+        (void **) &logstreamname, NULL
     },
     {
         CLIARG_STR, ".logcmd", "log command", "logon",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &logcmd
+        (void **) &logcmd, NULL
     }
 };
 

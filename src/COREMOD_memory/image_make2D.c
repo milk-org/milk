@@ -14,17 +14,17 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_STR, ".out_name", "output image", "out1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname
+        (void **) &outimname, NULL
     },
     {
         CLIARG_LONG, ".xsize", "x size", "512",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &imxsize
+        (void **) &imxsize, NULL
     },
     {
         CLIARG_LONG, ".ysize", "y size", "512",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &imysize
+        (void **) &imysize, NULL
     }
 };
 

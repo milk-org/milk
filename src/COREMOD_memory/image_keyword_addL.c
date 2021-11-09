@@ -10,22 +10,22 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname
+        (void **) &inimname, NULL
     },
     {
         CLIARG_STR, ".kwname", "keyword name", "KW1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &kwname
+        (void **) &kwname, NULL
     },
     {
         CLIARG_LONG, ".kwval", "keyword value", "1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &kwval
+        (void **) &kwval, NULL
     },
     {
         CLIARG_STR, ".comment", "comment", "keyword comment",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &comment
+        (void **) &comment, NULL
     }
 };
 
