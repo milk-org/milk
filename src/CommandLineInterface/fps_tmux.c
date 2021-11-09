@@ -83,9 +83,10 @@ errno_t functionparameter_FPS_tmux_init(
         sprintf(argstring, " ");
     }
 
-    for(int i=1; i<fps->md->NBnameindex; i++)
+    for(int i = 1; i < fps->md->NBnameindex; i++)
     {
-        snprintf(argstringcp, argstring_maxlen, "%s %s", argstring, fps->md->nameindexW[i]);
+        snprintf(argstringcp, argstring_maxlen, "%s %s", argstring,
+                 fps->md->nameindexW[i]);
         strcpy(argstring, argstringcp);
     }
 
@@ -94,9 +95,10 @@ errno_t functionparameter_FPS_tmux_init(
     char mloadstring[mloadstring_maxlen];
     char mloadstringcp[mloadstring_maxlen];
     sprintf(mloadstring, " ");
-    for(int m=0; m < fps->md->NBmodule; m++)
+    for(int m = 0; m < fps->md->NBmodule; m++)
     {
-        snprintf(mloadstringcp, mloadstring_maxlen, "%smload %s;", mloadstring, fps->md->modulename[m]);
+        snprintf(mloadstringcp, mloadstring_maxlen, "%smload %s;", mloadstring,
+                 fps->md->modulename[m]);
         strcpy(mloadstring, mloadstringcp);
     }
 
