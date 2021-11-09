@@ -8,6 +8,14 @@
 
 
 
+int64_t *functionparameter_GetParamPtr_generic(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    long *paramindex
+);
+
+
+
 // =====================================================================
 // INT32
 // =====================================================================

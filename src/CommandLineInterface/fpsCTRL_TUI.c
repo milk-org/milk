@@ -1626,7 +1626,7 @@ errno_t functionparameter_CTRLscreen(
                                                 }
                                             }
 
-                                    TUI_printfw("[%d]  %10s",
+                                    TUI_printfw("[LOC %d]  %6s",
                                                 data.fpsarray[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
                                                 data.fpsarray[fpsindex].parray[pindex].val.string[0]);
 
