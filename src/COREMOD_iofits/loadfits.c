@@ -36,17 +36,17 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_STR, ".infname", "input file", "imfname",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &infilename
+        (void **) &infilename, NULL
     },
     {
         CLIARG_STR_NOT_IMG, ".outimname", "output image name", "outimname",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname
+        (void **) &outimname, NULL
     },
     {
         CLIARG_LONG, ".errmode", "FITSIO errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)", "1",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &FITSIOerrmode
+        (void **) &FITSIOerrmode, NULL
     }
 };
 
@@ -57,9 +57,7 @@ static CLICMDDATA CLIcmddata =
 {
     "loadfits",
     "load FITS format file",
-    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,
-    CLICMDFLAG_FPS,
-    NULL
+    CLICMD_FIELDS_DEFAULTS
 };
 
 

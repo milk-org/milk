@@ -93,6 +93,7 @@ void TUI_printfw(const char *fmt, ...)
         char prtstring[MAXLINELEN];
 
         getyx(stdscr, y, x);
+        (void) x;
         (void) y;
 
         vsnprintf(prtstring, MAXLINELEN, fmt, args);
@@ -358,7 +359,7 @@ errno_t TUI_print_header(
     }
 
 
-    for(int i = 0; i < strlen(str); i++)
+    for(size_t i = 0; i < strlen(str); i++)
     {
         linestring[spos] = str[i];
         spos++;

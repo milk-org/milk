@@ -31,17 +31,17 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".in_sname", "input stream name", "im1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &instreamname
+        (void **) &instreamname, NULL
     },
     {
         CLIARG_LONG, ".cubesize", "cube size", "10000",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &logcubesize
+        (void **) &logcubesize, NULL
     },
     {
         CLIARG_STR, ".logdir", "log directory", "/media/data",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &logdir
+        (void **) &logdir, NULL
     }
 };
 

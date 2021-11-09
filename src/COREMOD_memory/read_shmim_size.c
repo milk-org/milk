@@ -26,12 +26,12 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_STR, ".in_sname", "input stream", "ims1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &insname
+        (void **) &insname, NULL
     },
     {
         CLIARG_STR_NOT_IMG, ".outfname", "output file name", "outsize.dat",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outfname
+        (void **) &outfname, NULL
     }
 };
 
