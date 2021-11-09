@@ -27,6 +27,11 @@
 #endif
 
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803
+#endif
+
+
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
