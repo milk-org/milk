@@ -28,7 +28,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG,  ".in_sname", "input stream", "ims1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname
+        (void **) &inimname, NULL
     }
 };
 

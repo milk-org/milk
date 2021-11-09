@@ -38,12 +38,12 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname
+        (void **) &inimname, NULL
     },
     {
         CLIARG_STR, ".out_fname", "output FITS file name", "out.fits",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outfname
+        (void **) &outfname, NULL
     },
     {
         // non-CLI parameter
@@ -54,12 +54,12 @@ static CLICMDARGDEF farg[] =
         "-32/-64 : 32/64-b flt\n"
         , "0",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &outbitpix
+        (void **) &outbitpix, NULL
     },
     {
         CLIARG_STR, ".in_header", "header import from this FITS file", "",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &inheader
+        (void **) &inheader, NULL
     }
 };
 

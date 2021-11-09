@@ -22,7 +22,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_STR, ".strfilter", "string filter", "im",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &stringfilter
+        (void **) &stringfilter, NULL
     }
 };
 

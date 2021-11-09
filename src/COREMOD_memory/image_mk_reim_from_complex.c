@@ -17,17 +17,17 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".imre_name", "input imaginary image", "imC",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname
+        (void **) &inimname, NULL
     },
     {
         CLIARG_STR, ".imim_name", "output real image", "outre",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outreimname
+        (void **) &outreimname, NULL
     },
     {
         CLIARG_STR, ".out_name", "output imaginary image", "outim",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimimname
+        (void **) &outimimname, NULL
     }
 };
 

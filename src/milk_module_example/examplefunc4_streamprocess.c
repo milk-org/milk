@@ -31,22 +31,22 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname
+        (void **) &inimname, NULL
     },
     {
         CLIARG_IMG, ".out_name", "output image", "out1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname
+        (void **) &outimname, NULL
     },
     {
         CLIARG_UINT32, ".cntindex", "counter index", "5",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindex
+        (void **) &cntindex, NULL
     },
     {
         CLIARG_UINT32, ".cntindexmax", "counter index max value", "100",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindexmax
+        (void **) &cntindexmax, NULL
     }
 };
 

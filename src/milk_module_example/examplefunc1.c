@@ -29,13 +29,13 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG, ".in_name", "input image", "im1",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname
+        (void **) &inimname, NULL
     },
     {
         // hidden argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &scoeff
+        (void **) &scoeff, NULL
     }
 };
 
