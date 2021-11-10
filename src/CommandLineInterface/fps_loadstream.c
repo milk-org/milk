@@ -19,8 +19,9 @@ imageID functionparameter_LoadStream(
     uint32_t     imLOC;
 
 
-    printf("====================== Loading stream \"%s\" = %s\n",
+    printf("\n\n====================== Loading stream \"%s\" = %s\n",
            fps->parray[pindex].keywordfull, fps->parray[pindex].val.string[0]);
+
     ID = COREMOD_IOFITS_LoadMemStream(fps->parray[pindex].val.string[0],
                                       &(fps->parray[pindex].fpflag), &imLOC);
 
@@ -32,7 +33,7 @@ imageID functionparameter_LoadStream(
             printf("    FPFLAG_STREAM_CONF_REQUIRED\n");
             if(ID == -1)
             {
-                printf("FAILURE: Required stream %s could not be loaded\n",
+                printf("FAILURE: FPSCONNECT_CONF Required stream %s could not be loaded\n",
                        fps->parray[pindex].val.string[0]);
                 exit(EXIT_FAILURE);
             }
@@ -46,7 +47,7 @@ imageID functionparameter_LoadStream(
             printf("    FPFLAG_STREAM_RUN_REQUIRED\n");
             if(ID == -1)
             {
-                printf("FAILURE: Required stream %s could not be loaded\n",
+                printf("FAILURE: FPSCONNECT_RUN Required stream %s could not be loaded\n",
                        fps->parray[pindex].val.string[0]);
                 exit(EXIT_FAILURE);
             }
