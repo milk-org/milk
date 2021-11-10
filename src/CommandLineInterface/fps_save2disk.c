@@ -236,7 +236,7 @@ errno_t fps_write_RUNoutput_image(
     mkUTtimestring_microsec(timestring, fps->md->runpidstarttime);
     mkUTtimestring_microsec_now(timestringnow);
 
-    WRITE_FULLFILENAME(ffname, "!%s/%s.fits", fps->md->datadir, outname);
+    WRITE_FULLFILENAME(ffname, "%s/%s.fits", fps->md->datadir, outname);
     save_fits(imagename, ffname);
 
     FILE *fpout;
