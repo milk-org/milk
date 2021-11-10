@@ -81,6 +81,7 @@ imageID read_sharedmem_image(
 
         //ID = image_ID(sname);
         printf("read shared mem image success -> ID = %ld\n", img.ID);
+        ID = img.ID;
         fflush(stdout);
 
         image_keywords_list(img);
