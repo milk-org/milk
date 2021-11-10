@@ -586,37 +586,37 @@ imageID COREMOD_IOFITS_LoadMemStream(
         switch(*imLOC)
         {
 
-        case STREAM_LOAD_SOURCE_NOTFOUND :
-            strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_NOTFOUND :
+                strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
+                break;
 
-        case STREAM_LOAD_SOURCE_LOCALMEM :
-            strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_LOCALMEM :
+                strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
+                break;
 
-        case STREAM_LOAD_SOURCE_SHAREMEM :
-            strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_SHAREMEM :
+                strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
+                break;
 
-        case STREAM_LOAD_SOURCE_CONFFITS :
-            strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_CONFFITS :
+                strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
+                break;
 
-        case STREAM_LOAD_SOURCE_CONFNAME :
-            strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_CONFNAME :
+                strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
+                break;
 
-        case STREAM_LOAD_SOURCE_NULL :
-            strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_NULL :
+                strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
+                break;
 
-        case STREAM_LOAD_SOURCE_EXITFAILURE :
-            strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
-            break;
+            case STREAM_LOAD_SOURCE_EXITFAILURE :
+                strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
+                break;
 
-        default :
-            strcpy(locstring, "unknown");
-            break;
+            default :
+                strcpy(locstring, "unknown");
+                break;
         }
 
 
