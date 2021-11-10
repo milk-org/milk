@@ -166,7 +166,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(
     {
         ID = IDarray[i];
         WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
-        WRITE_FULLFILENAME(fnamecp, "!./%s/%s.fits", dirname, data.image[ID].name);
+        WRITE_FULLFILENAME(fnamecp, "./%s/%s.fits", dirname, data.image[ID].name);
         save_fits(imnamecp, fnamecp);
     }
 
@@ -284,7 +284,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     {
         ID = IDarray[i];
         sprintf(imnameout, "%s_out", data.image[ID].name);
-        sprintf(fnameout, "!./%s/%s_out.fits", dirname, data.image[ID].name);
+        sprintf(fnameout, "./%s/%s_out.fits", dirname, data.image[ID].name);
         save_fits(imnameout, fnameout);
     }
 
