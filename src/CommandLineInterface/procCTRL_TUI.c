@@ -841,145 +841,145 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
     switch(SignalNumber)
     {
 
-    case SIGHUP :  // Hangup detected on controlling terminal or death of controlling process
-        strcpy(SIGstr, "SIGHUP");
-        SIGflag = 1;
-        break;
+        case SIGHUP :  // Hangup detected on controlling terminal or death of controlling process
+            strcpy(SIGstr, "SIGHUP");
+            SIGflag = 1;
+            break;
 
-    case SIGINT :  // Interrupt from keyboard
-        strcpy(SIGstr, "SIGINT");
-        SIGflag = 1;
-        break;
+        case SIGINT :  // Interrupt from keyboard
+            strcpy(SIGstr, "SIGINT");
+            SIGflag = 1;
+            break;
 
-    case SIGQUIT :  // Quit from keyboard
-        strcpy(SIGstr, "SIGQUIT");
-        SIGflag = 1;
-        break;
+        case SIGQUIT :  // Quit from keyboard
+            strcpy(SIGstr, "SIGQUIT");
+            SIGflag = 1;
+            break;
 
-    case SIGILL :  // Illegal Instruction
-        strcpy(SIGstr, "SIGILL");
-        SIGflag = 1;
-        break;
+        case SIGILL :  // Illegal Instruction
+            strcpy(SIGstr, "SIGILL");
+            SIGflag = 1;
+            break;
 
-    case SIGABRT :  // Abort signal from abort
-        strcpy(SIGstr, "SIGABRT");
-        SIGflag = 1;
-        break;
+        case SIGABRT :  // Abort signal from abort
+            strcpy(SIGstr, "SIGABRT");
+            SIGflag = 1;
+            break;
 
-    case SIGFPE :  // Floating-point exception
-        strcpy(SIGstr, "SIGFPE");
-        SIGflag = 1;
-        break;
+        case SIGFPE :  // Floating-point exception
+            strcpy(SIGstr, "SIGFPE");
+            SIGflag = 1;
+            break;
 
-    case SIGKILL :  // Kill signal
-        strcpy(SIGstr, "SIGKILL");
-        SIGflag = 1;
-        break;
+        case SIGKILL :  // Kill signal
+            strcpy(SIGstr, "SIGKILL");
+            SIGflag = 1;
+            break;
 
-    case SIGSEGV :  // Invalid memory reference
-        strcpy(SIGstr, "SIGSEGV");
-        SIGflag = 1;
-        break;
+        case SIGSEGV :  // Invalid memory reference
+            strcpy(SIGstr, "SIGSEGV");
+            SIGflag = 1;
+            break;
 
-    case SIGPIPE :  // Broken pipe: write to pipe with no readers
-        strcpy(SIGstr, "SIGPIPE");
-        SIGflag = 1;
-        break;
+        case SIGPIPE :  // Broken pipe: write to pipe with no readers
+            strcpy(SIGstr, "SIGPIPE");
+            SIGflag = 1;
+            break;
 
-    case SIGALRM :  // Timer signal from alarm
-        strcpy(SIGstr, "SIGALRM");
-        SIGflag = 1;
-        break;
+        case SIGALRM :  // Timer signal from alarm
+            strcpy(SIGstr, "SIGALRM");
+            SIGflag = 1;
+            break;
 
-    case SIGTERM :  // Termination signal
-        strcpy(SIGstr, "SIGTERM");
-        SIGflag = 1;
-        break;
+        case SIGTERM :  // Termination signal
+            strcpy(SIGstr, "SIGTERM");
+            SIGflag = 1;
+            break;
 
-    case SIGUSR1 :  // User-defined signal 1
-        strcpy(SIGstr, "SIGUSR1");
-        SIGflag = 1;
-        break;
+        case SIGUSR1 :  // User-defined signal 1
+            strcpy(SIGstr, "SIGUSR1");
+            SIGflag = 1;
+            break;
 
-    case SIGUSR2 :  // User-defined signal 1
-        strcpy(SIGstr, "SIGUSR2");
-        SIGflag = 1;
-        break;
+        case SIGUSR2 :  // User-defined signal 1
+            strcpy(SIGstr, "SIGUSR2");
+            SIGflag = 1;
+            break;
 
-    case SIGCHLD :  // Child stopped or terminated
-        strcpy(SIGstr, "SIGCHLD");
-        SIGflag = 1;
-        break;
+        case SIGCHLD :  // Child stopped or terminated
+            strcpy(SIGstr, "SIGCHLD");
+            SIGflag = 1;
+            break;
 
-    case SIGCONT :  // Continue if stoppedshmimTCPtransmit
-        strcpy(SIGstr, "SIGCONT");
-        SIGflag = 1;
-        break;
+        case SIGCONT :  // Continue if stoppedshmimTCPtransmit
+            strcpy(SIGstr, "SIGCONT");
+            SIGflag = 1;
+            break;
 
-    case SIGSTOP :  // Stop process
-        strcpy(SIGstr, "SIGSTOP");
-        SIGflag = 1;
-        break;
+        case SIGSTOP :  // Stop process
+            strcpy(SIGstr, "SIGSTOP");
+            SIGflag = 1;
+            break;
 
-    case SIGTSTP :  // Stop typed at terminal
-        strcpy(SIGstr, "SIGTSTP");
-        SIGflag = 1;
-        break;
+        case SIGTSTP :  // Stop typed at terminal
+            strcpy(SIGstr, "SIGTSTP");
+            SIGflag = 1;
+            break;
 
-    case SIGTTIN :  // Terminal input for background process
-        strcpy(SIGstr, "SIGTTIN");
-        SIGflag = 1;
-        break;
+        case SIGTTIN :  // Terminal input for background process
+            strcpy(SIGstr, "SIGTTIN");
+            SIGflag = 1;
+            break;
 
-    case SIGTTOU :  // Terminal output for background process
-        strcpy(SIGstr, "SIGTTOU");
-        SIGflag = 1;
-        break;
+        case SIGTTOU :  // Terminal output for background process
+            strcpy(SIGstr, "SIGTTOU");
+            SIGflag = 1;
+            break;
 
-    case SIGBUS :  // Bus error (bad memory access)
-        strcpy(SIGstr, "SIGBUS");
-        SIGflag = 1;
-        break;
+        case SIGBUS :  // Bus error (bad memory access)
+            strcpy(SIGstr, "SIGBUS");
+            SIGflag = 1;
+            break;
 
-    case SIGPOLL :  // Pollable event (Sys V).
-        strcpy(SIGstr, "SIGPOLL");
-        SIGflag = 1;
-        break;
+        case SIGPOLL :  // Pollable event (Sys V).
+            strcpy(SIGstr, "SIGPOLL");
+            SIGflag = 1;
+            break;
 
-    case SIGPROF :  // Profiling timer expired
-        strcpy(SIGstr, "SIGPROF");
-        SIGflag = 1;
-        break;
+        case SIGPROF :  // Profiling timer expired
+            strcpy(SIGstr, "SIGPROF");
+            SIGflag = 1;
+            break;
 
-    case SIGSYS :  // Bad system call (SVr4)
-        strcpy(SIGstr, "SIGSYS");
-        SIGflag = 1;
-        break;
+        case SIGSYS :  // Bad system call (SVr4)
+            strcpy(SIGstr, "SIGSYS");
+            SIGflag = 1;
+            break;
 
-    case SIGTRAP :  // Trace/breakpoint trap
-        strcpy(SIGstr, "SIGTRAP");
-        SIGflag = 1;
-        break;
+        case SIGTRAP :  // Trace/breakpoint trap
+            strcpy(SIGstr, "SIGTRAP");
+            SIGflag = 1;
+            break;
 
-    case SIGURG :  // Urgent condition on socket (4.2BSD)
-        strcpy(SIGstr, "SIGURG");
-        SIGflag = 1;
-        break;
+        case SIGURG :  // Urgent condition on socket (4.2BSD)
+            strcpy(SIGstr, "SIGURG");
+            SIGflag = 1;
+            break;
 
-    case SIGVTALRM :  // Virtual alarm clock (4.2BSD)
-        strcpy(SIGstr, "SIGVTALRM");
-        SIGflag = 1;
-        break;
+        case SIGVTALRM :  // Virtual alarm clock (4.2BSD)
+            strcpy(SIGstr, "SIGVTALRM");
+            SIGflag = 1;
+            break;
 
-    case SIGXCPU :  // CPU time limit exceeded (4.2BSD)
-        strcpy(SIGstr, "SIGXCPU");
-        SIGflag = 1;
-        break;
+        case SIGXCPU :  // CPU time limit exceeded (4.2BSD)
+            strcpy(SIGstr, "SIGXCPU");
+            SIGflag = 1;
+            break;
 
-    case SIGXFSZ :  // File size limit exceeded (4.2BSD)
-        strcpy(SIGstr, "SIGXFSZ");
-        SIGflag = 1;
-        break;
+        case SIGXFSZ :  // File size limit exceeded (4.2BSD)
+            strcpy(SIGstr, "SIGXFSZ");
+            SIGflag = 1;
+            break;
     }
 
 
@@ -3136,236 +3136,249 @@ errno_t processinfo_CTRLscreen()
         int selectedOK = 0; // goes to 1 if at least one process is selected
         switch(ch)
         {
-        case 'f':     // Freeze screen (toggle)
-            if(freeze == 0)
-            {
-                freeze = 1;
-            }
-            else
-            {
-                freeze = 0;
-            }
-            break;
+            case 'f':     // Freeze screen (toggle)
+                if(freeze == 0)
+                {
+                    freeze = 1;
+                }
+                else
+                {
+                    freeze = 0;
+                }
+                break;
 
-        case 'x':     // Exit control screen
-            loopOK = 0;
-            Xexit = 1;
-            break;
+            case 'x':     // Exit control screen
+                loopOK = 0;
+                Xexit = 1;
+                break;
 
-        case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
-            pindex = pindexSelected;
-            if(procinfoproc.selectedarray[pindex] == 1)
-            {
-                procinfoproc.selectedarray[pindex] = 0;
-            }
-            else
-            {
-                procinfoproc.selectedarray[pindex] = 1;
-            }
-            break;
-
-        case 'u':    // undelect all
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                procinfoproc.selectedarray[pindex] = 0;
-            }
-            break;
-
-
-
-
-        case KEY_UP:
-            pindexActiveSelected --;
-            if(pindexActiveSelected < 0)
-            {
-                pindexActiveSelected = 0;
-            }
-            if(TimeSorted == 0)
-            {
-                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-        case KEY_DOWN:
-            pindexActiveSelected ++;
-            if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
-            {
-                pindexActiveSelected = procinfoproc.NBpindexActive - 1;
-            }
-            if(TimeSorted == 0)
-            {
-                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-
-        case KEY_RIGHT:
-            procinfoproc.DisplayDetailedMode = 1;
-            break;
-
-
-        case KEY_LEFT:
-            procinfoproc.DisplayDetailedMode = 0;
-            break;
-
-
-        case KEY_PPAGE:
-            pindexActiveSelected -= 10;
-            if(pindexActiveSelected < 0)
-            {
-                pindexActiveSelected = 0;
-            }
-            if(TimeSorted == 0)
-            {
-                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-        case KEY_NPAGE:
-            pindexActiveSelected += 10;
-            if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
-            {
-                pindexActiveSelected = procinfoproc.NBpindexActive - 1;
-            }
-            if(TimeSorted == 0)
-            {
-                pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-
-
-
-
-        case 'T':
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
+            case ' ':     // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
+                pindex = pindexSelected;
                 if(procinfoproc.selectedarray[pindex] == 1)
                 {
-                    selectedOK = 1;
+                    procinfoproc.selectedarray[pindex] = 0;
+                }
+                else
+                {
+                    procinfoproc.selectedarray[pindex] = 1;
+                }
+                break;
+
+            case 'u':    // undelect all
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    procinfoproc.selectedarray[pindex] = 0;
+                }
+                break;
+
+
+
+
+            case KEY_UP:
+                pindexActiveSelected --;
+                if(pindexActiveSelected < 0)
+                {
+                    pindexActiveSelected = 0;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+            case KEY_DOWN:
+                pindexActiveSelected ++;
+                if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
+                {
+                    pindexActiveSelected = procinfoproc.NBpindexActive - 1;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+
+            case KEY_RIGHT:
+                procinfoproc.DisplayDetailedMode = 1;
+                break;
+
+
+            case KEY_LEFT:
+                procinfoproc.DisplayDetailedMode = 0;
+                break;
+
+
+            case KEY_PPAGE:
+                pindexActiveSelected -= 10;
+                if(pindexActiveSelected < 0)
+                {
+                    pindexActiveSelected = 0;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+            case KEY_NPAGE:
+                pindexActiveSelected += 10;
+                if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
+                {
+                    pindexActiveSelected = procinfoproc.NBpindexActive - 1;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected = procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected = procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+
+
+
+
+            case 'T':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        pid = pinfolist->PIDarray[pindex];
+                        kill(pid, SIGTERM);
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     pid = pinfolist->PIDarray[pindex];
                     kill(pid, SIGTERM);
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                pid = pinfolist->PIDarray[pindex];
-                kill(pid, SIGTERM);
-            }
-            break;
+                break;
 
-        case 'K':
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 'K':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        pid = pinfolist->PIDarray[pindex];
+                        kill(pid, SIGKILL);
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     pid = pinfolist->PIDarray[pindex];
                     kill(pid, SIGKILL);
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                pid = pinfolist->PIDarray[pindex];
-                kill(pid, SIGKILL);
-            }
-            break;
+                break;
 
-        case 'I':
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 'I':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        pid = pinfolist->PIDarray[pindex];
+                        kill(pid, SIGINT);
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     pid = pinfolist->PIDarray[pindex];
                     kill(pid, SIGINT);
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                pid = pinfolist->PIDarray[pindex];
-                kill(pid, SIGINT);
-            }
-            break;
+                break;
 
-        case 'r':
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 'r':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        if(pinfolist->active[pindex] != 1)
+                        {
+                            char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                            WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname,
+                                               pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                            remove(SM_fname);
+                        }
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     if(pinfolist->active[pindex] != 1)
                     {
+                        remove(procinfoproc.pinfoarray[pindex]->logfilename);
+
                         char SM_fname[STRINGMAXLEN_FULLFILENAME];
                         WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname,
                                            pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
                         remove(SM_fname);
                     }
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                if(pinfolist->active[pindex] != 1)
-                {
-                    remove(procinfoproc.pinfoarray[pindex]->logfilename);
+                break;
 
-                    char SM_fname[STRINGMAXLEN_FULLFILENAME];
-                    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname,
-                                       pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-                    remove(SM_fname);
+            case 'R':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    if(pinfolist->active[pindex] != 1)
+                    {
+                        remove(procinfoproc.pinfoarray[pindex]->logfilename);
+
+                        char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                        WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname,
+                                           pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
+                        remove(SM_fname);
+                    }
                 }
-            }
-            break;
+                break;
 
-        case 'R':
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(pinfolist->active[pindex] != 1)
+            // loop controls
+            case 'p': // pause toggle
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    remove(procinfoproc.pinfoarray[pindex]->logfilename);
-
-                    char SM_fname[STRINGMAXLEN_FULLFILENAME];
-                    WRITE_FULLFILENAME(SM_fname, "%s/proc.%s.%06d.shm", procdname,
-                                       pinfolist->pnamearray[pindex], (int) pinfolist->PIDarray[pindex]);
-                    remove(SM_fname);
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 1;
+                        }
+                        else
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 0;
+                        }
+                    }
                 }
-            }
-            break;
-
-        // loop controls
-        case 'p': // pause toggle
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
                 {
-                    selectedOK = 1;
+                    pindex = pindexSelected;
                     if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
                     {
                         procinfoproc.pinfoarray[pindex]->CTRLval = 1;
@@ -3375,364 +3388,351 @@ errno_t processinfo_CTRLscreen()
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                     }
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 1;
-                }
-                else
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 0;
-                }
-            }
-            break;
+                break;
 
-        case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
-            DEBUG_TRACEPOINT(" ");
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
+                DEBUG_TRACEPOINT(" ");
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                                0) // if running, turn compute to off
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 5;
+                        }
+                        else if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                                5)  // if compute off, turn compute back on
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 0;
+                        }
+                    }
+                }
+                DEBUG_TRACEPOINT(" ");
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     if(procinfoproc.pinfoarray[pindex]->CTRLval ==
                             0) // if running, turn compute to off
                     {
                         procinfoproc.pinfoarray[pindex]->CTRLval = 5;
                     }
                     else if(procinfoproc.pinfoarray[pindex]->CTRLval ==
-                            5)  // if compute off, turn compute back on
+                            5)  // if procinfoproccompute off, turn compute back on
                     {
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                     }
                 }
-            }
-            DEBUG_TRACEPOINT(" ");
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                if(procinfoproc.pinfoarray[pindex]->CTRLval ==
-                        0) // if running, turn compute to off
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 5;
-                }
-                else if(procinfoproc.pinfoarray[pindex]->CTRLval ==
-                        5)  // if procinfoproccompute off, turn compute back on
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 0;
-                }
-            }
-            DEBUG_TRACEPOINT(" ");
-            break;
+                DEBUG_TRACEPOINT(" ");
+                break;
 
-        case 's': // step
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 's': // step
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 2;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     procinfoproc.pinfoarray[pindex]->CTRLval = 2;
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
+                break;
+
+
+
+
+            case '>': // move to other cpuset
                 pindex = pindexSelected;
-                procinfoproc.pinfoarray[pindex]->CTRLval = 2;
-            }
-            break;
-
-
-
-
-        case '>': // move to other cpuset
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-                if(system("clear") != 0) // clear screen
+                if(pinfolist->active[pindex] == 1)
                 {
-                    PRINT_ERROR("system() returns non-zero value");
+                    TUI_exit();
+                    if(system("clear") != 0) // clear screen
+                    {
+                        PRINT_ERROR("system() returns non-zero value");
+                    }
+                    printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
+                    listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+
+                    EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex],
+                                           CPUsetList[listindex].name);
+
+                    TUI_init_terminal(&wrow, &wcol);
                 }
-                printf("CURRENT cpu set : %s\n",  procinfoproc.pinfodisp[pindex].cpuset);
-                listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+                break;
 
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s", pinfolist->PIDarray[pindex],
-                                       CPUsetList[listindex].name);
-
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-        case '<': // move to same cpuset
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
-                                       pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null",
-                                       pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
-
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-
-        case 'e': // exit
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case '<': // move to same cpuset
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
                 {
-                    selectedOK = 1;
+                    TUI_exit();
+
+                    EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
+                                           pinfolist->PIDarray[pindex]);
+                    EXECUTE_SYSTEM_COMMAND("sudo cset proc --force -m %d %s &> /dev/null",
+                                           pinfolist->PIDarray[pindex], procinfoproc.pinfodisp[pindex].cpuset);
+
+                    TUI_init_terminal(&wrow, &wcol);
+                }
+                break;
+
+
+            case 'e': // exit
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 3;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     procinfoproc.pinfoarray[pindex]->CTRLval = 3;
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                procinfoproc.pinfoarray[pindex]->CTRLval = 3;
-            }
-            break;
+                break;
 
-        case 'z': // apply current value as offset (zero loop counter)
-            selectedOK = 0;
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 'z': // apply current value as offset (zero loop counter)
+                selectedOK = 0;
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        procinfoproc.loopcntoffsetarray[pindex] =
+                            procinfoproc.pinfoarray[pindex]->loopcnt;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     procinfoproc.loopcntoffsetarray[pindex] =
                         procinfoproc.pinfoarray[pindex]->loopcnt;
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                procinfoproc.loopcntoffsetarray[pindex] =
-                    procinfoproc.pinfoarray[pindex]->loopcnt;
-            }
-            break;
+                break;
 
-        case 'Z': // revert to original counter value
-            for(index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if(procinfoproc.selectedarray[pindex] == 1)
+            case 'Z': // revert to original counter value
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        procinfoproc.loopcntoffsetarray[pindex] = 0;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     procinfoproc.loopcntoffsetarray[pindex] = 0;
                 }
-            }
-            if((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
+                break;
+
+            case 't':
+                TUI_exit();
+                EXECUTE_SYSTEM_COMMAND("tmux a -t %s",
+                                       procinfoproc.pinfoarray[pindexSelected]->tmuxname);
+                TUI_init_terminal(&wrow, &wcol);
+                break;
+
+            case 'a':
                 pindex = pindexSelected;
-                procinfoproc.loopcntoffsetarray[pindex] = 0;
-            }
-            break;
-
-        case 't':
-            TUI_exit();
-            EXECUTE_SYSTEM_COMMAND("tmux a -t %s",
-                                   procinfoproc.pinfoarray[pindexSelected]->tmuxname);
-            TUI_init_terminal(&wrow, &wcol);
-            break;
-
-        case 'a':
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
-                                       (int) pinfolist->PIDarray[pindex]);
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-        case 'd':
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                       (int) pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                       (int) pinfolist->PIDarray[pindex]);
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-
-        case 'o':
-            if(TimeSorted == 1)
-            {
-                TimeSorted = 0;
-            }
-            else
-            {
-                TimeSorted = 1;
-            }
-            break;
-
-
-        case 'L': // toggle time limit (iter)
-            pindex = pindexSelected;
-            ToggleValue = procinfoproc.pinfoarray[pindex]->dtiter_limit_enable;
-            if(ToggleValue == 0)
-            {
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = 1;
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_value = (long)(
-                            1.5 * procinfoproc.pinfoarray[pindex]->dtmedian_iter_ns);
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt = 0;
-            }
-            else
-            {
-                ToggleValue ++;
-                if(ToggleValue == 3)
+                if(pinfolist->active[pindex] == 1)
                 {
-                    ToggleValue = 0;
+                    TUI_exit();
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    TUI_init_terminal(&wrow, &wcol);
                 }
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = ToggleValue;
-            }
-            break;;
+                break;
 
-        case 'M' : // toggle time limit (exec)
-            pindex = pindexSelected;
-            ToggleValue = procinfoproc.pinfoarray[pindex]->dtexec_limit_enable;
-            if(ToggleValue == 0)
-            {
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = 1;
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_value = (long)(
-                            1.5 * procinfoproc.pinfoarray[pindex]->dtmedian_exec_ns + 20000);
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt = 0;
-            }
-            else
-            {
-                ToggleValue ++;
-                if(ToggleValue == 3)
+            case 'd':
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
                 {
-                    ToggleValue = 0;
+                    TUI_exit();
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    TUI_init_terminal(&wrow, &wcol);
                 }
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = ToggleValue;
-            }
-            break;;
+                break;
 
 
-        case 'm' : // message
-            pindex = pindexSelected;
-            if(pinfolist->active[pindex] == 1)
-            {
+            case 'o':
+                if(TimeSorted == 1)
+                {
+                    TimeSorted = 0;
+                }
+                else
+                {
+                    TimeSorted = 1;
+                }
+                break;
+
+
+            case 'L': // toggle time limit (iter)
+                pindex = pindexSelected;
+                ToggleValue = procinfoproc.pinfoarray[pindex]->dtiter_limit_enable;
+                if(ToggleValue == 0)
+                {
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = 1;
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_value = (long)(
+                                1.5 * procinfoproc.pinfoarray[pindex]->dtmedian_iter_ns);
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt = 0;
+                }
+                else
+                {
+                    ToggleValue ++;
+                    if(ToggleValue == 3)
+                    {
+                        ToggleValue = 0;
+                    }
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = ToggleValue;
+                }
+                break;;
+
+            case 'M' : // toggle time limit (exec)
+                pindex = pindexSelected;
+                ToggleValue = procinfoproc.pinfoarray[pindex]->dtexec_limit_enable;
+                if(ToggleValue == 0)
+                {
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = 1;
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_value = (long)(
+                                1.5 * procinfoproc.pinfoarray[pindex]->dtmedian_exec_ns + 20000);
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt = 0;
+                }
+                else
+                {
+                    ToggleValue ++;
+                    if(ToggleValue == 3)
+                    {
+                        ToggleValue = 0;
+                    }
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = ToggleValue;
+                }
+                break;;
+
+
+            case 'm' : // message
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    TUI_exit();
+                    EXECUTE_SYSTEM_COMMAND("clear; tail -f %s",
+                                           procinfoproc.pinfoarray[pindex]->logfilename);
+                    TUI_init_terminal(&wrow, &wcol);
+                }
+                break;
+
+
+            // ============ SCREENS
+
+            case 'h': // help
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_HELP;
+                break;
+
+            case KEY_F(2): // control
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
+                break;
+
+            case KEY_F(3): // resources
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
+                break;
+
+            case KEY_F(4): // triggering
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
+                break;
+
+            case KEY_F(5): // timing
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
+                break;
+
+            case KEY_F(6): // htop
                 TUI_exit();
-                EXECUTE_SYSTEM_COMMAND("clear; tail -f %s",
-                                       procinfoproc.pinfoarray[pindex]->logfilename);
+                if(system("htop") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
                 TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
+                break;
 
+            case KEY_F(7): // iotop
+                TUI_exit();
+                if(system("sudo iotop -o") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                TUI_init_terminal(&wrow, &wcol);
+                break;
 
-        // ============ SCREENS
-
-        case 'h': // help
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_HELP;
-            break;
-
-        case KEY_F(2): // control
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
-            break;
-
-        case KEY_F(3): // resources
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
-            break;
-
-        case KEY_F(4): // triggering
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
-            break;
-
-        case KEY_F(5): // timing
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
-            break;
-
-        case KEY_F(6): // htop
-            TUI_exit();
-            if(system("htop") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            TUI_init_terminal(&wrow, &wcol);
-            break;
-
-        case KEY_F(7): // iotop
-            TUI_exit();
-            if(system("sudo iotop -o") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            TUI_init_terminal(&wrow, &wcol);
-            break;
-
-        case KEY_F(8): // atop
-            TUI_exit();
-            if(system("sudo atop") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            TUI_init_terminal(&wrow, &wcol);
-            break;
+            case KEY_F(8): // atop
+                TUI_exit();
+                if(system("sudo atop") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                TUI_init_terminal(&wrow, &wcol);
+                break;
 
 
 
 
-        // ============ SCANNING
+            // ============ SCANNING
 
-        case '{': // slower scan update
-            procinfoproc.twaitus = (int)(1.2 * procinfoproc.twaitus);
-            if(procinfoproc.twaitus > 1000000)
-            {
-                procinfoproc.twaitus = 1000000;
-            }
-            break;
+            case '{': // slower scan update
+                procinfoproc.twaitus = (int)(1.2 * procinfoproc.twaitus);
+                if(procinfoproc.twaitus > 1000000)
+                {
+                    procinfoproc.twaitus = 1000000;
+                }
+                break;
 
-        case '}': // faster scan update
-            procinfoproc.twaitus = (int)(0.83333333333333333333 * procinfoproc.twaitus);
-            if(procinfoproc.twaitus < 1000)
-            {
-                procinfoproc.twaitus = 1000;
-            }
-            break;
-
-
-        // ============ DISPLAY
-
-        case '-': // slower display update
-            frequ *= 0.5;
-            if(frequ < 1.0)
-            {
-                frequ = 1.0;
-            }
-            if(frequ > 64.0)
-            {
-                frequ = 64.0;
-            }
-            break;
+            case '}': // faster scan update
+                procinfoproc.twaitus = (int)(0.83333333333333333333 * procinfoproc.twaitus);
+                if(procinfoproc.twaitus < 1000)
+                {
+                    procinfoproc.twaitus = 1000;
+                }
+                break;
 
 
-        case '+': // faster display update
-            frequ *= 2.0;
-            if(frequ < 1.0)
-            {
-                frequ = 1.0;
-            }
-            if(frequ > 64.0)
-            {
-                frequ = 64.0;
-            }
-            break;
+            // ============ DISPLAY
+
+            case '-': // slower display update
+                frequ *= 0.5;
+                if(frequ < 1.0)
+                {
+                    frequ = 1.0;
+                }
+                if(frequ > 64.0)
+                {
+                    frequ = 64.0;
+                }
+                break;
+
+
+            case '+': // faster display update
+                frequ *= 2.0;
+                if(frequ < 1.0)
+                {
+                    frequ = 1.0;
+                }
+                if(frequ > 64.0)
+                {
+                    frequ = 64.0;
+                }
+                break;
 
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
@@ -4351,26 +4351,26 @@ errno_t processinfo_CTRLscreen()
                         {
                             switch(procinfoproc.pinfoarray[pindex]->loopstat)
                             {
-                            case 3: // clean exit
-                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "STOPPED");
-                                attron(COLOR_PAIR(3));
-                                TUI_printfw("%s", string);
-                                attroff(COLOR_PAIR(3));
-                                break;
+                                case 3: // clean exit
+                                    sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "STOPPED");
+                                    attron(COLOR_PAIR(3));
+                                    TUI_printfw("%s", string);
+                                    attroff(COLOR_PAIR(3));
+                                    break;
 
-                            case 4: // error
-                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ERROR");
-                                attron(COLOR_PAIR(3));
-                                TUI_printfw("%s", string);
-                                attroff(COLOR_PAIR(3));
-                                break;
+                                case 4: // error
+                                    sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "ERROR");
+                                    attron(COLOR_PAIR(3));
+                                    TUI_printfw("%s", string);
+                                    attroff(COLOR_PAIR(3));
+                                    break;
 
-                            default: // crashed
-                                sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
-                                attron(COLOR_PAIR(4));
-                                TUI_printfw("%s", string);
-                                attroff(COLOR_PAIR(4));
-                                break;
+                                default: // crashed
+                                    sprintf(string, "%-*.*s", pstrlen_status, pstrlen_status, "CRASHED");
+                                    attron(COLOR_PAIR(4));
+                                    TUI_printfw("%s", string);
+                                    attroff(COLOR_PAIR(4));
+                                    break;
                             }
                         }
 
@@ -4403,36 +4403,36 @@ errno_t processinfo_CTRLscreen()
                             {
                                 switch(procinfoproc.pinfoarray[pindex]->loopstat)
                                 {
-                                case 0:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "INIT");
-                                    break;
+                                    case 0:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "INIT");
+                                        break;
 
-                                case 1:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "RUN");
-                                    break;
+                                    case 1:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "RUN");
+                                        break;
 
-                                case 2:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "PAUS");
-                                    break;
+                                    case 2:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "PAUS");
+                                        break;
 
-                                case 3:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "TERM");
-                                    break;
+                                    case 3:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "TERM");
+                                        break;
 
-                                case 4:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "ERR");
-                                    break;
+                                    case 4:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "ERR");
+                                        break;
 
-                                case 5:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "OFF");
-                                    break;
+                                    case 5:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "OFF");
+                                        break;
 
-                                case 6:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "CRASH");
-                                    break;
+                                    case 6:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "CRASH");
+                                        break;
 
-                                default:
-                                    sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "??");
+                                    default:
+                                        sprintf(string, " %-*.*s", pstrlen_state, pstrlen_state, "??");
                                 }
                                 TUI_printfw("%s", string);
 
@@ -4807,32 +4807,32 @@ errno_t processinfo_CTRLscreen()
                                 switch(procinfoproc.pinfoarray[pindex]->triggermode)
                                 {
 
-                                case PROCESSINFO_TRIGGERMODE_IMMEDIATE :
-                                    TUI_printfw("%2d:IMME ", procinfoproc.pinfoarray[pindex]->triggermode);
-                                    break;
+                                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE :
+                                        TUI_printfw("%2d:IMME ", procinfoproc.pinfoarray[pindex]->triggermode);
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_CNT0 :
-                                    TUI_printfw("%2d:CNT0 ", procinfoproc.pinfoarray[pindex]->triggermode);
-                                    break;
+                                    case PROCESSINFO_TRIGGERMODE_CNT0 :
+                                        TUI_printfw("%2d:CNT0 ", procinfoproc.pinfoarray[pindex]->triggermode);
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_CNT1 :
-                                    TUI_printfw("%2d:CNT1 ", procinfoproc.pinfoarray[pindex]->triggermode);
-                                    break;
+                                    case PROCESSINFO_TRIGGERMODE_CNT1 :
+                                        TUI_printfw("%2d:CNT1 ", procinfoproc.pinfoarray[pindex]->triggermode);
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_SEMAPHORE :
-                                    TUI_printfw("%2d:S:%02d ",
-                                                procinfoproc.pinfoarray[pindex]->triggermode,
-                                                procinfoproc.pinfoarray[pindex]->triggersem
-                                               );
+                                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE :
+                                        TUI_printfw("%2d:S:%02d ",
+                                                    procinfoproc.pinfoarray[pindex]->triggermode,
+                                                    procinfoproc.pinfoarray[pindex]->triggersem
+                                                   );
 
-                                    break;
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_DELAY :
-                                    TUI_printfw("%2d:DELA ", procinfoproc.pinfoarray[pindex]->triggermode);
-                                    break;
+                                    case PROCESSINFO_TRIGGERMODE_DELAY :
+                                        TUI_printfw("%2d:DELA ", procinfoproc.pinfoarray[pindex]->triggermode);
+                                        break;
 
-                                default :
-                                    TUI_printfw("%2d:UNKN ",  procinfoproc.pinfoarray[pindex]->triggermode);
+                                    default :
+                                        TUI_printfw("%2d:UNKN ",  procinfoproc.pinfoarray[pindex]->triggermode);
                                 }
 
                                 TUI_printfw("  %*d ", pstrlen_missedfr,

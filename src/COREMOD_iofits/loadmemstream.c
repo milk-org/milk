@@ -25,9 +25,13 @@ imageID COREMOD_IOFITS_LoadMemStream(
     uint32_t   *imLOC
 )
 {
-    imageID ID = 0;
-    __attribute__((unused)) int updateSHAREMEM =
-        0; // toggles to 1 if updating shared mem
+    imageID ID = -1;
+
+
+    // toggles to 1 if updating shared mem
+    __attribute__((unused)) int updateSHAREMEM = 0;
+
+
     int updateCONFFITS = 0; // toggles to 1 if updating CONF FITS
 
 
@@ -45,12 +49,12 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
 
 
-
     if(strcmp(sname, "NULL") == 0)   // don't bother looking for it
     {
         *imLOC = STREAM_LOAD_SOURCE_NULL;
         ID = -1;
     }
+
 
     int imLOCALMEM;
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -114,6 +118,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
             }
         }
     }
+
 
     // FORCE_SHAREMEM
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -581,37 +586,37 @@ imageID COREMOD_IOFITS_LoadMemStream(
         switch(*imLOC)
         {
 
-            case STREAM_LOAD_SOURCE_NOTFOUND :
-                strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_NOTFOUND :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_LOCALMEM :
-                strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_LOCALMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_SHAREMEM :
-                strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_SHAREMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_CONFFITS :
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_CONFFITS :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_CONFNAME :
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_CONFNAME :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_NULL :
-                strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_NULL :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_EXITFAILURE :
-                strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_EXITFAILURE :
+            strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
+            break;
 
-            default :
-                strcpy(locstring, "unknown");
-                break;
+        default :
+            strcpy(locstring, "unknown");
+            break;
         }
 
 
