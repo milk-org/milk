@@ -44,7 +44,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
 
     *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
 
@@ -56,7 +55,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     int imLOCALMEM;
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -122,7 +120,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // FORCE_SHAREMEM
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -160,7 +157,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // FORCE_CONFFITS
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -200,7 +196,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // FORCE_CONFNAME
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -312,7 +307,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // SEARCH LOCALMEM
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -351,39 +345,31 @@ imageID COREMOD_IOFITS_LoadMemStream(
         //printf("imLOC = %d\n", *imLOC);
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
     // SEARCH SHAREMEM
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
     {
-        printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
         if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM & *streamflag))
         {
-            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
             if(MEMLOADREPORT == 1)
             {
-                printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                 char msg[STRINGMAXLEN_FPS_LOGMSG];
                 SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                "%s Search SHAREMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
-            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
             printf("image name : \"%s\"\n", sname);
             if(sname == NULL)
             {
                 printf("NULL pointer\n");
             }
             ID = read_sharedmem_image(sname);
-            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
             if(ID != -1)
             {
-                printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 if(MEMLOADREPORT == 1)
                 {
-                    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                     char msg[STRINGMAXLEN_FPS_LOGMSG];
                     SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                    "%s SUCCESS found image in SHAREMEM", sname);
@@ -395,18 +381,15 @@ imageID COREMOD_IOFITS_LoadMemStream(
             }
             else
             {
-                printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                 char msg[STRINGMAXLEN_FPS_LOGMSG];
                 SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                "%s sharedmem stream not found", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
-            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
         }
         //printf("imLOC = %d\n", *imLOC);
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
     // SEARCH CONFFITS
@@ -450,7 +433,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
     // SEARCH CONFNAME
@@ -559,7 +541,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // copy to shared memory
     if(*imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
@@ -605,7 +586,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
         *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
     }
 
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     if(MEMLOADREPORT == 1)
     {
@@ -654,7 +634,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
         functionparameter_outlog("LOADMEMSTREAM", msg);
     }
-    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     return ID;
 }
