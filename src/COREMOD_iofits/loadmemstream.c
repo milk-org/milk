@@ -533,6 +533,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // copy to shared memory
     if(*imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
@@ -578,6 +579,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
     }
 
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
+
     if(MEMLOADREPORT == 1)
     {
         char msg[STRINGMAXLEN_FPS_LOGMSG];
@@ -586,37 +589,37 @@ imageID COREMOD_IOFITS_LoadMemStream(
         switch(*imLOC)
         {
 
-            case STREAM_LOAD_SOURCE_NOTFOUND :
-                strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_NOTFOUND :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_LOCALMEM :
-                strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_LOCALMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_SHAREMEM :
-                strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_SHAREMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_CONFFITS :
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_CONFFITS :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_CONFNAME :
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_CONFNAME :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_NULL :
-                strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_NULL :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_EXITFAILURE :
-                strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_EXITFAILURE :
+            strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
+            break;
 
-            default :
-                strcpy(locstring, "unknown");
-                break;
+        default :
+            strcpy(locstring, "unknown");
+            break;
         }
 
 
@@ -625,6 +628,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
         functionparameter_outlog("LOADMEMSTREAM", msg);
     }
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     return ID;
 }
