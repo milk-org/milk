@@ -59,6 +59,8 @@ imageID read_sharedmem_image(
     imageID IDmem = 0;
     IMAGE *image;
 
+    printf("%s %d sringlen = %d\n", __FILE__, __LINE__, strlen(sname));//TBE
+
     DEBUG_TRACEPOINT("looking for next ID");
     IDmem = next_avail_image_ID();
     DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
