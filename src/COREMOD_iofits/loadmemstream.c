@@ -357,22 +357,27 @@ imageID COREMOD_IOFITS_LoadMemStream(
     // SEARCH SHAREMEM
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
     {
-        //printf("imLOC = %d\n", *imLOC);
+        printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
         if(!(FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM & *streamflag))
         {
+            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
             if(MEMLOADREPORT == 1)
             {
+                printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                 char msg[STRINGMAXLEN_FPS_LOGMSG];
                 SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                "%s Search SHAREMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
+            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
             ID = read_sharedmem_image(sname);
             if(ID != -1)
             {
+                printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
                 if(MEMLOADREPORT == 1)
                 {
+                    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                     char msg[STRINGMAXLEN_FPS_LOGMSG];
                     SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                    "%s SUCCESS found image in SHAREMEM", sname);
@@ -384,11 +389,13 @@ imageID COREMOD_IOFITS_LoadMemStream(
             }
             else
             {
+                printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
                 char msg[STRINGMAXLEN_FPS_LOGMSG];
                 SNPRINTF_CHECK(msg, STRINGMAXLEN_FPS_LOGMSG,
                                "%s sharedmem stream not found", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
+            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
         }
         //printf("imLOC = %d\n", *imLOC);
     }
@@ -602,37 +609,37 @@ imageID COREMOD_IOFITS_LoadMemStream(
         switch(*imLOC)
         {
 
-            case STREAM_LOAD_SOURCE_NOTFOUND :
-                strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_NOTFOUND :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_LOCALMEM :
-                strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_LOCALMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_SHAREMEM :
-                strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_SHAREMEM :
+            strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_CONFFITS :
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_CONFFITS :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_CONFNAME :
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_CONFNAME :
+            strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_NULL :
-                strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_NULL :
+            strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
+            break;
 
-            case STREAM_LOAD_SOURCE_EXITFAILURE :
-                strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
-                break;
+        case STREAM_LOAD_SOURCE_EXITFAILURE :
+            strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
+            break;
 
-            default :
-                strcpy(locstring, "unknown");
-                break;
+        default :
+            strcpy(locstring, "unknown");
+            break;
         }
 
 
