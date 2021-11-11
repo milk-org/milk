@@ -370,7 +370,9 @@ imageID COREMOD_IOFITS_LoadMemStream(
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
             printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
+            printf("image name : \"%s\"\n", sname);
             ID = read_sharedmem_image(sname);
+            printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
             if(ID != -1)
             {
                 printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
