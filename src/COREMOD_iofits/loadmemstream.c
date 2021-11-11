@@ -359,11 +359,6 @@ imageID COREMOD_IOFITS_LoadMemStream(
                                "%s Search SHAREMEM", sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
-            printf("image name : \"%s\"\n", sname);
-            if(sname == NULL)
-            {
-                printf("NULL pointer\n");
-            }
             ID = read_sharedmem_image(sname);
             if(ID != -1)
             {
