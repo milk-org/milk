@@ -160,6 +160,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // FORCE_CONFFITS
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -199,6 +200,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
     }
 
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // FORCE_CONFNAME
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -310,6 +312,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
     }
 
 
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
     // SEARCH LOCALMEM
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)   // still searching
@@ -347,6 +350,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
         //printf("imLOC = %d\n", *imLOC);
     }
+
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
     // SEARCH SHAREMEM
@@ -387,6 +392,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
         }
         //printf("imLOC = %d\n", *imLOC);
     }
+
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
     // SEARCH CONFFITS
@@ -429,6 +436,8 @@ imageID COREMOD_IOFITS_LoadMemStream(
             // printf("imLOC = %d\n", *imLOC);
         }
     }
+
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);//TBE
 
 
     // SEARCH CONFNAME
