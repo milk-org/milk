@@ -44,7 +44,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
 
     *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
-    printf("imLOC = %d\n", *imLOC);
+    printf("%s %d imLOC = %d\n", __FILE__, __LINE__, *imLOC);
 
 
 
