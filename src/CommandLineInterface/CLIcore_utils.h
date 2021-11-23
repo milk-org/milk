@@ -260,14 +260,13 @@ typedef struct
         DEBUG_TRACEPOINT("setting RT priority to %d", CLIcmddata.cmdsettings->RT_priority);             \
         processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;                                 \
         processinfo->CPUmask = CLIcmddata.cmdsettings->CPUmask;                                         \
-                                                                                                        \
-        processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;
+        processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;                    \
+        DEBUG_TRACEPOINT("loopstart");                                                                  \
+        processinfo_loopstart(processinfo);                                                             \
+    }
 
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                                                       \
-        DEBUG_TRACEPOINT("loopstart");                                                                  \
-        processinfo_loopstart(processinfo);                                                             \
-    }                                                                                                   \
     while (processloopOK == 1)                                                                          \
     {                                                                                                   \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                                        \
