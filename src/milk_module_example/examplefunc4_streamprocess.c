@@ -141,8 +141,12 @@ static errno_t compute_function()
     IMGID outimg = makeIMGID(outimname);
     resolveIMGID(&outimg, ERRMODE_ABORT);
 
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    // custom initialization
+    // procinfo is accessible here
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
     streamprocess(inimg, outimg);
     processinfo_update_output_stream(processinfo, outimg.ID);
