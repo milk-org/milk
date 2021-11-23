@@ -199,7 +199,12 @@ typedef struct
     }
 
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_START                                                           \
+
+
+
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                                            \
     int processloopOK = 1;                                                                              \
     PROCESSINFO *processinfo = NULL;                                                                    \
     if (data.fpsptr != NULL)                                                                            \
@@ -256,8 +261,10 @@ typedef struct
         processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;                                 \
         processinfo->CPUmask = CLIcmddata.cmdsettings->CPUmask;                                         \
                                                                                                         \
-        processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;                    \
-                                                                                                        \
+        processinfo->MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                                                       \
         DEBUG_TRACEPOINT("loopstart");                                                                  \
         processinfo_loopstart(processinfo);                                                             \
     }                                                                                                   \
@@ -283,6 +290,18 @@ typedef struct
         }                                                                                               \
         if (processcompstatus == 1)                                                                     \
         {
+
+
+
+
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_START       \
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT            \
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+
+
+
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_END                  \
     }                                                        \
