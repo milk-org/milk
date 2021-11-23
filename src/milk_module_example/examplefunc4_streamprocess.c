@@ -144,7 +144,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
     }
