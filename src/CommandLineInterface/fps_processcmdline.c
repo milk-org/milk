@@ -747,7 +747,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT32");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -776,7 +776,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not UINT32");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -805,7 +805,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT64");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -834,7 +834,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not UINT64");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -863,7 +863,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not FLOAT64");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -892,7 +892,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not FLOAT32");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -921,7 +921,7 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not number");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT64");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
