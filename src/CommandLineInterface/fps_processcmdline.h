@@ -17,4 +17,12 @@ int functionparameter_FPSprocess_cmdline(
     uint64_t *taskstatus
 );
 
+int functionparameter_FPSprocess_cmdfile(
+    char *infname,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar
+);
+
 #endif

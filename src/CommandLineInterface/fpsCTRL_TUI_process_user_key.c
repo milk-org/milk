@@ -29,6 +29,13 @@
 static short unsigned int wrow, wcol;
 
 
+
+
+
+
+
+
+
 int fpsCTRL_TUI_process_user_key(
     int ch,
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -42,7 +49,6 @@ int fpsCTRL_TUI_process_user_key(
     int loopOK = 1;
     int fpsindex;
     int pindex;
-    FILE *fpinputcmd;
 
     char msg[stringmaxlen];
 
@@ -52,432 +58,424 @@ int fpsCTRL_TUI_process_user_key(
 
     switch(ch)
     {
-        case 3: // CTRL-C
-            loopOK = 0;
-            break;
+    case 3: // CTRL-C
+        loopOK = 0;
+        break;
 
-        case 'x':     // Exit control screen
-            loopOK = 0;
-            break;
+    case 'x':     // Exit control screen
+        loopOK = 0;
+        break;
 
-        // ============ SCREENS
+    // ============ SCREENS
 
-        case 'h': // help
-            fpsCTRLvar->fpsCTRL_DisplayMode = 1;
-            break;
+    case 'h': // help
+        fpsCTRLvar->fpsCTRL_DisplayMode = 1;
+        break;
 
-        case KEY_F(2): // control
-            fpsCTRLvar->fpsCTRL_DisplayMode = 2;
-            break;
+    case KEY_F(2): // control
+        fpsCTRLvar->fpsCTRL_DisplayMode = 2;
+        break;
 
-        case KEY_F(3): // scheduler
-            fpsCTRLvar->fpsCTRL_DisplayMode = 3;
-            break;
+    case KEY_F(3): // scheduler
+        fpsCTRLvar->fpsCTRL_DisplayMode = 3;
+        break;
 
-        case 's' : // (re)scan
-            functionparameter_scan_fps(
-                fpsCTRLvar->mode,
-                fpsCTRLvar->fpsnamemask,
-                fps,
-                keywnode,
-                &fpsCTRLvar->NBkwn,
-                &fpsCTRLvar->NBfps,
-                &fpsCTRLvar->NBindex,
-                0);
-            clear();
-            break;
+    case 's' : // (re)scan
+        functionparameter_scan_fps(
+            fpsCTRLvar->mode,
+            fpsCTRLvar->fpsnamemask,
+            fps,
+            keywnode,
+            &fpsCTRLvar->NBkwn,
+            &fpsCTRLvar->NBfps,
+            &fpsCTRLvar->NBindex,
+            0);
+        clear();
+        break;
 
-        case 'e' : // erase FPS
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_FPSremove(&fps[fpsindex]);
+    case 'e' : // erase FPS
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        functionparameter_FPSremove(&fps[fpsindex]);
 
-            functionparameter_scan_fps(
-                fpsCTRLvar->mode,
-                fpsCTRLvar->fpsnamemask,
-                fps,
-                keywnode,
-                &fpsCTRLvar->NBkwn,
-                &(fpsCTRLvar->NBfps),
-                &fpsCTRLvar->NBindex,
-                0);
-            clear();
-            //DEBUG_TRACEPOINT("fpsCTRLvar->NBfps = %d\n", fpsCTRLvar->NBfps);
-            // abort();
-            fpsCTRLvar->run_display = 0; // skip next display
-            fpsCTRLvar->fpsindexSelected =
-                0; // safeguard in case current selection disappears
-            break;
-
-
-        case 'T' : // initialize tmux session
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_FPS_tmux_init(&fps[fpsindex]);
-            break;
-
-        case 't' : // kill tmux session
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_FPS_tmux_kill(&fps[fpsindex]);
-            break;
+        functionparameter_scan_fps(
+            fpsCTRLvar->mode,
+            fpsCTRLvar->fpsnamemask,
+            fps,
+            keywnode,
+            &fpsCTRLvar->NBkwn,
+            &(fpsCTRLvar->NBfps),
+            &fpsCTRLvar->NBindex,
+            0);
+        clear();
+        //DEBUG_TRACEPOINT("fpsCTRLvar->NBfps = %d\n", fpsCTRLvar->NBfps);
+        // abort();
+        fpsCTRLvar->run_display = 0; // skip next display
+        fpsCTRLvar->fpsindexSelected =
+            0; // safeguard in case current selection disappears
+        break;
 
 
-        case 'E' : // Erase FPS and close tmux sessions
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+    case 'T' : // initialize tmux session
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        functionparameter_FPS_tmux_init(&fps[fpsindex]);
+        break;
 
-            functionparameter_FPSremove(&fps[fpsindex]);
-            functionparameter_scan_fps(
-                fpsCTRLvar->mode,
-                fpsCTRLvar->fpsnamemask,
-                fps,
-                keywnode,
-                &fpsCTRLvar->NBkwn,
-                &fpsCTRLvar->NBfps,
-                &fpsCTRLvar->NBindex, 0);
-            clear();
-            DEBUG_TRACEPOINT(" ");
-            // safeguard in case current selection disappears
-            fpsCTRLvar->fpsindexSelected = 0;
-            break;
-
-        case KEY_UP:
-            fpsCTRLvar->direction = -1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] --;
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] < 0)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
-            }
-            break;
+    case 't' : // kill tmux session
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        functionparameter_FPS_tmux_kill(&fps[fpsindex]);
+        break;
 
 
-        case KEY_DOWN:
-            fpsCTRLvar->direction = 1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] ++;
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] > fpsCTRLvar->NBindex -
-                    1)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
-            }
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
-            }
-            break;
+    case 'E' : // Erase FPS and close tmux sessions
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
 
-        case KEY_PPAGE:
-            fpsCTRLvar->direction = -1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] -= 10;
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] < 0)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
-            }
-            break;
+        functionparameter_FPSremove(&fps[fpsindex]);
+        functionparameter_scan_fps(
+            fpsCTRLvar->mode,
+            fpsCTRLvar->fpsnamemask,
+            fps,
+            keywnode,
+            &fpsCTRLvar->NBkwn,
+            &fpsCTRLvar->NBfps,
+            &fpsCTRLvar->NBindex, 0);
+        clear();
+        DEBUG_TRACEPOINT(" ");
+        // safeguard in case current selection disappears
+        fpsCTRLvar->fpsindexSelected = 0;
+        break;
 
-        case KEY_NPAGE:
-            fpsCTRLvar->direction = 1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] += 10;
-            while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                    fpsCTRLvar->NBindex - 1)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
-            }
-            while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
-            }
-            break;
+    case KEY_UP:
+        fpsCTRLvar->direction = -1;
+        fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] --;
+        if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] < 0)
+        {
+            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
+        }
+        break;
 
 
-        case KEY_LEFT:
-            if(fpsCTRLvar->directorynodeSelected != 0)   // ROOT has no parent
+    case KEY_DOWN:
+        fpsCTRLvar->direction = 1;
+        fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] ++;
+        if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] > fpsCTRLvar->NBindex -
+                1)
+        {
+            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
+        }
+        if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
+                keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+        {
+            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
+                keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
+        }
+        break;
+
+    case KEY_PPAGE:
+        fpsCTRLvar->direction = -1;
+        fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] -= 10;
+        if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] < 0)
+        {
+            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
+        }
+        break;
+
+    case KEY_NPAGE:
+        fpsCTRLvar->direction = 1;
+        fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] += 10;
+        while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
+                fpsCTRLvar->NBindex - 1)
+        {
+            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
+        }
+        while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
+                keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+        {
+            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
+                keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
+        }
+        break;
+
+
+    case KEY_LEFT:
+        if(fpsCTRLvar->directorynodeSelected != 0)   // ROOT has no parent
+        {
+            fpsCTRLvar->directorynodeSelected =
+                keywnode[fpsCTRLvar->directorynodeSelected].parent_index;
+            fpsCTRLvar->nodeSelected = fpsCTRLvar->directorynodeSelected;
+        }
+        break;
+
+
+    case KEY_RIGHT :
+        if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
+        {
+            if(keywnode[keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]]].leaf
+                    == 0)
             {
                 fpsCTRLvar->directorynodeSelected =
-                    keywnode[fpsCTRLvar->directorynodeSelected].parent_index;
+                    keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]];
                 fpsCTRLvar->nodeSelected = fpsCTRLvar->directorynodeSelected;
             }
-            break;
+        }
+        break;
 
-
-        case KEY_RIGHT :
-            if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
-            {
-                if(keywnode[keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]]].leaf
-                        == 0)
-                {
-                    fpsCTRLvar->directorynodeSelected =
-                        keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]];
-                    fpsCTRLvar->nodeSelected = fpsCTRLvar->directorynodeSelected;
-                }
-            }
-            break;
-
-        case 10 : // enter key
+    case 10 : // enter key
+        DEBUG_TRACEPOINT_LOG("exiting TUI screen");
+        if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)   // this is a leaf
+        {
             DEBUG_TRACEPOINT_LOG("exiting TUI screen");
-            if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)   // this is a leaf
-            {
-                DEBUG_TRACEPOINT_LOG("exiting TUI screen");
-                TUI_exit();
-
-                if(system("clear") != 0)   // clear screen
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
-                functionparameter_UserInputSetParamValue(&fps[fpsCTRLvar->fpsindexSelected],
-                        fpsCTRLvar->pindexSelected);
-
-                DEBUG_TRACEPOINT(" ");
-
-                TUI_init_terminal(&wrow, &wcol);
-                DEBUG_TRACEPOINT(" ");
-            }
-            break;
-
-        case ' ' :
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            pindex = keywnode[fpsCTRLvar->nodeSelected].pindex;
-
-            // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
-            if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS)
-            {
-                if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
-                {
-
-                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)    // ON -> OFF
-                    {
-                        fps[fpsindex].parray[pindex].fpflag &= ~FPFLAG_ONOFF;
-                        fps[fpsindex].parray[pindex].val.i64[0] = 0;
-                    }
-                    else     // OFF -> ON
-                    {
-                        fps[fpsindex].parray[pindex].fpflag |= FPFLAG_ONOFF;
-                        fps[fpsindex].parray[pindex].val.i64[0] = 1;
-                    }
-
-                    // Save to disk
-                    if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
-                    {
-                        functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval",
-                                                               "UserInputSetParamValue");
-                    }
-                    fps[fpsindex].parray[pindex].cnt0 ++;
-                    fps[fpsindex].md->signal |=
-                        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-                }
-            }
-
-            if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
-            {
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
-                                       fps[fpsindex].md->name, fps[fpsindex].md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s/%s.fps\" C-m",
-                                       fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0],
-                                       fps[fpsindex].md->datadir, fps[fpsindex].md->name);
-            }
-
-            break;
-
-
-        case 'u' : // update conf process
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            fps[fpsindex].md->signal |=
-                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-            if(snprintf(msg, stringmaxlen, "UPDATE %s", fps[fpsindex].md->name) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", "%s", msg);
-            //functionparameter_CONFupdate(fps, fpsindex);
-            break;
-
-        case 'R' : // start run process if possible
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "RUNSTART %s", fps[fpsindex].md->name) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_RUNstart(&fps[fpsindex]);
-            break;
-
-        case 'r' : // stop run process
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "RUNSTOP %s", fps[fpsindex].md->name) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_RUNstop(&fps[fpsindex]);
-            break;
-
-
-        case 'C' : // start conf process
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "CONFSTART %s", fps[fpsindex].md->name) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_CONFstart(&fps[fpsindex]);
-            break;
-
-        case 'c': // kill conf process
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "CONFSTOP %s", fps[fpsindex].md->name) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
-            functionparameter_CONFstop(&fps[fpsindex]);
-            break;
-
-        case 'l': // list all parameters
             TUI_exit();
-            if(system("clear") != 0)
+
+            if(system("clear") != 0)   // clear screen
             {
                 PRINT_ERROR("system() returns non-zero value");
             }
-            printf("FPS entries - Full list \n");
-            printf("\n");
-            for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
+            functionparameter_UserInputSetParamValue(&fps[fpsCTRLvar->fpsindexSelected],
+                    fpsCTRLvar->pindexSelected);
+
+            DEBUG_TRACEPOINT(" ");
+
+            TUI_init_terminal(&wrow, &wcol);
+            DEBUG_TRACEPOINT(" ");
+        }
+        break;
+
+    case ' ' :
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        pindex = keywnode[fpsCTRLvar->nodeSelected].pindex;
+
+        // toggles ON / OFF - this is a special case not using function functionparameter_UserInputSetParamValue
+        if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_WRITESTATUS)
+        {
+            if(fps[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
             {
-                if(keywnode[kwnindex].leaf == 1)
+
+                if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)    // ON -> OFF
                 {
-                    printf("%4d  %4d  %s\n", keywnode[kwnindex].fpsindex, keywnode[kwnindex].pindex,
-                           keywnode[kwnindex].keywordfull);
+                    fps[fpsindex].parray[pindex].fpflag &= ~FPFLAG_ONOFF;
+                    fps[fpsindex].parray[pindex].val.i64[0] = 0;
                 }
-            }
-            printf("  TOTAL :  %d nodes\n", fpsCTRLvar->NBkwn);
-            printf("\n");
-            printf("Press Any Key to Continue\n");
-            getchar();
-
-            TUI_initncurses();
-
-            break;
-
-
-        case '>': // export to confdir
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            fps_datadir_to_confdir(&fps[fpsindex]);
-            break;
-
-
-        case '<': // Load from confdir
-            TUI_exit();
-            if(system("clear") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            sprintf(fname, "%s/%s.fps", fps[fpsindex].md->confdir, fps[fpsindex].md->name);
-            //printf("LOADING FPS FILE %s\n", fname);
-
-            fpin = fopen(fname, "r");
-            if(fpin != NULL)
-            {
-                char *FPSline = NULL;
-                size_t len = 0;
-                ssize_t read;
-
-                while((read = getline(&FPSline, &len, fpin)) != -1)
+                else     // OFF -> ON
                 {
-                    uint64_t taskstatus = 0;
-
-                    //printf("READING LINE: %s\n", FPSline);
-
-                    char delimiter[] = " ";
-                    char *varname, *vartype, *varvalue;
-                    char *context;
-
-                    int inputLength = strlen(FPSline);
-
-                    char *inputCopy = (char *) calloc(inputLength + 1, sizeof(char));
-                    if(inputCopy == NULL)
-                    {
-                        PRINT_ERROR("malloc returns NULL pointer");
-                        abort();
-                    }
-
-                    strncpy(inputCopy, FPSline, inputLength);
-
-                    varname = strtok_r(inputCopy, delimiter, &context);
-                    vartype = strtok_r(NULL, delimiter, &context);
-                    (void) vartype;
-                    varvalue = strtok_r(NULL, delimiter, &context);
-
-                    //printf("%s [%s] -< %s\n", varname, vartype, varvalue);
-
-                    char FPScmdline[200];
-                    sprintf(FPScmdline, "setval %s %s", varname, varvalue);
-                    free(inputCopy);
-                    functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode,
-                                                         fpsCTRLvar, fps, &taskstatus);
+                    fps[fpsindex].parray[pindex].fpflag |= FPFLAG_ONOFF;
+                    fps[fpsindex].parray[pindex].val.i64[0] = 1;
                 }
-                fclose(fpin);
-            }
-            else
-            {
-                printf("File not found\n");
-            }
 
-            TUI_initncurses();
-            break;
-
-
-        case 'F': // process FIFO
-            TUI_exit();
-            if(system("clear") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            printf("Reading FIFO file \"%s\"  fd=%d\n", fpsCTRLvar->fpsCTRLfifoname,
-                   fpsCTRLvar->fpsCTRLfifofd);
-
-            if(fpsCTRLvar->fpsCTRLfifofd > 0)
-            {
-                // int verbose = 1;
-                functionparameter_read_fpsCMD_fifo(fpsCTRLvar->fpsCTRLfifofd, fpsctrltasklist,
-                                                   fpsctrlqueuelist);
-            }
-
-            printf("\n");
-            printf("Press Any Key to Continue\n");
-            getchar();
-            TUI_initncurses();
-            break;
-
-
-        case 'P': // process input command file
-            TUI_exit();
-            if(system("clear") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            printf("Reading file confscript\n");
-            fpinputcmd = fopen("confscript", "r");
-            if(fpinputcmd != NULL)
-            {
-                char *FPScmdline = NULL;
-                size_t len = 0;
-                ssize_t read;
-
-                while((read = getline(&FPScmdline, &len, fpinputcmd)) != -1)
+                // Save to disk
+                if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
                 {
-                    uint64_t taskstatus = 0;
-                    printf("Processing line : %s\n", FPScmdline);
-                    functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode,
-                                                         fpsCTRLvar, fps, &taskstatus);
+                    functionparameter_WriteParameterToDisk(&fps[fpsindex], pindex, "setval",
+                                                           "UserInputSetParamValue");
                 }
-                fclose(fpinputcmd);
+                fps[fpsindex].parray[pindex].cnt0 ++;
+                fps[fpsindex].md->signal |=
+                    FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             }
+        }
 
-            printf("\n");
-            printf("Press Any Key to Continue\n");
-            getchar();
-            TUI_initncurses();
-            break;
+        if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
+        {
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
+                                   fps[fpsindex].md->name, fps[fpsindex].md->workdir);
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s %s/%s.fps\" C-m",
+                                   fps[fpsindex].md->name, fps[fpsindex].parray[pindex].val.string[0],
+                                   fps[fpsindex].md->datadir, fps[fpsindex].md->name);
+        }
+
+        break;
+
+
+    case 'u' : // update conf process
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        fps[fpsindex].md->signal |=
+            FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+        if(snprintf(msg, stringmaxlen, "UPDATE %s", fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        functionparameter_outlog("FPSCTRL", "%s", msg);
+        //functionparameter_CONFupdate(fps, fpsindex);
+        break;
+
+    case 'R' : // start run process if possible
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        if(snprintf(msg, stringmaxlen, "RUNSTART %s", fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        functionparameter_outlog("FPSCTRL", msg);
+        functionparameter_RUNstart(&fps[fpsindex]);
+        break;
+
+    case 'r' : // stop run process
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        if(snprintf(msg, stringmaxlen, "RUNSTOP %s", fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        functionparameter_outlog("FPSCTRL", msg);
+        functionparameter_RUNstop(&fps[fpsindex]);
+        break;
+
+
+    case 'C' : // start conf process
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        if(snprintf(msg, stringmaxlen, "CONFSTART %s", fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        functionparameter_outlog("FPSCTRL", msg);
+        functionparameter_CONFstart(&fps[fpsindex]);
+        break;
+
+    case 'c': // kill conf process
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        if(snprintf(msg, stringmaxlen, "CONFSTOP %s", fps[fpsindex].md->name) < 0)
+        {
+            PRINT_ERROR("snprintf error");
+        }
+        functionparameter_outlog("FPSCTRL", msg);
+        functionparameter_CONFstop(&fps[fpsindex]);
+        break;
+
+    case 'l': // list all parameters
+        TUI_exit();
+        if(system("clear") != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
+        printf("FPS entries - Full list \n");
+        printf("\n");
+        for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
+        {
+            if(keywnode[kwnindex].leaf == 1)
+            {
+                printf("%4d  %4d  %s\n", keywnode[kwnindex].fpsindex, keywnode[kwnindex].pindex,
+                       keywnode[kwnindex].keywordfull);
+            }
+        }
+        printf("  TOTAL :  %d nodes\n", fpsCTRLvar->NBkwn);
+        printf("\n");
+        printf("Press Any Key to Continue\n");
+        getchar();
+
+        TUI_initncurses();
+
+        break;
+
+
+    case '>': // export to confdir
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        fps_datadir_to_confdir(&fps[fpsindex]);
+        break;
+
+
+    case '<': // Load from confdir
+        TUI_exit();
+        if(system("clear") != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        sprintf(fname, "%s/%s.fps", fps[fpsindex].md->confdir, fps[fpsindex].md->name);
+        //printf("LOADING FPS FILE %s\n", fname);
+
+        fpin = fopen(fname, "r");
+        if(fpin != NULL)
+        {
+            char *FPSline = NULL;
+            size_t len = 0;
+            ssize_t read;
+
+            while((read = getline(&FPSline, &len, fpin)) != -1)
+            {
+                uint64_t taskstatus = 0;
+
+                //printf("READING LINE: %s\n", FPSline);
+
+                char delimiter[] = " ";
+                char *varname, *vartype, *varvalue;
+                char *context;
+
+                int inputLength = strlen(FPSline);
+
+                char *inputCopy = (char *) calloc(inputLength + 1, sizeof(char));
+                if(inputCopy == NULL)
+                {
+                    PRINT_ERROR("malloc returns NULL pointer");
+                    abort();
+                }
+
+                strncpy(inputCopy, FPSline, inputLength);
+
+                varname = strtok_r(inputCopy, delimiter, &context);
+                vartype = strtok_r(NULL, delimiter, &context);
+                (void) vartype;
+                varvalue = strtok_r(NULL, delimiter, &context);
+
+                //printf("%s [%s] -< %s\n", varname, vartype, varvalue);
+
+                char FPScmdline[200];
+                sprintf(FPScmdline, "setval %s %s", varname, varvalue);
+                free(inputCopy);
+                functionparameter_FPSprocess_cmdline(FPScmdline, fpsctrlqueuelist, keywnode,
+                                                     fpsCTRLvar, fps, &taskstatus);
+            }
+            fclose(fpin);
+        }
+        else
+        {
+            printf("File not found\n");
+        }
+
+        TUI_initncurses();
+        break;
+
+
+    case 'F': // process FIFO
+        TUI_exit();
+        if(system("clear") != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
+        printf("Reading FIFO file \"%s\"  fd=%d\n", fpsCTRLvar->fpsCTRLfifoname,
+               fpsCTRLvar->fpsCTRLfifofd);
+
+        if(fpsCTRLvar->fpsCTRLfifofd > 0)
+        {
+            // int verbose = 1;
+            functionparameter_read_fpsCMD_fifo(fpsCTRLvar->fpsCTRLfifofd, fpsctrltasklist,
+                                               fpsctrlqueuelist);
+        }
+
+        printf("\n");
+        printf("Press Any Key to Continue\n");
+        getchar();
+        TUI_initncurses();
+        break;
+
+
+    case 'P': // process input command file
+        TUI_exit();
+        if(system("clear") != 0)
+        {
+            PRINT_ERROR("system() returns non-zero value");
+        }
+        printf("Reading file confscript\n");
+
+        functionparameter_FPSprocess_cmdfile(
+            "confscript",
+            fps,
+            keywnode,
+            fpsctrlqueuelist,
+            fpsCTRLvar
+        );
+
+        printf("\n");
+        printf("Press Any Key to Continue\n");
+        getchar();
+        TUI_initncurses();
+        break;
     }
 
 
