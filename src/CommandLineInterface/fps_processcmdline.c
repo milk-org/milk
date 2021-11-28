@@ -760,7 +760,7 @@ int functionparameter_FPSprocess_cmdline(
                         char *endptr;
                         long valn = strtol(FPScmdarg1, &endptr, 10);
 
-                        if( (*endptr == '\0') && (valn >= 0))
+                        if((*endptr == '\0') && (valn >= 0))
                         {
                             // OK
                             if(functionparameter_SetParamValue_UINT32(&fps[fpsindex], FPSentryname,
