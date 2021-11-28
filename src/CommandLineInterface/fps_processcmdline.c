@@ -863,7 +863,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not FLOAT64");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                           "argument is not FLOAT64");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
@@ -892,7 +893,8 @@ int functionparameter_FPSprocess_cmdline(
                         {
                             *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
                             cmdOK = 0;
-                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not FLOAT32");
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                           "argument is not FLOAT32");
                             functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
