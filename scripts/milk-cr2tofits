@@ -1,4 +1,5 @@
 milk << EOF
-cr2tofits "$1" "!$2"
+mload milkimageformat
+imgformat.cr2tofits "$1" "$2"
 exit
 EOF
