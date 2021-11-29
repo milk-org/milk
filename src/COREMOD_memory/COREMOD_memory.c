@@ -176,7 +176,7 @@ static errno_t init_module_CLI()
     shmim_setowner_addCLIcmd();
 
     stream_updateloop_addCLIcmd();
-    stream_delay_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__streamdelay();
     saveall_addCLIcmd();
     stream__TCP_addCLIcmd();
     stream_pixmapdecode_addCLIcmd();
