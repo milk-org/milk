@@ -21,10 +21,24 @@
 
 
 // Local variables pointers
+
 static char *inimname;
+
 static char *outimname;
+
 static uint32_t *cntindex;
+static long fpi_cntindex = -1;
+
 static uint32_t *cntindexmax;
+static long fpi_cntindexmax = -1;
+
+static int64_t  *ex0mode;
+static long fpi_ex0mode = -1;
+
+static int64_t  *ex1mode;
+static long fpi_ex1mode = -1;
+
+
 
 static CLICMDARGDEF farg[] =
 {
@@ -41,12 +55,20 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_UINT32, ".cntindex", "counter index", "5",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindex, NULL
+        (void **) &cntindex, &fpi_cntindex
     },
     {
         CLIARG_UINT32, ".cntindexmax", "counter index max value", "100",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindexmax, NULL
+        (void **) &cntindexmax, &fpi_cntindexmax
+    },
+    {
+        CLIARG_ONOFF, ".option.ex0mode", "toggle0", "0",
+        CLIARG_HIDDEN_DEFAULT, (void **) &ex0mode, &fpi_ex0mode
+    },
+    {
+        CLIARG_ONOFF, ".option.ex1mode", "toggle1 conditional on toggle0", "0",
+        CLIARG_HIDDEN_DEFAULT, (void **) &ex1mode, &fpi_ex1mode
     }
 };
 
@@ -86,12 +108,26 @@ static errno_t customCONFsetup()
 //
 static errno_t customCONFcheck()
 {
-    // increment counter at every configuration check
-    *cntindex = *cntindex + 1;
-
-    if(*cntindex >= *cntindexmax)
+    if(data.fpsptr != NULL)
     {
-        *cntindex = 0;
+        if(data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)     // ON state
+        {
+            data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
+            data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
+        }
+        else     // OFF state
+        {
+            data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
+            data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
+        }
+
+        // increment counter at every configuration check
+        *cntindex = *cntindex + 1;
+
+        if(*cntindex >= *cntindexmax)
+        {
+            *cntindex = 0;
+        }
     }
 
     return RETURN_SUCCESS;
