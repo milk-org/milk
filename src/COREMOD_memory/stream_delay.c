@@ -150,7 +150,7 @@ static errno_t streamdelay(
     clock_gettime(CLOCK_REALTIME, &tnow);
 
     // update circular buffer if new frame has arrived
-    if( cnt0prev != inimg.md->cnt0 )
+    if(cnt0prev != inimg.md->cnt0)
     {
         // new input frame
 
@@ -188,7 +188,7 @@ static errno_t streamdelay(
     double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
     //printf("%8ld  %8ld  tdiffv = %lf sec    %lf\n", bufferindex_input, bufferindex_output, tdiffv, (1.0e-9 * *delayns));
-    if( (warray[bufferindex_output] == 0) && (tdiffv > (1.0e-9 * *delayns)) )
+    if((warray[bufferindex_output] == 0) && (tdiffv > (1.0e-9 * *delayns)))
     {
         // update output frame
 
@@ -233,17 +233,19 @@ static errno_t compute_function()
     IMGID outimg = makeIMGID(outimname);
     imcreatelikewiseIMGID(&outimg, &inimg);
 
-    IMGID bufferimg = makeIMGID_3D("streamdelaybuff", inimg.size[0], inimg.size[1], *timebuffsize);
+    IMGID bufferimg = makeIMGID_3D("streamdelaybuff", inimg.size[0], inimg.size[1],
+                                   *timebuffsize);
     bufferimg.datatype = inimg.datatype;
     imcreateIMGID(&bufferimg);
 
 
     struct timespec    *timeinarray;
-    timeinarray = (struct timespec *) malloc(sizeof(struct timespec) *  (*timebuffsize));
+    timeinarray = (struct timespec *) malloc(sizeof(struct timespec) *
+                  (*timebuffsize));
     // get current time
     struct timespec tnow;
     clock_gettime(CLOCK_REALTIME, &tnow);
-    for(uint64_t i=0; i < *timebuffsize; i++)
+    for(uint64_t i = 0; i < *timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
         timeinarray[i].tv_nsec = tnow.tv_nsec;
@@ -253,7 +255,7 @@ static errno_t compute_function()
     // 0 if new, 1 if already sent to output
     int *warray;
     warray = (int *) malloc(sizeof(int) * (*timebuffsize));
-    for(uint64_t i=0; i < *timebuffsize; i++)
+    for(uint64_t i = 0; i < *timebuffsize; i++)
     {
         warray[i] = 1;
     }
@@ -266,7 +268,7 @@ static errno_t compute_function()
 
     streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     // status is 0 if no update to output, 1 otherwise
-    if( status != 0)
+    if(status != 0)
     {
         processinfo_update_output_stream(processinfo, outimg.ID);
     }
