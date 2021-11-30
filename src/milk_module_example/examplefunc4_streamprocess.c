@@ -2,7 +2,7 @@
  * @file    stream_process_loop_simple.c
  * @brief   template for simple stream processing loop
  *
- * Example 3
+ * Example 4
  * Function has input stream and output stream.
  */
 
