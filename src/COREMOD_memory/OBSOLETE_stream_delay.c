@@ -148,13 +148,13 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF()
     long delayus_default[4] = { 1000, 1, 10000, 1000 };
     long fp_delayus = 0;
     function_parameter_add_entry(&fps, ".delayus", "Delay [us]",
-                      FPTYPE_INT64, FPFLAG, &delayus_default, &fp_delayus);
+                                 FPTYPE_INT64, FPFLAG, &delayus_default, &fp_delayus);
     (void) fp_delayus; // suppresses unused parameter compiler warning
 
     long dtus_default[4] = { 50, 1, 200, 50 };
     long fp_dtus    = 0;
     function_parameter_add_entry(&fps, ".dtus",
-                      "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default, &fp_dtus);
+                                 "Loop period [us]", FPTYPE_INT64, FPFLAG, &dtus_default, &fp_dtus);
     (void) fp_dtus; // suppresses unused parameter compiler warning
 
 
@@ -260,11 +260,11 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     //
     char IDin_name[FUNCTION_PARAMETER_STRMAXLEN];
     strncpy(IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_name"),
-            FUNCTION_PARAMETER_STRMAXLEN-1);
+            FUNCTION_PARAMETER_STRMAXLEN - 1);
 
     char IDout_name[FUNCTION_PARAMETER_STRMAXLEN];
     strncpy(IDout_name, functionparameter_GetParamPtr_STRING(&fps, ".out_name"),
-            FUNCTION_PARAMETER_STRMAXLEN-1);
+            FUNCTION_PARAMETER_STRMAXLEN - 1);
 
     long delayus = functionparameter_GetParamValue_INT64(&fps, ".delayus");
 
