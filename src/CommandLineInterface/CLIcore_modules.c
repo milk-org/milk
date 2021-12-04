@@ -435,10 +435,6 @@ uint32_t RegisterCLIcmd(
 {
     DEBUG_TRACE_FSTART();
 
-    DEBUG_TRACEPOINT("REGISTERING FUNCTION %s", CLIcmddata.key);
-
-    DEBUG_TRACEPOINT(" nbarg =  %d\n", CLIcmddata.nbarg);
-    DEBUG_TRACEPOINT(" tag : %s\n", CLIcmddata.funcfpscliarg[0].fpstag);
 
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
     if(data.cmd[data.NBcmd].moduleindex == -1)
@@ -472,15 +468,12 @@ uint32_t RegisterCLIcmd(
         }
     }
 
-    DEBUG_TRACEPOINT("setting module name to unknown");
     if(strlen(data.modulename) == 0)
     {
-        DEBUG_TRACEPOINT("setting module name to unknown");
         strcpy(data.cmd[data.NBcmd].module, "unknown");
     }
     else
     {
-        DEBUG_TRACEPOINT("setting module name to %s", data.modulename);
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
 
@@ -593,9 +586,7 @@ uint32_t RegisterCLIcmd(
 
     data.NBcmd++;
 
-    DEBUG_TRACEPOINT("data.NBcmd set to %d", data.NBcmd);
     DEBUG_TRACE_FEXIT();
-    DEBUG_TRACEPOINT("--- data.NBcmd set to %d", data.NBcmd);
 
     return((uint32_t)((int) data.NBcmd - 1));
 }
