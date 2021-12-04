@@ -357,7 +357,8 @@ uint32_t RegisterCLIcommand(
 {
     DEBUG_TRACE_FSTART();
 
-    DEBUG_TRACEPOINT("FARG CLIkey %s -> command index %u / %d", CLIkey, data.NBcmd, DATA_NB_MAX_COMMAND);
+    DEBUG_TRACEPOINT("FARG CLIkey %s -> command index %u / %d", CLIkey, data.NBcmd,
+                     DATA_NB_MAX_COMMAND);
 
 
 
@@ -396,22 +397,28 @@ uint32_t RegisterCLIcommand(
 
     DEBUG_TRACEPOINT("load function data");
 
-    strncpy(data.cmd[data.NBcmd].srcfile, CLImodulesrc, STRINGMAXLEN_CMD_SRCFILE-1);
+    strncpy(data.cmd[data.NBcmd].srcfile, CLImodulesrc,
+            STRINGMAXLEN_CMD_SRCFILE - 1);
 
     data.cmd[data.NBcmd].fp = CLIfptr;
 
-    strncpy(data.cmd[data.NBcmd].info,    CLIinfo, STRINGMAXLEN_CMD_INFO-1);
+    strncpy(data.cmd[data.NBcmd].info,    CLIinfo, STRINGMAXLEN_CMD_INFO - 1);
 
-    strncpy(data.cmd[data.NBcmd].syntax,  CLIsyntax, STRINGMAXLEN_CMD_SYNTAX-1);
+    strncpy(data.cmd[data.NBcmd].syntax,  CLIsyntax, STRINGMAXLEN_CMD_SYNTAX - 1);
 
-    strncpy(data.cmd[data.NBcmd].example, CLIexample, STRINGMAXLEN_CMD_EXAMPLE-1);
+    strncpy(data.cmd[data.NBcmd].example, CLIexample, STRINGMAXLEN_CMD_EXAMPLE - 1);
 
-    strncpy(data.cmd[data.NBcmd].Ccall,   CLICcall, STRINGMAXLEN_CMD_CCALL-1);
+    strncpy(data.cmd[data.NBcmd].Ccall,   CLICcall, STRINGMAXLEN_CMD_CCALL - 1);
 
     data.cmd[data.NBcmd].nbarg = 0;
     data.NBcmd++;
 
+    DEBUG_TRACEPOINT("Done1");
+
     DEBUG_TRACE_FEXIT();
+
+    DEBUG_TRACEPOINT("NBcmd = %u", data.NBcmd);
+
     return(data.NBcmd);
 }
 
@@ -428,10 +435,10 @@ uint32_t RegisterCLIcmd(
 {
     DEBUG_TRACE_FSTART();
 
-    //printf("============== REGISTERING FUNCTION\n");
+    DEBUG_TRACEPOINT("REGISTERING FUNCTION %s", CLIcmddata.key);
 
-    //printf(" nbarg =  %d\n", CLIcmddata.nbarg);
-    //printf(" tag : %s\n", CLIcmddata.funcfpscliarg[0].fpstag);
+    DEBUG_TRACEPOINT(" nbarg =  %d\n", CLIcmddata.nbarg);
+    DEBUG_TRACEPOINT(" tag : %s\n", CLIcmddata.funcfpscliarg[0].fpstag);
 
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
     if(data.cmd[data.NBcmd].moduleindex == -1)
@@ -465,26 +472,30 @@ uint32_t RegisterCLIcmd(
         }
     }
 
+    DEBUG_TRACEPOINT("setting module name to unknown");
     if(strlen(data.modulename) == 0)
     {
+        DEBUG_TRACEPOINT("setting module name to unknown");
         strcpy(data.cmd[data.NBcmd].module, "unknown");
     }
     else
     {
+        DEBUG_TRACEPOINT("setting module name to %s", data.modulename);
         strcpy(data.cmd[data.NBcmd].module, data.modulename);
     }
 
+    DEBUG_TRACEPOINT("settingsrcfile to %s", CLIcmddata.sourcefilename);
     strcpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename);
     data.cmd[data.NBcmd].fp = CLIfptr;
     strcpy(data.cmd[data.NBcmd].info,    CLIcmddata.description);
 
     // assemble argument syntax string for help
-    char argstring[1000];
+    char argstring[STRINGMAXLEN_CMD_SYNTAX];
     CLIhelp_make_argstring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg, argstring);
     strcpy(data.cmd[data.NBcmd].syntax,  argstring);
 
     // assemble example string for help
-    char cmdexamplestring[1000];
+    char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
     CLIhelp_make_cmdexamplestring(CLIcmddata.funcfpscliarg, CLIcmddata.nbarg,
                                   CLIcmddata.key,
                                   cmdexamplestring);
@@ -493,7 +504,7 @@ uint32_t RegisterCLIcmd(
     strcpy(data.cmd[data.NBcmd].Ccall,   "--callstring--");
 
 
-    // define arguments to CLI function from content of CLIcmddata.funcfpscliarg
+    DEBUG_TRACEPOINT("define arguments to CLI function from content of CLIcmddata.funcfpscliarg");
     data.cmd[data.NBcmd].nbarg = CLIcmddata.nbarg;
     if(CLIcmddata.nbarg > 0)
     {
@@ -574,7 +585,7 @@ uint32_t RegisterCLIcmd(
         }
     }
 
-    // define CLI function flags from content of CLIcmddata.flags
+    DEBUG_TRACEPOINT("define CLI function flags from content of CLIcmddata.flags");
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
 
     data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax = 1;
@@ -582,7 +593,10 @@ uint32_t RegisterCLIcmd(
 
     data.NBcmd++;
 
+    DEBUG_TRACEPOINT("data.NBcmd set to %d", data.NBcmd);
     DEBUG_TRACE_FEXIT();
-    return(data.NBcmd - 1);
+    DEBUG_TRACEPOINT("--- data.NBcmd set to %d", data.NBcmd);
+
+    return((uint32_t) ((int) data.NBcmd - 1));
 }
 
