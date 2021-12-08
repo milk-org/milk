@@ -726,337 +726,337 @@ int functionparameter_FPSprocess_cmdline(
 
 
 
-                case FPTYPE_INT32:
-                {
-                    char *endptr;
-                    long valn = strtol(FPScmdarg1, &endptr, 10);
-
-                    if(*endptr == '\0')
+                    case FPTYPE_INT32:
                     {
-                        // OK
-                        if(functionparameter_SetParamValue_INT32(&fps[fpsindex], FPSentryname,
-                                valn) == EXIT_SUCCESS)
-                        {
-                            updated = 1;
+                        char *endptr;
+                        long valn = strtol(FPScmdarg1, &endptr, 10);
 
-                            functionparameter_outlog("SETVAL", "%-40s INT32      %ld",
-                                                     FPSentryname, valn);
+                        if(*endptr == '\0')
+                        {
+                            // OK
+                            if(functionparameter_SetParamValue_INT32(&fps[fpsindex], FPSentryname,
+                                    valn) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
+
+                                functionparameter_outlog("SETVAL", "%-40s INT32      %ld",
+                                                         FPSentryname, valn);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT32");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
-                    else
+                    break;
+
+
+
+                    case FPTYPE_UINT32:
                     {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT32");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
+                        char *endptr;
+                        long valn = strtol(FPScmdarg1, &endptr, 10);
 
-
-
-                case FPTYPE_UINT32:
-                {
-                    char *endptr;
-                    long valn = strtol(FPScmdarg1, &endptr, 10);
-
-                    if((*endptr == '\0') && (valn >= 0))
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_UINT32(&fps[fpsindex], FPSentryname,
-                                valn) == EXIT_SUCCESS)
+                        if((*endptr == '\0') && (valn >= 0))
                         {
-                            updated = 1;
+                            // OK
+                            if(functionparameter_SetParamValue_UINT32(&fps[fpsindex], FPSentryname,
+                                    valn) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
 
-                            functionparameter_outlog("SETVAL", "%-40s UINT32     %ld",
-                                                     FPSentryname, valn);
+                                functionparameter_outlog("SETVAL", "%-40s UINT32     %ld",
+                                                         FPSentryname, valn);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not UINT32");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
-                    else
+                    break;
+
+
+
+                    case FPTYPE_INT64:
                     {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not UINT32");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
+                        char *endptr;
+                        long valn = strtol(FPScmdarg1, &endptr, 10);
 
-
-
-                case FPTYPE_INT64:
-                {
-                    char *endptr;
-                    long valn = strtol(FPScmdarg1, &endptr, 10);
-
-                    if(*endptr == '\0')
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname,
-                                valn) == EXIT_SUCCESS)
+                        if(*endptr == '\0')
                         {
-                            updated = 1;
+                            // OK
+                            if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname,
+                                    valn) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
 
-                            functionparameter_outlog("SETVAL", "%-40s INT64      %ld",
-                                                     FPSentryname, valn);
+                                functionparameter_outlog("SETVAL", "%-40s INT64      %ld",
+                                                         FPSentryname, valn);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT64");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
-                    else
+                    break;
+
+
+
+                    case FPTYPE_UINT64:
                     {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT64");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
+                        char *endptr;
+                        long valn = strtol(FPScmdarg1, &endptr, 10);
 
-
-
-                case FPTYPE_UINT64:
-                {
-                    char *endptr;
-                    long valn = strtol(FPScmdarg1, &endptr, 10);
-
-                    if((*endptr == '\0') && (valn >= 0))
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_UINT64(&fps[fpsindex], FPSentryname,
-                                valn) == EXIT_SUCCESS)
+                        if((*endptr == '\0') && (valn >= 0))
                         {
-                            updated = 1;
+                            // OK
+                            if(functionparameter_SetParamValue_UINT64(&fps[fpsindex], FPSentryname,
+                                    valn) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
 
-                            functionparameter_outlog("SETVAL", "%-40s UINT64     %ld",
-                                                     FPSentryname, valn);
+                                functionparameter_outlog("SETVAL", "%-40s UINT64     %ld",
+                                                         FPSentryname, valn);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not UINT64");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
-                    else
+                    break;
+
+
+
+                    case FPTYPE_FLOAT64:
                     {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not UINT64");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
+                        char *endptr;
+                        double valf64 = strtod(FPScmdarg1, &endptr);
 
-
-
-                case FPTYPE_FLOAT64:
-                {
-                    char *endptr;
-                    double valf64 = strtod(FPScmdarg1, &endptr);
-
-                    if(*endptr == '\0')
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname,
-                                valf64) == EXIT_SUCCESS)
+                        if(*endptr == '\0')
                         {
-                            updated = 1;
+                            // OK
+                            if(functionparameter_SetParamValue_FLOAT64(&fps[fpsindex], FPSentryname,
+                                    valf64) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
 
-                            functionparameter_outlog("SETVAL", "%-40s FLOAT64     %f",
-                                                     FPSentryname, valf64);
+                                functionparameter_outlog("SETVAL", "%-40s FLOAT64     %f",
+                                                         FPSentryname, valf64);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                           "argument is not FLOAT64");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
                         }
                     }
-                    else
+                    break;
+
+
+
+                    case FPTYPE_FLOAT32:
                     {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
+                        char *endptr;
+                        double valf32 = strtof(FPScmdarg1, &endptr);
+
+                        if(*endptr == '\0')
+                        {
+                            // OK
+                            if(functionparameter_SetParamValue_FLOAT32(&fps[fpsindex], FPSentryname,
+                                    valf32) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
+
+                                functionparameter_outlog("SETVAL", "%-40s FLOAT32     %f",
+                                                         FPSentryname, valf32);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                           "argument is not FLOAT32");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
+                        }
+                    }
+                    break;
+
+
+
+                    case FPTYPE_PID:
+                    {
+                        char *endptr;
+                        long valn = strtol(FPScmdarg1, &endptr, 10);
+
+                        if(*endptr == '\0')
+                        {
+                            // OK
+                            if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname,
+                                    valn) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
+
+                                functionparameter_outlog("SETVAL", "%-40s PID      %ld",
+                                                         FPSentryname, valn);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT64");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
+                        }
+                    }
+                    break;
+
+                    case FPTYPE_TIMESPEC:
+                    {
+                        char *endptr;
+                        double valf32 = strtof(FPScmdarg1, &endptr);
+
+                        if(*endptr == '\0')
+                        {
+                            // OK
+                            if(functionparameter_SetParamValue_TIMESPEC(&fps[fpsindex], FPSentryname,
+                                    valf32) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
+
+                                functionparameter_outlog("SETVAL", "%-40s TIMESPEC     %f",
+                                                         FPSentryname, valf32);
+                            }
+                        }
+                        else
+                        {
+                            *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
+                            cmdOK = 0;
+                            SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
+                                           "argument is not FLOAT->TIMESPEC");
+                            functionparameter_outlog("ERROR", "%s", errmsgstring);
+                        }
+                    }
+                    break;
+
+                    case FPTYPE_FILENAME:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s FILENAME   %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    case FPTYPE_FITSFILENAME:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s FITSFILENAME   %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    case FPTYPE_EXECFILENAME:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s EXECFILENAME   %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    case FPTYPE_DIRNAME:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s DIRNAME    %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    case FPTYPE_STREAMNAME:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s STREAMNAME %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    case FPTYPE_STRING:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s STRING     %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    case FPTYPE_ONOFF:
+                        if(strncmp(FPScmdarg1, "ON", 2) == 0)
+                        {
+                            if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname,
+                                    1) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
+                            }
+                            functionparameter_outlog("SETVAL", "%-40s ONOFF      ON",
+                                                     FPSentryname);
+                        }
+                        if(strncmp(FPScmdarg1, "OFF", 3) == 0)
+                        {
+                            if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname,
+                                    0) == EXIT_SUCCESS)
+                            {
+                                updated = 1;
+                            }
+                            functionparameter_outlog("SETVAL", "%-40s ONOFF      OFF",
+                                                     FPSentryname);
+                        }
+                        break;
+
+
+                    case FPTYPE_FPSNAME:
+                        if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
+                                FPScmdarg1) == EXIT_SUCCESS)
+                        {
+                            updated = 1;
+                        }
+                        functionparameter_outlog("SETVAL", "%-40s FPSNAME   %s",
+                                                 FPSentryname, FPScmdarg1);
+                        break;
+
+                    default:
                         SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
-                                       "argument is not FLOAT64");
+                                       "argument type not recognized");
                         functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
-
-
-
-                case FPTYPE_FLOAT32:
-                {
-                    char *endptr;
-                    double valf32 = strtof(FPScmdarg1, &endptr);
-
-                    if(*endptr == '\0')
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_FLOAT32(&fps[fpsindex], FPSentryname,
-                                valf32) == EXIT_SUCCESS)
-                        {
-                            updated = 1;
-
-                            functionparameter_outlog("SETVAL", "%-40s FLOAT32     %f",
-                                                     FPSentryname, valf32);
-                        }
-                    }
-                    else
-                    {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
-                                       "argument is not FLOAT32");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
-
-
-
-                case FPTYPE_PID:
-                {
-                    char *endptr;
-                    long valn = strtol(FPScmdarg1, &endptr, 10);
-
-                    if(*endptr == '\0')
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_INT64(&fps[fpsindex], FPSentryname,
-                                valn) == EXIT_SUCCESS)
-                        {
-                            updated = 1;
-
-                            functionparameter_outlog("SETVAL", "%-40s PID      %ld",
-                                                     FPSentryname, valn);
-                        }
-                    }
-                    else
-                    {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG, "argument is not INT64");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
-
-                case FPTYPE_TIMESPEC:
-                {
-                    char *endptr;
-                    double valf32 = strtof(FPScmdarg1, &endptr);
-
-                    if(*endptr == '\0')
-                    {
-                        // OK
-                        if(functionparameter_SetParamValue_TIMESPEC(&fps[fpsindex], FPSentryname,
-                                valf32) == EXIT_SUCCESS)
-                        {
-                            updated = 1;
-
-                            functionparameter_outlog("SETVAL", "%-40s TIMESPEC     %f",
-                                                     FPSentryname, valf32);
-                        }
-                    }
-                    else
-                    {
-                        *taskstatus |= FPSTASK_STATUS_ERR_TYPECONV;
-                        cmdOK = 0;
-                        SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
-                                       "argument is not FLOAT->TIMESPEC");
-                        functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    }
-                }
-                break;
-
-                case FPTYPE_FILENAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s FILENAME   %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                case FPTYPE_FITSFILENAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s FITSFILENAME   %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                case FPTYPE_EXECFILENAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s EXECFILENAME   %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                case FPTYPE_DIRNAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s DIRNAME    %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                case FPTYPE_STREAMNAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s STREAMNAME %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                case FPTYPE_STRING:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s STRING     %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                case FPTYPE_ONOFF:
-                    if(strncmp(FPScmdarg1, "ON", 2) == 0)
-                    {
-                        if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname,
-                                1) == EXIT_SUCCESS)
-                        {
-                            updated = 1;
-                        }
-                        functionparameter_outlog("SETVAL", "%-40s ONOFF      ON",
-                                                 FPSentryname);
-                    }
-                    if(strncmp(FPScmdarg1, "OFF", 3) == 0)
-                    {
-                        if(functionparameter_SetParamValue_ONOFF(&fps[fpsindex], FPSentryname,
-                                0) == EXIT_SUCCESS)
-                        {
-                            updated = 1;
-                        }
-                        functionparameter_outlog("SETVAL", "%-40s ONOFF      OFF",
-                                                 FPSentryname);
-                    }
-                    break;
-
-
-                case FPTYPE_FPSNAME:
-                    if(functionparameter_SetParamValue_STRING(&fps[fpsindex], FPSentryname,
-                            FPScmdarg1) == EXIT_SUCCESS)
-                    {
-                        updated = 1;
-                    }
-                    functionparameter_outlog("SETVAL", "%-40s FPSNAME   %s",
-                                             FPSentryname, FPScmdarg1);
-                    break;
-
-                default:
-                    SNPRINTF_CHECK(errmsgstring, STRINGMAXLEN_FPS_LOGMSG,
-                                   "argument type not recognized");
-                    functionparameter_outlog("ERROR", "%s", errmsgstring);
-                    *taskstatus |= FPSTASK_STATUS_ERR_ARGTYPE;
-                    break;
+                        *taskstatus |= FPSTASK_STATUS_ERR_ARGTYPE;
+                        break;
 
                 }
 
