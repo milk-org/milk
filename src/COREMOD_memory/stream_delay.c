@@ -19,7 +19,7 @@
 // Local variables pointers
 static char     *inimname;
 static char     *outimname;
-static uint64_t *delayns;
+static float    *delaysec;
 static uint64_t *timebuffsize;
 
 static int32_t  *avemode;
@@ -46,9 +46,9 @@ static CLICMDARGDEF farg[] =
         (void **) &outimname, NULL
     },
     {
-        CLIARG_UINT64, ".delayns", "delay [ns]", "10000000",
+        CLIARG_FLOAT32, ".delaysec", "delay [s]", "0.001",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &delayns, NULL
+        (void **) &delaysec, NULL
     },
     {
         CLIARG_UINT64, ".timebuffsize", "time buffer size", "10000",
@@ -152,6 +152,8 @@ static errno_t streamdelay(
     // update circular buffer if new frame has arrived
     if(cnt0prev != inimg.md->cnt0)
     {
+        //printf("cnt %8ld %8ld   CIRC BUFFER UPDATE -> index %8ld / %8ld\n",
+        //       cnt0prev, inimg.md->cnt0, bufferindex_input, *timebuffsize);
         // new input frame
 
         // update counter for next detection loop
@@ -187,29 +189,47 @@ static errno_t streamdelay(
     struct timespec tdiff = timespec_diff(tarray[bufferindex_output], tnow);
     double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-    //printf("%8ld  %8ld  tdiffv = %lf sec    %lf\n", bufferindex_input, bufferindex_output, tdiffv, (1.0e-9 * *delayns));
-    if((warray[bufferindex_output] == 0) && (tdiffv > (1.0e-9 * *delayns)))
+    //printf("%8ld  %8ld [%d]  tdiffv = %lf sec    %lf\n",
+    //       bufferindex_input, bufferindex_output, warray[bufferindex_output], tdiffv, (*delaysec));
+    //fflush(stdout);
+
+    int updateflag = 0;
+    long bufferindex_output_last = 0;
+    while((warray[bufferindex_output] == 0) && (tdiffv > (*delaysec)))
     {
         // update output frame
-
-        // copy circular buffer frame to output
-        char *srcptr;
-        srcptr = (char *) bufferimg.im->array.raw;
-        srcptr += inimg.md->imdatamemsize * bufferindex_output;
-        memcpy(
-            outimg.im->array.raw,
-            srcptr,
-            inimg.md->imdatamemsize
-        );
-
+        updateflag = 1;
         warray[bufferindex_output] = 1;
 
+        bufferindex_output_last = bufferindex_output;
         bufferindex_output ++;
         if(bufferindex_output == (*timebuffsize))
         {
             // end of circular buffer reached
             bufferindex_output = 0;
         }
+
+        //printf("    advance %8ld %8ld\n", bufferindex_input, bufferindex_output);
+        tdiff = timespec_diff(tarray[bufferindex_output], tnow);
+        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+    }
+
+    if(updateflag == 1)
+    {
+        printf("     WRITE %8ld %8ld  :  %ld bytes\n",
+               bufferindex_input, bufferindex_output_last,
+               (long) inimg.md->imdatamemsize);
+        // copy circular buffer frame to output
+        char *srcptr;
+        srcptr = (char *) bufferimg.im->array.raw;
+        srcptr += inimg.md->imdatamemsize * bufferindex_output_last;
+        memcpy(
+            outimg.im->array.raw,
+            srcptr,
+            inimg.md->imdatamemsize
+        );
+
+        // frame has been processed
         *status = 1;
     }
     else
@@ -219,6 +239,8 @@ static errno_t streamdelay(
 
     return RETURN_SUCCESS;
 }
+
+
 
 
 
@@ -266,7 +288,13 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
-    streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
+    streamdelay(
+        inimg,
+        outimg,
+        bufferimg,
+        timeinarray,
+        warray,
+        &status);
     // status is 0 if no update to output, 1 otherwise
     if(status != 0)
     {
