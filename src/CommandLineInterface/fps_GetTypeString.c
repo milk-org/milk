@@ -20,10 +20,25 @@ errno_t functionparameter_GetTypeString(
     {
         strcat(typestring, "UNDEF ");
     }
+
+    if(type & FPTYPE_INT32)
+    {
+        strcat(typestring, "INT32 ");
+    }
+    if(type & FPTYPE_UINT32)
+    {
+        strcat(typestring, "UINT32 ");
+    }
     if(type & FPTYPE_INT64)
     {
         strcat(typestring, "INT64 ");
     }
+    if(type & FPTYPE_UINT64)
+    {
+        strcat(typestring, "UINT64 ");
+    }
+
+
     if(type & FPTYPE_FLOAT64)
     {
         strcat(typestring, "FLOAT64 ");
@@ -32,6 +47,8 @@ errno_t functionparameter_GetTypeString(
     {
         strcat(typestring, "FLOAT32 ");
     }
+
+
     if(type & FPTYPE_PID)
     {
         strcat(typestring, "PID ");
