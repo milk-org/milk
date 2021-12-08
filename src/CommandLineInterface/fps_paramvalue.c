@@ -406,6 +406,64 @@ float *functionparameter_GetParamPtr_FLOAT32(
 
 
 
+
+
+float functionparameter_GetParamValue_TIMESPEC(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+)
+{
+    long value_sec;
+    long value_nsec;
+
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
+    value_sec = fps->parray[fpsi].val.ts[0].tv_sec;
+    value_nsec = fps->parray[fpsi].val.ts[0].tv_nsec;
+    fps->parray[fpsi].val.ts[3].tv_sec = value_sec;
+    fps->parray[fpsi].val.ts[3].tv_nsec = value_nsec;
+
+    float value = 1.0 * value_sec + 1.0e-9 * value_nsec;
+    return value;
+}
+
+int functionparameter_SetParamValue_TIMESPEC(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    float value
+)
+{
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
+
+    long valuesec = (long) value;
+    long valuensec = (long) (1.0e9 * (value-valuesec));
+    fps->parray[fpsi].val.ts[0].tv_sec = valuesec;
+    fps->parray[fpsi].val.ts[0].tv_nsec = valuensec;
+
+    fps->parray[fpsi].cnt0++;
+
+    return EXIT_SUCCESS;
+}
+
+struct timespec *functionparameter_GetParamPtr_TIMESPEC(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+)
+{
+    struct timespec *ptr;
+
+    int fpsi = functionparameter_GetParamIndex(fps, paramname);
+    ptr = &fps->parray[fpsi].val.ts[0];
+
+    return ptr;
+}
+
+
+
+
+
+
+
+
 char *functionparameter_GetParamPtr_STRING(
     FUNCTION_PARAMETER_STRUCT *fps,
     const char *paramname
