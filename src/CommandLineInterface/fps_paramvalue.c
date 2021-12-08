@@ -435,7 +435,7 @@ int functionparameter_SetParamValue_TIMESPEC(
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
 
     long valuesec = (long) value;
-    long valuensec = (long) (1.0e9 * (value-valuesec));
+    long valuensec = (long)(1.0e9 * (value - valuesec));
     fps->parray[fpsi].val.ts[0].tv_sec = valuesec;
     fps->parray[fpsi].val.ts[0].tv_nsec = valuensec;
 
