@@ -214,6 +214,30 @@ double *functionparameter_GetParamPtr_FLOAT64(
 
 
 // =====================================================================
+// TIMESPEC
+// =====================================================================
+
+float functionparameter_GetParamValue_TIMESPEC(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+);
+
+int functionparameter_SetParamValue_TIMESPEC(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname,
+    float value
+);
+
+struct timespec *functionparameter_GetParamPtr_TIMESPEC(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    const char *paramname
+);
+
+
+
+
+
+// =====================================================================
 // STRING
 // =====================================================================
 
