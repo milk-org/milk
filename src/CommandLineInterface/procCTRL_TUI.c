@@ -4820,7 +4820,7 @@ errno_t processinfo_CTRLscreen()
                                         break;
 
                                     case PROCESSINFO_TRIGGERMODE_SEMAPHORE :
-                                        TUI_printfw("%2d:S:%02d ",
+                                        TUI_printfw("%2d:sem%01d ",
                                                     procinfoproc.pinfoarray[pindex]->triggermode,
                                                     procinfoproc.pinfoarray[pindex]->triggersem
                                                    );
