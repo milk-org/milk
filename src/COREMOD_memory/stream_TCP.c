@@ -604,12 +604,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
             }
             ts.tv_sec += 2;
 
-#ifndef __MACH__
             semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
-#else
-            alarm(1);  // send SIGALRM to process in 1 sec - Will force sem_wait to proceed in 1 sec
-            semr = sem_wait(data.image[ID].semptr[semtrig]);
-#endif
 
             if(iter == 0)
             {
@@ -672,8 +667,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 ptr1 = ptr0 + framesize *
                        slice; //data.image[ID].md[0].cnt1; // frame that was just written
                 memcpy(buff, ptr1, framesize);
-                frame_md[0].cnt0 = 0;
-                frame_md[0].cnt1 = 0;
                 memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
 
@@ -847,7 +840,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
 
 
     schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
     if(seteuid(data.euid) != 0)     //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
@@ -858,7 +850,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     {
         PRINT_ERROR("seteuid error");
     }
-#endif
 
     // create TCP socket
     if((fds_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
@@ -988,12 +979,12 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
 
 
 	{
-		// flush socket
+		// flush socket for 1MB
 		
-		size_t flushsize = 1000;
+		size_t flushsize = 1048576;
 		
 		char *flushbuff;
-		flushbuff = (char*) malloc(flushsize*flushsize);
+		flushbuff = (char*) malloc(flushsize);
 		
 		recv(fds_client, flushbuff, flushsize, MSG_DONTWAIT);
 
@@ -1055,6 +1046,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
                              imgmd[0].datatype, imgmd[0].shared, 0, 0, &ID);
         printf("Created image stream %s - shared = %d\n", imgmd[0].name,
                imgmd[0].shared);
+        printf("Size = %d,%d\n", imgmd[0].size[0], imgmd[0].size[1]);
     }
     else
     {
@@ -1218,6 +1210,15 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     long loopcnt = 0;
     int loopOK = 1;
 
+    // In-loop counter watch and debug prompts
+    long frameincr;
+    long minputcnt = 0;
+    long moutputcnt = 0;
+    long monitorinterval = 10000;
+    long monitorindex = 0;
+    long monitorloopindex = 0;
+    long cnt0previous = 0;
+
     while(loopOK == 1)
     {
         if(data.processinfo == 1)
@@ -1276,6 +1277,32 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
             {
                 memcpy(ptr0, buff, framesize);
             }
+            
+            frameincr = (long)frame_md[0].cnt0 - cnt0previous;
+            if (frameincr > 1)
+            {
+                printf("Skipped %ld frame(s) at index %ld %ld\n", frameincr - 1, (long)(frame_md[0].cnt0), (long)(frame_md[0].cnt1));
+            }
+            
+            cnt0previous = frame_md[0].cnt0;
+
+            if (monitorindex == monitorinterval)
+            {
+                printf("[%5ld]  input %20ld (+ %8ld) output %20ld (+ %8ld)\n",
+                       monitorloopindex,
+                       frame_md[0].cnt0, frame_md[0].cnt0 - minputcnt,
+                       data.image[ID].md[0].cnt0, data.image[ID].md[0].cnt0 - moutputcnt);
+
+
+                minputcnt = frame_md[0].cnt0;
+                moutputcnt = data.image[ID].md[0].cnt0;
+
+                monitorloopindex++;
+                monitorindex = 0;
+            }
+
+            monitorindex++;
+
 
             data.image[ID].md[0].cnt0++;
             for(semnb = 0; semnb < data.image[ID].md[0].sem ; semnb++)
