@@ -245,6 +245,39 @@ static errno_t create_ushort_image_shared__cli() // default precision
     }
 }
 
+static errno_t create_sshort_image_shared__cli() // default precision
+{
+    uint32_t *imsize;
+    long naxis = 0;
+    long i;
+
+
+    if(0
+            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
+            + CLI_checkarg(2, CLIARG_LONG)
+            == 0)
+    {
+        naxis = 0;
+        imsize = (uint32_t *) malloc(sizeof(uint32_t) * 5);
+        i = 2;
+        while(data.cmdargtoken[i].type == 2)
+        {
+            imsize[naxis] = data.cmdargtoken[i].val.numl;
+            naxis++;
+            i++;
+        }
+        create_image_ID(data.cmdargtoken[1].val.string, naxis, imsize, _DATATYPE_INT16,
+                        1, data.NBKEYWORD_DFT, 0, NULL);
+
+        free(imsize);
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
+
 
 
 
@@ -311,6 +344,15 @@ errno_t create_image_addCLIcmd()
         "<name> <xsize> <ysize> <opt: zsize>",
         "creaushortimshm imname 512 512",
         "long create_image_ID(const char *name, long naxis, long *size, _DATATYPE_UINT16, 0, 10, NULL)");
+
+    RegisterCLIcommand(
+        "creasshortimshm",
+        __FILE__,
+        create_sshort_image_shared__cli,
+        "create signed short image in shared mem",
+        "<name> <xsize> <ysize> <opt: zsize>",
+        "creasshortimshm imname 512 512",
+        "long create_image_ID(const char *name, long naxis, long *size, _DATATYPE_INT16, 0, 10, NULL)");
 
     RegisterCLIcommand(
         "crea3dim",
