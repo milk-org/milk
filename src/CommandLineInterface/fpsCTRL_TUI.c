@@ -598,7 +598,9 @@ errno_t functionparameter_CTRLscreen(
         keywnode,
         &fpsCTRLvar.NBkwn,
         &fpsCTRLvar.NBfps,
-        &NBpindex, 1);
+        &NBpindex,
+        0   // quiet
+    );
 
     printf("%d function parameter structure(s) imported, %ld parameters\n",
            fpsCTRLvar.NBfps, NBpindex);
