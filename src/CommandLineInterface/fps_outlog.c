@@ -92,10 +92,10 @@ errno_t functionparameter_outlog(
 
     static int LogOutOpen = 0;
     static FILE *fpout;
+    static char logfname[STRINGMAXLEN_FULLFILENAME];
 
     if(LogOutOpen == 0)   // file not open
     {
-        char logfname[STRINGMAXLEN_FULLFILENAME];
         getFPSlogfname(logfname);
 
         fpout = fopen(logfname, "a");
@@ -148,11 +148,15 @@ errno_t functionparameter_outlog(
 
     if(strcmp(keyw, "LOGFILECLOSE") == 0)
     {
+        // Normal exit
+        // close log file and remove it from filesystem
+
         if(LogOutOpen == 1)
         {
             fclose(fpout);
             LogOutOpen = 0;
         }
+        remove(logfname);
     }
 
     return RETURN_SUCCESS;
