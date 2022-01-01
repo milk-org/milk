@@ -188,44 +188,44 @@ errno_t function_parameter_add_entry(
 
             case FPTYPE_FILENAME :
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLFNAME");
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLFNAME");
                 break;
 
             case FPTYPE_FITSFILENAME :
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLFITS");
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLFITS");
                 break;
 
             case FPTYPE_EXECFILENAME :
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLEXEC");
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLEXEC");
                 break;
 
             case FPTYPE_DIRNAME :
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLDIR");
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLDIR");
                 break;
 
             case FPTYPE_STREAMNAME :
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLSTREAM");
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLSTREAM");
                 break;
 
             case FPTYPE_STRING :
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[0],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLSTRING");
                 SNPRINTF_CHECK(funcparamarray[pindex].val.string[1],
-                               FUNCTION_PARAMETER_STRMAXLEN, "NULL");
+                               FUNCTION_PARAMETER_STRMAXLEN, "NULLSTRING");
                 break;
 
             case FPTYPE_ONOFF :
