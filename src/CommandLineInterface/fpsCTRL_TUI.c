@@ -785,10 +785,10 @@ errno_t functionparameter_CTRLscreen(
 
             DEBUG_TRACEPOINT(" ");
 
-            TUI_printfw("======== FPSCTRL info  ( screen refresh cnt %7ld  scan interval %7ld us) [node %d / %d]",
+            TUI_printfw("======== FPSCTRL info  ( screen refresh cnt %7ld  scan interval %7ld us)",
                         loopcnt, getchardt_us);
             TUI_newline();
-            TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d",
+            TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d   [node %d / %d]",
                         fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
                         NBtaskLaunched, NBtaskLaunchedcnt,
                         fpsCTRLvar.nodeSelected, fpsCTRLvar.NBfps);
