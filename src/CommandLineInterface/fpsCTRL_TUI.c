@@ -788,10 +788,10 @@ errno_t functionparameter_CTRLscreen(
             TUI_printfw("======== FPSCTRL info  ( screen refresh cnt %7ld  scan interval %7ld us)",
                         loopcnt, getchardt_us);
             TUI_newline();
-            TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d   [node %d / %d]",
+            TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = %ld   NBtaskLaunched = %d -> %d   [NB FPS = %d]",
                         fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
                         NBtaskLaunched, NBtaskLaunchedcnt,
-                        fpsCTRLvar.nodeSelected, fpsCTRLvar.NBfps);
+                        fpsCTRLvar.NBfps);
             TUI_newline();
 
 
@@ -818,7 +818,7 @@ errno_t functionparameter_CTRLscreen(
                 DEBUG_TRACEPOINT("Check that selected node is OK : %d",
                                  fpsCTRLvar.nodeSelected);
 
-                if(fpsCTRLvar.nodeSelected < fpsCTRLvar.NBfps)
+                if(fpsCTRLvar.NBfps > 0)
                 {
                     /*TUI_printfw("node selected : %d", fpsCTRLvar.nodeSelected);
                     TUI_newline();
