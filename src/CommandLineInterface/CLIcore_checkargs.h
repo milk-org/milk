@@ -23,6 +23,9 @@
 #define CLIARG_STR_NOT_IMG      0x00000003  // string, not existing image
 #define CLIARG_IMG              0x00000004  // existing image or stream
 #define CLIARG_STR              0x00000005  // string
+#define CLIARG_FILENAME         0x00000006
+#define CLIARG_FITSFILENAME     0x00000007
+
 
 #define CLIARG_FLOAT32          0x00010001
 #define CLIARG_FLOAT64          0x00020001 // same as FLOAT
@@ -101,11 +104,12 @@ typedef struct
 #define STRINGMAXLEN_CLICMDARG 256
 typedef struct
 {
-    int type;
-    char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
-    char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
-    char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
-    uint64_t flag;
+    int       type;    // Command line argument type
+    uint64_t  fptype;  // FPS type (could be more speccific than CLI type)
+    char      fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
+    char      descr[STRINGMAXLEN_FPSCLIARG_DESCR];
+    char      example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
+    uint64_t  flag;
     union
     {
         double f;
