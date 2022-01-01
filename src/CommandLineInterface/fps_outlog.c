@@ -75,7 +75,14 @@ errno_t functionparameter_outlog_file(
 
 
 
-
+/**
+ * @brief Add log entry to fps log
+ *
+ * @param keyw     Entry keyword
+ * @param fmt      Format
+ * @param ...      Parameters
+ * @return errno_t Error code
+ */
 errno_t functionparameter_outlog(
     char *keyw,
     const char *fmt, ...
