@@ -2132,7 +2132,7 @@ errno_t functionparameter_CTRLscreen(
     free(fpsctrlqueuelist);
     functionparameter_outlog("LOGFILECLOSE", "close log file");
 
-    DEBUG_TRACEPOINT("exit from function");
+    DEBUG_TRACEPOINT("normal exit from function");
 
     return RETURN_SUCCESS;
 }
