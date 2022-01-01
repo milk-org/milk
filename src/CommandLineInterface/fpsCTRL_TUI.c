@@ -609,19 +609,6 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-    if(fpsCTRLvar.NBfps == 0)
-    {
-        printf("No function parameter structure found\n");
-        printf("File %s line %d\n", __FILE__, __LINE__);
-        fflush(stdout);
-
-// TBCONFIRMED
-        //   free(fpsctrltasklist);
-        //   free(keywnode);
-        //   free(fpsctrlqueuelist);
-        //   return RETURN_SUCCESS;
-    }
-
     fpsCTRLvar.nodeSelected = 1;
     fpsindex = 0;
 
@@ -785,23 +772,6 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-
-        if(fpsCTRLvar.NBfps == 0)
-        {
-            // TODO TBCONFIRMED
-            //TUI_exit();
-
-            //printf("\n fpsCTRLvar.NBfps = %d ->  No FPS on system - nothing to display\n",
-            //      fpsCTRLvar.NBfps);
-            //return RETURN_FAILURE;
-        }
-
-
-
-
-
-
-
         if(fpsCTRLvar.run_display == 1)
         {
             TUI_ncurses_erase();
@@ -842,7 +812,8 @@ errno_t functionparameter_CTRLscreen(
             {
 
 
-                DEBUG_TRACEPOINT("Check that selected node is OK : %d", fpsCTRLvar.nodeSelected);
+                DEBUG_TRACEPOINT("Check that selected node is OK : %d",
+                                 fpsCTRLvar.nodeSelected);
 
                 if(fpsCTRLvar.nodeSelected < fpsCTRLvar.NBfps)
                 {
@@ -1324,26 +1295,26 @@ errno_t functionparameter_CTRLscreen(
                                         int intflag = 0; // toggles to 1 if int type
                                         switch(data.fpsarray[fpsindex].parray[pindex].type)
                                         {
-                                        case FPTYPE_INT32:
-                                            val0 = data.fpsarray[fpsindex].parray[pindex].val.i32[0];
-                                            val3 = data.fpsarray[fpsindex].parray[pindex].val.i32[3];
-                                            intflag = 1;
-                                            break;
-                                        case FPTYPE_UINT32:
-                                            val0 = data.fpsarray[fpsindex].parray[pindex].val.ui32[0];
-                                            val3 = data.fpsarray[fpsindex].parray[pindex].val.ui32[3];
-                                            intflag = 1;
-                                            break;
-                                        case FPTYPE_INT64:
-                                            val0 = data.fpsarray[fpsindex].parray[pindex].val.i64[0];
-                                            val3 = data.fpsarray[fpsindex].parray[pindex].val.i64[3];
-                                            intflag = 1;
-                                            break;
-                                        case FPTYPE_UINT64:
-                                            val0 = data.fpsarray[fpsindex].parray[pindex].val.ui64[0];
-                                            val3 = data.fpsarray[fpsindex].parray[pindex].val.ui64[3];
-                                            intflag = 1;
-                                            break;
+                                            case FPTYPE_INT32:
+                                                val0 = data.fpsarray[fpsindex].parray[pindex].val.i32[0];
+                                                val3 = data.fpsarray[fpsindex].parray[pindex].val.i32[3];
+                                                intflag = 1;
+                                                break;
+                                            case FPTYPE_UINT32:
+                                                val0 = data.fpsarray[fpsindex].parray[pindex].val.ui32[0];
+                                                val3 = data.fpsarray[fpsindex].parray[pindex].val.ui32[3];
+                                                intflag = 1;
+                                                break;
+                                            case FPTYPE_INT64:
+                                                val0 = data.fpsarray[fpsindex].parray[pindex].val.i64[0];
+                                                val3 = data.fpsarray[fpsindex].parray[pindex].val.i64[3];
+                                                intflag = 1;
+                                                break;
+                                            case FPTYPE_UINT64:
+                                                val0 = data.fpsarray[fpsindex].parray[pindex].val.ui64[0];
+                                                val3 = data.fpsarray[fpsindex].parray[pindex].val.ui64[3];
+                                                intflag = 1;
+                                                break;
                                         }
 
                                         if(intflag == 1)
@@ -1388,16 +1359,16 @@ errno_t functionparameter_CTRLscreen(
                                         int floatflag = 0; // toggles to 1 if int type
                                         switch(data.fpsarray[fpsindex].parray[pindex].type)
                                         {
-                                        case FPTYPE_FLOAT32:
-                                            val0 = data.fpsarray[fpsindex].parray[pindex].val.f32[0];
-                                            val3 = data.fpsarray[fpsindex].parray[pindex].val.f32[3];
-                                            floatflag = 1;
-                                            break;
-                                        case FPTYPE_FLOAT64:
-                                            val0 = data.fpsarray[fpsindex].parray[pindex].val.f64[0];
-                                            val3 = data.fpsarray[fpsindex].parray[pindex].val.f64[3];
-                                            floatflag = 1;
-                                            break;
+                                            case FPTYPE_FLOAT32:
+                                                val0 = data.fpsarray[fpsindex].parray[pindex].val.f32[0];
+                                                val3 = data.fpsarray[fpsindex].parray[pindex].val.f32[3];
+                                                floatflag = 1;
+                                                break;
+                                            case FPTYPE_FLOAT64:
+                                                val0 = data.fpsarray[fpsindex].parray[pindex].val.f64[0];
+                                                val3 = data.fpsarray[fpsindex].parray[pindex].val.f64[3];
+                                                floatflag = 1;
+                                                break;
                                         }
 
                                         if(floatflag == 1)
