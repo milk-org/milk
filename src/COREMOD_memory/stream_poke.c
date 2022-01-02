@@ -57,8 +57,6 @@ static errno_t compute_function()
     IMGID img = makeIMGID(inimname);
     resolveIMGID(&img, ERRMODE_ABORT);
 
-    printf("running PCA on image %s\n", img.name);
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
