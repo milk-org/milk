@@ -28,20 +28,20 @@ errno_t functionparameter_FPSremove(
     WRITE_FULLFILENAME(fpsfname, "%s/%s.fps.shm", shmdname, fps->md->name);
 
     // delete sym links
-    //EXECUTE_SYSTEM_COMMAND("find %s -follow -type f -name \"fpslog.*%s\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
-    //                       shmdname, fps[fpsindex].md->name, fps[fpsindex].md->name);
+    EXECUTE_SYSTEM_COMMAND("find %s -follow -type f -name \"fpslog.*%s\" -exec grep -q \"LOGSTART %s\" {} \\; -delete",
+                           shmdname, fps->md->name, fps->md->name);
 
     fps->SMfd = -1;
     close(fps->SMfd);
 
-	//    remove(conflogfname);
+    //    remove(conflogfname);
     int ret = remove(fpsfname);
     int errcode = errno;
-	(void) ret;
-	(void) errcode;
+    (void) ret;
+    (void) errcode;
 
     // TEST
-	/*
+    /*
     FILE *fp;
     fp = fopen("rmlist.txt", "a");
     fprintf(fp, "remove %s  %d\n", fpsfname, ret);
@@ -73,16 +73,24 @@ errno_t functionparameter_FPSremove(
         }
     }
     fclose(fp);
-	*/
+    */
 
     // terminate tmux sessions
+    // 2x exit required: first one to exit bash, second one to exit tmux
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
+                           fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
+                           fps->md->name);
+
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
                            fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
                            fps->md->name);
+
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
                            fps->md->name);
-
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
+                           fps->md->name);
 
     return RETURN_SUCCESS;
 }
