@@ -42,7 +42,7 @@ echo "command string : ${cmdstring}"
 IFS=';' read -r -a array <<< "${cmdstring}"
 
 #fifoname="milkCLIfifo.${pname}"
-SF="milkCLIstartup.${pname}.$$"
+SF="${MILK_SHM_DIR}/milkCLIstartup.${pname}.$$"
 echo "" > $SF
 for cmdstring in "${array[@]}"
 do
