@@ -49,7 +49,7 @@ do
     echo "${cmdstring}" >> $SF
 done
 echo "exitCLI" >> $SF
-cp ${SF} test.txt
+#cp ${SF} test.txt
 
 milk -n ${pname} -f -s ${SF}
 

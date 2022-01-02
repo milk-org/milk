@@ -995,7 +995,6 @@ int CMDargs_to_FPSparams_create(
 
 
 
-
                 case CLIARG_STR_NOT_IMG:
                     function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
                                                  data.cmd[data.cmdindex].argdata[argi].descr,
