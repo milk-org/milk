@@ -9,7 +9,7 @@ MSdescr="poke existing stream"
 
 # Extended description
 MSdescr="poke existing stream
-Can poke in a periodic loop
+Can poke in a periodic loop for finite number of iterations
 "
 
 # standard configuration
