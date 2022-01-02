@@ -454,7 +454,7 @@ long processinfo_shm_list_create()
     char  SM_fname[STRINGMAXLEN_FULLFILENAME];
     long pindex = 0;
 
-    char  procdname[200];
+    char  procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
     WRITE_FULLFILENAME(SM_fname, "%s/processinfo.list.shm", procdname);
@@ -2132,8 +2132,9 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
     char word1[200];
     int NBset = 0;
 
+
     char fname[STRINGMAXLEN_FILENAME];
-    WRITE_FILENAME(fname, "%s/.csetlist.%ld", data.shmdir, (long) getpid());
+    WRITE_FILENAME(fname, "%s/.csetlist.%ld", SHAREDPROCDIR, (long) getpid());
 
     EXECUTE_SYSTEM_COMMAND("cset set -l | awk '/root/{stop=1} stop==1{print $0}' > %s",
                            fname);
