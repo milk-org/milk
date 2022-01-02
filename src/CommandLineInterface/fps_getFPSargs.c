@@ -130,9 +130,21 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(
 
         if(strcmp(data.cmdargtoken[1].val.string, "..triggerdelay") == 0)
         {
-            printf("Command %ld: updating triggerdelay to value %f\n", data.cmdindex,
-                   data.cmdargtoken[2].val.numf);
-            double x = data.cmdargtoken[2].val.numf;
+            double x = 0.0;
+            switch (data.cmdargtoken[2].type)
+            {
+                case CMDARGTOKEN_TYPE_FLOAT :
+                x = data.cmdargtoken[2].val.numf;
+                break;
+
+                case CMDARGTOKEN_TYPE_LONG :
+                x = data.cmdargtoken[2].val.numl;
+                break;
+
+                default :
+                printf("wrong argument type, should be float or int -> setting to zero\n");
+            }
+            printf("Command %ld: updating triggerdelay to value %f\n", data.cmdindex, x);
             x += 0.5e-9;
             long x_sec = (long) x;
             long x_nsec = (x - x_sec) * 1000000000L;
