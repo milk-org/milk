@@ -329,7 +329,8 @@ errno_t saveFITS(
 
 
     // Add FITS keywords from importheaderfile (optional)
-    if(strlen(importheaderfile) > 0)
+    //TEST
+/*    if(strlen(importheaderfile) > 0)
     {
         if(is_fits_file(importheaderfile) == 1)
         {
@@ -412,9 +413,11 @@ errno_t saveFITS(
             }
         }
     }
+    */
 
 
     // Add FITS keywords from image keywords
+    /*
     {
         int NBkw = imgin.md->NBkw;
         int kwcnt = 0;
@@ -466,8 +469,10 @@ errno_t saveFITS(
             }
         }
     }
+    */
 
     // add custom keywords
+    /*
     if((kwarraysize > 0) && (kwarray != NULL))
     {
         printf("----------- NUMBER CUSTOM KW = %d ---------------\n", kwarraysize);
@@ -513,6 +518,7 @@ errno_t saveFITS(
             }
         }
     }
+    */
 
 
     long fpixel = 1;
