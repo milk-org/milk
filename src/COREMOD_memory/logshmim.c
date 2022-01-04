@@ -290,7 +290,6 @@ void *save_fits_function(
     fflush(stdout);
 
 
-    sleep(5);
 
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(imsizearray == NULL)
@@ -397,14 +396,14 @@ void *save_fits_function(
     {
         printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
 
-        saveFITS(
+      /*  saveFITS(
             tmsg->iname,
             tmsg->fname,
             0,
             tmsg->fname_auxFITSheader,
             imkwarray,
             NBcustomKW
-        );
+        );*/
     }
     else
     {
