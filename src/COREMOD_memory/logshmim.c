@@ -286,6 +286,10 @@ void *save_fits_function(
     }
 
 
+    printf("===================== START SAVE THREAD =====================\n");
+    fflush(stdout);
+
+
 
 
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -542,6 +546,11 @@ void *save_fits_function(
     ID = image_ID(tmsg->iname);
     tret = ID;
     free(imsizearray);
+
+    printf("===================== END SAVE THREAD =====================\n");
+    fflush(stdout);
+
+
     pthread_exit(&tret);
 }
 
