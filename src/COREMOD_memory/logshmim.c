@@ -396,14 +396,14 @@ void *save_fits_function(
     {
         printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
 
-      /*  saveFITS(
-            tmsg->iname,
-            tmsg->fname,
-            0,
-            tmsg->fname_auxFITSheader,
-            imkwarray,
-            NBcustomKW
-        );*/
+        /*  saveFITS(
+              tmsg->iname,
+              tmsg->fname,
+              0,
+              tmsg->fname_auxFITSheader,
+              imkwarray,
+              NBcustomKW
+          );*/
     }
     else
     {
