@@ -129,7 +129,7 @@ errno_t saveFITS(
                        (long) self_id);
     */
     WRITE_FILENAME(fnametmp,
-                   "_%s.%d.%ld.tmp",
+                   "%s.%d.%ld.tmp",
                    outputFITSname,
                    (int) getpid(),
                    (long) self_id);
