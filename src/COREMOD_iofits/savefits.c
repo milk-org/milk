@@ -120,6 +120,8 @@ errno_t saveFITS(
 
     char fnametmp[STRINGMAXLEN_FILENAME];
 
+    printf("saving %s to %s\n", inputimname, outputFITSname);
+
     WRITE_FILENAME(fnametmp,
                    "_savefits_atomic_%s_%d_%ld.tmp.fits",
                    inputimname,
