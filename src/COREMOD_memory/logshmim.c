@@ -290,7 +290,7 @@ void *save_fits_function(
     fflush(stdout);
 
 
-
+    sleep(5);
 
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(imsizearray == NULL)
