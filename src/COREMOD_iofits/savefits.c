@@ -157,119 +157,119 @@ errno_t saveFITS(
     DEBUG_TRACEPOINT("datatype = %d", (int) datatype);
     switch(datatype)
     {
-        case _DATATYPE_UINT8:
-            FITSIOdatatype = TBYTE;
-            bitpix = BYTE_IMG;
-            datainptr = (char *) imgin.im->array.UI8;
-            break;
+    case _DATATYPE_UINT8:
+        FITSIOdatatype = TBYTE;
+        bitpix = BYTE_IMG;
+        datainptr = (char *) imgin.im->array.UI8;
+        break;
 
-        case _DATATYPE_INT8:
-            FITSIOdatatype = TSBYTE;
-            bitpix = SBYTE_IMG;
-            datainptr = (char *) imgin.im->array.SI8;
-            break;
-
-
-        case _DATATYPE_UINT16:
-            FITSIOdatatype = TUSHORT;
-            bitpix = SHORT_IMG;
-            datainptr = (char *) imgin.im->array.UI16;
-            break;
-
-        case _DATATYPE_INT16:
-            FITSIOdatatype = TUSHORT;
-            bitpix = SHORT_IMG;
-            datainptr = (char *) imgin.im->array.SI16;
-            break;
+    case _DATATYPE_INT8:
+        FITSIOdatatype = TSBYTE;
+        bitpix = SBYTE_IMG;
+        datainptr = (char *) imgin.im->array.SI8;
+        break;
 
 
-        case _DATATYPE_UINT32:
-            FITSIOdatatype = TUINT;
-            bitpix = ULONG_IMG;
-            datainptr = (char *) imgin.im->array.UI32;
-            break;
+    case _DATATYPE_UINT16:
+        FITSIOdatatype = TUSHORT;
+        bitpix = SHORT_IMG;
+        datainptr = (char *) imgin.im->array.UI16;
+        break;
 
-        case _DATATYPE_INT32:
-            FITSIOdatatype = TINT;
-            bitpix = LONG_IMG;
-            datainptr = (char *) imgin.im->array.SI32;
-            break;
-
-
-        case _DATATYPE_UINT64:
-            FITSIOdatatype = TULONG;
-            bitpix = ULONGLONG_IMG;
-            datainptr = (char *) imgin.im->array.UI64;
-            break;
-
-        case _DATATYPE_INT64:
-            FITSIOdatatype = TLONG;
-            bitpix = LONGLONG_IMG;
-            datainptr = (char *) imgin.im->array.SI64;
-            break;
+    case _DATATYPE_INT16:
+        FITSIOdatatype = TUSHORT;
+        bitpix = SHORT_IMG;
+        datainptr = (char *) imgin.im->array.SI16;
+        break;
 
 
-        case _DATATYPE_FLOAT:
-            FITSIOdatatype = TFLOAT;
-            bitpix = FLOAT_IMG;
-            datainptr = (char *) imgin.im->array.F;
-            break;
+    case _DATATYPE_UINT32:
+        FITSIOdatatype = TUINT;
+        bitpix = ULONG_IMG;
+        datainptr = (char *) imgin.im->array.UI32;
+        break;
 
-        case _DATATYPE_DOUBLE:
-            FITSIOdatatype = TDOUBLE;
-            bitpix = DOUBLE_IMG;
-            datainptr = (char *) imgin.im->array.D;
-            break;
+    case _DATATYPE_INT32:
+        FITSIOdatatype = TINT;
+        bitpix = LONG_IMG;
+        datainptr = (char *) imgin.im->array.SI32;
+        break;
+
+
+    case _DATATYPE_UINT64:
+        FITSIOdatatype = TULONG;
+        bitpix = ULONGLONG_IMG;
+        datainptr = (char *) imgin.im->array.UI64;
+        break;
+
+    case _DATATYPE_INT64:
+        FITSIOdatatype = TLONG;
+        bitpix = LONGLONG_IMG;
+        datainptr = (char *) imgin.im->array.SI64;
+        break;
+
+
+    case _DATATYPE_FLOAT:
+        FITSIOdatatype = TFLOAT;
+        bitpix = FLOAT_IMG;
+        datainptr = (char *) imgin.im->array.F;
+        break;
+
+    case _DATATYPE_DOUBLE:
+        FITSIOdatatype = TDOUBLE;
+        bitpix = DOUBLE_IMG;
+        datainptr = (char *) imgin.im->array.D;
+        break;
     }
 
     DEBUG_TRACEPOINT("bitpix = %d", bitpix);
 
     switch(outputbitpix)
     {
-        case 8:
-            bitpix = BYTE_IMG;
-            printf("    output data type: BYTE_IMG\n");
-            break;
-        case 10:
-            bitpix = SBYTE_IMG;
-            printf("    output data type: SBYTE_IMG\n");
-            break;
+    case 8:
+        bitpix = BYTE_IMG;
+        printf("    output data type: BYTE_IMG\n");
+        break;
+    case 10:
+        bitpix = SBYTE_IMG;
+        printf("    output data type: SBYTE_IMG\n");
+        break;
 
-        case 16:
-            bitpix = SHORT_IMG;
-            printf("    output data type: SHORT_IMG\n");
-            break;
-        case 20:
-            bitpix = USHORT_IMG;
-            printf("    output data type: USHORT_IMG\n");
-            break;
+    case 16:
+        bitpix = SHORT_IMG;
+        printf("    output data type: SHORT_IMG\n");
+        break;
+    case 20:
+        bitpix = USHORT_IMG;
+        printf("    output data type: USHORT_IMG\n");
+        break;
 
-        case 32:
-            bitpix = LONG_IMG;
-            printf("    output data type: LONG_IMG\n");
-            break;
-        case 40:
-            bitpix = ULONG_IMG;
-            printf("    output data type: ULONG_IMG\n");
-            break;
+    case 32:
+        bitpix = LONG_IMG;
+        printf("    output data type: LONG_IMG\n");
+        break;
+    case 40:
+        bitpix = ULONG_IMG;
+        printf("    output data type: ULONG_IMG\n");
+        break;
 
-        case 64:
-            bitpix = LONGLONG_IMG;
-            printf("    output data type: LONGLONG_IMG\n");
-            break;
-        case 80:
-            bitpix = ULONGLONG_IMG;
-            printf("    output data type: ULONGLONG_IMG\n");
-            break;
+    case 64:
+        bitpix = LONGLONG_IMG;
+        printf("    output data type: LONGLONG_IMG\n");
+        break;
+    case 80:
+        bitpix = ULONGLONG_IMG;
+        printf("    output data type: ULONGLONG_IMG\n");
+        break;
 
-        case -32:
-            bitpix = FLOAT_IMG;
-            printf("    output data type: FLOAT_IMG\n");
-            break;
-        case -64:
-            bitpix = DOUBLE_IMG;
-            printf("    output data type: DOUBLE_IMG\n");
-            break;
+    case -32:
+        bitpix = FLOAT_IMG;
+        printf("    output data type: FLOAT_IMG\n");
+        break;
+    case -64:
+        bitpix = DOUBLE_IMG;
+        printf("    output data type: DOUBLE_IMG\n");
+        break;
     }
 
     DEBUG_TRACEPOINT("bitpix = %d", bitpix);
@@ -329,95 +329,94 @@ errno_t saveFITS(
 
 
     // Add FITS keywords from importheaderfile (optional)
-    //TEST
-    /*    if(strlen(importheaderfile) > 0)
+    if(strlen(importheaderfile) > 0)
+    {
+        if(is_fits_file(importheaderfile) == 1)
         {
-            if(is_fits_file(importheaderfile) == 1)
+            printf("Importing FITS header entries from : %s\n", importheaderfile);
+
+            fitsfile *fptr_header = NULL;
+            int nkeys;
+
+            char *header;
+
+            COREMOD_iofits_data.FITSIO_status = 0;
+            fits_open_file(&fptr_header, importheaderfile, READONLY,
+                           &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
             {
-                printf("Importing FITS header entries from : %s\n", importheaderfile);
+                PRINT_ERROR("fits_open_file error on file %s", importheaderfile);
+                abort();
+            }
 
-                fitsfile *fptr_header = NULL;
-                int nkeys;
 
-                char *header;
+            COREMOD_iofits_data.FITSIO_status = 0;
+            fits_hdr2str(fptr_header, 1, NULL, 0, &header, &nkeys,
+                         &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                PRINT_ERROR("fits_hdr2str erroron file %s", importheaderfile);
+                abort();
+            }
+            printf("imported %d header cards\n", nkeys);
 
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_open_file(&fptr_header, importheaderfile, READONLY,
-                               &COREMOD_iofits_data.FITSIO_status);
-                if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            char *hptr; // pointer to header
+            hptr = header;
+            while(*hptr)
+            {
+                char fitscard[81];
+                sprintf(fitscard, "%.80s", hptr);
+
+                // keywords to not overwrite
+                int writecard = 1;
+                char *keyexcl[] = {"BITPIX", "NAXIS", "SIMPLE", "EXTEND", 0};
+                int ki = 0;
+                while(keyexcl[ki])
                 {
-                    PRINT_ERROR("fits_open_file error on file %s", importheaderfile);
-                    abort();
-                }
-
-
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_hdr2str(fptr_header, 1, NULL, 0, &header, &nkeys,
-                             &COREMOD_iofits_data.FITSIO_status);
-                if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-                {
-                    PRINT_ERROR("fits_hdr2str erroron file %s", importheaderfile);
-                    abort();
-                }
-                printf("imported %d header cards\n", nkeys);
-
-                char *hptr; // pointer to header
-                hptr = header;
-                while(*hptr)
-                {
-                    char fitscard[81];
-                    sprintf(fitscard, "%.80s", hptr);
-
-                    // keywords to not overwrite
-                    int writecard = 1;
-                    char *keyexcl[] = {"BITPIX", "NAXIS", "SIMPLE", "EXTEND", 0};
-                    int ki = 0;
-                    while(keyexcl[ki])
+                    if(strncmp(keyexcl[ki], fitscard, strlen(keyexcl[ki])) == 0)
                     {
-                        if(strncmp(keyexcl[ki], fitscard, strlen(keyexcl[ki])) == 0)
-                        {
-                            printf("EXCLUDING %s\n", fitscard);
-                            writecard = 0;
-                            break;
-                        }
-                        ki++;
+                        printf("EXCLUDING %s\n", fitscard);
+                        writecard = 0;
+                        break;
                     }
+                    ki++;
+                }
 
-                    if(writecard == 1)
+                if(writecard == 1)
+                {
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    fits_write_record(fptr, fitscard, &COREMOD_iofits_data.FITSIO_status);
+                    if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
                     {
-                        COREMOD_iofits_data.FITSIO_status = 0;
-                        fits_write_record(fptr, fitscard, &COREMOD_iofits_data.FITSIO_status);
-                        if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-                        {
-                            PRINT_ERROR("fits_write_record error on file %s", importheaderfile);
-                            abort();
-                        }
+                        PRINT_ERROR("fits_write_record error on file %s", importheaderfile);
+                        abort();
                     }
-                    hptr += 80;
                 }
+                hptr += 80;
+            }
 
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_free_memory(header, &COREMOD_iofits_data.FITSIO_status);
-                if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-                {
-                    PRINT_ERROR("fits_free_memory error on file %s", importheaderfile);
-                    abort();
-                }
+            COREMOD_iofits_data.FITSIO_status = 0;
+            fits_free_memory(header, &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                PRINT_ERROR("fits_free_memory error on file %s", importheaderfile);
+                abort();
+            }
 
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_close_file(fptr_header, &COREMOD_iofits_data.FITSIO_status);
-                if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
-                {
-                    PRINT_ERROR("fits_close_file error on file %s", importheaderfile);
-                    abort();
-                }
+            COREMOD_iofits_data.FITSIO_status = 0;
+            fits_close_file(fptr_header, &COREMOD_iofits_data.FITSIO_status);
+            if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+            {
+                PRINT_ERROR("fits_close_file error on file %s", importheaderfile);
+                abort();
             }
         }
-        */
+    }
+
 
 
     // Add FITS keywords from image keywords
-    /*
+
     {
         int NBkw = imgin.md->NBkw;
         int kwcnt = 0;
@@ -427,39 +426,39 @@ errno_t saveFITS(
             char tmpkwvalstr[81];
             switch(imgin.im->kw[kw].type)
             {
-                case 'L':
-                    printf("writing keyword [L] %-8s= %20ld / %s\n", imgin.im->kw[kw].name,
-                           imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr, TLONG, imgin.im->kw[kw].name,
-                                    &imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    kwcnt++;
-                    break;
+            case 'L':
+                printf("writing keyword [L] %-8s= %20ld / %s\n", imgin.im->kw[kw].name,
+                       imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr, TLONG, imgin.im->kw[kw].name,
+                                &imgin.im->kw[kw].value.numl, imgin.im->kw[kw].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                kwcnt++;
+                break;
 
-                case 'D':
-                    printf("writing keyword [D] %-8s= %20g / %s\n", imgin.im->kw[kw].name,
-                           imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr, TDOUBLE, imgin.im->kw[kw].name,
-                                    &imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    kwcnt++;
-                    break;
+            case 'D':
+                printf("writing keyword [D] %-8s= %20g / %s\n", imgin.im->kw[kw].name,
+                       imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr, TDOUBLE, imgin.im->kw[kw].name,
+                                &imgin.im->kw[kw].value.numf, imgin.im->kw[kw].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                kwcnt++;
+                break;
 
-                case 'S':
-                    sprintf(tmpkwvalstr, "'%s'", imgin.im->kw[kw].value.valstr);
-                    printf("writing keyword [S] %-8s= %20s / %s\n", imgin.im->kw[kw].name,
-                           tmpkwvalstr, imgin.im->kw[kw].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr, TSTRING, imgin.im->kw[kw].name,
-                                    imgin.im->kw[kw].value.valstr, imgin.im->kw[kw].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    kwcnt++;
-                    break;
+            case 'S':
+                sprintf(tmpkwvalstr, "'%s'", imgin.im->kw[kw].value.valstr);
+                printf("writing keyword [S] %-8s= %20s / %s\n", imgin.im->kw[kw].name,
+                       tmpkwvalstr, imgin.im->kw[kw].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr, TSTRING, imgin.im->kw[kw].name,
+                                imgin.im->kw[kw].value.valstr, imgin.im->kw[kw].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                kwcnt++;
+                break;
 
-                default:
-                    break;
+            default:
+                break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -469,10 +468,10 @@ errno_t saveFITS(
             }
         }
     }
-    */
+
 
     // add custom keywords
-    /*
+
     if((kwarraysize > 0) && (kwarray != NULL))
     {
         printf("----------- NUMBER CUSTOM KW = %d ---------------\n", kwarraysize);
@@ -481,34 +480,34 @@ errno_t saveFITS(
             char tmpkwvalstr[81];
             switch(kwarray[kwi].type)
             {
-                case 'L':
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr, TLONG, kwarray[kwi].name,
-                                    &kwarray[kwi].value.numl, kwarray[kwi].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    break;
+            case 'L':
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr, TLONG, kwarray[kwi].name,
+                                &kwarray[kwi].value.numl, kwarray[kwi].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                break;
 
-                case 'D':
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    printf("writing keyword [D] %-8s= %20g / %s\n", kwarray[kwi].name,
-                           kwarray[kwi].value.numf, kwarray[kwi].comment);
-                    fits_update_key(fptr, TDOUBLE, kwarray[kwi].name,
-                                    &kwarray[kwi].value.numf, kwarray[kwi].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    break;
+            case 'D':
+                COREMOD_iofits_data.FITSIO_status = 0;
+                printf("writing keyword [D] %-8s= %20g / %s\n", kwarray[kwi].name,
+                       kwarray[kwi].value.numf, kwarray[kwi].comment);
+                fits_update_key(fptr, TDOUBLE, kwarray[kwi].name,
+                                &kwarray[kwi].value.numf, kwarray[kwi].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                break;
 
-                case 'S':
-                    sprintf(tmpkwvalstr, "'%s'", kwarray[kwi].value.valstr);
-                    printf("writing keyword [S] %-8s= %20s / %s\n", kwarray[kwi].name,
-                           tmpkwvalstr, kwarray[kwi].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr, TSTRING, kwarray[kwi].name,
-                                    kwarray[kwi].value.valstr, kwarray[kwi].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    break;
+            case 'S':
+                sprintf(tmpkwvalstr, "'%s'", kwarray[kwi].value.valstr);
+                printf("writing keyword [S] %-8s= %20s / %s\n", kwarray[kwi].name,
+                       tmpkwvalstr, kwarray[kwi].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr, TSTRING, kwarray[kwi].name,
+                                kwarray[kwi].value.valstr, kwarray[kwi].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                break;
 
-                default:
-                    break;
+            default:
+                break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -518,7 +517,7 @@ errno_t saveFITS(
             }
         }
     }
-    */
+
 
 
     long fpixel = 1;
