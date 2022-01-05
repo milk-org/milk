@@ -280,7 +280,8 @@ long function_parameter_struct_connect(
 
         {
             // semindexrequested
-            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.semindexrequested");
+            int pindex = functionparameter_GetParamIndex(fps,
+                         ".procinfo.semindexrequested");
             if(pindex > -1)
             {
                 if(fps->parray[pindex].type == FPTYPE_INT64)
