@@ -279,6 +279,18 @@ long function_parameter_struct_connect(
         }
 
         {
+            // semindexrequested
+            int pindex = functionparameter_GetParamIndex(fps, ".procinfo.semindexrequested");
+            if(pindex > -1)
+            {
+                if(fps->parray[pindex].type == FPTYPE_INT64)
+                {
+                    fps->cmdset.semindexrequested = fps->parray[pindex].val.i64[0];
+                }
+            }
+        }
+
+        {
             // triggerdelay
             int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
             if(pindex > -1)
