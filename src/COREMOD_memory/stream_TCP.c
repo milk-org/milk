@@ -19,6 +19,8 @@
 #include "stream_sem.h"
 
 
+// set to 1 if transfering keywords
+static int TCPTRANSFERKW = 1;
 
 
 typedef struct
@@ -170,7 +172,7 @@ errno_t stream__TCP_addCLIcmd()
         "receive image(s) over network. mode=1 uses counter instead of semaphore",
         "<port [long]> <mode [int]> <RT priority>",
         "imnetwreceive 8887 0 80",
-        "long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)");	
+        "long COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority)");
 
 
     return RETURN_SUCCESS;
@@ -244,21 +246,21 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(
             switch(errno)
             {
 
-                case EINTR:
-                    printf("    sem_wait call was interrupted by a signal handler\n");
-                    break;
+            case EINTR:
+                printf("    sem_wait call was interrupted by a signal handler\n");
+                break;
 
-                case EINVAL:
-                    printf("    not a valid semaphore\n");
-                    break;
+            case EINVAL:
+                printf("    not a valid semaphore\n");
+                break;
 
-                case EAGAIN:
-                    printf("    The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n");
-                    break;
+            case EAGAIN:
+                printf("    The operation could not be performed without blocking (i.e., the semaphore currently has the value zero)\n");
+                break;
 
-                default:
-                    printf("    ERROR: unknown code %d\n", rv);
-                    break;
+            default:
+                printf("    ERROR: unknown code %d\n", rv);
+                break;
             }
         }
         else
@@ -321,6 +323,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     TCP_BUFFER_METADATA *frame_md;
     long       framesize1; // pixel data + metadata
+    long       framesizeall; // total frame size : pixel data + metadata + kw
     char      *buff; // transmit buffer
 
 
@@ -447,50 +450,50 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         switch(data.image[ID].md[0].datatype)
         {
 
-            case _DATATYPE_INT8:
-                framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT8:
-                framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-                break;
+        case _DATATYPE_INT8:
+            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+            break;
+        case _DATATYPE_UINT8:
+            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+            break;
 
-            case _DATATYPE_INT16:
-                framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT16:
-                framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-                break;
+        case _DATATYPE_INT16:
+            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+            break;
+        case _DATATYPE_UINT16:
+            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+            break;
 
-            case _DATATYPE_INT32:
-                framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT32:
-                framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-                break;
+        case _DATATYPE_INT32:
+            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+            break;
+        case _DATATYPE_UINT32:
+            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+            break;
 
-            case _DATATYPE_INT64:
-                framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT64:
-                framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-                break;
+        case _DATATYPE_INT64:
+            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+            break;
+        case _DATATYPE_UINT64:
+            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+            break;
 
-            case _DATATYPE_FLOAT:
-                framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-                break;
-            case _DATATYPE_DOUBLE:
-                framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-                break;
+        case _DATATYPE_FLOAT:
+            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+            break;
+        case _DATATYPE_DOUBLE:
+            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+            break;
 
 
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                sprintf(errmsg, "WRONG DATA TYPE data type = %d\n",
-                        data.image[ID].md[0].datatype);
-                printf("data type = %d\n", data.image[ID].md[0].datatype);
-                processinfo_error(processinfo, errmsg);
-                loopOK = 0;
-                break;
+        default:
+            printf("ERROR: WRONG DATA TYPE\n");
+            sprintf(errmsg, "WRONG DATA TYPE data type = %d\n",
+                    data.image[ID].md[0].datatype);
+            printf("data type = %d\n", data.image[ID].md[0].datatype);
+            processinfo_error(processinfo, errmsg);
+            loopOK = 0;
+            break;
         }
 
 
@@ -503,45 +506,45 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         switch(data.image[ID].md[0].datatype)
         {
 
-            case _DATATYPE_INT8:
-                ptr0 = (char *) data.image[ID].array.SI8;
-                break;
-            case _DATATYPE_UINT8:
-                ptr0 = (char *) data.image[ID].array.UI8;
-                break;
+        case _DATATYPE_INT8:
+            ptr0 = (char *) data.image[ID].array.SI8;
+            break;
+        case _DATATYPE_UINT8:
+            ptr0 = (char *) data.image[ID].array.UI8;
+            break;
 
-            case _DATATYPE_INT16:
-                ptr0 = (char *) data.image[ID].array.SI16;
-                break;
-            case _DATATYPE_UINT16:
-                ptr0 = (char *) data.image[ID].array.UI16;
-                break;
+        case _DATATYPE_INT16:
+            ptr0 = (char *) data.image[ID].array.SI16;
+            break;
+        case _DATATYPE_UINT16:
+            ptr0 = (char *) data.image[ID].array.UI16;
+            break;
 
-            case _DATATYPE_INT32:
-                ptr0 = (char *) data.image[ID].array.SI32;
-                break;
-            case _DATATYPE_UINT32:
-                ptr0 = (char *) data.image[ID].array.UI32;
-                break;
+        case _DATATYPE_INT32:
+            ptr0 = (char *) data.image[ID].array.SI32;
+            break;
+        case _DATATYPE_UINT32:
+            ptr0 = (char *) data.image[ID].array.UI32;
+            break;
 
-            case _DATATYPE_INT64:
-                ptr0 = (char *) data.image[ID].array.SI64;
-                break;
-            case _DATATYPE_UINT64:
-                ptr0 = (char *) data.image[ID].array.UI64;
-                break;
+        case _DATATYPE_INT64:
+            ptr0 = (char *) data.image[ID].array.SI64;
+            break;
+        case _DATATYPE_UINT64:
+            ptr0 = (char *) data.image[ID].array.UI64;
+            break;
 
-            case _DATATYPE_FLOAT:
-                ptr0 = (char *) data.image[ID].array.F;
-                break;
-            case _DATATYPE_DOUBLE:
-                ptr0 = (char *) data.image[ID].array.D;
-                break;
+        case _DATATYPE_FLOAT:
+            ptr0 = (char *) data.image[ID].array.F;
+            break;
+        case _DATATYPE_DOUBLE:
+            ptr0 = (char *) data.image[ID].array.D;
+            break;
 
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                exit(0);
-                break;
+        default:
+            printf("ERROR: WRONG DATA TYPE\n");
+            exit(0);
+            break;
         }
 
 
@@ -549,9 +552,19 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         frame_md = (TCP_BUFFER_METADATA *) malloc(sizeof(TCP_BUFFER_METADATA));
         framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
-        buff = (char *) malloc(sizeof(char) * framesize1);
 
-        printf("transfer buffer size = %ld\n", framesize1);
+        if(TCPTRANSFERKW == 0)
+        {
+            framesizeall = framesize1;
+        }
+        else
+        {
+            framesizeall = framesize1 + data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD);
+        }
+
+        buff = (char *) malloc(sizeof(char) * framesizeall);
+
+        printf("transfer buffer size = %ld\n", framesizeall);
         fflush(stdout);
 
         oldslice = 0;
@@ -669,16 +682,23 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 memcpy(buff, ptr1, framesize);
                 memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
+                if(TCPTRANSFERKW == 1)
+                {
+                    memcpy(
+                        buff+framesize1,
+                        (char *) data.image[ID].kw,
+                        data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                }
 
 
-                rs = send(fds_client, buff, framesize1, 0);
+                rs = send(fds_client, buff, framesizeall, 0);
 
-                if(rs != framesize1)
+                if(rs != framesizeall)
                 {
                     perror("socket send error ");
                     sprintf(errmsg,
                             "ERROR: send() sent a different number of bytes (%d) than expected %ld  %ld  %ld",
-                            rs, (long) framesize, (long) framesize1, (long) sizeof(TCP_BUFFER_METADATA));
+                            rs, (long) framesize, (long) framesizeall, (long) sizeof(TCP_BUFFER_METADATA));
                     printf("%s\n", errmsg);
                     fflush(stdout);
                     processinfo_WriteMessage(processinfo, errmsg);
@@ -767,8 +787,9 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
     TCP_BUFFER_METADATA *frame_md;
-    long framesize1; // pixel data + metadata
-    char *buff; // buffer
+    long framesize1;     // pixel data + metadata
+    long framesizefull;  // pixel data + metadata + kw
+    char *buff;          // buffer
 
 
 
@@ -978,18 +999,18 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     }
 
 
-	{
-		// flush socket for 1MB
-		
-		size_t flushsize = 1048576;
-		
-		char *flushbuff;
-		flushbuff = (char*) malloc(flushsize);
-		
-		recv(fds_client, flushbuff, flushsize, MSG_DONTWAIT);
+    {
+        // flush socket for 1MB
 
-		free(flushbuff);
-	}
+        size_t flushsize = 1048576;
+
+        char *flushbuff;
+        flushbuff = (char*) malloc(flushsize);
+
+        recv(fds_client, flushbuff, flushsize, MSG_DONTWAIT);
+
+        free(flushbuff);
+    }
 
 
 
@@ -1038,12 +1059,21 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     }
 
 
+    int nbkw = 0;
+    if(TCPTRANSFERKW == 1)
+    {
+        nbkw = imgmd[0].NBkw;
+        if(imgmd[0].NBkw != data.image[ID].md[0].NBkw)
+        {
+            OKim = 0;
+        }
+    }
 
     if(OKim == 0)
     {
         printf("IMAGE %s HAS TO BE CREATED\n", imgmd[0].name);
         create_image_ID(imgmd[0].name, imgmd[0].naxis, imgmd[0].size,
-                             imgmd[0].datatype, imgmd[0].shared, 0, 0, &ID);
+                        imgmd[0].datatype, imgmd[0].shared, nbkw, 0, &ID);
         printf("Created image stream %s - shared = %d\n", imgmd[0].name,
                imgmd[0].shared);
         printf("Size = %d,%d\n", imgmd[0].size[0], imgmd[0].size[1]);
@@ -1074,61 +1104,61 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     switch(data.image[ID].md[0].datatype)
     {
 
-        case _DATATYPE_INT8:
-            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            sprintf(typestring, "INT8");
-            break;
+    case _DATATYPE_INT8:
+        framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+        sprintf(typestring, "INT8");
+        break;
 
-        case _DATATYPE_UINT8:
-            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            sprintf(typestring, "UINT8");
-            break;
+    case _DATATYPE_UINT8:
+        framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+        sprintf(typestring, "UINT8");
+        break;
 
-        case _DATATYPE_INT16:
-            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            sprintf(typestring, "INT16");
-            break;
+    case _DATATYPE_INT16:
+        framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+        sprintf(typestring, "INT16");
+        break;
 
-        case _DATATYPE_UINT16:
-            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            sprintf(typestring, "UINT16");
-            break;
+    case _DATATYPE_UINT16:
+        framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+        sprintf(typestring, "UINT16");
+        break;
 
-        case _DATATYPE_INT32:
-            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            sprintf(typestring, "INT32");
-            break;
+    case _DATATYPE_INT32:
+        framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+        sprintf(typestring, "INT32");
+        break;
 
-        case _DATATYPE_UINT32:
-            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            sprintf(typestring, "UINT32");
-            break;
+    case _DATATYPE_UINT32:
+        framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+        sprintf(typestring, "UINT32");
+        break;
 
-        case _DATATYPE_INT64:
-            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            sprintf(typestring, "INT64");
-            break;
+    case _DATATYPE_INT64:
+        framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+        sprintf(typestring, "INT64");
+        break;
 
-        case _DATATYPE_UINT64:
-            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            sprintf(typestring, "UINT64");
-            break;
+    case _DATATYPE_UINT64:
+        framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+        sprintf(typestring, "UINT64");
+        break;
 
-        case _DATATYPE_FLOAT:
-            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            sprintf(typestring, "FLOAT");
-            break;
+    case _DATATYPE_FLOAT:
+        framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+        sprintf(typestring, "FLOAT");
+        break;
 
-        case _DATATYPE_DOUBLE:
-            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            sprintf(typestring, "DOUBLE");
-            break;
+    case _DATATYPE_DOUBLE:
+        framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+        sprintf(typestring, "DOUBLE");
+        break;
 
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            sprintf(typestring, "ERR");
-            exit(0);
-            break;
+    default:
+        printf("ERROR: WRONG DATA TYPE\n");
+        sprintf(typestring, "ERR");
+        exit(0);
+        break;
     }
 
     printf("image frame size = %ld\n", framesize);
@@ -1136,45 +1166,45 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     switch(data.image[ID].md[0].datatype)
     {
 
-        case _DATATYPE_INT8:
-            ptr0 = (char *) data.image[ID].array.SI8;
-            break;
-        case _DATATYPE_UINT8:
-            ptr0 = (char *) data.image[ID].array.UI8;
-            break;
+    case _DATATYPE_INT8:
+        ptr0 = (char *) data.image[ID].array.SI8;
+        break;
+    case _DATATYPE_UINT8:
+        ptr0 = (char *) data.image[ID].array.UI8;
+        break;
 
-        case _DATATYPE_INT16:
-            ptr0 = (char *) data.image[ID].array.SI16;
-            break;
-        case _DATATYPE_UINT16:
-            ptr0 = (char *) data.image[ID].array.UI16;
-            break;
+    case _DATATYPE_INT16:
+        ptr0 = (char *) data.image[ID].array.SI16;
+        break;
+    case _DATATYPE_UINT16:
+        ptr0 = (char *) data.image[ID].array.UI16;
+        break;
 
-        case _DATATYPE_INT32:
-            ptr0 = (char *) data.image[ID].array.SI32;
-            break;
-        case _DATATYPE_UINT32:
-            ptr0 = (char *) data.image[ID].array.UI32;
-            break;
+    case _DATATYPE_INT32:
+        ptr0 = (char *) data.image[ID].array.SI32;
+        break;
+    case _DATATYPE_UINT32:
+        ptr0 = (char *) data.image[ID].array.UI32;
+        break;
 
-        case _DATATYPE_INT64:
-            ptr0 = (char *) data.image[ID].array.SI64;
-            break;
-        case _DATATYPE_UINT64:
-            ptr0 = (char *) data.image[ID].array.UI64;
-            break;
+    case _DATATYPE_INT64:
+        ptr0 = (char *) data.image[ID].array.SI64;
+        break;
+    case _DATATYPE_UINT64:
+        ptr0 = (char *) data.image[ID].array.UI64;
+        break;
 
-        case _DATATYPE_FLOAT:
-            ptr0 = (char *) data.image[ID].array.F;
-            break;
-        case _DATATYPE_DOUBLE:
-            ptr0 = (char *) data.image[ID].array.D;
-            break;
+    case _DATATYPE_FLOAT:
+        ptr0 = (char *) data.image[ID].array.F;
+        break;
+    case _DATATYPE_DOUBLE:
+        ptr0 = (char *) data.image[ID].array.D;
+        break;
 
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            exit(0);
-            break;
+    default:
+        printf("ERROR: WRONG DATA TYPE\n");
+        exit(0);
+        break;
     }
 
 
@@ -1195,7 +1225,16 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
     // frame_md = (TCP_BUFFER_METADATA*) malloc(sizeof(TCP_BUFFER_METADATA));
 
     framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
-    buff = (char *) malloc(sizeof(char) * framesize1);
+    if(TCPTRANSFERKW == 0)
+    {
+        framesizefull = framesize1;
+    }
+    else
+    {
+        framesizefull = framesize1 + nbkw * sizeof(IMAGE_KEYWORD);
+    }
+
+    buff = (char *) malloc(sizeof(char) * framesizefull);
 
     frame_md = (TCP_BUFFER_METADATA *) (buff + framesize);
 
@@ -1240,7 +1279,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
         }
 
 
-        if((recvsize = recv(fds_client, buff, framesize1, MSG_WAITALL)) < 0)
+        if((recvsize = recv(fds_client, buff, framesizefull, MSG_WAITALL)) < 0)
         {
             printf("ERROR recv()\n");
             socketOpen = 0;
@@ -1269,6 +1308,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
             data.image[ID].md[0].cnt1 = frame_md[0].cnt1;
 
 
+            // copy pixel data
             if(NBslices > 1)
             {
                 memcpy(ptr0 + framesize * frame_md[0].cnt1, buff, framesize);
@@ -1277,13 +1317,23 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(
             {
                 memcpy(ptr0, buff, framesize);
             }
-            
+
+            if(TCPTRANSFERKW == 1)
+            {
+                // copy kw
+                memcpy(
+                    data.image[ID].kw,
+                    (IMAGE_KEYWORD *) (buff + framesize1),
+                    nbkw * sizeof(IMAGE_KEYWORD)
+                );
+            }
+
             frameincr = (long)frame_md[0].cnt0 - cnt0previous;
             if (frameincr > 1)
             {
                 printf("Skipped %ld frame(s) at index %ld %ld\n", frameincr - 1, (long)(frame_md[0].cnt0), (long)(frame_md[0].cnt1));
             }
-            
+
             cnt0previous = frame_md[0].cnt0;
 
             if (monitorindex == monitorinterval)
