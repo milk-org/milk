@@ -256,7 +256,7 @@ typedef struct
         processinfo->triggerstreamID = image_ID(processinfo->triggerstreamname);                        \
         DEBUG_TRACEPOINT("triggerstreamID = %ld", processinfo->triggerstreamID);                        \
         FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(processinfo, processinfo->triggerstreamID, \
-                                                             CLIcmddata.cmdsettings->triggermode, -1)); \
+                                                             CLIcmddata.cmdsettings->triggermode, CLIcmddata.cmdsettings->semindexrequested));  \
         DEBUG_TRACEPOINT("setting RT priority to %d", CLIcmddata.cmdsettings->RT_priority);             \
         processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;                                 \
         processinfo->CPUmask = CLIcmddata.cmdsettings->CPUmask;                                         \
