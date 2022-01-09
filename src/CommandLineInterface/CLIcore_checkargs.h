@@ -27,8 +27,8 @@
 #define CLIARG_FITSFILENAME     0x00000007
 
 
-#define CLIARG_FLOAT32          0x00010001
-#define CLIARG_FLOAT64          0x00020001 // same as FLOAT
+#define CLIARG_FLOAT32          0x00010001 // same as float
+#define CLIARG_FLOAT64          0x00020001 // same as double
 
 // integer types
 #define CLIARG_ONOFF            0x00030002
@@ -112,8 +112,14 @@ typedef struct
     uint64_t  flag;
     union
     {
-        double f;
-        long l;
+        float  f32;
+        double f64;
+
+        int32_t  i32;
+        int64_t  i64;
+        uint32_t ui32;
+        uint64_t ui64;
+
         char s[STRINGMAXLEN_CLICMDARG];
     } val;
 } CLICMDARGDATA;
