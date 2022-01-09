@@ -86,8 +86,6 @@ errno_t function_parameter_add_entry(
             printf("ERROR [%s line %d]: NBparamMAX %ld limit reached\n", __FILE__, __LINE__,
                    NBparamMAX);
             fflush(stdout);
-            printf("STEP %s %d\n", __FILE__, __LINE__);
-            fflush(stdout);
             exit(0);
         }
 
