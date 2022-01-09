@@ -688,12 +688,12 @@ errno_t help_command(
                         break;*/
 
                     case CLIARG_INT32:
-                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int32 ]  %ld",
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ int32 ]  %d",
                                        data.cmd[cmdi].argdata[argi].val.i32);
                         break;
 
                     case CLIARG_UINT32:
-                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint32 ]  %ld",
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint32 ]  %u",
                                        data.cmd[cmdi].argdata[argi].val.ui32);
                         break;
 
@@ -703,7 +703,7 @@ errno_t help_command(
                         break;
 
                     case CLIARG_UINT64:
-                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint64 ]  %ld",
+                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[uint64 ]  %lu",
                                        data.cmd[cmdi].argdata[argi].val.ui64);
                         break;
 
