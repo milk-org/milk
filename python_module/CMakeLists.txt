@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 project(CacaoProcessTools LANGUAGES CXX)
 
+find_package(pybind11)
 if(NOT TARGET pybind11)
   execute_process(COMMAND bash -c "${PYTHON_EXECUTABLE} -m pybind11 --includes"
                   OUTPUT_VARIABLE pybind11_inc)
