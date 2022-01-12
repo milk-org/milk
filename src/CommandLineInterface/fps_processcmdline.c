@@ -9,6 +9,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+#include "fps_scan.h"
 
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"
@@ -42,12 +43,15 @@
  * - getval      : get value, write to output log
  * - fwrval      : get value, write to file or fifo
  * - exec        : execute scripte (parameter must be FPTYPE_EXECFILENAME type)
+ * - confstart   : start RUN process associated with parameter
+ * - confstop    : start RUN process associated with parameter
  * - confupdate  : update configuration
  * - confwupdate : update configuration, wait for completion to proceed
  * - runstart    : start RUN process associated with parameter
  * - runstop     : stop RUN process associated with parameter
  * - fpsrm       : remove fps
  * - cntinc      : counter test to check fifo connection
+ * - rescan      : rescan fps tree
  * - exit        : exit fpsCTRL tool
  *
  * - queueprio   : change queue priority
@@ -240,14 +244,14 @@ int functionparameter_FPSprocess_cmdline(
     // Handle commands for which FPSarg0 is NOT an FPS entry
 
 
-    // cntinc
+    // exit
     if((cmdFOUND == 0)
             && (strcmp(FPScommand, "exit") == 0))
     {
         cmdFOUND = 1;
         if(nbword != 1)
         {
-            functionparameter_outlog("ERROR", "COMMAND cntinc takes NBARGS = 0");
+            functionparameter_outlog("ERROR", "COMMAND exit takes NBARGS = 0");
             *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
             cmdOK = 0;
         }
@@ -255,6 +259,31 @@ int functionparameter_FPSprocess_cmdline(
         {
             fpsCTRLvar->exitloop = 1;
             functionparameter_outlog("INFO", "EXIT");
+        }
+    }
+
+    // exit
+    if((cmdFOUND == 0)
+            && (strcmp(FPScommand, "rescan") == 0))
+    {
+        cmdFOUND = 1;
+        if(nbword != 1)
+        {
+            functionparameter_outlog("ERROR", "COMMAND rescan takes NBARGS = 0");
+            *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
+            cmdOK = 0;
+        }
+        else
+        {
+            functionparameter_scan_fps(
+                fpsCTRLvar->mode,
+                fpsCTRLvar->fpsnamemask,
+                fps,
+                keywnode,
+                &fpsCTRLvar->NBkwn,
+                &fpsCTRLvar->NBfps,
+                &fpsCTRLvar->NBindex, 0);
+            functionparameter_outlog("INFO", "RESCAN");
         }
     }
 
