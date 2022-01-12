@@ -16,6 +16,8 @@
 #include "fps_RUNstart.h"
 #include "fps_RUNstop.h"
 
+#include "fps_tmux.h"
+
 #include "fps_FPSremove.h"
 
 #include "fps_outlog.h"
@@ -394,6 +396,50 @@ int functionparameter_FPSprocess_cmdline(
 
     if(kwnindex != -1)   // if FPS has been found
     {
+
+        // tmuxstart
+        if((cmdFOUND == 0)
+                && (strcmp(FPScommand, "tmuxstart") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2)
+            {
+                functionparameter_outlog("ERROR", "%s", "COMMAND tmuxstart takes NBARGS = 1");
+                *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
+                cmdOK = 0;
+            }
+            else
+            {
+                DEBUG_TRACEPOINT(" ");
+                functionparameter_FPS_tmux_init(&fps[fpsindex]);
+
+                functionparameter_outlog("TMUXSTART", "Init tmux session %d %s",
+                                         fpsindex, fps[fpsindex].md->name);
+                cmdOK = 1;
+            }
+        }
+
+        // tmuxstop
+        if((cmdFOUND == 0)
+                && (strcmp(FPScommand, "tmuxstop") == 0))
+        {
+            cmdFOUND = 1;
+            if(nbword != 2)
+            {
+                functionparameter_outlog("ERROR", "%s", "COMMAND tmuxstop takes NBARGS = 1");
+                *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
+                cmdOK = 0;
+            }
+            else
+            {
+                DEBUG_TRACEPOINT(" ");
+                functionparameter_FPS_tmux_kill(&fps[fpsindex]);
+
+                functionparameter_outlog("TMUXSTOP", "Init tmux session %d %s",
+                                         fpsindex, fps[fpsindex].md->name);
+                cmdOK = 1;
+            }
+        }
 
         // confstart
         if((cmdFOUND == 0)
