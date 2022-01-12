@@ -7,7 +7,8 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-#define SHAREDSHMDIR data.shmdir
+// #define SHAREDSHMDIR data.shmdir
+#define SHAREDSHMDIR    "/milk/shm"  /**< default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR */
 
 errno_t function_parameter_struct_shmdirname(char *shmdname)
 {
