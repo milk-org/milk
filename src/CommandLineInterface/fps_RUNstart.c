@@ -33,23 +33,35 @@ errno_t functionparameter_RUNstart(
                                fps->md->name, fps->md->workdir);
 
 
-        // set taskset if applicable
+        // set cset if applicable
         //
-        pindex = functionparameter_GetParamIndex(fps, ".conf.taskset");
+        pindex = functionparameter_GetParamIndex(fps, ".procinfo.cset");
         if(pindex > -1) {
             //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
-            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TASKSETCMDPREFIX=\\\"taskset --cpu-list %s\\\"\" C-m", fps->md->name, fps->parray[pindex].val.string[0]);
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TCSETCMDPREFIX=\\\"csetpmove %s;\\\"\" C-m", fps->md->name, fps->parray[pindex].val.string[0]);
         }
         else
         {
-            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TASKSETCMDPREFIX=\"\"\" C-m", fps->md->name);
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TCSETCMDPREFIX=\"\"\" C-m", fps->md->name);
+        }
+
+        // set taskset if applicable
+        //
+        pindex = functionparameter_GetParamIndex(fps, ".procinfo.taskset");
+        if(pindex > -1) {
+            //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TCSETCMDPREFIX=\\\"\\${TCSETCMDPREFIX} tsetpmove \\\\\\\"%s\\\\\\\";\\\"\" C-m", fps->md->name, fps->parray[pindex].val.string[0]);
+        }
+        else
+        {
+            EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export TCSETCMDPREFIX=\"\"\" C-m", fps->md->name);
         }
 
         // set OMP_NUM_THREADS if applicable
         //
-        pindex = functionparameter_GetParamIndex(fps, ".conf.procinfo.NBthread");
+        pindex = functionparameter_GetParamIndex(fps, ".procinfo.NBthread");
         if(pindex > -1) {
-            long NBthread = functionparameter_GetParamValue_INT64(fps, ".conf.procinfo.NBthread");
+            long NBthread = functionparameter_GetParamValue_INT64(fps, ".conf.NBthread");
             EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export OMP_NUM_THREADS=%ld\" C-m", fps->md->name, NBthread);
         }
 
