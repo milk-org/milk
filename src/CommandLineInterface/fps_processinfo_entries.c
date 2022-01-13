@@ -28,14 +28,8 @@ errno_t fps_add_processinfo_entries(
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT | FPFLAG_MAXLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
 
-    // taskset
-    function_parameter_add_entry(fps, ".conf.taskset", "CPUs mask",
-                                 FPTYPE_STRING, FPFLAG, "0-127", NULL);
 
-    // value = 0 indicates process will adjust to available nb cores
-    long maxNBthread_default[4] = { 1, 0, 50, 1 };
-    function_parameter_add_entry(fps, ".conf.NBthread", "max NB threads",
-                                 FPTYPE_INT64, FPFLAG, &maxNBthread_default, NULL);
+
 
     // run time string
     function_parameter_add_entry(fps, ".conf.timestring", "runstart time string",
@@ -70,21 +64,29 @@ errno_t fps_add_processinfo_entries(
 
 
 
+    // value = -1 indicates no RT priority
+    long RTprio_default[4] = { fps->cmdset.RT_priority, -1, 49, 20 };
+    function_parameter_add_entry(fps, ".procinfo.RTprio", "RTprio",
+                                 FPTYPE_INT64, FPFLAG, &RTprio_default, NULL);
 
+    // cset
+    function_parameter_add_entry(fps, ".procinfo.cset", "CPUs set",
+                                 FPTYPE_STRING, FPFLAG, "system", NULL);
 
+    // taskset
+    function_parameter_add_entry(fps, ".procinfo.taskset", "CPUs mask",
+                                 FPTYPE_STRING, FPFLAG, "1-127", NULL);
+
+    // value = 0 indicates process will adjust to available nb cores
+    long maxNBthread_default[4] = { 1, 0, 50, 1 };
+    function_parameter_add_entry(fps, ".procinfo.NBthread", "max NB threads",
+                                 FPTYPE_INT64, FPFLAG, &maxNBthread_default, NULL);
 
     // PROCESSINFO
     long fp_pinfoenabled = 0;
     function_parameter_add_entry(fps, ".procinfo.enabled", "procinfo mode",
                                  FPTYPE_ONOFF, FPFLAG, NULL, &fp_pinfoenabled);
     fps->parray[fp_pinfoenabled].fpflag |= FPFLAG_ONOFF;
-
-
-
-    // value = -1 indicates no RT priority
-    long RTprio_default[4] = { fps->cmdset.RT_priority, -1, 49, 20 };
-    function_parameter_add_entry(fps, ".procinfo.RTprio", "RTprio",
-                                 FPTYPE_INT64, FPFLAG, &RTprio_default, NULL);
 
 
     // no max limit
