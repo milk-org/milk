@@ -137,7 +137,7 @@ errno_t functionparameter_FPS_tmux_init(
     sprintf(functionstring,
             "function fpsrunstart {\n"
             "echo \"STARTING RUN PROCESS\"\n"
-            "MILK_FPSPROCINFO=1 \\${TASKSETCMDPREFIX} %s-exec -n %s \\\"%s%s _RUNSTART_ %s\\\"\n"
+            "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"\\${TCSETCMDPREFIX} %s%s _RUNSTART_ %s\\\"\n"
             "}\n",
             fps->md->callprogname,
             fps->md->name,
