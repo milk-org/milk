@@ -3,15 +3,11 @@
  * @brief   create FPS shared memory directory name
  */
 
-
 #include <dirent.h>
-
-
 
 #include "CommandLineInterface/CLIcore.h"
 
 #define SHAREDSHMDIR data.shmdir
-
 
 errno_t function_parameter_struct_shmdirname(char *shmdname)
 {
@@ -20,24 +16,24 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
     static unsigned long functioncnt = 0;
     static char shmdname_static[STRINGMAXLEN_SHMDIRNAME];
 
-    if(functioncnt == 0)
+    if (functioncnt == 0)
     {
         functioncnt++; // ensure we only run this once, and then retrieve stored result from shmdname_static
 
         // first, we try the env variable if it exists
         char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");
-        if(MILK_SHM_DIR != NULL)
+        if (MILK_SHM_DIR != NULL)
         {
             DEBUG_TRACEPOINT("MILK_SHM_DIR is '%s'\n", MILK_SHM_DIR);
 
             {
                 int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", MILK_SHM_DIR);
-                if(slen < 1)
+                if (slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
                 }
-                if(slen >= STRINGMAXLEN_SHMDIRNAME)
+                if (slen >= STRINGMAXLEN_SHMDIRNAME)
                 {
                     PRINT_ERROR("snprintf string truncation");
                     abort(); // can't handle this error any other way
@@ -46,7 +42,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
 
             // does this direcory exist ?
             tmpdir = opendir(shmdname);
-            if(tmpdir) // directory exits
+            if (tmpdir) // directory exits
             {
                 shmdirOK = 1;
                 closedir(tmpdir);
@@ -58,25 +54,24 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         }
 
         // second, we try SHAREDSHMDIR default
-        if(shmdirOK == 0)
+        if (shmdirOK == 0)
         {
             tmpdir = opendir(SHAREDSHMDIR);
-            if(tmpdir) // directory exits
+            if (tmpdir) // directory exits
             {
                 {
                     int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", SHAREDSHMDIR);
-                    if(slen < 1)
+                    if (slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");
                         abort(); // can't handle this error any other way
                     }
-                    if(slen >= STRINGMAXLEN_SHMDIRNAME)
+                    if (slen >= STRINGMAXLEN_SHMDIRNAME)
                     {
                         PRINT_ERROR("snprintf string truncation");
                         abort(); // can't handle this error any other way
                     }
                 }
-
 
                 shmdirOK = 1;
                 closedir(tmpdir);
@@ -84,10 +79,10 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
         }
 
         // if all above fails, set to /tmp
-        if(shmdirOK == 0)
+        if (shmdirOK == 0)
         {
             tmpdir = opendir("/tmp");
-            if(!tmpdir)
+            if (!tmpdir)
             {
                 exit(EXIT_FAILURE);
             }
@@ -99,16 +94,15 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             }
         }
 
-
         {
             int slen = snprintf(shmdname_static, STRINGMAXLEN_SHMDIRNAME, "%s",
                                 shmdname); // keep it memory
-            if(slen < 1)
+            if (slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if(slen >= STRINGMAXLEN_SHMDIRNAME)
+            if (slen >= STRINGMAXLEN_SHMDIRNAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort(); // can't handle this error any other way
@@ -119,18 +113,17 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
     {
         {
             int slen = snprintf(shmdname, STRINGMAXLEN_SHMDIRNAME, "%s", shmdname_static);
-            if(slen < 1)
+            if (slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if(slen >= STRINGMAXLEN_SHMDIRNAME)
+            if (slen >= STRINGMAXLEN_SHMDIRNAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort(); // can't handle this error any other way
             }
         }
-
     }
 
     return RETURN_SUCCESS;

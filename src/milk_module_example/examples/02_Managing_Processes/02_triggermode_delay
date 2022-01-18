@@ -1,7 +1,7 @@
 examplestring="processinfo triggermode delay"
 
 exampleDescription="
-Configuration parameter triggermode_delay controls the time delay 
+Configuration parameter triggermode_delay controls the time delay
 between loop iterations.
 "
 

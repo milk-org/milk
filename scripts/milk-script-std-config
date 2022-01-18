@@ -12,7 +12,7 @@ set -o pipefail
 
 function customcleanup()
 {
-	echo "default cleanup"
+    echo "default cleanup"
 }
 
 
@@ -69,55 +69,55 @@ MSopt+=( "chkp:check-prerequ:checkallprerequisitesExit::check all prerequisites 
 
 spin()
 {
-	local CPU=0
-	local cpuprobecntlim=10
-	local cpuprobecnt=0
-	local delay=0.1
-	local spincnt=0
-	spinstr="▏▎▍▌▋▊▉▊▋▌▍▎"
-	#spinstr="▁▃▄▅▆▇▆▅▄▃▁ "
-	#spinstr="/|\\-/|\\-"
+    local CPU=0
+    local cpuprobecntlim=10
+    local cpuprobecnt=0
+    local delay=0.1
+    local spincnt=0
+    spinstr="▏▎▍▌▋▊▉▊▋▌▍▎"
+    #spinstr="▁▃▄▅▆▇▆▅▄▃▁ "
+    #spinstr="/|\\-/|\\-"
 
-	let cpuprobecnt=cpuprobecntlim+1
-	echo -n "STARTED $(date -u)  "
-	while :
-	do
-	  if [[ "${cpuprobecnt}" -gt "${cpuprobecntlim}" ]]; then
-	    CPU=$( pstree -p $THIS_PID | grep -o '([0-9]\+)' | grep -o '[0-9]\+' |\
-	    xargs ps -o %cpu,cmd -p | awk '{cpu+=$1} END {print cpu}' )  
-	    cpuprobecnt=0
-	  fi
-	  let cpuprobecnt+=1
+    let cpuprobecnt=cpuprobecntlim+1
+    echo -n "STARTED $(date -u)  "
+    while :
+    do
+        if [[ "${cpuprobecnt}" -gt "${cpuprobecntlim}" ]]; then
+            CPU=$( pstree -p $THIS_PID | grep -o '([0-9]\+)' | grep -o '[0-9]\+' |\
+                xargs ps -o %cpu,cmd -p | awk '{cpu+=$1} END {print cpu}' )
+            cpuprobecnt=0
+        fi
+        let cpuprobecnt+=1
 
-	  t1=$( echo "scale=2;${spincnt}*${delay}" | bc )
-	  local temp=${spinstr#?}
-	  local temp1=${temp:0:4}
+        t1=$( echo "scale=2;${spincnt}*${delay}" | bc )
+        local temp=${spinstr#?}
+        local temp1=${temp:0:4}
 
-	  printf " [%s CPU %3.0f%%] %5.1f s" "$temp1" "${CPU}" "${t1}"
-	  local spinstr=$temp${spinstr%"$temp"}
-	  sleep $delay
-	  printf "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
-	  let spincnt+=1
+        printf " [%s CPU %3.0f%%] %5.1f s" "$temp1" "${CPU}" "${t1}"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+        let spincnt+=1
     done
 }
 
 startspin()
 {
-	tput civis
-	# Start the Spinner:
-	THIS_PID=$$
-	spin &
-	SPIN_PID=$!
-	#echo "SPIN_PID ${SPIN_PID}"
-	#echo "THIS_PID ${THIS_PID}"
-	# Kill the spinner on any signal, including our own exit.
-	trap "kill -9 $SPIN_PID &> /dev/null" `seq 0 15`
+    tput civis
+    # Start the Spinner:
+    THIS_PID=$$
+    spin &
+    SPIN_PID=$!
+    #echo "SPIN_PID ${SPIN_PID}"
+    #echo "THIS_PID ${THIS_PID}"
+    # Kill the spinner on any signal, including our own exit.
+    trap "kill -9 $SPIN_PID &> /dev/null" `seq 0 15`
 }
 
 stopspin()
 {
-	kill -9 $SPIN_PID &> /dev/null
-	echo ""
-	tput cnorm
-	#settrap
+    kill -9 $SPIN_PID &> /dev/null
+    echo ""
+    tput cnorm
+    #settrap
 }

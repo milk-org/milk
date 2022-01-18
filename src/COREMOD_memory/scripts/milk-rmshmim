@@ -10,25 +10,25 @@ echo "pname = $pname"
 
 
 function printHELP {
-echo "------------------------------------------------------------------------"
-echo "$(tput bold) $pname : remove shmim and files $(tput sgr0)"
-echo "------------------------------------------------------------------------"
-echo "  Remove shared memory image (stream) and associated files"
-echo "  Multiple streams can be entered, separated by comma, no space"
-echo "   "
-echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-h] <stream(s)>"
-echo ""
-echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
-echo ""
-echo "------------------------------------------------------------------------"
+    echo "------------------------------------------------------------------------"
+    echo "$(tput bold) $pname : remove shmim and files $(tput sgr0)"
+    echo "------------------------------------------------------------------------"
+    echo "  Remove shared memory image (stream) and associated files"
+    echo "  Multiple streams can be entered, separated by comma, no space"
+    echo "   "
+    echo " $(tput bold)USAGE:$(tput sgr0)"
+    echo "     $0 [-h] <stream(s)>"
+    echo ""
+    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+    echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
+    echo ""
+    echo "------------------------------------------------------------------------"
 }
 
 
 printHELP1 ()
 {
-	printf "%20s       Remove shared memory image (stream)\n" "$0" 
+    printf "%20s       Remove shared memory image (stream)\n" "$0"
 }
 
 
@@ -39,38 +39,38 @@ printHELP1 ()
 # Transform long options to short ones
 singlelinehelp=0
 for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--help") set -- "$@" "-h" ;;
-    "--help1") 
-set -- "$@" "-h" 
-singlelinehelp=1;
-;;
-    *)        set -- "$@" "$arg"
-  esac
+    shift
+    case "$arg" in
+        "--help") set -- "$@" "-h" ;;
+        "--help1")
+            set -- "$@" "-h"
+            singlelinehelp=1;
+            ;;
+        *)        set -- "$@" "$arg"
+    esac
 done
 
 
 
 
 while getopts :h FLAG; do
-  case $FLAG in
-    h)  #show help
-      if [ "$singlelinehelp" -eq "0" ]; then
-      printHELP
-      else
-      printHELP1
-      fi
-      exit
-      ;;
-    \?) 
-      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-      printHELP
-      ;;
-  esac
+    case $FLAG in
+        h)  #show help
+            if [ "$singlelinehelp" -eq "0" ]; then
+                printHELP
+            else
+                printHELP1
+            fi
+            exit
+            ;;
+        \?)
+            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            printHELP
+            ;;
+    esac
 done
 
-shift $((OPTIND-1))  
+shift $((OPTIND-1))
 
 ### End getopts code ###
 
@@ -80,11 +80,11 @@ shift $((OPTIND-1))
 
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
-if [ "$#" -ne $NBARGS ]; then
-    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
-fi
-printHELP
-        exit
+    if [ "$#" -ne $NBARGS ]; then
+        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+    fi
+    printHELP
+    exit
 fi
 
 
@@ -99,7 +99,7 @@ SF="milkCLIstartup.${pname}"
 echo "" > $SF
 for streamname in "${array[@]}"
 do
-	echo "readshmim ${streamname}" >> $SF
+    echo "readshmim ${streamname}" >> $SF
     echo "rmshmim ${streamname}" >> $SF
 done
 echo "exitCLI" >> $SF
@@ -107,5 +107,3 @@ echo "exitCLI" >> $SF
 milk -n ${pname} -f ${fifoname} -s ${SF}
 
 rm ${SF}
-
-

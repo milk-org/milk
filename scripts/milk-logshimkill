@@ -4,16 +4,16 @@ EXPECTED_ARGS=1
 
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo
-  echo "-------- KILL LOG SHARED MEMORY DATA STREAM ---------"
- echo " "
- echo "Usage: $0 <data stream name>"
- echo " "
- echo "  INPUT <data stream name>   : shared memory stream name. Actual file is $MILK_SHM_DIR/<stream name>.im.shm"
- echo " "
- echo "EXAMPLE :  $0 ircam2"
- echo " "
- exit
+    echo
+    echo "-------- KILL LOG SHARED MEMORY DATA STREAM ---------"
+    echo " "
+    echo "Usage: $0 <data stream name>"
+    echo " "
+    echo "  INPUT <data stream name>   : shared memory stream name. Actual file is $MILK_SHM_DIR/<stream name>.im.shm"
+    echo " "
+    echo "EXAMPLE :  $0 ircam2"
+    echo " "
+    exit
 fi
 
 pname="$0-$1"

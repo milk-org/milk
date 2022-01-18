@@ -1,22 +1,22 @@
-# Command Line Interface Syntax {#page_command_line_interface}  
+# Command Line Interface Syntax {#page_command_line_interface}
 
 Files CLIcore.c and CLIcore.h contain the source code for the command line interpreter (CLI)
 
 ## COMMAND LINE OPTIONS
 
 \verbatim
-  -h, --help 
+  -h, --help
 	print this message and exit
   -i, --info
 	Print version, settings, info and exit
   -j, --journal
-	keeps journal of commands - TO BE IMPLEMENTED 
+	keeps journal of commands - TO BE IMPLEMENTED
 	Write all commands to file "cfits_cmdlog.txt" as they are entered
   --verbose
 	be verbose
   -d, --debug=DEBUGLEVEL
 	Set debug level at startup
-  -o, --overwrite 
+  -o, --overwrite
 	Automatically overwrite files if necessary (USE WITH CAUTION - WILL OVERWRITE EXISTING FITS FILES)
   -l
 	Keeps a list of images in file imlist.txt
@@ -61,7 +61,7 @@ Tab completion is provided and behaves as follows:
 
 GNU readline used to read input. See GNU readline documentation on http://tiswww.case.edu/php/chet/readline/rltop.html. For a quick help on readline input, type:
 \verbatim
-> helprl 
+> helprl
 \endverbatim
 
 The command line interpreter (CLI) will take input from file cmdfile.txt if it exists. If file cmdfile.txt exists commands will be read one by one from top to bottom, and will be removed from the file as they are read, until the file is empty
@@ -71,21 +71,21 @@ The command line interpreter (CLI) will take input from file cmdfile.txt if it e
 
 \verbatim
 > ?
-> help			     
+> help
 	# print this help file
-> helprl		     
+> helprl
 	# print readline quick help
-> lm?                        
+> lm?
 	# list all modules loaded
-> m? <module>               
+> m? <module>
 	# list all commands for a module
-> m?                    
+> m?
 	# perform m? on all modules loaded
-> cmd? <command>              
+> cmd? <command>
 	# command description for <command>
-> cmd?                    
+> cmd?
 	# command description for all commands
-> h? str                    
+> h? str
 	# search for string <str> in all commands and their descriptions
 \endverbatim
 
@@ -95,20 +95,20 @@ The command line interpreter (CLI) will take input from file cmdfile.txt if it e
 \verbatim
 > ci
 	# compilation time and memory usage
-> listim 
+> listim
 	# list all images in memory
-> listimf <filename> 
+> listimf <filename>
 	# list all images in memory and write output to file <filename>
-> !<syscommand>             
+> !<syscommand>
 	# execute system command
-> showhist                  
+> showhist
 	# prints history of all commands
-> quit                      
+> quit
 	# exit Cfits (exit also works)
 
-> setdp <val> 		     
+> setdp <val>
 	# set default precision to float (<val> = 0) or double (<val> = 1)
-> creaim <im> <xs> <ys>     
+> creaim <im> <xs> <ys>
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 \endverbatim
 
@@ -119,30 +119,30 @@ FITSIO is used for FITS files I/O, see FITSIO documentation for more detailed in
 ## LOADING FILES
 
 \verbatim
-> loadfits <fname> <imname> 
+> loadfits <fname> <imname>
 	# load FITS file <fname> into image <imname>
-> loadfits im1.fits imf1    
+> loadfits im1.fits imf1
 	# load file im1.fits in memory with name imf1
-> loadfits im1.fits	     
+> loadfits im1.fits
 	# load file im1.fits in memory with name im1 (default name is composed of all chars before first ".")
-> loadfits im1.fits.gz im1  
+> loadfits im1.fits.gz im1
 	# load compressed file
 \endverbatim
 
 ## SAVING FILES
 
 \verbatim
-> save_fl  <imname> <fname> 
+> save_fl  <imname> <fname>
 	# save image <imname> into FITS file <fname> (float)
-> save_fl im1 imf1.fits      
+> save_fl im1 imf1.fits
 	# write image im1 to disk file imf1.fits
 > save_fl im1
 	# write image im1 to disk file im1.fits (default file name = image name + ".fits")
-> save_fl im1 "!im1.fits"   
+> save_fl im1 "!im1.fits"
 	# overwrite file im1.fits if it exists
 > save_fl im1 "../dir2/im1.fits"
 	# specify full path
-> save_fl im1 im1.fits.gz   
+> save_fl im1 im1.fits.gz
 	# save compressed image
 \endverbatim
 
@@ -172,15 +172,6 @@ If you start Cfits with the "-l" option,  the file "imlist.txt" contains the lis
 # ARITHMETIC OPERATIONS
 
 \verbatim
-> im1=sqrt(im+2.0)          
+> im1=sqrt(im+2.0)
 	# will perform an arithmetic operation on image im and store the result in image im1
 \endverbatim
-
-
-
-
-
-
-
-
-

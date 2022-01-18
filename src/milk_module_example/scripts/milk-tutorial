@@ -57,7 +57,7 @@ echo "Use arrow keys to navigate and select example script."
 echo ""
 echo "All examples will run in tmux session ${TMUXSESSIONNAME}"
 echo ""
-echo "$(tput bold)====== DO THIS NOW =======" 
+echo "$(tput bold)====== DO THIS NOW ======="
 echo "Run \"tmux a -t ${TMUXSESSIONNAME}\" in a separate terminal to view examples$(tput sgr0)"
 echo
 read -s -p "When done, press [ENTER] to proceed to navigator, [CTRL-C] to exit"
@@ -73,15 +73,15 @@ function ProbeUserRunExample {
     for (( i=0; i<$nbCLIcmd; i++ )); do
         CLIline=${CLIinarray[$i]}
         if [ -n "$CLIline" ]; then # only process non-empty lines
-        if [[ $CLIline == \#* ]]; then
-            # this is a comment, just print it in green
-            echo "$(tput setaf 2)${CLIline} $(tput sgr0)"
-        else
-            echo "$(tput bold)$(tput setaf 3)${CLIline} $(tput sgr0)"
-            read -p "   [ENTER] to run this command "
-            tmux send-keys -t ${TMUXSESSIONNAME} "${CLIline}" C-m
-            echo ""
-        fi
+            if [[ $CLIline == \#* ]]; then
+                # this is a comment, just print it in green
+                echo "$(tput setaf 2)${CLIline} $(tput sgr0)"
+            else
+                echo "$(tput bold)$(tput setaf 3)${CLIline} $(tput sgr0)"
+                read -p "   [ENTER] to run this command "
+                tmux send-keys -t ${TMUXSESSIONNAME} "${CLIline}" C-m
+                echo ""
+            fi
         fi
     done
 }
@@ -94,32 +94,32 @@ ExampleDir="/home/oguyon/src/milk/src/milk_module_example/examples/"
 loopOK=1
 while [ ${loopOK} = 1 ]; do
 
-#EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
-EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
+    #EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
+    EXAMPLEFILE=$(cd $ExampleDir; nnn -c -o -p '-')
 
-echo "selected : $EXAMPLEFILE in $ExampleDir"
-if [ -f "$EXAMPLEFILE" ]; then
-    ExampleDir="$(dirname "$EXAMPLEFILE")"
-    source $EXAMPLEFILE
+    echo "selected : $EXAMPLEFILE in $ExampleDir"
+    if [ -f "$EXAMPLEFILE" ]; then
+        ExampleDir="$(dirname "$EXAMPLEFILE")"
+        source $EXAMPLEFILE
 
-    clear
-    tput bold; echo "Example ${examplestring}"; tput sgr0
-    echo
-    echo "$exampleDescription"
-    echo
-    ProbeUserRunExample
-else
-    echo "ERROR: File does not exist, could not run test"
-fi
+        clear
+        tput bold; echo "Example ${examplestring}"; tput sgr0
+        echo
+        echo "$exampleDescription"
+        echo
+        ProbeUserRunExample
+    else
+        echo "ERROR: File does not exist, could not run test"
+    fi
 
-echo -n "[ENTER] return to menu or (q)uit ? "
-read answer
+    echo -n "[ENTER] return to menu or (q)uit ? "
+    read answer
 
-if [ "$answer" != "${answer#[Qq]}" ]; then
-    loopOK=0
-else
-    loopOK=1
-fi
+    if [ "$answer" != "${answer#[Qq]}" ]; then
+        loopOK=0
+    else
+        loopOK=1
+    fi
 
 
 done

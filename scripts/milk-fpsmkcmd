@@ -35,147 +35,147 @@ chmod +x ${FPScmddir}/fpsrunstopscript
 cat "$FPSlistfilename" | while read LINE; do
     nw=$( echo "$LINE" | wc -w )
     if [ "$nw" -gt 1 ]; then
-    if [[ $LINE != \#* ]]; then
+        if [[ $LINE != \#* ]]; then
 
-	declare -a OPTARG
+            declare -a OPTARG
 
-		stringarr=($LINE)
-		nbarg=$(( $nw - 2 ))
-		
-		FPSrootname=${stringarr[0]}
-		#$( echo "$LINE" | awk '{print $1}' )
-		CLIname=${stringarr[1]}
-		#$( echo "$LINE" | awk '{print $2}' )
-		
-		FPSname="${FPSrootname}"
-		echo "    FPS root name = ${FPSname}"
-		echo "    CLI cmd       = ${CLIname}"
-		
-		for arg in `seq 1 $nbarg`;
-        do
-				i=$(( $arg + 1 ))				
-				OPTARG[$arg]=${stringarr[$i]}				                
+            stringarr=($LINE)
+            nbarg=$(( $nw - 2 ))
+
+            FPSrootname=${stringarr[0]}
+            #$( echo "$LINE" | awk '{print $1}' )
+            CLIname=${stringarr[1]}
+            #$( echo "$LINE" | awk '{print $2}' )
+
+            FPSname="${FPSrootname}"
+            echo "    FPS root name = ${FPSname}"
+            echo "    CLI cmd       = ${CLIname}"
+
+            for arg in `seq 1 $nbarg`;
+            do
+                i=$(( $arg + 1 ))
+                OPTARG[$arg]=${stringarr[$i]}
                 echo "    Argument $arg =" ${OPTARG[$arg]}
                 FPSname+="-"${OPTARG[$arg]}
-        done
-        
-        echo "    FPS name      = ${FPSname}"
+            done
+
+            echo "    FPS name      = ${FPSname}"
 
 
-	# write to list of FPS names
-	echo "${FPSname}" >> ./${FPScmddir}/fpslist.txt
+            # write to list of FPS names
+            echo "${FPSname}" >> ./${FPScmddir}/fpslist.txt
 
-	# write scripts
-	for CMDCODE in "FPSINIT" "CONFSTART" "CONFSTOP" "RUNSTART" "RUNSTOP"; do
-		
-		pnamestr="$(echo "$CMDCODE" | awk '{print tolower($0)}')"
-		
-		fname="./${FPScmddir}/${FPSrootname}-${pnamestr}"		
-		
-		if [ "$CMDCODE" != "CONFSTOP" ];  # CONFSTOP does not run a program. Instead, C-c char sent to tmux session
-		then
-		
-		if [ -f ${fname} ]; then
-			echo "File  $fname  exists - no write"
-		else
-			echo "Writing  $fname"
-			
-			echo "#!/bin/bash" > $fname
-			echo "# This script was automatically written by $0" >> $fname
-			echo "" >> $fname
-			for arg in `seq 1 $nbarg`;
-			do 
-				echo "arg${arg}=\"\$${arg}\"" >> $fname
-			done
-			
-			pname="${FPSrootname}"
-			CLIcmdstring="${CLIname} _${CMDCODE}_"
-			for arg in `seq 1 $nbarg`; do 
-				pname+="-\${arg$arg}"
-				CLIcmdstring+=" \${arg$arg}"
-			done 
-			echo "" >> $fname
-			echo "pname=\"${pname}.${pnamestr}\"" >> $fname
-			echo "" >> $fname
-			
-			redirect=""
-			if [ "$CMDCODE" = "RUNSTOP" ]; then
-			redirect="&>> ./${FPScmdlogdir}/${pname}.runstop.log"
-			fi
-			
-			# create fifo
-			#if [ "$CMDCODE" = "CONFSTART" ]; then
-			#echo "mkfifo ${MILK_SHM_DIR}/${pname}.fpsconf.fifo" >> $fname
-			#echo "" >> $fname
-			#fi
-			
-			echo "cacao -n \${pname} ${redirect} << EOF" >> $fname
-			
-			echo "$CLIcmdstring" >> $fname
-			echo "exitCLI" >> $fname
-			echo "EOF" >> $fname
-		
-			chmod +x $fname
-		fi
-		
-		fi
-		
+            # write scripts
+            for CMDCODE in "FPSINIT" "CONFSTART" "CONFSTOP" "RUNSTART" "RUNSTOP"; do
 
+                pnamestr="$(echo "$CMDCODE" | awk '{print tolower($0)}')"
+
+                fname="./${FPScmddir}/${FPSrootname}-${pnamestr}"
+
+                if [ "$CMDCODE" != "CONFSTOP" ];  # CONFSTOP does not run a program. Instead, C-c char sent to tmux session
+                then
+
+                    if [ -f ${fname} ]; then
+                        echo "File  $fname  exists - no write"
+                    else
+                        echo "Writing  $fname"
+
+                        echo "#!/bin/bash" > $fname
+                        echo "# This script was automatically written by $0" >> $fname
+                        echo "" >> $fname
+                        for arg in `seq 1 $nbarg`;
+                        do
+                            echo "arg${arg}=\"\$${arg}\"" >> $fname
+                        done
+
+                        pname="${FPSrootname}"
+                        CLIcmdstring="${CLIname} _${CMDCODE}_"
+                        for arg in `seq 1 $nbarg`; do
+                            pname+="-\${arg$arg}"
+                            CLIcmdstring+=" \${arg$arg}"
+                        done
+                        echo "" >> $fname
+                        echo "pname=\"${pname}.${pnamestr}\"" >> $fname
+                        echo "" >> $fname
+
+                        redirect=""
+                        if [ "$CMDCODE" = "RUNSTOP" ]; then
+                            redirect="&>> ./${FPScmdlogdir}/${pname}.runstop.log"
+                        fi
+
+                        # create fifo
+                        #if [ "$CMDCODE" = "CONFSTART" ]; then
+                        #echo "mkfifo ${MILK_SHM_DIR}/${pname}.fpsconf.fifo" >> $fname
+                        #echo "" >> $fname
+                        #fi
+
+                        echo "cacao -n \${pname} ${redirect} << EOF" >> $fname
+
+                        echo "$CLIcmdstring" >> $fname
+                        echo "exitCLI" >> $fname
+                        echo "EOF" >> $fname
+
+                        chmod +x $fname
+                    fi
+
+                fi
 
 
-		if [ "$CMDCODE" = "FPSINIT" ]; then
-			echo ""  >> ${FPScmddir}/fpsinitscript
-			cmdstring="$fname"
-			for arg in `seq 1 $nbarg`; do 
-				cmdstring+=" "${OPTARG[$arg]}
-			done
-			echo "${cmdstring}" >> ${FPScmddir}/fpsinitscript
-		fi
-
-		if [ "$CMDCODE" = "CONFSTART" ]; then
-			echo "" >> ${FPScmddir}/fpsconfstartscript
-			cmdstring="$fname"
-			tmuxname="${FPSname}-conf"
-			echo "tmux new-session -d -s ${tmuxname}" >> ${FPScmddir}/fpsconfstartscript
-			for arg in `seq 1 $nbarg`; do 
-				cmdstring+=" "${OPTARG[$arg]}
-			done
-			echo "tmux send-keys -t ${tmuxname} \"${cmdstring}\" C-m" >> ${FPScmddir}/fpsconfstartscript
-		fi
-		
-		if [ "$CMDCODE" = "CONFSTOP" ]; then
-			echo "" >> ${FPScmddir}/fpsconfstopscript
-			tmuxname="${FPSname}-conf"
-			echo "tmux send-keys -t ${tmuxname} C-c" >> ${FPScmddir}/fpsconfstopscript
-		fi
 
 
-		if [ "$CMDCODE" = "RUNSTART" ]; then
-			echo "" >> ${FPScmddir}/fpsrunstartscript
-			cmdstring="$fname"
-			tmuxname="${FPSname}-run"
-			echo "tmux new-session -d -s ${tmuxname}" >> ${FPScmddir}/fpsrunstartscript
-			for arg in `seq 1 $nbarg`; do 
-				cmdstring+=" "${OPTARG[$arg]}
-			done
-			echo "tmux send-keys -t ${tmuxname} \"${cmdstring}\" C-m" >> ${FPScmddir}/fpsrunstartscript
-		fi
-		
-		if [ "$CMDCODE" = "RUNSTOP" ]; then
-			echo "" >> ${FPScmddir}/fpsrunstopscript
-			cmdstring="$fname"
-			for arg in `seq 1 $nbarg`; do 
-				cmdstring+=" "${OPTARG[$arg]}
-			done
-			echo "${cmdstring}" >> ${FPScmddir}/fpsrunstopscript
-		fi
-								
-		
-	done
-        
+                if [ "$CMDCODE" = "FPSINIT" ]; then
+                    echo ""  >> ${FPScmddir}/fpsinitscript
+                    cmdstring="$fname"
+                    for arg in `seq 1 $nbarg`; do
+                        cmdstring+=" "${OPTARG[$arg]}
+                    done
+                    echo "${cmdstring}" >> ${FPScmddir}/fpsinitscript
+                fi
 
-        
-		echo ""
-    fi
+                if [ "$CMDCODE" = "CONFSTART" ]; then
+                    echo "" >> ${FPScmddir}/fpsconfstartscript
+                    cmdstring="$fname"
+                    tmuxname="${FPSname}-conf"
+                    echo "tmux new-session -d -s ${tmuxname}" >> ${FPScmddir}/fpsconfstartscript
+                    for arg in `seq 1 $nbarg`; do
+                        cmdstring+=" "${OPTARG[$arg]}
+                    done
+                    echo "tmux send-keys -t ${tmuxname} \"${cmdstring}\" C-m" >> ${FPScmddir}/fpsconfstartscript
+                fi
+
+                if [ "$CMDCODE" = "CONFSTOP" ]; then
+                    echo "" >> ${FPScmddir}/fpsconfstopscript
+                    tmuxname="${FPSname}-conf"
+                    echo "tmux send-keys -t ${tmuxname} C-c" >> ${FPScmddir}/fpsconfstopscript
+                fi
+
+
+                if [ "$CMDCODE" = "RUNSTART" ]; then
+                    echo "" >> ${FPScmddir}/fpsrunstartscript
+                    cmdstring="$fname"
+                    tmuxname="${FPSname}-run"
+                    echo "tmux new-session -d -s ${tmuxname}" >> ${FPScmddir}/fpsrunstartscript
+                    for arg in `seq 1 $nbarg`; do
+                        cmdstring+=" "${OPTARG[$arg]}
+                    done
+                    echo "tmux send-keys -t ${tmuxname} \"${cmdstring}\" C-m" >> ${FPScmddir}/fpsrunstartscript
+                fi
+
+                if [ "$CMDCODE" = "RUNSTOP" ]; then
+                    echo "" >> ${FPScmddir}/fpsrunstopscript
+                    cmdstring="$fname"
+                    for arg in `seq 1 $nbarg`; do
+                        cmdstring+=" "${OPTARG[$arg]}
+                    done
+                    echo "${cmdstring}" >> ${FPScmddir}/fpsrunstopscript
+                fi
+
+
+            done
+
+
+
+            echo ""
+        fi
     fi
 done

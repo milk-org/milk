@@ -6,135 +6,124 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 #import pyfits as pf
-import pdb
 import threading
 import mmap
-import struct 
+import struct
 import os
 #import Image
 import time
 from PIL import Image
 
 
-
-
-
-
 class shm:
     ''' -------------------------------------------------------------
-    Shared memory data structure for images 
+    Shared memory data structure for images
     ------------------------------------------------------------- '''
 
     def __init__(self, fname=None, verbose=True):
         if fname == None:
             print("No shared memory file name provided")
-            return(None)
+            return (None)
         try:
             self.fd = os.open(fname, os.O_RDWR)
         except:
-            print("File %s is not a shared memory file" % (fname,))
-            return(None)
+            print("File %s is not a shared memory file" % (fname, ))
+            return (None)
 
         fsz = os.path.getsize(fname)
         #print ("file %s size = %d bytes" % (fname, fsz))
         self.buf = mmap.mmap(self.fd, 0, mmap.MAP_SHARED)
         self.read_meta_data(verbose=verbose)
 
-
-    def close(self,):
+    def close(self, ):
         self.buf.close()
         os.close(self.fd)
 
-
     def read_meta_data(self, verbose=True):
         buf = self.buf
-        self.imname  = str(buf[0:80]).strip('\x00')       # image name
-        self.naxis,  = struct.unpack('l',   buf[80:88])   # array dimension
-        self.size    = struct.unpack('lll', buf[88:112])  # array size
-        self.nel,    = struct.unpack('l',   buf[112:120]) # nb. elements
-        self.idtype, = struct.unpack('l',   buf[120:128]) # image dtype
-        self.crtime, = struct.unpack('d',   buf[128:136]) # creation time
-        self.latime, = struct.unpack('d',   buf[136:144]) # last access time
+        self.imname = str(buf[0:80]).strip('\x00')  # image name
+        self.naxis, = struct.unpack('l', buf[80:88])  # array dimension
+        self.size = struct.unpack('lll', buf[88:112])  # array size
+        self.nel, = struct.unpack('l', buf[112:120])  # nb. elements
+        self.idtype, = struct.unpack('l', buf[120:128])  # image dtype
+        self.crtime, = struct.unpack('d', buf[128:136])  # creation time
+        self.latime, = struct.unpack('d', buf[136:144])  # last access time
 
-        self.shared, = struct.unpack('i',   buf[164:168]) # flag
-        self.write,  = struct.unpack('i',   buf[168:172]) # flag
+        self.shared, = struct.unpack('i', buf[164:168])  # flag
+        self.write, = struct.unpack('i', buf[168:172])  # flag
 
-        self.status, = struct.unpack('i',   buf[172:176])   
-        self.cnt0,   = struct.unpack('l',   buf[176:184]) # counter
-        self.cnt1,   = struct.unpack('l',   buf[184:192]) # counter
-        self.nbkw    = struct.unpack('l',   buf[192:200]) # nb of keywords
+        self.status, = struct.unpack('i', buf[172:176])
+        self.cnt0, = struct.unpack('l', buf[176:184])  # counter
+        self.cnt1, = struct.unpack('l', buf[184:192])  # counter
+        self.nbkw = struct.unpack('l', buf[192:200])  # nb of keywords
 
         self.naxis = 2
         self.size = (self.size[0], self.size[1], 0)
-	self.nel = self.size[0]*self.size[1]
+        self.nel = self.size[0] * self.size[1]
         self.elt_sz = 2
         self.ddtype = np.int32
 
-        if self.idtype == 1: # C-char
+        if self.idtype == 1:  # C-char
             self.elt_sz = 1
             self.ddtype = np.str
 
-        if self.idtype == 2: # C-long
+        if self.idtype == 2:  # C-long
             self.elt_sz = 4
             self.ddtype = np.int32
-                
-        if self.idtype == 3: # C-float
-            self.elt_sz = 4 
+
+        if self.idtype == 3:  # C-float
+            self.elt_sz = 4
             self.ddtype = np.float32
 
-        if self.idtype == 4: # C-double
-            self.elt_sz= 8
+        if self.idtype == 4:  # C-double
+            self.elt_sz = 8
             self.ddtype = np.float64
 
-        if self.idtype == 7: # C-ushort
-            self.elt_sz= 2
+        if self.idtype == 7:  # C-ushort
+            self.elt_sz = 2
             self.ddtype = np.ushort
 
         if verbose:
-            print("imname = %s"             % (self.imname,))
-            print("naxis = %d"              % (self.naxis,))
-            print("xs, ys, zs = %d, %d, %d" %  self.size)
-            print("image data type %d"      % (self.idtype,))
-            print("image counter = %d"      % (self.cnt0,))
-            print("SHARED %d"               % (self.shared,))
+            print("imname = %s" % (self.imname, ))
+            print("naxis = %d" % (self.naxis, ))
+            print("xs, ys, zs = %d, %d, %d" % self.size)
+            print("image data type %d" % (self.idtype, ))
+            print("image counter = %d" % (self.cnt0, ))
+            print("SHARED %d" % (self.shared, ))
 
     # ------
-    def get_data(self,check=False,reform=True):
+    def get_data(self, check=False, reform=True):
         if check:
-            cnt, = struct.unpack('l',   self.buf[176:184]) # current counter val
+            cnt, = struct.unpack('l', self.buf[176:184])  # current counter val
             while (cnt <= self.cnt0):
                 time.sleep(0.001)
-                cnt, = struct.unpack('l',   self.buf[168:176])
+                cnt, = struct.unpack('l', self.buf[168:176])
             self.cnt0 = cnt
-            
-        data = np.fromstring(
-            self.buf[200:200+self.nel*self.elt_sz], dtype=self.ddtype)
+
+        data = np.fromstring(self.buf[200:200 + self.nel * self.elt_sz],
+                             dtype=self.ddtype)
 
         if reform:
             data = data.reshape(self.size[:self.naxis][::-1])
 
-        return(data)
+        return (data)
 
     # ------
     def get_counter(self):
-        self.cnt0,   = struct.unpack('l',   self.buf[176:184]) # counter
+        self.cnt0, = struct.unpack('l', self.buf[176:184])  # counter
         return self.cnt0
 
     # ------
     def set_data(self, data):
         aa = array.array('f', (np.hstack(data.astype('f'))).tolist())
         try:
-            self.buf[200:200+self.nel*self.elt_sz] = aa.tostring()
-            counter, = struct.unpack('l',   self.buf[176:184])
+            self.buf[200:200 + self.nel * self.elt_sz] = aa.tostring()
+            counter, = struct.unpack('l', self.buf[176:184])
             counter += 1
             self.buf[176:184] = struct.pack('l', counter)
         except:
             print("Failed to write buffer to shared mem structure")
-        return(True)
-
-
-
-
+        return (True)
 
 
 hmsg = """
@@ -172,9 +161,9 @@ ESC   : quit shmview
 
 """
 args = sys.argv[1:]
-if args == []: 
+if args == []:
     print(hmsg)
-    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2,))
+    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2, ))
 else:
     cam = shm(args[0])
 
@@ -209,7 +198,7 @@ else:
 # -----------------------
 pygame.init()
 
-FPS = 20                        # frames per second setting
+FPS = 20  # frames per second setting
 fpsClock = pygame.time.Clock()  # start the pygame clock!
 XW, YW = 650, 712
 XW, YW = zoom * xsize, zoom * ysize
@@ -217,6 +206,7 @@ XW, YW = zoom * xsize, zoom * ysize
 screen = pygame.display.set_mode((XW, YW), 0, 32)
 #pygame.display.set_caption('shared memory live viewer')
 pygame.display.set_caption(args[0])
+
 
 # ------------------------------------------------------------------
 #             short hands for shared memory data access
@@ -228,42 +218,44 @@ def get_img_data(check=False):
     Reads from the already-opened shared memory
     data structure.
     ---------------------------------------- '''
-    return(cam.get_data(check, True).astype(float))
+    return (cam.get_data(check, True).astype(float))
+
 
 # ------------------------------------------------------------------
 #  another short hand to convert numpy array into image for display
 # ------------------------------------------------------------------
 def arr2im(arr, vmin=0., vmax=10000.0, pwr=1.0, mmin=None, mmax=None):
-    
-    arr2 = arr.astype('float') 
-    if mmin is None or mmax is None: mmin,mmax = arr2.min(), arr2.max()
+
+    arr2 = arr.astype('float')
+    if mmin is None or mmax is None: mmin, mmax = arr2.min(), arr2.max()
     #mmax = np.percentile(arr2, 99)
     arr2 -= mmin
-    arr2 /= (mmax-mmin)
+    arr2 /= (mmax - mmin)
     if not lin_scale:
         arr2 = arr2**pwr
-    
+
     if zoom != 1:
         img = Image.fromarray(arr2)
-        rimg = img.resize((zoom*ysize, zoom*xsize))
+        rimg = img.resize((zoom * ysize, zoom * xsize))
         rarr = np.asarray(rimg)
         test = mycmap(rarr)
     else:
         test = mycmap(arr2)
-    return((255*test[:,:,:3]).astype('int'))
+    return ((255 * test[:, :, :3]).astype('int'))
+
 
 # ------------------------------------------------------------------
 #              !!! now we are in business !!!!
 # ------------------------------------------------------------------
 
 WHITE = (255, 255, 255)
-GREEN = (  0, 255,   0) 
-BLUE  = (  0,   0, 255)
-RED   = (255,   0,   0)
-BLK   = (  0,   0,   0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+BLK = (0, 0, 0)
 FGCOL = WHITE  # foreground color (text)
-BGCOL = BLK    # background color
-BTCOL = BLUE   # *button* color
+BGCOL = BLK  # background color
+BTCOL = BLUE  # *button* color
 
 background = pygame.Surface(screen.get_size())
 background = background.convert()
@@ -272,34 +264,32 @@ background.fill(BLK)
 # ----------------------------
 #          labels
 # ----------------------------
-font1 = pygame.font.SysFont("default",   48)
-font2 = pygame.font.SysFont("default",   30)
+font1 = pygame.font.SysFont("default", 48)
+font2 = pygame.font.SysFont("default", 30)
 font3 = pygame.font.SysFont("monospace", 16)
 
-xws = xsize*zoom
-yws = ysize*zoom
+xws = xsize * zoom
+yws = ysize * zoom
 
 imin, imax = 0, 0
-surf_live = pygame.surface.Surface((zoom*xsize, zoom*ysize))
+surf_live = pygame.surface.Surface((zoom * xsize, zoom * ysize))
 #screen.blit(surf_live, (5,5))
 
 rect1 = surf_live.get_rect()
-rect1.center = (xws/2, yws/2)
+rect1.center = (xws / 2, yws / 2)
 
-temp      = get_img_data()
-
+temp = get_img_data()
 
 #plot_cross = True  # flag for display of the crosses
 #subt_bias  = False # flag for bias subtraction
-#cont_acq   = False 
-lin_scale  = True  # flag for linear range
-clr_scale  = False # flag for the display color scale
+#cont_acq   = False
+lin_scale = True  # flag for linear range
+clr_scale = False  # flag for the display color scale
 #bias = np.zeros_like(temp)
 
-
 # =======================================================
 # =======================================================
-while True: # the main game loop
+while True:  # the main game loop
     clicked = False
 
     pwr0 = 1.0
@@ -311,11 +301,11 @@ while True: # the main game loop
         mycmap = cm.jet
 
     # read image
-    temp      = get_img_data()
+    temp = get_img_data()
 
     imin, imax = temp.min(), temp.max()
     temp -= imin
-    myim      = arr2im(temp.transpose(), pwr=pwr0, mmin=mindisp, mmax=maxdisp)
+    myim = arr2im(temp.transpose(), pwr=pwr0, mmin=mindisp, mmax=maxdisp)
 
     #imax = np.percentile(temp, 99.95)
     #msg = "(min,max) = (%5d,%5d)" % (imin, imax)
@@ -323,7 +313,6 @@ while True: # the main game loop
     # display information
     pygame.surfarray.blit_array(surf_live, myim)
     screen.blit(surf_live, rect1)
-
 
     # =====================================
     for event in pygame.event.get():
@@ -333,7 +322,7 @@ while True: # the main game loop
 
             # close shared memory access
             # --------------------------
-            cam.close()          # global disp map
+            cam.close()  # global disp map
             print("shmview has ended normally.")
             sys.exit()
         elif event.type == KEYDOWN:
@@ -342,7 +331,7 @@ while True: # the main game loop
                 pygame.quit()
                 # close shared memory access
                 # --------------------------
-                cam.close()          # global disp map
+                cam.close()  # global disp map
                 print("shmview has ended normally.")
                 sys.exit()
             if event.key == K_m:

@@ -3,7 +3,6 @@
  *
  */
 
-
 int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out);
 
 int arith_image_cstadd(const char *ID_name, double f1, const char *ID_out);
@@ -71,4 +70,3 @@ int arith_image_cstminv_inplace_byID(long ID, double f1);
 int arith_image_csttestlt_inplace_byID(long ID, double f1);
 
 int arith_image_csttestmt_inplace_byID(long ID, double f1);
-

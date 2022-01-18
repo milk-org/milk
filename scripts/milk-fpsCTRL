@@ -11,35 +11,35 @@ echo "pname = ${pname}"
 
 
 function printHELP {
-echo "------------------------------------------------------------------------"
-echo "$(tput bold) $pname : function parameters control  $(tput sgr0)"
-echo "------------------------------------------------------------------------"
-echo "  Monitors and controls function parameters"
-echo "  Connects to <name>.fps.shm shared memory structures"
-echo "  Argument is string match filter to select fps structures"
-echo "   "
-echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-hlmD] <stringfilter>"
-echo ""
-echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
-echo "     <stringfilter>                      string filter (optional)"
-echo ""
-echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-h$(tput sgr0)          help"
-echo "     $(tput bold)-f$(tput sgr0) <fname>  input (f)ifo name"
-echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
-echo "     $(tput bold)-m$(tput sgr0)          must (m)atch fpscmd/fpslist.txt"
-echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
-echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
-echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
-echo ""
-echo "------------------------------------------------------------------------"
+    echo "------------------------------------------------------------------------"
+    echo "$(tput bold) $pname : function parameters control  $(tput sgr0)"
+    echo "------------------------------------------------------------------------"
+    echo "  Monitors and controls function parameters"
+    echo "  Connects to <name>.fps.shm shared memory structures"
+    echo "  Argument is string match filter to select fps structures"
+    echo "   "
+    echo " $(tput bold)USAGE:$(tput sgr0)"
+    echo "     $0 [-hlmD] <stringfilter>"
+    echo ""
+    echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
+    echo "     <stringfilter>                      string filter (optional)"
+    echo ""
+    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+    echo "     $(tput bold)-h$(tput sgr0)          help"
+    echo "     $(tput bold)-f$(tput sgr0) <fname>  input (f)ifo name"
+    echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
+    echo "     $(tput bold)-m$(tput sgr0)          must (m)atch fpscmd/fpslist.txt"
+    echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
+    echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
+    echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
+    echo ""
+    echo "------------------------------------------------------------------------"
 }
 
 
 printHELP1 ()
 {
-	printf "%20s       Monitor and control function parameters\n" "$0" 
+    printf "%20s       Monitor and control function parameters\n" "$0"
 }
 
 
@@ -53,15 +53,15 @@ echo -n "sh-${shortpname}" > /proc/self/comm
 # Transform long options to short ones
 singlelinehelp=0
 for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--help") set -- "$@" "-h" ;;
-    "--help1") 
-set -- "$@" "-h" 
-singlelinehelp=1;
-;;
-    *)        set -- "$@" "$arg"
-  esac
+    shift
+    case "$arg" in
+        "--help") set -- "$@" "-h" ;;
+        "--help1")
+            set -- "$@" "-h"
+            singlelinehelp=1;
+            ;;
+        *)        set -- "$@" "$arg"
+    esac
 done
 
 
@@ -78,45 +78,45 @@ fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
 outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
 
 while getopts :hlmDf:o:sq FLAG; do
-  case $FLAG in
-    h)  #show help
-      if [ "$singlelinehelp" -eq "0" ]; then
-      printHELP
-      else
-      printHELP1
-      fi
-      exit
-      ;;
-    l) # list fps structures
-	  echo ""
-	  ls -l $MILK_SHM_DIR/*.fps.shm
-	  echo ""
-	  exit
-    ;;
-    f) # fifo name
-	 fifoname=${OPTARG}
-	 echo "using fifo name : ${fifoname}"
-    ;;
-    m)
-		MODE="1"
-    ;;
-    s) # use stdio instead of ncurses
-		export MILK_TUIPRINT_STDIO=1
-    ;;
-    q) # quiet mode - don't print status
-		export MILK_TUIPRINT_NONE=1
-    ;;
-    D)
-		DEBUG="1"
-	;;
-    \?) 
-      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-      printHELP
-      ;;
-  esac
+    case $FLAG in
+        h)  #show help
+            if [ "$singlelinehelp" -eq "0" ]; then
+                printHELP
+            else
+                printHELP1
+            fi
+            exit
+            ;;
+        l) # list fps structures
+            echo ""
+            ls -l $MILK_SHM_DIR/*.fps.shm
+            echo ""
+            exit
+            ;;
+        f) # fifo name
+            fifoname=${OPTARG}
+            echo "using fifo name : ${fifoname}"
+            ;;
+        m)
+            MODE="1"
+            ;;
+        s) # use stdio instead of ncurses
+            export MILK_TUIPRINT_STDIO=1
+            ;;
+        q) # quiet mode - don't print status
+            export MILK_TUIPRINT_NONE=1
+            ;;
+        D)
+            DEBUG="1"
+            ;;
+        \?)
+            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            printHELP
+            ;;
+    esac
 done
 
-shift $((OPTIND-1))  
+shift $((OPTIND-1))
 
 ### End getopts code ###
 
@@ -125,18 +125,18 @@ NBargInput="$#"
 arg1="$1"
 
 if [ "$#" -eq 0 ]; then
-arg1="_ALL"
-NBargInput="1"
+    arg1="_ALL"
+    NBargInput="1"
 fi
 
 
 
 if [ "$arg1" = "help" ] || [ "$NBargInput" -ne $NBARGS ]; then
-if [ "$#" -ne $NBARGS ]; then
-    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
-fi
-printHELP
-        exit
+    if [ "$#" -ne $NBARGS ]; then
+        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+    fi
+    printHELP
+    exit
 fi
 
 
@@ -154,24 +154,24 @@ echo "SF       = ${SF}"
 
 if [ "$DEBUG" = "1" ]; then
 
-cp $(which milk) milkdebugtest
-OPTION="--leak-check=full --show-leak-kinds=all"
-OPTION="$OPTION --track-origins=yes"
-OPTION="$OPTION --num-callers=200"
-OPTION="$OPTION --show-reachable=yes"
-#OPTION="$OPTION --gen-suppressions=all"
-OPTION="$OPTION --log-file=milk.memcheck.log"
-OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
-OPTION="$OPTION --max-stackframe=4442392"
+    cp $(which milk) milkdebugtest
+    OPTION="--leak-check=full --show-leak-kinds=all"
+    OPTION="$OPTION --track-origins=yes"
+    OPTION="$OPTION --num-callers=200"
+    OPTION="$OPTION --show-reachable=yes"
+    #OPTION="$OPTION --gen-suppressions=all"
+    OPTION="$OPTION --log-file=milk.memcheck.log"
+    OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
+    OPTION="$OPTION --max-stackframe=4442392"
 
-valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${CLIfifoname} -s ${SF}
-rm ./milkdebugtest
+    valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${CLIfifoname} -s ${SF}
+    rm ./milkdebugtest
 
 else
-echo "Running: milk -n ${shortpname} -f ${CLIfifoname} -s ${SF}"
-export MILK_QUIET=1
-milk -n ${shortpname} -f ${CLIfifoname} -s ${SF} 
-#2> testout.txt
+    echo "Running: milk -n ${shortpname} -f ${CLIfifoname} -s ${SF}"
+    export MILK_QUIET=1
+    milk -n ${shortpname} -f ${CLIfifoname} -s ${SF}
+    #2> testout.txt
 
 fi
 
@@ -185,8 +185,7 @@ rm ${fifoname}
 
 exitscriptname="${pname}-exitscript"
 if [ -f ${exitscriptname} ]; then
-  echo "running script ${exitscriptname}"
-  source ${exitscriptname}
-  rm ${exitscriptname}
+    echo "running script ${exitscriptname}"
+    source ${exitscriptname}
+    rm ${exitscriptname}
 fi
-

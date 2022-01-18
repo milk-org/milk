@@ -63,5 +63,3 @@ Compile with coffee plugins:
 
     ./fetch_coffee_dev.sh
     ./compile.sh $PWD/local
-
-

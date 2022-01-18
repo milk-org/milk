@@ -3,7 +3,7 @@
 
 usage()
 {
-	echo -n "############################################################
+    echo -n "############################################################
 # Compile script for milk_package
 # Customize / add you own options
 # Use as-is, or make a local custom copy (private, do not commit)
@@ -40,12 +40,12 @@ Check you bashrc for
   export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${MILK_INSTALLDIR}/lib/pkgconfig
 
 
-"
+    "
 }
 
 if [ "$1" == "-h" ]; then
-usage
-exit 1
+    usage
+    exit 1
 fi
 
 
@@ -68,18 +68,18 @@ BUILDTYPE=${MILK_BUILD_TYPE:-"Release"}
 
 if [ "${MILK_PYTHON}" == "OFF" ]; then
 
-echo "Compiling without Python wrapper"
-cmake .. $MILK_CMAKE_OPT -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT -DCMAKE_BUILD_TYPE=${BUILDTYPE}
+    echo "Compiling without Python wrapper"
+    cmake .. $MILK_CMAKE_OPT -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT -DCMAKE_BUILD_TYPE=${BUILDTYPE}
 
 else
-# find python executable
-pythonexec=$(which python)
-if command -v python3 &> /dev/null
-then
-    pythonexec=$(which python3)
-fi
-echo "using python at ${pythonexec}"
-cmake .. $MILK_CMAKE_OPT -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT -DCMAKE_BUILD_TYPE=${BUILDTYPE}
+    # find python executable
+    pythonexec=$(which python)
+    if command -v python3 &> /dev/null
+    then
+        pythonexec=$(which python3)
+    fi
+    echo "using python at ${pythonexec}"
+    cmake .. $MILK_CMAKE_OPT -Dbuild_python_module=ON -DPYTHON_EXECUTABLE=${pythonexec} -DCMAKE_INSTALL_PREFIX=$MILK_INSTALL_ROOT -DCMAKE_BUILD_TYPE=${BUILDTYPE}
 fi
 
 
@@ -87,6 +87,3 @@ fi
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
 cmake --build . -- -j $NCPUS
-
-
-

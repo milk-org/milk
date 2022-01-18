@@ -1,3 +1,0 @@
-#!/bin/sh
-
-cp devscripts/pre-commit .git/hooks/

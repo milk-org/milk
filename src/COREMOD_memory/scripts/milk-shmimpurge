@@ -10,26 +10,26 @@ echo "pname = $pname"
 
 
 function printHELP {
-echo "------------------------------------------------------------------------"
-echo "$(tput bold) $pname : purge orphan streams $(tput sgr0)"
-echo "------------------------------------------------------------------------"
-echo "  Remove orphan shared memory image (stream) and associated files"
-echo "  Optional filter string to be matched can be specified" 
-echo "   "
-echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-hf:]"
-echo ""
-echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
-echo "     $(tput bold)-f$(tput sgr0)          only purge streams matching (f)ilter"
-echo ""
-echo "------------------------------------------------------------------------"
+    echo "------------------------------------------------------------------------"
+    echo "$(tput bold) $pname : purge orphan streams $(tput sgr0)"
+    echo "------------------------------------------------------------------------"
+    echo "  Remove orphan shared memory image (stream) and associated files"
+    echo "  Optional filter string to be matched can be specified"
+    echo "   "
+    echo " $(tput bold)USAGE:$(tput sgr0)"
+    echo "     $0 [-hf:]"
+    echo ""
+    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+    echo "     $(tput bold)-h$(tput sgr0)          (h)elp"
+    echo "     $(tput bold)-f$(tput sgr0)          only purge streams matching (f)ilter"
+    echo ""
+    echo "------------------------------------------------------------------------"
 }
 
 
 printHELP1 ()
 {
-	printf "%20s       Purge orphan streams\n" "$0" 
+    printf "%20s       Purge orphan streams\n" "$0"
 }
 
 
@@ -40,15 +40,15 @@ printHELP1 ()
 # Transform long options to short ones
 singlelinehelp=0
 for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--help") set -- "$@" "-h" ;;
-    "--help1") 
-set -- "$@" "-h" 
-singlelinehelp=1;
-;;
-    *)        set -- "$@" "$arg"
-  esac
+    shift
+    case "$arg" in
+        "--help") set -- "$@" "-h" ;;
+        "--help1")
+            set -- "$@" "-h"
+            singlelinehelp=1;
+            ;;
+        *)        set -- "$@" "$arg"
+    esac
 done
 
 
@@ -56,27 +56,27 @@ done
 FILTERSTRING=""
 
 while getopts :hf: FLAG; do
-  case $FLAG in
-    h)  #show help
-      if [ "$singlelinehelp" -eq "0" ]; then
-      printHELP
-      else
-      printHELP1
-      fi
-      exit
-      ;;
-    f)
-    FILTERSTRING="${OPTARG}"
-    echo "using filter ${FILTERSTRING}"
-    ;;
-    \?) 
-      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-      printHELP
-      ;;
-  esac
+    case $FLAG in
+        h)  #show help
+            if [ "$singlelinehelp" -eq "0" ]; then
+                printHELP
+            else
+                printHELP1
+            fi
+            exit
+            ;;
+        f)
+            FILTERSTRING="${OPTARG}"
+            echo "using filter ${FILTERSTRING}"
+            ;;
+        \?)
+            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            printHELP
+            ;;
+    esac
 done
 
-shift $((OPTIND-1))  
+shift $((OPTIND-1))
 
 ### End getopts code ###
 
@@ -86,11 +86,11 @@ shift $((OPTIND-1))
 
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
-if [ "$#" -ne $NBARGS ]; then
-    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
-fi
-printHELP
-        exit
+    if [ "$#" -ne $NBARGS ]; then
+        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+    fi
+    printHELP
+    exit
 fi
 
 
@@ -99,6 +99,3 @@ milk -n ${pname} << EOF
 shmimpurge "${FILTERSTRING}"
 exitCLI
 EOF
-
-
-

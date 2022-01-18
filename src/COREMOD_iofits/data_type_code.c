@@ -2,12 +2,7 @@
  * @file    data_type_code.c
  */
 
-
-
-
-int data_type_code(
-    int bitpix
-)
+int data_type_code(int bitpix)
 {
     int code;
     /*
@@ -25,34 +20,33 @@ int data_type_code(
                   double complex, M      163        TDBLCOMPLEX
                   */
     code = 0;
-    if(bitpix == 1)
+    if (bitpix == 1)
     {
         code = 1;
     }
-    if(bitpix == 8)
+    if (bitpix == 8)
     {
         code = 11;
     }
-    if(bitpix == 16)
+    if (bitpix == 16)
     {
         code = 21;
     }
-    if(bitpix == 32)
+    if (bitpix == 32)
     {
         code = 41;
     }
-    if(bitpix == 64)
+    if (bitpix == 64)
     {
         code = 81;
     }
-    if(bitpix == -32)
+    if (bitpix == -32)
     {
         code = 42;
     }
-    if(bitpix == -64)
+    if (bitpix == -64)
     {
         code = 82;
     }
-    return(code);
+    return (code);
 }
-

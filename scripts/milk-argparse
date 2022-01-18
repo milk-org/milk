@@ -75,44 +75,44 @@ QUIET=0
 
 
 function checkFile {
-	if [ -f $1 ]; then
-		echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
-	else
-		echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
-		EXITSTATUS=1
-	fi
+    if [ -f $1 ]; then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
 }
 
 function checkDir {
-	if [ -d $1 ]; then
-		echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) found"
-	else
-		echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) not found"
-		EXITSTATUS=1
-	fi
+    if [ -d $1 ]; then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
 }
 
 
 
 function cmdexists()
 {
-  command -v "$1" >/dev/null 2>&1
+    command -v "$1" >/dev/null 2>&1
 }
 
 
 function checkCommand {
-if cmdexists $1; then
-	if [ ${QUIET} = 0 ]; then
-		echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) found"
+    if cmdexists $1; then
+        if [ ${QUIET} = 0 ]; then
+            echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) found"
+        fi
+        COMMAND_FOUND=1
+    else
+        if [ ${QUIET} = 0 ]; then
+            echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) not installed.  Aborting."
+        fi
+        COMMAND_FOUND=0
+        EXITSTATUS=1;
     fi
-    COMMAND_FOUND=1
-else
-	if [ ${QUIET} = 0 ]; then
-		echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) not installed.  Aborting."
-    fi
-    COMMAND_FOUND=0
-    EXITSTATUS=1;
-fi
 }
 
 
@@ -122,61 +122,61 @@ fi
 
 function printHELP {
 
-optlistshort=""
-optindex=0
-while [ $optindex -lt ${NBopt} ]; do
-  optlistshort="${optlistshort}[${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}]"
-  let optindex+=1
-done
+    optlistshort=""
+    optindex=0
+    while [ $optindex -lt ${NBopt} ]; do
+        optlistshort="${optlistshort}[${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}]"
+        let optindex+=1
+    done
 
-argliststring=""
-argindex=0
-while [ $argindex -lt ${NBarg} ]; do
-  argliststring="${argliststring} ${inputMSargnameARRAY[$argindex]}"
-  let argindex+=1
-done
+    argliststring=""
+    argindex=0
+    while [ $argindex -lt ${NBarg} ]; do
+        argliststring="${argliststring} ${inputMSargnameARRAY[$argindex]}"
+        let argindex+=1
+    done
 
 
-echo "------------------------------------------------------------------------"
-echo "${txBold} ${pname} : ${MSdescr}  ${txReset}"
-echo " $0"
-echo "------------------------------------------------------------------------"
-echo ""
-set +o nounset
-if [ ! -z "${MSextdescr}" ]; then
-printf "${MSextdescr}"
-echo ""
-echo ""
-fi
-set -o nounset
-echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     ${pname} [OPTION(S)] ${fgYellow}${argliststring}${txReset}"
-echo "     option(s): ${optlistshort}"
-echo ""
-echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
-argindex=0
-while [ $argindex -lt ${NBarg} ]; do
-  printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${inputMSargdescrARRAY[$argindex]}"
-  let argindex+=1
-done
-echo ""
-echo " $(tput bold)OPTIONS:$(tput sgr0)"
-optindex=0
-while [ $optindex -lt ${NBopt} ]; do
-  echo -e " ${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}, ${fgRed}--${inputMSoptlongARRAY[$optindex]}${txReset} ${fgBGreen}${inputMSoptargARRAY[$optindex]}${txReset}"
-  echo "     ${inputMSoptdescrARRAY[$optindex]}"
-  let optindex+=1
-done
-echo ""
-exit
+    echo "------------------------------------------------------------------------"
+    echo "${txBold} ${pname} : ${MSdescr}  ${txReset}"
+    echo " $0"
+    echo "------------------------------------------------------------------------"
+    echo ""
+    set +o nounset
+    if [ ! -z "${MSextdescr}" ]; then
+        printf "${MSextdescr}"
+        echo ""
+        echo ""
+    fi
+    set -o nounset
+    echo " $(tput bold)USAGE:$(tput sgr0)"
+    echo "     ${pname} [OPTION(S)] ${fgYellow}${argliststring}${txReset}"
+    echo "     option(s): ${optlistshort}"
+    echo ""
+    echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
+    argindex=0
+    while [ $argindex -lt ${NBarg} ]; do
+        printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${inputMSargdescrARRAY[$argindex]}"
+        let argindex+=1
+    done
+    echo ""
+    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+    optindex=0
+    while [ $optindex -lt ${NBopt} ]; do
+        echo -e " ${fgRed}-${inputMSoptshortARRAY[$optindex]}${txReset}, ${fgRed}--${inputMSoptlongARRAY[$optindex]}${txReset} ${fgBGreen}${inputMSoptargARRAY[$optindex]}${txReset}"
+        echo "     ${inputMSoptdescrARRAY[$optindex]}"
+        let optindex+=1
+    done
+    echo ""
+    exit
 }
 
 
 
 printHELPshort ()
 {
-	printf "%20s       ${MSdescr}\n" "$0"
-	exit
+    printf "%20s       ${MSdescr}\n" "$0"
+    exit
 }
 
 
@@ -193,25 +193,25 @@ printHELPshort ()
 # =================================================
 function checkallprerequisites()
 {
-set +o nounset
-for cmd in ${RequiredCommands[@]}; do
-  checkCommand $cmd
-done
+    set +o nounset
+    for cmd in ${RequiredCommands[@]}; do
+        checkCommand $cmd
+    done
 
-for fname in ${RequiredFiles[@]}; do
-  checkFile $fname
-done
+    for fname in ${RequiredFiles[@]}; do
+        checkFile $fname
+    done
 
-for dname in ${RequiredDirs[@]}; do
-  checkDir $dname
-done
-set -o nounset
+    for dname in ${RequiredDirs[@]}; do
+        checkDir $dname
+    done
+    set -o nounset
 }
 
 function checkallprerequisitesExit()
 {
-  checkallprerequisites
-  exit
+    checkallprerequisites
+    exit
 }
 
 
@@ -232,13 +232,13 @@ inputMSargdescrARRAY=( )
 
 NBarg=0
 for argdat in "${MSarg[@]}";do
-  #echo "Argument ${NBarg}: $argdat"
-  IFS=':' read -r -a argarray <<< "$argdat"
-  inputMSargnameARRAY+=( ${argarray[0]} )
-  inputMSargtypeARRAY+=( ${argarray[1]} )
-  inputMSargdescrARRAY+=( "${argarray[2]}" )
-  #echo "    ${inputMSargnameARRAY[$NBarg]}"
-  let NBarg+=1
+    #echo "Argument ${NBarg}: $argdat"
+    IFS=':' read -r -a argarray <<< "$argdat"
+    inputMSargnameARRAY+=( ${argarray[0]} )
+    inputMSargtypeARRAY+=( ${argarray[1]} )
+    inputMSargdescrARRAY+=( "${argarray[2]}" )
+    #echo "    ${inputMSargnameARRAY[$NBarg]}"
+    let NBarg+=1
 done
 
 #echo "NBarg = ${NBarg}"
@@ -268,18 +268,18 @@ optactlist=( )
 
 NBopt=0
 for optdat in "${MSopt[@]}";do
-  #echo "Option ${NBopt}: $optdat"
-  IFS=':' read -r -a optarray <<< "$optdat"
-  let NBopt+=1
-  inputMSoptshortARRAY+=( ${optarray[0]} )
-  inputMSoptlongARRAY+=( ${optarray[1]} )
-  inputMSoptfuncARRAY+=( ${optarray[2]} )
-  inputMSoptargARRAY+=( "${optarray[3]}" )
-  inputMSoptdescrARRAY+=( "${optarray[4]}" )
-  OPTlong[${optarray[0]}]="${optarray[1]}"
-  OPTfunc[${optarray[0]}]="${optarray[2]}"
-  OPTarg[${optarray[0]}]="${optarray[3]}"
-  OPTlong2short[${OPTlong[${optarray[0]}]}]=${optarray[0]}
+    #echo "Option ${NBopt}: $optdat"
+    IFS=':' read -r -a optarray <<< "$optdat"
+    let NBopt+=1
+    inputMSoptshortARRAY+=( ${optarray[0]} )
+    inputMSoptlongARRAY+=( ${optarray[1]} )
+    inputMSoptfuncARRAY+=( ${optarray[2]} )
+    inputMSoptargARRAY+=( "${optarray[3]}" )
+    inputMSoptdescrARRAY+=( "${optarray[4]}" )
+    OPTlong[${optarray[0]}]="${optarray[1]}"
+    OPTfunc[${optarray[0]}]="${optarray[2]}"
+    OPTarg[${optarray[0]}]="${optarray[3]}"
+    OPTlong2short[${OPTlong[${optarray[0]}]}]=${optarray[0]}
 done
 
 
@@ -294,53 +294,53 @@ optargstring=""
 inputParamString=( )
 
 function getoptargs {
-	optargstring=""
-	shiftcnt=0
-	nboptarg=$( wc -w <<< "${OPTarg[${shortopt}]}" )
-	#echo "nboptarg = ${nboptarg} from $@"
-	optargindex=0
+    optargstring=""
+    shiftcnt=0
+    nboptarg=$( wc -w <<< "${OPTarg[${shortopt}]}" )
+    #echo "nboptarg = ${nboptarg} from $@"
+    optargindex=0
     while [ $optargindex -lt ${nboptarg} ]; do
-	  let shiftcnt+=1
-	  let optargindex+=1
-	  optargstring="${optargstring} $1"
-	  shift
-	done
+        let shiftcnt+=1
+        let optargindex+=1
+        optargstring="${optargstring} $1"
+        shift
+    done
 }
 
 
 while (( "$#" )); do
-  case "$1" in
-  --*) # long option
-    #echo "long option: $1"
-    inputMSoptlongARRAY+=( $1 )
-    longopt=$1
-    longopt="${longopt:2}"
-    shortopt=${OPTlong2short[$longopt]}
-    #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
-    optactlist+=( $shortopt )
-    shift
-    getoptargs $@
-    OPTargstring[${shortopt}]=${optargstring}
-    shift ${shiftcnt}
-  ;;
-  -*) # short option
-    inputMSoptshortARRAY+=( $1 )
-    shortopt=$1
-    shortopt="${shortopt:1}"
-    #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
-    optactlist+=( $shortopt )
-    shift
-    getoptargs $@
-    OPTargstring[${shortopt}]=${optargstring}
-	shift ${shiftcnt}
-  ;;
-  *)
-    #echo "param: $1"
-    inputMSargARRAY+=( "$1" )
-    inputParamString+=( "$1" )
-    shift
-  ;;
-  esac
+    case "$1" in
+        --*) # long option
+            #echo "long option: $1"
+            inputMSoptlongARRAY+=( $1 )
+            longopt=$1
+            longopt="${longopt:2}"
+            shortopt=${OPTlong2short[$longopt]}
+            #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
+            optactlist+=( $shortopt )
+            shift
+            getoptargs $@
+            OPTargstring[${shortopt}]=${optargstring}
+            shift ${shiftcnt}
+            ;;
+        -*) # short option
+            inputMSoptshortARRAY+=( $1 )
+            shortopt=$1
+            shortopt="${shortopt:1}"
+            #echo "func $1 $shortopt : ${OPTfunc[${shortopt}]}"
+            optactlist+=( $shortopt )
+            shift
+            getoptargs $@
+            OPTargstring[${shortopt}]=${optargstring}
+            shift ${shiftcnt}
+            ;;
+        *)
+            #echo "param: $1"
+            inputMSargARRAY+=( "$1" )
+            inputParamString+=( "$1" )
+            shift
+            ;;
+    esac
 done
 
 
@@ -348,9 +348,9 @@ done
 set +o nounset
 NBoptact=0
 for MSopt in "${optactlist[@]}";do
-  #echo "   input option   ${NBoptact} : $MSopt -> ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}"
-  ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}
-  let NBoptact+=1
+    #echo "   input option   ${NBoptact} : $MSopt -> ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}"
+    ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}
+    let NBoptact+=1
 done
 set -o nounset
 
@@ -367,13 +367,13 @@ checkallprerequisites
 NBargin=0
 #for MSarg in "${inputMSargARRAY[@]}";do
 for MSarg in "${inputParamString[@]}";do
-#  echo "   input argument ${NBargin} : $MSarg"
-  let NBargin+=1
+    #  echo "   input argument ${NBargin} : $MSarg"
+    let NBargin+=1
 done
 
 if [[ ${NBargin} -ne ${NBarg} ]]; then
-  echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
-  exit
+    echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
+    exit
 fi
 
 
@@ -382,16 +382,16 @@ fi
 
 function cleanup()
 {
-	echo ""
-	# optional custom cleanup provided by application
-	customcleanup
-	echo "Exiting script ${pname}"
-	echo ""
+    echo ""
+    # optional custom cleanup provided by application
+    customcleanup
+    echo "Exiting script ${pname}"
+    echo ""
 }
 
 function settrap()
 {
-	trap cleanup EXIT
+    trap cleanup EXIT
 }
 
 # call settrap function

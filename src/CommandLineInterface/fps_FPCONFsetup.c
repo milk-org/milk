@@ -3,23 +3,18 @@
  * @brief   FPS config setup
  */
 
-
-#include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/fps_create.h"
+#include "CommandLineInterface/CLIcore.h"
 
 #include "fps_connect.h"
 #include "fps_disconnect.h"
-
 
 /** @brief FPS config setup
  *
  * called by conf and run functions
  *
  */
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
-    const char *fpsname,
-    uint32_t CMDmode
-)
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t CMDmode)
 {
     long NBparamMAX = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
     uint32_t FPSCONNECTFLAG;
@@ -35,9 +30,9 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     data.FPS_TIMESTAMP = tnow.tv_sec;
 
     strcpy(data.FPS_PROCESS_TYPE, "UNDEF");
-//	char ptstring[STRINGMAXLEN_FPSPROCESSTYPE];
+    //	char ptstring[STRINGMAXLEN_FPSPROCESSTYPE];
 
-    switch(CMDmode)
+    switch (CMDmode)
     {
     case FPSCMDCODE_CONFSTART:
         snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "confstart-%s", fpsname);
@@ -63,7 +58,6 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "runstop-%s", fpsname);
         break;
 
-
     case FPSCMDCODE_TMUXSTART:
         snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "tmuxstart-%s", fpsname);
         break;
@@ -71,42 +65,37 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     case FPSCMDCODE_TMUXSTOP:
         snprintf(data.FPS_PROCESS_TYPE, STRINGMAXLEN_FPSPROCESSTYPE, "tmuxstop-%s", fpsname);
         break;
-
     }
 
-
-
-
-    if(CMDmode & FPSCMDCODE_FPSINITCREATE)   // (re-)create fps even if it exists
+    if (CMDmode & FPSCMDCODE_FPSINITCREATE) // (re-)create fps even if it exists
     {
         //printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
-    else     // load existing fps if exists
+    else // load existing fps if exists
     {
         //printf("=== CHECK IF FPS EXISTS\n");
 
-
         FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
-        if(CMDmode & FPSCMDCODE_CONFSTART)
+        if (CMDmode & FPSCMDCODE_CONFSTART)
         {
             FPSCONNECTFLAG = FPSCONNECT_CONF;
         }
 
-        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1)
+        if (function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) == -1)
         {
             //printf("=== FPS DOES NOT EXISTS -> CREATE\n");
             function_parameter_struct_create(NBparamMAX, fpsname);
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
-/*        else
+        /*        else
         {
             printf("=== FPS EXISTS\n");
         }*/
     }
 
-    if(CMDmode & FPSCMDCODE_CONFSTOP)   // stop conf
+    if (CMDmode & FPSCMDCODE_CONFSTOP) // stop conf
     {
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
         function_parameter_struct_disconnect(&fps);
@@ -117,20 +106,15 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
 
-
-
-    if((CMDmode & FPSCMDCODE_FPSINITCREATE) || (CMDmode & FPSCMDCODE_FPSINIT)
-            || (CMDmode & FPSCMDCODE_CONFSTOP))
+    if ((CMDmode & FPSCMDCODE_FPSINITCREATE) || (CMDmode & FPSCMDCODE_FPSINIT) || (CMDmode & FPSCMDCODE_CONFSTOP))
     {
         fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // do not start conf
     }
 
-    if(CMDmode & FPSCMDCODE_CONFSTART)
+    if (CMDmode & FPSCMDCODE_CONFSTART)
     {
         fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
 
-
     return fps;
 }
-

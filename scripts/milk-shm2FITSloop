@@ -6,12 +6,12 @@ trap cleanup EXIT
 EXPECTED_ARGS=2
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo
-  echo " ---------- write shared memory to FITS file ----------- "
-  echo "runs as a simple loop"
-  echo ""
-  echo " Usage:  $0 <shm stream> <delay[sec]>"
-  echo 
+    echo
+    echo " ---------- write shared memory to FITS file ----------- "
+    echo "runs as a simple loop"
+    echo ""
+    echo " Usage:  $0 <shm stream> <delay[sec]>"
+    echo
 fi
 
 progname=`basename "$0"`
@@ -20,8 +20,8 @@ pname=${tmuxname}
 
 
 function cleanup {
-	echo "clean exit"
-	tmux send-keys -t ${tmuxname} "exitCLI" C-m
+    echo "clean exit"
+    tmux send-keys -t ${tmuxname} "exitCLI" C-m
 }
 
 
@@ -39,10 +39,8 @@ IMCNT=0
 
 while :
 do
-	echo "saving count ${IMCNT}"
-	tmux send-keys -t ${tmuxname} "savefits $1 \"!$1.fits\"" C-m
-	let IMCNT=IMCNT+1
-	sleep $2
+    echo "saving count ${IMCNT}"
+    tmux send-keys -t ${tmuxname} "savefits $1 \"!$1.fits\"" C-m
+    let IMCNT=IMCNT+1
+    sleep $2
 done
-
-

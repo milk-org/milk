@@ -4,18 +4,18 @@ EXPECTED_ARGS=3
 
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo
-  echo "-------- MOVE PID TO CSET AND ASSIGN RT PRIORITY ---------"
-  echo " "
-  echo "Usage: $0 <PID> <CPU set> <PRIO>"
-  echo " "
-  echo "  INPUT <PID>      : PID to move/elevate"
-  echo "  INPUT <CPU set>  : Name of CPU set"
-  echo "  INPUT <PRIO>     : RT priority to give to PID - 0 to ignore"
-  echo " "
-  echo "EXAMPLE :  $0 33654 ircam0_edt 80"
-  echo " "
-  exit
+    echo
+    echo "-------- MOVE PID TO CSET AND ASSIGN RT PRIORITY ---------"
+    echo " "
+    echo "Usage: $0 <PID> <CPU set> <PRIO>"
+    echo " "
+    echo "  INPUT <PID>      : PID to move/elevate"
+    echo "  INPUT <CPU set>  : Name of CPU set"
+    echo "  INPUT <PRIO>     : RT priority to give to PID - 0 to ignore"
+    echo " "
+    echo "EXAMPLE :  $0 33654 ircam0_edt 80"
+    echo " "
+    exit
 fi
 
 pname="$0-$1-$2"

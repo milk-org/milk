@@ -1,3 +1,3 @@
 # Process Information (procinfo)
 
-procinfo is 
+procinfo is

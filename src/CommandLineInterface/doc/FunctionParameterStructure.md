@@ -48,7 +48,7 @@ Examples:
 	myfps                        # simple name, no optional integers
 	myfps-000000                 # optional integer 000000
 	myfps-000043-000020-000002   # 3 optional integers
-	
+
 @warning The FPS name does not need to match the process or function name. FPS name is specified in the CLI function as described in @ref page_FunctionParameterStructure_WritingCLIfunc.
 
 
@@ -57,7 +57,7 @@ Examples:
 
 name                                  | Type           | Description        | Origin
 --------------------------------------|----------------|--------------------|---------------------------------
-/tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function 
+/tmp/<fpsname>.fps.shm                | shared memory  | FP structure       | Created by FPS init function
 ./fpscmd/<fpsnameroot>-confinit       | script         | Initialize FPS     | Built by fpsmkcmd, can be user-edited
 ./fpscmd/<fpsnameroot>-confstart      | script         | Start CONF process | Built by fpsmkcmd, can be user-edited
 ./fpscmd/<fpsnameroot>-runstart       | script         | Start RUN process  | Built by fpsmkcmd, can be user-edited
@@ -71,7 +71,7 @@ name                                  | Type           | Description        | Or
 
 
 
-	
+
 
 
 
@@ -81,7 +81,7 @@ name                                  | Type           | Description        | Or
 Main steps to enable FPS-enabled function for fpsCTRL:
 
 - Add entry in ./fpslist.txt
-- Run milk-fpsmkcmd 
+- Run milk-fpsmkcmd
 - Run ./fpscmd/<fpsname>-confinit
 
 These steps should ideally performed by a setup script.
@@ -104,10 +104,10 @@ fpsrootname1	CLIcommand1		optarg00	optarg01
 FPS command scripts are built by
 
 	$ fpsmkcmd
-	
+
 The command will create the FPS command scripts in directory `./fpscmd/`, which are then called by the @ref page_FunctionParameterStructure_fpsCTRL to control the CONF and RUN processes.
 
-	
+
 
 ## 2.2. fpsCTRL tool {#page_FunctionParameterStructure_fpsCTRL}
 
@@ -125,7 +125,7 @@ The FPS control tool is started from the command line :
 
 A single CLI function, named <functionname>_cli, will take the following arguments:
 - arg1: A command code
-- arg2+: Optional arguments 
+- arg2+: Optional arguments
 
 The command code is a string, and will determine the action to be executed:
 - `_FPSINIT_`  : Initialize FPS for the function
@@ -133,12 +133,12 @@ The command code is a string, and will determine the action to be executed:
 - `_CONFSTOP_`  : Stop the FPS configuration process
 - `_RUNSTART_`  : Start the run process
 - `_RUNSTOP_`   : Stop the run process
- 
- 
- 
+
+
+
 @note Why Optional arguments to CLI function ?
 @note Multiple instances of a C function may need to be running, each with its own FPS. Optional arguments provides a mechanism to differentiate the FPSs. They are appended to the FPS name following a dash. Optional arguments can be a number (usually integer) or a string.
- 
+
 
 Example source code below.
 
@@ -151,8 +151,8 @@ errno_t ExampleFunction_cli()
     // default FPS name will be used if CLI process has NOT been named
     // see code in function_parameter.c for detailed rules
     function_parameter_getFPSname_from_CLIfunc("measlinRM");
-	
-	if(data.FPS_CMDCODE != 0) {	// use FPS implementation	
+
+	if(data.FPS_CMDCODE != 0) {	// use FPS implementation
 		// set pointers to CONF and RUN functions
 		data.FPS_CONFfunc = ExampleFunction_FPCONF;
 		data.FPS_RUNfunc  = ExampleFunction_RUN;
@@ -164,7 +164,7 @@ errno_t ExampleFunction_cli()
     // call non FPS implementation - all parameters specified at function launch
     if(
         CLI_checkarg(1, 1) +
-        CLI_checkarg(2, 2) 
+        CLI_checkarg(2, 2)
         == 0) {
         ExampleFunction(
             data.cmdargtoken[1].val.numf,
@@ -191,7 +191,7 @@ errno_t ExampleFunction_cli()
 errno_t ExampleFunction_FPCONF();
 errno_t ExampleFunction_RUN();
 errno_t ExampleFunction(long arg0num, long arg1num, long arg2num, long arg3num);
-~~~~ 
+~~~~
 
 
 
@@ -201,7 +201,7 @@ errno_t ExampleFunction(long arg0num, long arg1num, long arg2num, long arg3num);
 
 Check function_parameters.h for full list of flags.
 
-~~~~{.c} 
+~~~~{.c}
 
 
 //
@@ -336,7 +336,7 @@ errno_t ExampleFunction_FPCONF(
 
 
 
-~~~~	
+~~~~
 
 
 
@@ -349,7 +349,7 @@ errno_t ExampleFunction_FPCONF(
 # 6. Writing RUN function (in source .c file) {#page_FunctionParameterStructure_WritingRUNfunc}
 
 
-The RUN function will connect to the FPS and execute the run loop. 
+The RUN function will connect to the FPS and execute the run loop.
 
 ## 6.1. A simple _RUN example {#page_FunctionParameterStructure_WritingRUNfunc_simple}
 
@@ -366,14 +366,14 @@ errno_t ExampleFunction_RUN(
 	// ===========================
 	FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN );
 
-	
-	
+
+
 	// ===============================
 	// GET FUNCTION PARAMETER VALUES
 	// ===============================
 
 	// parameters are addressed by their tag name
-		
+
 	// These parameters are read once, before running the loop
 	//
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
@@ -390,12 +390,12 @@ errno_t ExampleFunction_RUN(
 
 	char imsname[FUNCTION_PARAMETER_STRMAXLEN];
 	strncpy(imsname, functionparameter_GetParamPtr_STRING(&fps, ".option.imname"), FUNCTION_PARAMETER_STRMAXLEN);
-	
+
 
 	// connect to WFS image
     	long IDim = read_sharedmem_image(imsname);
-	
-	
+
+
 	// ===============================
 	// RUN LOOP
 	// ===============================
@@ -405,12 +405,12 @@ errno_t ExampleFunction_RUN(
 	{
 		// here we compute what we need...
 		//
-		
-		
+
+
 		// Note that some mechanism is required to set loopOK to 0 when MyFunction_Stop() is called
 		// This can use a separate shared memory path
 	}
-	
+
 	function_parameter_RUNexit( &fps );
 	return RETURN_SUCCESS;
 }
@@ -421,16 +421,16 @@ errno_t ExampleFunction_RUN(
 
 ~~~{.c}
 errno_t ExampleFunction(
-    long arg0num, 
-    long arg1num, 
-    long arg2num, 
+    long arg0num,
+    long arg1num,
+    long arg2num,
     long arg3num
 ) {
     char fpsname[200];
-    
+
     long pindex = (long) getpid();  // index used to differentiate multiple calls to function
     // if we don't have anything more informative, we use PID
-    
+
     FUNCTION_PARAMETER_STRUCT fps;
 
     // create FPS
@@ -479,7 +479,7 @@ The example also shows using FPS to set the process realtime priority.
  *
  *
  * All function parameters are held inside the function parameter structure (FPS).\n
- * 
+ *
  *
  * ## Details
  *
@@ -489,16 +489,16 @@ errno_t MyFunction_RUN(
 )
 {
 	// ===========================
-	// ### Connect to FPS 
+	// ### Connect to FPS
 	// ===========================
 	FPS_CONNECT( data.FPS_name, FPSCONNECT_RUN );
-	
-	
-	// ===================================	
+
+
+	// ===================================
 	// ### GET FUNCTION PARAMETER VALUES
 	// ===================================
 	// parameters are addressed by their tag name
-	
+
 	// These parameters are read once, before running the loop
 	//
 	int param01 = functionparameter_GetParamValue_INT64(&fps, ".param01");
@@ -517,7 +517,7 @@ errno_t MyFunction_RUN(
 
 
 	// ===========================
-	// ### processinfo support 
+	// ### processinfo support
 	// ===========================
 
     PROCESSINFO *processinfo;
@@ -530,7 +530,7 @@ errno_t MyFunction_RUN(
         );
 
 	// OPTIONAL SETTINGS
-    processinfo->MeasureTiming = 1; // Measure timing 
+    processinfo->MeasureTiming = 1; // Measure timing
     processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
     processinfo->loopcntMax = 1000; // max number of iterations. -1 if infinite
 
@@ -557,38 +557,38 @@ errno_t MyFunction_RUN(
 	// ### Start loop
 	// ===========================
 
-    
+
     processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
     while(loopOK==1)
     {
 	    loopOK = processinfo_loopstep(processinfo);
-     
-     
+
+
         //
-        // Semaphore wait goes here  
+        // Semaphore wait goes here
         // computation starts here
-       
-        
-        
-        processinfo_exec_start(processinfo);    
+
+
+
+        processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo)==1)
         {
             //
 		    // computation ....
 		    //
         }
-  
-  
-        // Post semaphore(s) and counter(s) 
+
+
+        // Post semaphore(s) and counter(s)
         // computation done
-        
+
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
-    
-    
+
+
         // OPTIONAL: MESSAGE WHILE LOOP RUNNING
-        processinfo_WriteMessage(processinfo, "loop running fine");		
+        processinfo_WriteMessage(processinfo, "loop running fine");
 	}
 
 
@@ -598,7 +598,7 @@ errno_t MyFunction_RUN(
 
      processinfo_cleanExit(processinfo);
 	function_parameter_RUNexit( &fps  );
-    
+
 	return RETURN_SUCCESS;
 }
 ~~~~
@@ -606,8 +606,3 @@ errno_t MyFunction_RUN(
 
 
 ----
-
-
-
-
-

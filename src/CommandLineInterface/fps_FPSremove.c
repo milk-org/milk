@@ -5,18 +5,12 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-
-
-
-
 /** @brief remove FPS and associated files
  *
  * Requires CONF and RUN to be off
  *
  */
-errno_t functionparameter_FPSremove(
-    FUNCTION_PARAMETER_STRUCT *fps
-)
+errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
 {
 
     // get directory name
@@ -37,8 +31,8 @@ errno_t functionparameter_FPSremove(
     //    remove(conflogfname);
     int ret = remove(fpsfname);
     int errcode = errno;
-    (void) ret;
-    (void) errcode;
+    (void)ret;
+    (void)errcode;
 
     // TEST
     /*
@@ -77,22 +71,14 @@ errno_t functionparameter_FPSremove(
 
     // terminate tmux sessions
     // 2x exit required: first one to exit bash, second one to exit tmux
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
-                           fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m", fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
-                           fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m", fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
-                           fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m", fps->md->name);
 
     return RETURN_SUCCESS;
 }
-
-

@@ -8,8 +8,6 @@
 
 #include "function_parameters.h"
 
-int function_parameter_struct_disconnect(
-    FUNCTION_PARAMETER_STRUCT *funcparamstruct
-);
+int function_parameter_struct_disconnect(FUNCTION_PARAMETER_STRUCT *funcparamstruct);
 
 #endif

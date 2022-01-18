@@ -24,8 +24,7 @@ errno_t COREMOD_TOOLS_mvProcTset_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
     {
-        COREMOD_TOOLS_mvProcTset(
-            data.cmdargtoken[1].val.string);
+        COREMOD_TOOLS_mvProcTset(data.cmdargtoken[1].val.string);
 
         return CLICMD_SUCCESS;
     }
@@ -38,11 +37,10 @@ errno_t COREMOD_TOOLS_mvProcTset_cli()
 errno_t COREMOD_TOOLS_mvProcTsetExt_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) == 0)
-        {
-            COREMOD_TOOLS_mvProcTsetExt(data.cmdargtoken[1].val.numl,
-                                        data.cmdargtoken[2].val.string);
-            return CLICMD_SUCCESS;
-        }
+    {
+        COREMOD_TOOLS_mvProcTsetExt(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string);
+        return CLICMD_SUCCESS;
+    }
     else
     {
         return CLICMD_INVALID_ARG;
@@ -53,8 +51,7 @@ errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
     {
-        COREMOD_TOOLS_mvProcCPUset(
-            data.cmdargtoken[1].val.string);
+        COREMOD_TOOLS_mvProcCPUset(data.cmdargtoken[1].val.string);
 
         return CLICMD_SUCCESS;
     }
@@ -68,8 +65,7 @@ errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) + CLI_checkarg(3, CLIARG_LONG) == 0)
     {
-        COREMOD_TOOLS_mvProcCPUsetExt(data.cmdargtoken[1].val.numl,
-                                      data.cmdargtoken[2].val.string,
+        COREMOD_TOOLS_mvProcCPUsetExt(data.cmdargtoken[1].val.numl, data.cmdargtoken[2].val.string,
                                       data.cmdargtoken[3].val.numl);
         return CLICMD_SUCCESS;
     }
@@ -85,56 +81,36 @@ errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
 
 errno_t mvprocTset_addCLIcmd()
 {
-    RegisterCLIcommand(
-        "tsetpmove",
-        __FILE__,
-        COREMOD_TOOLS_mvProcTset_cli,
-        "Assign taskset to current process",
-        "<taskset spec list>",
-        "tsetpmove realtime",
-        "int COREMOD_TOOLS_mvProcTset(const char *tsetspec)");
+    RegisterCLIcommand("tsetpmove", __FILE__, COREMOD_TOOLS_mvProcTset_cli, "Assign taskset to current process",
+                       "<taskset spec list>", "tsetpmove realtime",
+                       "int COREMOD_TOOLS_mvProcTset(const char *tsetspec)");
 
     return RETURN_SUCCESS;
 }
 
 errno_t mvprocTsetExt_addCLIcmd()
 {
-    RegisterCLIcommand(
-        "tsetpmoveext",
-        __FILE__,
-        COREMOD_TOOLS_mvProcTsetExt_cli,
-        "Assign taskset for any process",
-        "<PID> <taskset spec list>",
-        "tsetpmoveext 33659 1-5",
-        "int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)");
+    RegisterCLIcommand("tsetpmoveext", __FILE__, COREMOD_TOOLS_mvProcTsetExt_cli, "Assign taskset for any process",
+                       "<PID> <taskset spec list>", "tsetpmoveext 33659 1-5",
+                       "int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)");
 
     return RETURN_SUCCESS;
 }
 
 errno_t mvprocCPUset_addCLIcmd()
 {
-    RegisterCLIcommand(
-        "csetpmove",
-        __FILE__,
-        COREMOD_TOOLS_mvProcCPUset_cli,
-        "move current process to CPU set",
-        "<CPU set name>",
-        "csetpmove realtime",
-        "int COREMOD_TOOLS_mvProcCPUset(const char *csetname)");
+    RegisterCLIcommand("csetpmove", __FILE__, COREMOD_TOOLS_mvProcCPUset_cli, "move current process to CPU set",
+                       "<CPU set name>", "csetpmove realtime", "int COREMOD_TOOLS_mvProcCPUset(const char *csetname)");
 
     return RETURN_SUCCESS;
 }
 
 errno_t mvprocCPUsetExt_addCLIcmd()
 {
-    RegisterCLIcommand(
-        "csetandprioext",
-        __FILE__,
-        COREMOD_TOOLS_mvProcCPUsetExt_cli,
-        "move any PID to CPU set and assign RT priority (SCHED_FIFO) - priority ignored if 0",
-        "<PID> <CPU set name> <RT priority>",
-        "csetandprioext 23445 ircam0_edt 80",
-        "int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio)");
+    RegisterCLIcommand("csetandprioext", __FILE__, COREMOD_TOOLS_mvProcCPUsetExt_cli,
+                       "move any PID to CPU set and assign RT priority (SCHED_FIFO) - priority ignored if 0",
+                       "<PID> <CPU set name> <RT priority>", "csetandprioext 23445 ircam0_edt 80",
+                       "int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio)");
 
     return RETURN_SUCCESS;
 }

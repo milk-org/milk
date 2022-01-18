@@ -13,22 +13,22 @@ tidle=2000 # 2 sec
 while [ 1 ];
 do
 
-if ps -p $PID > /dev/null
-then
-#  echo "$PID is running"
-  if [ `xprintidle` -gt "$tidle" ];
-  then
-    echo "idle for more than $tidle ms -> continue process $PID"
-    kill -CONT $PID
-  else
-    echo "stopping process $PID"
-    kill -STOP $PID
-  fi
-else
- echo "$PID is not running -> exit runidle"
- exit
-fi
+    if ps -p $PID > /dev/null
+    then
+        #  echo "$PID is running"
+        if [ `xprintidle` -gt "$tidle" ];
+        then
+            echo "idle for more than $tidle ms -> continue process $PID"
+            kill -CONT $PID
+        else
+            echo "stopping process $PID"
+            kill -STOP $PID
+        fi
+    else
+        echo "$PID is not running -> exit runidle"
+        exit
+    fi
 
-sleep 1
+    sleep 1
 
 done

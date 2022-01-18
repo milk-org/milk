@@ -39,12 +39,12 @@ When developing, work in dev branch and set branch to dev in all submodules and 
 	$ git checkout dev
 	$ git pull
 	$ git push
-	
+
 
 ## 1.3. Updating master branches {#page_WorkingWithGit_SourceCodeAndModules_UpdatingMaster}
 
 To synchronize master to latest dev:
-	
+
 	$ git submodule foreach "(git checkout master; git merge dev)"
 	$ git checkout master
 	$ git merge dev
@@ -84,7 +84,7 @@ Documentation tree can be locally built on dev branch with doxygen from main dir
 	$ git checkout dev
 	$ doxygen
 
-To push it on the origin :	
+To push it on the origin :
 
 	$ cd dochtml/html
 	$ git add *
@@ -93,5 +93,3 @@ To push it on the origin :
 
 
 @note When switching branches, you may get an error message "The following untracked working tree files would be overwritten by checkout" preventing branch switch. If the error only lists files in the html directory, you can safely use the -f option to force branch change.
-
-

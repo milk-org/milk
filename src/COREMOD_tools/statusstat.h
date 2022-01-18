@@ -4,7 +4,4 @@
 
 errno_t statusstat_addCLIcmd();
 
-imageID COREMOD_TOOLS_statusStat(
-    const char *IDstat_name,
-    long        indexmax
-);
+imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);

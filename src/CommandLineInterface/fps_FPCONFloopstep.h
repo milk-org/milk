@@ -8,8 +8,6 @@
 
 #include "function_parameters.h"
 
-uint16_t function_parameter_FPCONFloopstep(
-    FUNCTION_PARAMETER_STRUCT *fps
-);
+uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps);
 
 #endif

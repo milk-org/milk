@@ -13,7 +13,7 @@ Can poke in a loop
 "
 
 # standard configuration
-# 
+#
 source milk-script-std-config
 
 # prerequisites
@@ -65,4 +65,3 @@ modex.streamupdate ${streamname}
 listim
 exitCLI
 EOF
-
