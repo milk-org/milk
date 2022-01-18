@@ -3,17 +3,11 @@
  *
  */
 
-
-
 double Ppositive(double a);
-
-
 
 /* ------------------------------------------------------------------------- */
 /* image  -> image                                                           */
 /* ------------------------------------------------------------------------- */
-
-
 
 int arith_image_acos_byID(long ID, long IDout);
 int arith_image_asin_byID(long ID, long IDout);
@@ -50,10 +44,6 @@ int arith_image_tan(const char *ID_name, const char *ID_out);
 int arith_image_tanh(const char *ID_name, const char *ID_out);
 int arith_image_positive(const char *ID_name, const char *ID_out);
 
-
-
-
-
 int arith_image_acos_inplace_byID(long ID);
 int arith_image_asin_inplace_byID(long ID);
 int arith_image_atan_inplace_byID(long ID);
@@ -87,4 +77,3 @@ int arith_image_sin_inplace(const char *ID_name);
 int arith_image_sinh_inplace(const char *ID_name);
 int arith_image_tan_inplace(const char *ID_name);
 int arith_image_tanh_inplace(const char *ID_name);
-

@@ -44,7 +44,6 @@
  *
  */
 
-
 #define _GNU_SOURCE
 
 /* ================================================================== */
@@ -59,11 +58,7 @@
 #define MODULE_SHORTNAME_DEFAULT "modex"
 
 // Module short description
-#define MODULE_DESCRIPTION       "Example module: template for creating new modules"
-
-
-
-
+#define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
 /* ================================================================== */
 /* ================================================================== */
@@ -71,10 +66,7 @@
 /* ================================================================== */
 /* ================================================================== */
 
-
 #include "CommandLineInterface/CLIcore.h"
-
-
 
 //
 // Forward declarations are required to connect CLI calls to functions
@@ -90,9 +82,6 @@
 
 //#include "updatestreamloop_brief.h"
 
-
-
-
 /* ================================================================== */
 /* ================================================================== */
 /*  INITIALIZE LIBRARY                                                */
@@ -103,8 +92,6 @@
 // macro argument defines module name for bindings
 //
 INIT_MODULE_LIB(milk_module_example)
-
-
 
 /**
  * @brief Initialize module CLI
@@ -124,20 +111,11 @@ static errno_t init_module_CLI()
     //	milk_module_example__updatestreamloop_addCLIcmd();
 
     CLIADDCMD_milk_module_example__simplefunc();
-	CLIADDCMD_milk_module_example__simplefunc_FPS();
+    CLIADDCMD_milk_module_example__simplefunc_FPS();
     CLIADDCMD_milk_module_example__updatestreamloop();
     CLIADDCMD_milk_module_example__streamprocess();
-
 
     // optional: add atexit functions here
 
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
-
-

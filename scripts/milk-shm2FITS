@@ -3,11 +3,11 @@
 EXPECTED_ARGS=2
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo
-  echo " ---------- write shared memory to FITS file ----------- "
-  echo
-  echo " Usage:  $0 <shm stream> <FITS file>"
-  echo 
+    echo
+    echo " ---------- write shared memory to FITS file ----------- "
+    echo
+    echo " Usage:  $0 <shm stream> <FITS file>"
+    echo
 fi
 
 pname=$0

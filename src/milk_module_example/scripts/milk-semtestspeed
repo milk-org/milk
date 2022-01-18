@@ -33,4 +33,3 @@ readshmim imB
 mex.streamloop imB imA ${NBLOOP} ${SEMTRIG}
 exitCLI
 EOF
-

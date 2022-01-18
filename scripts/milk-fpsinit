@@ -6,33 +6,33 @@ MSdescr="initialize Function Parameter Structures (FPS)"
 scriptname=$(basename $0)
 
 MSextdescr="Reads file fpslist.txt
- For each entry, initialize the FPS :
-  - Create and initialize FPS
-  - Create tmux session and functions in tmux sessions
- Run without argument to print FPSs status
+For each entry, initialize the FPS :
+- Create and initialize FPS
+- Create tmux session and functions in tmux sessions
+Run without argument to print FPSs status
 
 $(tput bold)fpslist.txt file format$(tput sgr0)
-   One line per entry: <FPS root name> <CLI command> <optional args>
-   Add modules with \"+module1;module2\" line directly before entry
-   Optional arguments may be parsed by code, or simply used for FPS naming
+One line per entry: <FPS root name> <CLI command> <optional args>
+Add modules with \"+module1;module2\" line directly before entry
+Optional arguments may be parsed by code, or simply used for FPS naming
 
 $(tput bold)Example use$(tput sgr0)
 
- [1] Create fpslist.txt file:
-   +mycustommodule;othercustommodule
-   myfpsname custommod.customcommand im1 304
+[1] Create fpslist.txt file:
++mycustommodule;othercustommodule
+myfpsname custommod.customcommand im1 304
 
- [2] Run ${scriptname} :
-   > ${scriptname} -c 0
-   Will create FPS named \"myfpsname-im1-304\"
+[2] Run ${scriptname} :
+> ${scriptname} -c 0
+Will create FPS named \"myfpsname-im1-304\"
 
- [3] Launch milk-fpsCTRL to manage and control
+[3] Launch milk-fpsCTRL to manage and control
 
 
 $(tput bold)Related scripts:$(tput sgr0)
-  milk-fpsCTRL
-  milk-procCTRL
- "
+milk-fpsCTRL
+milk-procCTRL
+"
 
 
 source milk-script-std-config
@@ -346,9 +346,3 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 
   fi
 done
-
-
-
-
-
-

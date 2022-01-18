@@ -4,7 +4,4 @@
 
 errno_t breakcube_addCLIcmd();
 
-
-imageID break_cube(
-    const char *restrict ID_name
-);
+imageID break_cube(const char *restrict ID_name);

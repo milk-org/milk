@@ -1,7 +1,7 @@
 examplestring="Loading modules"
 
 exampleDescription="
-Modules can be loaded at runtime from the CLI, 
+Modules can be loaded at runtime from the CLI,
 or by using the MILKCLI_ADD_LIBS environment
 variable.
 "

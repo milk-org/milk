@@ -5,30 +5,20 @@
  *
  */
 
-
 #include "CommandLineInterface/CLIcore.h"
 
 // required for create_2Dimage_ID
 #include "COREMOD_memory/COREMOD_memory.h"
 
-
-
 // ==========================================
 // Forward declaration(s)
 // ==========================================
 
-errno_t milk_module_example__create_image_with_value(
-    const char *restrict imname,
-    double value
-);
-
-
+errno_t milk_module_example__create_image_with_value(const char *restrict imname, double value);
 
 // ==========================================
 // Command line interface wrapper function(s)
 // ==========================================
-
-
 
 /** @brief Example CLI function
  *
@@ -58,16 +48,11 @@ errno_t milk_module_example__create_image_with_value(
  */
 static errno_t milk_module_example__create_image_with_value__cli()
 {
-    if(0
-            + CLI_checkarg(1, CLIARG_STR_NOT_IMG)
-            + CLI_checkarg(2, CLIARG_FLOAT)
-            == 0)
+    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) + CLI_checkarg(2, CLIARG_FLOAT) == 0)
     {
         // If arguments meet requirements, command is executed
         //
-        milk_module_example__create_image_with_value(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.numf);
+        milk_module_example__create_image_with_value(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf);
 
         return CLICMD_SUCCESS;
     }
@@ -78,12 +63,6 @@ static errno_t milk_module_example__create_image_with_value__cli()
     }
 }
 
-
-
-
-
-
-
 // ==========================================
 // Register CLI command(s)
 // ==========================================
@@ -91,31 +70,20 @@ static errno_t milk_module_example__create_image_with_value__cli()
 errno_t create_example_image_addCLIcmd()
 {
 
-    RegisterCLIcommand(
-        "createim",                                                                    // function call name from CLI
-        __FILE__,                                                                      // this file, used to track where function comes from
-        milk_module_example__create_image_with_value__cli,                             // function to call
-        "creates image with specified value",                                          // short description
-        "<image> <value>",                                                             // arguments
-        "createim im1 3.5",                                                            // example use
-        "milk_module_example__create_image_with_value(char *imname, double value)");   // source code call
+    RegisterCLIcommand("createim", // function call name from CLI
+                       __FILE__,   // this file, used to track where function comes from
+                       milk_module_example__create_image_with_value__cli,                           // function to call
+                       "creates image with specified value",                                        // short description
+                       "<image> <value>",                                                           // arguments
+                       "createim im1 3.5",                                                          // example use
+                       "milk_module_example__create_image_with_value(char *imname, double value)"); // source code call
 
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
-
 // By convention, function name starts with <modulename>__
 //
-errno_t milk_module_example__create_image_with_value(
-    const char *restrict imname,
-    double value
-)
+errno_t milk_module_example__create_image_with_value(const char *restrict imname, double value)
 {
     uint32_t xsize = 128; // by convention, pixel index variables are uint32_t type
     uint32_t ysize = 256;
@@ -130,15 +98,10 @@ errno_t milk_module_example__create_image_with_value(
     imageID ID = create_2Dimage_ID(imname, xsize, ysize);
 
     // set each pixel to value
-    for(uint64_t ii = 0; ii < xysize; ii++)
+    for (uint64_t ii = 0; ii < xysize; ii++)
     {
         data.image[ID].array.F[ii] = value;
     }
 
     return RETURN_SUCCESS;
 }
-
-
-
-
-

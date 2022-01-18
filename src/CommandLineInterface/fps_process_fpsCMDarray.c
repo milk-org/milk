@@ -6,10 +6,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-
 #include "fps_processcmdline.h"
-
-
 
 /** @brief Find the next task to execute
  *
@@ -36,13 +33,9 @@
  * - Return to queue 0 when done working in other queues
  */
 
-int function_parameter_process_fpsCMDarray(
-    FPSCTRL_TASK_ENTRY         *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE         *fpsctrlqueuelist,
-    KEYWORD_TREE_NODE          *keywnode,
-    FPSCTRL_PROCESS_VARS       *fpsCTRLvar,
-    FUNCTION_PARAMETER_STRUCT  *fps
-)
+int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY *fpsctrltasklist, FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
+                                           KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+                                           FUNCTION_PARAMETER_STRUCT *fps)
 {
     // queue has no task
     int QUEUE_NOTASK = -1;
@@ -53,16 +46,10 @@ int function_parameter_process_fpsCMDarray(
     // queue is ready for next scan
     int QUEUE_SCANREADY = -3;
 
-
-
     // the scheduler handles multiple queues
     // in each queue, we look for a task to run, and run it if conditions are met
 
-
     int NBtaskLaunched = 0;
-
-
-
 
     // For each queue, lets find which task is ready
     // results are written in array
@@ -70,31 +57,28 @@ int function_parameter_process_fpsCMDarray(
     //
     int queue_nexttask[NB_FPSCTRL_TASKQUEUE_MAX];
 
-
-    for( uint32_t qi = 0; qi < NB_FPSCTRL_TASKQUEUE_MAX; qi ++)
+    for (uint32_t qi = 0; qi < NB_FPSCTRL_TASKQUEUE_MAX; qi++)
     {
         queue_nexttask[qi] = QUEUE_SCANREADY;
 
-
-        while ( queue_nexttask[qi] == QUEUE_SCANREADY )
+        while (queue_nexttask[qi] == QUEUE_SCANREADY)
         {
             // find next command to execute
             uint64_t inputindexmin = UINT_MAX;
             int cmdindexExec;
             int cmdOK = 0;
 
-
             queue_nexttask[qi] = QUEUE_NOTASK;
             //
             // Find task with smallest inputindex within this queue
             // This is the one to be executed
             //
-            for( int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++ )
+            for (int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++)
             {
-                if((fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_ACTIVE)
-                        && (fpsctrltasklist[cmdindex].queue == qi))
+                if ((fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_ACTIVE) &&
+                    (fpsctrltasklist[cmdindex].queue == qi))
                 {
-                    if(fpsctrltasklist[cmdindex].inputindex < inputindexmin)
+                    if (fpsctrltasklist[cmdindex].inputindex < inputindexmin)
                     {
                         inputindexmin = fpsctrltasklist[cmdindex].inputindex;
                         cmdindexExec = cmdindex;
@@ -103,43 +87,40 @@ int function_parameter_process_fpsCMDarray(
                 }
             }
 
-
-            if(cmdOK == 1) // A potential task to be executed has been found
+            if (cmdOK == 1) // A potential task to be executed has been found
             {
-                if(!(fpsctrltasklist[cmdindexExec].status &
-                        FPSTASK_STATUS_RUNNING))     // if task not running, launch it
+                if (!(fpsctrltasklist[cmdindexExec].status & FPSTASK_STATUS_RUNNING)) // if task not running, launch it
                 {
                     queue_nexttask[qi] = cmdindexExec;
-
                 }
                 else
                 {
                     // if it's already running, lets check if it is completed
                     int task_completed = 1; // default
 
-                    if(fpsctrltasklist[cmdindexExec].flag &
-                            FPSTASK_FLAG_WAITONRUN)   // are we waiting for run to be completed ?
+                    if (fpsctrltasklist[cmdindexExec].flag &
+                        FPSTASK_FLAG_WAITONRUN) // are we waiting for run to be completed ?
                     {
-                        if((fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
-                                FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
+                        if ((fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
+                             FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN))
                         {
                             task_completed = 0; // must wait
                             queue_nexttask[qi] = QUEUE_WAIT;
                         }
                     }
 
-                    if(fpsctrltasklist[cmdindexExec].flag &
-                            FPSTASK_FLAG_WAITONCONF)   // are we waiting for conf update to be completed ?
+                    if (fpsctrltasklist[cmdindexExec].flag &
+                        FPSTASK_FLAG_WAITONCONF) // are we waiting for conf update to be completed ?
                     {
-                        if(fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
-                                FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)
+                        if (fps[fpsctrltasklist[cmdindexExec].fpsindex].md->status &
+                            FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED)
                         {
                             task_completed = 0; // must wait
                             queue_nexttask[qi] = QUEUE_WAIT;
                         }
                     }
 
-                    if(task_completed == 1)
+                    if (task_completed == 1)
                     {
                         // update status - no longer running
                         fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_RUNNING;
@@ -155,51 +136,50 @@ int function_parameter_process_fpsCMDarray(
                     }
                 }
             } // end if(cmdOK==1)
-        } // end while QUEUE_SCANREADY
-
-
+        }     // end while QUEUE_SCANREADY
     }
-
 
     // Remove old tasks
     //
     double *completion_age; // completion time
-    long    oldest_index = 0;
-    struct  timespec tnow;
-    double  tnowd;
+    long oldest_index = 0;
+    struct timespec tnow;
+    double tnowd;
 
-    completion_age = (double*) malloc(sizeof(double)*NB_FPSCTRL_TASK_MAX);
-    if(completion_age == NULL) {
+    completion_age = (double *)malloc(sizeof(double) * NB_FPSCTRL_TASK_MAX);
+    if (completion_age == NULL)
+    {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     clock_gettime(CLOCK_REALTIME, &tnow);
-    tnowd = 1.0*tnow.tv_sec + 1.0e-9*tnow.tv_nsec;
+    tnowd = 1.0 * tnow.tv_sec + 1.0e-9 * tnow.tv_nsec;
 
     long taskcnt = NB_FPSCTRL_TASK_MAX;
 
-    while( taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE )
+    while (taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE)
     {
         taskcnt = 0;
-        double  oldest_age = 0.0;
-        for( int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++ )
+        double oldest_age = 0.0;
+        for (int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++)
         {
             // how many tasks are candidates for removal (completed) ?
-            if( fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_COMPLETED )
+            if (fpsctrltasklist[cmdindex].status & FPSTASK_STATUS_COMPLETED)
             {
 
-                completion_age[taskcnt] = tnowd-(1.0*fpsctrltasklist[cmdindex].completiontime.tv_sec + 1.0e-9*fpsctrltasklist[cmdindex].completiontime.tv_nsec);
+                completion_age[taskcnt] = tnowd - (1.0 * fpsctrltasklist[cmdindex].completiontime.tv_sec +
+                                                   1.0e-9 * fpsctrltasklist[cmdindex].completiontime.tv_nsec);
 
-                if(completion_age[taskcnt] > oldest_age)
+                if (completion_age[taskcnt] > oldest_age)
                 {
-                    oldest_age   = completion_age[taskcnt];
+                    oldest_age = completion_age[taskcnt];
                     oldest_index = cmdindex;
                 }
-                taskcnt ++;
+                taskcnt++;
             }
         }
-        if(taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE)
+        if (taskcnt > NB_FPSCTRL_TASK_MAX - NB_FPSCTRL_TASK_PURGESIZE)
         {
             fpsctrltasklist[oldest_index].status = 0;
         }
@@ -207,20 +187,15 @@ int function_parameter_process_fpsCMDarray(
 
     free(completion_age);
 
-
-
-
-
-
     // find out which task to run among the ones pre-selected above
 
     int nexttask_priority = -1;
     int nexttask_cmdindex = -1;
-    for( uint32_t qi = 0; qi < NB_FPSCTRL_TASKQUEUE_MAX; qi ++)
+    for (uint32_t qi = 0; qi < NB_FPSCTRL_TASKQUEUE_MAX; qi++)
     {
-        if( (queue_nexttask[qi] != QUEUE_NOTASK ) && (queue_nexttask[qi] != QUEUE_WAIT ) )
+        if ((queue_nexttask[qi] != QUEUE_NOTASK) && (queue_nexttask[qi] != QUEUE_WAIT))
         {
-            if( fpsctrlqueuelist[qi].priority > nexttask_priority )
+            if (fpsctrlqueuelist[qi].priority > nexttask_priority)
             {
                 nexttask_priority = fpsctrlqueuelist[qi].priority;
                 nexttask_cmdindex = queue_nexttask[qi];
@@ -228,19 +203,16 @@ int function_parameter_process_fpsCMDarray(
         }
     }
 
-
-
-    if( nexttask_cmdindex != -1 )
+    if (nexttask_cmdindex != -1)
     {
-        if(nexttask_priority > 0 )
-        {   // execute task
+        if (nexttask_priority > 0)
+        { // execute task
             int cmdindexExec = nexttask_cmdindex;
 
             uint64_t taskstatus = 0;
 
-            fpsctrltasklist[cmdindexExec].fpsindex =
-                functionparameter_FPSprocess_cmdline(fpsctrltasklist[cmdindexExec].cmdstring,
-                        fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
+            fpsctrltasklist[cmdindexExec].fpsindex = functionparameter_FPSprocess_cmdline(
+                fpsctrltasklist[cmdindexExec].cmdstring, fpsctrlqueuelist, keywnode, fpsCTRLvar, fps, &taskstatus);
             NBtaskLaunched++;
 
             // update status form cmdline interpreter
@@ -254,8 +226,5 @@ int function_parameter_process_fpsCMDarray(
         }
     }
 
-
     return NBtaskLaunched;
 }
-
-

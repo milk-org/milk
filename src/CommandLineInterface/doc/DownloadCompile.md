@@ -83,12 +83,12 @@ Install above libraries (Ubuntu):
 For reading and writing FITS image files
 
 - Visit https://heasarc.gsfc.nasa.gov/fitsio/fitsio.html and download the file Unix .tar file cfitsio3410.tar.gz
-- Extract it , README , install it 
+- Extract it , README , install it
 There is the fitsio.h in it. Move it to usr :
 
 		./configure --prefix=/usr
-		make 
-		sudo make install 
+		make
+		sudo make install
 
 
 ## 2.3. GPU acceleration (optional, but highly recommended) {#page_installation_details_gpuacceleration}
@@ -160,6 +160,3 @@ Additionally, each version may have its own independent shared memory space for 
 @verbatim
 MILK_SHM_DIR=/milk-2/shm LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
 @endverbatim
-
-
-

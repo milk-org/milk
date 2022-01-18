@@ -7,8 +7,6 @@
 #ifndef FPS_CONFSTART_H
 #define FPS_CONFSTART_H
 
-errno_t functionparameter_CONFstart(
-    FUNCTION_PARAMETER_STRUCT *fps
-);
+errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps);
 
 #endif

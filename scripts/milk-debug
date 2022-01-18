@@ -16,4 +16,3 @@ OPTION="$OPTION --max-stackframe=4442392"
 
 valgrind ${OPTION} ./milkdebugtest
 rm ./milkdebugtest
-

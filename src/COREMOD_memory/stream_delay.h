@@ -1,9 +1,7 @@
 /** @file stream_delay,h
  */
 
-
 errno_t CLIADDCMD_COREMOD_memory__streamdelay();
-
 
 /*
 errno_t COREMOD_MEMORY_streamDelay(

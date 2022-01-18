@@ -22,7 +22,7 @@
 The PiS is stored in shared memory as
 
 	proc.<shortname>.<PID>.shm
-	
+
 
 
 ---
@@ -55,7 +55,7 @@ int functiontemplate_usingprocessinfo() {
         );
 
 	// OPTIONAL SETTINGS
-    processinfo->MeasureTiming = 1; // Measure timing 
+    processinfo->MeasureTiming = 1; // Measure timing
     processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
     processinfo->loopcntMax = 100;  // -1 if infinite loop
 
@@ -81,40 +81,40 @@ int functiontemplate_usingprocessinfo() {
     // ==================================
     // STARTING LOOP
     // ==================================
-    
+
     processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
 
-    
+
     while(loopOK==1)
     {
 	    loopOK = processinfo_loopstep(processinfo);
-     
-     
+
+
         //
-        // Semaphore wait goes here  
+        // Semaphore wait goes here
         // computation starts here
-       
-        
-        
-        processinfo_exec_start(processinfo);    
+
+
+
+        processinfo_exec_start(processinfo);
         if(processinfo_compute_status(processinfo)==1)
         {
             //
 		    // computation ....
 		    //
         }
-  
-  
-        // Post semaphore(s) and counter(s) 
+
+
+        // Post semaphore(s) and counter(s)
         // computation done
-        
+
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
-    
-    
+
+
         // OPTIONAL: MESSAGE WHILE LOOP RUNNING
         processinfo_WriteMessage(processinfo, "loop running fine");
-    }   
+    }
 
 
 
@@ -130,7 +130,3 @@ int functiontemplate_usingprocessinfo() {
 
 
 ----
-
-
-
-

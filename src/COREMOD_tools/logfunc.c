@@ -2,14 +2,11 @@
  * @file logfunc.c
  */
 
-
 #include <stdio.h>
-#include <time.h>
-#include <sys/types.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
-
-
 
 /**
  * ## Purpose
@@ -74,15 +71,9 @@
  * @warning May slow down code. Only use for debugging. Output file may grow very quickly.
  */
 
-void CORE_logFunctionCall(
-    const int funclevel,
-    const int loglevel,
-    const int logfuncMODE,
-    __attribute__((unused)) const char *FileName,
-    const char *FunctionName,
-    const long line,
-    char *comments
-)
+void CORE_logFunctionCall(const int funclevel, const int loglevel, const int logfuncMODE,
+                          __attribute__((unused)) const char *FileName, const char *FunctionName, const long line,
+                          char *comments)
 {
     time_t tnow;
     struct timespec timenow;
@@ -91,11 +82,11 @@ void CORE_logFunctionCall(
 
     modechar = '?';
 
-    if(logfuncMODE == 0)
+    if (logfuncMODE == 0)
     {
         modechar = '>';
     }
-    else if(logfuncMODE == 1)
+    else if (logfuncMODE == 1)
     {
         modechar = '<';
     }
@@ -104,12 +95,11 @@ void CORE_logFunctionCall(
         modechar = '?';
     }
 
-    if(funclevel <= loglevel)
+    if (funclevel <= loglevel)
     {
-        char  fname[500];
+        char fname[500];
 
         FILE *fp;
-
 
         sprintf(fname, ".%s.funccalls.log", FunctionName);
 
@@ -122,16 +112,8 @@ void CORE_logFunctionCall(
         // add custom parameter into string (optional)
 
         fp = fopen(fname, "a");
-        fprintf(fp, "%02d:%02d:%02ld.%09ld  %10d  %10d  %c %40s %6ld   %s\n",
-                uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec,
-                getpid(), (int) tid,
-                modechar, FunctionName, line, comments);
+        fprintf(fp, "%02d:%02d:%02ld.%09ld  %10d  %10d  %c %40s %6ld   %s\n", uttime->tm_hour, uttime->tm_min,
+                timenow.tv_sec % 60, timenow.tv_nsec, getpid(), (int)tid, modechar, FunctionName, line, comments);
         fclose(fp);
     }
-
-
 }
-
-
-
-

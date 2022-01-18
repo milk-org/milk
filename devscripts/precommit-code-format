@@ -6,14 +6,13 @@ RETURN=0
 
 ASTYLECMD=$(which astyle)
 if [ $? -ne 0 ]; then
-	echo "[!] astyle not installed. Unable to check source file format policy." >&2
-	exit 1
+    echo "[!] astyle not installed. Unable to check source file format policy." >&2
+    exit 1
 fi
 
 FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
 for FILE in $FILES; do
-	$ASTYLECMD $ASTYLEOPTIONS $FILE -n
+    $ASTYLECMD $ASTYLEOPTIONS $FILE -n
 done
 
 exit $RETURN
-

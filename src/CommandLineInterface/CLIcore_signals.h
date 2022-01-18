@@ -5,25 +5,16 @@
  *
  */
 
-
 #ifndef CLICORE_SIGNALS_H
 
 #define CLICORE_SIGNALS_H
-
 
 errno_t write_process_log();
 
 errno_t set_signal_catch();
 
+errno_t write_process_exit_report(const char *__restrict errortypestring);
 
-errno_t write_process_exit_report(
-    const char *__restrict errortypestring
-);
-
-
-void sig_handler(
-    int signo
-);
-
+void sig_handler(int signo);
 
 #endif

@@ -11,7 +11,6 @@
 #ifndef _STREAMCTRL_H
 #define _STREAMCTRL_H
 
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                        HEADER FILES                                             */
@@ -19,8 +18,7 @@
 /* =============================================================================================== */
 
 #include <stdint.h>
-#include <unistd.h>    // getpid()
-
+#include <unistd.h> // getpid()
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -28,7 +26,7 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-#define STRINGLENMAX  32
+#define STRINGLENMAX 32
 
 #define streamNBID_MAX 10000
 #define streamOpenNBpid_MAX 100
@@ -37,27 +35,23 @@
 
 #define PIDnameStringLen 12
 
-
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                  GLOBAL DATA DECLARATION                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
-
 typedef struct
 {
-    char sname[STRINGMAXLEN_STREAMINFO_NAME];      // stream name
+    char sname[STRINGMAXLEN_STREAMINFO_NAME]; // stream name
     int SymLink;
-    char linkname[STRINGMAXLEN_STREAMINFO_NAME];   // if stream is sym link, resolve link name
+    char linkname[STRINGMAXLEN_STREAMINFO_NAME]; // if stream is sym link, resolve link name
 
     imageID ID;
 
     pid_t streamOpenPID[streamOpenNBpid_MAX];
     int streamOpenPID_cnt;
-    int streamOpenPID_cnt1;                       // number of processes accessing stream
+    int streamOpenPID_cnt1; // number of processes accessing stream
     int streamOpenPID_status;
 
     int datatype;
@@ -70,17 +64,15 @@ typedef struct
 
 } STREAMINFO;
 
-
-
 typedef struct
 {
-    int twaitus; // sleep time between scans
+    int twaitus;   // sleep time between scans
     double dtscan; // measured time interval between scans [s]
 
-    int loop;   // 1 : loop     0 : exit
+    int loop; // 1 : loop     0 : exit
     long loopcnt;
 
-    int filter;           // 1 if applying filter to name
+    int filter; // 1 if applying filter to name
     char namefilter[STRINGLENMAX];
 
     int WriteFlistToFile; // 1 if output to file
@@ -94,44 +86,31 @@ typedef struct
 
 } STREAMINFOPROC;
 
-
-
-
-
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                    FUNCTIONS SOURCE CODE                                        */
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-
-
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-
-
-/**
+    /**
  * INITIALIZE ncurses
  *
  */
 
-int get_process_name_by_pid(const int pid, char *pname);
+    int get_process_name_by_pid(const int pid, char *pname);
 
-int streamCTRL_CatchSignals();
+    int streamCTRL_CatchSignals();
 
-int find_streams(
-    STREAMINFO *streaminfo,
-    int filter,
-    const char *namefilter
-);
+    int find_streams(STREAMINFO *streaminfo, int filter, const char *namefilter);
 
-void *streamCTRL_scan(void *thptr);
+    void *streamCTRL_scan(void *thptr);
 
-/**
+    /**
  * ## Purpose
  *
  * Control screen for stream structures
@@ -143,13 +122,11 @@ void *streamCTRL_scan(void *thptr);
  *
  */
 
-errno_t streamCTRL_CTRLscreen();
+    errno_t streamCTRL_CTRLscreen();
 
+    long image_ID_from_images(IMAGE *images, const char *name);
 
-long image_ID_from_images(IMAGE *images, const char *name);
-
-long image_get_first_ID_available_from_images(IMAGE *images);
-
+    long image_get_first_ID_available_from_images(IMAGE *images);
 
 #ifdef __cplusplus
 }

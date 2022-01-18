@@ -4,8 +4,6 @@
  *
  */
 
-
-
 double arith_image_mean(const char *ID_name);
 
 double arith_image_min(const char *ID_name);
