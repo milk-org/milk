@@ -31,7 +31,7 @@ Documentation is built by doxygen and written in the ./dochtml/html directory.
 
 
  To set it up on you local repo, follow these steps AFTER having cloned the repo.
-	
+
 @verbatim
 mkdir dochtml
 mkdir dochtml/html
@@ -60,11 +60,11 @@ git checkout -b gh-pages
 # remove other branch(es)
 git branch -d master
 # remove files to start from clean state. Change file list as needed
-git rm -r src doc config configure.ac LICENSE Makefile.am 
+git rm -r src doc config configure.ac LICENSE Makefile.am
 cd ../..
 @endverbatim
 
---- 
+---
 
 
 ## 1.2. Updating documentation {#documentation_updating}
@@ -215,8 +215,6 @@ Tags **defgroup** and **ingroup** are used to group functions in modules.
 See for example, in function_parameters.c :
 
 @verbatim
- * @defgroup FPSconf Configuration function for Function Parameter Structure (FPS) 
+ * @defgroup FPSconf Configuration function for Function Parameter Structure (FPS)
  * @defgroup FPSrun  Run function using Function Parameter Structure (FPS)
 @endverbatim
-
-

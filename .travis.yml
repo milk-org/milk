@@ -26,4 +26,3 @@ script:
 - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${MILK_INSTALLDIR}/lib/pkgconfig
 - ls -l /usr/local/milk/bin/
 - ctest -D Experimental
-

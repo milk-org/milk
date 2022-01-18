@@ -6,38 +6,38 @@ NBARGS=1
 
 
 function printHELP {
-echo "------------------------------------------------------------------------"
-echo "$(tput bold) $0 : EXAMPLE SCRIPT $(tput sgr0)"
-echo "------------------------------------------------------------------------"
-echo "  Monitor image stream"
-echo "   "
-echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-h] <stream>"
-echo ""
-echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-h$(tput sgr0)          help"
-echo ""
-echo " $(tput bold)INPUT:$(tput sgr0)"
-echo "     <stream>     data stream"
-echo ""
-echo "------------------------------------------------------------------------"
+    echo "------------------------------------------------------------------------"
+    echo "$(tput bold) $0 : EXAMPLE SCRIPT $(tput sgr0)"
+    echo "------------------------------------------------------------------------"
+    echo "  Monitor image stream"
+    echo "   "
+    echo " $(tput bold)USAGE:$(tput sgr0)"
+    echo "     $0 [-h] <stream>"
+    echo ""
+    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+    echo "     $(tput bold)-h$(tput sgr0)          help"
+    echo ""
+    echo " $(tput bold)INPUT:$(tput sgr0)"
+    echo "     <stream>     data stream"
+    echo ""
+    echo "------------------------------------------------------------------------"
 }
 
 
 printHELP1 ()
 {
-	printf "%20s       Monitor stream\n" "$0" 
+    printf "%20s       Monitor stream\n" "$0"
 }
 
 
 function checkFile {
-if [ -f $1 ]
-  then
-    echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
-   else
-    echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
-    EXITSTATUS=1
-fi
+    if [ -f $1 ]
+    then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] File $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] File $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
 }
 
 
@@ -50,34 +50,34 @@ fi
 # Transform long options to short ones
 singlelinehelp=0
 for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--help") set -- "$@" "-h" ;;
-    "--help1") 
-set -- "$@" "-h" 
-singlelinehelp=1;
-;;
-    *)        set -- "$@" "$arg"
-  esac
+    shift
+    case "$arg" in
+        "--help") set -- "$@" "-h" ;;
+        "--help1")
+            set -- "$@" "-h"
+            singlelinehelp=1;
+            ;;
+        *)        set -- "$@" "$arg"
+    esac
 done
 
 
 
 while getopts :h FLAG; do
-  case $FLAG in
-    h)  #show help
-      if [ "$singlelinehelp" -eq "0" ]; then
-      printHELP
-      else
-      printHELP1
-      fi
-      exit
-      ;;
-    \?) #unrecognized option - show help
-      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-      printHELP
-      ;;
-  esac
+    case $FLAG in
+        h)  #show help
+            if [ "$singlelinehelp" -eq "0" ]; then
+                printHELP
+            else
+                printHELP1
+            fi
+            exit
+            ;;
+        \?) #unrecognized option - show help
+            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            printHELP
+            ;;
+    esac
 done
 
 shift $((OPTIND-1))  #This tells getopts to move on to the next argument.
@@ -88,11 +88,11 @@ shift $((OPTIND-1))  #This tells getopts to move on to the next argument.
 
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
-if [ "$#" -ne $NBARGS ]; then
-    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
-fi
-printHELP
-        exit
+    if [ "$#" -ne $NBARGS ]; then
+        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+    fi
+    printHELP
+    exit
 fi
 
 
@@ -103,12 +103,12 @@ checkFile ${MILK_SHM_DIR}/$1.im.shm
 
 
 if [ $EXITSTATUS -eq 1 ]; then
-echo ""
-echo "$(tput setaf 1)$(tput bold) REQUIRED FILE NOT FOUND: EXITING $(tput sgr0)"
-echo ""
-exit
+    echo ""
+    echo "$(tput setaf 1)$(tput bold) REQUIRED FILE NOT FOUND: EXITING $(tput sgr0)"
+    echo ""
+    exit
 else
-echo ""
+    echo ""
 fi
 
 

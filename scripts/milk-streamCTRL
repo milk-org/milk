@@ -10,26 +10,26 @@ pname=`echo "$0" | sed "s/\.\///g"`
 
 
 function printHELP {
-echo "------------------------------------------------------------------------"
-echo "$(tput bold) $pname : data streams control  $(tput sgr0)"
-echo "------------------------------------------------------------------------"
-echo "  Monitors and controls shared memory data streams"
-echo "   "
-echo " $(tput bold)USAGE:$(tput sgr0)"
-echo "     $0 [-hD]"
-echo ""
-echo " $(tput bold)OPTIONS:$(tput sgr0)"
-echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
-echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
-echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
-echo ""
-echo "------------------------------------------------------------------------"
+    echo "------------------------------------------------------------------------"
+    echo "$(tput bold) $pname : data streams control  $(tput sgr0)"
+    echo "------------------------------------------------------------------------"
+    echo "  Monitors and controls shared memory data streams"
+    echo "   "
+    echo " $(tput bold)USAGE:$(tput sgr0)"
+    echo "     $0 [-hD]"
+    echo ""
+    echo " $(tput bold)OPTIONS:$(tput sgr0)"
+    echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
+    echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
+    echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
+    echo ""
+    echo "------------------------------------------------------------------------"
 }
 
 
 printHELP1 ()
 {
-	printf "%20s       Monitor and control loop processes\n" "$0" 
+    printf "%20s       Monitor and control loop processes\n" "$0"
 }
 
 
@@ -40,15 +40,15 @@ printHELP1 ()
 # Transform long options to short ones
 singlelinehelp=0
 for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--help") set -- "$@" "-h" ;;
-    "--help1") 
-set -- "$@" "-h" 
-singlelinehelp=1;
-;;
-    *)        set -- "$@" "$arg"
-  esac
+    shift
+    case "$arg" in
+        "--help") set -- "$@" "-h" ;;
+        "--help1")
+            set -- "$@" "-h"
+            singlelinehelp=1;
+            ;;
+        *)        set -- "$@" "$arg"
+    esac
 done
 
 
@@ -56,32 +56,32 @@ done
 DEBUG="0"
 
 while getopts :hDsq FLAG; do
-  case $FLAG in
-    h)  #show help
-      if [ "$singlelinehelp" -eq "0" ]; then
-      printHELP
-      else
-      printHELP1
-      fi
-      exit
-      ;;
-    s) # use stdio instead of ncurses
-		export MILK_TUIPRINT_STDIO=1
-    ;;
-    q) # quiet mode - don't print status
-		export MILK_TUIPRINT_NONE=1
-    ;;
-    D)
-		DEBUG="1"
-	;;
-    \?) 
-      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-      printHELP
-      ;;
-  esac
+    case $FLAG in
+        h)  #show help
+            if [ "$singlelinehelp" -eq "0" ]; then
+                printHELP
+            else
+                printHELP1
+            fi
+            exit
+            ;;
+        s) # use stdio instead of ncurses
+            export MILK_TUIPRINT_STDIO=1
+            ;;
+        q) # quiet mode - don't print status
+            export MILK_TUIPRINT_NONE=1
+            ;;
+        D)
+            DEBUG="1"
+            ;;
+        \?)
+            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+            printHELP
+            ;;
+    esac
 done
 
-shift $((OPTIND-1))  
+shift $((OPTIND-1))
 
 ### End getopts code ###
 
@@ -91,11 +91,11 @@ shift $((OPTIND-1))
 
 
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
-if [ "$#" -ne $NBARGS ]; then
-    echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
-fi
-printHELP
-        exit
+    if [ "$#" -ne $NBARGS ]; then
+        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
+    fi
+    printHELP
+    exit
 fi
 
 
@@ -111,22 +111,22 @@ echo "exitCLI" >> $SF
 
 if [ "$DEBUG" = "1" ]; then
 
-cp $(which milk) milkdebugtest
-OPTION="--leak-check=full --show-leak-kinds=all"
-OPTION="$OPTION --track-origins=yes"
-OPTION="$OPTION --num-callers=200"
-OPTION="$OPTION --show-reachable=yes"
-#OPTION="$OPTION --gen-suppressions=all"
-OPTION="$OPTION --log-file=milk.memcheck.log"
-OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
-OPTION="$OPTION --max-stackframe=4442392"
+    cp $(which milk) milkdebugtest
+    OPTION="--leak-check=full --show-leak-kinds=all"
+    OPTION="$OPTION --track-origins=yes"
+    OPTION="$OPTION --num-callers=200"
+    OPTION="$OPTION --show-reachable=yes"
+    #OPTION="$OPTION --gen-suppressions=all"
+    OPTION="$OPTION --log-file=milk.memcheck.log"
+    OPTION="$OPTION --suppressions=$MILK_ROOT/milk.memcheck.supp"
+    OPTION="$OPTION --max-stackframe=4442392"
 
-valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${fifoname} -s ${SF}
-rm ./milkdebugtest
+    valgrind ${OPTION} ./milkdebugtest -n ${pname} -f ${fifoname} -s ${SF}
+    rm ./milkdebugtest
 
 else
 
-MILK_QUIET=1 milk -n ${pname} -f ${fifoname} -s $SF
+    MILK_QUIET=1 milk -n ${pname} -f ${fifoname} -s $SF
 
 fi
 

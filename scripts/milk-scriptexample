@@ -8,7 +8,7 @@ Can span muliple lines
 "
 
 # standard configuration
-# 
+#
 source milk-script-std-config
 
 
@@ -97,7 +97,7 @@ exit
 
 function redraw() {
         local str width height length
-        
+
         width=$(tput cols)
         height=$(tput lines)
         str="Width = $width Height = $height"
@@ -113,5 +113,3 @@ redraw
 while true; do
         :
 done
-    
-

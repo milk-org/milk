@@ -6,10 +6,10 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT ""
-#define MODULE_DESCRIPTION       "Read/Write FITS files"
+#define MODULE_DESCRIPTION "Read/Write FITS files"
 
-#include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_iofits_common.h"
+#include "CommandLineInterface/CLIcore.h"
 
 #include "breakcube.h"
 #include "images2cube.h"
@@ -19,20 +19,17 @@
 
 COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
-
 INIT_MODULE_LIB(COREMOD_iofits)
-
 
 static errno_t init_module_CLI()
 {
-	COREMOD_iofits_data.FITSIO_status = 0;
+    COREMOD_iofits_data.FITSIO_status = 0;
 
-	CLIADDCMD_COREMOD_iofits__loadfits();
-	CLIADDCMD_COREMOD_iofits__saveFITS();
+    CLIADDCMD_COREMOD_iofits__loadfits();
+    CLIADDCMD_COREMOD_iofits__saveFITS();
 
-	breakcube_addCLIcmd();
-	images2cube_addCLIcmd();
-
+    breakcube_addCLIcmd();
+    images2cube_addCLIcmd();
 
     // add atexit functions here
 

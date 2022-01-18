@@ -8,9 +8,6 @@
 
 #include "function_parameters.h"
 
-int functionparameter_UserInputSetParamValue(
-    FUNCTION_PARAMETER_STRUCT *fpsentry,
-    int pindex
-);
+int functionparameter_UserInputSetParamValue(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex);
 
 #endif

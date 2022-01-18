@@ -20,5 +20,3 @@ The code is arranged in modules. Source code, documentation and additional files
 
 
 Modules are compiled to object files, stored in ./libs/ (static and shared objects).
-
-

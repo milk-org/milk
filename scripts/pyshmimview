@@ -9,12 +9,10 @@ import time
 from PIL import Image
 
 home = os.getenv('HOME')
-sys.path.append(home+'/src/lib/python/')
+sys.path.append(home + '/src/lib/python/')
 import matplotlib.colors as cmaps
 #import colormaps as cmaps
-from   scexao_shm   import shm
-
-
+from scexao_shm import shm
 
 hmsg = """
 
@@ -48,9 +46,9 @@ ESC   : quit shmview
 
 """
 args = sys.argv[1:]
-if args == []: 
+if args == []:
     print(hmsg)
-    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2,))
+    cam = shm("$MILK_SHM_DIR/ircam%d.im.shm" % (2, ))
 else:
     cam = shm(args[0])
 
@@ -73,13 +71,14 @@ else:
 # -----------------------
 pygame.init()
 
-FPS = 20                        # frames per second setting
+FPS = 20  # frames per second setting
 fpsClock = pygame.time.Clock()  # start the pygame clock!
 XW, YW = 650, 712
 XW, YW = zoom * xsize, zoom * ysize
 
 screen = pygame.display.set_mode((XW, YW), 0, 32)
 pygame.display.set_caption('shared memory live viewer')
+
 
 # ------------------------------------------------------------------
 #             short hands for shared memory data access
@@ -91,41 +90,43 @@ def get_img_data(check=False):
     Reads from the already-opened shared memory
     data structure.
     ---------------------------------------- '''
-    return(cam.get_data(check, True).astype(float))
+    return (cam.get_data(check, True).astype(float))
+
 
 # ------------------------------------------------------------------
 #  another short hand to convert numpy array into image for display
 # ------------------------------------------------------------------
 def arr2im(arr, vmin=0., vmax=10000.0, pwr=1.0):
-    
+
     arr2 = arr.astype('float')**pwr
-    mmin,mmax = arr2.min(), arr2.max()
+    mmin, mmax = arr2.min(), arr2.max()
     #mmax = np.percentile(arr2, 99)
     arr2 -= mmin
-    arr2 /= (mmax-mmin)
+    arr2 /= (mmax - mmin)
 
     if zoom != 1:
         img = Image.fromarray(arr2)
-        rimg = img.resize((zoom*ysize, zoom*xsize))
+        rimg = img.resize((zoom * ysize, zoom * xsize))
         rarr = np.asarray(rimg)
         test = mycmap(rarr)
     else:
         test = mycmap(arr2)
-    return((255*test[:,:,:3]).astype('int'))
+    return ((255 * test[:, :, :3]).astype('int'))
+
 
 # ------------------------------------------------------------------
 #              !!! now we are in business !!!!
 # ------------------------------------------------------------------
 
 WHITE = (255, 255, 255)
-GREEN = (  0, 255,   0) 
-BLUE  = (  0,   0, 255)
-RED   = (255,   0,   0)
-BLK   = (  0,   0,   0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+BLK = (0, 0, 0)
 
 FGCOL = WHITE  # foreground color (text)
-BGCOL = BLK    # background color
-BTCOL = BLUE   # *button* color
+BGCOL = BLK  # background color
+BTCOL = BLUE  # *button* color
 
 background = pygame.Surface(screen.get_size())
 background = background.convert()
@@ -134,34 +135,32 @@ background.fill(BLK)
 # ----------------------------
 #          labels
 # ----------------------------
-font1 = pygame.font.SysFont("default",   48)
-font2 = pygame.font.SysFont("default",   30)
+font1 = pygame.font.SysFont("default", 48)
+font2 = pygame.font.SysFont("default", 30)
 font3 = pygame.font.SysFont("monospace", 16)
 
-xws = xsize*zoom
-yws = ysize*zoom
+xws = xsize * zoom
+yws = ysize * zoom
 
 imin, imax = 0, 0
-surf_live = pygame.surface.Surface((zoom*xsize, zoom*ysize))
+surf_live = pygame.surface.Surface((zoom * xsize, zoom * ysize))
 #screen.blit(surf_live, (5,5))
 
 rect1 = surf_live.get_rect()
-rect1.center = (xws/2, yws/2)
+rect1.center = (xws / 2, yws / 2)
 
-temp      = get_img_data()
-
+temp = get_img_data()
 
 plot_cross = True  # flag for display of the crosses
-subt_bias  = False # flag for bias subtraction
-cont_acq   = False 
-lin_scale  = True  # flag for linear range
-clr_scale  = False # flag for the display color scale
+subt_bias = False  # flag for bias subtraction
+cont_acq = False
+lin_scale = True  # flag for linear range
+clr_scale = False  # flag for the display color scale
 bias = np.zeros_like(temp)
 
-
 # =======================================================
 # =======================================================
-while True: # the main game loop
+while True:  # the main game loop
     clicked = False
 
     pwr0 = 1.0
@@ -173,19 +172,18 @@ while True: # the main game loop
         mycmap = cmaps.inferno
 
     # read image
-    temp      = get_img_data()
+    temp = get_img_data()
 
     imin, imax = temp.min(), temp.max()
     temp -= imin
-    myim      = arr2im(temp.transpose(), pwr=pwr0)
+    myim = arr2im(temp.transpose(), pwr=pwr0)
 
     imax = np.percentile(temp, 99.95)
-    msg = ""#"(min,max) = (%5d,%5d)" % (imin, imax)
+    msg = ""  #"(min,max) = (%5d,%5d)" % (imin, imax)
 
     # display information
     pygame.surfarray.blit_array(surf_live, myim)
     screen.blit(surf_live, rect1)
-
 
     # =====================================
     for event in pygame.event.get():
@@ -195,7 +193,7 @@ while True: # the main game loop
 
             # close shared memory access
             # --------------------------
-            cam.close()          # global disp map
+            cam.close()  # global disp map
             print("shmview has ended normally.")
             sys.exit()
         elif event.type == KEYDOWN:
@@ -204,7 +202,7 @@ while True: # the main game loop
                 pygame.quit()
                 # close shared memory access
                 # --------------------------
-                cam.close()          # global disp map
+                cam.close()  # global disp map
                 print("shmview has ended normally.")
                 sys.exit()
             if event.key == K_m:

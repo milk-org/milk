@@ -10,24 +10,26 @@ from setuptools.command.build_ext import build_ext
 
 
 class CMakeExtension(Extension):
+
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
 
 
 class CMakeBuildExt(build_ext):
+
     def run(self):
         try:
             import pybind11
             out = subprocess.check_output(['cmake', '--version'])
         except:
             raise RuntimeError(
-                "CMake and pybind11 must be installed to build the following extensions: " +
-                ", ".join(e.name for e in self.extensions))
+                    "CMake and pybind11 must be installed to build the following extensions: "
+                    + ", ".join(e.name for e in self.extensions))
 
         if platform.system() == "Windows":
             cmake_version = LooseVersion(
-                re.search(r'version\s*([\d.]+)', out.decode()).group(1))
+                    re.search(r'version\s*([\d.]+)', out.decode()).group(1))
             if cmake_version < '3.1.0':
                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
 
@@ -40,11 +42,11 @@ class CMakeBuildExt(build_ext):
         self.announce("Preparing the build environment", level=3)
 
         extdir = os.path.abspath(
-            os.path.dirname(self.get_ext_fullpath(ext.name)))
+                os.path.dirname(self.get_ext_fullpath(ext.name)))
 
         cmake_args = [
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable,
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+                '-DPYTHON_EXECUTABLE=' + sys.executable,
         ]
 
         cfg = 'Debug' if self.debug else 'Release'
@@ -52,8 +54,8 @@ class CMakeBuildExt(build_ext):
 
         if platform.system() == "Windows":
             cmake_args += [
-                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
-                    cfg.upper(), extdir)
+                    '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
+                            cfg.upper(), extdir)
             ]
             if sys.maxsize > 2**32:
                 cmake_args += ['-A', 'x64']
@@ -82,23 +84,23 @@ class CMakeBuildExt(build_ext):
         os.makedirs(self.build_temp, exist_ok=True)
 
         self.announce("Configuring cmake project", level=3)
-        subprocess.check_call(
-            ['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp)
-        subprocess.check_call(
-            ['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args,
+                              cwd=self.build_temp)
+        subprocess.check_call(['cmake', '--build', '.'] + build_args,
+                              cwd=self.build_temp)
 
 
 setup(
-    name='CacaoProcessTools',
-    version='1.0.0',
-    author=['Arnaud Sevin'],
-    author_email=['Arnaud.Sevin@obspm.fr'],
-    description='A wrap project to use milk with python',
-    long_description='A wrap project to use milk with python',
-    ext_modules=[CMakeExtension('CacaoProcessTools')],
-    install_requires=['pybind11>=2.4', 'wheel', 'cmake'],
-    setup_requires=['pybind11>=2.4', 'wheel', 'cmake'],
-    python_requires='>=3',
-    cmdclass={'build_ext': CMakeBuildExt},
-    zip_safe=False,
+        name='CacaoProcessTools',
+        version='1.0.0',
+        author=['Arnaud Sevin'],
+        author_email=['Arnaud.Sevin@obspm.fr'],
+        description='A wrap project to use milk with python',
+        long_description='A wrap project to use milk with python',
+        ext_modules=[CMakeExtension('CacaoProcessTools')],
+        install_requires=['pybind11>=2.4', 'wheel', 'cmake'],
+        setup_requires=['pybind11>=2.4', 'wheel', 'cmake'],
+        python_requires='>=3',
+        cmdclass={'build_ext': CMakeBuildExt},
+        zip_safe=False,
 )

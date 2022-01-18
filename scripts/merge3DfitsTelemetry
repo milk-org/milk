@@ -3,12 +3,12 @@
 EXPECTED_ARGS=3
 if [ $# -ne $EXPECTED_ARGS ]
 then
-  echo
-  echo " ---------- merge 3D telemetry FITS cubes ----------- "
-  echo
-  echo " Usage:  $0 <Directory> <File Prefix> <Number of files>"
-  echo 
-  echo "looks for files <File Prefix>.<xxx>, xxx from 000 to number of files"
+    echo
+    echo " ---------- merge 3D telemetry FITS cubes ----------- "
+    echo
+    echo " Usage:  $0 <Directory> <File Prefix> <Number of files>"
+    echo
+    echo "looks for files <File Prefix>.<xxx>, xxx from 000 to number of files"
 fi
 
 pname=$0

@@ -65,4 +65,3 @@ modex.streamupdate ${streamname}
 listim
 exitCLI
 EOF
-

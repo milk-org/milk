@@ -8,9 +8,6 @@
 
 #include "function_parameters.h"
 
-int functionparameter_GetParamIndex(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    const char                *paramname
-);
+int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname);
 
 #endif

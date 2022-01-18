@@ -19,7 +19,7 @@ Users can create additional modules, and following a few milk-specific conventio
 # 1. Overview {#page_LoadingModules_overview}
 
 
-milk is oganized in modules, each compiled as a shared object and loaded at runtime. 
+milk is oganized in modules, each compiled as a shared object and loaded at runtime.
 
 ## 1.1. Compiling {#page_LoadingModules_overview_compiling}
 
@@ -28,16 +28,16 @@ While milk comes with its own set of modules, others can be added at runtime. Mo
 	# execute these commands from the source root directory (for example ~./milk/)
 	# move to source subdir, where module directories are located
 	$ cd ./src
-	
+
 	# Download a new module
 	$ git clone https://github.com/milk-org/NewModuleName
-	
+
 	# move to build directory
 	$ cd ../_build
-	
+
 	# Add new module to compile script
 	$ cmake .. -DEXTRAMODULES="NewModuleName"
-	
+
 	# compile and install
 	$ sudo make install
 
@@ -48,10 +48,10 @@ Note that the commands above will compile the module into a shared object, but i
 
 	# start milk
 	$ milk
-	
+
 	# load module from command line interface
-	milk> mload NewModuleName 
-	
+	milk> mload NewModuleName
+
 	# check list of modules. NewModuleName should appear
 	milk> m?
 
@@ -80,17 +80,17 @@ Lets run it :
 
 	# start milk
 	$ milk
-	
+
 	# load module as "mex" (short for module example)
 	milk> mloadas milk_module_example mex
-	
+
 	# check we have it
 	milk> m?
-	
+
 	# run the test function, which creates an image
 	# note you can tab complete after typying "mex." to list functions
 	milk> mex.func1 im1 1.2
-	
+
 	# check the image is in memory
 	milk> listim
 
@@ -122,16 +122,16 @@ Provided that the module follows milk conventions, linking the module will add t
 
 	milk> m?                # lists linked modules
 	milk> m? <modulename>   # lists CLI commands in the module
-	
 
-	
+
+
 ## 2.3. Linking module from within CLI with mload {#page_LoadingModules_linking_mload}
 
 By default, modules shared objects are installed in `/usr/local/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
 
 	milk> mload <modulename>
 
-Alternatively, a short name can be specified 
+Alternatively, a short name can be specified
 
 	milk> mloadas <modulename> <shortname>
 
@@ -146,7 +146,7 @@ Module functions are called from the command line interface prompt:
 Upon startup, milk will read the CLI_ADD_LIBS environment variable to link shared objects. For example:
 
 	CLI_ADD_LIBS="/usr/local/libs/libMyFirstModule.so /usr/local/libs/libMySecondModule.so" milk
-	
+
 will link modules `MyFirstModule` and `MySecondModule`.
 
 @note Shared object names can be separated by space, semicolumn, or comma.
@@ -166,7 +166,7 @@ will link modules `MyFirstModule` and `MySecondModule`.
 
 Modules that are always loaded upon startup are explicitely listed in CLImain.c. Additional modules may be loaded using the C dlopen() command. The library should include a function `initlib_<modulename>` to be executed when the module is loaded. This function should register functions to the command line interface, as done for all other modules that are part of the distribution.
 
-\see http://www.linux-mag.com/id/1028/ for instructions to create shared libraries that can be loaded as modules. 
+\see http://www.linux-mag.com/id/1028/ for instructions to create shared libraries that can be loaded as modules.
 \see https://www.gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html
 
 
@@ -196,7 +196,7 @@ will compile modules `WFpropagate` and `OpticsMaterials` in addition to default 
 
 Several options are available to have the additional module(s) automatically loaded every time:
 
-- Copy or link the shared object to the `./lib/` directory (see @ref page_LoadingModules_linking_libdir). 
+- Copy or link the shared object to the `./lib/` directory (see @ref page_LoadingModules_linking_libdir).
 
 For example:
 
@@ -213,7 +213,7 @@ For example:
 
 ## 3.4. Adding new module to github {#page_LoadingModules_compiling_addingmodulegithub}
 
-We assume here that you have created a module and you would like to push it to the main github package org (we assume here milk-org). 
+We assume here that you have created a module and you would like to push it to the main github package org (we assume here milk-org).
 
 	# First, create the repo in github, then run the following commands:
 	cd ./MyModuleName/
@@ -242,7 +242,7 @@ To compile a custom module :
 	gcc -c -I.. -fPIC exampleModule.c
 	gcc -c -fPIC compute_pi.c -Ofast
 	gcc -shared -I.. -fPIC exampleModule.o compute_pi.o -o libexamplemodule.so -lc
-	
+
 To load the new modules automatically on milk startup, create a sym link in the milk's lib directory:
 
 	cd ~/src/milk/lib
@@ -251,9 +251,7 @@ To load the new modules automatically on milk startup, create a sym link in the 
 Alternatively, you can load it from the CLI at anytime:
 
 	milk > soload "<pathtomilk>/src/exampleModule/libexamplemodule.so"
-	
+
 
 
 ---
-
-

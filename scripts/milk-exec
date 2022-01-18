@@ -18,12 +18,12 @@ MSarg+=( "commandstring:string:command string" )
 
 MSopt+=( "n:name:set_pname:pname[string]:(n)ame process" )
 function set_pname() {
-	pname="$1"
+    pname="$1"
 }
 
 MSopt+=( "T:testmode:set_testmode::(T)est mode" )
 function set_testmode() {
-	echo "CTEST_FULL_OUTPUT"
+    echo "CTEST_FULL_OUTPUT"
 }
 
 
@@ -54,5 +54,3 @@ echo "exitCLI" >> $SF
 milk -n ${pname} -f -s ${SF}
 
 rm ${SF}
-
-

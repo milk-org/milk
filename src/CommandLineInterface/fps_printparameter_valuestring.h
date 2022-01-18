@@ -8,10 +8,6 @@
 
 #include "function_parameters.h"
 
-errno_t functionparameter_PrintParameter_ValueString(
-    FUNCTION_PARAMETER *fpsentry,
-    char *outstring,
-    int stringmaxlen
-);
+errno_t functionparameter_PrintParameter_ValueString(FUNCTION_PARAMETER *fpsentry, char *outstring, int stringmaxlen);
 
 #endif

@@ -71,4 +71,3 @@ shmimpoke ${streamname}
 listim
 exitCLI
 EOF
-
