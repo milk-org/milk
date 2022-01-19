@@ -5,8 +5,9 @@
  *
  */
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 double arith_image_total(const char *ID_name)
 {
