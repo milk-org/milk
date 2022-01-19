@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit 0
+
 ASTYLEOPTIONS="-A1 -s4 -U -p -j -xC80 -xG -S -k3"
 
 RETURN=0
