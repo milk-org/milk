@@ -8,8 +8,9 @@
 #include <math.h>
 #include <sys/time.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 /*^-----------------------------------------------------------------------------
 |  Initialization the "data" structure

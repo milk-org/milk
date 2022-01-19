@@ -10,8 +10,9 @@
 #include <sys/stat.h>
 #include <termios.h>
 
-#include "CLIcore_UI.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "CLIcore_UI.h"
 
 #include "timeutils.h"
 

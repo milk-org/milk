@@ -3,8 +3,9 @@
  * @brief   Load FPS
  */
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "fps_connect.h"
 

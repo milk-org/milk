@@ -3,8 +3,9 @@
  * @brief   FPS config setup
  */
 
-#include "COREMOD_memory/fps_create.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/fps_create.h"
 
 #include "fps_connect.h"
 #include "fps_disconnect.h"
