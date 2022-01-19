@@ -7,8 +7,9 @@
 #include <sys/stat.h>    // fstat
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "CommandLineInterface/timeutils.h"
 
 #include "fps_GetParamIndex.h"
