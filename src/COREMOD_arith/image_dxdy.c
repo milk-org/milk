@@ -6,8 +6,9 @@
  */
 #include <assert.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 imageID arith_image_dx(const char *ID_name, const char *IDout_name)
 {
