@@ -416,8 +416,8 @@ int execute_arith(const char *cmd1)
             l = 0;
 
             /*word[w][l] = '\0';
-                                      w++;
-                                      l = 0;*/
+                                          w++;
+                                          l = 0;*/
             break;
 
         default:
