@@ -26,9 +26,14 @@
 #define M_PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803
 #endif
 
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
 #include <errno.h>
 #include <fftw3.h>
 #include <gsl/gsl_rng.h> // for random numbers
+#include <sched.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <stdint.h>

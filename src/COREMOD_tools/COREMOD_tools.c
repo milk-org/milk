@@ -10,9 +10,10 @@
 #define MODULE_SHORTNAME_DEFAULT ""
 #define MODULE_DESCRIPTION "misc tools"
 
-#include "COREMOD_tools/COREMOD_tools.h"
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
 #include "imdisplay3d.h"
 #include "mvprocCPUset.h"

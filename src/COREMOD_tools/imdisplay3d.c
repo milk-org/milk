@@ -2,8 +2,9 @@
  * @file imdisplay3d.c
  */
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 static FILE *fpgnuplot;
 
