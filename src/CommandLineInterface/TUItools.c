@@ -8,8 +8,9 @@
 
 #include <ncurses.h>
 
-#include "TUItools.h"
 #include <CommandLineInterface/CLIcore.h>
+
+#include "TUItools.h"
 
 static struct winsize w;
 static short unsigned int wrow, wcol;
