@@ -5,8 +5,9 @@
  * Scan for source location, load stream of FITS file
  */
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "COREMOD_iofits_common.h"
 #include "loadfits.h"
