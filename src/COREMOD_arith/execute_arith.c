@@ -8,8 +8,9 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/CLIcore.h"
+
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_arith__Cim_Cim__Cim.h"
 #include "image_arith__im__im.h"
