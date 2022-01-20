@@ -130,6 +130,13 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
     // Second call: setuid promote the RUID to root
     // Which is what we need for the cset call to pass without a sudo password prompt.
 
+    /* FOR DEBUG - WARNING data.euid and data.ruid are NOT what they say
+    PRINT_ERROR("(data) EUID %d - (data) RUID %d ", data.euid, data.ruid);
+    int euid, suid, ruid;
+    getresuid(&ruid, &euid, &suid);
+    PRINT_ERROR("AC EUID %d - SUID %d - RUID %d ", euid, suid, ruid);
+    //*/
+
     if (seteuid(data.euid) != 0 || setuid(data.euid) != 0) // This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid/setuid error");
@@ -140,7 +147,7 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
 
     EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
 
-    if (seteuid(data.ruid) != 0) // Go back to normal privileges
+    if (setresuid(data.ruid, data.ruid, data.euid) != 0) // Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
@@ -157,6 +164,13 @@ int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int rtprio)
 {
     char command[200];
+
+    /* FOR DEBUG - WARNING data.euid and data.ruid are NOT what they say
+    PRINT_ERROR("(data) EUID %d - (data) RUID %d ", data.euid, data.ruid);
+    int euid, suid, ruid;
+    getresuid(&ruid, &euid, &suid);
+    PRINT_ERROR("AC EUID %d - SUID %d - RUID %d ", euid, suid, ruid);
+    //*/
 
     // Must make TWO calls - see COREMOD_TOOLS_mvProcTset
     if (seteuid(data.euid) != 0 || setuid(data.euid) != 0) // This goes up to maximum privileges
@@ -177,7 +191,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int pid, const char *csetname, const int
         EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
     }
 
-    if (seteuid(data.ruid) != 0) // Go back to normal privileges
+    if (setresuid(data.ruid, data.ruid, data.euid) != 0) // Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
