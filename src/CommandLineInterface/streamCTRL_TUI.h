@@ -28,7 +28,7 @@
 
 #define STRINGLENMAX 32
 
-#define streamNBID_MAX 10000
+#define streamNBID_MAX      10000
 #define streamOpenNBpid_MAX 100
 
 #define STRINGMAXLEN_STREAMINFO_NAME 100
@@ -44,15 +44,16 @@
 typedef struct
 {
     char sname[STRINGMAXLEN_STREAMINFO_NAME]; // stream name
-    int SymLink;
-    char linkname[STRINGMAXLEN_STREAMINFO_NAME]; // if stream is sym link, resolve link name
+    int  SymLink;
+    char linkname
+        [STRINGMAXLEN_STREAMINFO_NAME]; // if stream is sym link, resolve link name
 
     imageID ID;
 
     pid_t streamOpenPID[streamOpenNBpid_MAX];
-    int streamOpenPID_cnt;
-    int streamOpenPID_cnt1; // number of processes accessing stream
-    int streamOpenPID_status;
+    int   streamOpenPID_cnt;
+    int   streamOpenPID_cnt1; // number of processes accessing stream
+    int   streamOpenPID_status;
 
     int datatype;
 
@@ -60,29 +61,29 @@ typedef struct
     double updatevalue_frozen;
 
     long long cnt0; // used to check if cnt0 has changed
-    long deltacnt0;
+    long      deltacnt0;
 
 } STREAMINFO;
 
 typedef struct
 {
-    int twaitus;   // sleep time between scans
-    double dtscan; // measured time interval between scans [s]
+    int    twaitus; // sleep time between scans
+    double dtscan;  // measured time interval between scans [s]
 
-    int loop; // 1 : loop     0 : exit
+    int  loop; // 1 : loop     0 : exit
     long loopcnt;
 
-    int filter; // 1 if applying filter to name
+    int  filter; // 1 if applying filter to name
     char namefilter[STRINGLENMAX];
 
     int WriteFlistToFile; // 1 if output to file
 
     STREAMINFO *sinfo;
-    long NBstream;
-    int fuserUpdate;
-    int fuserUpdate0;
-    int sindexscan;
-    char **PIDtable; // stores names of PIDs
+    long        NBstream;
+    int         fuserUpdate;
+    int         fuserUpdate0;
+    int         sindexscan;
+    char      **PIDtable; // stores names of PIDs
 
 } STREAMINFOPROC;
 
@@ -106,7 +107,8 @@ extern "C"
 
     int streamCTRL_CatchSignals();
 
-    int find_streams(STREAMINFO *streaminfo, int filter, const char *namefilter);
+    int
+    find_streams(STREAMINFO *streaminfo, int filter, const char *namefilter);
 
     void *streamCTRL_scan(void *thptr);
 

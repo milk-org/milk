@@ -8,6 +8,8 @@
 
 #include "processinfo.h"
 
-errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname);
+errno_t functionparameter_CTRLscreen(uint32_t mode,
+                                     char    *fpsnamemask,
+                                     char    *fpsCTRLfifoname);
 
 #endif

@@ -12,12 +12,12 @@ long compute_nb_image()
     //fflush(stdout);
 
     for (imageID i = 0; i < data.NB_MAX_IMAGE; i++)
-    {
-        if (data.image[i].used == 1)
         {
-            NBimage += 1;
+            if (data.image[i].used == 1)
+                {
+                    NBimage += 1;
+                }
         }
-    }
 
     return NBimage;
 }

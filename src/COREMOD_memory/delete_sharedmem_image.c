@@ -15,14 +15,23 @@
 static char *imname;
 
 // CLI function arguments and parameters
-static CLICMDARGDEF farg[] = {
-    {CLIARG_IMG, ".imname", "image name", "im", CLIARG_VISIBLE_DEFAULT, (void **)&imname, NULL}};
+static CLICMDARGDEF farg[] = {{CLIARG_IMG,
+                               ".imname",
+                               "image name",
+                               "im",
+                               CLIARG_VISIBLE_DEFAULT,
+                               (void **) &imname,
+                               NULL}};
 
 // CLI function initialization data
-static CLICMDDATA CLIcmddata = {"rmshmim", "remove shared image and files", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata = {
+    "rmshmim", "remove shared image and files", CLICMD_FIELDS_DEFAULTS};
 
 // detailed help
-static errno_t help_function() { return RETURN_SUCCESS; }
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
 
 errno_t destroy_shared_image_ID(const char *__restrict imname)
 {
@@ -30,14 +39,24 @@ errno_t destroy_shared_image_ID(const char *__restrict imname)
 
     ID = image_ID(imname);
     if ((ID != -1) && (data.image[ID].md[0].shared == 1))
-    {
-        ImageStreamIO_destroyIm(&data.image[ID]);
-    }
+        {
+            ImageStreamIO_destroyIm(&data.image[ID]);
+        }
     else
-    {
-        fprintf(stderr, "%c[%d;%dm WARNING: shared image %s does not exist [ %s  %s  %d ] %c[%d;m\n", (char)27, 1, 31,
-                imname, __FILE__, __func__, __LINE__, (char)27, 0);
-    }
+        {
+            fprintf(stderr,
+                    "%c[%d;%dm WARNING: shared image %s does not exist [ %s  "
+                    "%s  %d ] %c[%d;m\n",
+                    (char) 27,
+                    1,
+                    31,
+                    imname,
+                    __FILE__,
+                    __func__,
+                    __LINE__,
+                    (char) 27,
+                    0);
+        }
 
     return RETURN_SUCCESS;
 }
@@ -64,7 +83,7 @@ INSERT_STD_FPSCLIfunctions
 {
     //INSERT_STD_FPSCLIREGISTERFUNC
 
-    int cmdi = RegisterCLIcmd(CLIcmddata, CLIfunction);
+    int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;

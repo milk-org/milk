@@ -1,17 +1,41 @@
 #include "CommandLineInterface/CLIcore.h"
 
-static char *inimname;
-static char *kwname;
+static char   *inimname;
+static char   *kwname;
 static double *kwval;
-static char *comment;
+static char   *comment;
 
-static CLICMDARGDEF farg[] = {
-    {CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **)&inimname, NULL},
-    {CLIARG_STR, ".kwname", "keyword name", "KW1", CLIARG_VISIBLE_DEFAULT, (void **)&kwname, NULL},
-    {CLIARG_FLOAT, ".kwval", "keyword value", "1.234", CLIARG_VISIBLE_DEFAULT, (void **)&kwval, NULL},
-    {CLIARG_STR, ".comment", "comment", "keyword comment", CLIARG_VISIBLE_DEFAULT, (void **)&comment, NULL}};
+static CLICMDARGDEF farg[] = {{CLIARG_IMG,
+                               ".in_name",
+                               "input image",
+                               "im1",
+                               CLIARG_VISIBLE_DEFAULT,
+                               (void **) &inimname,
+                               NULL},
+                              {CLIARG_STR,
+                               ".kwname",
+                               "keyword name",
+                               "KW1",
+                               CLIARG_VISIBLE_DEFAULT,
+                               (void **) &kwname,
+                               NULL},
+                              {CLIARG_FLOAT,
+                               ".kwval",
+                               "keyword value",
+                               "1.234",
+                               CLIARG_VISIBLE_DEFAULT,
+                               (void **) &kwval,
+                               NULL},
+                              {CLIARG_STR,
+                               ".comment",
+                               "comment",
+                               "keyword comment",
+                               CLIARG_VISIBLE_DEFAULT,
+                               (void **) &comment,
+                               NULL}};
 
-static CLICMDDATA CLIcmddata = {"imkwaddD", "add float type image keyword", CLICMD_FIELDS_NOFPS};
+static CLICMDDATA CLIcmddata = {
+    "imkwaddD", "add float type image keyword", CLICMD_FIELDS_NOFPS};
 
 errno_t image_keyword_addD(IMGID img, char *kwname, double kwval, char *comment)
 {
@@ -21,23 +45,23 @@ errno_t image_keyword_addD(IMGID img, char *kwname, double kwval, char *comment)
 
     int kw = 0;
     while ((img.im->kw[kw].type != 'N') && (kw < NBkw))
-    {
-        kw++;
-    }
+        {
+            kw++;
+        }
     int kw0 = kw;
 
     if (kw0 == NBkw)
-    {
-        printf("ERROR: no available keyword entry\n");
-        abort();
-    }
+        {
+            printf("ERROR: no available keyword entry\n");
+            abort();
+        }
     else
-    {
-        strcpy(img.im->kw[kw].name, kwname);
-        img.im->kw[kw].type = 'D';
-        img.im->kw[kw].value.numf = kwval;
-        strcpy(img.im->kw[kw].comment, comment);
-    }
+        {
+            strcpy(img.im->kw[kw].name, kwname);
+            img.im->kw[kw].type       = 'D';
+            img.im->kw[kw].value.numf = kwval;
+            strcpy(img.im->kw[kw].comment, comment);
+        }
 
     return RETURN_SUCCESS;
 }

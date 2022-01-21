@@ -23,14 +23,27 @@ static double *scoeff;
 // For example: .input.xsize (note that first dot is optional)
 //
 static CLICMDARGDEF farg[] = {
-    {CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **)&inimname, NULL},
+    {CLIARG_IMG,
+     ".in_name",
+     "input image",
+     "im1",
+     CLIARG_VISIBLE_DEFAULT,
+     (void **) &inimname,
+     NULL},
     {// hidden argument is not part of CLI call, FPFLAG ignored
-     CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0", CLIARG_HIDDEN_DEFAULT, (void **)&scoeff, NULL}};
+     CLIARG_FLOAT,
+     ".scaling",
+     "scaling coefficient",
+     "1.0",
+     CLIARG_HIDDEN_DEFAULT,
+     (void **) &scoeff,
+     NULL}};
 
 // CLI function initialization data
-static CLICMDDATA CLIcmddata = {"imsum1",                          // keyword to call function in CLI
-                                "compute total of image example1", // description of what the function does
-                                CLICMD_FIELDS_NOFPS};
+static CLICMDDATA CLIcmddata = {
+    "imsum1",                          // keyword to call function in CLI
+    "compute total of image example1", // description of what the function does
+    CLICMD_FIELDS_NOFPS};
 
 /**
  * @brief Detailed help
@@ -39,10 +52,11 @@ static CLICMDDATA CLIcmddata = {"imsum1",                          // keyword to
  */
 static errno_t help_function()
 {
-    printf("Example function demonstrating basic CLI interface\n"
-           "Adds pixel values of an image with a global scaling parameter\n"
-           "Input is image, output is scalar\n"
-           "This function does not support fps or procinfo\n");
+    printf(
+        "Example function demonstrating basic CLI interface\n"
+        "Adds pixel values of an image with a global scaling parameter\n"
+        "Input is image, output is scalar\n"
+        "This function does not support fps or procinfo\n");
 
     return RETURN_SUCCESS;
 }
@@ -77,18 +91,21 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
 
     // FUNC_CHECK_RETURN(othermilkfunc(img));
 
-    uint32_t xsize = img.md->size[0];
-    uint32_t ysize = img.md->size[1];
+    uint32_t      xsize  = img.md->size[0];
+    uint32_t      ysize  = img.md->size[1];
     uint_fast64_t xysize = xsize * ysize;
 
     double total = 0.0;
     for (uint_fast64_t ii = 0; ii < xysize; ii++)
-    {
-        total += img.im->array.F[ii];
-    }
+        {
+            total += img.im->array.F[ii];
+        }
     total *= scalingcoeff;
 
-    printf("image %s total = %lf (scaling coeff %lf)\n", img.im->name, total, scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n",
+           img.im->name,
+           total,
+           scalingcoeff);
 
     // normal successful return from function :
     DEBUG_TRACE_FEXIT();
