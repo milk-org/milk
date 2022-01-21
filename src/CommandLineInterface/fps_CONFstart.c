@@ -17,9 +17,12 @@ errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps)
 {
     // Move to correct launch directory
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"cd %s\" C-m", fps->md->name, fps->md->workdir);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"cd %s\" C-m",
+                           fps->md->name,
+                           fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"fpsconfstart\" C-m", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"fpsconfstart\" C-m",
+                           fps->md->name);
 
     fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
 

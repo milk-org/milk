@@ -17,60 +17,71 @@
 static char *insname;
 
 // List of arguments to function
-static CLICMDARGDEF farg[] = {
-    {CLIARG_STR_NOT_IMG, ".in_sname", "input stream", "ims1", CLIARG_VISIBLE_DEFAULT, (void **)&insname, NULL}};
+static CLICMDARGDEF farg[] = {{CLIARG_STR_NOT_IMG,
+                               ".in_sname",
+                               "input stream",
+                               "ims1",
+                               CLIARG_VISIBLE_DEFAULT,
+                               (void **) &insname,
+                               NULL}};
 
 // flag CLICMDFLAG_FPS enabled FPS capability
-static CLICMDDATA CLIcmddata = {"readshmim", "read shared memory image", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata = {
+    "readshmim", "read shared memory image", CLICMD_FIELDS_DEFAULTS};
 
 // detailed help
-static errno_t help_function() { return RETURN_SUCCESS; }
+static errno_t help_function()
+{
+    return RETURN_SUCCESS;
+}
 
 imageID read_sharedmem_image(const char *sname)
 {
-    imageID ID = -1;
+    imageID ID    = -1;
     imageID IDmem = 0;
-    IMAGE *image;
+    IMAGE  *image;
 
     if (strlen(sname) != 0)
-    {
-        DEBUG_TRACEPOINT("looking for next ID");
-        IDmem = next_avail_image_ID();
-        DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
-
-        image = &data.image[IDmem];
-
-        if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) != IMAGESTREAMIO_SUCCESS)
         {
-            printf("read shared mem image failed -> ID = -1\n");
-            fflush(stdout);
-            ID = -1;
-        }
-        else
-        {
-            IMGID img = makeIMGID(sname);
-            //DEBUG_TRACEPOINT("resolving image");
-            //ID = resolveIMGID(&img, ERRMODE_ABORT);
-            img.ID = IDmem;
+            DEBUG_TRACEPOINT("looking for next ID");
+            IDmem = next_avail_image_ID();
+            DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
 
-            //ID = image_ID(sname);
-            printf("read shared mem image success -> ID = %ld\n", img.ID);
-            ID = img.ID;
-            fflush(stdout);
+            image = &data.image[IDmem];
 
-            image_keywords_list(img);
-        }
+            if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
+                IMAGESTREAMIO_SUCCESS)
+                {
+                    printf("read shared mem image failed -> ID = -1\n");
+                    fflush(stdout);
+                    ID = -1;
+                }
+            else
+                {
+                    IMGID img = makeIMGID(sname);
+                    //DEBUG_TRACEPOINT("resolving image");
+                    //ID = resolveIMGID(&img, ERRMODE_ABORT);
+                    img.ID = IDmem;
 
-        if (data.MEM_MONITOR == 1)
-        {
-            list_image_ID_ncurses();
+                    //ID = image_ID(sname);
+                    printf("read shared mem image success -> ID = %ld\n",
+                           img.ID);
+                    ID = img.ID;
+                    fflush(stdout);
+
+                    image_keywords_list(img);
+                }
+
+            if (data.MEM_MONITOR == 1)
+                {
+                    list_image_ID_ncurses();
+                }
+            return ID;
         }
-        return ID;
-    }
     else
-    {
-        return -1;
-    }
+        {
+            return -1;
+        }
 }
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support

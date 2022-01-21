@@ -18,9 +18,14 @@ errno_t help();
 
 errno_t helpreadline();
 
-int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[], int nbarg, char *outargstring);
+int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
+                           int          nbarg,
+                           char        *outargstring);
 
-int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[], int nbarg, char *shortname, char *outcmdexstring);
+int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
+                                  int          nbarg,
+                                  char        *shortname,
+                                  char        *outcmdexstring);
 
 errno_t help_cmd();
 

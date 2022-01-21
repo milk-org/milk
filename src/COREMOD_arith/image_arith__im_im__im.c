@@ -16,61 +16,81 @@
 #include "imfunctions.h"
 #include "mathfuncs.h"
 
-int arith_image_fmod(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_fmod(const char *ID1_name,
+                     const char *ID2_name,
+                     const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Pfmod);
     return (0);
 }
 
-int arith_image_pow(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_pow(const char *ID1_name,
+                    const char *ID2_name,
+                    const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Ppow);
     return (0);
 }
 
-int arith_image_add(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_add(const char *ID1_name,
+                    const char *ID2_name,
+                    const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Padd);
     return (0);
 }
 
-int arith_image_sub(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_sub(const char *ID1_name,
+                    const char *ID2_name,
+                    const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Psub);
     return (0);
 }
 
-int arith_image_mult(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_mult(const char *ID1_name,
+                     const char *ID2_name,
+                     const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Pmult);
     return (0);
 }
 
-int arith_image_div(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_div(const char *ID1_name,
+                    const char *ID2_name,
+                    const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Pdiv);
     return (0);
 }
 
-int arith_image_minv(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_minv(const char *ID1_name,
+                     const char *ID2_name,
+                     const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Pminv);
     return (0);
 }
 
-int arith_image_maxv(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_maxv(const char *ID1_name,
+                     const char *ID2_name,
+                     const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Pmaxv);
     return (0);
 }
 
-int arith_image_testlt(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_testlt(const char *ID1_name,
+                       const char *ID2_name,
+                       const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Ptestlt);
     return (0);
 }
 
-int arith_image_testmt(const char *ID1_name, const char *ID2_name, const char *ID_out)
+int arith_image_testmt(const char *ID1_name,
+                       const char *ID2_name,
+                       const char *ID_out)
 {
     arith_image_function_2_1(ID1_name, ID2_name, ID_out, &Ptestmt);
     return (0);

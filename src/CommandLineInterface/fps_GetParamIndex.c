@@ -5,28 +5,30 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps, const char *paramname)
+int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps,
+                                    const char                *paramname)
 {
-    long index = -1;
+    long index  = -1;
     long pindex = 0;
 
     long NBparamMAX = fps->md->NBparamMAX;
 
     int found = 0;
     for (pindex = 0; pindex < NBparamMAX; pindex++)
-    {
-        if (found == 0)
         {
-            if (fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
-            {
-                if (strstr(fps->parray[pindex].keywordfull, paramname) != NULL)
+            if (found == 0)
                 {
-                    index = pindex;
-                    found = 1;
+                    if (fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
+                        {
+                            if (strstr(fps->parray[pindex].keywordfull,
+                                       paramname) != NULL)
+                                {
+                                    index = pindex;
+                                    found = 1;
+                                }
+                        }
                 }
-            }
         }
-    }
 
     /*
     if(index == -1)
