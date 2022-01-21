@@ -118,10 +118,10 @@
 int_fast8_t templatemodule_examplefunction00_cli()
 {
     if (CLI_checkarg(1, 2) == 0)
-        {
-            templatemodule_examplefunction00(data.cmdargtoken[1].val.numl);
-            return 0;
-        }
+    {
+        templatemodule_examplefunction00(data.cmdargtoken[1].val.numl);
+        return 0;
+    }
     else
         return 1;
 }
@@ -129,12 +129,12 @@ int_fast8_t templatemodule_examplefunction00_cli()
 int_fast8_t templatemodule_examplefunction01_cli()
 {
     if (CLI_checkarg(1, 1) + CLI_checkarg(2, 2) == 0)
-        {
-            templatemodule_examplefunction01(data.cmdargtoken[1].val.numl,
-                                             data.cmdargtoken[2].val.numf,
-                                             NULL);
-            return 0;
-        }
+    {
+        templatemodule_examplefunction01(data.cmdargtoken[1].val.numl,
+                                         data.cmdargtoken[2].val.numf,
+                                         NULL);
+        return 0;
+    }
     else
         return 1;
 }
@@ -229,9 +229,9 @@ int templatemodule_examplefunc00(int mode)
     // CODING STANDARD NOTE: how to write an infinite loop
     // CODING STANDARD NOTE: Do not write infinite loop with while statement
     for (;;)
-        {
-            // infinite loop
-        }
+    {
+        // infinite loop
+    }
     free(farray);
 
     fp_test = fopen("testfile.log", "w");
@@ -243,33 +243,27 @@ int templatemodule_examplefunc00(int mode)
     fclose(fp_test);
 
     if (mode == 2)
-        {
-            // CODING STANDARD NOTE: reduce variable scope as much as possible
-            // CODING STANDARD NOTE: variables used inside code block declared at beginning of code block
-            char imagename[NAME_STRING_MAXSIZE];
-            char command[COMMAND_STRING_MAXSIZE];
+    {
+        // CODING STANDARD NOTE: reduce variable scope as much as possible
+        // CODING STANDARD NOTE: variables used inside code block declared at beginning of code block
+        char imagename[NAME_STRING_MAXSIZE];
+        char command[COMMAND_STRING_MAXSIZE];
 
-            // CODING STANDARD NOTE: Always test return value of std functions
-            // CODING STANDARD NOTE: Use functions in 00CORE.h :
-            // CODING STANDARD NOTE: 		printERROR(const char *file, const char *func, int line, char *errmessage)
-            // CODING STANDARD NOTE: 		printWARNING(const char *file, const char *func, int line, char *warnmessage)
-            // CODING STANDARD NOTE:  printERROR will exit code, printWARNING will issue warning and continue
-            if (sprintf(name, "image1", loop) < 1)
-                printERROR(__FILE__,
-                           __func__,
-                           __LINE__,
-                           "sprintf wrote <1 char");
-            if (sprintf(command, "ls %s.fits", name) < 1)
-                printERROR(__FILE__,
-                           __func__,
-                           __LINE__,
-                           "sprintf wrote <1 char");
-            if (system(command) != 0)
-                printERROR(__FILE__,
-                           __func__,
-                           __LINE__,
-                           "system() returns non-zero value");
-        }
+        // CODING STANDARD NOTE: Always test return value of std functions
+        // CODING STANDARD NOTE: Use functions in 00CORE.h :
+        // CODING STANDARD NOTE: 		printERROR(const char *file, const char *func, int line, char *errmessage)
+        // CODING STANDARD NOTE: 		printWARNING(const char *file, const char *func, int line, char *warnmessage)
+        // CODING STANDARD NOTE:  printERROR will exit code, printWARNING will issue warning and continue
+        if (sprintf(name, "image1", loop) < 1)
+            printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
+        if (sprintf(command, "ls %s.fits", name) < 1)
+            printERROR(__FILE__, __func__, __LINE__, "sprintf wrote <1 char");
+        if (system(command) != 0)
+            printERROR(__FILE__,
+                       __func__,
+                       __LINE__,
+                       "system() returns non-zero value");
+    }
 
     fp_test = fopen("testfile.log", "r");
     if (fp_test == NULL)
@@ -383,8 +377,8 @@ int templatemodule_examplefunc01(const char *namein,
 
     // code here
     for (;;) // preferred way to write infinite loop
-        {
-        }
+    {
+    }
 
     /// ---
     return (Niteration);

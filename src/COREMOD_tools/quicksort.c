@@ -10,11 +10,11 @@ int bubble_sort(double *array, unsigned long count)
     for (a = 1; a < count; a++)
         for (b = count - 1; b >= a; b--)
             if (array[b - 1] > array[b])
-                {
-                    t            = array[b - 1];
-                    array[b - 1] = array[b];
-                    array[b]     = t;
-                }
+            {
+                t            = array[b - 1];
+                array[b - 1] = array[b];
+                array[b]     = t;
+            }
 
     return (0);
 }
@@ -29,37 +29,37 @@ void qs_float(float *array, unsigned long left, unsigned long right)
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
-                    i++;
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
+            i++;
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs_float(array, left, j);
-        }
+    {
+        qs_float(array, left, j);
+    }
     if (i < right)
-        {
-            qs_float(array, i, right);
-        }
+    {
+        qs_float(array, i, right);
+    }
 }
 
 void qs_long(long *array, unsigned long left, unsigned long right)
@@ -72,37 +72,37 @@ void qs_long(long *array, unsigned long left, unsigned long right)
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
-                    i++;
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
+            i++;
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs_long(array, left, j);
-        }
+    {
+        qs_long(array, left, j);
+    }
     if (i < right)
-        {
-            qs_long(array, i, right);
-        }
+    {
+        qs_long(array, i, right);
+    }
 }
 
 void qs_double(double *array, unsigned long left, unsigned long right)
@@ -115,38 +115,38 @@ void qs_double(double *array, unsigned long left, unsigned long right)
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
-                    i++;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs_double(array, left, j);
-        }
+    {
+        qs_double(array, left, j);
+    }
     if (i < right)
-        {
-            qs_double(array, i, right);
-        }
+    {
+        qs_double(array, i, right);
+    }
 }
 
 void qs_ushort(unsigned short *array, unsigned long left, unsigned long right)
@@ -159,38 +159,38 @@ void qs_ushort(unsigned short *array, unsigned long left, unsigned long right)
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
-                    i++;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs_ushort(array, left, j);
-        }
+    {
+        qs_ushort(array, left, j);
+    }
     if (i < right)
-        {
-            qs_ushort(array, i, right);
-        }
+    {
+        qs_ushort(array, i, right);
+    }
 }
 
 void qs3(double       *array,
@@ -208,47 +208,47 @@ void qs3(double       *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    y1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = y1;
+            y1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = y1;
 
-                    y2        = array2[i];
-                    array2[i] = array2[j];
-                    array2[j] = y2;
+            y2        = array2[i];
+            array2[i] = array2[j];
+            array2[j] = y2;
 
-                    i++;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs3(array, array1, array2, left, j);
-        }
+    {
+        qs3(array, array1, array2, left, j);
+    }
     if (i < right)
-        {
-            qs3(array, array1, array2, i, right);
-        }
+    {
+        qs3(array, array1, array2, i, right);
+    }
 }
 
 void qs3_float(float        *array,
@@ -266,47 +266,47 @@ void qs3_float(float        *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    y1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = y1;
+            y1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = y1;
 
-                    y2        = array2[i];
-                    array2[i] = array2[j];
-                    array2[j] = y2;
+            y2        = array2[i];
+            array2[i] = array2[j];
+            array2[j] = y2;
 
-                    i++;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs3_float(array, array1, array2, left, j);
-        }
+    {
+        qs3_float(array, array1, array2, left, j);
+    }
     if (i < right)
-        {
-            qs3_float(array, array1, array2, i, right);
-        }
+    {
+        qs3_float(array, array1, array2, i, right);
+    }
 }
 
 void qs3_double(double       *array,
@@ -324,47 +324,47 @@ void qs3_double(double       *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    y1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = y1;
+            y1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = y1;
 
-                    y2        = array2[i];
-                    array2[i] = array2[j];
-                    array2[j] = y2;
+            y2        = array2[i];
+            array2[i] = array2[j];
+            array2[j] = y2;
 
-                    i++;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs3_double(array, array1, array2, left, j);
-        }
+    {
+        qs3_double(array, array1, array2, left, j);
+    }
     if (i < right)
-        {
-            qs3_double(array, array1, array2, i, right);
-        }
+    {
+        qs3_double(array, array1, array2, i, right);
+    }
 }
 
 void qs2l(double *array, long *array1, unsigned long left, unsigned long right)
@@ -378,43 +378,43 @@ void qs2l(double *array, long *array1, unsigned long left, unsigned long right)
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    l1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = l1;
+            l1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
 
-                    i++;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs2l(array, array1, left, j);
-        }
+    {
+        qs2l(array, array1, left, j);
+    }
     if (i < right)
-        {
-            qs2l(array, array1, i, right);
-        }
+    {
+        qs2l(array, array1, i, right);
+    }
 }
 
 void qs2ul(double        *array,
@@ -431,42 +431,42 @@ void qs2ul(double        *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    l1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = l1;
+            l1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
 
-                    i++;
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            i++;
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs2ul(array, array1, left, j);
-        }
+    {
+        qs2ul(array, array1, left, j);
+    }
     if (i < right)
-        {
-            qs2ul(array, array1, i, right);
-        }
+    {
+        qs2ul(array, array1, i, right);
+    }
 }
 
 void qs2l_double(double       *array,
@@ -483,43 +483,43 @@ void qs2l_double(double       *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    l1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = l1;
+            l1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
 
-                    i++;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs2l_double(array, array1, left, j);
-        }
+    {
+        qs2l_double(array, array1, left, j);
+    }
     if (i < right)
-        {
-            qs2l_double(array, array1, i, right);
-        }
+    {
+        qs2l_double(array, array1, i, right);
+    }
 }
 
 void qs2ul_double(double        *array,
@@ -536,43 +536,43 @@ void qs2ul_double(double        *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    l1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = l1;
+            l1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
 
-                    i++;
+            i++;
 
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs2ul_double(array, array1, left, j);
-        }
+    {
+        qs2ul_double(array, array1, left, j);
+    }
     if (i < right)
-        {
-            qs2ul_double(array, array1, i, right);
-        }
+    {
+        qs2ul_double(array, array1, i, right);
+    }
 }
 
 void qs3ll_double(double       *array,
@@ -590,46 +590,46 @@ void qs3ll_double(double       *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    l1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = l1;
+            l1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
 
-                    l2        = array2[i];
-                    array2[i] = array2[j];
-                    array2[j] = l2;
+            l2        = array2[i];
+            array2[i] = array2[j];
+            array2[j] = l2;
 
-                    i++;
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            i++;
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs3ll_double(array, array1, array2, left, j);
-        }
+    {
+        qs3ll_double(array, array1, array2, left, j);
+    }
     if (i < right)
-        {
-            qs3ll_double(array, array1, array2, i, right);
-        }
+    {
+        qs3ll_double(array, array1, array2, i, right);
+    }
 }
 
 void qs3ulul_double(double        *array,
@@ -647,47 +647,47 @@ void qs3ulul_double(double        *array,
     x = array[(left + right) / 2];
 
     do
+    {
+        while (array[i] < x && i < right)
         {
-            while (array[i] < x && i < right)
-                {
-                    i++;
-                }
-            while (x < array[j] && j > left && j > 0)
-                {
-                    j--;
-                }
+            i++;
+        }
+        while (x < array[j] && j > left && j > 0)
+        {
+            j--;
+        }
 
-            if (i <= j)
-                {
-                    y        = array[i];
-                    array[i] = array[j];
-                    array[j] = y;
+        if (i <= j)
+        {
+            y        = array[i];
+            array[i] = array[j];
+            array[j] = y;
 
-                    l1        = array1[i];
-                    array1[i] = array1[j];
-                    array1[j] = l1;
+            l1        = array1[i];
+            array1[i] = array1[j];
+            array1[j] = l1;
 
-                    l2        = array2[i];
-                    array2[i] = array2[j];
-                    array2[j] = l2;
+            l2        = array2[i];
+            array2[i] = array2[j];
+            array2[j] = l2;
 
-                    i++;
-                    if (j > 0)
-                        {
-                            j--;
-                        }
-                }
+            i++;
+            if (j > 0)
+            {
+                j--;
+            }
+        }
     } while (i <= j);
 
     if (left < j)
-        {
-            qs3ulul_double(array, array1, array2, left, j);
-        }
+    {
+        qs3ulul_double(array, array1, array2, left, j);
+    }
 
     if (i < right)
-        {
-            qs3ulul_double(array, array1, array2, i, right);
-        }
+    {
+        qs3ulul_double(array, array1, array2, i, right);
+    }
 }
 
 void quick_sort_float(float *array, unsigned long count)

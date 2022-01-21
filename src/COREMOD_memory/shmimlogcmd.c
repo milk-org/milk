@@ -47,59 +47,59 @@ static errno_t logshim_cmd(const char *logshimname, const char *cmd)
 
     SM_fd = open(SM_fname, O_RDWR);
     if (SM_fd == -1)
+    {
+        printf("Cannot import file - continuing\n");
+        exit(0);
+    }
+    else
+    {
+        fstat(SM_fd, &file_stat);
+        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
+
+        map = (LOGSHIM_CONF *) mmap(0,
+                                    file_stat.st_size,
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_SHARED,
+                                    SM_fd,
+                                    0);
+        if (map == MAP_FAILED)
         {
-            printf("Cannot import file - continuing\n");
+            close(SM_fd);
+            perror("Error mmapping the file");
             exit(0);
         }
-    else
+
+        if (strcmp(cmd, "logon") == 0)
         {
-            fstat(SM_fd, &file_stat);
-            printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-            map = (LOGSHIM_CONF *) mmap(0,
-                                        file_stat.st_size,
-                                        PROT_READ | PROT_WRITE,
-                                        MAP_SHARED,
-                                        SM_fd,
-                                        0);
-            if (map == MAP_FAILED)
-                {
-                    close(SM_fd);
-                    perror("Error mmapping the file");
-                    exit(0);
-                }
-
-            if (strcmp(cmd, "logon") == 0)
-                {
-                    printf("Setting logging to ON\n");
-                    map[0].on = 1;
-                }
-            else if (strcmp(cmd, "logoff") == 0)
-                {
-                    printf("Setting logging to OFF\n");
-                    map[0].on = 0;
-                }
-            else if (strcmp(cmd, "logexit") == 0)
-                {
-                    printf("log exit\n");
-                    map[0].logexit = 1;
-                }
-            else if (strcmp(cmd, "stat") == 0)
-                {
-                    printf("LOG   on = %d\n", map[0].on);
-                    printf("    cnt  = %lld\n", map[0].cnt);
-                    printf(" filecnt = %lld\n", map[0].filecnt);
-                    printf("interval = %ld\n", map[0].interval);
-                    printf("logexit  = %d\n", map[0].logexit);
-                }
-
-            if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-                {
-                    printf("unmapping %s\n", SM_fname);
-                    perror("Error un-mmapping the file");
-                }
-            close(SM_fd);
+            printf("Setting logging to ON\n");
+            map[0].on = 1;
         }
+        else if (strcmp(cmd, "logoff") == 0)
+        {
+            printf("Setting logging to OFF\n");
+            map[0].on = 0;
+        }
+        else if (strcmp(cmd, "logexit") == 0)
+        {
+            printf("log exit\n");
+            map[0].logexit = 1;
+        }
+        else if (strcmp(cmd, "stat") == 0)
+        {
+            printf("LOG   on = %d\n", map[0].on);
+            printf("    cnt  = %lld\n", map[0].cnt);
+            printf(" filecnt = %lld\n", map[0].filecnt);
+            printf("interval = %ld\n", map[0].interval);
+            printf("logexit  = %d\n", map[0].logexit);
+        }
+
+        if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
+        {
+            printf("unmapping %s\n", SM_fname);
+            perror("Error un-mmapping the file");
+        }
+        close(SM_fd);
+    }
     return RETURN_SUCCESS;
 }
 

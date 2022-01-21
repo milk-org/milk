@@ -42,9 +42,9 @@ static errno_t image_copy_shm(IMGID img, char *outshmname)
     uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     uint8_t   datatype  = data.image[ID].md[0].datatype;
     for (uint8_t k = 0; k < naxis; k++)
-        {
-            sizearray[k] = data.image[ID].md[0].size[k];
-        }
+    {
+        sizearray[k] = data.image[ID].md[0].size[k];
+    }
     uint16_t NBkw = data.image[ID].md[0].NBkw;
 
     int shmOK = 1;
@@ -54,47 +54,45 @@ static errno_t image_copy_shm(IMGID img, char *outshmname)
     DEBUG_TRACEPOINT("IDshm = %ld", IDshm);
 
     if (IDshm != -1)
+    {
+        // verify type and size
+        if (data.image[ID].md[0].naxis != data.image[IDshm].md[0].naxis)
         {
-            // verify type and size
-            if (data.image[ID].md[0].naxis != data.image[IDshm].md[0].naxis)
+            shmOK = 0;
+        }
+        if (shmOK == 1)
+        {
+            for (uint8_t axis = 0; axis < data.image[IDshm].md[0].naxis; axis++)
+                if (data.image[ID].md[0].size[axis] !=
+                    data.image[IDshm].md[0].size[axis])
                 {
                     shmOK = 0;
-                }
-            if (shmOK == 1)
-                {
-                    for (uint8_t axis = 0; axis < data.image[IDshm].md[0].naxis;
-                         axis++)
-                        if (data.image[ID].md[0].size[axis] !=
-                            data.image[IDshm].md[0].size[axis])
-                            {
-                                shmOK = 0;
-                            }
-                }
-            if (data.image[ID].md[0].datatype !=
-                data.image[IDshm].md[0].datatype)
-                {
-                    shmOK = 0;
-                }
-
-            if (shmOK == 0)
-                {
-                    delete_image_ID(outshmname, DELETE_IMAGE_ERRMODE_WARNING);
-                    IDshm = -1;
                 }
         }
+        if (data.image[ID].md[0].datatype != data.image[IDshm].md[0].datatype)
+        {
+            shmOK = 0;
+        }
+
+        if (shmOK == 0)
+        {
+            delete_image_ID(outshmname, DELETE_IMAGE_ERRMODE_WARNING);
+            IDshm = -1;
+        }
+    }
 
     if (IDshm == -1)
-        {
-            DEBUG_TRACEPOINT("Creating image");
-            create_image_ID(outshmname,
-                            naxis,
-                            sizearray,
-                            datatype,
-                            1,
-                            NBkw,
-                            0,
-                            &IDshm);
-        }
+    {
+        DEBUG_TRACEPOINT("Creating image");
+        create_image_ID(outshmname,
+                        naxis,
+                        sizearray,
+                        datatype,
+                        1,
+                        NBkw,
+                        0,
+                        &IDshm);
+    }
     free(sizearray);
 
     //data.image[IDshm].md[0].nelement = data.image[ID].md[0].nelement;
@@ -108,91 +106,91 @@ static errno_t image_copy_shm(IMGID img, char *outshmname)
     char *ptr2;
 
     switch (datatype)
-        {
-        case _DATATYPE_FLOAT:
-            ptr1 = (char *) data.image[ID].array.F;
-            ptr2 = (char *) data.image[IDshm].array.F;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_FLOAT * data.image[ID].md[0].nelement);
-            break;
+    {
+    case _DATATYPE_FLOAT:
+        ptr1 = (char *) data.image[ID].array.F;
+        ptr2 = (char *) data.image[IDshm].array.F;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_FLOAT * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_DOUBLE:
-            ptr1 = (char *) data.image[ID].array.D;
-            ptr2 = (char *) data.image[IDshm].array.D;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_DOUBLE * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_DOUBLE:
+        ptr1 = (char *) data.image[ID].array.D;
+        ptr2 = (char *) data.image[IDshm].array.D;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_DOUBLE * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_INT8:
-            ptr1 = (char *) data.image[ID].array.SI8;
-            ptr2 = (char *) data.image[IDshm].array.SI8;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_INT8 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_INT8:
+        ptr1 = (char *) data.image[ID].array.SI8;
+        ptr2 = (char *) data.image[IDshm].array.SI8;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_INT8 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_UINT8:
-            ptr1 = (char *) data.image[ID].array.UI8;
-            ptr2 = (char *) data.image[IDshm].array.UI8;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_UINT8 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_UINT8:
+        ptr1 = (char *) data.image[ID].array.UI8;
+        ptr2 = (char *) data.image[IDshm].array.UI8;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_UINT8 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_INT16:
-            ptr1 = (char *) data.image[ID].array.SI16;
-            ptr2 = (char *) data.image[IDshm].array.SI16;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_INT16 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_INT16:
+        ptr1 = (char *) data.image[ID].array.SI16;
+        ptr2 = (char *) data.image[IDshm].array.SI16;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_INT16 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_UINT16:
-            ptr1 = (char *) data.image[ID].array.UI16;
-            ptr2 = (char *) data.image[IDshm].array.UI16;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_UINT16 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_UINT16:
+        ptr1 = (char *) data.image[ID].array.UI16;
+        ptr2 = (char *) data.image[IDshm].array.UI16;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_UINT16 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_INT32:
-            ptr1 = (char *) data.image[ID].array.SI32;
-            ptr2 = (char *) data.image[IDshm].array.SI32;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_INT32 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_INT32:
+        ptr1 = (char *) data.image[ID].array.SI32;
+        ptr2 = (char *) data.image[IDshm].array.SI32;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_INT32 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_UINT32:
-            ptr1 = (char *) data.image[ID].array.UI32;
-            ptr2 = (char *) data.image[IDshm].array.UI32;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_UINT32 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_UINT32:
+        ptr1 = (char *) data.image[ID].array.UI32;
+        ptr2 = (char *) data.image[IDshm].array.UI32;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_UINT32 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_INT64:
-            ptr1 = (char *) data.image[ID].array.SI64;
-            ptr2 = (char *) data.image[IDshm].array.SI64;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_INT64 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_INT64:
+        ptr1 = (char *) data.image[ID].array.SI64;
+        ptr2 = (char *) data.image[IDshm].array.SI64;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_INT64 * data.image[ID].md[0].nelement);
+        break;
 
-        case _DATATYPE_UINT64:
-            ptr1 = (char *) data.image[ID].array.UI64;
-            ptr2 = (char *) data.image[IDshm].array.UI64;
-            memcpy((void *) ptr2,
-                   (void *) ptr1,
-                   SIZEOF_DATATYPE_UINT64 * data.image[ID].md[0].nelement);
-            break;
+    case _DATATYPE_UINT64:
+        ptr1 = (char *) data.image[ID].array.UI64;
+        ptr2 = (char *) data.image[IDshm].array.UI64;
+        memcpy((void *) ptr2,
+               (void *) ptr1,
+               SIZEOF_DATATYPE_UINT64 * data.image[ID].md[0].nelement);
+        break;
 
-        default:
-            printf("data type not supported\n");
-            break;
-        }
+    default:
+        printf("data type not supported\n");
+        break;
+    }
 
     // copy keywords
     ptr1 = (char *) data.image[ID].kw;

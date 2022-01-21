@@ -21,16 +21,16 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
-        {
-            COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string,
-                                       data.cmdargtoken[2].val.numl);
+    {
+        COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string,
+                                   data.cmdargtoken[2].val.numl);
 
-            return CLICMD_SUCCESS;
-        }
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================
@@ -68,10 +68,10 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     snprintf(cmd, 512, "gnuplot");
 
     if ((fpgnuplot = popen(cmd, "w")) == NULL)
-        {
-            fprintf(stderr, "could not connect to gnuplot\n");
-            return -1;
-        }
+    {
+        fprintf(stderr, "could not connect to gnuplot\n");
+        return -1;
+    }
 
     printf("image: %s [%ld x %ld], step = %ld\n", IDname, xsize, ysize, step);
 
@@ -87,23 +87,23 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fp = fopen("pts.dat", "w");
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
     for (ii = 0; ii < xsize; ii += step)
+    {
+        for (jj = 0; jj < xsize; jj += step)
         {
-            for (jj = 0; jj < xsize; jj += step)
-                {
-                    fprintf(fpgnuplot,
-                            "%ld %ld %f\n",
-                            ii,
-                            jj,
-                            data.image[ID].array.F[jj * xsize + ii]);
-                    fprintf(fp,
-                            "%ld %ld %f\n",
-                            ii,
-                            jj,
-                            data.image[ID].array.F[jj * xsize + ii]);
-                }
-            fprintf(fpgnuplot, "\n");
-            fprintf(fp, "\n");
+            fprintf(fpgnuplot,
+                    "%ld %ld %f\n",
+                    ii,
+                    jj,
+                    data.image[ID].array.F[jj * xsize + ii]);
+            fprintf(fp,
+                    "%ld %ld %f\n",
+                    ii,
+                    jj,
+                    data.image[ID].array.F[jj * xsize + ii]);
         }
+        fprintf(fpgnuplot, "\n");
+        fprintf(fp, "\n");
+    }
     fprintf(fpgnuplot, "e\n");
     fflush(fpgnuplot);
     fclose(fp);

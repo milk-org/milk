@@ -15,20 +15,19 @@ int functionparameter_GetParamIndex(FUNCTION_PARAMETER_STRUCT *fps,
 
     int found = 0;
     for (pindex = 0; pindex < NBparamMAX; pindex++)
+    {
+        if (found == 0)
         {
-            if (found == 0)
+            if (fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
+            {
+                if (strstr(fps->parray[pindex].keywordfull, paramname) != NULL)
                 {
-                    if (fps->parray[pindex].fpflag & FPFLAG_ACTIVE)
-                        {
-                            if (strstr(fps->parray[pindex].keywordfull,
-                                       paramname) != NULL)
-                                {
-                                    index = pindex;
-                                    found = 1;
-                                }
-                        }
+                    index = pindex;
+                    found = 1;
                 }
+            }
         }
+    }
 
     /*
     if(index == -1)

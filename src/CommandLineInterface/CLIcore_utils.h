@@ -111,15 +111,15 @@ typedef struct
 #define STD_FARG_LINKfunction                                                  \
     for (int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF));     \
          argi++)                                                               \
+    {                                                                          \
+        long  fpsi           = -1;                                             \
+        void *ptr            = get_farg_ptr(farg[argi].fpstag, &fpsi);         \
+        *(farg[argi].valptr) = ptr;                                            \
+        if (farg[argi].indexptr != NULL)                                       \
         {                                                                      \
-            long  fpsi           = -1;                                         \
-            void *ptr            = get_farg_ptr(farg[argi].fpstag, &fpsi);     \
-            *(farg[argi].valptr) = ptr;                                        \
-            if (farg[argi].indexptr != NULL)                                   \
-                {                                                              \
-                    *(farg[argi].indexptr) = fpsi;                             \
-                }                                                              \
-        }
+            *(farg[argi].indexptr) = fpsi;                                     \
+        }                                                                      \
+    }
 
 /** @brief Standard Function call wrapper
  *
@@ -137,17 +137,17 @@ typedef struct
     {                                                                          \
         errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);           \
         if (retval == RETURN_SUCCESS)                                          \
-            {                                                                  \
-                STD_FARG_LINKfunction return compute_function();               \
-            }                                                                  \
+        {                                                                      \
+            STD_FARG_LINKfunction return compute_function();                   \
+        }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_HELP)                            \
-            {                                                                  \
-                return RETURN_SUCCESS;                                         \
-            }                                                                  \
+        {                                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)                    \
-            {                                                                  \
-                return RETURN_SUCCESS;                                         \
-            }                                                                  \
+        {                                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
         return retval;                                                         \
     }
 
@@ -191,26 +191,26 @@ typedef struct
     {                                                                          \
         FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);                       \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
-            {                                                                  \
-                fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;        \
-                fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;  \
-                fps.cmdset.procinfo_loopcntMax =                               \
-                    CLIcmddata.cmdsettings->procinfo_loopcntMax;               \
-                fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;  \
-                strcpy(fps.cmdset.triggerstreamname,                           \
-                       CLIcmddata.cmdsettings->triggerstreamname);             \
-                fps.cmdset.semindexrequested =                                 \
-                    CLIcmddata.cmdsettings->semindexrequested;                 \
-                fps.cmdset.triggerdelay.tv_sec =                               \
-                    CLIcmddata.cmdsettings->triggerdelay.tv_sec;               \
-                fps.cmdset.triggerdelay.tv_nsec =                              \
-                    CLIcmddata.cmdsettings->triggerdelay.tv_nsec;              \
-                fps.cmdset.triggertimeout.tv_sec =                             \
-                    CLIcmddata.cmdsettings->triggertimeout.tv_sec;             \
-                fps.cmdset.triggertimeout.tv_nsec =                            \
-                    CLIcmddata.cmdsettings->triggertimeout.tv_nsec;            \
-                fps_add_processinfo_entries(&fps);                             \
-            }                                                                  \
+        {                                                                      \
+            fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;            \
+            fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;      \
+            fps.cmdset.procinfo_loopcntMax =                                   \
+                CLIcmddata.cmdsettings->procinfo_loopcntMax;                   \
+            fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;      \
+            strcpy(fps.cmdset.triggerstreamname,                               \
+                   CLIcmddata.cmdsettings->triggerstreamname);                 \
+            fps.cmdset.semindexrequested =                                     \
+                CLIcmddata.cmdsettings->semindexrequested;                     \
+            fps.cmdset.triggerdelay.tv_sec =                                   \
+                CLIcmddata.cmdsettings->triggerdelay.tv_sec;                   \
+            fps.cmdset.triggerdelay.tv_nsec =                                  \
+                CLIcmddata.cmdsettings->triggerdelay.tv_nsec;                  \
+            fps.cmdset.triggertimeout.tv_sec =                                 \
+                CLIcmddata.cmdsettings->triggertimeout.tv_sec;                 \
+            fps.cmdset.triggertimeout.tv_nsec =                                \
+                CLIcmddata.cmdsettings->triggertimeout.tv_nsec;                \
+            fps_add_processinfo_entries(&fps);                                 \
+        }                                                                      \
         data.fpsptr = &fps;                                                    \
         CMDargs_to_FPSparams_create(&fps);                                     \
         STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
@@ -225,119 +225,114 @@ typedef struct
         return RETURN_SUCCESS;                                                 \
     }
 
-#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                    \
-    int          processloopOK = 1;                                             \
-    PROCESSINFO *processinfo   = NULL;                                          \
-    if (data.fpsptr != NULL)                                                    \
-        { /* If FPS mode, then FPS settings override defaults*/                 \
-            /* data.fpsptr->cmset entries are read by fps_connect */            \
-            /*CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;*/      \
-            CLIcmddata.cmdsettings->RT_priority =                               \
-                data.fpsptr->cmdset.RT_priority;                                \
-            CLIcmddata.cmdsettings->procinfo_loopcntMax =                       \
-                data.fpsptr->cmdset.procinfo_loopcntMax;                        \
-            CLIcmddata.cmdsettings->triggermode =                               \
-                data.fpsptr->cmdset.triggermode;                                \
-            strcpy(CLIcmddata.cmdsettings->triggerstreamname,                   \
-                   data.fpsptr->cmdset.triggerstreamname);                      \
-            CLIcmddata.cmdsettings->semindexrequested =                         \
-                data.fpsptr->cmdset.semindexrequested;                          \
-            CLIcmddata.cmdsettings->triggerdelay.tv_sec =                       \
-                data.fpsptr->cmdset.triggerdelay.tv_sec;                        \
-            CLIcmddata.cmdsettings->triggerdelay.tv_nsec =                      \
-                data.fpsptr->cmdset.triggerdelay.tv_nsec;                       \
-            CLIcmddata.cmdsettings->triggertimeout.tv_sec =                     \
-                data.fpsptr->cmdset.triggertimeout.tv_sec;                      \
-            CLIcmddata.cmdsettings->triggertimeout.tv_nsec =                    \
-                data.fpsptr->cmdset.triggertimeout.tv_nsec;                     \
-        }                                                                       \
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                    \
-        {                                                                       \
-            char pinfodescr[200];                                               \
-            int  slen =                                                         \
-                snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);    \
-            if (slen < 1)                                                       \
-                {                                                               \
-                    PRINT_ERROR("snprintf wrote <1 char");                      \
-                    abort();                                                    \
-                }                                                               \
-            if (slen >= 200)                                                    \
-                {                                                               \
-                    PRINT_ERROR("snprintf string truncation");                  \
-                    abort();                                                    \
-                }                                                               \
-            if (data.fpsptr != NULL)                                            \
-                {                                                               \
-                    processinfo = processinfo_setup(data.FPS_name,              \
-                                                    pinfodescr,                 \
-                                                    "startup",                  \
-                                                    __FUNCTION__,               \
-                                                    __FILE__,                   \
-                                                    __LINE__);                  \
-                    fps_to_processinfo(data.fpsptr, processinfo);               \
-                }                                                               \
-            else                                                                \
-                {                                                               \
-                    processinfo = processinfo_setup(CLIcmddata.key,             \
-                                                    pinfodescr,                 \
-                                                    "startup",                  \
-                                                    __FUNCTION__,               \
-                                                    __FILE__,                   \
-                                                    __LINE__);                  \
-                }                                                               \
-            DEBUG_TRACEPOINT("setting processinfo parameters");                 \
-            processinfo->loopcntMax =                                           \
-                CLIcmddata.cmdsettings->procinfo_loopcntMax;                    \
-            processinfo->triggerstreamID = -2;                                  \
-            processinfo->triggermode     = CLIcmddata.cmdsettings->triggermode; \
-            strcpy(processinfo->triggerstreamname,                              \
-                   CLIcmddata.cmdsettings->triggerstreamname);                  \
-            processinfo->triggerdelay = CLIcmddata.cmdsettings->triggerdelay;   \
-            processinfo->triggertimeout =                                       \
-                CLIcmddata.cmdsettings->triggertimeout;                         \
-            processinfo->triggerstreamID =                                      \
-                image_ID(processinfo->triggerstreamname);                       \
-            DEBUG_TRACEPOINT("triggerstreamID = %ld",                           \
-                             processinfo->triggerstreamID);                     \
-            FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(               \
-                processinfo,                                                    \
-                processinfo->triggerstreamID,                                   \
-                CLIcmddata.cmdsettings->triggermode,                            \
-                CLIcmddata.cmdsettings->semindexrequested));                    \
-            DEBUG_TRACEPOINT("setting RT priority to %d",                       \
-                             CLIcmddata.cmdsettings->RT_priority);              \
-            processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;     \
-            processinfo->CPUmask     = CLIcmddata.cmdsettings->CPUmask;         \
-            processinfo->MeasureTiming =                                        \
-                CLIcmddata.cmdsettings->procinfo_MeasureTiming;                 \
-            DEBUG_TRACEPOINT("loopstart");                                      \
-            processinfo_loopstart(processinfo);                                 \
-        }
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                   \
+    int          processloopOK = 1;                                            \
+    PROCESSINFO *processinfo   = NULL;                                         \
+    if (data.fpsptr != NULL)                                                   \
+    { /* If FPS mode, then FPS settings override defaults*/                    \
+        /* data.fpsptr->cmset entries are read by fps_connect */               \
+        /*CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;*/         \
+        CLIcmddata.cmdsettings->RT_priority = data.fpsptr->cmdset.RT_priority; \
+        CLIcmddata.cmdsettings->procinfo_loopcntMax =                          \
+            data.fpsptr->cmdset.procinfo_loopcntMax;                           \
+        CLIcmddata.cmdsettings->triggermode = data.fpsptr->cmdset.triggermode; \
+        strcpy(CLIcmddata.cmdsettings->triggerstreamname,                      \
+               data.fpsptr->cmdset.triggerstreamname);                         \
+        CLIcmddata.cmdsettings->semindexrequested =                            \
+            data.fpsptr->cmdset.semindexrequested;                             \
+        CLIcmddata.cmdsettings->triggerdelay.tv_sec =                          \
+            data.fpsptr->cmdset.triggerdelay.tv_sec;                           \
+        CLIcmddata.cmdsettings->triggerdelay.tv_nsec =                         \
+            data.fpsptr->cmdset.triggerdelay.tv_nsec;                          \
+        CLIcmddata.cmdsettings->triggertimeout.tv_sec =                        \
+            data.fpsptr->cmdset.triggertimeout.tv_sec;                         \
+        CLIcmddata.cmdsettings->triggertimeout.tv_nsec =                       \
+            data.fpsptr->cmdset.triggertimeout.tv_nsec;                        \
+    }                                                                          \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
+    {                                                                          \
+        char pinfodescr[200];                                                  \
+        int  slen =                                                            \
+            snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);       \
+        if (slen < 1)                                                          \
+        {                                                                      \
+            PRINT_ERROR("snprintf wrote <1 char");                             \
+            abort();                                                           \
+        }                                                                      \
+        if (slen >= 200)                                                       \
+        {                                                                      \
+            PRINT_ERROR("snprintf string truncation");                         \
+            abort();                                                           \
+        }                                                                      \
+        if (data.fpsptr != NULL)                                               \
+        {                                                                      \
+            processinfo = processinfo_setup(data.FPS_name,                     \
+                                            pinfodescr,                        \
+                                            "startup",                         \
+                                            __FUNCTION__,                      \
+                                            __FILE__,                          \
+                                            __LINE__);                         \
+            fps_to_processinfo(data.fpsptr, processinfo);                      \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            processinfo = processinfo_setup(CLIcmddata.key,                    \
+                                            pinfodescr,                        \
+                                            "startup",                         \
+                                            __FUNCTION__,                      \
+                                            __FILE__,                          \
+                                            __LINE__);                         \
+        }                                                                      \
+        DEBUG_TRACEPOINT("setting processinfo parameters");                    \
+        processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax; \
+        processinfo->triggerstreamID = -2;                                     \
+        processinfo->triggermode     = CLIcmddata.cmdsettings->triggermode;    \
+        strcpy(processinfo->triggerstreamname,                                 \
+               CLIcmddata.cmdsettings->triggerstreamname);                     \
+        processinfo->triggerdelay   = CLIcmddata.cmdsettings->triggerdelay;    \
+        processinfo->triggertimeout = CLIcmddata.cmdsettings->triggertimeout;  \
+        processinfo->triggerstreamID =                                         \
+            image_ID(processinfo->triggerstreamname);                          \
+        DEBUG_TRACEPOINT("triggerstreamID = %ld",                              \
+                         processinfo->triggerstreamID);                        \
+        FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(                  \
+            processinfo,                                                       \
+            processinfo->triggerstreamID,                                      \
+            CLIcmddata.cmdsettings->triggermode,                               \
+            CLIcmddata.cmdsettings->semindexrequested));                       \
+        DEBUG_TRACEPOINT("setting RT priority to %d",                          \
+                         CLIcmddata.cmdsettings->RT_priority);                 \
+        processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;        \
+        processinfo->CPUmask     = CLIcmddata.cmdsettings->CPUmask;            \
+        processinfo->MeasureTiming =                                           \
+            CLIcmddata.cmdsettings->procinfo_MeasureTiming;                    \
+        DEBUG_TRACEPOINT("loopstart");                                         \
+        processinfo_loopstart(processinfo);                                    \
+    }
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                              \
     while (processloopOK == 1)                                                 \
+    {                                                                          \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
         {                                                                      \
-            if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)           \
-                {                                                              \
-                    DEBUG_TRACEPOINT("loopstep");                              \
-                    processloopOK = processinfo_loopstep(processinfo);         \
-                    DEBUG_TRACEPOINT("waitoninputstream");                     \
-                    processinfo_waitoninputstream(processinfo);                \
-                    DEBUG_TRACEPOINT("exec_start");                            \
-                    processinfo_exec_start(processinfo);                       \
-                }                                                              \
-            else                                                               \
-                {                                                              \
-                    processloopOK = 0;                                         \
-                }                                                              \
-            int processcompstatus = 1;                                         \
-            if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)           \
-                {                                                              \
-                    processcompstatus =                                        \
-                        processinfo_compute_status(processinfo);               \
-                }                                                              \
-            if (processcompstatus == 1)                                        \
-                {
+            DEBUG_TRACEPOINT("loopstep");                                      \
+            processloopOK = processinfo_loopstep(processinfo);                 \
+            DEBUG_TRACEPOINT("waitoninputstream");                             \
+            processinfo_waitoninputstream(processinfo);                        \
+            DEBUG_TRACEPOINT("exec_start");                                    \
+            processinfo_exec_start(processinfo);                               \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            processloopOK = 0;                                                 \
+        }                                                                      \
+        int processcompstatus = 1;                                             \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
+        {                                                                      \
+            processcompstatus = processinfo_compute_status(processinfo);       \
+        }                                                                      \
+        if (processcompstatus == 1)                                            \
+        {
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START                                  \
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                       \
@@ -346,14 +341,14 @@ typedef struct
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                    \
     }                                                                          \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
-        {                                                                      \
-            processinfo_exec_end(processinfo);                                 \
-        }                                                                      \
+    {                                                                          \
+        processinfo_exec_end(processinfo);                                     \
+    }                                                                          \
     }                                                                          \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
-        {                                                                      \
-            processinfo_cleanExit(processinfo);                                \
-        }
+    {                                                                          \
+        processinfo_cleanExit(processinfo);                                    \
+    }
 
 /** @brief FPS run function
  *
@@ -405,33 +400,33 @@ typedef struct
     static errno_t CLIfunction(void)                                           \
     {                                                                          \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_FPS)                    \
+        {                                                                      \
+            function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);        \
+            if (data.FPS_CMDCODE != 0)                                         \
             {                                                                  \
-                function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);    \
-                if (data.FPS_CMDCODE != 0)                                     \
-                    {                                                          \
-                        data.FPS_CONFfunc = FPSCONFfunction;                   \
-                        data.FPS_RUNfunc  = FPSRUNfunction;                    \
-                        function_parameter_execFPScmd();                       \
-                        return RETURN_SUCCESS;                                 \
-                    }                                                          \
+                data.FPS_CONFfunc = FPSCONFfunction;                           \
+                data.FPS_RUNfunc  = FPSRUNfunction;                            \
+                function_parameter_execFPScmd();                               \
+                return RETURN_SUCCESS;                                         \
             }                                                                  \
+        }                                                                      \
                                                                                \
         errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);           \
         if (retval == RETURN_CLICHECKARGARRAY_SUCCESS)                         \
-            {                                                                  \
-                data.fpsptr = NULL;                                            \
-                STD_FARG_LINKfunction return compute_function();               \
-            }                                                                  \
+        {                                                                      \
+            data.fpsptr = NULL;                                                \
+            STD_FARG_LINKfunction return compute_function();                   \
+        }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_HELP)                            \
-            {                                                                  \
-                help_function();                                               \
-                printf("\n");                                                  \
-                return RETURN_SUCCESS;                                         \
-            }                                                                  \
+        {                                                                      \
+            help_function();                                                   \
+            printf("\n");                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)                    \
-            {                                                                  \
-                return RETURN_SUCCESS;                                         \
-            }                                                                  \
+        {                                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
                                                                                \
         return retval;                                                         \
     }
@@ -443,9 +438,9 @@ typedef struct
 #define INSERT_STD_CLIREGISTERFUNC                                             \
     {                                                                          \
         if (getenv("MILK_FPSPROCINFO"))                                        \
-            {                                                                  \
-                CLIcmddata.flags |= CLICMDFLAG_PROCINFO;                       \
-            }                                                                  \
+        {                                                                      \
+            CLIcmddata.flags |= CLICMDFLAG_PROCINFO;                           \
+        }                                                                      \
         int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);      \
         CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;                  \
     }
@@ -483,87 +478,87 @@ static inline IMGID makeIMGID(CONST_WORD name)
     strcpy(namestring, name);
     pch = strtok(namestring, ">");
     while (pch != NULL)
+    {
+        pch1 = pch;
+        //printf("[%2d] %s\n", nbword, pch);
+
+        if (strcmp(pch, "s") == 0)
         {
-            pch1 = pch;
-            //printf("[%2d] %s\n", nbword, pch);
-
-            if (strcmp(pch, "s") == 0)
-                {
-                    printf("    shared memory\n");
-                    img.shared = 1;
-                }
-
-            if (strcmp(pch, "tui8") == 0)
-                {
-                    printf("    data type unsigned 8-bit int\n");
-                    img.datatype = _DATATYPE_UINT8;
-                }
-            if (strcmp(pch, "tsi8") == 0)
-                {
-                    printf("    data type signed 8-bit int\n");
-                    img.datatype = _DATATYPE_INT8;
-                }
-            if (strcmp(pch, "tui16") == 0)
-                {
-                    printf("    data type unsigned 16-bit int\n");
-                    img.datatype = _DATATYPE_UINT16;
-                }
-            if (strcmp(pch, "tsi16") == 0)
-                {
-                    printf("    data type signed 16-bit int\n");
-                    img.datatype = _DATATYPE_INT16;
-                }
-            if (strcmp(pch, "tui32") == 0)
-                {
-                    printf("    data type unsigned 32-bit int\n");
-                    img.datatype = _DATATYPE_UINT32;
-                }
-            if (strcmp(pch, "tsi32") == 0)
-                {
-                    printf("    data type signed 32-bit int\n");
-                    img.datatype = _DATATYPE_INT32;
-                }
-            if (strcmp(pch, "tui64") == 0)
-                {
-                    printf("    data type unsigned 64-bit int\n");
-                    img.datatype = _DATATYPE_UINT64;
-                }
-            if (strcmp(pch, "tsi64") == 0)
-                {
-                    printf("    data type signed 64-bit int\n");
-                    img.datatype = _DATATYPE_INT64;
-                }
-
-            if (strcmp(pch, "tf32") == 0)
-                {
-                    printf("    data type double (32)\n");
-                    img.datatype = _DATATYPE_FLOAT;
-                }
-            if (strcmp(pch, "tf64") == 0)
-                {
-                    printf("    data type float (64)\n");
-                    img.datatype = _DATATYPE_DOUBLE;
-                }
-
-            if (pch[0] == 'k')
-                {
-                    int nbkw;
-                    sscanf(pch, "k%d", &nbkw);
-                    printf("    %d keywords\n", nbkw);
-                    img.NBkw = nbkw;
-                }
-
-            if (pch[0] == 'c')
-                {
-                    int cbsize;
-                    sscanf(pch, "c%d", &cbsize);
-                    printf("    %d circular buffer size\n", cbsize);
-                    img.CBsize = cbsize;
-                }
-
-            pch = strtok(NULL, ">");
-            nbword++;
+            printf("    shared memory\n");
+            img.shared = 1;
         }
+
+        if (strcmp(pch, "tui8") == 0)
+        {
+            printf("    data type unsigned 8-bit int\n");
+            img.datatype = _DATATYPE_UINT8;
+        }
+        if (strcmp(pch, "tsi8") == 0)
+        {
+            printf("    data type signed 8-bit int\n");
+            img.datatype = _DATATYPE_INT8;
+        }
+        if (strcmp(pch, "tui16") == 0)
+        {
+            printf("    data type unsigned 16-bit int\n");
+            img.datatype = _DATATYPE_UINT16;
+        }
+        if (strcmp(pch, "tsi16") == 0)
+        {
+            printf("    data type signed 16-bit int\n");
+            img.datatype = _DATATYPE_INT16;
+        }
+        if (strcmp(pch, "tui32") == 0)
+        {
+            printf("    data type unsigned 32-bit int\n");
+            img.datatype = _DATATYPE_UINT32;
+        }
+        if (strcmp(pch, "tsi32") == 0)
+        {
+            printf("    data type signed 32-bit int\n");
+            img.datatype = _DATATYPE_INT32;
+        }
+        if (strcmp(pch, "tui64") == 0)
+        {
+            printf("    data type unsigned 64-bit int\n");
+            img.datatype = _DATATYPE_UINT64;
+        }
+        if (strcmp(pch, "tsi64") == 0)
+        {
+            printf("    data type signed 64-bit int\n");
+            img.datatype = _DATATYPE_INT64;
+        }
+
+        if (strcmp(pch, "tf32") == 0)
+        {
+            printf("    data type double (32)\n");
+            img.datatype = _DATATYPE_FLOAT;
+        }
+        if (strcmp(pch, "tf64") == 0)
+        {
+            printf("    data type float (64)\n");
+            img.datatype = _DATATYPE_DOUBLE;
+        }
+
+        if (pch[0] == 'k')
+        {
+            int nbkw;
+            sscanf(pch, "k%d", &nbkw);
+            printf("    %d keywords\n", nbkw);
+            img.NBkw = nbkw;
+        }
+
+        if (pch[0] == 'c')
+        {
+            int cbsize;
+            sscanf(pch, "c%d", &cbsize);
+            printf("    %d circular buffer size\n", cbsize);
+            img.CBsize = cbsize;
+        }
+
+        pch = strtok(NULL, ">");
+        nbword++;
+    }
 
     img.ID        = -1;
     img.createcnt = -1;
@@ -603,37 +598,37 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
                                             IMGID *source_img)
 {
     if (target_img->ID == -1)
+    {
+        if (target_img != source_img)
         {
-            if (target_img != source_img)
-                {
-                    printf("Creating image %s from %s, shared = %d, kw = %d\n",
-                           target_img->name,
-                           source_img->name,
-                           source_img->shared,
-                           source_img->NBkw);
-                }
-            else
-                {
-                    printf("Creating image %s, shared = %d, kw = %d\n",
-                           source_img->name,
-                           source_img->shared,
-                           source_img->NBkw);
-                }
-
-            DEBUG_TRACEPOINT("Creating 2D image");
-            create_image_ID(target_img->name,
-                            source_img->naxis,
-                            source_img->size,
-                            source_img->datatype,
-                            source_img->shared,
-                            source_img->NBkw,
-                            source_img->CBsize,
-                            &target_img->ID);
-            DEBUG_TRACEPOINT(" ");
-            target_img->im        = &data.image[target_img->ID];
-            target_img->md        = &data.image[target_img->ID].md[0];
-            target_img->createcnt = data.image[target_img->ID].createcnt;
+            printf("Creating image %s from %s, shared = %d, kw = %d\n",
+                   target_img->name,
+                   source_img->name,
+                   source_img->shared,
+                   source_img->NBkw);
         }
+        else
+        {
+            printf("Creating image %s, shared = %d, kw = %d\n",
+                   source_img->name,
+                   source_img->shared,
+                   source_img->NBkw);
+        }
+
+        DEBUG_TRACEPOINT("Creating 2D image");
+        create_image_ID(target_img->name,
+                        source_img->naxis,
+                        source_img->size,
+                        source_img->datatype,
+                        source_img->shared,
+                        source_img->NBkw,
+                        source_img->CBsize,
+                        &target_img->ID);
+        DEBUG_TRACEPOINT(" ");
+        target_img->im        = &data.image[target_img->ID];
+        target_img->md        = &data.image[target_img->ID].md[0];
+        target_img->createcnt = data.image[target_img->ID].createcnt;
+    }
     return target_img->ID;
 }
 
@@ -650,9 +645,9 @@ static inline errno_t updateIMGIDcreationparams(IMGID *img)
     img->datatype = img->md->datatype;
     img->naxis    = img->md->naxis;
     for (int ii = 0; ii < 3; ++ii)
-        {
-            img->size[ii] = img->md->size[ii];
-        }
+    {
+        img->size[ii] = img->md->size[ii];
+    }
     img->shared = img->md->shared;
     img->NBkw   = img->md->NBkw;
     img->CBsize = img->md->CBsize;
@@ -681,43 +676,42 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
     // Not resolved before OR create counter mismatch OR not used
     if (img->ID == -1 || (img->createcnt != data.image[img->ID].createcnt) ||
         (data.image[img->ID].used != 1))
+    {
+        img->ID = image_ID(img->name);
+        if (img->ID > -1) // Resolve success !
         {
-            img->ID = image_ID(img->name);
-            if (img->ID > -1) // Resolve success !
-                {
-                    img->im        = &data.image[img->ID];
-                    img->md        = &data.image[img->ID].md[0];
-                    img->createcnt = data.image[img->ID].createcnt;
-                    // Populate the IMGID from the imageID metadata
-                    updateIMGIDcreationparams(img);
-                }
+            img->im        = &data.image[img->ID];
+            img->md        = &data.image[img->ID].md[0];
+            img->createcnt = data.image[img->ID].createcnt;
+            // Populate the IMGID from the imageID metadata
+            updateIMGIDcreationparams(img);
         }
+    }
 
     if (img->ID == -1)
+    {
+        if ((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            if ((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
-                {
-                    printf("ERROR: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
-                           (char) 27,
-                           1,
-                           31,
-                           img->name,
-                           (char) 27,
-                           0);
-                    abort();
-                }
-            else if (ERRMODE == ERRMODE_WARN)
-                {
-                    printf(
-                        "WARNING: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
-                        (char) 27,
-                        1,
-                        35,
-                        img->name,
-                        (char) 27,
-                        0);
-                }
+            printf("ERROR: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
+                   (char) 27,
+                   1,
+                   31,
+                   img->name,
+                   (char) 27,
+                   0);
+            abort();
         }
+        else if (ERRMODE == ERRMODE_WARN)
+        {
+            printf("WARNING: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
+                   (char) 27,
+                   1,
+                   35,
+                   img->name,
+                   (char) 27,
+                   0);
+        }
+    }
 
     return img->ID;
 }

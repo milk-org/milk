@@ -42,46 +42,45 @@ imageID read_sharedmem_image(const char *sname)
     IMAGE  *image;
 
     if (strlen(sname) != 0)
+    {
+        DEBUG_TRACEPOINT("looking for next ID");
+        IDmem = next_avail_image_ID();
+        DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
+
+        image = &data.image[IDmem];
+
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
+            IMAGESTREAMIO_SUCCESS)
         {
-            DEBUG_TRACEPOINT("looking for next ID");
-            IDmem = next_avail_image_ID();
-            DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
-
-            image = &data.image[IDmem];
-
-            if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
-                IMAGESTREAMIO_SUCCESS)
-                {
-                    printf("read shared mem image failed -> ID = -1\n");
-                    fflush(stdout);
-                    ID = -1;
-                }
-            else
-                {
-                    IMGID img = makeIMGID(sname);
-                    //DEBUG_TRACEPOINT("resolving image");
-                    //ID = resolveIMGID(&img, ERRMODE_ABORT);
-                    img.ID = IDmem;
-
-                    //ID = image_ID(sname);
-                    printf("read shared mem image success -> ID = %ld\n",
-                           img.ID);
-                    ID = img.ID;
-                    fflush(stdout);
-
-                    image_keywords_list(img);
-                }
-
-            if (data.MEM_MONITOR == 1)
-                {
-                    list_image_ID_ncurses();
-                }
-            return ID;
+            printf("read shared mem image failed -> ID = -1\n");
+            fflush(stdout);
+            ID = -1;
         }
+        else
+        {
+            IMGID img = makeIMGID(sname);
+            //DEBUG_TRACEPOINT("resolving image");
+            //ID = resolveIMGID(&img, ERRMODE_ABORT);
+            img.ID = IDmem;
+
+            //ID = image_ID(sname);
+            printf("read shared mem image success -> ID = %ld\n", img.ID);
+            ID = img.ID;
+            fflush(stdout);
+
+            image_keywords_list(img);
+        }
+
+        if (data.MEM_MONITOR == 1)
+        {
+            list_image_ID_ncurses();
+        }
+        return ID;
+    }
     else
-        {
-            return -1;
-        }
+    {
+        return -1;
+    }
 }
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support

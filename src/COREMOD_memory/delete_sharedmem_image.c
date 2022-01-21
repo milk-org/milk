@@ -39,24 +39,24 @@ errno_t destroy_shared_image_ID(const char *__restrict imname)
 
     ID = image_ID(imname);
     if ((ID != -1) && (data.image[ID].md[0].shared == 1))
-        {
-            ImageStreamIO_destroyIm(&data.image[ID]);
-        }
+    {
+        ImageStreamIO_destroyIm(&data.image[ID]);
+    }
     else
-        {
-            fprintf(stderr,
-                    "%c[%d;%dm WARNING: shared image %s does not exist [ %s  "
-                    "%s  %d ] %c[%d;m\n",
-                    (char) 27,
-                    1,
-                    31,
-                    imname,
-                    __FILE__,
-                    __func__,
-                    __LINE__,
-                    (char) 27,
-                    0);
-        }
+    {
+        fprintf(stderr,
+                "%c[%d;%dm WARNING: shared image %s does not exist [ %s  "
+                "%s  %d ] %c[%d;m\n",
+                (char) 27,
+                1,
+                31,
+                imname,
+                __FILE__,
+                __func__,
+                __LINE__,
+                (char) 27,
+                0);
+    }
 
     return RETURN_SUCCESS;
 }

@@ -11,10 +11,10 @@ errno_t delete_variable_ID(const char *varname)
 
     ID = variable_ID(varname);
     if (ID != -1)
-        {
-            data.variable[ID].used = 0;
-            /*      free(data.variable[ID].name);*/
-        }
+    {
+        data.variable[ID].used = 0;
+        /*      free(data.variable[ID].name);*/
+    }
     else
         fprintf(stderr,
                 "%c[%d;%dm WARNING: variable %s does not exist [ %s  %s  %d ] "
