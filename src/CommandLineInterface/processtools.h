@@ -214,12 +214,12 @@ extern "C"
 #define PROCINFOLOOP_START                                                     \
     processinfo_loopstart(processinfo);                                        \
     while (processloopOK == 1)                                                 \
-        {                                                                      \
-            processloopOK = processinfo_loopstep(processinfo);                 \
-            processinfo_waitoninputstream(processinfo);                        \
-            processinfo_exec_start(processinfo);                               \
-            if (processinfo_compute_status(processinfo) == 1)                  \
-                {
+    {                                                                          \
+        processloopOK = processinfo_loopstep(processinfo);                     \
+        processinfo_waitoninputstream(processinfo);                            \
+        processinfo_exec_start(processinfo);                                   \
+        if (processinfo_compute_status(processinfo) == 1)                      \
+        {
 
 #define PROCINFOLOOP_END                                                       \
     }                                                                          \

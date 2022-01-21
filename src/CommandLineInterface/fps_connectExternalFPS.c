@@ -21,16 +21,16 @@ int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS,
     int pindexext;
     for (pindexext = 0; pindexext < FPS->parray[pindex].info.fps.FPSNBparamMAX;
          pindexext++)
+    {
+        if (FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE)
         {
-            if (FPSext->parray[pindexext].fpflag & FPFLAG_ACTIVE)
-                {
-                    FPS->parray[pindex].info.fps.FPSNBparamActive++;
-                }
-            if (FPSext->parray[pindexext].fpflag & FPFLAG_USED)
-                {
-                    FPS->parray[pindex].info.fps.FPSNBparamUsed++;
-                }
+            FPS->parray[pindex].info.fps.FPSNBparamActive++;
         }
+        if (FPSext->parray[pindexext].fpflag & FPFLAG_USED)
+        {
+            FPS->parray[pindex].info.fps.FPSNBparamUsed++;
+        }
+    }
 
     return 0;
 }

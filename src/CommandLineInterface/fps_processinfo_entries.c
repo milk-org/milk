@@ -201,21 +201,20 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
     DEBUG_TRACEPOINT("Checking fps pointer");
     if (fps == NULL)
-        {
-            PRINT_ERROR("Null pointer - cannot proceed\n");
-            abort();
-        }
+    {
+        PRINT_ERROR("Null pointer - cannot proceed\n");
+        abort();
+    }
 
     DEBUG_TRACEPOINT("set RT_priority if applicable");
     {
         long pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
         if (pindex > -1)
-            {
-                long RTprio =
-                    functionparameter_GetParamValue_INT64(fps,
-                                                          ".procinfo.RTprio");
-                procinfo->RT_priority = RTprio;
-            }
+        {
+            long RTprio =
+                functionparameter_GetParamValue_INT64(fps, ".procinfo.RTprio");
+            procinfo->RT_priority = RTprio;
+        }
     }
 
     DEBUG_TRACEPOINT("set loopcntMax if applicable");
@@ -223,12 +222,12 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
         long pindex =
             functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
         if (pindex > -1)
-            {
-                long loopcntMax = functionparameter_GetParamValue_INT64(
-                    fps,
-                    ".procinfo.loopcntMax");
-                procinfo->loopcntMax = loopcntMax;
-            }
+        {
+            long loopcntMax =
+                functionparameter_GetParamValue_INT64(fps,
+                                                      ".procinfo.loopcntMax");
+            procinfo->loopcntMax = loopcntMax;
+        }
     }
 
     DEBUG_TRACEPOINT("set triggermode if applicable");
@@ -237,13 +236,13 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
         long pindex =
             functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
         if (pindex > -1)
-            {
-                long triggermode = functionparameter_GetParamValue_INT64(
-                    fps,
-                    ".procinfo.triggermode");
-                procinfo->triggermode = triggermode;
-                printf(">>>>>>>>>>>>> SET TRIGGERMODE = %ld\n", triggermode);
-            }
+        {
+            long triggermode =
+                functionparameter_GetParamValue_INT64(fps,
+                                                      ".procinfo.triggermode");
+            procinfo->triggermode = triggermode;
+            printf(">>>>>>>>>>>>> SET TRIGGERMODE = %ld\n", triggermode);
+        }
     }
 
     DEBUG_TRACE_FEXIT();

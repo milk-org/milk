@@ -26,9 +26,9 @@ int64_t *functionparameter_GetParamPtr_generic(FUNCTION_PARAMETER_STRUCT *fps,
     ptr = &fps->parray[fpsi].val.i64[0];
 
     if (paramindex != NULL)
-        {
-            *paramindex = fpsi;
-        }
+    {
+        *paramindex = fpsi;
+    }
 
     return ptr;
 }
@@ -80,13 +80,13 @@ errno_t function_parameter_SetValue_int64(char *keywordfull, int64_t val)
     keywordlevel = 0;
     pch          = strtok(tmpstring, ".");
     while (pch != NULL)
-        {
-            strncpy(keyword[keywordlevel],
-                    pch,
-                    FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
-            keywordlevel++;
-            pch = strtok(NULL, ".");
-        }
+    {
+        strncpy(keyword[keywordlevel],
+                pch,
+                FUNCTION_PARAMETER_KEYWORD_STRMAXLEN - 1);
+        keywordlevel++;
+        pch = strtok(NULL, ".");
+    }
 
     function_parameter_struct_connect(keyword[9], &fps, FPSCONNECT_SIMPLE);
 
@@ -351,13 +351,13 @@ int functionparameter_GetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
 
     if (fps->parray[fpsi].fpflag & FPFLAG_ONOFF)
-        {
-            return 1;
-        }
+    {
+        return 1;
+    }
     else
-        {
-            return 0;
-        }
+    {
+        return 0;
+    }
 }
 
 int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
@@ -367,15 +367,15 @@ int functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
     int fpsi = functionparameter_GetParamIndex(fps, paramname);
 
     if (ONOFFvalue == 1)
-        {
-            fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
-            fps->parray[fpsi].val.i64[0] = 1;
-        }
+    {
+        fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
+        fps->parray[fpsi].val.i64[0] = 1;
+    }
     else
-        {
-            fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
-            fps->parray[fpsi].val.i64[0] = 0;
-        }
+    {
+        fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
+        fps->parray[fpsi].val.i64[0] = 0;
+    }
 
     fps->parray[fpsi].cnt0++;
 

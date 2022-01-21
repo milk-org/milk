@@ -70,58 +70,58 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     imageID         ID = -1;
 
     if ((ID = image_ID(name)) == -1)
+    {
+        WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", data.shmdir, name);
+
+        SM_fd = open(SM_fname, O_RDWR);
+        if (SM_fd == -1)
         {
-            WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", data.shmdir, name);
-
-            SM_fd = open(SM_fname, O_RDWR);
-            if (SM_fd == -1)
-                {
-                    printf("Cannot import file - continuing\n");
-                }
-            else
-                {
-                    fstat(SM_fd, &file_stat);
-                    //        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-                    map = (IMAGE_METADATA *) mmap(0,
-                                                  sizeof(IMAGE_METADATA),
-                                                  PROT_READ | PROT_WRITE,
-                                                  MAP_SHARED,
-                                                  SM_fd,
-                                                  0);
-                    if (map == MAP_FAILED)
-                        {
-                            close(SM_fd);
-                            perror("Error mmapping the file");
-                            exit(0);
-                        }
-
-                    fp = fopen(fname, "w");
-                    for (i = 0; i < map[0].naxis; i++)
-                        {
-                            fprintf(fp, "%ld ", (long) map[0].size[i]);
-                        }
-                    fprintf(fp, "\n");
-                    fclose(fp);
-
-                    if (munmap(map, sizeof(IMAGE_METADATA)) == -1)
-                        {
-                            printf("unmapping %s\n", SM_fname);
-                            perror("Error un-mmapping the file");
-                        }
-                    close(SM_fd);
-                }
+            printf("Cannot import file - continuing\n");
         }
-    else
+        else
         {
+            fstat(SM_fd, &file_stat);
+            //        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
+
+            map = (IMAGE_METADATA *) mmap(0,
+                                          sizeof(IMAGE_METADATA),
+                                          PROT_READ | PROT_WRITE,
+                                          MAP_SHARED,
+                                          SM_fd,
+                                          0);
+            if (map == MAP_FAILED)
+            {
+                close(SM_fd);
+                perror("Error mmapping the file");
+                exit(0);
+            }
+
             fp = fopen(fname, "w");
-            for (i = 0; i < data.image[ID].md[0].naxis; i++)
-                {
-                    fprintf(fp, "%ld ", (long) data.image[ID].md[0].size[i]);
-                }
+            for (i = 0; i < map[0].naxis; i++)
+            {
+                fprintf(fp, "%ld ", (long) map[0].size[i]);
+            }
             fprintf(fp, "\n");
             fclose(fp);
+
+            if (munmap(map, sizeof(IMAGE_METADATA)) == -1)
+            {
+                printf("unmapping %s\n", SM_fname);
+                perror("Error un-mmapping the file");
+            }
+            close(SM_fd);
         }
+    }
+    else
+    {
+        fp = fopen(fname, "w");
+        for (i = 0; i < data.image[ID].md[0].naxis; i++)
+        {
+            fprintf(fp, "%ld ", (long) data.image[ID].md[0].size[i]);
+        }
+        fprintf(fp, "\n");
+        fclose(fp);
+    }
 
     return ID;
 }

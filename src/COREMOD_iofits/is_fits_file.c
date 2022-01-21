@@ -17,14 +17,14 @@ int is_fits_file(const char *restrict file_name)
                         file_name,
                         READONLY,
                         &COREMOD_iofits_data.FITSIO_status))
-        {
-            fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
-            value = 1;
-        }
+    {
+        fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
+        value = 1;
+    }
     if (check_FITSIO_status(__FILE__, __func__, __LINE__, 1) == 1)
-        {
-            PRINT_ERROR("Error in function is_fits_file(%s)", file_name);
-        }
+    {
+        PRINT_ERROR("Error in function is_fits_file(%s)", file_name);
+    }
 
     return (value);
 }

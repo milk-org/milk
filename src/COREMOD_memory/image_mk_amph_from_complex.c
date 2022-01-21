@@ -56,126 +56,122 @@ errno_t mk_amph_from_complex(const char *in_name,
     uint8_t naxis = data.image[IDin].md[0].naxis;
 
     for (uint8_t i = 0; i < naxis; i++)
-        {
-            naxes[i] = data.image[IDin].md[0].size[i];
-        }
+    {
+        naxes[i] = data.image[IDin].md[0].size[i];
+    }
     uint64_t nelement = data.image[IDin].md[0].nelement;
 
     if (datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
-        {
-            FUNC_CHECK_RETURN(create_image_ID(am_name,
-                                              naxis,
-                                              naxes,
-                                              _DATATYPE_FLOAT,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDam));
+    {
+        FUNC_CHECK_RETURN(create_image_ID(am_name,
+                                          naxis,
+                                          naxes,
+                                          _DATATYPE_FLOAT,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDam));
 
-            FUNC_CHECK_RETURN(create_image_ID(ph_name,
-                                              naxis,
-                                              naxes,
-                                              _DATATYPE_FLOAT,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDph));
+        FUNC_CHECK_RETURN(create_image_ID(ph_name,
+                                          naxis,
+                                          naxes,
+                                          _DATATYPE_FLOAT,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDph));
 
-            data.image[IDam].md[0].write = 1;
-            data.image[IDph].md[0].write = 1;
+        data.image[IDam].md[0].write = 1;
+        data.image[IDph].md[0].write = 1;
 #ifdef _OPENMP
 #pragma omp parallel if (nelement >                                            \
                          OMP_NELEMENT_LIMIT) private(ii, amp_f, pha_f)
-            {
+        {
 #pragma omp for
 #endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                    {
-                        float amp_f =
-                            (float) sqrt(data.image[IDin].array.CF[ii].re *
-                                             data.image[IDin].array.CF[ii].re +
-                                         data.image[IDin].array.CF[ii].im *
-                                             data.image[IDin].array.CF[ii].im);
-                        float pha_f =
-                            (float) atan2(data.image[IDin].array.CF[ii].im,
-                                          data.image[IDin].array.CF[ii].re);
-                        data.image[IDam].array.F[ii] = amp_f;
-                        data.image[IDph].array.F[ii] = pha_f;
-                    }
-#ifdef _OPENMP
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                float amp_f =
+                    (float) sqrt(data.image[IDin].array.CF[ii].re *
+                                     data.image[IDin].array.CF[ii].re +
+                                 data.image[IDin].array.CF[ii].im *
+                                     data.image[IDin].array.CF[ii].im);
+                float pha_f = (float) atan2(data.image[IDin].array.CF[ii].im,
+                                            data.image[IDin].array.CF[ii].re);
+                data.image[IDam].array.F[ii] = amp_f;
+                data.image[IDph].array.F[ii] = pha_f;
             }
-#endif
-            if (sharedmem == 1)
-                {
-                    FUNC_CHECK_RETURN(
-                        COREMOD_MEMORY_image_set_sempost_byID(IDam, -1));
-
-                    FUNC_CHECK_RETURN(
-                        COREMOD_MEMORY_image_set_sempost_byID(IDph, -1));
-                }
-            data.image[IDam].md[0].cnt0++;
-            data.image[IDph].md[0].cnt0++;
-            data.image[IDam].md[0].write = 0;
-            data.image[IDph].md[0].write = 0;
+#ifdef _OPENMP
         }
-    else if (datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
+#endif
+        if (sharedmem == 1)
         {
-            FUNC_CHECK_RETURN(create_image_ID(am_name,
-                                              naxis,
-                                              naxes,
-                                              _DATATYPE_DOUBLE,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDam));
+            FUNC_CHECK_RETURN(COREMOD_MEMORY_image_set_sempost_byID(IDam, -1));
 
-            FUNC_CHECK_RETURN(create_image_ID(ph_name,
-                                              naxis,
-                                              naxes,
-                                              _DATATYPE_DOUBLE,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDph));
+            FUNC_CHECK_RETURN(COREMOD_MEMORY_image_set_sempost_byID(IDph, -1));
+        }
+        data.image[IDam].md[0].cnt0++;
+        data.image[IDph].md[0].cnt0++;
+        data.image[IDam].md[0].write = 0;
+        data.image[IDph].md[0].write = 0;
+    }
+    else if (datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
+    {
+        FUNC_CHECK_RETURN(create_image_ID(am_name,
+                                          naxis,
+                                          naxes,
+                                          _DATATYPE_DOUBLE,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDam));
 
-            data.image[IDam].md[0].write = 1;
-            data.image[IDph].md[0].write = 1;
+        FUNC_CHECK_RETURN(create_image_ID(ph_name,
+                                          naxis,
+                                          naxes,
+                                          _DATATYPE_DOUBLE,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDph));
+
+        data.image[IDam].md[0].write = 1;
+        data.image[IDph].md[0].write = 1;
 #ifdef _OPENMP
 #pragma omp parallel if (nelement >                                            \
                          OMP_NELEMENT_LIMIT) private(ii, amp_d, pha_d)
-            {
+        {
 #pragma omp for
 #endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                    {
-                        double amp_d =
-                            sqrt(data.image[IDin].array.CD[ii].re *
-                                     data.image[IDin].array.CD[ii].re +
-                                 data.image[IDin].array.CD[ii].im *
-                                     data.image[IDin].array.CD[ii].im);
-                        double pha_d = atan2(data.image[IDin].array.CD[ii].im,
-                                             data.image[IDin].array.CD[ii].re);
-                        data.image[IDam].array.D[ii] = amp_d;
-                        data.image[IDph].array.D[ii] = pha_d;
-                    }
-#ifdef _OPENMP
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                double amp_d = sqrt(data.image[IDin].array.CD[ii].re *
+                                        data.image[IDin].array.CD[ii].re +
+                                    data.image[IDin].array.CD[ii].im *
+                                        data.image[IDin].array.CD[ii].im);
+                double pha_d = atan2(data.image[IDin].array.CD[ii].im,
+                                     data.image[IDin].array.CD[ii].re);
+                data.image[IDam].array.D[ii] = amp_d;
+                data.image[IDph].array.D[ii] = pha_d;
             }
+#ifdef _OPENMP
+        }
 #endif
-            if (sharedmem == 1)
-                {
-                    COREMOD_MEMORY_image_set_sempost_byID(IDam, -1);
-                    COREMOD_MEMORY_image_set_sempost_byID(IDph, -1);
-                }
-            data.image[IDam].md[0].cnt0++;
-            data.image[IDph].md[0].cnt0++;
-            data.image[IDam].md[0].write = 0;
-            data.image[IDph].md[0].write = 0;
-        }
-    else
+        if (sharedmem == 1)
         {
-            PRINT_ERROR("Wrong image type(s)\n");
-            exit(0);
+            COREMOD_MEMORY_image_set_sempost_byID(IDam, -1);
+            COREMOD_MEMORY_image_set_sempost_byID(IDph, -1);
         }
+        data.image[IDam].md[0].cnt0++;
+        data.image[IDph].md[0].cnt0++;
+        data.image[IDam].md[0].write = 0;
+        data.image[IDph].md[0].write = 0;
+    }
+    else
+    {
+        PRINT_ERROR("Wrong image type(s)\n");
+        exit(0);
+    }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

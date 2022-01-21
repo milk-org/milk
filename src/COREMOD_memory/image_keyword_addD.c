@@ -45,23 +45,23 @@ errno_t image_keyword_addD(IMGID img, char *kwname, double kwval, char *comment)
 
     int kw = 0;
     while ((img.im->kw[kw].type != 'N') && (kw < NBkw))
-        {
-            kw++;
-        }
+    {
+        kw++;
+    }
     int kw0 = kw;
 
     if (kw0 == NBkw)
-        {
-            printf("ERROR: no available keyword entry\n");
-            abort();
-        }
+    {
+        printf("ERROR: no available keyword entry\n");
+        abort();
+    }
     else
-        {
-            strcpy(img.im->kw[kw].name, kwname);
-            img.im->kw[kw].type       = 'D';
-            img.im->kw[kw].value.numf = kwval;
-            strcpy(img.im->kw[kw].comment, comment);
-        }
+    {
+        strcpy(img.im->kw[kw].name, kwname);
+        img.im->kw[kw].type       = 'D';
+        img.im->kw[kw].value.numf = kwval;
+        strcpy(img.im->kw[kw].comment, comment);
+    }
 
     return RETURN_SUCCESS;
 }

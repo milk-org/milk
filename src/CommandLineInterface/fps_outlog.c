@@ -73,17 +73,17 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
     static char  logfname[STRINGMAXLEN_FULLFILENAME];
 
     if (LogOutOpen == 0) // file not open
-        {
-            getFPSlogfname(logfname);
+    {
+        getFPSlogfname(logfname);
 
-            fpout = fopen(logfname, "a");
-            if (fpout == NULL)
-                {
-                    printf("ERROR: cannot open file\n");
-                    exit(EXIT_FAILURE);
-                }
-            LogOutOpen = 1;
+        fpout = fopen(logfname, "a");
+        if (fpout == NULL)
+        {
+            printf("ERROR: cannot open file\n");
+            exit(EXIT_FAILURE);
         }
+        LogOutOpen = 1;
+    }
 
     // Get GMT time and create timestring
 
@@ -120,17 +120,17 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
     va_end(args);
 
     if (strcmp(keyw, "LOGFILECLOSE") == 0)
-        {
-            // Normal exit
-            // close log file and remove it from filesystem
+    {
+        // Normal exit
+        // close log file and remove it from filesystem
 
-            if (LogOutOpen == 1)
-                {
-                    fclose(fpout);
-                    LogOutOpen = 0;
-                }
-            remove(logfname);
+        if (LogOutOpen == 1)
+        {
+            fclose(fpout);
+            LogOutOpen = 0;
         }
+        remove(logfname);
+    }
 
     return RETURN_SUCCESS;
 }
@@ -155,17 +155,17 @@ errno_t functionparameter_outlog_namelink()
                        data.FPS_PROCESS_TYPE);
 
     if (access(linkfname, F_OK) == 0) // link already exists, remove
-        {
-            printf("outlog file %s exists -> updating symlink\n", linkfname);
-            remove(linkfname);
-        }
+    {
+        printf("outlog file %s exists -> updating symlink\n", linkfname);
+        remove(linkfname);
+    }
 
     if (symlink(logfname, linkfname) == -1)
-        {
-            int errnum = errno;
-            fprintf(stderr, "Error symlink: %s\n", strerror(errnum));
-            PRINT_ERROR("symlink error %s %s", logfname, linkfname);
-        }
+    {
+        int errnum = errno;
+        fprintf(stderr, "Error symlink: %s\n", strerror(errnum));
+        PRINT_ERROR("symlink error %s %s", logfname, linkfname);
+    }
 
     return RETURN_SUCCESS;
 }

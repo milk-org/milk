@@ -53,20 +53,20 @@ static errno_t milk_module_example__create_image_with_value__cli()
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_FLOAT) ==
         0)
-        {
-            // If arguments meet requirements, command is executed
-            //
-            milk_module_example__create_image_with_value(
-                data.cmdargtoken[1].val.string,
-                data.cmdargtoken[2].val.numf);
+    {
+        // If arguments meet requirements, command is executed
+        //
+        milk_module_example__create_image_with_value(
+            data.cmdargtoken[1].val.string,
+            data.cmdargtoken[2].val.numf);
 
-            return CLICMD_SUCCESS;
-        }
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            // If arguments do not pass test, errror code returned
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        // If arguments do not pass test, errror code returned
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================
@@ -110,9 +110,9 @@ milk_module_example__create_image_with_value(const char *restrict imname,
 
     // set each pixel to value
     for (uint64_t ii = 0; ii < xysize; ii++)
-        {
-            data.image[ID].array.F[ii] = value;
-        }
+    {
+        data.image[ID].array.F[ii] = value;
+    }
 
     return RETURN_SUCCESS;
 }

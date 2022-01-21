@@ -111,92 +111,90 @@ errno_t load_fits(const char *restrict file_name,
         int fileOK = 0;
         int NBtry  = 3;
         for (int tr = 0; tr < NBtry; tr++)
+        {
+            if (fileOK == 0)
             {
-                if (fileOK == 0)
+                int status = 0;
+                fits_open_file(&fptr, file_name, READONLY, &status);
+
+                if (status != 0)
+                {
+                    if (errmode > 0)
                     {
-                        int status = 0;
-                        fits_open_file(&fptr, file_name, READONLY, &status);
 
-                        if (status != 0)
-                            {
-                                if (errmode > 0)
-                                    {
-
-                                        printf("attempt # %d failed\n", tr);
-                                    }
-
-                                //void fits_get_errstatus(int status, char *err_text)
-                                if (status != 0)
-                                    {
-                                        if (errmode > 1)
-                                            {
-                                                if (tr == NBtry - 1)
-                                                    {
-                                                        FITSIO_CHECK_ERROR(
-                                                            status,
-                                                            errmode,
-                                                            "can't load %s "
-                                                            "(tried %d times)",
-                                                            file_name,
-                                                            NBtry);
-                                                    }
-                                            }
-                                        if (tr !=
-                                            NBtry - 1) // don't wait on last try
-                                            {
-                                                usleep(10000);
-                                            }
-                                    }
-
-                                ID = -1;
-                            }
-                        else
-                            {
-                                fileOK = 1;
-                            }
+                        printf("attempt # %d failed\n", tr);
                     }
+
+                    //void fits_get_errstatus(int status, char *err_text)
+                    if (status != 0)
+                    {
+                        if (errmode > 1)
+                        {
+                            if (tr == NBtry - 1)
+                            {
+                                FITSIO_CHECK_ERROR(status,
+                                                   errmode,
+                                                   "can't load %s "
+                                                   "(tried %d times)",
+                                                   file_name,
+                                                   NBtry);
+                            }
+                        }
+                        if (tr != NBtry - 1) // don't wait on last try
+                        {
+                            usleep(10000);
+                        }
+                    }
+
+                    ID = -1;
+                }
+                else
+                {
+                    fileOK = 1;
+                }
             }
+        }
         printf("fileOK = %d\n", fileOK);
 
         if (fileOK == 0)
+        {
+            // if image not loaded, set output identifier to -1
+            if (IDout != NULL)
             {
-                // if image not loaded, set output identifier to -1
-                if (IDout != NULL)
-                    {
-                        *IDout = -1;
-                    }
-
-                if (errmode == 0)
-                    {
-                        DEBUG_TRACE_FEXIT();
-                        return RETURN_SUCCESS;
-                    }
-
-                if (errmode == 1)
-                    {
-                        PRINT_WARNING(
-                            "Image \"%s\" could not be loaded from file \"%s\"",
-                            ID_name,
-                            file_name);
-                        DEBUG_TRACE_FEXIT();
-                        return RETURN_SUCCESS;
-                    }
-
-                if (errmode == 2)
-                    {
-                        FUNC_RETURN_FAILURE(
-                            "Image \"%s\" could not be loaded from file \"%s\"",
-                            ID_name,
-                            file_name);
-                    }
-
-                if (errmode == 3)
-                    {
-                        abort();
-                    }
-                DEBUG_TRACE_FEXIT();
-                return -1;
+                *IDout = -1;
             }
+
+            if (errmode == 0)
+            {
+                DEBUG_TRACE_FEXIT();
+                return RETURN_SUCCESS;
+            }
+
+            if (errmode == 1)
+            {
+                PRINT_WARNING(
+                    "Image \"%s\" could not be loaded from file \"%s\"",
+                    ID_name,
+                    file_name);
+                DEBUG_TRACE_FEXIT();
+                return RETURN_SUCCESS;
+            }
+
+            if (errmode == 2)
+            {
+                FUNC_RETURN_FAILURE(
+                    "Image \"%s\" could not be loaded from file \"%s\"",
+                    ID_name,
+                    file_name);
+            }
+
+            if (errmode == 3)
+            {
+                abort();
+            }
+            DEBUG_TRACE_FEXIT();
+            return -1;
+        }
     }
 
     DEBUG_TRACEPOINT("File %s open", file_name);
@@ -228,24 +226,19 @@ errno_t load_fits(const char *restrict file_name,
     DEBUG_TRACEPOINT("naxis = %ld", naxis);
 
     for (long i = 0; i < naxis; i++)
-        {
-            WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
+    {
+        WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
 
-            {
-                int status = 0;
-                fits_read_key(fptr,
-                              TLONG,
-                              keyword,
-                              &naxes[i],
-                              comment,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "File %s has no NAXIS%ld",
-                                   file_name,
-                                   i);
-            }
+        {
+            int status = 0;
+            fits_read_key(fptr, TLONG, keyword, &naxes[i], comment, &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "File %s has no NAXIS%ld",
+                               file_name,
+                               i);
         }
+    }
 
     {
         int status = 0;
@@ -258,18 +251,18 @@ errno_t load_fits(const char *restrict file_name,
         int status = 0;
         fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, comment, &status);
         if (status != 0)
-            {
-                bscale = 1.0;
-            }
+        {
+            bscale = 1.0;
+        }
     }
 
     {
         int status = 0;
         fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, comment, &status);
         if (status != 0)
-            {
-                bzero = 0.0;
-            }
+        {
+            bzero = 0.0;
+        }
     }
 
     {
@@ -279,239 +272,238 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     if (1)
+    {
+        printf("[%ld", (long) naxes[0]);
+        for (long i = 1; i < naxis; i++)
         {
-            printf("[%ld", (long) naxes[0]);
-            for (long i = 1; i < naxis; i++)
-                {
-                    printf(",%ld", (long) naxes[i]);
-                }
-            printf("] %d %f %f\n", bitpix, bscale, bzero);
-            fflush(stdout);
+            printf(",%ld", (long) naxes[i]);
         }
+        printf("] %d %f %f\n", bitpix, bscale, bzero);
+        fflush(stdout);
+    }
 
     nelements = 1;
     for (long i = 0; i < naxis; i++)
-        {
-            nelements *= naxes[i];
-        }
+    {
+        nelements *= naxes[i];
+    }
 
     /* bitpix = -32  TFLOAT */
     if (bitpix == -32)
-        {
-            create_image_ID(ID_name,
-                            naxis,
-                            naxes,
-                            _DATATYPE_FLOAT,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            &ID);
+    {
+        create_image_ID(ID_name,
+                        naxis,
+                        naxes,
+                        _DATATYPE_FLOAT,
+                        data.SHARED_DFT,
+                        data.NBKEYWORD_DFT,
+                        0,
+                        &ID);
 
-            {
-                int status = 0;
-                fits_read_img(fptr,
-                              data_type_code(bitpix),
-                              fpixel,
-                              nelements,
-                              &nulval,
-                              data.image[ID].array.F,
-                              &anynul,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "fits_read_img bitpix=%d",
-                                   bitpix);
-            }
+        {
+            int status = 0;
+            fits_read_img(fptr,
+                          data_type_code(bitpix),
+                          fpixel,
+                          nelements,
+                          &nulval,
+                          data.image[ID].array.F,
+                          &anynul,
+                          &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "fits_read_img bitpix=%d",
+                               bitpix);
         }
+    }
 
     /* bitpix = -64  TDOUBLE */
     if (bitpix == -64)
-        {
-            create_image_ID(ID_name,
-                            naxis,
-                            naxes,
-                            _DATATYPE_DOUBLE,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            &ID);
+    {
+        create_image_ID(ID_name,
+                        naxis,
+                        naxes,
+                        _DATATYPE_DOUBLE,
+                        data.SHARED_DFT,
+                        data.NBKEYWORD_DFT,
+                        0,
+                        &ID);
 
-            {
-                int status = 0;
-                fits_read_img(fptr,
-                              data_type_code(bitpix),
-                              fpixel,
-                              nelements,
-                              &nulval,
-                              data.image[ID].array.D,
-                              &anynul,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "fits_read_img bitpix=%d",
-                                   bitpix);
-            }
+        {
+            int status = 0;
+            fits_read_img(fptr,
+                          data_type_code(bitpix),
+                          fpixel,
+                          nelements,
+                          &nulval,
+                          data.image[ID].array.D,
+                          &anynul,
+                          &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "fits_read_img bitpix=%d",
+                               bitpix);
         }
+    }
 
     /* bitpix = 16   TSHORT */
     if (bitpix == 16)
-        {
-            // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
-            create_image_ID(ID_name,
-                            naxis,
-                            naxes,
-                            _DATATYPE_UINT16,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            &ID);
+    {
+        // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
+        create_image_ID(ID_name,
+                        naxis,
+                        naxes,
+                        _DATATYPE_UINT16,
+                        data.SHARED_DFT,
+                        data.NBKEYWORD_DFT,
+                        0,
+                        &ID);
 
-            //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
-            {
-                int status = 0;
-                fits_read_img(fptr,
-                              20,
-                              fpixel,
-                              nelements,
-                              &nulval,
-                              data.image[ID].array.UI16,
-                              &anynul,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "fits_read_img bitpix=%d",
-                                   bitpix);
-            }
+        //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
+        {
+            int status = 0;
+            fits_read_img(fptr,
+                          20,
+                          fpixel,
+                          nelements,
+                          &nulval,
+                          data.image[ID].array.UI16,
+                          &anynul,
+                          &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "fits_read_img bitpix=%d",
+                               bitpix);
         }
+    }
 
     /* bitpix = 32   TLONG */
     if (bitpix == 32)
+    {
+        create_image_ID(ID_name,
+                        naxis,
+                        naxes,
+                        _DATATYPE_INT32,
+                        data.SHARED_DFT,
+                        data.NBKEYWORD_DFT,
+                        0,
+                        &ID);
+        larray = (long *) malloc(sizeof(long) * nelements);
+        if (larray == NULL)
         {
-            create_image_ID(ID_name,
-                            naxis,
-                            naxes,
-                            _DATATYPE_INT32,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            &ID);
-            larray = (long *) malloc(sizeof(long) * nelements);
-            if (larray == NULL)
-                {
-                    PRINT_ERROR("malloc error");
-                    exit(0);
-                }
-            {
-                int status = 0;
-                fits_read_img(fptr,
-                              data_type_code(bitpix),
-                              fpixel,
-                              nelements,
-                              &nulval,
-                              larray,
-                              &anynul,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "fits_read_img bitpix=%d",
-                                   bitpix);
-            }
-
-            bzero = 0.0;
-            for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
-                {
-                    data.image[ID].array.SI32[ii] = larray[ii] * bscale + bzero;
-                }
-            free(larray);
-            larray = NULL;
+            PRINT_ERROR("malloc error");
+            exit(0);
         }
+        {
+            int status = 0;
+            fits_read_img(fptr,
+                          data_type_code(bitpix),
+                          fpixel,
+                          nelements,
+                          &nulval,
+                          larray,
+                          &anynul,
+                          &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "fits_read_img bitpix=%d",
+                               bitpix);
+        }
+
+        bzero = 0.0;
+        for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        {
+            data.image[ID].array.SI32[ii] = larray[ii] * bscale + bzero;
+        }
+        free(larray);
+        larray = NULL;
+    }
 
     /* bitpix = 64   TLONG  */
     if (bitpix == 64)
+    {
+        create_image_ID(ID_name,
+                        naxis,
+                        naxes,
+                        _DATATYPE_INT64,
+                        data.SHARED_DFT,
+                        data.NBKEYWORD_DFT,
+                        0,
+                        &ID);
+        larray = (long *) malloc(sizeof(long) * nelements);
+        if (larray == NULL)
         {
-            create_image_ID(ID_name,
-                            naxis,
-                            naxes,
-                            _DATATYPE_INT64,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            &ID);
-            larray = (long *) malloc(sizeof(long) * nelements);
-            if (larray == NULL)
-                {
-                    PRINT_ERROR("malloc error");
-                    abort();
-                }
-
-            {
-                int status = 0;
-                fits_read_img(fptr,
-                              data_type_code(bitpix),
-                              fpixel,
-                              nelements,
-                              &nulval,
-                              larray,
-                              &anynul,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "fits_read_img bitpix=%d",
-                                   bitpix);
-            }
-
-            bzero = 0.0;
-            for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
-                {
-                    data.image[ID].array.SI64[ii] = larray[ii] * bscale + bzero;
-                }
-            free(larray);
-            larray = NULL;
+            PRINT_ERROR("malloc error");
+            abort();
         }
+
+        {
+            int status = 0;
+            fits_read_img(fptr,
+                          data_type_code(bitpix),
+                          fpixel,
+                          nelements,
+                          &nulval,
+                          larray,
+                          &anynul,
+                          &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "fits_read_img bitpix=%d",
+                               bitpix);
+        }
+
+        bzero = 0.0;
+        for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        {
+            data.image[ID].array.SI64[ii] = larray[ii] * bscale + bzero;
+        }
+        free(larray);
+        larray = NULL;
+    }
 
     /* bitpix = 8   TBYTE */
     if (bitpix == 8)
+    {
+        create_image_ID(ID_name,
+                        naxis,
+                        naxes,
+                        _DATATYPE_FLOAT,
+                        data.SHARED_DFT,
+                        data.NBKEYWORD_DFT,
+                        0,
+                        &ID);
+        barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] *
+                                          naxes[0]);
+        if (barray == NULL)
         {
-            create_image_ID(ID_name,
-                            naxis,
-                            naxes,
-                            _DATATYPE_FLOAT,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            &ID);
-            barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] *
-                                              naxes[0]);
-            if (barray == NULL)
-                {
-                    PRINT_ERROR("malloc error");
-                    exit(0);
-                }
-
-            {
-                int status = 0;
-                fits_read_img(fptr,
-                              data_type_code(bitpix),
-                              fpixel,
-                              nelements,
-                              &nulval,
-                              barray,
-                              &anynul,
-                              &status);
-                FITSIO_CHECK_ERROR(status,
-                                   errmode,
-                                   "fits_read_img bitpix=%d",
-                                   bitpix);
-            }
-
-            for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
-                {
-                    data.image[ID].array.F[ii] =
-                        (1.0 * barray[ii] * bscale + bzero);
-                }
-            free(barray);
-            barray = NULL;
+            PRINT_ERROR("malloc error");
+            exit(0);
         }
+
+        {
+            int status = 0;
+            fits_read_img(fptr,
+                          data_type_code(bitpix),
+                          fpixel,
+                          nelements,
+                          &nulval,
+                          barray,
+                          &anynul,
+                          &status);
+            FITSIO_CHECK_ERROR(status,
+                               errmode,
+                               "fits_read_img bitpix=%d",
+                               bitpix);
+        }
+
+        for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        {
+            data.image[ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
+        }
+        free(barray);
+        barray = NULL;
+    }
 
     IMGID img = makesetIMGID(ID_name, ID);
 
@@ -531,96 +523,85 @@ errno_t load_fits(const char *restrict file_name,
                              0};
     printf("%d FITS keywords detected\n", nbFITSkeys);
     for (int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
+    {
+        char keyname[9];
+        char kwvaluestr[21];
+        char kwcomment[81];
         {
-            char keyname[9];
-            char kwvaluestr[21];
-            char kwcomment[81];
+            int status = 0;
+            fits_read_keyn(fptr,
+                           kwnum + 1,
+                           keyname,
+                           kwvaluestr,
+                           kwcomment,
+                           &status);
+        }
+
+        //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
+
+        int kwignore = 0;
+        int ki       = 0;
+        while (keywordignore[ki])
+        {
+            if (strcmp(keywordignore[ki], keyname) == 0)
             {
-                int status = 0;
-                fits_read_keyn(fptr,
-                               kwnum + 1,
-                               keyname,
-                               kwvaluestr,
-                               kwcomment,
-                               &status);
+                //printf("%3d IGNORING %s\n", kwnum, keyname);
+                kwignore = 1;
+                break;
+            }
+            ki++;
+        }
+
+        if ((kwignore == 0) && (strlen(kwvaluestr) > 0))
+        {
+            int kwtypeOK = 0;
+
+            // is this a long ?
+            char *tailstr;
+            long  kwlongval = strtol(kwvaluestr, &tailstr, 10);
+            if (strlen(tailstr) == 0)
+            {
+                kwtypeOK = 1;
+                printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
+                       kwnum,
+                       keyname,
+                       kwlongval,
+                       kwcomment);
+                image_keyword_addL(img, keyname, kwlongval, kwcomment);
             }
 
-            //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
-
-            int kwignore = 0;
-            int ki       = 0;
-            while (keywordignore[ki])
+            if (kwtypeOK == 0)
+            {
+                // is this a float ?
+                double kwdoubleval = strtold(kwvaluestr, &tailstr);
+                if (strlen(tailstr) == 0)
                 {
-                    if (strcmp(keywordignore[ki], keyname) == 0)
-                        {
-                            //printf("%3d IGNORING %s\n", kwnum, keyname);
-                            kwignore = 1;
-                            break;
-                        }
-                    ki++;
+                    kwtypeOK = 1;
+                    printf("%3d FITS KEYW [D] %-8s= %20g / %s\n",
+                           kwnum,
+                           keyname,
+                           kwdoubleval,
+                           kwcomment);
+                    image_keyword_addD(img, keyname, kwdoubleval, kwcomment);
                 }
 
-            if ((kwignore == 0) && (strlen(kwvaluestr) > 0))
+                if (kwtypeOK == 0)
                 {
-                    int kwtypeOK = 0;
-
-                    // is this a long ?
-                    char *tailstr;
-                    long  kwlongval = strtol(kwvaluestr, &tailstr, 10);
-                    if (strlen(tailstr) == 0)
-                        {
-                            kwtypeOK = 1;
-                            printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
-                                   kwnum,
-                                   keyname,
-                                   kwlongval,
-                                   kwcomment);
-                            image_keyword_addL(img,
-                                               keyname,
-                                               kwlongval,
-                                               kwcomment);
-                        }
-
-                    if (kwtypeOK == 0)
-                        {
-                            // is this a float ?
-                            double kwdoubleval = strtold(kwvaluestr, &tailstr);
-                            if (strlen(tailstr) == 0)
-                                {
-                                    kwtypeOK = 1;
-                                    printf(
-                                        "%3d FITS KEYW [D] %-8s= %20g / %s\n",
-                                        kwnum,
-                                        keyname,
-                                        kwdoubleval,
-                                        kwcomment);
-                                    image_keyword_addD(img,
-                                                       keyname,
-                                                       kwdoubleval,
-                                                       kwcomment);
-                                }
-
-                            if (kwtypeOK == 0)
-                                {
-                                    // default to string
-                                    printf(
-                                        "%3d FITS KEYW [S] %-8s= %-20s / %s\n",
-                                        kwnum,
-                                        keyname,
-                                        kwvaluestr,
-                                        kwcomment);
-                                    // remove leading and trailing '
-                                    kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
-                                    char *kwvaluestr1;
-                                    kwvaluestr1 = kwvaluestr + 1;
-                                    image_keyword_addS(img,
-                                                       keyname,
-                                                       kwvaluestr1,
-                                                       kwcomment);
-                                }
-                        }
+                    // default to string
+                    printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n",
+                           kwnum,
+                           keyname,
+                           kwvaluestr,
+                           kwcomment);
+                    // remove leading and trailing '
+                    kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
+                    char *kwvaluestr1;
+                    kwvaluestr1 = kwvaluestr + 1;
+                    image_keyword_addS(img, keyname, kwvaluestr1, kwcomment);
                 }
+            }
         }
+    }
 
     {
         int status = 0;
@@ -634,9 +615,9 @@ errno_t load_fits(const char *restrict file_name,
     list_image_ID();
 
     if (IDout != NULL)
-        {
-            *IDout = ID;
-        }
+    {
+        *IDout = ID;
+    }
 
     DEBUG_TRACEPOINT("FOUT IDout %ld", ID);
 

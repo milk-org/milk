@@ -77,9 +77,9 @@ double Ppositive(double a)
 {
     double value = 0.0;
     if (a > 0.0)
-        {
-            value = (double) 1.0;
-        }
+    {
+        value = (double) 1.0;
+    }
     return (value);
 }
 
@@ -91,13 +91,13 @@ double Pfmod(double a, double b)
 double Ppow(double a, double b)
 {
     if (b > 0)
-        {
-            return ((double) pow(a, b));
-        }
+    {
+        return ((double) pow(a, b));
+    }
     else
-        {
-            return ((double) pow(a, -b));
-        }
+    {
+        return ((double) pow(a, -b));
+    }
 }
 
 double Padd(double a, double b)
@@ -133,49 +133,49 @@ double Pdiv1(double a, double b)
 double Pminv(double a, double b)
 {
     if (a < b)
-        {
-            return (a);
-        }
+    {
+        return (a);
+    }
     else
-        {
-            return (b);
-        }
+    {
+        return (b);
+    }
 }
 
 double Pmaxv(double a, double b)
 {
     if (a > b)
-        {
-            return (a);
-        }
+    {
+        return (a);
+    }
     else
-        {
-            return (b);
-        }
+    {
+        return (b);
+    }
 }
 
 double Ptestlt(double a, double b)
 {
     if (a < b)
-        {
-            return ((double) 1.0);
-        }
+    {
+        return ((double) 1.0);
+    }
     else
-        {
-            return ((double) 0.0);
-        }
+    {
+        return ((double) 0.0);
+    }
 }
 
 double Ptestmt(double a, double b)
 {
     if (a < b)
-        {
-            return ((double) 0.0);
-        }
+    {
+        return ((double) 0.0);
+    }
     else
-        {
-            return ((double) 1.0);
-        }
+    {
+        return ((double) 1.0);
+    }
 }
 
 double Ptrunc(double a, double b, double c)
@@ -183,13 +183,13 @@ double Ptrunc(double a, double b, double c)
     double value;
     value = a;
     if (a < b)
-        {
-            value = b;
-        };
+    {
+        value = b;
+    };
     if (a > c)
-        {
-            value = c;
-        };
+    {
+        value = c;
+    };
     return (value);
 }
 

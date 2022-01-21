@@ -24,33 +24,33 @@ int main(int argc, char *argv[])
 
     char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
     if (CLI_APPNAME != NULL)
-        {
-            strncpy(AppName, CLI_APPNAME, STRINGMAXLEN_APPNAME - 1);
-        }
+    {
+        strncpy(AppName, CLI_APPNAME, STRINGMAXLEN_APPNAME - 1);
+    }
     else
-        {
-            strncpy(AppName, "milk", STRINGMAXLEN_APPNAME - 1);
-        }
+    {
+        strncpy(AppName, "milk", STRINGMAXLEN_APPNAME - 1);
+    }
 
     if (getenv("MILK_QUIET"))
-        {
-            data.quiet = 1;
-        }
+    {
+        data.quiet = 1;
+    }
     else
-        {
-            data.quiet = 0;
-        }
+    {
+        data.quiet = 0;
+    }
 
     if (getenv("MILK_ERROREXIT"))
-        {
-            data.errorexit = 1;
-        }
+    {
+        data.errorexit = 1;
+    }
     else
-        {
-            data.errorexit = 0;
-        }
+    {
+        data.errorexit = 0;
+    }
 
-        // Allocate data.testpointarray
+    // Allocate data.testpointarray
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
     // allocate circular buffer memory
@@ -74,20 +74,20 @@ int main(int argc, char *argv[])
              VERSION_OPTION);
 
     if (data.quiet == 0)
-        {
-            printf(STYLE_BOLD);
-            printf("\n        milk  v %s\n", versionstring);
+    {
+        printf(STYLE_BOLD);
+        printf("\n        milk  v %s\n", versionstring);
 #ifndef NDEBUG
-            printf(
-                "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
-                "===\n");
+        printf(
+            "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
+            "===\n");
 #endif
-            printf(STYLE_NO_BOLD);
-            if (data.errorexit == 1)
-                {
-                    printf("        EXIT-ON-ERROR mode\n");
-                }
+        printf(STYLE_NO_BOLD);
+        if (data.errorexit == 1)
+        {
+            printf("        EXIT-ON-ERROR mode\n");
         }
+    }
 
     strcpy(data.package_name, PACKAGE_NAME);
 
@@ -102,16 +102,16 @@ int main(int argc, char *argv[])
     strcpy(data.installdir, INSTALLDIR);
 
     if (data.quiet == 0)
-        {
-            //printf("        %s version %s\n", data.package_name, data.package_version);
+    {
+        //printf("        %s version %s\n", data.package_name, data.package_version);
 #ifdef IMAGESTRUCT_VERSION
-            printf("        ImageStreamIO v %s\n", IMAGESTRUCT_VERSION);
+        printf("        ImageStreamIO v %s\n", IMAGESTRUCT_VERSION);
 #endif
-            //printf("        GNU General Public License v3.0\n");
-            //printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
-            //printf("        Type \"help\" for instructions\n");
-            printf("        \n");
-        }
+        //printf("        GNU General Public License v3.0\n");
+        //printf("        Report bugs to : %s\n", PACKAGE_BUGREPORT);
+        //printf("        Type \"help\" for instructions\n");
+        printf("        \n");
+    }
 
     // default exit code
     data.exitcode = RETURN_SUCCESS;
@@ -121,23 +121,23 @@ int main(int argc, char *argv[])
     //errno_t CLIretval = RETURN_SUCCESS;
 
     if (data.quiet == 0)
-        {
-            printf("EXIT CODE %d\n", data.exitcode);
-        }
+    {
+        printf("EXIT CODE %d\n", data.exitcode);
+    }
     else
-        {
-            printf("\n");
-        }
+    {
+        printf("\n");
+    }
 
-        // clean-up calling thread
-        //pthread_exit(NULL);
+    // clean-up calling thread
+    //pthread_exit(NULL);
 
 #ifndef NDEBUG
 
     if (getenv("MILK_WRITECODETRACE"))
-        {
-            write_tracedebugfile();
-        }
+    {
+        write_tracedebugfile();
+    }
     printf("De-allocating test circular buffer\n");
     fflush(stdout);
     data.testpointarrayinit = 0;
