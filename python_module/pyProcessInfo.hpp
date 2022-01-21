@@ -13,7 +13,7 @@ extern "C"
 class pyProcessInfo
 {
     PROCESSINFO *m_pinfo;
-    int m_fd;
+    int          m_fd;
 
   public:
     /**
@@ -32,7 +32,10 @@ class pyProcessInfo
    *                 - 2: increment single step (will go back to 1)
    *                 - 3: exit loop
    */
-    pyProcessInfo(char *pname, int CTRLval) { create(pname, CTRLval); }
+    pyProcessInfo(char *pname, int CTRLval)
+    {
+        create(pname, CTRLval);
+    }
 
     /**
    * @brief Destroy the Process Info object
@@ -41,13 +44,16 @@ class pyProcessInfo
     ~pyProcessInfo()
     {
         if (m_pinfo != nullptr)
-        {
-            processinfo_cleanExit(m_pinfo);
-            m_pinfo = nullptr;
-        }
+            {
+                processinfo_cleanExit(m_pinfo);
+                m_pinfo = nullptr;
+            }
     }
 
-    PROCESSINFO *operator->() { return m_pinfo; }
+    PROCESSINFO *operator->()
+    {
+        return m_pinfo;
+    }
 
     /**
    * @brief Create Process Info object in shared memory
@@ -68,7 +74,7 @@ class pyProcessInfo
         // if (m_pinfo != nullptr) {
         //   processinfo_cleanExit(m_pinfo);
         // }
-        m_pinfo = processinfo_shm_create(pname, CTRLval);
+        m_pinfo           = processinfo_shm_create(pname, CTRLval);
         m_pinfo->loopstat = 0; // loop initialization
         strcpy(m_pinfo->source_FUNCTION, "\0");
         strcpy(m_pinfo->source_FILE, "\0");
@@ -114,11 +120,11 @@ class pyProcessInfo
     int sigexit(int sig)
     {
         if (m_pinfo != nullptr)
-        {
-            int ret = processinfo_SIGexit(m_pinfo, sig);
-            m_pinfo = nullptr;
-            return ret;
-        }
+            {
+                int ret = processinfo_SIGexit(m_pinfo, sig);
+                m_pinfo = nullptr;
+                return ret;
+            }
         return EXIT_FAILURE;
     }
 
@@ -131,9 +137,9 @@ class pyProcessInfo
     int writeMessage(const char *message)
     {
         if (m_pinfo != nullptr)
-        {
-            return processinfo_WriteMessage(m_pinfo, message);
-        }
+            {
+                return processinfo_WriteMessage(m_pinfo, message);
+            }
         return EXIT_FAILURE;
     };
 
@@ -145,9 +151,9 @@ class pyProcessInfo
     int exec_start()
     {
         if ((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
-        {
-            return processinfo_exec_start(m_pinfo);
-        }
+            {
+                return processinfo_exec_start(m_pinfo);
+            }
         return EXIT_FAILURE;
     };
 
@@ -159,9 +165,9 @@ class pyProcessInfo
     int exec_end()
     {
         if ((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
-        {
-            return processinfo_exec_end(m_pinfo);
-        }
+            {
+                return processinfo_exec_end(m_pinfo);
+            }
         return EXIT_FAILURE;
     };
 };

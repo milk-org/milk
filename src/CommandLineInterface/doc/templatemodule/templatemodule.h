@@ -43,9 +43,10 @@ int templatemodule_examplefunc00(int mode);
 /* =============================================================================================== */
 
 /** @brief one-line description of function */
-int templatemodule_examplefunc01(float val1,   ///< [in]   This parameter does this and that
-                                 int n1,       ///< [in]   Number of that
-                                 float *farray ///< [out]  Output array
+int templatemodule_examplefunc01(
+    float  val1,  ///< [in]   This parameter does this and that
+    int    n1,    ///< [in]   Number of that
+    float *farray ///< [out]  Output array
 );
 
 #endif

@@ -8,7 +8,7 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT ""
-#define MODULE_DESCRIPTION "misc tools"
+#define MODULE_DESCRIPTION       "misc tools"
 
 #include "CommandLineInterface/CLIcore.h"
 

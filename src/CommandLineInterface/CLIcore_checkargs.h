@@ -15,31 +15,31 @@
 // lower 16-bit is format input type in CLI
 // higher 16-bit can be more specific and used for conversion
 
-#define CLIARG_MISSING 0x00000000
-#define CLIARG_FLOAT 0x00000001       // floating point number, defaults to float64
-#define CLIARG_LONG 0x00000002        // integer, default to int64
-#define CLIARG_STR_NOT_IMG 0x00000003 // string, not existing image
-#define CLIARG_IMG 0x00000004         // existing image or stream
-#define CLIARG_STR 0x00000005         // string
-#define CLIARG_FILENAME 0x00000006
+#define CLIARG_MISSING      0x00000000
+#define CLIARG_FLOAT        0x00000001 // floating point number, defaults to float64
+#define CLIARG_LONG         0x00000002 // integer, default to int64
+#define CLIARG_STR_NOT_IMG  0x00000003 // string, not existing image
+#define CLIARG_IMG          0x00000004 // existing image or stream
+#define CLIARG_STR          0x00000005 // string
+#define CLIARG_FILENAME     0x00000006
 #define CLIARG_FITSFILENAME 0x00000007
 
 #define CLIARG_FLOAT32 0x00010001 // same as float
 #define CLIARG_FLOAT64 0x00020001 // same as double
 
 // integer types
-#define CLIARG_ONOFF 0x00030002
-#define CLIARG_INT32 0x00010002
+#define CLIARG_ONOFF  0x00030002
+#define CLIARG_INT32  0x00010002
 #define CLIARG_UINT32 0x00110002
-#define CLIARG_INT64 0x00020002 // same as LONG
+#define CLIARG_INT64  0x00020002 // same as LONG
 #define CLIARG_UINT64 0x00120002
 
 // image/stream types
 #define CLIARG_STREAM 0x00010004 // stream
 
-#define STRINGMAXLEN_FPSCLIARG_TAG 100
-#define STRINGMAXLEN_FPSCLIARG_DESCR 100
-#define STRINGMAXLEN_FPSCLIARG_EXAMPLE 100
+#define STRINGMAXLEN_FPSCLIARG_TAG       100
+#define STRINGMAXLEN_FPSCLIARG_DESCR     100
+#define STRINGMAXLEN_FPSCLIARG_EXAMPLE   100
 #define STRINGMAXLEN_FPSCLIARG_LASTENTRY 100
 
 #define CLICMDARG_FLAG_DEFAULT 0x00000000
@@ -86,27 +86,27 @@ typedef struct
     struct
     {
         double numf;
-        long numl;
-        char string[200];
+        long   numl;
+        char   string[200];
     } val;
 } CMDARGVAL;
 
 #define STRINGMAXLEN_CLICMDARG 256
 typedef struct
 {
-    int type;        // Command line argument type
+    int      type;   // Command line argument type
     uint64_t fptype; // FPS type (could be more speccific than CLI type)
-    char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
-    char descr[STRINGMAXLEN_FPSCLIARG_DESCR];
-    char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
+    char     fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
+    char     descr[STRINGMAXLEN_FPSCLIARG_DESCR];
+    char     example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
     uint64_t flag;
     union
     {
-        float f32;
+        float  f32;
         double f64;
 
-        int32_t i32;
-        int64_t i64;
+        int32_t  i32;
+        int64_t  i64;
         uint32_t ui32;
         uint64_t ui64;
 
@@ -120,7 +120,7 @@ typedef struct
     char description[100];
     char sourcefilename[100];
 
-    int nbarg;
+    int           nbarg;
     CLICMDARGDEF *funcfpscliarg;
 
     uint64_t flags; // controls function behavior and capabilities
@@ -129,14 +129,16 @@ typedef struct
     // pointer to CMD struct initialized by CLI function registration
     CMDSETTINGS *cmdsettings;
 
-    errno_t (*FPS_customCONFsetup)(); // pointer to optional custom FPS conf setup function
-    errno_t (*FPS_customCONFcheck)(); // pointer to optional custom FPS conf check function
+    errno_t (
+        *FPS_customCONFsetup)(); // pointer to optional custom FPS conf setup function
+    errno_t (
+        *FPS_customCONFcheck)(); // pointer to optional custom FPS conf check function
 
 } CLICMDDATA;
 
-#define CLICMD_SUCCESS 0
+#define CLICMD_SUCCESS     0
 #define CLICMD_INVALID_ARG 1
-#define CLICMD_ERROR 2
+#define CLICMD_ERROR       2
 
 //int CLI_checkarg0(int argnum, int argtype, int errmsg);
 
@@ -146,7 +148,9 @@ int CLI_checkarg_noerrmsg(int argnum, uint32_t argtype);
 
 errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg);
 
-int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FUNCTION_PARAMETER_STRUCT *fps);
+int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
+                                int                        nbarg,
+                                FUNCTION_PARAMETER_STRUCT *fps);
 
 int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps);
 

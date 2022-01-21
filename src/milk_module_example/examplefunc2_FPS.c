@@ -20,11 +20,26 @@ static double *scoeff;
 // List of arguments to function
 static CLICMDARGDEF farg[] = {
     //    FARG_INPUTIM(inim),
-    {CLIARG_IMG, ".in_name", "input image", "im1", CLIARG_VISIBLE_DEFAULT, (void **)&inimname, NULL},
+    {CLIARG_IMG,
+     ".in_name",
+     "input image",
+     "im1",
+     CLIARG_VISIBLE_DEFAULT,
+     (void **) &inimname,
+     NULL},
     {// argument is not part of CLI call, FPFLAG ignored
-     CLIARG_FLOAT, ".scaling", "scaling coefficient", "1.0", CLIARG_HIDDEN_DEFAULT, (void **)&scoeff, NULL}};
+     CLIARG_FLOAT,
+     ".scaling",
+     "scaling coefficient",
+     "1.0",
+     CLIARG_HIDDEN_DEFAULT,
+     (void **) &scoeff,
+     NULL}};
 
-static CLICMDDATA CLIcmddata = {"imsum2", "compute total of image example2, FPS-compatible", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata = {
+    "imsum2",
+    "compute total of image example2, FPS-compatible",
+    CLICMD_FIELDS_DEFAULTS};
 
 static errno_t help_function()
 {
@@ -46,18 +61,21 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
 
     resolveIMGID(&img, ERRMODE_ABORT);
 
-    uint32_t xsize = img.md->size[0];
-    uint32_t ysize = img.md->size[1];
+    uint32_t xsize  = img.md->size[0];
+    uint32_t ysize  = img.md->size[1];
     uint64_t xysize = xsize * ysize;
 
     double total = 0.0;
     for (uint64_t ii = 0; ii < xysize; ii++)
-    {
-        total += img.im->array.F[ii];
-    }
+        {
+            total += img.im->array.F[ii];
+        }
     total *= scalingcoeff;
 
-    printf("image %s total = %lf (scaling coeff %lf)\n", img.im->name, total, scalingcoeff);
+    printf("image %s total = %lf (scaling coeff %lf)\n",
+           img.im->name,
+           total,
+           scalingcoeff);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

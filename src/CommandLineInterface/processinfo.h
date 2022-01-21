@@ -8,11 +8,11 @@
 #ifndef _PROCESSINFO_H
 #define _PROCESSINFO_H
 
-#define STRINGMAXLEN_PROCESSINFO_NAME 80
-#define STRINGMAXLEN_PROCESSINFO_SRCFUNC 200
-#define STRINGMAXLEN_PROCESSINFO_SRCFILE 200
-#define STRINGMAXLEN_PROCESSINFO_TMUXNAME 100
-#define STRINGMAXLEN_PROCESSINFO_STATUSMSG 200
+#define STRINGMAXLEN_PROCESSINFO_NAME        80
+#define STRINGMAXLEN_PROCESSINFO_SRCFUNC     200
+#define STRINGMAXLEN_PROCESSINFO_SRCFILE     200
+#define STRINGMAXLEN_PROCESSINFO_TMUXNAME    100
+#define STRINGMAXLEN_PROCESSINFO_STATUSMSG   200
 #define STRINGMAXLEN_PROCESSINFO_LOGFILENAME 250
 #define STRINGMAXLEN_PROCESSINFO_DESCRIPTION 200
 
@@ -35,17 +35,19 @@ typedef struct
 {
     char name[STRINGMAXLEN_PROCESSINFO_NAME]; /// process name (human-readable)
 
-    char source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC]; /// source code function
-    char source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE];     /// source code file
-    int source_LINE;                                        /// source code line
+    char source_FUNCTION
+        [STRINGMAXLEN_PROCESSINFO_SRCFUNC];             /// source code function
+    char source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE]; /// source code file
+    int  source_LINE;                                   /// source code line
 
     pid_t PID; /// process ID; file name is /tmp/proc.PID.shm
 
     struct timespec createtime; // time at which pinfo was created
 
-    long loopcnt;    // counter, useful for loop processes to monitor activity
-    long loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
-    int CTRLval;     // control value to be externally written.
+    long loopcnt; // counter, useful for loop processes to monitor activity
+    long
+        loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
+    int CTRLval; // control value to be externally written.
     // 0: run                     (default)
     // 1: pause
     // 2: increment single step (will go back to 1)
@@ -65,33 +67,34 @@ typedef struct
     // 6: CRASHED    pid has gone away without proper exit sequence. Will attempt to generate exit log file (using atexit) to identify crash location
 
     char statusmsg[STRINGMAXLEN_PROCESSINFO_STATUSMSG]; // status message
-    int statuscode;                                     // status code
+    int  statuscode;                                    // status code
 
     FILE *logFile;
-    char logfilename[STRINGMAXLEN_PROCESSINFO_LOGFILENAME];
+    char  logfilename[STRINGMAXLEN_PROCESSINFO_LOGFILENAME];
 
     // OPTIONAL INPUT STREAM SETUP
     // Used to specify which stream will trigger the computation and track trigger state
     // Enables use of function processinfo_waitoninputstream()
     // Enables streamproctrace entry
     // Must be inialized by processinfo_waitoninputstream_init()
-    int triggermode;         // see TRIGGERMODE codes
+    int     triggermode;     // see TRIGGERMODE codes
     imageID triggerstreamID; // -1 if not initialized
-    ino_t triggerstreaminode;
-    char triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
-    int triggersem;                 // semaphore index
-    uint64_t triggerstreamcnt;      // previous value of trigger counter, updates on trigger
+    ino_t   triggerstreaminode;
+    char    triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
+    int     triggersem; // semaphore index
+    uint64_t
+        triggerstreamcnt; // previous value of trigger counter, updates on trigger
     struct timespec triggerdelay;   // for PROCESSINFO_TRIGGERMODE_DELAY
     struct timespec triggertimeout; // how long to wait until trigger ?
-    uint64_t trigggertimeoutcnt;
+    uint64_t        trigggertimeoutcnt;
     int triggermissedframe; // have we missed any frame, if yes how many ?
     //  0  : no missed frame, loop has been waiting for semaphore to be posted
     //  1  : no missed frame, but semaphore was already posted and at 1 when triggering
     //  2+ : frame(s) missed
     uint64_t triggermissedframe_cumul; // cumulative missed frames
-    int triggerstatus;                 // see TRIGGERSTATUS codes
+    int      triggerstatus;            // see TRIGGERSTATUS codes
 
-    int RT_priority; // -1 if unused. 0-99 for higher priority
+    int       RT_priority; // -1 if unused. 0-99 for higher priority
     cpu_set_t CPUmask;
 
     // OPTIONAL TIMING MEASUREMENT
@@ -102,8 +105,8 @@ typedef struct
 
     // the last PROCESSINFO_NBtimer times are stored in a circular buffer, from
     // which timing stats are derived
-    int timerindex;                                  // last written index in circular buffer
-    int timingbuffercnt;                             // increments every cycle of the circular buffer
+    int timerindex;      // last written index in circular buffer
+    int timingbuffercnt; // increments every cycle of the circular buffer
     struct timespec texecstart[PROCESSINFO_NBtimer]; // task starts
     struct timespec texecend[PROCESSINFO_NBtimer];   // task ends
 
@@ -111,12 +114,12 @@ typedef struct
     long dtmedian_exec_ns; // median compute/busy time [nanosec]
 
     // If enabled=1, pause process if dtiter larger than limit
-    int dtiter_limit_enable;
+    int  dtiter_limit_enable;
     long dtiter_limit_value;
     long dtiter_limit_cnt;
 
     // If enabled=1, pause process if dtexec larger than limit
-    int dtexec_limit_enable;
+    int  dtexec_limit_enable;
     long dtexec_limit_value;
     long dtexec_limit_cnt;
 

@@ -6,7 +6,7 @@
  */
 
 #define MODULE_SHORTNAME_DEFAULT ""
-#define MODULE_DESCRIPTION "Read/Write FITS files"
+#define MODULE_DESCRIPTION       "Read/Write FITS files"
 
 #include "COREMOD_iofits_common.h"
 #include "CommandLineInterface/CLIcore.h"

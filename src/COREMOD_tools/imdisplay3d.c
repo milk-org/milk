@@ -21,15 +21,16 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
-    {
-        COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+        {
+            COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string,
+                                       data.cmdargtoken[2].val.numl);
 
-        return CLICMD_SUCCESS;
-    }
+            return CLICMD_SUCCESS;
+        }
     else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+        {
+            return CLICMD_INVALID_ARG;
+        }
 }
 
 // ==========================================
@@ -38,9 +39,14 @@ errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 
 errno_t imdisplay3d_addCLIcmd()
 {
-    RegisterCLIcommand("dispim3d", __FILE__, COREMOD_TOOLS_imgdisplay3D_cli,
-                       "display 2D image as 3D surface using gnuplot", "<imname> <step>", "dispim3d im1 5",
-                       "int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)");
+    RegisterCLIcommand(
+        "dispim3d",
+        __FILE__,
+        COREMOD_TOOLS_imgdisplay3D_cli,
+        "display 2D image as 3D surface using gnuplot",
+        "<imname> <step>",
+        "dispim3d im1 5",
+        "int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)");
 
     return RETURN_SUCCESS;
 }
@@ -50,22 +56,22 @@ errno_t imdisplay3d_addCLIcmd()
 errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
 {
     imageID ID;
-    long xsize, ysize;
-    long ii, jj;
-    char cmd[512];
-    FILE *fp;
+    long    xsize, ysize;
+    long    ii, jj;
+    char    cmd[512];
+    FILE   *fp;
 
-    ID = image_ID(IDname);
+    ID    = image_ID(IDname);
     xsize = data.image[ID].md[0].size[0];
     ysize = data.image[ID].md[0].size[1];
 
     snprintf(cmd, 512, "gnuplot");
 
     if ((fpgnuplot = popen(cmd, "w")) == NULL)
-    {
-        fprintf(stderr, "could not connect to gnuplot\n");
-        return -1;
-    }
+        {
+            fprintf(stderr, "could not connect to gnuplot\n");
+            return -1;
+        }
 
     printf("image: %s [%ld x %ld], step = %ld\n", IDname, xsize, ysize, step);
 
@@ -81,15 +87,23 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fp = fopen("pts.dat", "w");
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
     for (ii = 0; ii < xsize; ii += step)
-    {
-        for (jj = 0; jj < xsize; jj += step)
         {
-            fprintf(fpgnuplot, "%ld %ld %f\n", ii, jj, data.image[ID].array.F[jj * xsize + ii]);
-            fprintf(fp, "%ld %ld %f\n", ii, jj, data.image[ID].array.F[jj * xsize + ii]);
+            for (jj = 0; jj < xsize; jj += step)
+                {
+                    fprintf(fpgnuplot,
+                            "%ld %ld %f\n",
+                            ii,
+                            jj,
+                            data.image[ID].array.F[jj * xsize + ii]);
+                    fprintf(fp,
+                            "%ld %ld %f\n",
+                            ii,
+                            jj,
+                            data.image[ID].array.F[jj * xsize + ii]);
+                }
+            fprintf(fpgnuplot, "\n");
+            fprintf(fp, "\n");
         }
-        fprintf(fpgnuplot, "\n");
-        fprintf(fp, "\n");
-    }
     fprintf(fpgnuplot, "e\n");
     fflush(fpgnuplot);
     fclose(fp);
