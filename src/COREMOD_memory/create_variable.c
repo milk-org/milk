@@ -25,29 +25,29 @@ variableID create_variable_ID(const char *name, double value)
     //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
 
     if (i1 != -1)
-        {
-            printf(
-                "ERROR: cannot create variable \"%s\": name already used as an "
-                "image\n",
-                name);
-        }
+    {
+        printf(
+            "ERROR: cannot create variable \"%s\": name already used as an "
+            "image\n",
+            name);
+    }
     else
+    {
+        if (i2 != -1)
         {
-            if (i2 != -1)
-                {
-                    //	  printf("Warning : variable name \"%s\" is already in use\n",name);
-                    ID = i2;
-                }
-            else
-                {
-                    ID = next_avail_variable_ID();
-                }
-
-            data.variable[ID].used = 1;
-            data.variable[ID].type = 0; /** floating point double */
-            strcpy(data.variable[ID].name, name);
-            data.variable[ID].value.f = value;
+            //	  printf("Warning : variable name \"%s\" is already in use\n",name);
+            ID = i2;
         }
+        else
+        {
+            ID = next_avail_variable_ID();
+        }
+
+        data.variable[ID].used = 1;
+        data.variable[ID].type = 0; /** floating point double */
+        strcpy(data.variable[ID].name, name);
+        data.variable[ID].value.f = value;
+    }
     //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
     return ID;
 }
@@ -63,29 +63,29 @@ variableID create_variable_long_ID(const char *name, long value)
     i2 = variable_ID(name);
 
     if (i1 != -1)
-        {
-            printf(
-                "ERROR: cannot create variable \"%s\": name already used as an "
-                "image\n",
-                name);
-        }
+    {
+        printf(
+            "ERROR: cannot create variable \"%s\": name already used as an "
+            "image\n",
+            name);
+    }
     else
+    {
+        if (i2 != -1)
         {
-            if (i2 != -1)
-                {
-                    //	  printf("Warning : variable name \"%s\" is already in use\n",name);
-                    ID = i2;
-                }
-            else
-                {
-                    ID = next_avail_variable_ID();
-                }
-
-            data.variable[ID].used = 1;
-            data.variable[ID].type = 1; /** long */
-            strcpy(data.variable[ID].name, name);
-            data.variable[ID].value.l = value;
+            //	  printf("Warning : variable name \"%s\" is already in use\n",name);
+            ID = i2;
         }
+        else
+        {
+            ID = next_avail_variable_ID();
+        }
+
+        data.variable[ID].used = 1;
+        data.variable[ID].type = 1; /** long */
+        strcpy(data.variable[ID].name, name);
+        data.variable[ID].value.l = value;
+    }
 
     return ID;
 }
@@ -101,29 +101,29 @@ variableID create_variable_string_ID(const char *name, const char *value)
     i2 = variable_ID(name);
 
     if (i1 != -1)
-        {
-            printf(
-                "ERROR: cannot create variable \"%s\": name already used as an "
-                "image\n",
-                name);
-        }
+    {
+        printf(
+            "ERROR: cannot create variable \"%s\": name already used as an "
+            "image\n",
+            name);
+    }
     else
+    {
+        if (i2 != -1)
         {
-            if (i2 != -1)
-                {
-                    //	  printf("Warning : variable name \"%s\" is already in use\n",name);
-                    ID = i2;
-                }
-            else
-                {
-                    ID = next_avail_variable_ID();
-                }
-
-            data.variable[ID].used = 1;
-            data.variable[ID].type = 2; /** string */
-            strcpy(data.variable[ID].name, name);
-            strcpy(data.variable[ID].value.s, value);
+            //	  printf("Warning : variable name \"%s\" is already in use\n",name);
+            ID = i2;
         }
+        else
+        {
+            ID = next_avail_variable_ID();
+        }
+
+        data.variable[ID].used = 1;
+        data.variable[ID].type = 2; /** string */
+        strcpy(data.variable[ID].name, name);
+        strcpy(data.variable[ID].value.s, value);
+    }
 
     return ID;
 }

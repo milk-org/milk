@@ -47,25 +47,24 @@ errno_t CLI_data_init()
 #else
     data.image = (IMAGE *) calloc(data.NB_MAX_IMAGE, sizeof(IMAGE));
     if (data.image == NULL)
-        {
-            PRINT_ERROR(
-                "Allocation of data.image has failed - exiting program");
-            exit(1);
-        }
+    {
+        PRINT_ERROR("Allocation of data.image has failed - exiting program");
+        exit(1);
+    }
     if (data.Debug > 0)
-        {
-            printf("Allocation of data.image completed %p\n", data.image);
-            fflush(stdout);
-        }
+    {
+        printf("Allocation of data.image completed %p\n", data.image);
+        fflush(stdout);
+    }
 #endif
 
     for (long i = 0; i < data.NB_MAX_IMAGE; i++)
-        {
-            data.image[i].used      = 0;
-            data.image[i].createcnt = 0;
-        }
+    {
+        data.image[i].used      = 0;
+        data.image[i].createcnt = 0;
+    }
 
-        // Allocate data.variable
+    // Allocate data.variable
 
 #ifdef DATA_STATIC_ALLOC
     // variable static allocation mode
@@ -75,11 +74,10 @@ errno_t CLI_data_init()
 #else
     data.variable = (VARIABLE *) calloc(data.NB_MAX_VARIABLE, sizeof(VARIABLE));
     if (data.variable == NULL)
-        {
-            PRINT_ERROR(
-                "Allocation of data.variable has failed - exiting program");
-            exit(1);
-        }
+    {
+        PRINT_ERROR("Allocation of data.variable has failed - exiting program");
+        exit(1);
+    }
 
     data.image[0].used   = 0;
     data.image[0].shmfd  = -1;
@@ -90,34 +88,34 @@ errno_t CLI_data_init()
         (VARIABLE *) realloc(data.variable,
                              data.NB_MAX_VARIABLE * sizeof(VARIABLE));
     for (long i = tmplong; i < data.NB_MAX_VARIABLE; i++)
-        {
-            data.variable[i].used = 0;
-            data.variable[i].type = 0; /** defaults to floating point type */
-        }
+    {
+        data.variable[i].used = 0;
+        data.variable[i].type = 0; /** defaults to floating point type */
+    }
 
     if (data.variable == NULL)
-        {
-            PRINT_ERROR(
-                "Reallocation of data.variable has failed - exiting program");
-            exit(1);
-        }
+    {
+        PRINT_ERROR(
+            "Reallocation of data.variable has failed - exiting program");
+        exit(1);
+    }
 #endif
 
     // Allocate data.fps
     data.fpsarray = malloc(sizeof(FUNCTION_PARAMETER_STRUCT) * data.NB_MAX_FPS);
     if (data.fpsarray == NULL)
-        {
-            FUNC_RETURN_FAILURE("memory allocation error");
-        }
+    {
+        FUNC_RETURN_FAILURE("memory allocation error");
+    }
 
     // Initialize file descriptors to -1
     //
     for (int fpsindex = 0; fpsindex < data.NB_MAX_FPS; fpsindex++)
-        {
-            data.fpsarray[fpsindex].SMfd   = -1;
-            data.fpsarray[fpsindex].md     = NULL;
-            data.fpsarray[fpsindex].parray = NULL;
-        }
+    {
+        data.fpsarray[fpsindex].SMfd   = -1;
+        data.fpsarray[fpsindex].md     = NULL;
+        data.fpsarray[fpsindex].parray = NULL;
+    }
 
     create_variable_ID("_PI", 3.14159265358979323846264338328);
     create_variable_ID("_e", exp(1));

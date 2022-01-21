@@ -23,14 +23,14 @@ errno_t lin_regress(double      *a,
     Sxy = 0;
 
     for (i = 0; i < nb_points; i++)
-        {
-            S += 1.0 / sig[i] / sig[i];
-            Sx += x[i] / sig[i] / sig[i];
-            Sy += y[i] / sig[i] / sig[i];
-            Sxx += x[i] * x[i] / sig[i] / sig[i];
-            Syy += y[i] * y[i] / sig[i] / sig[i];
-            Sxy += x[i] * y[i] / sig[i] / sig[i];
-        }
+    {
+        S += 1.0 / sig[i] / sig[i];
+        Sx += x[i] / sig[i] / sig[i];
+        Sy += y[i] / sig[i] / sig[i];
+        Sxx += x[i] * x[i] / sig[i] / sig[i];
+        Syy += y[i] * y[i] / sig[i] / sig[i];
+        Sxy += x[i] * y[i] / sig[i] / sig[i];
+    }
 
     delta = S * Sxx - Sx * Sx;
     *a    = (Sxx * Sy - Sx * Sxy) / delta;

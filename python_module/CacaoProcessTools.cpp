@@ -19,65 +19,64 @@ int fps_value_to_key(pyFps             &cls,
                      py::object         value)
 {
     switch (fps_type)
-        {
-        case FPS_type::INT32:
-        case FPS_type::UINT32:
-        case FPS_type::INT64:
-        case FPS_type::UINT64:
-            return functionparameter_SetParamValue_INT64(cls,
-                                                         key.c_str(),
-                                                         py::int_(value));
-        case FPS_type::FLOAT32:
-            return functionparameter_SetParamValue_FLOAT32(cls,
-                                                           key.c_str(),
-                                                           py::float_(value));
-        case FPS_type::FLOAT64:
-            return functionparameter_SetParamValue_FLOAT64(cls,
-                                                           key.c_str(),
-                                                           py::float_(value));
-        case FPS_type::STRING:
-            return functionparameter_SetParamValue_STRING(
-                cls,
-                key.c_str(),
-                std::string(py::str(value)).c_str());
-        default:
-            return EXIT_FAILURE;
-        }
+    {
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+    case FPS_type::UINT64:
+        return functionparameter_SetParamValue_INT64(cls,
+                                                     key.c_str(),
+                                                     py::int_(value));
+    case FPS_type::FLOAT32:
+        return functionparameter_SetParamValue_FLOAT32(cls,
+                                                       key.c_str(),
+                                                       py::float_(value));
+    case FPS_type::FLOAT64:
+        return functionparameter_SetParamValue_FLOAT64(cls,
+                                                       key.c_str(),
+                                                       py::float_(value));
+    case FPS_type::STRING:
+        return functionparameter_SetParamValue_STRING(
+            cls,
+            key.c_str(),
+            std::string(py::str(value)).c_str());
+    default:
+        return EXIT_FAILURE;
+    }
 }
 
 py::object
 fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
     switch (fps_type)
-        {
-        case FPS_type::INT32:
-        case FPS_type::UINT32:
-        case FPS_type::INT64:
-        case FPS_type::UINT64:
-            return py::int_(
-                functionparameter_GetParamValue_INT64(cls, key.c_str()));
-        case FPS_type::FLOAT32:
-            return py::float_(
-                functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
-        case FPS_type::FLOAT64:
-            return py::float_(
-                functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
-        case FPS_type::STRING:
-            return py::str(
-                functionparameter_GetParamPtr_STRING(cls, key.c_str()));
-        default:
-            return py::none();
-        }
+    {
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+    case FPS_type::UINT64:
+        return py::int_(
+            functionparameter_GetParamValue_INT64(cls, key.c_str()));
+    case FPS_type::FLOAT32:
+        return py::float_(
+            functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
+    case FPS_type::FLOAT64:
+        return py::float_(
+            functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
+    case FPS_type::STRING:
+        return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
+    default:
+        return py::none();
+    }
 }
 
 py::dict fps_to_dict(pyFps &cls)
 {
     py::dict fps_dict;
     for (auto &key : cls.keys())
-        {
-            fps_dict[py::str(key.first)] =
-                fps_value_from_key(cls, key.first, key.second);
-        }
+    {
+        fps_dict[py::str(key.first)] =
+            fps_value_from_key(cls, key.first, key.second);
+    }
     return fps_dict;
 }
 
@@ -619,22 +618,22 @@ Return:
             [](pyFps &cls) {
                 pid_t pid = cls->md->confpid;
                 if ((getpgid(pid) >= 0) && (pid > 0))
-                    {
-                        return 1;
-                    }
+                {
+                    return 1;
+                }
                 else // PID not active
+                {
+                    if (cls->md->status &
+                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
                     {
-                        if (cls->md->status &
-                            FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
-                            {
-                                // not clean exit
-                                return -1;
-                            }
-                        else
-                            {
-                                return 0;
-                            }
+                        // not clean exit
+                        return -1;
                     }
+                    else
+                    {
+                        return 0;
+                    }
+                }
             },
             R"pbdoc(Test if CONF process is running
 
@@ -647,22 +646,22 @@ Return:
             [](pyFps &cls) {
                 pid_t pid = cls->md->runpid;
                 if ((getpgid(pid) >= 0) && (pid > 0))
-                    {
-                        return 1;
-                    }
+                {
+                    return 1;
+                }
                 else // PID not active
+                {
+                    if (cls->md->status &
+                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
                     {
-                        if (cls->md->status &
-                            FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
-                            {
-                                // not clean exit
-                                return -1;
-                            }
-                        else
-                            {
-                                return 0;
-                            }
+                        // not clean exit
+                        return -1;
                     }
+                    else
+                    {
+                        return 0;
+                    }
+                }
             },
             R"pbdoc(Test if RUN process is running
 

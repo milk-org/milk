@@ -29,9 +29,9 @@ int32_t *functionparameter_GetParamPtr_INT32(FUNCTION_PARAMETER_STRUCT *fps,
 #define FPS_GETPARAM_INT32(varname, pname)                                     \
     int32_t _##varname = 0;                                                    \
     do                                                                         \
-        {                                                                      \
-            _##varname = functionparameter_GetParamValue_INT32(&fps, pname);   \
-            (void) _##varname;                                                 \
+    {                                                                          \
+        _##varname = functionparameter_GetParamValue_INT32(&fps, pname);       \
+        (void) _##varname;                                                     \
     } while (0)
 
 // =====================================================================
@@ -53,9 +53,9 @@ uint32_t *functionparameter_GetParamPtr_UINT32(FUNCTION_PARAMETER_STRUCT *fps,
 #define FPS_GETPARAM_UINT32(varname, pname)                                    \
     int32_t _##varname = 0;                                                    \
     do                                                                         \
-        {                                                                      \
-            _##varname = functionparameter_GetParamValue_UINT32(&fps, pname);  \
-            (void) _##varname;                                                 \
+    {                                                                          \
+        _##varname = functionparameter_GetParamValue_UINT32(&fps, pname);      \
+        (void) _##varname;                                                     \
     } while (0)
 
 // =====================================================================
@@ -77,9 +77,9 @@ int64_t *functionparameter_GetParamPtr_INT64(FUNCTION_PARAMETER_STRUCT *fps,
 #define FPS_GETPARAM_INT64(varname, pname)                                     \
     int64_t _##varname = 0;                                                    \
     do                                                                         \
-        {                                                                      \
-            _##varname = functionparameter_GetParamValue_INT64(&fps, pname);   \
-            (void) _##varname;                                                 \
+    {                                                                          \
+        _##varname = functionparameter_GetParamValue_INT64(&fps, pname);       \
+        (void) _##varname;                                                     \
     } while (0)
 
 // =====================================================================
@@ -101,9 +101,9 @@ uint64_t *functionparameter_GetParamPtr_UINT64(FUNCTION_PARAMETER_STRUCT *fps,
 #define FPS_GETPARAM_UINT64(varname, pname)                                    \
     int64_t _##varname = 0;                                                    \
     do                                                                         \
-        {                                                                      \
-            _##varname = functionparameter_GetParamValue_UINT64(&fps, pname);  \
-            (void) _##varname;                                                 \
+    {                                                                          \
+        _##varname = functionparameter_GetParamValue_UINT64(&fps, pname);      \
+        (void) _##varname;                                                     \
     } while (0)
 
 // =====================================================================
@@ -125,9 +125,9 @@ float *functionparameter_GetParamPtr_FLOAT32(FUNCTION_PARAMETER_STRUCT *fps,
 #define FPS_GETPARAM_FLOAT32(varname, pname)                                   \
     float _##varname = 0;                                                      \
     do                                                                         \
-        {                                                                      \
-            _##varname = functionparameter_GetParamValue_FLOAT32(&fps, pname); \
-            (void) _##varname;                                                 \
+    {                                                                          \
+        _##varname = functionparameter_GetParamValue_FLOAT32(&fps, pname);     \
+        (void) _##varname;                                                     \
     } while (0)
 
 // =====================================================================

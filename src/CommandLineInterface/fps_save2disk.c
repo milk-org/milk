@@ -40,9 +40,9 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
 
     struct stat st = {0};
     if (stat(dirname, &st) == -1)
-        {
-            mkdir(dirname, 0700);
-        }
+    {
+        mkdir(dirname, 0700);
+    }
 
     sprintf(fname, "%s/%s.fps", dirname, fpsentry->md->name);
     fpoutval = fopen(fname, "w");
@@ -76,16 +76,16 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
     fprintf(fpoutval, "#\n");
 
     for (int pindex = 0; pindex < fpsentry->md->NBparamMAX; pindex++)
+    {
+        errno_t ret = functionparameter_PrintParameter_ValueString(
+            &fpsentry->parray[pindex],
+            outfpstring,
+            stringmaxlen);
+        if (ret == RETURN_SUCCESS)
         {
-            errno_t ret = functionparameter_PrintParameter_ValueString(
-                &fpsentry->parray[pindex],
-                outfpstring,
-                stringmaxlen);
-            if (ret == RETURN_SUCCESS)
-                {
-                    fprintf(fpoutval, "%s\n", outfpstring);
-                }
+            fprintf(fpoutval, "%s\n", outfpstring);
         }
+    }
     fclose(fpoutval);
 
     return RETURN_SUCCESS;
@@ -188,29 +188,29 @@ errno_t functionparameter_write_archivescript(FUNCTION_PARAMETER_STRUCT *fps)
     WRITE_FULLFILENAME(loglistfname, "loglist.dat");
     fploglist = fopen(loglistfname, "r");
     if (fploglist != NULL)
-        {
-            char  *line = NULL;
-            size_t llen = 0;
-            char   logfname[STRINGMAXLEN_FILENAME];
+    {
+        char  *line = NULL;
+        size_t llen = 0;
+        char   logfname[STRINGMAXLEN_FILENAME];
 
-            while (getline(&line, &llen, fploglist) != -1)
-                {
-                    sscanf(line, "%s", logfname);
-                    WRITE_DIRNAME(datadirname,
-                                  "../datadir/%s/%s/%s",
-                                  datestring,
-                                  fps->md->name,
-                                  logfname);
-                    fprintf(fplogscript, "mkdir -p %s\n", datadirname);
-                    fprintf(fplogscript,
-                            "cp -r %s %s/%s.%s\n",
-                            logfname,
-                            datadirname,
-                            logfname,
-                            timestring);
-                }
-            fclose(fploglist);
+        while (getline(&line, &llen, fploglist) != -1)
+        {
+            sscanf(line, "%s", logfname);
+            WRITE_DIRNAME(datadirname,
+                          "../datadir/%s/%s/%s",
+                          datestring,
+                          fps->md->name,
+                          logfname);
+            fprintf(fplogscript, "mkdir -p %s\n", datadirname);
+            fprintf(fplogscript,
+                    "cp -r %s %s/%s.%s\n",
+                    logfname,
+                    datadirname,
+                    logfname,
+                    timestring);
         }
+        fclose(fploglist);
+    }
 
     fclose(fplogscript);
     chmod(ffname, S_IRWXU | S_IRWXG | S_IROTH);
@@ -312,9 +312,9 @@ static char *get_filename_ext(const char *filename)
 {
     char *dot = strrchr(filename, '.');
     if (!dot || dot == filename)
-        {
-            return "";
-        }
+    {
+        return "";
+    }
     return dot + 1;
 }
 
@@ -323,15 +323,15 @@ static char *remove_filename_ext(const char *filename)
     char *tmpstring;
 
     if ((tmpstring = malloc(strlen(filename) + 1)) == NULL)
-        {
-            return NULL;
-        }
+    {
+        return NULL;
+    }
     strcpy(tmpstring, filename);
     char *lastdot = strrchr(tmpstring, '.');
     if (lastdot != NULL)
-        {
-            *lastdot = '\0';
-        }
+    {
+        *lastdot = '\0';
+    }
     return tmpstring;
 }
 
@@ -344,10 +344,10 @@ static errno_t filecopy(char *sourcefilename, char *destfilename)
     int   pos;
 
     if ((fp1 = fopen(sourcefilename, "r")) == NULL)
-        {
-            printf("Cannot open file \"%s\" \n", sourcefilename);
-            return RETURN_FAILURE;
-        }
+    {
+        printf("Cannot open file \"%s\" \n", sourcefilename);
+        return RETURN_FAILURE;
+    }
 
     fp2 = fopen(destfilename, "w");
 
@@ -355,10 +355,10 @@ static errno_t filecopy(char *sourcefilename, char *destfilename)
     pos = ftell(fp1);
     fseek(fp1, 0L, SEEK_SET); // file pointer set at start
     while (pos--)
-        {
-            ch = fgetc(fp1); // copying file character by character
-            fputc(ch, fp2);
-        }
+    {
+        ch = fgetc(fp1); // copying file character by character
+        fputc(ch, fp2);
+    }
     fclose(fp1);
     fclose(fp2);
 
@@ -380,52 +380,49 @@ errno_t fps_datadir_to_confdir(FUNCTION_PARAMETER_STRUCT *fps)
     // opendir() returns a pointer of DIR type.
     DIR *indir = opendir(fps->md->datadir);
     if (indir == NULL) // opendir returns NULL if couldn't open directory
-        {
-            printf("Cannot open directory \"%s\"\n", fps->md->datadir);
-            return RETURN_FAILURE;
-        }
+    {
+        printf("Cannot open directory \"%s\"\n", fps->md->datadir);
+        return RETURN_FAILURE;
+    }
 
     DIR *outdir = opendir(fps->md->confdir);
     if (outdir == NULL) // opendir returns NULL if couldn't open directory
-        {
-            printf("Cannot open directory\"%s\"", fps->md->confdir);
-            return RETURN_FAILURE;
-        }
+    {
+        printf("Cannot open directory\"%s\"", fps->md->confdir);
+        return RETURN_FAILURE;
+    }
 
     while ((indirentry = readdir(indir)) != NULL)
+    {
+        printf("%s\n", indirentry->d_name);
+        file_ext = get_filename_ext(indirentry->d_name);
+
+        if (strcmp(file_ext, "outlog") == 0)
         {
-            printf("%s\n", indirentry->d_name);
-            file_ext = get_filename_ext(indirentry->d_name);
+            char ffnamein[STRINGMAXLEN_FULLFILENAME];
+            char ffnameout[STRINGMAXLEN_FULLFILENAME];
 
-            if (strcmp(file_ext, "outlog") == 0)
-                {
-                    char ffnamein[STRINGMAXLEN_FULLFILENAME];
-                    char ffnameout[STRINGMAXLEN_FULLFILENAME];
+            WRITE_FULLFILENAME(ffnamein,
+                               "%s/%s",
+                               fps->md->datadir,
+                               indirentry->d_name);
+            WRITE_FULLFILENAME(ffnameout,
+                               "%s/%s",
+                               fps->md->confdir,
+                               indirentry->d_name);
+            filecopy(ffnamein, ffnameout);
 
-                    WRITE_FULLFILENAME(ffnamein,
-                                       "%s/%s",
-                                       fps->md->datadir,
-                                       indirentry->d_name);
-                    WRITE_FULLFILENAME(ffnameout,
-                                       "%s/%s",
-                                       fps->md->confdir,
-                                       indirentry->d_name);
-                    filecopy(ffnamein, ffnameout);
+            char *fnamenoext;
+            fnamenoext = remove_filename_ext(indirentry->d_name);
 
-                    char *fnamenoext;
-                    fnamenoext = remove_filename_ext(indirentry->d_name);
-
-                    WRITE_FULLFILENAME(ffnamein,
-                                       "%s/%s",
-                                       fps->md->datadir,
-                                       fnamenoext);
-                    WRITE_FULLFILENAME(ffnameout,
-                                       "%s/%s",
-                                       fps->md->confdir,
-                                       fnamenoext);
-                    filecopy(ffnamein, ffnameout);
-                }
+            WRITE_FULLFILENAME(ffnamein, "%s/%s", fps->md->datadir, fnamenoext);
+            WRITE_FULLFILENAME(ffnameout,
+                               "%s/%s",
+                               fps->md->confdir,
+                               fnamenoext);
+            filecopy(ffnamein, ffnameout);
         }
+    }
 
     closedir(indir);
     closedir(outdir);

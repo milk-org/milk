@@ -44,10 +44,10 @@ class pyProcessInfo
     ~pyProcessInfo()
     {
         if (m_pinfo != nullptr)
-            {
-                processinfo_cleanExit(m_pinfo);
-                m_pinfo = nullptr;
-            }
+        {
+            processinfo_cleanExit(m_pinfo);
+            m_pinfo = nullptr;
+        }
     }
 
     PROCESSINFO *operator->()
@@ -120,11 +120,11 @@ class pyProcessInfo
     int sigexit(int sig)
     {
         if (m_pinfo != nullptr)
-            {
-                int ret = processinfo_SIGexit(m_pinfo, sig);
-                m_pinfo = nullptr;
-                return ret;
-            }
+        {
+            int ret = processinfo_SIGexit(m_pinfo, sig);
+            m_pinfo = nullptr;
+            return ret;
+        }
         return EXIT_FAILURE;
     }
 
@@ -137,9 +137,9 @@ class pyProcessInfo
     int writeMessage(const char *message)
     {
         if (m_pinfo != nullptr)
-            {
-                return processinfo_WriteMessage(m_pinfo, message);
-            }
+        {
+            return processinfo_WriteMessage(m_pinfo, message);
+        }
         return EXIT_FAILURE;
     };
 
@@ -151,9 +151,9 @@ class pyProcessInfo
     int exec_start()
     {
         if ((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
-            {
-                return processinfo_exec_start(m_pinfo);
-            }
+        {
+            return processinfo_exec_start(m_pinfo);
+        }
         return EXIT_FAILURE;
     };
 
@@ -165,9 +165,9 @@ class pyProcessInfo
     int exec_end()
     {
         if ((m_pinfo != nullptr) && (m_pinfo->MeasureTiming == 1))
-            {
-                return processinfo_exec_end(m_pinfo);
-            }
+        {
+            return processinfo_exec_end(m_pinfo);
+        }
         return EXIT_FAILURE;
     };
 };

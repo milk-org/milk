@@ -39,25 +39,25 @@ static errno_t COREMOD_MEMORY_stream_monitorlimits__cli()
     function_parameter_getFPSargs_from_CLIfunc("streammlim");
 
     if (data.FPS_CMDCODE != 0)
-        { // use FPS implementation
-            // set pointers to CONF and RUN functions
-            data.FPS_CONFfunc = stream_monitorlimits_FPCONF;
-            data.FPS_RUNfunc  = stream_monitorlimits_RUN;
-            function_parameter_execFPScmd();
-            return RETURN_SUCCESS;
-        }
+    { // use FPS implementation
+        // set pointers to CONF and RUN functions
+        data.FPS_CONFfunc = stream_monitorlimits_FPCONF;
+        data.FPS_RUNfunc  = stream_monitorlimits_RUN;
+        function_parameter_execFPScmd();
+        return RETURN_SUCCESS;
+    }
 
     // call non FPS implementation - all parameters specified at function launch
     if (CLI_checkarg(1, CLIARG_IMG) == 0)
-        {
-            stream_monitorlimits(data.cmdargtoken[1].val.string);
+    {
+        stream_monitorlimits(data.cmdargtoken[1].val.string);
 
-            return RETURN_SUCCESS;
-        }
+        return RETURN_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================
@@ -231,10 +231,10 @@ errno_t stream_monitorlimits_RUN()
     processinfo->triggerdelay.tv_sec  = 0;
     processinfo->triggerdelay.tv_nsec = (long) (dtus * 1000);
     while (processinfo->triggerdelay.tv_nsec > 1000000000)
-        {
-            processinfo->triggerdelay.tv_nsec -= 1000000000;
-            processinfo->triggerdelay.tv_sec += 1;
-        }
+    {
+        processinfo->triggerdelay.tv_nsec -= 1000000000;
+        processinfo->triggerdelay.tv_sec += 1;
+    }
 
     // ===========================
     /// ### START LOOP
@@ -244,20 +244,20 @@ errno_t stream_monitorlimits_RUN()
     processinfo_loopstart(processinfo);
 
     while (loopOK == 1)
+    {
+        loopOK = processinfo_loopstep(processinfo);
+
+        processinfo_waitoninputstream(processinfo);
+
+        processinfo_exec_start(processinfo);
+
+        if (processinfo_compute_status(processinfo) == 1)
         {
-            loopOK = processinfo_loopstep(processinfo);
-
-            processinfo_waitoninputstream(processinfo);
-
-            processinfo_exec_start(processinfo);
-
-            if (processinfo_compute_status(processinfo) == 1)
-                {
-                }
-
-            // process signals, increment loop counter
-            processinfo_exec_end(processinfo);
         }
+
+        // process signals, increment loop counter
+        processinfo_exec_end(processinfo);
+    }
 
     // ==================================
     /// ### ENDING LOOP

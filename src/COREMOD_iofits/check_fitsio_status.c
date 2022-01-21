@@ -16,28 +16,26 @@ int check_FITSIO_status(const char *restrict cfile,
     int Ferr = 0;
 
     if (COREMOD_iofits_data.FITSIO_status != 0)
+    {
+        if (print == 1)
         {
-            if (print == 1)
-                {
-                    char errstr[STRINGMAXLEN_FITSIOCHECK_ERRSTRING];
-                    fits_get_errstatus(COREMOD_iofits_data.FITSIO_status,
-                                       errstr);
-                    fprintf(
-                        stderr,
-                        "%c[%d;%dmFITSIO error %d [%s, %s, %ld]: %s%c[%d;m\n\a",
-                        (char) 27,
-                        1,
-                        31,
-                        COREMOD_iofits_data.FITSIO_status,
-                        cfile,
-                        cfunc,
-                        cline,
-                        errstr,
-                        (char) 27,
-                        0);
-                }
-            Ferr = COREMOD_iofits_data.FITSIO_status;
+            char errstr[STRINGMAXLEN_FITSIOCHECK_ERRSTRING];
+            fits_get_errstatus(COREMOD_iofits_data.FITSIO_status, errstr);
+            fprintf(stderr,
+                    "%c[%d;%dmFITSIO error %d [%s, %s, %ld]: %s%c[%d;m\n\a",
+                    (char) 27,
+                    1,
+                    31,
+                    COREMOD_iofits_data.FITSIO_status,
+                    cfile,
+                    cfunc,
+                    cline,
+                    errstr,
+                    (char) 27,
+                    0);
         }
+        Ferr = COREMOD_iofits_data.FITSIO_status;
+    }
     COREMOD_iofits_data.FITSIO_status = 0;
 
     return (Ferr);

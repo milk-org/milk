@@ -651,23 +651,23 @@ typedef struct
 #define FPS_SETUP_INIT(VARfpsname, VARCMDmode)                                 \
     FUNCTION_PARAMETER_STRUCT fps;                                             \
     do                                                                         \
+    {                                                                          \
+        fps.SMfd = -1;                                                         \
+        fps      = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
+        strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);          \
+        fps.md->sourceline = __LINE__;                                         \
         {                                                                      \
-            fps.SMfd = -1;                                                     \
-            fps = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode));  \
-            strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);      \
-            fps.md->sourceline = __LINE__;                                     \
-            {                                                                  \
-                char msgstring[STRINGMAXLEN_FPS_LOGMSG];                       \
-                SNPRINTF_CHECK(msgstring,                                      \
-                               STRINGMAXLEN_FPS_LOGMSG,                        \
-                               "LOGSTART %s %d %s %d",                         \
-                               (VARfpsname),                                   \
-                               (VARCMDmode),                                   \
-                               fps.md->sourcefname,                            \
-                               fps.md->sourceline);                            \
-                functionparameter_outlog("FPSINIT", msgstring);                \
-                functionparameter_outlog_namelink();                           \
-            }                                                                  \
+            char msgstring[STRINGMAXLEN_FPS_LOGMSG];                           \
+            SNPRINTF_CHECK(msgstring,                                          \
+                           STRINGMAXLEN_FPS_LOGMSG,                            \
+                           "LOGSTART %s %d %s %d",                             \
+                           (VARfpsname),                                       \
+                           (VARCMDmode),                                       \
+                           fps.md->sourcefname,                                \
+                           fps.md->sourceline);                                \
+            functionparameter_outlog("FPSINIT", msgstring);                    \
+            functionparameter_outlog_namelink();                               \
+        }                                                                      \
     } while (0)
 
 /** @brief Connect to FPS
@@ -677,41 +677,41 @@ typedef struct
 #define FPS_CONNECT(VARfpsname, VARCMDmode)                                    \
     FUNCTION_PARAMETER_STRUCT fps;                                             \
     do                                                                         \
+    {                                                                          \
+        fps.SMfd = -1;                                                         \
+        if (function_parameter_struct_connect((VARfpsname),                    \
+                                              &fps,                            \
+                                              (VARCMDmode)) == -1)             \
         {                                                                      \
-            fps.SMfd = -1;                                                     \
-            if (function_parameter_struct_connect((VARfpsname),                \
-                                                  &fps,                        \
-                                                  (VARCMDmode)) == -1)         \
-                {                                                              \
-                    printf(                                                    \
-                        "ERROR: fps \"%s\" does not exist -> running without " \
-                        "FPS interface\n",                                     \
-                        VARfpsname);                                           \
-                    return RETURN_FAILURE;                                     \
-                }                                                              \
+            printf(                                                            \
+                "ERROR: fps \"%s\" does not exist -> running without "         \
+                "FPS interface\n",                                             \
+                VARfpsname);                                                   \
+            return RETURN_FAILURE;                                             \
+        }                                                                      \
     } while (0)
 
 /** @brief Start FPS configuration loop
  */
 #define FPS_CONFLOOP_START                                                     \
     if (!fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                           \
-        {                                                                      \
-            return RETURN_SUCCESS;                                             \
-        }                                                                      \
+    {                                                                          \
+        return RETURN_SUCCESS;                                                 \
+    }                                                                          \
     while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                         \
+    {                                                                          \
         {                                                                      \
+            struct timespec treq, trem;                                        \
+            treq.tv_sec  = 0;                                                  \
+            treq.tv_nsec = 50000;                                              \
+            nanosleep(&treq, &trem);                                           \
+            if (data.signal_INT == 1)                                          \
             {                                                                  \
-                struct timespec treq, trem;                                    \
-                treq.tv_sec  = 0;                                              \
-                treq.tv_nsec = 50000;                                          \
-                nanosleep(&treq, &trem);                                       \
-                if (data.signal_INT == 1)                                      \
-                    {                                                          \
-                        fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;          \
-                    }                                                          \
+                fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;                  \
             }                                                                  \
-            if (function_parameter_FPCONFloopstep(&fps) == 1)                  \
-                {
+        }                                                                      \
+        if (function_parameter_FPCONFloopstep(&fps) == 1)                      \
+        {
 
 /** @brief End FPS configuration loop
  */
@@ -728,38 +728,38 @@ typedef struct
     PROCESSINFO *processinfo;                                                  \
     int          processloopOK = 1;                                            \
     do                                                                         \
+    {                                                                          \
+        char pinfodescr[200];                                                  \
+        int  slen = snprintf(pinfodescr, 200, __VA_ARGS__);                    \
+        if (slen < 1)                                                          \
         {                                                                      \
-            char pinfodescr[200];                                              \
-            int  slen = snprintf(pinfodescr, 200, __VA_ARGS__);                \
-            if (slen < 1)                                                      \
-                {                                                              \
-                    PRINT_ERROR("snprintf wrote <1 char");                     \
-                    abort();                                                   \
-                }                                                              \
-            if (slen >= 200)                                                   \
-                {                                                              \
-                    PRINT_ERROR("snprintf string truncation");                 \
-                    abort();                                                   \
-                }                                                              \
-            processinfo = processinfo_setup(data.FPS_name,                     \
-                                            pinfodescr,                        \
-                                            "startup",                         \
-                                            __FUNCTION__,                      \
-                                            __FILE__,                          \
-                                            __LINE__);                         \
-            fps_to_processinfo(&fps, processinfo);                             \
+            PRINT_ERROR("snprintf wrote <1 char");                             \
+            abort();                                                           \
+        }                                                                      \
+        if (slen >= 200)                                                       \
+        {                                                                      \
+            PRINT_ERROR("snprintf string truncation");                         \
+            abort();                                                           \
+        }                                                                      \
+        processinfo = processinfo_setup(data.FPS_name,                         \
+                                        pinfodescr,                            \
+                                        "startup",                             \
+                                        __FUNCTION__,                          \
+                                        __FILE__,                              \
+                                        __LINE__);                             \
+        fps_to_processinfo(&fps, processinfo);                                 \
     } while (0)
 
 #define FPS_AUTORUN_SETUP(funcstring, shortname)                               \
     FUNCTION_PARAMETER_STRUCT fps;                                             \
     do                                                                         \
-        {                                                                      \
-            sprintf(data.FPS_name, "%s-%06ld", (shortname), (long) getpid());  \
-            data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                             \
-            FPSCONF_##funcstring();                                            \
-            function_parameter_struct_connect(data.FPS_name,                   \
-                                              &fps,                            \
-                                              FPSCONNECT_SIMPLE);              \
+    {                                                                          \
+        sprintf(data.FPS_name, "%s-%06ld", (shortname), (long) getpid());      \
+        data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
+        FPSCONF_##funcstring();                                                \
+        function_parameter_struct_connect(data.FPS_name,                       \
+                                          &fps,                                \
+                                          FPSCONNECT_SIMPLE);                  \
     } while (0)
 
 #define FPS_EXECFUNCTION_STD                                                   \
@@ -783,21 +783,21 @@ typedef struct
     {                                                                          \
         function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);            \
         if (data.FPS_CMDCODE != 0)                                             \
-            {                                                                  \
-                data.FPS_CONFfunc = FPSCONFfunction;                           \
-                data.FPS_RUNfunc  = FPSRUNfunction;                            \
-                function_parameter_execFPScmd();                               \
-                return RETURN_SUCCESS;                                         \
-            }                                                                  \
+        {                                                                      \
+            data.FPS_CONFfunc = FPSCONFfunction;                               \
+            data.FPS_RUNfunc  = FPSRUNfunction;                                \
+            function_parameter_execFPScmd();                                   \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
         if (CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)      \
-            {                                                                  \
-                FPSEXECfunction();                                             \
-                return RETURN_SUCCESS;                                         \
-            }                                                                  \
+        {                                                                      \
+            FPSEXECfunction();                                                 \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
         else                                                                   \
-            {                                                                  \
-                return CLICMD_INVALID_ARG;                                     \
-            }                                                                  \
+        {                                                                      \
+            return CLICMD_INVALID_ARG;                                         \
+        }                                                                      \
     }
 
 #define FPS_MAKE_CONF_FUNCNAME(x)      FPSCONF_##x

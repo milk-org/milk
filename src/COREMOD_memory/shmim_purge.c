@@ -50,43 +50,41 @@ errno_t shmim_purge(const char *strfilter)
 
     DEBUG_TRACEPOINT("scanning %d streams for purging", NBstream);
     for (int sindex = 0; sindex < NBstream; sindex++)
+    {
+        printf(" STREAM %3d   %s\n", sindex, streaminfo[sindex].sname);
+        imageID ID = image_ID(streaminfo[sindex].sname);
+        if (ID == -1)
         {
-            printf(" STREAM %3d   %s\n", sindex, streaminfo[sindex].sname);
-            imageID ID = image_ID(streaminfo[sindex].sname);
-            if (ID == -1)
-                {
-                    ID = read_sharedmem_image(streaminfo[sindex].sname);
-                }
-            DEBUG_TRACEPOINT("stream %s loaded ID %ld",
-                             streaminfo[sindex].sname,
-                             (long) ID);
-
-            pid_t opid; // owner PID
-            opid = data.image[ID].md[0].ownerPID;
-            DEBUG_TRACEPOINT("owner PID : %ld", (long) opid);
-            printf("owner PID : %ld\n", (long) opid);
-
-            if (opid != 0)
-                {
-                    if (getpgid(opid) >= 0)
-                        {
-                            printf("Keeping stream %s\n",
-                                   streaminfo[sindex].sname);
-                        }
-                    else
-                        {
-                            printf("Purging stream %s\n",
-                                   streaminfo[sindex].sname);
-                            ImageStreamIO_destroyIm(&data.image[ID]);
-                        }
-                }
-            else
-                {
-                    // owner unset: assumes no owner
-                    printf("Purging stream %s\n", streaminfo[sindex].sname);
-                    ImageStreamIO_destroyIm(&data.image[ID]);
-                }
+            ID = read_sharedmem_image(streaminfo[sindex].sname);
         }
+        DEBUG_TRACEPOINT("stream %s loaded ID %ld",
+                         streaminfo[sindex].sname,
+                         (long) ID);
+
+        pid_t opid; // owner PID
+        opid = data.image[ID].md[0].ownerPID;
+        DEBUG_TRACEPOINT("owner PID : %ld", (long) opid);
+        printf("owner PID : %ld\n", (long) opid);
+
+        if (opid != 0)
+        {
+            if (getpgid(opid) >= 0)
+            {
+                printf("Keeping stream %s\n", streaminfo[sindex].sname);
+            }
+            else
+            {
+                printf("Purging stream %s\n", streaminfo[sindex].sname);
+                ImageStreamIO_destroyIm(&data.image[ID]);
+            }
+        }
+        else
+        {
+            // owner unset: assumes no owner
+            printf("Purging stream %s\n", streaminfo[sindex].sname);
+            ImageStreamIO_destroyIm(&data.image[ID]);
+        }
+    }
 
     free(streaminfo);
 

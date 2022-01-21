@@ -63,101 +63,93 @@ errno_t mk_complex_from_reim(const char *re_name,
 
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
     if (naxes == NULL)
-        {
-            PRINT_ERROR("malloc error");
-            abort();
-        }
+    {
+        PRINT_ERROR("malloc error");
+        abort();
+    }
 
     for (int8_t i = 0; i < naxis; i++)
-        {
-            naxes[i] = data.image[IDre].md[0].size[i];
-        }
+    {
+        naxes[i] = data.image[IDre].md[0].size[i];
+    }
     uint64_t nelement = data.image[IDre].md[0].nelement;
 
     if ((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
+    {
+        datatype_out = _DATATYPE_COMPLEX_FLOAT;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
-            datatype_out = _DATATYPE_COMPLEX_FLOAT;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.CF[ii].re =
-                        data.image[IDre].array.F[ii];
-                    data.image[IDout].array.CF[ii].im =
-                        data.image[IDim].array.F[ii];
-                }
+            data.image[IDout].array.CF[ii].re = data.image[IDre].array.F[ii];
+            data.image[IDout].array.CF[ii].im = data.image[IDim].array.F[ii];
         }
+    }
     else if ((datatype_re == _DATATYPE_FLOAT) &&
              (datatype_im == _DATATYPE_DOUBLE))
+    {
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
-            datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.CD[ii].re =
-                        data.image[IDre].array.F[ii];
-                    data.image[IDout].array.CD[ii].im =
-                        data.image[IDim].array.D[ii];
-                }
+            data.image[IDout].array.CD[ii].re = data.image[IDre].array.F[ii];
+            data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
         }
+    }
     else if ((datatype_re == _DATATYPE_DOUBLE) &&
              (datatype_im == _DATATYPE_FLOAT))
+    {
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
-            datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.CD[ii].re =
-                        data.image[IDre].array.D[ii];
-                    data.image[IDout].array.CD[ii].im =
-                        data.image[IDim].array.F[ii];
-                }
+            data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
+            data.image[IDout].array.CD[ii].im = data.image[IDim].array.F[ii];
         }
+    }
     else if ((datatype_re == _DATATYPE_DOUBLE) &&
              (datatype_im == _DATATYPE_DOUBLE))
+    {
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        for (uint64_t ii = 0; ii < nelement; ii++)
         {
-            datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            for (uint64_t ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.CD[ii].re =
-                        data.image[IDre].array.D[ii];
-                    data.image[IDout].array.CD[ii].im =
-                        data.image[IDim].array.D[ii];
-                }
+            data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
+            data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
         }
+    }
     else
-        {
-            PRINT_ERROR("Wrong image type(s)\n");
-            abort();
-        }
+    {
+        PRINT_ERROR("Wrong image type(s)\n");
+        abort();
+    }
     // Note: openMP doesn't help here
 
     free(naxes);

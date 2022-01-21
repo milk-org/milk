@@ -58,14 +58,14 @@ errno_t COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
 static errno_t COREMOD_MEMORY_logshim_printstatus__cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
-        {
-            COREMOD_MEMORY_logshim_printstatus(data.cmdargtoken[1].val.string);
-            return CLICMD_SUCCESS;
-        }
+    {
+        COREMOD_MEMORY_logshim_printstatus(data.cmdargtoken[1].val.string);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 static errno_t COREMOD_MEMORY_logshim_set_on__cli()
@@ -73,16 +73,16 @@ static errno_t COREMOD_MEMORY_logshim_set_on__cli()
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_LONG) ==
         0)
-        {
-            printf("logshim_set_on ----------------------\n");
-            COREMOD_MEMORY_logshim_set_on(data.cmdargtoken[1].val.string,
-                                          data.cmdargtoken[2].val.numl);
-            return CLICMD_SUCCESS;
-        }
+    {
+        printf("logshim_set_on ----------------------\n");
+        COREMOD_MEMORY_logshim_set_on(data.cmdargtoken[1].val.string,
+                                      data.cmdargtoken[2].val.numl);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 static errno_t COREMOD_MEMORY_logshim_set_logexit__cli()
@@ -90,39 +90,39 @@ static errno_t COREMOD_MEMORY_logshim_set_logexit__cli()
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_LONG) ==
         0)
-        {
-            COREMOD_MEMORY_logshim_set_logexit(data.cmdargtoken[1].val.string,
-                                               data.cmdargtoken[2].val.numl);
-            return CLICMD_SUCCESS;
-        }
+    {
+        COREMOD_MEMORY_logshim_set_logexit(data.cmdargtoken[1].val.string,
+                                           data.cmdargtoken[2].val.numl);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
 {
 
     if (CLI_checkarg_noerrmsg(4, CLIARG_STR_NOT_IMG) != 0)
-        {
-            sprintf(data.cmdargtoken[4].val.string, "null");
-        }
+    {
+        sprintf(data.cmdargtoken[4].val.string, "null");
+    }
 
     if (0 + CLI_checkarg(1, 3) + CLI_checkarg(2, CLIARG_LONG) +
             CLI_checkarg(3, 3) ==
         0)
-        {
-            COREMOD_MEMORY_sharedMem_2Dim_log(data.cmdargtoken[1].val.string,
-                                              data.cmdargtoken[2].val.numl,
-                                              data.cmdargtoken[3].val.string,
-                                              data.cmdargtoken[4].val.string);
-            return CLICMD_SUCCESS;
-        }
+    {
+        COREMOD_MEMORY_sharedMem_2Dim_log(data.cmdargtoken[1].val.string,
+                                          data.cmdargtoken[2].val.numl,
+                                          data.cmdargtoken[3].val.string,
+                                          data.cmdargtoken[4].val.string);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================
@@ -204,26 +204,26 @@ void *save_fits_function(void *ptr)
 
     schedpar.sched_priority = RT_priority;
     if (seteuid(data.euid) != 0) //This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    {
+        PRINT_ERROR("seteuid error");
+    }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
     if (seteuid(data.ruid) != 0)   //Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    {
+        PRINT_ERROR("seteuid error");
+    }
 
     printf("===================== START SAVE THREAD =====================\n");
     fflush(stdout);
 
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if (imsizearray == NULL)
-        {
-            PRINT_ERROR("malloc error");
-            abort();
-        }
+    {
+        PRINT_ERROR("malloc error");
+        abort();
+    }
 
     //    tmsg = (struct savethreadmsg*) ptr;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
@@ -316,165 +316,164 @@ void *save_fits_function(void *ptr)
             lt.tm_zone);
 
     if (tmsg->partial == 0) // full image
-        {
-            printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+    {
+        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
 
-            saveFITS(tmsg->iname,
-                     tmsg->fname,
-                     0,
-                     tmsg->fname_auxFITSheader,
-                     imkwarray,
-                     NBcustomKW);
-        }
+        saveFITS(tmsg->iname,
+                 tmsg->fname,
+                 0,
+                 tmsg->fname_auxFITSheader,
+                 imkwarray,
+                 NBcustomKW);
+    }
     else
+    {
+        ID       = image_ID(tmsg->iname);
+        datatype = data.image[ID].md[0].datatype;
+        xsize    = data.image[ID].md[0].size[0];
+        ysize    = data.image[ID].md[0].size[1];
+
+        imsizearray[0] = xsize;
+        imsizearray[1] = ysize;
+        imsizearray[2] = tmsg->cubesize;
+
+        create_image_ID("tmpsavecube",
+                        3,
+                        imsizearray,
+                        datatype,
+                        0,
+                        10,
+                        0,
+                        &IDc);
+
+        switch (datatype)
         {
-            ID       = image_ID(tmsg->iname);
-            datatype = data.image[ID].md[0].datatype;
-            xsize    = data.image[ID].md[0].size[0];
-            ysize    = data.image[ID].md[0].size[1];
 
-            imsizearray[0] = xsize;
-            imsizearray[1] = ysize;
-            imsizearray[2] = tmsg->cubesize;
+        case _DATATYPE_UINT8:
+            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.UI8;  // source
+            ptr1      = (char *) data.image[IDc].array.UI8; // destination
+            break;
+        case _DATATYPE_INT8:
+            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.SI8;  // source
+            ptr1      = (char *) data.image[IDc].array.SI8; // destination
+            break;
 
-            create_image_ID("tmpsavecube",
-                            3,
-                            imsizearray,
-                            datatype,
-                            0,
-                            10,
-                            0,
-                            &IDc);
+        case _DATATYPE_UINT16:
+            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.UI16;  // source
+            ptr1      = (char *) data.image[IDc].array.UI16; // destination
+            break;
+        case _DATATYPE_INT16:
+            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.SI16;  // source
+            ptr1      = (char *) data.image[IDc].array.SI16; // destination
+            break;
 
-            switch (datatype)
-                {
+        case _DATATYPE_UINT32:
+            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.UI32;  // source
+            ptr1      = (char *) data.image[IDc].array.UI32; // destination
+            break;
+        case _DATATYPE_INT32:
+            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.SI32;  // source
+            ptr1      = (char *) data.image[IDc].array.SI32; // destination
+            break;
 
-                case _DATATYPE_UINT8:
-                    framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.UI8; // source
-                    ptr1 = (char *) data.image[IDc].array.UI8; // destination
-                    break;
-                case _DATATYPE_INT8:
-                    framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.SI8; // source
-                    ptr1 = (char *) data.image[IDc].array.SI8; // destination
-                    break;
+        case _DATATYPE_UINT64:
+            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.UI64;  // source
+            ptr1      = (char *) data.image[IDc].array.UI64; // destination
+            break;
+        case _DATATYPE_INT64:
+            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.SI64;  // source
+            ptr1      = (char *) data.image[IDc].array.SI64; // destination
+            break;
 
-                case _DATATYPE_UINT16:
-                    framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.UI16; // source
-                    ptr1 = (char *) data.image[IDc].array.UI16; // destination
-                    break;
-                case _DATATYPE_INT16:
-                    framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.SI16; // source
-                    ptr1 = (char *) data.image[IDc].array.SI16; // destination
-                    break;
+        case _DATATYPE_FLOAT:
+            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.F;  // source
+            ptr1      = (char *) data.image[IDc].array.F; // destination
+            break;
+        case _DATATYPE_DOUBLE:
+            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+            ptr0      = (char *) data.image[ID].array.D;  // source
+            ptr1      = (char *) data.image[IDc].array.D; // destination
+            break;
 
-                case _DATATYPE_UINT32:
-                    framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.UI32; // source
-                    ptr1 = (char *) data.image[IDc].array.UI32; // destination
-                    break;
-                case _DATATYPE_INT32:
-                    framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.SI32; // source
-                    ptr1 = (char *) data.image[IDc].array.SI32; // destination
-                    break;
-
-                case _DATATYPE_UINT64:
-                    framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.UI64; // source
-                    ptr1 = (char *) data.image[IDc].array.UI64; // destination
-                    break;
-                case _DATATYPE_INT64:
-                    framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.SI64; // source
-                    ptr1 = (char *) data.image[IDc].array.SI64; // destination
-                    break;
-
-                case _DATATYPE_FLOAT:
-                    framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.F;  // source
-                    ptr1      = (char *) data.image[IDc].array.F; // destination
-                    break;
-                case _DATATYPE_DOUBLE:
-                    framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-                    ptr0      = (char *) data.image[ID].array.D;  // source
-                    ptr1      = (char *) data.image[IDc].array.D; // destination
-                    break;
-
-                default:
-                    printf("ERROR: WRONG DATA TYPE\n");
-                    free(imsizearray);
-                    free(tmsg);
-                    exit(0);
-                    break;
-                }
-
-            memcpy((void *) ptr1, (void *) ptr0, framesize * tmsg->cubesize);
-
-            printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
-            saveFITS("tmpsavecube",
-                     tmsg->fname,
-                     0,
-                     tmsg->fname_auxFITSheader,
-                     imkwarray,
-                     NBcustomKW);
-
-            delete_image_ID("tmpsavecube", DELETE_IMAGE_ERRMODE_WARNING);
+        default:
+            printf("ERROR: WRONG DATA TYPE\n");
+            free(imsizearray);
+            free(tmsg);
+            exit(0);
+            break;
         }
+
+        memcpy((void *) ptr1, (void *) ptr0, framesize * tmsg->cubesize);
+
+        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+        saveFITS("tmpsavecube",
+                 tmsg->fname,
+                 0,
+                 tmsg->fname_auxFITSheader,
+                 imkwarray,
+                 NBcustomKW);
+
+        delete_image_ID("tmpsavecube", DELETE_IMAGE_ERRMODE_WARNING);
+    }
 
     free(imkwarray);
 
     if (tmsg->saveascii == 1)
+    {
+        if ((fp = fopen(tmsg->fnameascii, "w")) == NULL)
         {
-            if ((fp = fopen(tmsg->fnameascii, "w")) == NULL)
-                {
-                    printf("ERROR: cannot create file \"%s\"\n",
-                           tmsg->fnameascii);
-                    exit(0);
-                }
-
-            fprintf(fp, "# Telemetry stream timing data \n");
-            fprintf(fp,
-                    "# File written by function %s in file %s\n",
-                    __FUNCTION__,
-                    __FILE__);
-            fprintf(fp, "# \n");
-            fprintf(fp, "# col1 : datacube frame index\n");
-            fprintf(fp, "# col2 : Main index\n");
-            fprintf(fp, "# col3 : Time since cube origin\n");
-            fprintf(fp, "# col4 : Absolute time\n");
-            fprintf(fp, "# col5 : stream cnt0 index\n");
-            fprintf(fp, "# col6 : stream cnt1 index\n");
-            fprintf(fp, "# \n");
-
-            double t0; // time reference
-            t0 = tmsg->arraytime[0];
-            for (k = 0; k < tmsg->cubesize; k++)
-                {
-                    //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
-
-                    // entries are:
-                    // - index within cube
-                    // - loop index (if applicable)
-                    // - time since cube start
-                    // - time (absolute)
-                    // - cnt0
-                    // - cnt1
-
-                    fprintf(fp,
-                            "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n",
-                            k,
-                            tmsg->arrayindex[k],
-                            tmsg->arraytime[k] - t0,
-                            tmsg->arraytime[k],
-                            tmsg->arraycnt0[k],
-                            tmsg->arraycnt1[k]);
-                }
-            fclose(fp);
+            printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
+            exit(0);
         }
+
+        fprintf(fp, "# Telemetry stream timing data \n");
+        fprintf(fp,
+                "# File written by function %s in file %s\n",
+                __FUNCTION__,
+                __FILE__);
+        fprintf(fp, "# \n");
+        fprintf(fp, "# col1 : datacube frame index\n");
+        fprintf(fp, "# col2 : Main index\n");
+        fprintf(fp, "# col3 : Time since cube origin\n");
+        fprintf(fp, "# col4 : Absolute time\n");
+        fprintf(fp, "# col5 : stream cnt0 index\n");
+        fprintf(fp, "# col6 : stream cnt1 index\n");
+        fprintf(fp, "# \n");
+
+        double t0; // time reference
+        t0 = tmsg->arraytime[0];
+        for (k = 0; k < tmsg->cubesize; k++)
+        {
+            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
+
+            // entries are:
+            // - index within cube
+            // - loop index (if applicable)
+            // - time since cube start
+            // - time (absolute)
+            // - cnt0
+            // - cnt1
+
+            fprintf(fp,
+                    "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n",
+                    k,
+                    tmsg->arrayindex[k],
+                    tmsg->arraytime[k] - t0,
+                    tmsg->arraytime[k],
+                    tmsg->arraycnt0[k],
+                    tmsg->arraycnt1[k]);
+        }
+        fclose(fp);
+    }
 
     ID   = image_ID(tmsg->iname);
     tret = ID;
@@ -506,37 +505,37 @@ LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(const char *logshimname)
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
     if (SM_fd == -1)
-        {
-            printf("File \"%s\"\n", SM_fname);
-            fflush(stdout);
-            perror("Error opening file for writing");
-            exit(0);
-        }
+    {
+        printf("File \"%s\"\n", SM_fname);
+        fflush(stdout);
+        perror("Error opening file for writing");
+        exit(0);
+    }
 
     result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
     if (result == -1)
-        {
-            close(SM_fd);
-            PRINT_ERROR("Error calling lseek() to 'stretch' the file");
-            exit(0);
-        }
+    {
+        close(SM_fd);
+        PRINT_ERROR("Error calling lseek() to 'stretch' the file");
+        exit(0);
+    }
 
     result = write(SM_fd, "", 1);
     if (result != 1)
-        {
-            close(SM_fd);
-            perror("Error writing last byte of the file");
-            exit(0);
-        }
+    {
+        close(SM_fd);
+        perror("Error writing last byte of the file");
+        exit(0);
+    }
 
     map = (LOGSHIM_CONF *)
         mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
     if (map == MAP_FAILED)
-        {
-            close(SM_fd);
-            perror("Error mmapping the file");
-            exit(0);
-        }
+    {
+        close(SM_fd);
+        perror("Error mmapping the file");
+        exit(0);
+    }
 
     map[0].on       = 0;
     map[0].cnt      = 0;
@@ -562,41 +561,41 @@ errno_t COREMOD_MEMORY_logshim_printstatus(const char *IDname)
 
     SM_fd = open(SM_fname, O_RDWR);
     if (SM_fd == -1)
+    {
+        printf("Cannot import file - continuing\n");
+        exit(0);
+    }
+    else
+    {
+        fstat(SM_fd, &file_stat);
+        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
+
+        map = (LOGSHIM_CONF *) mmap(0,
+                                    file_stat.st_size,
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_SHARED,
+                                    SM_fd,
+                                    0);
+        if (map == MAP_FAILED)
         {
-            printf("Cannot import file - continuing\n");
+            close(SM_fd);
+            perror("Error mmapping the file");
             exit(0);
         }
-    else
+
+        printf("LOG   on = %d\n", map[0].on);
+        printf("    cnt  = %lld\n", map[0].cnt);
+        printf(" filecnt = %lld\n", map[0].filecnt);
+        printf("interval = %ld\n", map[0].interval);
+        printf("logexit  = %d\n", map[0].logexit);
+
+        if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
-            fstat(SM_fd, &file_stat);
-            printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-            map = (LOGSHIM_CONF *) mmap(0,
-                                        file_stat.st_size,
-                                        PROT_READ | PROT_WRITE,
-                                        MAP_SHARED,
-                                        SM_fd,
-                                        0);
-            if (map == MAP_FAILED)
-                {
-                    close(SM_fd);
-                    perror("Error mmapping the file");
-                    exit(0);
-                }
-
-            printf("LOG   on = %d\n", map[0].on);
-            printf("    cnt  = %lld\n", map[0].cnt);
-            printf(" filecnt = %lld\n", map[0].filecnt);
-            printf("interval = %ld\n", map[0].interval);
-            printf("logexit  = %d\n", map[0].logexit);
-
-            if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-                {
-                    printf("unmapping %s\n", SM_fname);
-                    perror("Error un-mmapping the file");
-                }
-            close(SM_fd);
+            printf("unmapping %s\n", SM_fname);
+            perror("Error un-mmapping the file");
         }
+        close(SM_fd);
+    }
     return RETURN_SUCCESS;
 }
 
@@ -615,37 +614,37 @@ errno_t COREMOD_MEMORY_logshim_set_on(const char *IDname, int setv)
 
     SM_fd = open(SM_fname, O_RDWR);
     if (SM_fd == -1)
+    {
+        printf("Cannot import file - continuing\n");
+        exit(0);
+    }
+    else
+    {
+        fstat(SM_fd, &file_stat);
+        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
+
+        map = (LOGSHIM_CONF *) mmap(0,
+                                    file_stat.st_size,
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_SHARED,
+                                    SM_fd,
+                                    0);
+        if (map == MAP_FAILED)
         {
-            printf("Cannot import file - continuing\n");
+            close(SM_fd);
+            perror("Error mmapping the file");
             exit(0);
         }
-    else
+
+        map[0].on = setv;
+
+        if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
-            fstat(SM_fd, &file_stat);
-            printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-            map = (LOGSHIM_CONF *) mmap(0,
-                                        file_stat.st_size,
-                                        PROT_READ | PROT_WRITE,
-                                        MAP_SHARED,
-                                        SM_fd,
-                                        0);
-            if (map == MAP_FAILED)
-                {
-                    close(SM_fd);
-                    perror("Error mmapping the file");
-                    exit(0);
-                }
-
-            map[0].on = setv;
-
-            if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-                {
-                    printf("unmapping %s\n", SM_fname);
-                    perror("Error un-mmapping the file");
-                }
-            close(SM_fd);
+            printf("unmapping %s\n", SM_fname);
+            perror("Error un-mmapping the file");
         }
+        close(SM_fd);
+    }
     return RETURN_SUCCESS;
 }
 
@@ -664,37 +663,37 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
 
     SM_fd = open(SM_fname, O_RDWR);
     if (SM_fd == -1)
+    {
+        printf("Cannot import file - continuing\n");
+        exit(0);
+    }
+    else
+    {
+        fstat(SM_fd, &file_stat);
+        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
+
+        map = (LOGSHIM_CONF *) mmap(0,
+                                    file_stat.st_size,
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_SHARED,
+                                    SM_fd,
+                                    0);
+        if (map == MAP_FAILED)
         {
-            printf("Cannot import file - continuing\n");
+            close(SM_fd);
+            perror("Error mmapping the file");
             exit(0);
         }
-    else
+
+        map[0].logexit = setv;
+
+        if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
-            fstat(SM_fd, &file_stat);
-            printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
-
-            map = (LOGSHIM_CONF *) mmap(0,
-                                        file_stat.st_size,
-                                        PROT_READ | PROT_WRITE,
-                                        MAP_SHARED,
-                                        SM_fd,
-                                        0);
-            if (map == MAP_FAILED)
-                {
-                    close(SM_fd);
-                    perror("Error mmapping the file");
-                    exit(0);
-                }
-
-            map[0].logexit = setv;
-
-            if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
-                {
-                    printf("unmapping %s\n", SM_fname);
-                    perror("Error un-mmapping the file");
-                }
-            close(SM_fd);
+            printf("unmapping %s\n", SM_fname);
+            perror("Error un-mmapping the file");
         }
+        close(SM_fd);
+    }
     return RETURN_SUCCESS;
 }
 
@@ -793,25 +792,25 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     schedpar.sched_priority = RT_priority;
 
     if (seteuid(data.euid) != 0) //This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    {
+        PRINT_ERROR("seteuid error");
+    }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
     if (seteuid(data.ruid) != 0)   //Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    {
+        PRINT_ERROR("seteuid error");
+    }
 
     IDlogdata = image_ID(IDlogdata_name);
     if (IDlogdata != -1)
+    {
+        if (data.image[IDlogdata].md[0].datatype != _DATATYPE_FLOAT)
         {
-            if (data.image[IDlogdata].md[0].datatype != _DATATYPE_FLOAT)
-                {
-                    IDlogdata = -1;
-                }
+            IDlogdata = -1;
         }
+    }
     printf("log data name = %s\n", IDlogdata_name);
 
     logshimconf = COREMOD_MEMORY_logshim_create_SHMconf(IDname);
@@ -831,9 +830,9 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     ysize    = data.image[ID].md[0].size[1];
 
     if (data.image[ID].md[0].naxis == 3)
-        {
-            is3Dcube = 1;
-        }
+    {
+        is3Dcube = 1;
+    }
 
     /** create the 2 buffers */
 
@@ -885,107 +884,107 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     IDb = IDb0;
 
     switch (datatype)
-        {
+    {
 
-        case _DATATYPE_FLOAT:
-            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.F;
-            break;
+    case _DATATYPE_FLOAT:
+        framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.F;
+        break;
 
-        case _DATATYPE_INT8:
-            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.SI8;
-            break;
+    case _DATATYPE_INT8:
+        framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.SI8;
+        break;
 
-        case _DATATYPE_UINT8:
-            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.UI8;
-            break;
+    case _DATATYPE_UINT8:
+        framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.UI8;
+        break;
 
-        case _DATATYPE_INT16:
-            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.SI16;
-            break;
+    case _DATATYPE_INT16:
+        framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.SI16;
+        break;
 
-        case _DATATYPE_UINT16:
-            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.UI16;
-            break;
+    case _DATATYPE_UINT16:
+        framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.UI16;
+        break;
 
-        case _DATATYPE_INT32:
-            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.SI32;
-            break;
+    case _DATATYPE_INT32:
+        framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.SI32;
+        break;
 
-        case _DATATYPE_UINT32:
-            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.UI32;
-            break;
+    case _DATATYPE_UINT32:
+        framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.UI32;
+        break;
 
-        case _DATATYPE_INT64:
-            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.SI64;
-            break;
+    case _DATATYPE_INT64:
+        framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.SI64;
+        break;
 
-        case _DATATYPE_UINT64:
-            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.UI64;
-            break;
+    case _DATATYPE_UINT64:
+        framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.UI64;
+        break;
 
-        case _DATATYPE_DOUBLE:
-            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            ptr0_0    = (char *) data.image[ID].array.D;
-            break;
+    case _DATATYPE_DOUBLE:
+        framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+        ptr0_0    = (char *) data.image[ID].array.D;
+        break;
 
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            exit(0);
-            break;
-        }
+    default:
+        printf("ERROR: WRONG DATA TYPE\n");
+        exit(0);
+        break;
+    }
 
     switch (datatype)
-        {
+    {
 
-        case _DATATYPE_FLOAT:
-            ptr1_0 = (char *) data.image[IDb].array.F;
-            break;
+    case _DATATYPE_FLOAT:
+        ptr1_0 = (char *) data.image[IDb].array.F;
+        break;
 
-        case _DATATYPE_INT8:
-            ptr1_0 = (char *) data.image[IDb].array.SI8;
-            break;
+    case _DATATYPE_INT8:
+        ptr1_0 = (char *) data.image[IDb].array.SI8;
+        break;
 
-        case _DATATYPE_UINT8:
-            ptr1_0 = (char *) data.image[IDb].array.UI8;
-            break;
+    case _DATATYPE_UINT8:
+        ptr1_0 = (char *) data.image[IDb].array.UI8;
+        break;
 
-        case _DATATYPE_INT16:
-            ptr1_0 = (char *) data.image[IDb].array.SI16;
-            break;
+    case _DATATYPE_INT16:
+        ptr1_0 = (char *) data.image[IDb].array.SI16;
+        break;
 
-        case _DATATYPE_UINT16:
-            ptr1_0 = (char *) data.image[IDb].array.UI16;
-            break;
+    case _DATATYPE_UINT16:
+        ptr1_0 = (char *) data.image[IDb].array.UI16;
+        break;
 
-        case _DATATYPE_INT32:
-            ptr1_0 = (char *) data.image[IDb].array.SI32;
-            break;
+    case _DATATYPE_INT32:
+        ptr1_0 = (char *) data.image[IDb].array.SI32;
+        break;
 
-        case _DATATYPE_UINT32:
-            ptr1_0 = (char *) data.image[IDb].array.UI32;
-            break;
+    case _DATATYPE_UINT32:
+        ptr1_0 = (char *) data.image[IDb].array.UI32;
+        break;
 
-        case _DATATYPE_INT64:
-            ptr1_0 = (char *) data.image[IDb].array.SI64;
-            break;
+    case _DATATYPE_INT64:
+        ptr1_0 = (char *) data.image[IDb].array.SI64;
+        break;
 
-        case _DATATYPE_UINT64:
-            ptr1_0 = (char *) data.image[IDb].array.UI64;
-            break;
+    case _DATATYPE_UINT64:
+        ptr1_0 = (char *) data.image[IDb].array.UI64;
+        break;
 
-        case _DATATYPE_DOUBLE:
-            ptr1_0 = (char *) data.image[IDb].array.D;
-            break;
-        }
+    case _DATATYPE_DOUBLE:
+        ptr1_0 = (char *) data.image[IDb].array.D;
+        break;
+    }
 
     cnt = data.image[ID].md[0].cnt0 - 1;
 
@@ -998,566 +997,538 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     // using semlog ?
     use_semlog = 0;
     if (data.image[ID].semlog != NULL)
-        {
-            use_semlog = 1;
-            sem_getvalue(data.image[ID].semlog, &semval);
+    {
+        use_semlog = 1;
+        sem_getvalue(data.image[ID].semlog, &semval);
 
-            // bring semaphore value to 1 to only save 1 frame
-            while (semval > 1)
-                {
-                    sem_wait(data.image[ID].semlog);
-                    sem_getvalue(data.image[ID].semlog, &semval);
-                }
-            if (semval == 0)
-                {
-                    sem_post(data.image[ID].semlog);
-                }
+        // bring semaphore value to 1 to only save 1 frame
+        while (semval > 1)
+        {
+            sem_wait(data.image[ID].semlog);
+            sem_getvalue(data.image[ID].semlog, &semval);
         }
+        if (semval == 0)
+        {
+            sem_post(data.image[ID].semlog);
+        }
+    }
 
     while ((logshimconf[0].filecnt != NBfiles) && (logshimconf[0].logexit == 0))
+    {
+        int timeout; // 1 if timeout has occurred
+
+        cntwait = 0;
+        noframe = 0;
+        wOK     = 1;
+
+        if (VERBOSE > 1)
         {
-            int timeout; // 1 if timeout has occurred
+            printf("%5d  Entering wait loop   index = %ld %d\n",
+                   __LINE__,
+                   index,
+                   noframe);
+        }
 
-            cntwait = 0;
-            noframe = 0;
-            wOK     = 1;
-
+        timeout = 0;
+        if (likely(use_semlog == 1))
+        {
             if (VERBOSE > 1)
+            {
+                printf("%5d  Waiting for semaphore\n", __LINE__);
+            }
+
+            if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            {
+                perror("clock_gettime");
+                exit(EXIT_FAILURE);
+            }
+            ts.tv_sec += WaitSec;
+
+            ret = sem_timedwait(data.image[ID].semlog, &ts);
+            if (ret == -1)
+            {
+                if (errno == ETIMEDOUT)
                 {
-                    printf("%5d  Entering wait loop   index = %ld %d\n",
-                           __LINE__,
-                           index,
-                           noframe);
-                }
-
-            timeout = 0;
-            if (likely(use_semlog == 1))
-                {
-                    if (VERBOSE > 1)
-                        {
-                            printf("%5d  Waiting for semaphore\n", __LINE__);
-                        }
-
-                    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-                        {
-                            perror("clock_gettime");
-                            exit(EXIT_FAILURE);
-                        }
-                    ts.tv_sec += WaitSec;
-
-                    ret = sem_timedwait(data.image[ID].semlog, &ts);
-                    if (ret == -1)
-                        {
-                            if (errno == ETIMEDOUT)
-                                {
-                                    printf(
-                                        "%5d  sem_timedwait() timed out (%d "
-                                        "sec) -[index %ld]\n",
-                                        __LINE__,
-                                        WaitSec,
-                                        index);
-                                    if (VERBOSE > 0)
-                                        {
-                                            printf(
-                                                "%5d  sem time elapsed -> Save "
-                                                "current cube [index %ld]\n",
-                                                __LINE__,
-                                                index);
-                                        }
-
-                                    strcpy(tmsg->iname, iname);
-                                    strcpy(tmsg->fname, fname);
-                                    tmsg->partial  = 1; // partial cube
-                                    tmsg->cubesize = index;
-
-                                    memcpy(array_time_cp,
-                                           array_time,
-                                           sizeof(double) * index);
-                                    memcpy(array_cnt0_cp,
-                                           array_cnt0,
-                                           sizeof(uint64_t) * index);
-                                    memcpy(array_cnt1_cp,
-                                           array_cnt1,
-                                           sizeof(uint64_t) * index);
-
-                                    tmsg->arrayindex = array_cnt0_cp;
-                                    tmsg->arraycnt0  = array_cnt0_cp;
-                                    tmsg->arraycnt1  = array_cnt1_cp;
-                                    tmsg->arraytime  = array_time_cp;
-
-                                    timeout = 1;
-                                }
-                            if (errno == EINTR)
-                                {
-                                    printf(
-                                        "%5d  sem_timedwait [index %ld]: The "
-                                        "call was interrupted by a signal "
-                                        "handler\n",
-                                        __LINE__,
-                                        index);
-                                }
-
-                            if (errno == EINVAL)
-                                {
-                                    printf(
-                                        "%5d  sem_timedwait [index %ld]: Not a "
-                                        "valid semaphore\n",
-                                        __LINE__,
-                                        index);
-                                    printf(
-                                        "               The value of "
-                                        "abs_timeout.tv_nsecs is less than 0, "
-                                        "or greater than or equal "
-                                        "to 1000 million\n");
-                                }
-
-                            if (errno == EAGAIN)
-                                {
-                                    printf(
-                                        "%5d  sem_timedwait [index %ld]: The "
-                                        "operation could not be performed "
-                                        "without blocking "
-                                        "(i.e., the semaphore currently has "
-                                        "the value zero)\n",
-                                        __LINE__,
-                                        index);
-                                }
-
-                            wOK = 0;
-                            if (index == 0)
-                                {
-                                    noframe = 1;
-                                }
-                            else
-                                {
-                                    noframe = 0;
-                                }
-                        }
-                }
-            else
-                {
-                    if (VERBOSE > 1)
-                        {
-                            printf(
-                                "%5d  Not using semaphore, watching counter\n",
-                                __LINE__);
-                        }
-
-                    while (((cnt == data.image[ID].md[0].cnt0) ||
-                            (logshimconf[0].on == 0)) &&
-                           (wOK == 1))
-                        {
-                            if (VERBOSE > 1)
-                                {
-                                    printf("%5d  waiting time step\n",
-                                           __LINE__);
-                                }
-
-                            usleep(waitdelayus);
-                            cntwait++;
-
-                            if (VERBOSE > 1)
-                                {
-                                    printf("%5d  cntwait = %lld\n",
-                                           __LINE__,
-                                           cntwait);
-                                    fflush(stdout);
-                                }
-
-                            if (cntwait > cntwaitlim) // save current cube
-                                {
-                                    if (VERBOSE > 0)
-                                        {
-                                            printf(
-                                                "%5d  cnt time elapsed -> Save "
-                                                "current cube\n",
-                                                __LINE__);
-                                        }
-
-                                    strcpy(tmsg->iname, iname);
-                                    strcpy(tmsg->fname, fname);
-                                    tmsg->partial  = 1; // partial cube
-                                    tmsg->cubesize = index;
-
-                                    memcpy(array_time_cp,
-                                           array_time,
-                                           sizeof(double) * index);
-                                    memcpy(array_cnt0_cp,
-                                           array_cnt0,
-                                           sizeof(uint64_t) * index);
-                                    memcpy(array_cnt1_cp,
-                                           array_cnt1,
-                                           sizeof(uint64_t) * index);
-
-                                    tmsg->arrayindex = array_cnt0_cp;
-                                    tmsg->arraycnt0  = array_cnt0_cp;
-                                    tmsg->arraycnt1  = array_cnt1_cp;
-                                    tmsg->arraytime  = array_time_cp;
-
-                                    wOK = 0;
-                                    if (index == 0)
-                                        {
-                                            noframe = 1;
-                                        }
-                                    else
-                                        {
-                                            noframe = 0;
-                                        }
-                                }
-                        }
-                }
-
-            if (index == 0)
-                {
+                    printf(
+                        "%5d  sem_timedwait() timed out (%d "
+                        "sec) -[index %ld]\n",
+                        __LINE__,
+                        WaitSec,
+                        index);
                     if (VERBOSE > 0)
-                        {
-                            printf("%5d  Setting cube start time [index %ld]\n",
-                                   __LINE__,
-                                   index);
-                        }
-
-                    /// measure time
-                    t           = time(NULL);
-                    uttimeStart = gmtime(&t);
-                    clock_gettime(CLOCK_REALTIME, &timenowStart);
-
-                    //     sprintf(fname,"%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
-                    //            sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
-                }
-
-            if (VERBOSE > 1)
-                {
-                    printf("%5d  logshimconf[0].on = %d\n",
-                           __LINE__,
-                           logshimconf[0].on);
-                }
-
-            if (likely(logshimconf[0].on == 1))
-                {
-                    if (likely(wOK == 1)) // normal step: a frame has arrived
-                        {
-                            if (VERBOSE > 1)
-                                {
-                                    printf(
-                                        "%5d  Frame has arrived [index %ld]\n",
-                                        __LINE__,
-                                        index);
-                                }
-
-                            /// measure time
-                            //   t = time(NULL);
-                            //   uttime = gmtime(&t);
-
-                            clock_gettime(CLOCK_REALTIME, &timenow);
-
-                            if (is3Dcube == 1)
-                                {
-                                    ptr0 =
-                                        ptr0_0 +
-                                        framesize * data.image[ID].md[0].cnt1;
-                                }
-                            else
-                                {
-                                    ptr0 = ptr0_0;
-                                }
-
-                            ptr1 = ptr1_0 + framesize * index;
-
-                            if (VERBOSE > 1)
-                                {
-                                    printf("%5d  memcpy framesize = %ld\n",
-                                           __LINE__,
-                                           framesize);
-                                }
-
-                            memcpy((void *) ptr1, (void *) ptr0, framesize);
-
-                            if (VERBOSE > 1)
-                                {
-                                    printf("%5d  memcpy done\n", __LINE__);
-                                }
-
-                            array_cnt0[index] = data.image[ID].md[0].cnt0;
-                            array_cnt1[index] = data.image[ID].md[0].cnt1;
-                            //array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
-                            array_time[index] =
-                                timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
-
-                            index++;
-                        }
-                }
-            else
-                {
-                    // save partial if possible
-                    //if(index>0)
-                    wOK = 0;
-                }
-
-            if (VERBOSE > 1)
-                {
-                    printf("%5d  index = %ld  wOK = %d\n",
-                           __LINE__,
-                           index,
-                           wOK);
-                }
-
-            // SAVE CUBE TO DISK
-            /// cases:
-            /// index>zsize-1  buffer full
-            /// timeout==1 && index>0  : partial
-            if ((index > zsize - 1) || ((timeout == 1) && (index > 0)))
-                {
-                    long NBframemissing;
-
-                    /// save image
-                    if (VERBOSE > 0)
-                        {
-                            printf(
-                                "%5d  Save image   [index  %ld]  [timeout %d] "
-                                "[zsize %ld]\n",
-                                __LINE__,
-                                index,
-                                timeout,
-                                (long) zsize);
-                        }
-
-                    sprintf(iname, "%s_logbuff%d", IDname, buffer);
-                    if (buffer == 0)
-                        {
-                            IDb = IDb0;
-                        }
-                    else
-                        {
-                            IDb = IDb1;
-                        }
-
-                    // update buffer content
-                    memcpy(data.image[IDb].kw,
-                           data.image[ID].kw,
-                           sizeof(IMAGE_KEYWORD) * data.image[ID].md[0].NBkw);
-
-                    if (VERBOSE > 0)
-                        {
-                            printf("%5d  Building file name: ascii\n",
-                                   __LINE__);
-                            fflush(stdout);
-                        }
-
-                    sprintf(fnameascii,
-                            "%s/%s_%02d:%02d:%02ld.%09ld.txt",
-                            logdir,
-                            IDname,
-                            uttimeStart->tm_hour,
-                            uttimeStart->tm_min,
-                            timenowStart.tv_sec % 60,
-                            timenowStart.tv_nsec);
-
-                    if (VERBOSE > 0)
-                        {
-                            printf("%5d  Building file name: fits\n", __LINE__);
-                            fflush(stdout);
-                        }
-                    sprintf(fname,
-                            "%s/%s_%02d:%02d:%02ld.%09ld.fits",
-                            logdir,
-                            IDname,
-                            uttimeStart->tm_hour,
-                            uttimeStart->tm_min,
-                            timenowStart.tv_sec % 60,
-                            timenowStart.tv_nsec);
+                    {
+                        printf(
+                            "%5d  sem time elapsed -> Save "
+                            "current cube [index %ld]\n",
+                            __LINE__,
+                            index);
+                    }
 
                     strcpy(tmsg->iname, iname);
                     strcpy(tmsg->fname, fname);
-                    strcpy(tmsg->fnameascii, fnameascii);
-                    tmsg->saveascii = 1;
-
-                    if (wOK == 1) // full cube
-                        {
-                            tmsg->partial = 0; // full cube
-                            if (VERBOSE > 0)
-                                {
-                                    printf("%5d  SAVING FULL CUBE\n", __LINE__);
-                                    fflush(stdout);
-                                }
-                        }
-                    else // partial cube
-                        {
-                            tmsg->partial = 1; // partial cube
-                            if (VERBOSE > 0)
-                                {
-                                    printf("%5d  SAVING PARTIAL CUBE\n",
-                                           __LINE__);
-                                    fflush(stdout);
-                                }
-                        }
-
-                    {
-                        long cnt0start = data.image[ID].md[0].cnt0;
-
-                        // Wait for save thread to complete to launch next one
-                        if (tOK == 1)
-                            {
-                                if (pthread_tryjoin_np(thread_savefits, NULL) ==
-                                    EBUSY)
-                                    {
-                                        if (VERBOSE > 0)
-                                            {
-                                                printf(
-                                                    "%5d  PREVIOUS SAVE THREAD "
-                                                    "NOT TERMINATED -> "
-                                                    "waiting\n",
-                                                    __LINE__);
-                                            }
-                                        pthread_join(thread_savefits, NULL);
-                                        if (VERBOSE > 0)
-                                            {
-                                                printf(
-                                                    "%5d  PREVIOUS SAVE THREAD "
-                                                    "NOW COMPLETED -> "
-                                                    "continuing\n",
-                                                    __LINE__);
-                                            }
-                                    }
-                                else
-                                    {
-                                        if (VERBOSE > 0)
-                                            {
-                                                printf(
-                                                    "%5d  PREVIOUS SAVE THREAD "
-                                                    "ALREADY COMPLETED -> OK\n",
-                                                    __LINE__);
-                                            }
-                                    }
-                            }
-
-                        printf("\n ************** MISSED = %ld\n",
-                               data.image[ID].md[0].cnt0 - cnt0start);
-                    }
-
-                    COREMOD_MEMORY_image_set_sempost_byID(IDb, -1);
-                    data.image[IDb].md[0].cnt0++;
-                    data.image[IDb].md[0].write = 0;
-
+                    tmsg->partial  = 1; // partial cube
                     tmsg->cubesize = index;
-                    strcpy(tmsg->iname, iname);
 
                     memcpy(array_time_cp, array_time, sizeof(double) * index);
-
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t) * index);
-
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t) * index);
-
-                    NBframemissing =
-                        (array_cnt0[index - 1] - array_cnt0[0]) - (index - 1);
-
-                    printf(
-                        "=>=>=>=>= CUBE %8lld   Number of missed frames = %8ld "
-                        " / %ld  / %8ld ====\n",
-                        logshimconf[0].filecnt,
-                        NBframemissing,
-                        index,
-                        (long) zsize);
-
-                    if (VERBOSE > 0)
-                        {
-                            printf("%5d  Starting image save thread\n",
-                                   __LINE__);
-                            fflush(stdout);
-                        }
 
                     tmsg->arrayindex = array_cnt0_cp;
                     tmsg->arraycnt0  = array_cnt0_cp;
                     tmsg->arraycnt1  = array_cnt1_cp;
                     tmsg->arraytime  = array_time_cp;
-                    WRITE_FILENAME(tmsg->fname_auxFITSheader,
-                                   "%s/%s.auxFITSheader.shm",
-                                   data.shmdir,
-                                   IDname);
 
-                    iret_savefits = pthread_create(&thread_savefits,
-                                                   NULL,
-                                                   save_fits_function,
-                                                   tmsg);
-
-                    logshimconf[0].cnt++;
-
-                    tOK = 1;
-                    if (iret_savefits)
-                        {
-                            fprintf(
-                                stderr,
-                                "Error - pthread_create() return code: %d\n",
-                                iret_savefits);
-                            exit(EXIT_FAILURE);
-                        }
-
-                    index = 0;
-                    buffer++;
-                    if (buffer == 2)
-                        {
-                            buffer = 0;
-                        }
-                    //            printf("[%ld -> %d]", cnt, buffer);
-                    //           fflush(stdout);
-                    if (buffer == 0)
-                        {
-                            IDb = IDb0;
-                        }
-                    else
-                        {
-                            IDb = IDb1;
-                        }
-
-                    switch (datatype)
-                        {
-
-                        case _DATATYPE_FLOAT:
-                            ptr1_0 = (char *) data.image[IDb].array.F;
-                            break;
-
-                        case _DATATYPE_INT8:
-                            ptr1_0 = (char *) data.image[IDb].array.SI8;
-                            break;
-
-                        case _DATATYPE_UINT8:
-                            ptr1_0 = (char *) data.image[IDb].array.UI8;
-                            break;
-
-                        case _DATATYPE_INT16:
-                            ptr1_0 = (char *) data.image[IDb].array.SI16;
-                            break;
-
-                        case _DATATYPE_UINT16:
-                            ptr1_0 = (char *) data.image[IDb].array.UI16;
-                            break;
-
-                        case _DATATYPE_INT32:
-                            ptr1_0 = (char *) data.image[IDb].array.SI32;
-                            break;
-
-                        case _DATATYPE_UINT32:
-                            ptr1_0 = (char *) data.image[IDb].array.UI32;
-                            break;
-
-                        case _DATATYPE_INT64:
-                            ptr1_0 = (char *) data.image[IDb].array.SI64;
-                            break;
-
-                        case _DATATYPE_UINT64:
-                            ptr1_0 = (char *) data.image[IDb].array.UI64;
-                            break;
-
-                        case _DATATYPE_DOUBLE:
-                            ptr1_0 = (char *) data.image[IDb].array.D;
-                            break;
-                        }
-
-                    data.image[IDb].md[0].write = 1;
-                    logshimconf[0].filecnt++;
+                    timeout = 1;
+                }
+                if (errno == EINTR)
+                {
+                    printf(
+                        "%5d  sem_timedwait [index %ld]: The "
+                        "call was interrupted by a signal "
+                        "handler\n",
+                        __LINE__,
+                        index);
                 }
 
-            cnt = data.image[ID].md[0].cnt0;
+                if (errno == EINVAL)
+                {
+                    printf(
+                        "%5d  sem_timedwait [index %ld]: Not a "
+                        "valid semaphore\n",
+                        __LINE__,
+                        index);
+                    printf(
+                        "               The value of "
+                        "abs_timeout.tv_nsecs is less than 0, "
+                        "or greater than or equal "
+                        "to 1000 million\n");
+                }
+
+                if (errno == EAGAIN)
+                {
+                    printf(
+                        "%5d  sem_timedwait [index %ld]: The "
+                        "operation could not be performed "
+                        "without blocking "
+                        "(i.e., the semaphore currently has "
+                        "the value zero)\n",
+                        __LINE__,
+                        index);
+                }
+
+                wOK = 0;
+                if (index == 0)
+                {
+                    noframe = 1;
+                }
+                else
+                {
+                    noframe = 0;
+                }
+            }
         }
+        else
+        {
+            if (VERBOSE > 1)
+            {
+                printf("%5d  Not using semaphore, watching counter\n",
+                       __LINE__);
+            }
+
+            while (((cnt == data.image[ID].md[0].cnt0) ||
+                    (logshimconf[0].on == 0)) &&
+                   (wOK == 1))
+            {
+                if (VERBOSE > 1)
+                {
+                    printf("%5d  waiting time step\n", __LINE__);
+                }
+
+                usleep(waitdelayus);
+                cntwait++;
+
+                if (VERBOSE > 1)
+                {
+                    printf("%5d  cntwait = %lld\n", __LINE__, cntwait);
+                    fflush(stdout);
+                }
+
+                if (cntwait > cntwaitlim) // save current cube
+                {
+                    if (VERBOSE > 0)
+                    {
+                        printf(
+                            "%5d  cnt time elapsed -> Save "
+                            "current cube\n",
+                            __LINE__);
+                    }
+
+                    strcpy(tmsg->iname, iname);
+                    strcpy(tmsg->fname, fname);
+                    tmsg->partial  = 1; // partial cube
+                    tmsg->cubesize = index;
+
+                    memcpy(array_time_cp, array_time, sizeof(double) * index);
+                    memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t) * index);
+                    memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t) * index);
+
+                    tmsg->arrayindex = array_cnt0_cp;
+                    tmsg->arraycnt0  = array_cnt0_cp;
+                    tmsg->arraycnt1  = array_cnt1_cp;
+                    tmsg->arraytime  = array_time_cp;
+
+                    wOK = 0;
+                    if (index == 0)
+                    {
+                        noframe = 1;
+                    }
+                    else
+                    {
+                        noframe = 0;
+                    }
+                }
+            }
+        }
+
+        if (index == 0)
+        {
+            if (VERBOSE > 0)
+            {
+                printf("%5d  Setting cube start time [index %ld]\n",
+                       __LINE__,
+                       index);
+            }
+
+            /// measure time
+            t           = time(NULL);
+            uttimeStart = gmtime(&t);
+            clock_gettime(CLOCK_REALTIME, &timenowStart);
+
+            //     sprintf(fname,"%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
+            //            sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
+        }
+
+        if (VERBOSE > 1)
+        {
+            printf("%5d  logshimconf[0].on = %d\n",
+                   __LINE__,
+                   logshimconf[0].on);
+        }
+
+        if (likely(logshimconf[0].on == 1))
+        {
+            if (likely(wOK == 1)) // normal step: a frame has arrived
+            {
+                if (VERBOSE > 1)
+                {
+                    printf("%5d  Frame has arrived [index %ld]\n",
+                           __LINE__,
+                           index);
+                }
+
+                /// measure time
+                //   t = time(NULL);
+                //   uttime = gmtime(&t);
+
+                clock_gettime(CLOCK_REALTIME, &timenow);
+
+                if (is3Dcube == 1)
+                {
+                    ptr0 = ptr0_0 + framesize * data.image[ID].md[0].cnt1;
+                }
+                else
+                {
+                    ptr0 = ptr0_0;
+                }
+
+                ptr1 = ptr1_0 + framesize * index;
+
+                if (VERBOSE > 1)
+                {
+                    printf("%5d  memcpy framesize = %ld\n",
+                           __LINE__,
+                           framesize);
+                }
+
+                memcpy((void *) ptr1, (void *) ptr0, framesize);
+
+                if (VERBOSE > 1)
+                {
+                    printf("%5d  memcpy done\n", __LINE__);
+                }
+
+                array_cnt0[index] = data.image[ID].md[0].cnt0;
+                array_cnt1[index] = data.image[ID].md[0].cnt1;
+                //array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
+                array_time[index] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
+
+                index++;
+            }
+        }
+        else
+        {
+            // save partial if possible
+            //if(index>0)
+            wOK = 0;
+        }
+
+        if (VERBOSE > 1)
+        {
+            printf("%5d  index = %ld  wOK = %d\n", __LINE__, index, wOK);
+        }
+
+        // SAVE CUBE TO DISK
+        /// cases:
+        /// index>zsize-1  buffer full
+        /// timeout==1 && index>0  : partial
+        if ((index > zsize - 1) || ((timeout == 1) && (index > 0)))
+        {
+            long NBframemissing;
+
+            /// save image
+            if (VERBOSE > 0)
+            {
+                printf(
+                    "%5d  Save image   [index  %ld]  [timeout %d] "
+                    "[zsize %ld]\n",
+                    __LINE__,
+                    index,
+                    timeout,
+                    (long) zsize);
+            }
+
+            sprintf(iname, "%s_logbuff%d", IDname, buffer);
+            if (buffer == 0)
+            {
+                IDb = IDb0;
+            }
+            else
+            {
+                IDb = IDb1;
+            }
+
+            // update buffer content
+            memcpy(data.image[IDb].kw,
+                   data.image[ID].kw,
+                   sizeof(IMAGE_KEYWORD) * data.image[ID].md[0].NBkw);
+
+            if (VERBOSE > 0)
+            {
+                printf("%5d  Building file name: ascii\n", __LINE__);
+                fflush(stdout);
+            }
+
+            sprintf(fnameascii,
+                    "%s/%s_%02d:%02d:%02ld.%09ld.txt",
+                    logdir,
+                    IDname,
+                    uttimeStart->tm_hour,
+                    uttimeStart->tm_min,
+                    timenowStart.tv_sec % 60,
+                    timenowStart.tv_nsec);
+
+            if (VERBOSE > 0)
+            {
+                printf("%5d  Building file name: fits\n", __LINE__);
+                fflush(stdout);
+            }
+            sprintf(fname,
+                    "%s/%s_%02d:%02d:%02ld.%09ld.fits",
+                    logdir,
+                    IDname,
+                    uttimeStart->tm_hour,
+                    uttimeStart->tm_min,
+                    timenowStart.tv_sec % 60,
+                    timenowStart.tv_nsec);
+
+            strcpy(tmsg->iname, iname);
+            strcpy(tmsg->fname, fname);
+            strcpy(tmsg->fnameascii, fnameascii);
+            tmsg->saveascii = 1;
+
+            if (wOK == 1) // full cube
+            {
+                tmsg->partial = 0; // full cube
+                if (VERBOSE > 0)
+                {
+                    printf("%5d  SAVING FULL CUBE\n", __LINE__);
+                    fflush(stdout);
+                }
+            }
+            else // partial cube
+            {
+                tmsg->partial = 1; // partial cube
+                if (VERBOSE > 0)
+                {
+                    printf("%5d  SAVING PARTIAL CUBE\n", __LINE__);
+                    fflush(stdout);
+                }
+            }
+
+            {
+                long cnt0start = data.image[ID].md[0].cnt0;
+
+                // Wait for save thread to complete to launch next one
+                if (tOK == 1)
+                {
+                    if (pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
+                    {
+                        if (VERBOSE > 0)
+                        {
+                            printf(
+                                "%5d  PREVIOUS SAVE THREAD "
+                                "NOT TERMINATED -> "
+                                "waiting\n",
+                                __LINE__);
+                        }
+                        pthread_join(thread_savefits, NULL);
+                        if (VERBOSE > 0)
+                        {
+                            printf(
+                                "%5d  PREVIOUS SAVE THREAD "
+                                "NOW COMPLETED -> "
+                                "continuing\n",
+                                __LINE__);
+                        }
+                    }
+                    else
+                    {
+                        if (VERBOSE > 0)
+                        {
+                            printf(
+                                "%5d  PREVIOUS SAVE THREAD "
+                                "ALREADY COMPLETED -> OK\n",
+                                __LINE__);
+                        }
+                    }
+                }
+
+                printf("\n ************** MISSED = %ld\n",
+                       data.image[ID].md[0].cnt0 - cnt0start);
+            }
+
+            COREMOD_MEMORY_image_set_sempost_byID(IDb, -1);
+            data.image[IDb].md[0].cnt0++;
+            data.image[IDb].md[0].write = 0;
+
+            tmsg->cubesize = index;
+            strcpy(tmsg->iname, iname);
+
+            memcpy(array_time_cp, array_time, sizeof(double) * index);
+
+            memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t) * index);
+
+            memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t) * index);
+
+            NBframemissing =
+                (array_cnt0[index - 1] - array_cnt0[0]) - (index - 1);
+
+            printf(
+                "=>=>=>=>= CUBE %8lld   Number of missed frames = %8ld "
+                " / %ld  / %8ld ====\n",
+                logshimconf[0].filecnt,
+                NBframemissing,
+                index,
+                (long) zsize);
+
+            if (VERBOSE > 0)
+            {
+                printf("%5d  Starting image save thread\n", __LINE__);
+                fflush(stdout);
+            }
+
+            tmsg->arrayindex = array_cnt0_cp;
+            tmsg->arraycnt0  = array_cnt0_cp;
+            tmsg->arraycnt1  = array_cnt1_cp;
+            tmsg->arraytime  = array_time_cp;
+            WRITE_FILENAME(tmsg->fname_auxFITSheader,
+                           "%s/%s.auxFITSheader.shm",
+                           data.shmdir,
+                           IDname);
+
+            iret_savefits = pthread_create(&thread_savefits,
+                                           NULL,
+                                           save_fits_function,
+                                           tmsg);
+
+            logshimconf[0].cnt++;
+
+            tOK = 1;
+            if (iret_savefits)
+            {
+                fprintf(stderr,
+                        "Error - pthread_create() return code: %d\n",
+                        iret_savefits);
+                exit(EXIT_FAILURE);
+            }
+
+            index = 0;
+            buffer++;
+            if (buffer == 2)
+            {
+                buffer = 0;
+            }
+            //            printf("[%ld -> %d]", cnt, buffer);
+            //           fflush(stdout);
+            if (buffer == 0)
+            {
+                IDb = IDb0;
+            }
+            else
+            {
+                IDb = IDb1;
+            }
+
+            switch (datatype)
+            {
+
+            case _DATATYPE_FLOAT:
+                ptr1_0 = (char *) data.image[IDb].array.F;
+                break;
+
+            case _DATATYPE_INT8:
+                ptr1_0 = (char *) data.image[IDb].array.SI8;
+                break;
+
+            case _DATATYPE_UINT8:
+                ptr1_0 = (char *) data.image[IDb].array.UI8;
+                break;
+
+            case _DATATYPE_INT16:
+                ptr1_0 = (char *) data.image[IDb].array.SI16;
+                break;
+
+            case _DATATYPE_UINT16:
+                ptr1_0 = (char *) data.image[IDb].array.UI16;
+                break;
+
+            case _DATATYPE_INT32:
+                ptr1_0 = (char *) data.image[IDb].array.SI32;
+                break;
+
+            case _DATATYPE_UINT32:
+                ptr1_0 = (char *) data.image[IDb].array.UI32;
+                break;
+
+            case _DATATYPE_INT64:
+                ptr1_0 = (char *) data.image[IDb].array.SI64;
+                break;
+
+            case _DATATYPE_UINT64:
+                ptr1_0 = (char *) data.image[IDb].array.UI64;
+                break;
+
+            case _DATATYPE_DOUBLE:
+                ptr1_0 = (char *) data.image[IDb].array.D;
+                break;
+            }
+
+            data.image[IDb].md[0].write = 1;
+            logshimconf[0].filecnt++;
+        }
+
+        cnt = data.image[ID].md[0].cnt0;
+    }
 
     free(imsizearray);
     free(tmsg);

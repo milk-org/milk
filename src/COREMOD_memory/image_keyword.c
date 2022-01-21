@@ -26,30 +26,30 @@ errno_t image_write_keyword_L__cli()
             CLI_checkarg(3, CLIARG_LONG) +
             CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
         0)
-        {
-            image_write_keyword_L(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.numl,
-                                  data.cmdargtoken[4].val.string);
-            return CLICMD_SUCCESS;
-        }
+    {
+        image_write_keyword_L(data.cmdargtoken[1].val.string,
+                              data.cmdargtoken[2].val.string,
+                              data.cmdargtoken[3].val.numl,
+                              data.cmdargtoken[4].val.string);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 errno_t image_list_keywords__cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_IMG) == 0)
-        {
-            image_list_keywords(data.cmdargtoken[1].val.string);
-            return CLICMD_SUCCESS;
-        }
+    {
+        image_list_keywords(data.cmdargtoken[1].val.string);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================
@@ -91,23 +91,23 @@ long image_write_keyword_L(const char *IDname,
 
     kw = 0;
     while ((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
-        {
-            kw++;
-        }
+    {
+        kw++;
+    }
     kw0 = kw;
 
     if (kw0 == NBkw)
-        {
-            printf("ERROR: no available keyword entry\n");
-            exit(0);
-        }
+    {
+        printf("ERROR: no available keyword entry\n");
+        exit(0);
+    }
     else
-        {
-            strcpy(data.image[ID].kw[kw].name, kname);
-            data.image[ID].kw[kw].type       = 'L';
-            data.image[ID].kw[kw].value.numl = value;
-            strcpy(data.image[ID].kw[kw].comment, comment);
-        }
+    {
+        strcpy(data.image[ID].kw[kw].name, kname);
+        data.image[ID].kw[kw].type       = 'L';
+        data.image[ID].kw[kw].value.numl = value;
+        strcpy(data.image[ID].kw[kw].comment, comment);
+    }
 
     return kw0;
 }
@@ -127,23 +127,23 @@ long image_write_keyword_D(const char *IDname,
 
     kw = 0;
     while ((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
-        {
-            kw++;
-        }
+    {
+        kw++;
+    }
     kw0 = kw;
 
     if (kw0 == NBkw)
-        {
-            printf("ERROR: no available keyword entry\n");
-            exit(0);
-        }
+    {
+        printf("ERROR: no available keyword entry\n");
+        exit(0);
+    }
     else
-        {
-            strcpy(data.image[ID].kw[kw].name, kname);
-            data.image[ID].kw[kw].type       = 'D';
-            data.image[ID].kw[kw].value.numf = value;
-            strcpy(data.image[ID].kw[kw].comment, comment);
-        }
+    {
+        strcpy(data.image[ID].kw[kw].name, kname);
+        data.image[ID].kw[kw].type       = 'D';
+        data.image[ID].kw[kw].value.numf = value;
+        strcpy(data.image[ID].kw[kw].comment, comment);
+    }
 
     return kw0;
 }
@@ -163,23 +163,23 @@ long image_write_keyword_S(const char *IDname,
 
     kw = 0;
     while ((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
-        {
-            kw++;
-        }
+    {
+        kw++;
+    }
     kw0 = kw;
 
     if (kw0 == NBkw)
-        {
-            printf("ERROR: no available keyword entry\n");
-            exit(0);
-        }
+    {
+        printf("ERROR: no available keyword entry\n");
+        exit(0);
+    }
     else
-        {
-            strcpy(data.image[ID].kw[kw].name, kname);
-            data.image[ID].kw[kw].type = 'D';
-            strcpy(data.image[ID].kw[kw].value.valstr, value);
-            strcpy(data.image[ID].kw[kw].comment, comment);
-        }
+    {
+        strcpy(data.image[ID].kw[kw].name, kname);
+        data.image[ID].kw[kw].type = 'D';
+        strcpy(data.image[ID].kw[kw].value.valstr, value);
+        strcpy(data.image[ID].kw[kw].comment, comment);
+    }
 
     return kw0;
 }
@@ -192,31 +192,31 @@ imageID image_list_keywords(const char *IDname)
     ID = image_ID(IDname);
 
     for (kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    {
+        if (data.image[ID].kw[kw].type == 'L')
         {
-            if (data.image[ID].kw[kw].type == 'L')
-                {
-                    printf("%18s  %20ld %s\n",
-                           data.image[ID].kw[kw].name,
-                           data.image[ID].kw[kw].value.numl,
-                           data.image[ID].kw[kw].comment);
-                }
-            if (data.image[ID].kw[kw].type == 'D')
-                {
-                    printf("%18s  %20lf %s\n",
-                           data.image[ID].kw[kw].name,
-                           data.image[ID].kw[kw].value.numf,
-                           data.image[ID].kw[kw].comment);
-                }
-            if (data.image[ID].kw[kw].type == 'S')
-                {
-                    printf("%18s  %20s %s\n",
-                           data.image[ID].kw[kw].name,
-                           data.image[ID].kw[kw].value.valstr,
-                           data.image[ID].kw[kw].comment);
-                }
-            //	if(data.image[ID].kw[kw].type=='N')
-            //	printf("-------------\n");
+            printf("%18s  %20ld %s\n",
+                   data.image[ID].kw[kw].name,
+                   data.image[ID].kw[kw].value.numl,
+                   data.image[ID].kw[kw].comment);
         }
+        if (data.image[ID].kw[kw].type == 'D')
+        {
+            printf("%18s  %20lf %s\n",
+                   data.image[ID].kw[kw].name,
+                   data.image[ID].kw[kw].value.numf,
+                   data.image[ID].kw[kw].comment);
+        }
+        if (data.image[ID].kw[kw].type == 'S')
+        {
+            printf("%18s  %20s %s\n",
+                   data.image[ID].kw[kw].name,
+                   data.image[ID].kw[kw].value.valstr,
+                   data.image[ID].kw[kw].comment);
+        }
+        //	if(data.image[ID].kw[kw].type=='N')
+        //	printf("-------------\n");
+    }
 
     return ID;
 }
@@ -230,15 +230,14 @@ long image_read_keyword_D(const char *IDname, const char *kname, double *val)
     ID  = image_ID(IDname);
     kw0 = -1;
     for (kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    {
+        if ((data.image[ID].kw[kw].type == 'D') &&
+            (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
         {
-            if ((data.image[ID].kw[kw].type == 'D') &&
-                (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) ==
-                 0))
-                {
-                    kw0  = kw;
-                    *val = data.image[ID].kw[kw].value.numf;
-                }
+            kw0  = kw;
+            *val = data.image[ID].kw[kw].value.numf;
         }
+    }
 
     return kw0;
 }
@@ -252,15 +251,14 @@ long image_read_keyword_L(const char *IDname, const char *kname, long *val)
     ID  = image_ID(IDname);
     kw0 = -1;
     for (kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    {
+        if ((data.image[ID].kw[kw].type == 'L') &&
+            (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
         {
-            if ((data.image[ID].kw[kw].type == 'L') &&
-                (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) ==
-                 0))
-                {
-                    kw0  = kw;
-                    *val = data.image[ID].kw[kw].value.numl;
-                }
+            kw0  = kw;
+            *val = data.image[ID].kw[kw].value.numl;
         }
+    }
 
     return kw0;
 }

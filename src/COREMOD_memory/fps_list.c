@@ -45,32 +45,32 @@ errno_t fps_list()
     int NBchar_NBparam = 4;
 
     for (fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
+    {
+        if (data.fpsarray[fpsID].SMfd > -1)
         {
-            if (data.fpsarray[fpsID].SMfd > -1)
-                {
 
-                    if (fpscnt == 0)
-                        {
-                            printf("FPSs currently connected :\n");
-                        }
-                    // connected
-                    printf("%*ld  %*s  %*ld/%*ld entries\n",
-                           NBchar_fpsID,
-                           fpsID,
-                           NBchar_fpsname,
-                           data.fpsarray[fpsID].md[0].name,
-                           NBchar_NBparam,
-                           data.fpsarray[fpsID].NBparamActive,
-                           NBchar_NBparam,
-                           data.fpsarray[fpsID].NBparam);
+            if (fpscnt == 0)
+            {
+                printf("FPSs currently connected :\n");
+            }
+            // connected
+            printf("%*ld  %*s  %*ld/%*ld entries\n",
+                   NBchar_fpsID,
+                   fpsID,
+                   NBchar_fpsname,
+                   data.fpsarray[fpsID].md[0].name,
+                   NBchar_NBparam,
+                   data.fpsarray[fpsID].NBparamActive,
+                   NBchar_NBparam,
+                   data.fpsarray[fpsID].NBparam);
 
-                    fpscnt++;
-                }
+            fpscnt++;
         }
+    }
     if (fpscnt == 0)
-        {
-            printf("No FPS currently connected\n");
-        }
+    {
+        printf("No FPS currently connected\n");
+    }
 
     //printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
     //printf("\n");
@@ -80,30 +80,30 @@ errno_t fps_list()
     struct dirent *de;
     DIR           *dr = opendir(data.shmdir);
     if (dr == NULL)
-        {
-            printf("Could not open current directory");
-            return RETURN_FAILURE;
-        }
+    {
+        printf("Could not open current directory");
+        return RETURN_FAILURE;
+    }
 
     fpscnt = 0;
     while ((de = readdir(dr)) != NULL)
+    {
+        if (strstr(de->d_name, ".fps.shm") != NULL)
         {
-            if (strstr(de->d_name, ".fps.shm") != NULL)
-                {
-                    char fpsname[100];
-                    int  slen  = strlen(de->d_name);
-                    int  slen1 = slen - strlen(".fps.shm");
+            char fpsname[100];
+            int  slen  = strlen(de->d_name);
+            int  slen1 = slen - strlen(".fps.shm");
 
-                    strncpy(fpsname, de->d_name, slen1);
-                    fpsname[slen1] = '\0';
-                    printf("%*ld  %*s\n",
-                           NBchar_fpsID,
-                           fpscnt,
-                           NBchar_fpsname,
-                           fpsname);
-                    fpscnt++;
-                }
+            strncpy(fpsname, de->d_name, slen1);
+            fpsname[slen1] = '\0';
+            printf("%*ld  %*s\n",
+                   NBchar_fpsID,
+                   fpscnt,
+                   NBchar_fpsname,
+                   fpsname);
+            fpscnt++;
         }
+    }
     closedir(dr);
 
     return RETURN_SUCCESS;

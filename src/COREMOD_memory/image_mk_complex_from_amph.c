@@ -63,148 +63,148 @@ errno_t mk_complex_from_amph(const char *am_name,
 
     naxis = data.image[IDam].md[0].naxis;
     for (i = 0; i < naxis; i++)
-        {
-            naxes[i] = data.image[IDam].md[0].size[i];
-        }
+    {
+        naxes[i] = data.image[IDam].md[0].size[i];
+    }
     nelement = data.image[IDam].md[0].nelement;
 
     if ((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
-        {
-            datatype_out = _DATATYPE_COMPLEX_FLOAT;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
+    {
+        datatype_out = _DATATYPE_COMPLEX_FLOAT;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
 
-            data.image[IDout].md[0].write = 1;
+        data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
 #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-            {
+        {
 #pragma omp for
 #endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                    {
-                        data.image[IDout].array.CF[ii].re =
-                            data.image[IDam].array.F[ii] *
-                            ((float) cos(data.image[IDph].array.F[ii]));
-                        data.image[IDout].array.CF[ii].im =
-                            data.image[IDam].array.F[ii] *
-                            ((float) sin(data.image[IDph].array.F[ii]));
-                    }
-#ifdef _OPENMP
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                data.image[IDout].array.CF[ii].re =
+                    data.image[IDam].array.F[ii] *
+                    ((float) cos(data.image[IDph].array.F[ii]));
+                data.image[IDout].array.CF[ii].im =
+                    data.image[IDam].array.F[ii] *
+                    ((float) sin(data.image[IDph].array.F[ii]));
             }
-#endif
-            data.image[IDout].md[0].cnt0++;
-            data.image[IDout].md[0].write = 0;
+#ifdef _OPENMP
         }
+#endif
+        data.image[IDout].md[0].cnt0++;
+        data.image[IDout].md[0].write = 0;
+    }
     else if ((datatype_am == _DATATYPE_FLOAT) &&
              (datatype_ph == _DATATYPE_DOUBLE))
-        {
-            datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            data.image[IDout].md[0].write = 1;
+    {
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
 #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-            {
+        {
 #pragma omp for
 #endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                    {
-                        data.image[IDout].array.CD[ii].re =
-                            data.image[IDam].array.F[ii] *
-                            cos(data.image[IDph].array.D[ii]);
-                        data.image[IDout].array.CD[ii].im =
-                            data.image[IDam].array.F[ii] *
-                            sin(data.image[IDph].array.D[ii]);
-                    }
-#ifdef _OPENMP
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                data.image[IDout].array.CD[ii].re =
+                    data.image[IDam].array.F[ii] *
+                    cos(data.image[IDph].array.D[ii]);
+                data.image[IDout].array.CD[ii].im =
+                    data.image[IDam].array.F[ii] *
+                    sin(data.image[IDph].array.D[ii]);
             }
-#endif
-            data.image[IDout].md[0].cnt0++;
-            data.image[IDout].md[0].write = 0;
+#ifdef _OPENMP
         }
+#endif
+        data.image[IDout].md[0].cnt0++;
+        data.image[IDout].md[0].write = 0;
+    }
     else if ((datatype_am == _DATATYPE_DOUBLE) &&
              (datatype_ph == _DATATYPE_FLOAT))
-        {
-            datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            data.image[IDout].md[0].write = 1;
+    {
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
 #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-            {
+        {
 #pragma omp for
 #endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                    {
-                        data.image[IDout].array.CD[ii].re =
-                            data.image[IDam].array.D[ii] *
-                            cos(data.image[IDph].array.F[ii]);
-                        data.image[IDout].array.CD[ii].im =
-                            data.image[IDam].array.D[ii] *
-                            sin(data.image[IDph].array.F[ii]);
-                    }
-#ifdef _OPENMP
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                data.image[IDout].array.CD[ii].re =
+                    data.image[IDam].array.D[ii] *
+                    cos(data.image[IDph].array.F[ii]);
+                data.image[IDout].array.CD[ii].im =
+                    data.image[IDam].array.D[ii] *
+                    sin(data.image[IDph].array.F[ii]);
             }
-#endif
-            data.image[IDout].md[0].cnt0++;
-            data.image[IDout].md[0].write = 0;
+#ifdef _OPENMP
         }
+#endif
+        data.image[IDout].md[0].cnt0++;
+        data.image[IDout].md[0].write = 0;
+    }
     else if ((datatype_am == _DATATYPE_DOUBLE) &&
              (datatype_ph == _DATATYPE_DOUBLE))
-        {
-            datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-            FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                              naxis,
-                                              naxes,
-                                              datatype_out,
-                                              sharedmem,
-                                              data.NBKEYWORD_DFT,
-                                              0,
-                                              &IDout));
-            data.image[IDout].md[0].write = 1;
+    {
+        datatype_out = _DATATYPE_COMPLEX_DOUBLE;
+        FUNC_CHECK_RETURN(create_image_ID(out_name,
+                                          naxis,
+                                          naxes,
+                                          datatype_out,
+                                          sharedmem,
+                                          data.NBKEYWORD_DFT,
+                                          0,
+                                          &IDout));
+        data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
 #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-            {
+        {
 #pragma omp for
 #endif
-                for (uint64_t ii = 0; ii < nelement; ii++)
-                    {
-                        data.image[IDout].array.CD[ii].re =
-                            data.image[IDam].array.D[ii] *
-                            cos(data.image[IDph].array.D[ii]);
-                        data.image[IDout].array.CD[ii].im =
-                            data.image[IDam].array.D[ii] *
-                            sin(data.image[IDph].array.D[ii]);
-                    }
-#ifdef _OPENMP
+            for (uint64_t ii = 0; ii < nelement; ii++)
+            {
+                data.image[IDout].array.CD[ii].re =
+                    data.image[IDam].array.D[ii] *
+                    cos(data.image[IDph].array.D[ii]);
+                data.image[IDout].array.CD[ii].im =
+                    data.image[IDam].array.D[ii] *
+                    sin(data.image[IDph].array.D[ii]);
             }
+#ifdef _OPENMP
+        }
 #endif
-            data.image[IDout].md[0].cnt0++;
-            data.image[IDout].md[0].write = 0;
-        }
+        data.image[IDout].md[0].cnt0++;
+        data.image[IDout].md[0].write = 0;
+    }
     else
-        {
-            PRINT_ERROR("Wrong image type(s)\n");
-            abort();
-        }
+    {
+        PRINT_ERROR("Wrong image type(s)\n");
+        abort();
+    }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

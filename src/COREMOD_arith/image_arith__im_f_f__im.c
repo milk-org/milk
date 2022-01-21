@@ -35,18 +35,18 @@ static errno_t arith_image_trunc_cli()
             CLI_checkarg(3, CLIARG_FLOAT) +
             CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
         0)
-        {
-            arith_image_trunc(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.numf,
-                              data.cmdargtoken[3].val.numf,
-                              data.cmdargtoken[4].val.string);
+    {
+        arith_image_trunc(data.cmdargtoken[1].val.string,
+                          data.cmdargtoken[2].val.numf,
+                          data.cmdargtoken[3].val.numf,
+                          data.cmdargtoken[4].val.string);
 
-            return CLICMD_SUCCESS;
-        }
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================

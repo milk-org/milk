@@ -92,9 +92,9 @@ static errno_t customCONFsetup()
     *cntindex = *cntindex + 1;
 
     if (*cntindex >= *cntindexmax)
-        {
-            *cntindex = 0;
-        }
+    {
+        *cntindex = 0;
+    }
 
     return RETURN_SUCCESS;
 }
@@ -110,27 +110,26 @@ static errno_t customCONFsetup()
 static errno_t customCONFcheck()
 {
     if (data.fpsptr != NULL)
+    {
+        if (data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF) // ON state
         {
-            if (data.fpsptr->parray[fpi_ex0mode].fpflag &
-                FPFLAG_ONOFF) // ON state
-                {
-                    data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
-                    data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
-                }
-            else // OFF state
-                {
-                    data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
-                    data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
-                }
-
-            // increment counter at every configuration check
-            *cntindex = *cntindex + 1;
-
-            if (*cntindex >= *cntindexmax)
-                {
-                    *cntindex = 0;
-                }
+            data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
+            data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
         }
+        else // OFF state
+        {
+            data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
+            data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
+        }
+
+        // increment counter at every configuration check
+        *cntindex = *cntindex + 1;
+
+        if (*cntindex >= *cntindexmax)
+        {
+            *cntindex = 0;
+        }
+    }
 
     return RETURN_SUCCESS;
 }
@@ -169,9 +168,9 @@ static errno_t compute_function()
 
     // custom initialization
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
-        {
-            // procinfo is accessible here
-        }
+    {
+        // procinfo is accessible here
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 

@@ -66,12 +66,12 @@ class pyFps
         int k = 0;
         while ((k < fps_.md->NBparamMAX) &&
                (fps_.parray[k].keywordfull[0] != '\0'))
-            {
-                int   offset = strlen(fps_.parray[k].keyword[0]) + 1;
-                char *key    = fps_.parray[k].keywordfull + offset;
-                keys_[key]   = static_cast<FPS_type>(fps_.parray[k].type);
-                k++;
-            }
+        {
+            int   offset = strlen(fps_.parray[k].keyword[0]) + 1;
+            char *key    = fps_.parray[k].keywordfull + offset;
+            keys_[key]   = static_cast<FPS_type>(fps_.parray[k].type);
+            k++;
+        }
 
         return EXIT_SUCCESS;
     };
@@ -106,17 +106,17 @@ class pyFps
         fps_.NBparamActive = 0; // number of active parameters
 
         if (create)
-            {
-                create_and_connect(NBparamMAX);
-            }
+        {
+            create_and_connect(NBparamMAX);
+        }
         else
+        {
+            if (connect() == -1)
             {
-                if (connect() == -1)
-                    {
-                        throw std::runtime_error("FPS does not exist");
-                    }
-                read_keys();
+                throw std::runtime_error("FPS does not exist");
             }
+            read_keys();
+        }
         std::cout << "FPS connected" << std::endl;
     }
 
@@ -156,17 +156,17 @@ class pyFps
     int create_and_connect(int NBparamMAX)
     {
         if (connect() == -1)
-            {
-                std::cout << "Creating FPS...";
-                function_parameter_struct_create(NBparamMAX, name_.c_str());
-                std::cout << "Done" << std::endl;
-                connect();
-            }
+        {
+            std::cout << "Creating FPS...";
+            function_parameter_struct_create(NBparamMAX, name_.c_str());
+            std::cout << "Done" << std::endl;
+            connect();
+        }
         else
-            {
-                connect();
-                read_keys();
-            }
+        {
+            connect();
+            read_keys();
+        }
         return EXIT_SUCCESS;
     }
 
@@ -237,15 +237,15 @@ class pyFps
         std::vector<std::string> levelKeys = std::vector<std::string>();
         int                      k         = 0;
         while (fps_.parray[k].keywordfull[0] != '\0' && k < fps_.md->NBparamMAX)
+        {
+            std::string tmp = fps_.parray[k].keyword[level];
+            auto exist = std::find(levelKeys.begin(), levelKeys.end(), tmp);
+            if (exist == levelKeys.end())
             {
-                std::string tmp = fps_.parray[k].keyword[level];
-                auto exist = std::find(levelKeys.begin(), levelKeys.end(), tmp);
-                if (exist == levelKeys.end())
-                    {
-                        levelKeys.push_back(tmp);
-                    }
-                k++;
+                levelKeys.push_back(tmp);
             }
+            k++;
+        }
 
         return levelKeys;
     }

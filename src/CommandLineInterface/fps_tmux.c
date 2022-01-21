@@ -65,37 +65,37 @@ errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps)
     char argstringcp[argstring_maxlen];
 
     if (fps->md->NBnameindex > 0)
-        {
-            snprintf(argstring, argstring_maxlen, "%s", fps->md->nameindexW[0]);
-        }
+    {
+        snprintf(argstring, argstring_maxlen, "%s", fps->md->nameindexW[0]);
+    }
     else
-        {
-            sprintf(argstring, " ");
-        }
+    {
+        sprintf(argstring, " ");
+    }
 
     for (int i = 1; i < fps->md->NBnameindex; i++)
-        {
-            snprintf(argstringcp,
-                     argstring_maxlen,
-                     "%s %s",
-                     argstring,
-                     fps->md->nameindexW[i]);
-            strcpy(argstring, argstringcp);
-        }
+    {
+        snprintf(argstringcp,
+                 argstring_maxlen,
+                 "%s %s",
+                 argstring,
+                 fps->md->nameindexW[i]);
+        strcpy(argstring, argstringcp);
+    }
 
     // module load string
     char mloadstring[mloadstring_maxlen];
     char mloadstringcp[mloadstring_maxlen];
     sprintf(mloadstring, " ");
     for (int m = 0; m < fps->md->NBmodule; m++)
-        {
-            snprintf(mloadstringcp,
-                     mloadstring_maxlen,
-                     "%smload %s;",
-                     mloadstring,
-                     fps->md->modulename[m]);
-            strcpy(mloadstring, mloadstringcp);
-        }
+    {
+        snprintf(mloadstringcp,
+                 mloadstring_maxlen,
+                 "%smload %s;",
+                 mloadstring,
+                 fps->md->modulename[m]);
+        strcpy(mloadstring, mloadstringcp);
+    }
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"bash\" C-m",
                            fps->md->name);

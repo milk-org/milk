@@ -25,15 +25,15 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
 errno_t COREMOD_TOOLS_mvProcTset_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
-        {
-            COREMOD_TOOLS_mvProcTset(data.cmdargtoken[1].val.string);
+    {
+        COREMOD_TOOLS_mvProcTset(data.cmdargtoken[1].val.string);
 
-            return CLICMD_SUCCESS;
-        }
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 errno_t COREMOD_TOOLS_mvProcTsetExt_cli()
@@ -41,29 +41,29 @@ errno_t COREMOD_TOOLS_mvProcTsetExt_cli()
     if (0 + CLI_checkarg(1, CLIARG_LONG) +
             CLI_checkarg(2, CLIARG_STR_NOT_IMG) ==
         0)
-        {
-            COREMOD_TOOLS_mvProcTsetExt(data.cmdargtoken[1].val.numl,
-                                        data.cmdargtoken[2].val.string);
-            return CLICMD_SUCCESS;
-        }
+    {
+        COREMOD_TOOLS_mvProcTsetExt(data.cmdargtoken[1].val.numl,
+                                    data.cmdargtoken[2].val.string);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
-        {
-            COREMOD_TOOLS_mvProcCPUset(data.cmdargtoken[1].val.string);
+    {
+        COREMOD_TOOLS_mvProcCPUset(data.cmdargtoken[1].val.string);
 
-            return CLICMD_SUCCESS;
-        }
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
@@ -71,16 +71,16 @@ errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
     if (0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(3, CLIARG_LONG) ==
         0)
-        {
-            COREMOD_TOOLS_mvProcCPUsetExt(data.cmdargtoken[1].val.numl,
-                                          data.cmdargtoken[2].val.string,
-                                          data.cmdargtoken[3].val.numl);
-            return CLICMD_SUCCESS;
-        }
+    {
+        COREMOD_TOOLS_mvProcCPUsetExt(data.cmdargtoken[1].val.numl,
+                                      data.cmdargtoken[2].val.string,
+                                      data.cmdargtoken[3].val.numl);
+        return CLICMD_SUCCESS;
+    }
     else
-        {
-            return CLICMD_INVALID_ARG;
-        }
+    {
+        return CLICMD_INVALID_ARG;
+    }
 }
 
 // ==========================================
@@ -166,9 +166,9 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
 
     if (seteuid(data.euid) != 0 ||
         setuid(data.euid) != 0) // This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid/setuid error");
-        }
+    {
+        PRINT_ERROR("seteuid/setuid error");
+    }
 
     sprintf(command, "taskset -pc %s %d\n", tsetspec, pid);
     printf("Executing command: %s\n", command);
@@ -177,9 +177,9 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
 
     if (setresuid(data.ruid, data.ruid, data.euid) !=
         0) // Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    {
+        PRINT_ERROR("seteuid error");
+    }
 
     return (0);
 }
@@ -206,9 +206,9 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
     // Must make TWO calls - see COREMOD_TOOLS_mvProcTset
     if (seteuid(data.euid) != 0 ||
         setuid(data.euid) != 0) // This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid/setuid error");
-        }
+    {
+        PRINT_ERROR("seteuid/setuid error");
+    }
 
     sprintf(command,
             "cset proc --threads --force -m -p %d -t %s\n",
@@ -219,18 +219,18 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
     EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
 
     if (rtprio > 0)
-        {
-            sprintf(command, "chrt -f -p %d %d\n", rtprio, pid);
-            printf("Executing command: %s\n", command);
+    {
+        sprintf(command, "chrt -f -p %d %d\n", rtprio, pid);
+        printf("Executing command: %s\n", command);
 
-            EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
-        }
+        EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
+    }
 
     if (setresuid(data.ruid, data.ruid, data.euid) !=
         0) // Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    {
+        PRINT_ERROR("seteuid error");
+    }
 
     return (0);
 }

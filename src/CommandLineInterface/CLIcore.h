@@ -88,14 +88,14 @@ extern int C_ERRNO; // C errno (from errno.h)
 #define nmalloc(f, type, n)                                                    \
     f = (type *) malloc(sizeof(type) * n);                                     \
     if (f == NULL)                                                             \
-        {                                                                      \
-            printf("ERROR: pointer \"" #f "\" allocation failed\n");           \
-            exit(0);                                                           \
-        }                                                                      \
+    {                                                                          \
+        printf("ERROR: pointer \"" #f "\" allocation failed\n");               \
+        exit(0);                                                               \
+    }                                                                          \
     else                                                                       \
-        {                                                                      \
-            printf("\nMALLOC: \"" #f "\" allocated\n");                        \
-        }
+    {                                                                          \
+        printf("\nMALLOC: \"" #f "\" allocated\n");                            \
+    }
 #define nfree(f)                                                               \
     free(f);                                                                   \
     printf("\nMALLOC: \"" #f "\" freed\n");
@@ -103,19 +103,19 @@ extern int C_ERRNO; // C errno (from errno.h)
 #define nmalloc(f, type, n)                                                    \
     f = (type *) malloc(sizeof(type) * n);                                     \
     if (f == NULL)                                                             \
-        {                                                                      \
-            printf("ERROR: pointer \"" #f "\" allocation failed\n");           \
-            exit(0);                                                           \
-        }
+    {                                                                          \
+        printf("ERROR: pointer \"" #f "\" allocation failed\n");               \
+        exit(0);                                                               \
+    }
 #define nfree(f) free(f);
 #endif
 
 #define TEST_ALLOC(f)                                                          \
     if (f == NULL)                                                             \
-        {                                                                      \
-            printf("ERROR: pointer \"" #f "\" allocation failed\n");           \
-            exit(0);                                                           \
-        }
+    {                                                                          \
+        printf("ERROR: pointer \"" #f "\" allocation failed\n");               \
+        exit(0);                                                               \
+    }
 
 #define NB_ARG_MAX 20
 
@@ -131,31 +131,29 @@ extern int C_ERRNO; // C errno (from errno.h)
     void __attribute__((constructor)) libinit_##modname()                      \
     {                                                                          \
         if (INITSTATUS_##modname == 0) /* only run once */                     \
-            {                                                                  \
-                strcpy(data.moduleshortname_default,                           \
-                       MODULE_SHORTNAME_DEFAULT);                              \
-                strcpy(data.moduledatestring, __DATE__);                       \
-                strcpy(data.moduletimestring, __TIME__);                       \
-                strcpy(data.modulename, (#modname));                           \
-                RegisterModule(__FILE__,                                       \
-                               PROJECT_NAME,                                   \
-                               MODULE_DESCRIPTION,                             \
-                               VERSION_MAJOR,                                  \
-                               VERSION_MINOR,                                  \
-                               VERSION_PATCH);                                 \
-                init_module_CLI();                                             \
-                INITSTATUS_##modname = 1;                                      \
-                strcpy(data.modulename, ""); /* reset after use */             \
-                strcpy(data.moduleshortname_default,                           \
-                       "");                       /* reset after use */        \
-                strcpy(data.moduleshortname, ""); /* reset after use */        \
-            }                                                                  \
+        {                                                                      \
+            strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT);    \
+            strcpy(data.moduledatestring, __DATE__);                           \
+            strcpy(data.moduletimestring, __TIME__);                           \
+            strcpy(data.modulename, (#modname));                               \
+            RegisterModule(__FILE__,                                           \
+                           PROJECT_NAME,                                       \
+                           MODULE_DESCRIPTION,                                 \
+                           VERSION_MAJOR,                                      \
+                           VERSION_MINOR,                                      \
+                           VERSION_PATCH);                                     \
+            init_module_CLI();                                                 \
+            INITSTATUS_##modname = 1;                                          \
+            strcpy(data.modulename, "");              /* reset after use */    \
+            strcpy(data.moduleshortname_default, ""); /* reset after use */    \
+            strcpy(data.moduleshortname, "");         /* reset after use */    \
+        }                                                                      \
     }                                                                          \
     void __attribute__((destructor)) libclose_##modname()                      \
     {                                                                          \
         if (INITSTATUS_##modname == 1)                                         \
-            {                                                                  \
-            }                                                                  \
+        {                                                                      \
+        }                                                                      \
     }
 
 #define MAX_NB_FRAMENAME_CHAR 500

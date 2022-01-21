@@ -67,9 +67,9 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
 
     double total = 0.0;
     for (uint64_t ii = 0; ii < xysize; ii++)
-        {
-            total += img.im->array.F[ii];
-        }
+    {
+        total += img.im->array.F[ii];
+    }
     total *= scalingcoeff;
 
     printf("image %s total = %lf (scaling coeff %lf)\n",

@@ -87,47 +87,47 @@ void CORE_logFunctionCall(const int                           funclevel,
     modechar = '?';
 
     if (logfuncMODE == 0)
-        {
-            modechar = '>';
-        }
+    {
+        modechar = '>';
+    }
     else if (logfuncMODE == 1)
-        {
-            modechar = '<';
-        }
+    {
+        modechar = '<';
+    }
     else
-        {
-            modechar = '?';
-        }
+    {
+        modechar = '?';
+    }
 
     if (funclevel <= loglevel)
-        {
-            char fname[500];
+    {
+        char fname[500];
 
-            FILE *fp;
+        FILE *fp;
 
-            sprintf(fname, ".%s.funccalls.log", FunctionName);
+        sprintf(fname, ".%s.funccalls.log", FunctionName);
 
-            struct tm *uttime;
-            tnow   = time(NULL);
-            uttime = gmtime(&tnow);
-            clock_gettime(CLOCK_REALTIME, &timenow);
-            tid = syscall(SYS_gettid);
+        struct tm *uttime;
+        tnow   = time(NULL);
+        uttime = gmtime(&tnow);
+        clock_gettime(CLOCK_REALTIME, &timenow);
+        tid = syscall(SYS_gettid);
 
-            // add custom parameter into string (optional)
+        // add custom parameter into string (optional)
 
-            fp = fopen(fname, "a");
-            fprintf(fp,
-                    "%02d:%02d:%02ld.%09ld  %10d  %10d  %c %40s %6ld   %s\n",
-                    uttime->tm_hour,
-                    uttime->tm_min,
-                    timenow.tv_sec % 60,
-                    timenow.tv_nsec,
-                    getpid(),
-                    (int) tid,
-                    modechar,
-                    FunctionName,
-                    line,
-                    comments);
-            fclose(fp);
-        }
+        fp = fopen(fname, "a");
+        fprintf(fp,
+                "%02d:%02d:%02ld.%09ld  %10d  %10d  %c %40s %6ld   %s\n",
+                uttime->tm_hour,
+                uttime->tm_min,
+                timenow.tv_sec % 60,
+                timenow.tv_nsec,
+                getpid(),
+                (int) tid,
+                modechar,
+                FunctionName,
+                line,
+                comments);
+        fclose(fp);
+    }
 }
