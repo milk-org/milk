@@ -59,7 +59,7 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.NBthread");
         if (pindex > -1)
         {
-            long NBthread = functionparameter_GetParamValue_INT64(fps, ".conf.NBthread");
+            long NBthread = functionparameter_GetParamValue_INT64(fps, ".procinfo.NBthread");
             EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"export OMP_NUM_THREADS=%ld\" C-m", fps->md->name,
                                    NBthread);
         }
