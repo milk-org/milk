@@ -173,7 +173,7 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
     sprintf(command, "taskset -pc %s %d\n", tsetspec, pid);
     printf("Executing command: %s\n", command);
 
-    EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
+    EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
 
     if (setresuid(data.ruid, data.ruid, data.euid) !=
         0) // Go back to normal privileges
@@ -216,14 +216,14 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
             csetname);
     printf("Executing command: %s\n", command);
 
-    EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
+    EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
 
     if (rtprio > 0)
     {
         sprintf(command, "chrt -f -p %d %d\n", rtprio, pid);
         printf("Executing command: %s\n", command);
 
-        EXECUTE_SYSTEM_COMMAND_ERRCHECK(command);
+        EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
     }
 
     if (setresuid(data.ruid, data.ruid, data.euid) !=
