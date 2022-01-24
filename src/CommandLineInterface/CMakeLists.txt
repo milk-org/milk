@@ -129,7 +129,6 @@ target_include_directories(CLIcore
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                   ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}
                                   ${HWLOC_INCLUDE_DIR} ${NCURSES_INCLUDE_DIR})
-
 target_compile_options(CLIcore PUBLIC)
 
 target_link_directories(CLIcore
@@ -137,7 +136,7 @@ target_link_directories(CLIcore
 
 target_link_libraries(CLIcore
                       PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${HWLOC_LIBRARIES}
-                             ${NCURSES_LIBRARIES})
+                             ${NCURSES_LIBRARIES} )
 
 if(${python_module})
   add_subdirectory(python_module)

@@ -510,6 +510,26 @@ printf("DEBUG MSG [%s %s  %d]: %s\n", data.testpoint.file, data.testpoint.func, 
         }                                                                      \
     } while (0)
 
+
+#define WRITE_STRING(string, ...)                                              \
+    do                                                                         \
+    {                                                                          \
+        int slen = snprintf(string, STRINGMAXLEN_DEFAULT, __VA_ARGS__);        \
+        if (slen < 1)                                                          \
+        {                                                                      \
+            PRINT_ERROR("snprintf wrote <1 char");                             \
+            abort();                                                           \
+        }                                                                      \
+        if (slen >= STRINGMAXLEN_DEFAULT)                                      \
+        {                                                                      \
+            PRINT_ERROR("snprintf string truncation");                         \
+            abort();                                                           \
+        }                                                                      \
+    } while (0)
+
+
+
+
 /**
  * @ingroup errcheckmacro
  * @brief Write image name to string

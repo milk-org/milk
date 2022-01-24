@@ -7,6 +7,11 @@
 #include <termios.h>
 
 #include <ncurses.h>
+//#include <curses.h>
+#include <ncursesw/ncurses.h>
+
+#include <locale.h>
+#include <wchar.h>
 
 #include <CommandLineInterface/CLIcore.h>
 
@@ -85,6 +90,33 @@ void TUI_printfw(const char *fmt, ...)
     va_end(args);
 }
 
+/*
+void TUI_wprintfw(const wchar_t *wstr)
+{
+    if (screenprintmode == SCREENPRINT_STDIO)
+    {
+        printf("%ls", wstr);
+    }
+
+    if (screenprintmode == SCREENPRINT_NCURSES)
+    {
+        int  x, y;
+        int  MAXLINELEN = 512;
+        //wchar_t prtstring[MAXLINELEN];
+
+        getyx(stdscr, y, x);
+        (void) x;
+        (void) y;
+
+        //vswprintf(prtstring, MAXLINELEN, fmt, args);
+//        printw("%ls", wstr);
+        //mvaddwstr(y, x, wstr);
+    }
+}
+*/
+
+
+
 void TUI_newline()
 {
     if (screenprintmode == SCREENPRINT_STDIO)
@@ -96,6 +128,9 @@ void TUI_newline()
         printw("\n");
     }
 }
+
+
+
 
 void screenprint_setcolor(int colorcode)
 {
@@ -296,6 +331,9 @@ void screenprint_setnormal()
     }
 }
 
+
+
+
 /**
  * @brief Print header line
  *
@@ -432,6 +470,7 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
     {
         DEBUG_TRACEPOINT("Initializing TUI ncurses ");
 
+        setlocale(LC_ALL, "");
         if (initscr() == NULL)
         {
             fprintf(stderr, "Error initialising ncurses.\n");
