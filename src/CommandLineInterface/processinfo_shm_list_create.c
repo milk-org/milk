@@ -5,6 +5,8 @@
 #include "CLIcore.h"
 #include <processtools.h>
 
+#include "processinfo_procdirname.h"
+
 #define FILEMODE 0666
 
 extern PROCESSINFOLIST *pinfolist;
