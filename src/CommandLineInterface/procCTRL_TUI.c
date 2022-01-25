@@ -681,6 +681,8 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
     return pinfolist;
 }
 
+
+
 int processinfo_shm_close(PROCESSINFO *pinfo, int fd)
 {
     struct stat file_stat;
@@ -730,6 +732,18 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
         processinfo->loopstat = 3; // clean exit
     }
+
+    // Remove processinfo shm file on clean exit
+    char procdname[STRINGMAXLEN_FULLFILENAME];
+    processinfo_procdirname(procdname);
+
+    char SM_fname[STRINGMAXLEN_FULLFILENAME];
+    WRITE_FULLFILENAME(SM_fname,
+                       "%s/proc.%s.%06d.shm",
+                       procdname,
+                       processinfo->name,
+                       processinfo->PID);
+    remove(SM_fname);
 
     return 0;
 }
