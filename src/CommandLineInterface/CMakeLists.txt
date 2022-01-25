@@ -49,7 +49,6 @@ add_library(CLIcore
             fpsCTRL_TUI_process_user_key.c
             procCTRL_TUI.c
             streamCTRL_TUI.c
-            processtools_trigger.c
             timeutils.c
             fps_add_entry.c
             fps_checkparameter.c
@@ -87,6 +86,8 @@ add_library(CLIcore
             fps_tmux.c
             fps_userinputsetparamvalue.c
             fps_WriteParameterToDisk.c
+            processtools_trigger.c
+            processinfo_setup.c
             TUItools.c
             ${CORE_FILES})
 
