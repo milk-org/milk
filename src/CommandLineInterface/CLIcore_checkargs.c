@@ -936,8 +936,7 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
               CLICMDARG_FLAG_NOFPS))
         {
             // if argument is part of FPS
-            double tmpvalf = 0.0;
-            long   tmpvall = 0;
+            long tmpvall = 0;
 
             switch (data.cmd[data.cmdindex].argdata[argi].type)
             {

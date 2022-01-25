@@ -86,8 +86,18 @@ add_library(CLIcore
             fps_tmux.c
             fps_userinputsetparamvalue.c
             fps_WriteParameterToDisk.c
+            procCTRL_GetCPUloads.c
+            procCTRL_GetNumberCPUs.c
+            procCTRL_PIDcollectSystemInfo.c
             processtools_trigger.c
+            processinfo_procdirname.c
+            processinfo_exec_start.c
+            processinfo_exec_end.c
+            procCTRL_processinfo_scan.c
             processinfo_setup.c
+            processinfo_shm_create.c
+            processinfo_shm_list_create.c
+            processinfo_SIGexit.c
             TUItools.c
             ${CORE_FILES})
 

@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+
 #include "CLIcore.h"
 #include <processtools.h>
 
@@ -13,8 +15,10 @@ PROCESSINFO *processinfo_setup(
     const char *filename,
     int         linenumber)
 {
-    static PROCESSINFO
-        *processinfo; // Only one instance of processinfo created by process
+    DEBUG_TRACE_FSTART();
+
+    static PROCESSINFO *processinfo;
+    // Only one instance of processinfo created by process
     // subsequent calls to this function will re-use the same processinfo structure
 
     DEBUG_TRACEPOINT(" ");
@@ -47,6 +51,8 @@ PROCESSINFO *processinfo_setup(
 
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
+        DEBUG_TRACEPOINT(" ");
+
         processinfo_CatchSignals();
     }
 
@@ -66,6 +72,8 @@ PROCESSINFO *processinfo_setup(
     processinfo->RT_priority   = -1; // default: do not assign RT priority
 
     DEBUG_TRACEPOINT(" ");
+
+    DEBUG_TRACE_FEXIT();
 
     return processinfo;
 }
