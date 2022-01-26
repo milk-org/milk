@@ -118,8 +118,8 @@ static int NBtopP; // number of processes scanned by top
 */
 
 // timing info collected to optimize this program
-static struct timespec t1;
-static struct timespec t2;
+//static struct timespec t1;
+//static struct timespec t2;
 static struct timespec tdiff;
 
 // timing categories
