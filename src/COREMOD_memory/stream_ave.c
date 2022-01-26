@@ -106,7 +106,7 @@ static errno_t compute_function()
 
     if ((*compave) == 1)
     {
-        imcreateIMGID(&outimave);
+        imcreateIMGID(&outimgave);
     }
 
     IMGID outimgrms  = makeIMGID_2D(outimrms, xsize, ysize);
@@ -114,7 +114,7 @@ static errno_t compute_function()
 
     if ((*comprms) == 1)
     {
-        imcreateIMGID(&outimrms);
+        imcreateIMGID(&outimgrms);
     }
 
 

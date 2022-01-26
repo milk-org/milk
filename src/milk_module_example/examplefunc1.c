@@ -45,21 +45,7 @@ static CLICMDDATA CLIcmddata = {
     "compute total of image example1", // description of what the function does
     CLICMD_FIELDS_NOFPS};
 
-/**
- * @brief Detailed help
- *
- * @return errno_t
- */
-static errno_t help_function()
-{
-    printf(
-        "Example function demonstrating basic CLI interface\n"
-        "Adds pixel values of an image with a global scaling parameter\n"
-        "Input is image, output is scalar\n"
-        "This function does not support fps or procinfo\n");
 
-    return RETURN_SUCCESS;
-}
 
 /** @brief Compute function code
  *
