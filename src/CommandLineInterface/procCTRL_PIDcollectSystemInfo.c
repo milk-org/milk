@@ -54,11 +54,11 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
     tdiff = timespec_diff(t1, t2);
     scantime_cpuset += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-    char   *line = NULL;
-    size_t  len  = 0;
-    ssize_t read;
-    char    string0[200];
-    char    string1[300];
+    //char   *line = NULL;
+    //size_t  len  = 0;
+    //ssize_t read;
+    //char    string0[200];
+    //char    string1[300];
 
     DEBUG_TRACEPOINT(" ");
 
