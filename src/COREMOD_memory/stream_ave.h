@@ -1,9 +1,6 @@
-/** @file stream_ave.h
- */
+#ifndef _STREAMAVERAGE_H
+#define _STREAMAVERAGE_H
 
-errno_t stream_ave_addCLIcmd();
+errno_t CLIADDCMD_streamaverage();
 
-imageID COREMOD_MEMORY_streamAve(const char *IDstream_name,
-                                 int         NBave,
-                                 int         mode,
-                                 const char *IDout_name);
+#endif

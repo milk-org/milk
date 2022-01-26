@@ -163,7 +163,8 @@ static errno_t init_module_CLI()
     stream_diff_addCLIcmd();
     stream_paste_addCLIcmd();
     stream_halfimdiff_addCLIcmd();
-    stream_ave_addCLIcmd();
+
+    CLIADDCMD_streamaverage();
     stream_monitorlimits_addCLIcmd();
 
     // DATA LOGGING
