@@ -1,6 +1,7 @@
 
 #include <sys/file.h>
 #include <sys/mman.h> // mmap()
+#include <sys/stat.h>
 
 #include "CLIcore.h"
 #include <processtools.h>
