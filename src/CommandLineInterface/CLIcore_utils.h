@@ -454,9 +454,7 @@ typedef struct
  * "s>im1" : set shared memory flag
  * "k10>im1" : number of keyword = 10
  * "c20>im1" : 20-sized circular buffer
- * "tD>im1" : datatype is double (64 bit floating point)
- *      D double precision float (64)
- *      F single precision float (32)
+ * "tf64>im1" : datatype is double (64 bit floating point)
 */
 static inline IMGID makeIMGID(CONST_WORD name)
 {
@@ -568,6 +566,39 @@ static inline IMGID makeIMGID(CONST_WORD name)
 
     return img;
 }
+
+
+
+/** make blank IMGID from name
+ *
+ * All fields are uninitialized
+ * Can be used for comparison
+*/
+static inline IMGID makeIMGID_blank()
+{
+    IMGID img;
+
+    // default values for image creation
+    img.datatype = _DATATYPE_UNINITIALIZED;
+    img.naxis    = -1;
+    img.size[0]  = 0;
+    img.size[1]  = 0;
+    img.size[2]  = 0;
+    img.shared   = -1;
+    img.NBkw     = -1;
+    img.CBsize   = -1;
+
+    img.ID        = -1;
+    img.createcnt = -1;
+    strcpy(img.name, "");
+    img.im = NULL;
+    img.md = NULL;
+
+    return img;
+}
+
+
+
 
 static inline IMGID
 makeIMGID_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
@@ -715,5 +746,57 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 
     return img->ID;
 }
+
+/**
+ * @brief Check if img complies to imgtemplate
+ *
+ */
+static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
+{
+    int compErr = 0;
+
+    if (imgtemplate.datatype != _DATATYPE_UNINITIALIZED)
+    {
+        if (imgtemplate.datatype != img.datatype)
+        {
+            compErr++;
+        }
+    }
+
+    if (imgtemplate.naxis != -1)
+    {
+        if (imgtemplate.naxis != img.naxis)
+        {
+            compErr++;
+        }
+    }
+
+    if (imgtemplate.size[0] != 0)
+    {
+        if (imgtemplate.size[0] != img.size[0])
+        {
+            compErr++;
+        }
+    }
+
+    if (imgtemplate.size[1] != 0)
+    {
+        if (imgtemplate.size[1] != img.size[1])
+        {
+            compErr++;
+        }
+    }
+
+    if (imgtemplate.size[2] != 0)
+    {
+        if (imgtemplate.size[2] != img.size[2])
+        {
+            compErr++;
+        }
+    }
+
+    return compErr;
+}
+
 
 #endif
