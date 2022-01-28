@@ -89,7 +89,7 @@ errno_t saveFITS(const char *__restrict inputimname,
                  int            kwarraysize)
 {
     DEBUG_TRACE_FSTART();
-    printf("Saving image %s to file %s, bitpix = %d",
+    printf("Saving image %s to file %s, bitpix = %d\n",
            inputimname,
            outputFITSname,
            outputbitpix);
@@ -135,7 +135,7 @@ errno_t saveFITS(const char *__restrict inputimname,
 
 
 
-    DEBUG_TRACEPOINT("datatype = %d", (int) datatype);
+    printf("datatype = %d", (int) datatype);
     switch (datatype)
     {
     case _DATATYPE_UINT8:
@@ -199,7 +199,7 @@ errno_t saveFITS(const char *__restrict inputimname,
         break;
     }
 
-    DEBUG_TRACEPOINT("bitpix = %d", bitpix);
+    printf("bitpix = %d", bitpix);
 
     switch (outputbitpix)
     {
@@ -249,7 +249,7 @@ errno_t saveFITS(const char *__restrict inputimname,
         break;
     }
 
-    DEBUG_TRACEPOINT("bitpix = %d", bitpix);
+    printf("bitpix = %d", bitpix);
 
     fitsfile *fptr;
     COREMOD_iofits_data.FITSIO_status = 0;
