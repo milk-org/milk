@@ -89,10 +89,10 @@ errno_t saveFITS(const char *__restrict inputimname,
                  int            kwarraysize)
 {
     DEBUG_TRACE_FSTART();
-    DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d",
-                     inputimname,
-                     outputFITSname,
-                     outputbitpix);
+    printf("Saving image %s to file %s, bitpix = %d",
+           inputimname,
+           outputFITSname,
+           outputbitpix);
 
     COREMOD_iofits_data.FITSIO_status = 0;
 
