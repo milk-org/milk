@@ -135,7 +135,7 @@ errno_t saveFITS(const char *__restrict inputimname,
 
 
 
-    printf("datatype = %d", (int) datatype);
+    printf("datatype = %d\n", (int) datatype);
     switch (datatype)
     {
     case _DATATYPE_UINT8:
@@ -199,7 +199,7 @@ errno_t saveFITS(const char *__restrict inputimname,
         break;
     }
 
-    printf("bitpix = %d", bitpix);
+    printf("bitpix = %d\n", bitpix);
 
     switch (outputbitpix)
     {
@@ -249,7 +249,7 @@ errno_t saveFITS(const char *__restrict inputimname,
         break;
     }
 
-    printf("bitpix = %d", bitpix);
+    printf("bitpix = %d\n", bitpix);
 
     fitsfile *fptr;
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -284,6 +284,8 @@ errno_t saveFITS(const char *__restrict inputimname,
         nelements *= naxesl[i];
     }
 
+
+    printf(">>>>>>>> bitpix = %d\n", bitpix);
     COREMOD_iofits_data.FITSIO_status = 0;
     fits_create_img(fptr,
                     bitpix,
