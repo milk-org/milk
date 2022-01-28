@@ -747,6 +747,8 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
     return img->ID;
 }
 
+
+
 /**
  * @brief Check if img complies to imgtemplate
  *
