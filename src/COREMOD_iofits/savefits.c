@@ -133,6 +133,8 @@ errno_t saveFITS(const char *__restrict inputimname,
 
     char *datainptr;
 
+
+
     DEBUG_TRACEPOINT("datatype = %d", (int) datatype);
     switch (datatype)
     {
@@ -150,12 +152,12 @@ errno_t saveFITS(const char *__restrict inputimname,
 
     case _DATATYPE_UINT16:
         FITSIOdatatype = TUSHORT;
-        bitpix         = SHORT_IMG;
+        bitpix         = USHORT_IMG;
         datainptr      = (char *) imgin.im->array.UI16;
         break;
 
     case _DATATYPE_INT16:
-        FITSIOdatatype = TUSHORT;
+        FITSIOdatatype = TSHORT;
         bitpix         = SHORT_IMG;
         datainptr      = (char *) imgin.im->array.SI16;
         break;
@@ -402,6 +404,27 @@ errno_t saveFITS(const char *__restrict inputimname,
         }
     }
 
+
+    // if uint16, add BZERO and BSCALE keywords
+    /*if(datatype == _DATATYPE_UINT16)
+    {
+        char tmpkwvalstr[81];
+        COREMOD_iofits_data.FITSIO_status = 0;
+        fits_update_key(fptr,
+                        TLONG,
+                        "BSCALE",
+                        "1",
+                        "linear scale",
+                        &COREMOD_iofits_data.FITSIO_status);
+                fits_update_key(fptr,
+                        TLONG,
+                        "BZERO",
+                        "32768",
+                        "linear scale",
+                        &COREMOD_iofits_data.FITSIO_status);
+    }*/
+
+
     // Add FITS keywords from image keywords
 
     {
@@ -577,6 +600,9 @@ errno_t saveFITS(const char *__restrict inputimname,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
 
 errno_t saveall_fits(const char *__restrict savedirname)
 {
