@@ -757,41 +757,71 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
 
     if (imgtemplate.datatype != _DATATYPE_UNINITIALIZED)
     {
+        printf("Checking datatype       ");
         if (imgtemplate.datatype != img.datatype)
         {
+            printf("FAIL\n");
             compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
         }
     }
 
     if (imgtemplate.naxis != -1)
     {
+        printf("Checking naxis          ");
         if (imgtemplate.naxis != img.naxis)
         {
+            printf("FAIL\n");
             compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
         }
     }
 
     if (imgtemplate.size[0] != 0)
     {
+        printf("Checking size[0]        ");
         if (imgtemplate.size[0] != img.size[0])
         {
+            printf("FAIL\n");
             compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
         }
     }
 
     if (imgtemplate.size[1] != 0)
     {
+        printf("Checking size[1]        ");
         if (imgtemplate.size[1] != img.size[1])
         {
+            printf("FAIL\n");
             compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
         }
     }
 
     if (imgtemplate.size[2] != 0)
     {
+        printf("Checking size[2]        ");
         if (imgtemplate.size[2] != img.size[2])
         {
+            printf("FAIL\n");
             compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
         }
     }
 
