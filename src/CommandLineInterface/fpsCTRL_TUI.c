@@ -107,6 +107,7 @@ inline static void fpsCTRLscreen_print_help()
     TUI_printfw("============ SCREENS");
     TUI_newline();
     print_help_entry("h/F2/F3", "Help/Control/Sequencer screen");
+    print_help_entry("v/V", "verbose mode on/off");
 
     TUI_newline();
     TUI_printfw("============ OTHER");
@@ -272,6 +273,8 @@ inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
     TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
+
+
     TUI_printfw("======== NODE info ( # %5ld)", nodeSelected);
     TUI_newline();
     TUI_printfw("%-30s ", keywnode[nodeSelected].keywordfull);
@@ -705,29 +708,31 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
             DEBUG_TRACEPOINT(" ");
 
-            TUI_printfw(
-                "======== FPSCTRL info  ( screen refresh cnt %7ld  "
-                "scan interval %7ld us)",
-                loopcnt,
-                getchardt_us);
-            TUI_newline();
-            TUI_printfw(
-                "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
-                "%ld   NBtaskLaunched = %d -> %d   [NB FPS = %d]",
-                fpsCTRLvar.fpsCTRLfifoname,
-                fpsCTRLvar.fpsCTRLfifofd,
-                fifocmdcnt,
-                NBtaskLaunched,
-                NBtaskLaunchedcnt,
-                fpsCTRLvar.NBfps);
-            TUI_newline();
+            if (fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
+            {
+                TUI_printfw(
+                    "======== FPSCTRL info  ( screen refresh cnt %7ld  "
+                    "scan interval %7ld us)",
+                    loopcnt,
+                    getchardt_us);
+                TUI_newline();
+                TUI_printfw(
+                    "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
+                    "%ld   NBtaskLaunched = %d -> %d   [NB FPS = %d]",
+                    fpsCTRLvar.fpsCTRLfifoname,
+                    fpsCTRLvar.fpsCTRLfifofd,
+                    fifocmdcnt,
+                    NBtaskLaunched,
+                    NBtaskLaunchedcnt,
+                    fpsCTRLvar.NBfps);
+                TUI_newline();
 
-            DEBUG_TRACEPOINT(" ");
-            char logfname[STRINGMAXLEN_FULLFILENAME];
-            getFPSlogfname(logfname);
-            TUI_printfw("    OUTPUT LOG       :  %s", logfname);
-            TUI_newline();
-
+                DEBUG_TRACEPOINT(" ");
+                char logfname[STRINGMAXLEN_FULLFILENAME];
+                getFPSlogfname(logfname);
+                TUI_printfw("    OUTPUT LOG       :  %s", logfname);
+                TUI_newline();
+            }
             DEBUG_TRACEPOINT(" ");
 
             if (fpsCTRLvar.fpsCTRL_DisplayMode == 1) // help
@@ -764,36 +769,47 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                         keywnode[fpsCTRLvar.nodeSelected].fpsindex;
                     fpsCTRLvar.pindexSelected =
                         keywnode[fpsCTRLvar.nodeSelected].pindex;
-                    fpsCTRLscreen_print_nodeinfo(data.fpsarray,
-                                                 keywnode,
-                                                 fpsCTRLvar.nodeSelected,
-                                                 fpsCTRLvar.fpsindexSelected,
-                                                 fpsCTRLvar.pindexSelected);
+
+                    if (fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
+                    {
+                        fpsCTRLscreen_print_nodeinfo(
+                            data.fpsarray,
+                            keywnode,
+                            fpsCTRLvar.nodeSelected,
+                            fpsCTRLvar.fpsindexSelected,
+                            fpsCTRLvar.pindexSelected);
+                    }
 
                     DEBUG_TRACEPOINT("trace back node chain");
                     nodechain[fpsCTRLvar.currentlevel] =
                         fpsCTRLvar.directorynodeSelected;
 
-                    TUI_printfw("[level %d %d] ",
-                                fpsCTRLvar.currentlevel + 1,
-                                nodechain[fpsCTRLvar.currentlevel + 1]);
 
-                    if (fpsCTRLvar.currentlevel > 0)
+                    if (fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
                     {
                         TUI_printfw("[level %d %d] ",
-                                    fpsCTRLvar.currentlevel,
-                                    nodechain[fpsCTRLvar.currentlevel]);
+                                    fpsCTRLvar.currentlevel + 1,
+                                    nodechain[fpsCTRLvar.currentlevel + 1]);
+
+                        if (fpsCTRLvar.currentlevel > 0)
+                        {
+                            TUI_printfw("[level %d %d] ",
+                                        fpsCTRLvar.currentlevel,
+                                        nodechain[fpsCTRLvar.currentlevel]);
+                        }
+                        level = fpsCTRLvar.currentlevel - 1;
+                        while (level > 0)
+                        {
+                            nodechain[level] =
+                                keywnode[nodechain[level + 1]].parent_index;
+                            TUI_printfw("[level %d %d] ",
+                                        level,
+                                        nodechain[level]);
+                            level--;
+                        }
+                        TUI_printfw("[level 0 0]");
+                        TUI_newline();
                     }
-                    level = fpsCTRLvar.currentlevel - 1;
-                    while (level > 0)
-                    {
-                        nodechain[level] =
-                            keywnode[nodechain[level + 1]].parent_index;
-                        TUI_printfw("[level %d %d] ", level, nodechain[level]);
-                        level--;
-                    }
-                    TUI_printfw("[level 0 0]");
-                    TUI_newline();
                     nodechain[0] = 0; // root
 
                     DEBUG_TRACEPOINT("Get number of lines to be displayed");
@@ -812,20 +828,24 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                         }
                     }
 
-                    TUI_printfw(
-                        "[node %d] level = %d   [%d] NB child "
-                        "= %d",
-                        fpsCTRLvar.nodeSelected,
-                        fpsCTRLvar.currentlevel,
-                        fpsCTRLvar.directorynodeSelected,
-                        keywnode[fpsCTRLvar.directorynodeSelected].NBchild);
 
-                    TUI_printfw("   fps %d", fpsCTRLvar.fpsindexSelected);
+                    if (fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
+                    {
+                        TUI_printfw(
+                            "[node %d] level = %d   [%d] NB child "
+                            "= %d",
+                            fpsCTRLvar.nodeSelected,
+                            fpsCTRLvar.currentlevel,
+                            fpsCTRLvar.directorynodeSelected,
+                            keywnode[fpsCTRLvar.directorynodeSelected].NBchild);
 
-                    TUI_printfw("   pindex %d ",
-                                keywnode[fpsCTRLvar.nodeSelected].pindex);
+                        TUI_printfw("   fps %d", fpsCTRLvar.fpsindexSelected);
 
-                    TUI_newline();
+                        TUI_printfw("   pindex %d ",
+                                    keywnode[fpsCTRLvar.nodeSelected].pindex);
+
+                        TUI_newline();
+                    }
 
                     /*      TUI_printfw("SELECTED DIR = %3d    SELECTED = %3d   GUIlineMax= %3d",
                                  fpsCTRLvar.directorynodeSelected,
