@@ -16,8 +16,11 @@
 typedef struct
 {
     imageID ID; // -1 if not resolved
-    int64_t
-                    createcnt; // increments when image created, used to check if re-resolving needed
+
+    // increments when image created, used to check if re-resolving needed
+    int64_t createcnt;
+
+
     char            name[32]; // used to resolve if needed
     IMAGE          *im;
     IMAGE_METADATA *md; // pointer to metadata
