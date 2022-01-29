@@ -94,7 +94,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg = makeIMGID(inimname);
+    IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
     uint32_t xsize  = inimg.size[0];

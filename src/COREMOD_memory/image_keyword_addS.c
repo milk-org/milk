@@ -68,7 +68,7 @@ errno_t image_keyword_addS(IMGID img, char *kwname, char *kwval, char *comment)
 
 static errno_t compute_function()
 {
-    image_keyword_addS(makeIMGID(inimname), kwname, kwval, comment);
+    image_keyword_addS(mkIMGID_from_name(inimname), kwname, kwval, comment);
     return RETURN_SUCCESS;
 }
 

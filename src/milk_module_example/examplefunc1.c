@@ -110,7 +110,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    example_compute_2Dimage_total(makeIMGID(inimname), *scoeff);
+    example_compute_2Dimage_total(mkIMGID_from_name(inimname), *scoeff);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

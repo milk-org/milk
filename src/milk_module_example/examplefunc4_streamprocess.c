@@ -158,10 +158,10 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg = makeIMGID(inimname);
+    IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-    IMGID outimg = makeIMGID(outimname);
+    IMGID outimg = mkIMGID_from_name(outimname);
     resolveIMGID(&outimg, ERRMODE_ABORT);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

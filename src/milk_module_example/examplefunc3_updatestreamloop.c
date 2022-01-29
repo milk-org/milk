@@ -34,7 +34,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = makeIMGID(inimname);
+    IMGID img = mkIMGID_from_name(inimname);
     resolveIMGID(&img, ERRMODE_ABORT);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
