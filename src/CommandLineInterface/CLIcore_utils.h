@@ -878,6 +878,13 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
         arraytmp[1] = ysize;
 
         create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &ID);
+        if (ID != -1)
+        {
+            img.im        = &data.image[ID];
+            img.md        = data.image[ID].md;
+            img.createcnt = data.image[ID].createcnt;
+            updateIMGIDcreationparams(&img);
+        }
 
         free(arraytmp);
     }
