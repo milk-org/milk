@@ -883,6 +883,7 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
 
     if (img.ID != -1)
     {
+        imageID ID    = img.ID;
         img.im        = &data.image[ID];
         img.md        = data.image[ID].md;
         img.createcnt = data.image[ID].createcnt;
