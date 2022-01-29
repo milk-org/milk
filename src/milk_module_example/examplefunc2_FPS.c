@@ -95,7 +95,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    example_compute_2Dimage_total(makeIMGID(inimname), *scoeff);
+    example_compute_2Dimage_total(mkIMGID_from_name(inimname), *scoeff);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

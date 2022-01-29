@@ -116,7 +116,7 @@ errno_t saveFITS(const char *__restrict inputimname,
                    (long) self_id);
     printf("temp name : %s\n", fnametmp);
 
-    IMGID imgin = makeIMGID(inputimname);
+    IMGID imgin = mkIMGID_from_name(inputimname);
     resolveIMGID(&imgin, ERRMODE_WARN);
     if (imgin.ID == -1)
     {
@@ -418,14 +418,14 @@ errno_t saveFITS(const char *__restrict inputimname,
                         "1",
                         "linear scale",
                         &COREMOD_iofits_data.FITSIO_status);
-                fits_update_key(fptr,
+        fits_update_key(fptr,
                         TLONG,
                         "BZERO",
                         "32768",
                         "linear scale",
                         &COREMOD_iofits_data.FITSIO_status);
-    }*/
-
+    }
+*/
 
     // Add FITS keywords from image keywords
 

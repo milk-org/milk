@@ -456,7 +456,7 @@ typedef struct
  * "c20>im1" : 20-sized circular buffer
  * "tf64>im1" : datatype is double (64 bit floating point)
 */
-static inline IMGID makeIMGID(CONST_WORD name)
+static inline IMGID mkIMGID_from_name(CONST_WORD name)
 {
     IMGID img;
 
@@ -603,7 +603,7 @@ static inline IMGID makeIMGID_blank()
 static inline IMGID
 makeIMGID_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
 {
-    IMGID img   = makeIMGID(name);
+    IMGID img   = mkIMGID_from_name(name);
     img.naxis   = 2;
     img.size[0] = xsize;
     img.size[1] = ysize;
@@ -614,7 +614,7 @@ makeIMGID_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
 static inline IMGID
 makeIMGID_3D(CONST_WORD name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
 {
-    IMGID img   = makeIMGID(name);
+    IMGID img   = mkIMGID_from_name(name);
     img.naxis   = 3;
     img.size[0] = xsize;
     img.size[1] = ysize;
