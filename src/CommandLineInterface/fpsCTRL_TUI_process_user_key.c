@@ -66,6 +66,19 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         fpsCTRLvar->fpsCTRL_DisplayMode = 3;
         break;
 
+
+
+
+    case 'v':
+        fpsCTRLvar->fpsCTRL_DisplayVerbose = 0;
+        break;
+    case 'V':
+        fpsCTRLvar->fpsCTRL_DisplayVerbose = 1;
+        break;
+
+
+
+
     case 's': // (re)scan
         functionparameter_scan_fps(fpsCTRLvar->mode,
                                    fpsCTRLvar->fpsnamemask,

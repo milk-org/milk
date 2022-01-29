@@ -571,9 +571,10 @@ typedef struct
 {
     int      exitloop;            // exit control loop if 1
     int      fpsCTRL_DisplayMode; // Display mode
-    uint32_t mode;                // GUI mode
-    int      NBfps;               // Number of FPS entries
-    int      NBkwn;               // Number of keyword nodes
+    int      fpsCTRL_DisplayVerbose;
+    uint32_t mode;  // GUI mode
+    int      NBfps; // Number of FPS entries
+    int      NBkwn; // Number of keyword nodes
     long     NBindex;
     char     fpsnamemask[100];
     int      nodeSelected;
