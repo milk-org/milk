@@ -211,7 +211,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_copy_shm(makeIMGID(inimname), outimname);
+    image_copy_shm(mkIMGID_from_name(inimname), outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

@@ -58,7 +58,7 @@ imageID read_sharedmem_image(const char *sname)
         }
         else
         {
-            IMGID img = makeIMGID(sname);
+            IMGID img = mkIMGID_from_name(sname);
             //DEBUG_TRACEPOINT("resolving image");
             //ID = resolveIMGID(&img, ERRMODE_ABORT);
             img.ID = IDmem;
