@@ -5,9 +5,11 @@
  *
  */
 
+#include <stdio.h>
+
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <stdio.h>
+
 
 #include "CommandLineInterface/CLIcore.h"
 #include "CommandLineInterface/calc.h"
