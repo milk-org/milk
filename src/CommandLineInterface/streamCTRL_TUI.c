@@ -1425,7 +1425,8 @@ errno_t streamCTRL_CTRLscreen()
 
     int dindexSelected = 0;
 
-    int DisplayMode = DISPLAY_MODE_SEMVAL;
+    int DisplayMode      = DISPLAY_MODE_SEMVAL;
+    int DISPLAY_ALL_SEMS = 1; // Display all semaphores / just the first 2.
 
     struct tm *uttime_lastScan;
     time_t     rawtime;
@@ -1712,6 +1713,10 @@ errno_t streamCTRL_CTRLscreen()
             streaminfoproc.namefilter[stringindex] = '\0';
             TUI_init_terminal(&wrow, &wcol);
             break;
+
+        case 's': // toggle all sems / 2 sems
+            DISPLAY_ALL_SEMS = !DISPLAY_ALL_SEMS;
+            break;
         }
 
         DEBUG_TRACEPOINT("Input character processed");
@@ -1894,6 +1899,13 @@ errno_t streamCTRL_CTRLscreen()
             TUI_printfw("    Sort by processes access");
             TUI_newline();
 
+            screenprint_setbold();
+            TUI_printfw("    s");
+            //attroff(attrval);
+            screenprint_unsetbold();
+            TUI_printfw("    Show 3 semaphores / all semaphores");
+            TUI_newline();
+
             //attron(attrval);
             screenprint_setbold();
             TUI_printfw("    F");
@@ -1916,7 +1928,7 @@ errno_t streamCTRL_CTRLscreen()
         else
         {
             DEBUG_TRACEPOINT(" ");
-            if (DisplayMode == DISPLAY_MODE_HELP)
+            if (DisplayMode == DISPLAY_MODE_HELP) // Inaccessible.
             {
                 screenprint_setreverse();
                 TUI_printfw("[h] Help");
@@ -2673,7 +2685,10 @@ errno_t streamCTRL_CTRLscreen()
                         TUI_printfw(string);
 
                         int s;
-                        for (s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
+                        int max_s = DISPLAY_ALL_SEMS
+                                        ? streamCTRLimages[ID].md[0].sem
+                                        : 3;
+                        for (s = 0; s < max_s; s++)
                         {
                             int semval;
                             sem_getvalue(streamCTRLimages[ID].semptr[s],
@@ -2696,7 +2711,10 @@ errno_t streamCTRL_CTRLscreen()
                         TUI_printfw(string);
 
                         int s;
-                        for (s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
+                        int max_s = DISPLAY_ALL_SEMS
+                                        ? streamCTRLimages[ID].md[0].sem
+                                        : 3;
+                        for (s = 0; s < max_s; s++)
                         {
                             pid_t pid = streamCTRLimages[ID].semWritePID[s];
                             streamCTRL_print_procpid(8,
@@ -2722,7 +2740,10 @@ errno_t streamCTRL_CTRLscreen()
                         TUI_printfw(string);
 
                         int s;
-                        for (s = 0; s < streamCTRLimages[ID].md[0].sem; s++)
+                        int max_s = DISPLAY_ALL_SEMS
+                                        ? streamCTRLimages[ID].md[0].sem
+                                        : 3;
+                        for (s = 0; s < max_s; s++)
                         {
                             pid_t pid = streamCTRLimages[ID].semReadPID[s];
                             streamCTRL_print_procpid(8,
