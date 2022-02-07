@@ -623,6 +623,49 @@ makeIMGID_3D(CONST_WORD name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
     return img;
 }
 
+
+
+
+static inline int copyIMGID(IMGID *imgin, IMGID *imgout)
+{
+    imgout->datatype = imgin->datatype;
+    imgout->shared   = imgin->shared;
+
+    imgout->naxis = imgin->naxis;
+
+    imgout->size[0] = imgin->size[0];
+    imgout->size[1] = imgin->size[1];
+    imgout->size[2] = imgin->size[2];
+
+    imgout->NBkw   = imgin->NBkw;
+    imgout->CBsize = imgin->CBsize;
+
+    return RETURN_SUCCESS;
+}
+
+
+
+static inline imageID createimagefromIMGID(IMGID *img)
+{
+    create_image_ID(img->name,
+                    img->naxis,
+                    img->size,
+                    img->datatype,
+                    img->shared,
+                    img->NBkw,
+                    img->CBsize,
+                    &img->ID);
+
+    img->im        = &data.image[img->ID];
+    img->md        = &data.image[img->ID].md[0];
+    img->createcnt = data.image[img->ID].createcnt;
+
+    return img->ID;
+}
+
+
+
+
 /** Create image according to IMGID entries of existing image
  */
 static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
@@ -663,6 +706,9 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
     return target_img->ID;
 }
 
+
+
+
 /** Create image according to IMGID entries
  *  See cloning creation function imcreatelikewiseIMGID()
  */
@@ -670,6 +716,9 @@ static inline imageID imcreateIMGID(IMGID *img)
 {
     return imcreatelikewiseIMGID(img, img);
 }
+
+
+
 
 static inline errno_t updateIMGIDcreationparams(IMGID *img)
 {
@@ -829,6 +878,8 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
 
     return compErr;
 }
+
+
 
 
 /**
