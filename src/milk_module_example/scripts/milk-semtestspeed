@@ -15,21 +15,27 @@ EOF
 
 
 tmux new-session -d -s loopAB
-tmux new-session -d -s loopBA
+#tmux new-session -d -s loopBA
 
 tmux send-keys -t loopAB "milk" C-M
-tmux send-keys -t loopAB "mloadas milk_module_example mex" C-M
 tmux send-keys -t loopAB "readshmim imA" C-M
 tmux send-keys -t loopAB "readshmim imB" C-M
-tmux send-keys -t loopAB "mex.streamloop imA imB ${NBLOOP} ${SEMTRIG}" C-M
+tmux send-keys -t loopAB "shmimpoke ..procinfo 1" C-M
+tmux send-keys -t loopAB "shmimpoke ..triggermode 3" C-M
+tmux send-keys -t loopAB "shmimpoke ..triggersname imA" C-M
+tmux send-keys -t loopAB "shmimpoke ..loopcntMax ${NBLOOP}" C-M
+tmux send-keys -t loopAB "shmimpoke imB" C-M
 tmux send-keys -t loopAB "exitCLI" C-M
 
 
 
 milk << EOF
-mloadas milk_module_example mex
 readshmim imA
 readshmim imB
-mex.streamloop imB imA ${NBLOOP} ${SEMTRIG}
+shmimpoke ..procinfo 1
+shmimpoke ..triggermode 3
+shmimpoke ..triggersname imB
+shmimpoke ..loopcntMax ${NBLOOP}
+shmimpoke imA
 exitCLI
 EOF
