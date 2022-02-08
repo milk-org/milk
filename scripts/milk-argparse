@@ -358,7 +358,9 @@ set -o nounset
 
 # set positional arguments in their proper place
 #printf 'args before update  : '; printf '%q ' "$@"; echo
+if (( ${#inputParamString[@]} )); then
 set -- "${inputParamString[@]}"
+fi
 #printf 'args after  update  : '; printf '%q ' "$@"; echo
 
 
@@ -367,10 +369,12 @@ checkallprerequisites
 
 NBargin=0
 #for MSarg in "${inputMSargARRAY[@]}";do
+if (( ${#inputParamString[@]} )); then
 for MSarg in "${inputParamString[@]}";do
     #  echo "   input argument ${NBargin} : $MSarg"
     let NBargin+=1
 done
+fi
 
 if [[ ${NBargin} -ne ${NBarg} ]]; then
     echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
