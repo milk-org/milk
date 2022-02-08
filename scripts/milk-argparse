@@ -231,6 +231,7 @@ inputMSargtypeARRAY=( )
 inputMSargdescrARRAY=( )
 
 NBarg=0
+
 for argdat in "${MSarg[@]}";do
     #echo "Argument ${NBarg}: $argdat"
     IFS=':' read -r -a argarray <<< "$argdat"
