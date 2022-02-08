@@ -334,8 +334,10 @@ install(PROGRAMS
 
 include(CTest)
 
+add_test(milklistim milk-exec "listim")
+
 # test that milk CLI launches and list modules
 add_test(milkCLIlaunch milk-exec "-T" "m?")
-set_tests_properties(milkCLIlaunch PROPERTIES TIMEOUT 120)
+#set_tests_properties(milkCLIlaunch PROPERTIES TIMEOUT 120)
 
 add_test(milksemspeedtest milk-semtestspeed "100000" "1")
