@@ -43,13 +43,14 @@ IFS=';' read -r -a array <<< "${cmdstring}"
 
 #fifoname="milkCLIfifo.${pname}"
 
-
+set +u
 if [ -w "${MILK_SHM_DIR}/" ];
 then
 SFDIR="${MILK_SHM_DIR}/"
 else
 SFDIR="/tmp"
 fi
+set -u
 
 SF="${SFDIR}/milkCLIstartup.${pname}.$$"
 echo "" > $SF
