@@ -230,7 +230,6 @@ for i in "${!FPSNAMEARRAY[@]}"; do
   # printf "%20s module load string: ${mloadstring}\n" "${FPSNAMEARRAY[i]}"
   MODULELOADSTRING+=( "${mloadstring}" )
 done
-fi
 set -o nounset
 
 
