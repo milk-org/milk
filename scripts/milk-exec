@@ -42,7 +42,16 @@ echo "command string : ${cmdstring}"
 IFS=';' read -r -a array <<< "${cmdstring}"
 
 #fifoname="milkCLIfifo.${pname}"
-SF="${MILK_SHM_DIR}/milkCLIstartup.${pname}.$$"
+
+
+if [ -w "${MILK_SHM_DIR}/" ];
+then
+SFDIR="${MILK_SHM_DIR}/"
+else
+SFDIR="/tmp"
+fi
+
+SF="${SFDIR}/milkCLIstartup.${pname}.$$"
 echo "" > $SF
 for cmdstring in "${array[@]}"
 do
@@ -51,6 +60,6 @@ done
 echo "exitCLI" >> $SF
 #cp ${SF} test.txt
 
-milk -n ${pname} -f -s ${SF}
+MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
 
 rm ${SF}
