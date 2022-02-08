@@ -220,7 +220,7 @@ done < "${FPSlistfilename}"
 
 
 # construct module loading string
-if (( ${#FPSNAMEARRAY[@]} )); then
+set +o nounset
 for i in "${!FPSNAMEARRAY[@]}"; do
   IFS=';' read -r -a array <<< "${MODULELIST[$i]}"
   mloadstring=""
@@ -231,7 +231,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
   MODULELOADSTRING+=( "${mloadstring}" )
 done
 fi
-
+set -o nounset
 
 
 # PRINT STATUS
