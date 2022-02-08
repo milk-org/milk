@@ -62,11 +62,12 @@ txEndStand=$(tput rmso)   # exit standout
 txReset=$(tput sgr0)   # reset attributes
 
 
-MSarg+=( )
-
 MSopt+=( "h:help:printHELP::print help and exit" )
 MSopt+=( "hs:helpshort:printHELPshort::print 1-line help and exit" )
 MSopt+=( "chkp:check-prerequ:checkallprerequisitesExit::check all prerequisites and exit" )
+
+MSarg=( )
+
 
 spin()
 {
