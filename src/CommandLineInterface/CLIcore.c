@@ -684,7 +684,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             { // CLI loop delay to keep CPU load light
                 struct timespec nsts;
                 nsts.tv_sec  = 0;
-                nsts.tv_nsec = 30000000; // 30 ms delay
+                nsts.tv_nsec = 300000; // 0.3 ms delay
                 nanosleep(&nsts, NULL);
             }
 
