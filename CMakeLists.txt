@@ -315,12 +315,13 @@ install(PROGRAMS
 			scripts/milk-logshimoff
 			scripts/milk-logshimon
 			scripts/milk-logshimstat
-      scripts/milk-makecsetandrt
+      			scripts/milk-makecsetandrt
 			scripts/merge3DfitsTelemetry
 			scripts/milk-script-std-config
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
+			scripts/milk-shmimm-rm
 			scripts/milk-shmimmon
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
