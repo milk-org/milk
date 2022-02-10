@@ -28,9 +28,6 @@ echo "Removing stream ${sname}"
 
 
 
-IFS=';' read -r -a array <<< "${cmdstring}"
-
-#fifoname="milkCLIfifo.${pname}"
 
 set +u
 if [ -w "${MILK_SHM_DIR}/" ];
