@@ -321,7 +321,7 @@ install(PROGRAMS
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
-			scripts/milk-shmimm-rm
+			scripts/milk-shmim-rm
 			scripts/milk-shmimmon
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
