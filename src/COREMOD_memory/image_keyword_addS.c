@@ -52,8 +52,8 @@ errno_t image_keyword_addS(IMGID img, char *kwname, char *kwval, char *comment)
 
     if (kw0 == NBkw)
     {
-        printf("ERROR: no available keyword entry\n");
-        abort();
+        printf("WARNING: no available keyword entry -> ignored\n");
+        //abort();
     }
     else
     {
