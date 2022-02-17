@@ -91,6 +91,9 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
     return RETURN_SUCCESS;
 }
 
+
+
+
 /** @brief save entire FPS to disk
  *
  * Writes in subdirectory fpslog
@@ -126,6 +129,9 @@ int functionparameter_SaveFPS2disk(FUNCTION_PARAMETER_STRUCT *fps)
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 /** @brief Write archive script to .log2fps entry
  *
@@ -258,6 +264,9 @@ errno_t fps_write_RUNoutput_image(FUNCTION_PARAMETER_STRUCT *fps,
     return RETURN_SUCCESS;
 }
 
+
+
+
 /** @brief Save text file
  *
  * Standard function to save output of FPS RUN function.
@@ -364,6 +373,9 @@ static errno_t filecopy(char *sourcefilename, char *destfilename)
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 /** @brief Save FPS from datadir to confdir
  *
