@@ -625,6 +625,8 @@ errno_t load_fits(const char *restrict file_name,
     return RETURN_SUCCESS;
 }
 
+
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -638,6 +640,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 INSERT_STD_FPSCLIfunctions
 

@@ -50,10 +50,10 @@ errno_t image_keyword_addL(IMGID img, char *kwname, long kwval, char *comment)
     }
     int kw0 = kw;
 
-    if (kw0 == NBkw)
+    if (kw0 >= NBkw)
     {
-        printf("ERROR: no available keyword entry\n");
-        abort();
+        printf("WARNING: no available keyword entry -> keyword not loaded\n");
+        //abort();
     }
     else
     {
