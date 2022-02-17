@@ -41,12 +41,17 @@ static CLICMDDATA CLIcmddata = {
     "compute total of image example2, FPS-compatible",
     CLICMD_FIELDS_DEFAULTS};
 
+
+
 static errno_t help_function()
 {
     printf("\n");
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 /**
  * @brief Sum pixel values
@@ -81,6 +86,9 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
     return RETURN_SUCCESS;
 }
 
+
+
+
 /**
  * @brief Wrapper function, used by all CLI calls
  *
@@ -102,6 +110,9 @@ static errno_t compute_function()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
 
 INSERT_STD_FPSCLIfunctions
 

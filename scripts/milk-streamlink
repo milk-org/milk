@@ -112,6 +112,10 @@ if [ -a $file ]; then
     ln -s $SHMDIR/${streamname}.im.shm $SHMDIR/${fullname}.im.shm  # establish link
 
 echo "    Linking ${fullname}"
+
+
+
+
 milk << EOF
 readshmim ${fullname}
 readshmimsize ${fullname} "./conf/streamlink.$1.imsize.txt"
