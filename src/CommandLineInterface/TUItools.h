@@ -218,4 +218,15 @@ int get_singlechar_block();
 
 
 
+inline static void print_help_entry(char *key, char *descr)
+{
+    screenprint_setbold();
+    TUI_printfw("    %10s", key);
+    screenprint_unsetbold();
+    TUI_printfw("   %s", descr);
+    TUI_newline();
+}
+
+
+
 #endif

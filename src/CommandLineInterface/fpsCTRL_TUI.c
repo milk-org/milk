@@ -26,14 +26,7 @@
 
 static short unsigned int wrow, wcol;
 
-inline static void print_help_entry(char *key, char *descr)
-{
-    screenprint_setbold();
-    TUI_printfw("    %10s", key);
-    screenprint_unsetbold();
-    TUI_printfw("   %s", descr);
-    TUI_newline();
-}
+
 
 inline static void
 fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMode, int NBfps)
