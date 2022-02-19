@@ -963,6 +963,7 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
                                                 uint32_t ysize,
                                                 uint32_t zsize)
 {
+    printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
 
