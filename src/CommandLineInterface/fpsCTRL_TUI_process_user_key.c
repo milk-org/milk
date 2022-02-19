@@ -22,6 +22,10 @@
 #include "fps_tmux.h"
 #include "fps_userinputsetparamvalue.h"
 
+
+
+#define ctrl(x) ((x) &0x1f)
+
 static short unsigned int wrow, wcol;
 
 int fpsCTRL_TUI_process_user_key(int                        ch,
@@ -91,7 +95,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         clear();
         break;
 
-    case 'e': // erase FPS
+        /*    case ctrl('e'): // erase FPS
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         functionparameter_FPSremove(&fps[fpsindex]);
 
@@ -110,18 +114,18 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         fpsCTRLvar->fpsindexSelected =
             0; // safeguard in case current selection disappears
         break;
-
+*/
     case 'T': // initialize tmux session
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         functionparameter_FPS_tmux_init(&fps[fpsindex]);
         break;
 
-    case 't': // kill tmux session
+    case ctrl('t'): // kill tmux session
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         functionparameter_FPS_tmux_kill(&fps[fpsindex]);
         break;
 
-    case 'E': // Erase FPS and close tmux sessions
+    case ctrl('e'): // Erase FPS and close tmux sessions
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
 
         functionparameter_FPSremove(&fps[fpsindex]);
@@ -314,7 +318,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         functionparameter_RUNstart(&fps[fpsindex]);
         break;
 
-    case 'r': // stop run process
+    case ctrl('r'): // stop run process
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         if (snprintf(msg, stringmaxlen, "RUNSTOP %s", fps[fpsindex].md->name) <
             0)
@@ -325,7 +329,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         functionparameter_RUNstop(&fps[fpsindex]);
         break;
 
-    case 'C': // start conf process
+    case 'O': // start conf process
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         if (snprintf(msg,
                      stringmaxlen,
@@ -338,7 +342,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         functionparameter_CONFstart(&fps[fpsindex]);
         break;
 
-    case 'c': // kill conf process
+    case ctrl('o'): // kill conf process
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         if (snprintf(msg, stringmaxlen, "CONFSTOP %s", fps[fpsindex].md->name) <
             0)

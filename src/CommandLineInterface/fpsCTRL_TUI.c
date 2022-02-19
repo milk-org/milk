@@ -29,7 +29,7 @@ static short unsigned int wrow, wcol;
 inline static void print_help_entry(char *key, char *descr)
 {
     screenprint_setbold();
-    TUI_printfw("    %4s", key);
+    TUI_printfw("    %10s", key);
     screenprint_unsetbold();
     TUI_printfw("   %s", descr);
     TUI_newline();
@@ -113,10 +113,12 @@ inline static void fpsCTRLscreen_print_help()
     TUI_printfw("============ OTHER");
     TUI_newline();
     print_help_entry("s", "rescan");
-    print_help_entry("T/t", "initialize (T)mux session / kill (t)mux session");
-    print_help_entry("E/e", "(E)rase FPS and tmux sessions / (e)rase FPS only");
-    print_help_entry("C/c/u", "start/stop/update CONF process");
-    print_help_entry("R/r", "start/stop RUN process");
+    print_help_entry("T / CRTL+t",
+                     "initialize (T)mux session / kill (t)mux session");
+    print_help_entry("CTRL+e", "(E)rase FPS and tmux sessions");
+    print_help_entry("O / CTRL+o", "start/stop C(O)NF process");
+    print_help_entry("u", "(u)pdate CONF process");
+    print_help_entry("R / CTRL+r", "start/stop (R)UN process");
     print_help_entry("l", "list all entries");
     print_help_entry(">", "export fpsdatadir values fpsconfdir");
     print_help_entry("<", "import/load values from fpsconfdir");
