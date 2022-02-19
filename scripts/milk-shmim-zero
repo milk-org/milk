@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+
+MSdescr="zero stream image content"
+
+MSextdescr=""
+
+source milk-script-std-config
+
+RequiredCommands=(milk)
+RequiredFiles=()
+RequiredDirs=()
+
+
+MSarg+=( "stream:string:stream name" )
+
+
+
+source milk-argparse
+
+
+
+
+
+sname="${inputMSargARRAY[0]}"
+
+
+
+
+set +u
+if [ -w "${MILK_SHM_DIR}/" ];
+then
+SFDIR="${MILK_SHM_DIR}/"
+else
+SFDIR="/tmp"
+fi
+set -u
+
+SF="${SFDIR}/milkCLIstartup.${pname}.$$"
+echo "readshmim ${sname}" > $SF
+echo "imzero ${sname}" >> $SF
+echo "exitCLI" >> $SF
+
+MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
+
+rm ${SF}
