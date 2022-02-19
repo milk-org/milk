@@ -60,6 +60,11 @@ typedef int errno_t;
 
 #include "TUItools.h"
 
+
+#define ctrl(x) ((x) &0x1f)
+
+
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                      DEFINES, MACROS                                            */
@@ -1602,7 +1607,7 @@ errno_t streamCTRL_CTRLscreen()
 
             // ============ ACTIONS
 
-        case 'R': // remove stream
+        case ctrl('e'): // erase stream
             DEBUG_TRACEPOINT(" ");
             sindex = ssindex[dindexSelected];
 
@@ -1755,175 +1760,41 @@ errno_t streamCTRL_CTRLscreen()
 
             DEBUG_TRACEPOINT(" ");
 
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    x");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Exit");
-            TUI_newline();
+
+            print_help_entry("x", "Exit");
 
             TUI_newline();
             TUI_printfw("============ SCREENS");
             TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("     h");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("   Help screen");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    F2");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("   Display semaphore values");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    F3");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("   Display semaphore write PIDs");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    F4");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("   Display semaphore read PIDs");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    F5");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("   stream process trace");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    F6");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("   stream open by processes ...");
-            TUI_newline();
+            print_help_entry("h", "help");
+            print_help_entry("F2", "semaphore values");
+            print_help_entry("F3", "semaphore read  PIDs");
+            print_help_entry("F4", "semaphore write PIDs");
+            print_help_entry("F5", "stream process trace");
+            print_help_entry("F6", "stream open by processes ...");
 
             TUI_newline();
             TUI_printfw("============ ACTIONS");
             TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    R");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Remove stream");
-            TUI_newline();
+            print_help_entry("CTRL+e", "Erase stream");
 
             TUI_newline();
             TUI_printfw("============ SCANNING");
             TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    }");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Increase scan frequency");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    {");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Decrease scan frequency");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    o");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    output next scan to file");
-            TUI_newline();
+            print_help_entry("}", "Increase scan frequency");
+            print_help_entry("{", "Decrease scan frequency");
+            print_help_entry("o", "output next scan to file");
 
             TUI_newline();
             TUI_printfw("============ DISPLAY");
             TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    +");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Increase display frequency");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    -");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Decrease display frequency");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    1");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Sort by stream name (alphabetical)");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    2");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Sort by recently updated");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    3");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Sort by processes access");
-            TUI_newline();
-
-            screenprint_setbold();
-            TUI_printfw("    s");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Show 3 semaphores / all semaphores");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    F");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Set match string pattern");
-            TUI_newline();
-
-            //attron(attrval);
-            screenprint_setbold();
-            TUI_printfw("    f");
-            //attroff(attrval);
-            screenprint_unsetbold();
-            TUI_printfw("    Toggle apply match string to stream");
-            TUI_newline();
-
-            TUI_newline();
-            TUI_newline();
+            print_help_entry("+/-", "Increase/decrease display frequency");
+            print_help_entry("1", "Sort by stream name (alphabetical)");
+            print_help_entry("2", "Sort by recently updated");
+            print_help_entry("3", "Sort by process access");
+            print_help_entry("s", "Show 3 semaphores / all semaphores");
+            print_help_entry("F", "Set match string pattern");
+            print_help_entry("f", "Toggle apply match string to stream");
         }
         else
         {
