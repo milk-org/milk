@@ -965,7 +965,6 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
 {
     printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
-    img.naxis = 3;
     resolveIMGID(&img, ERRMODE_WARN);
 
     if (img.ID != -1)
@@ -999,7 +998,7 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
         arraytmp[1] = ysize;
         arraytmp[2] = zsize;
 
-        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
+        create_image_ID(imname, 3, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
         free(arraytmp);
     }
 
