@@ -822,7 +822,7 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
 
     if (imgtemplate.naxis != -1)
     {
-        printf("Checking naxis          ");
+        printf("Checking naxis  %d %d    ", imgtemplate.naxis, img.naxis);
         if (imgtemplate.naxis != img.naxis)
         {
             printf("FAIL\n");
@@ -926,6 +926,76 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
 
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
+
+        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
+        free(arraytmp);
+    }
+
+
+    if (img.ID != -1)
+    {
+        imageID ID    = img.ID;
+        img.im        = &data.image[ID];
+        img.md        = data.image[ID].md;
+        img.createcnt = data.image[ID].createcnt;
+        updateIMGIDcreationparams(&img);
+    }
+
+    return img;
+}
+
+
+
+
+/**
+ * @brief Connnect to stream or create if doesn't exist
+ *
+ * If stream exists but has wrong size type, recreate
+ *
+ * @param imname  stream name
+ * @param xsize   x size
+ * @param ysize   y size
+ * @param zsize   z size
+ * @return IMGID
+ */
+static inline IMGID stream_connect_create_3Df32(char    *imname,
+                                                uint32_t xsize,
+                                                uint32_t ysize,
+                                                uint32_t zsize)
+{
+    IMGID img = mkIMGID_from_name(imname);
+    resolveIMGID(&img, ERRMODE_WARN);
+
+    if (img.ID != -1)
+    {
+        // if in local memory,
+        // create blank img for comparison
+        IMGID imgc      = makeIMGID_blank();
+        imgc.datatype   = _DATATYPE_FLOAT;
+        imgc.naxis      = 3;
+        imgc.size[0]    = xsize;
+        imgc.size[1]    = ysize;
+        imgc.size[2]    = zsize;
+        uint64_t imgerr = IMGIDcompare(img, imgc);
+        printf("%lu errors\n", imgerr);
+
+        // if doesn't pass test, erase from local memory
+        if (imgerr != 0)
+        {
+            delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
+            img.ID = -1;
+        }
+    }
+
+    // if not in local memory, (re)-create
+    if (img.ID == -1)
+    {
+        uint32_t *arraytmp;
+        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+
+        arraytmp[0] = xsize;
+        arraytmp[1] = ysize;
+        arraytmp[2] = zsize;
 
         create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
         free(arraytmp);
