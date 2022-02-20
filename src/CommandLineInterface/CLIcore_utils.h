@@ -752,6 +752,11 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
     return img;
 }
 
+
+
+
+/** @brief Resolve image already in memory
+ */
 static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 {
 
@@ -931,6 +936,61 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
         arraytmp[1] = ysize;
 
         create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
+        free(arraytmp);
+    }
+
+
+    if (img.ID != -1)
+    {
+        imageID ID    = img.ID;
+        img.im        = &data.image[ID];
+        img.md        = data.image[ID].md;
+        img.createcnt = data.image[ID].createcnt;
+        updateIMGIDcreationparams(&img);
+    }
+
+    return img;
+}
+
+
+static inline IMGID stream_connect_create_2D(char    *imname,
+                                             uint32_t xsize,
+                                             uint32_t ysize,
+                                             uint8_t  datatype)
+{
+    IMGID img = mkIMGID_from_name(imname);
+    resolveIMGID(&img, ERRMODE_WARN);
+
+    if (img.ID != -1)
+    {
+        // if in local memory,
+        // create blank img for comparison
+        IMGID imgc      = makeIMGID_blank();
+        imgc.datatype   = datatype;
+        imgc.naxis      = 2;
+        imgc.size[0]    = xsize;
+        imgc.size[1]    = ysize;
+        uint64_t imgerr = IMGIDcompare(img, imgc);
+        printf("%lu errors\n", imgerr);
+
+        // if doesn't pass test, erase from local memory
+        if (imgerr != 0)
+        {
+            delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
+            img.ID = -1;
+        }
+    }
+
+    // if not in local memory, (re)-create
+    if (img.ID == -1)
+    {
+        uint32_t *arraytmp;
+        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+
+        arraytmp[0] = xsize;
+        arraytmp[1] = ysize;
+
+        create_image_ID(imname, 2, arraytmp, datatype, 1, 0, 0, &img.ID);
         free(arraytmp);
     }
 
