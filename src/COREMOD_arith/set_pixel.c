@@ -237,6 +237,8 @@ imageID arith_set_pixel(const char *ID_name, double value, long x, long y)
     return ID;
 }
 
+
+
 imageID
 arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)
 {
@@ -289,6 +291,62 @@ arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)
             data.image[ID].array.D[ii] = value;
         }
     }
+    else if (datatype == _DATATYPE_UINT8)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.UI8[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_UINT16)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.UI16[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_UINT32)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.UI32[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_UINT64)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.UI64[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_INT8)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.SI8[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_INT16)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.SI16[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_INT32)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.SI32[ii] = value;
+        }
+    }
+    else if (datatype == _DATATYPE_INT64)
+    {
+        for (ii = iistart; ii < iiend; ii++)
+        {
+            data.image[ID].array.SI64[ii] = value;
+        }
+    }
     else
     {
         PRINT_ERROR("Wrong image type(s)\n");
@@ -300,6 +358,9 @@ arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)
 
     return ID;
 }
+
+
+
 
 imageID arith_set_row(const char *ID_name, double value, long y)
 {
