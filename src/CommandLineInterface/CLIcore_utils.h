@@ -228,6 +228,9 @@ typedef struct
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                   \
     int          processloopOK = 1;                                            \
     PROCESSINFO *processinfo   = NULL;                                         \
+    /* set default timeout to 2 sec */                                         \
+    processinfo->triggertimeout.tv_sec  = 2;                                   \
+    processinfo->triggertimeout.tv_nsec = 0;                                   \
     if (data.fpsptr != NULL)                                                   \
     { /* If FPS mode, then FPS settings override defaults*/                    \
         /* data.fpsptr->cmset entries are read by fps_connect */               \
