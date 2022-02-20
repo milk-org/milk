@@ -419,9 +419,13 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
     return (data.NBcmd);
 }
 
-// Register command
-// Replaces legacy function RegisterCLIcommand
-//
+
+
+
+/**
+ Register command
+Replaces legacy function RegisterCLIcommand
+*/
 uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
 {
     DEBUG_TRACE_FSTART();
@@ -579,8 +583,16 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
         "define CLI function flags from content of CLIcmddata.flags");
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
 
+    // set default values
+    //
     data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax    = 1;
     data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
+
+    data.cmd[data.NBcmd].cmdsettings.triggerdelay.tv_sec  = 0;
+    data.cmd[data.NBcmd].cmdsettings.triggerdelay.tv_nsec = 0;
+
+    data.cmd[data.NBcmd].cmdsettings.triggertimeout.tv_sec  = 1;
+    data.cmd[data.NBcmd].cmdsettings.triggertimeout.tv_nsec = 0;
 
     data.NBcmd++;
 

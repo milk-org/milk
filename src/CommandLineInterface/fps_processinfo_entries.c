@@ -171,7 +171,7 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  NULL);
 
     struct timespec triggerdelay_default[2] = {fps->cmdset.triggerdelay,
-                                               {0, 0}};
+                                               {1, 0}};
     function_parameter_add_entry(fps,
                                  ".procinfo.triggerdelay",
                                  "trigger delay",
@@ -181,7 +181,7 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  NULL);
 
     struct timespec triggertimeout_default[2] = {fps->cmdset.triggertimeout,
-                                                 {0, 0}};
+                                                 {1, 0}};
     function_parameter_add_entry(fps,
                                  ".procinfo.triggertimeout",
                                  "trigger timeout",
