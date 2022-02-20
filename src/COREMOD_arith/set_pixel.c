@@ -295,56 +295,56 @@ arith_set_pixel_1Drange(const char *ID_name, double value, long x, long y)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.UI8[ii] = value;
+            data.image[ID].array.UI8[ii] = (uint8_t) value;
         }
     }
     else if (datatype == _DATATYPE_UINT16)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.UI16[ii] = value;
+            data.image[ID].array.UI16[ii] = (uint16_t) value;
         }
     }
     else if (datatype == _DATATYPE_UINT32)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.UI32[ii] = value;
+            data.image[ID].array.UI32[ii] = (uint32_t) value;
         }
     }
     else if (datatype == _DATATYPE_UINT64)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.UI64[ii] = value;
+            data.image[ID].array.UI64[ii] = (uint64_t) value;
         }
     }
     else if (datatype == _DATATYPE_INT8)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.SI8[ii] = value;
+            data.image[ID].array.SI8[ii] = (int8_t) value;
         }
     }
     else if (datatype == _DATATYPE_INT16)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.SI16[ii] = value;
+            data.image[ID].array.SI16[ii] = (int16_t) value;
         }
     }
     else if (datatype == _DATATYPE_INT32)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.SI32[ii] = value;
+            data.image[ID].array.SI32[ii] = (int32_t) value;
         }
     }
     else if (datatype == _DATATYPE_INT64)
     {
         for (ii = iistart; ii < iiend; ii++)
         {
-            data.image[ID].array.SI64[ii] = value;
+            data.image[ID].array.SI64[ii] = (int64_t) value;
         }
     }
     else
