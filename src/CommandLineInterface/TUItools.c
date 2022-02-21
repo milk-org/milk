@@ -459,13 +459,17 @@ void TUI_handle_winch(int sig)
     refresh();
 }
 
+
+
+
 /** @brief INITIALIZE ncurses
  *
  */
 errno_t TUI_initncurses(short unsigned int *wrowptr,
                         short unsigned int *wcolptr)
 {
-    DEBUG_TRACEPOINT(" ");
+    DEBUG_TRACE_FSTART();
+
     if (screenprintmode == SCREENPRINT_NCURSES)
     {
         DEBUG_TRACEPOINT("Initializing TUI ncurses ");
@@ -479,6 +483,9 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
         DEBUG_TRACEPOINT("Initializing TUI ncurses ");
 
         getmaxyx(stdscr, wrow, wcol); /* get the number of rows and columns */
+
+        DEBUG_TRACEPOINT("wrow wcol = %d %d", wrow, wcol);
+
         *wrowptr = wrow;
         *wcolptr = wcol;
         DEBUG_TRACEPOINT("wrow wcol = %d %d", wrow, wcol);
@@ -531,14 +538,18 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
         sigaction(SIGWINCH, &sa, NULL);
     }
 
-    DEBUG_TRACEPOINT(" ");
+    DEBUG_TRACE_FEXIT();
 
     return RETURN_SUCCESS;
 }
 
+
+
+
 errno_t TUI_init_terminal(short unsigned int *wrowptr,
                           short unsigned int *wcolptr)
 {
+    DEBUG_TRACE_FSTART();
     if (screenprintmode == SCREENPRINT_NCURSES) // ncurses mode
     {
         TUI_initncurses(wrowptr, wcolptr);
@@ -553,9 +564,10 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr,
         TUI_inittermios(wrowptr, wcolptr);
         DEBUG_TRACEPOINT("init terminal stdio mode %d %d", *wrowptr, *wcolptr);
     }
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 errno_t TUI_get_terminal_size(short unsigned int *wrowptr,
                               short unsigned int *wcolptr)
@@ -680,6 +692,9 @@ int get_singlechar_nonblock()
 
     return ch;
 }
+
+
+
 
 int get_singlechar_block()
 {

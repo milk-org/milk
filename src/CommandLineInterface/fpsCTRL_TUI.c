@@ -31,6 +31,7 @@ static short unsigned int wrow, wcol;
 inline static void
 fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMode, int NBfps)
 {
+    DEBUG_TRACE_FSTART();
 
     int  stringmaxlen = 500;
     char monstring[stringmaxlen];
@@ -87,10 +88,12 @@ fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMode, int NBfps)
         TUI_printfw("[F3] Sequencer");
     }
     TUI_newline();
+    DEBUG_TRACE_FEXIT();
 }
 
 inline static void fpsCTRLscreen_print_help()
 {
+    DEBUG_TRACE_FSTART();
     // int attrval = A_BOLD;
 
     TUI_newline();
@@ -118,7 +121,12 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("P", "(P)rocess input file \"confscript\"");
     TUI_printfw("        format: setval <paramfulname> <value>");
     TUI_newline();
+
+    DEBUG_TRACE_FEXIT();
 }
+
+
+
 
 inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
                                                 KEYWORD_TREE_NODE *keywnode,
@@ -126,6 +134,7 @@ inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
                                                 int fpsindexSelected,
                                                 int pindexSelected)
 {
+    DEBUG_TRACE_FSTART();
 
     DEBUG_TRACEPOINT("Selected node %d in fps %d",
                      nodeSelected,
@@ -311,11 +320,17 @@ inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
     }
     TUI_newline();
     TUI_newline();
+
+    DEBUG_TRACE_FEXIT();
 }
+
+
+
 
 inline static void
 fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex)
 {
+    DEBUG_TRACE_FSTART();
     pid_t pid;
 
     pid = fps[fpsindex].md->confpid;
@@ -382,7 +397,11 @@ fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps, int fpsindex)
             TUI_printfw("%07d ", (int) pid);
         }
     }
+    DEBUG_TRACE_FEXIT();
 }
+
+
+
 
 /** @brief runs fpsCTRL GUI
  *
@@ -397,6 +416,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                                      char    *fpsnamemask,
                                      char    *fpsCTRLfifoname)
 {
+    DEBUG_TRACE_FSTART();
     int fpsindex;
 
     FPSCTRL_PROCESS_VARS fpsCTRLvar;
@@ -2347,7 +2367,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     free(fpsctrlqueuelist);
     functionparameter_outlog("LOGFILECLOSE", "close log file");
 
-    DEBUG_TRACEPOINT("normal exit from function");
+
+    DEBUG_TRACE_FEXIT();
 
     return RETURN_SUCCESS;
 }
