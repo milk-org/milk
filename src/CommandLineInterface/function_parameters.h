@@ -294,9 +294,12 @@ typedef struct
     long FPSNBparamUsed;
 } FUNCTION_PARAMETER_SUBINFO_FPS;
 
+
+
 typedef struct
 {
-    uint64_t fpflag; // 64 binary flags, see FUNCTION_PARAMETER_MASK_XXXX
+    uint64_t fpflag;   // 64 binary flags, see FPFLAG_XXXX, reserved for milk
+    uint64_t userflag; // application specific flag, not used by milk
 
     // Parameter name
     char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
@@ -347,6 +350,9 @@ typedef struct
     long cnt0; // increments when changed
 
 } FUNCTION_PARAMETER;
+
+
+
 
 #define STRINGMAXLEN_FPS_NAME 100
 
