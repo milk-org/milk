@@ -35,6 +35,8 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                                  FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist,
                                  FPSCTRL_PROCESS_VARS      *fpsCTRLvar)
 {
+    DEBUG_TRACE_FSTART();
+
     int stringmaxlen = 500;
     int loopOK       = 1;
     int fpsindex;
@@ -373,10 +375,10 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         }
         printf("  TOTAL :  %d nodes\n", fpsCTRLvar->NBkwn);
         printf("\n");
-        printf("Press Any Key to Continue\n");
+        printf("Press Enter to Continue\n");
         getchar();
 
-        TUI_initncurses();
+        TUI_init_terminal(&wrow, &wcol);
 
         break;
 
@@ -451,7 +453,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
             printf("File not found\n");
         }
 
-        TUI_initncurses();
+        TUI_init_terminal(&wrow, &wcol);
         break;
 
     case 'F': // process FIFO
@@ -473,9 +475,9 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         }
 
         printf("\n");
-        printf("Press Any Key to Continue\n");
+        printf("Press Enter to Continue\n");
         getchar();
-        TUI_initncurses();
+        TUI_init_terminal(&wrow, &wcol);
         break;
 
     case 'P': // process input command file
@@ -493,11 +495,12 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                                              fpsCTRLvar);
 
         printf("\n");
-        printf("Press Any Key to Continue\n");
+        printf("Press Enter to Continue\n");
         getchar();
-        TUI_initncurses();
+        TUI_init_terminal(&wrow, &wcol);
         break;
     }
 
+    DEBUG_TRACE_FEXIT();
     return (loopOK);
 }
