@@ -1080,4 +1080,65 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
 
 
 
+static inline IMGID stream_connect_create_3D(char    *imname,
+                                             uint32_t xsize,
+                                             uint32_t ysize,
+                                             uint32_t zsize,
+                                             uint8_t  datatype)
+{
+    printf("Running stream_connect_create_3Df32\n");
+    IMGID img = mkIMGID_from_name(imname);
+    resolveIMGID(&img, ERRMODE_WARN);
+
+    if (img.ID != -1)
+    {
+        // if in local memory,
+        // create blank img for comparison
+        IMGID imgc      = makeIMGID_blank();
+        imgc.datatype   = datatype;
+        imgc.naxis      = 3;
+        imgc.size[0]    = xsize;
+        imgc.size[1]    = ysize;
+        imgc.size[2]    = zsize;
+        uint64_t imgerr = IMGIDcompare(img, imgc);
+        printf("%lu errors\n", imgerr);
+
+        // if doesn't pass test, erase from local memory
+        if (imgerr != 0)
+        {
+            delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
+            img.ID = -1;
+        }
+    }
+
+    // if not in local memory, (re)-create
+    if (img.ID == -1)
+    {
+        uint32_t *arraytmp;
+        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+
+        arraytmp[0] = xsize;
+        arraytmp[1] = ysize;
+        arraytmp[2] = zsize;
+
+        create_image_ID(imname, 3, arraytmp, datatype, 1, 0, 0, &img.ID);
+        free(arraytmp);
+    }
+
+
+    if (img.ID != -1)
+    {
+        imageID ID    = img.ID;
+        img.im        = &data.image[ID];
+        img.md        = data.image[ID].md;
+        img.createcnt = data.image[ID].createcnt;
+        updateIMGIDcreationparams(&img);
+    }
+
+    return img;
+}
+
+
+
+
 #endif
