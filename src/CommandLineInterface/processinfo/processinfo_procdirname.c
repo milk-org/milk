@@ -4,7 +4,8 @@
 #include <processtools.h>
 
 
-#define SHAREDPROCDIR data.shmdir
+// #define SHAREDPROCDIR data.shmdir
+#define SHAREDPROCDIR "/milk/shm"
 
 
 errno_t processinfo_procdirname(char *procdname)

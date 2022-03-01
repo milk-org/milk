@@ -53,7 +53,8 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "TUItools.h"
 
-#define SHAREDPROCDIR data.shmdir
+// #define SHAREDPROCDIR data.shmdir
+#define SHAREDPROCDIR "/milk/shm"
 
 #include <processtools.h>
 
@@ -155,42 +156,42 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
     char  word1[200];
     int   NBset = 0;
 
-    char fname[STRINGMAXLEN_FILENAME];
-    WRITE_FILENAME(fname, "%s/.csetlist.%ld", SHAREDPROCDIR, (long) getpid());
+    // char fname[STRINGMAXLEN_FILENAME];
+    // WRITE_FILENAME(fname, "%s/.csetlist.%ld", SHAREDPROCDIR, (long) getpid());
 
-    EXECUTE_SYSTEM_COMMAND(
-        "cset set -l | awk '/root/{stop=1} stop==1{print $0}' > %s",
-        fname);
+    // // EXECUTE_SYSTEM_COMMAND(
+    //     // "cset set -l | awk '/root/{stop=1} stop==1{print $0}' > %s",
+    //     // fname);
 
-    // first scan: get number of entries
-    fp = fopen(fname, "r");
-    while (NBset < NBsetMax)
-    {
-        if (fgets(line, 199, fp) == NULL)
-        {
-            break;
-        }
-        NBset++;
-        //		printf("%3d: %s", NBset, line);
-    }
-    fclose(fp);
+    // // first scan: get number of entries
+    // fp = fopen(fname, "r");
+    // while (NBset < NBsetMax)
+    // {
+    //     if (fgets(line, 199, fp) == NULL)
+    //     {
+    //         break;
+    //     }
+    //     NBset++;
+    //     //		printf("%3d: %s", NBset, line);
+    // }
+    // fclose(fp);
 
-    setindex = 0;
-    fp       = fopen(fname, "r");
-    while (1)
-    {
-        if (fgets(line, 199, fp) == NULL)
-        {
-            break;
-        }
-        sscanf(line, "%s %s", word, word1);
-        strcpy(CPUsetList[setindex].name, word);
-        strcpy(CPUsetList[setindex].description, word1);
-        setindex++;
-    }
-    fclose(fp);
+    // setindex = 0;
+    // fp       = fopen(fname, "r");
+    // while (1)
+    // {
+    //     if (fgets(line, 199, fp) == NULL)
+    //     {
+    //         break;
+    //     }
+    //     sscanf(line, "%s %s", word, word1);
+    //     strcpy(CPUsetList[setindex].name, word);
+    //     strcpy(CPUsetList[setindex].description, word1);
+    //     setindex++;
+    // }
+    // fclose(fp);
 
-    remove(fname);
+    // remove(fname);
 
     return NBset;
 }
@@ -326,11 +327,11 @@ errno_t processinfo_CTRLscreen()
     int listindex;
 
     int ToggleValue;
-
+processinfo_procdirname
     DEBUG_TRACEPOINT(" ");
 
     char procdname[200];
-    processinfo_procdirname(procdname);
+    (procdname);
 
     processinfo_CatchSignals();
 
@@ -388,18 +389,22 @@ errno_t processinfo_CTRLscreen()
         procinfoproc.CPUpcnt[cpu] = 0;
     }
 
+    fprintf(stderr, "[%d] MAXNBCPU %d\n", __LINE__, MAXNBCPU);
 
 
     STRINGLISTENTRY *CPUsetList;
     int              NBCPUset;
     CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
+    fprintf(stderr, "[%d] MAXNBCPU %d\n", __LINE__, MAXNBCPU);
     if (CPUsetList == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
     NBCPUset = processinfo_CPUsets_List(CPUsetList);
+    fprintf(stderr, "[%d] NBCPUset %d\n", __LINE__, NBCPUset);
     DEBUG_TRACEPOINT("%d CPU set", NBCPUset);
+    fprintf(stderr, "[%d] MAXNBCPU %d\n", __LINE__, MAXNBCPU);
 
     // Create / read process list
     //

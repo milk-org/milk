@@ -158,7 +158,18 @@ endif()
 install(TARGETS CLIcore DESTINATION lib)
 
 install(FILES CLIcore.h
-              CLIcore/CLIcore_utils.h
+              processinfo.h
+              cmdsettings.h
+              milkDebugTools.h
+              processinfo.h
+              processtools.h
+              processtools_trigger.h
+              timeutils.h
+              function_parameters.h
+              IMGID.h
+              DESTINATION include/${SRCNAME})
+
+install(FILES CLIcore/CLIcore_utils.h
               CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_checkargs.h
               CLIcore/CLIcore_datainit.h
@@ -167,17 +178,16 @@ install(FILES CLIcore.h
               CLIcore/CLIcore_modules.h
               CLIcore/CLIcore_setSHMdir.h
               CLIcore/CLIcore_signals.h
-              fpsCTRL/fpsCTRL_TUI.h
+              DESTINATION include/${SRCNAME}/CLIcore)
+
+install(FILES fpsCTRL/fpsCTRL_TUI.h
               fpsCTRL/fpsCTRL_TUI_process_user_key.h
-              processinfo.h
-              streamCTRL/streamCTRL_TUI.h
-              cmdsettings.h
-              milkDebugTools.h
-              processinfo.h
-              processtools_trigger.h
-              timeutils.h
-              function_parameters.h
-              fps/fps_add_entry.h
+              DESTINATION include/${SRCNAME}/fpsCTRL)
+
+install(FILES streamCTRL/streamCTRL_TUI.h
+              DESTINATION include/${SRCNAME}/streamCTRL)
+
+install(FILES fps/fps_add_entry.h
               fps/fps_checkparameter.h
               fps/fps_CONFstart.h
               fps/fps_CONFstop.h
@@ -211,5 +221,4 @@ install(FILES CLIcore.h
               fps/fps_shmdirname.h
               fps/fps_tmux.h
               fps/fps_userinputsetparamvalue.h
-              IMGID.h
-              DESTINATION include/${SRCNAME})
+              DESTINATION include/${SRCNAME}/fps)
