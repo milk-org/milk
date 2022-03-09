@@ -1278,10 +1278,12 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
         }
 
         // SAVE CUBE TO DISK
-        /// cases:
-        /// index>zsize-1  buffer full
-        /// timeout==1 && index>0  : partial
-        if ((index > zsize - 1) || ((timeout == 1) && (index > 0)))
+        // cases:
+        //   index>zsize-1  buffer full
+        //   timeout==1 && index>0 : partial due to timeout
+        //   logshimconf[0].on == 0 && index>0 : partial due to logshimoff
+        if ((index > zsize - 1) || ((timeout == 1) && (index > 0)) ||
+        ((logshimconf[0].on == 0) && (index > 0)))
         {
             long NBframemissing;
 
