@@ -416,7 +416,8 @@ typedef struct
 typedef struct
 {
     // process name
-    // Name can include numbers in the format -XX-YY to allow for multiple structures be created by the same process function and to pass arguments (XX, YY) to process function
+    // Name can include numbers in the format -XX-YY to allow for multiple
+    // structures be created by the same process function and to pass arguments (XX, YY) to process function
     char name[STRINGMAXLEN_FPS_NAME]; // example: pname-01-32
 
     char description[FPS_DESCR_STRMAXLEN];
