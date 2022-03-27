@@ -254,7 +254,7 @@ void *save_fits_function(void *ptr)
     strcpy(
         imkwarray[2].value.valstr,
         timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
-    strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure start");
+    strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure end");
 
     // Modified Julian Date (MJD)
 
@@ -275,14 +275,20 @@ void *save_fits_function(void *ptr)
     imkwarray[5].type = 'D';
     imkwarray[5].value.numf =
         (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) + 40587.0;
-    strcpy(imkwarray[5].comment, "Modified Julian Day at exposure start");
+    strcpy(imkwarray[5].comment, "Modified Julian Day at exposure end");
 
     // Local time
 
     // get time zone
     time_t    t  = time(NULL);
-    struct tm lt = {0};
-    localtime_r(&t, &lt);
+    // OVERRIDE localtime to HST
+    putenv("TZ=Pacific/Honolulu");
+    struct tm lt = *localtime(&t);
+    printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    putenv("TZ=");
+
+    printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+
     //printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
     //printf("The time zone is '%s'.\n", lt.tm_zone);
 
@@ -303,7 +309,7 @@ void *save_fits_function(void *ptr)
         imkwarray[7].value.valstr,
         timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + lt.tm_gmtoff));
     sprintf(imkwarray[7].comment,
-            "HH:MM:SS.SS typical %s at exposure",
+            "HH:MM:SS.SS typical %s at exposure start",
             lt.tm_zone);
 
     sprintf(imkwarray[8].name, "%s-END", lt.tm_zone);
@@ -312,118 +318,18 @@ void *save_fits_function(void *ptr)
            timedouble_to_UTC_timeofdaystring(
                tmsg->arraytime[tmsg->cubesize - 1] + lt.tm_gmtoff));
     sprintf(imkwarray[8].comment,
-            "HH:MM:SS.SS typical %s at exposure",
+            "HH:MM:SS.SS typical %s at exposure end",
             lt.tm_zone);
 
-    if (tmsg->partial == 0) // full image
-    {
-        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+    printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
 
-        saveFITS(tmsg->iname,
-                 tmsg->fname,
-                 0,
-                 tmsg->fname_auxFITSheader,
-                 imkwarray,
-                 NBcustomKW);
-    }
-    else
-    {
-        ID       = image_ID(tmsg->iname);
-        datatype = data.image[ID].md[0].datatype;
-        xsize    = data.image[ID].md[0].size[0];
-        ysize    = data.image[ID].md[0].size[1];
-
-        imsizearray[0] = xsize;
-        imsizearray[1] = ysize;
-        imsizearray[2] = tmsg->cubesize;
-
-        create_image_ID("tmpsavecube",
-                        3,
-                        imsizearray,
-                        datatype,
-                        0,
-                        10,
-                        0,
-                        &IDc);
-
-        switch (datatype)
-        {
-
-        case _DATATYPE_UINT8:
-            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.UI8;  // source
-            ptr1      = (char *) data.image[IDc].array.UI8; // destination
-            break;
-        case _DATATYPE_INT8:
-            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.SI8;  // source
-            ptr1      = (char *) data.image[IDc].array.SI8; // destination
-            break;
-
-        case _DATATYPE_UINT16:
-            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.UI16;  // source
-            ptr1      = (char *) data.image[IDc].array.UI16; // destination
-            break;
-        case _DATATYPE_INT16:
-            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.SI16;  // source
-            ptr1      = (char *) data.image[IDc].array.SI16; // destination
-            break;
-
-        case _DATATYPE_UINT32:
-            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.UI32;  // source
-            ptr1      = (char *) data.image[IDc].array.UI32; // destination
-            break;
-        case _DATATYPE_INT32:
-            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.SI32;  // source
-            ptr1      = (char *) data.image[IDc].array.SI32; // destination
-            break;
-
-        case _DATATYPE_UINT64:
-            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.UI64;  // source
-            ptr1      = (char *) data.image[IDc].array.UI64; // destination
-            break;
-        case _DATATYPE_INT64:
-            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.SI64;  // source
-            ptr1      = (char *) data.image[IDc].array.SI64; // destination
-            break;
-
-        case _DATATYPE_FLOAT:
-            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.F;  // source
-            ptr1      = (char *) data.image[IDc].array.F; // destination
-            break;
-        case _DATATYPE_DOUBLE:
-            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            ptr0      = (char *) data.image[ID].array.D;  // source
-            ptr1      = (char *) data.image[IDc].array.D; // destination
-            break;
-
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            free(imsizearray);
-            free(tmsg);
-            exit(0);
-            break;
-        }
-
-        memcpy((void *) ptr1, (void *) ptr0, framesize * tmsg->cubesize);
-
-        printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
-        saveFITS("tmpsavecube",
-                 tmsg->fname,
-                 0,
-                 tmsg->fname_auxFITSheader,
-                 imkwarray,
-                 NBcustomKW);
-
-        delete_image_ID("tmpsavecube", DELETE_IMAGE_ERRMODE_WARNING);
-    }
+    saveFITS_opt_trunc(tmsg->iname,
+                       tmsg->partial ? tmsg->cubesize : -1,
+                       tmsg->fname,
+                       0,
+                       tmsg->fname_auxFITSheader,
+                       imkwarray,
+                       NBcustomKW);
 
     free(imkwarray);
 
@@ -1283,7 +1189,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
         //   timeout==1 && index>0 : partial due to timeout
         //   logshimconf[0].on == 0 && index>0 : partial due to logshimoff
         if ((index > zsize - 1) || ((timeout == 1) && (index > 0)) ||
-        ((logshimconf[0].on == 0) && (index > 0)))
+            ((logshimconf[0].on == 0) && (index > 0)))
         {
             long NBframemissing;
 
