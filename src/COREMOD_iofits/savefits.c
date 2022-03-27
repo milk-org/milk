@@ -71,9 +71,11 @@ static errno_t help_function()
 }
 
 /**
- * @brief Write FITS file
+ * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
+ * optional input image truncation
  *
  * @param inputimname       input image name
+ * @param truncate          truncate input image to truncate first slices - -1 to ignore
  * @param outputFITSname    output FITS file name
  * @param outputbitpix      bitpix of output image. 0 if match input
  * @param importheaderfile  optional FITS file from which to read keywords
@@ -81,18 +83,22 @@ static errno_t help_function()
  * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
  * @return errno_t
  */
-errno_t saveFITS(const char *__restrict inputimname,
-                 const char *__restrict outputFITSname,
-                 int outputbitpix,
-                 const char *__restrict importheaderfile,
-                 IMAGE_KEYWORD *kwarray,
-                 int            kwarraysize)
+errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
+                           int truncate,
+                           const char *__restrict outputFITSname,
+                           int outputbitpix,
+                           const char *__restrict importheaderfile,
+                           IMAGE_KEYWORD *kwarray,
+                           int            kwarraysize)
 {
+
+
     DEBUG_TRACE_FSTART();
-    printf("Saving image %s to file %s, bitpix = %d\n",
+    printf("Saving image %s to file %s, bitpix = %d, slice truncation %d\n",
            inputimname,
            outputFITSname,
-           outputbitpix);
+           outputbitpix,
+           truncate);
 
     COREMOD_iofits_data.FITSIO_status = 0;
 
@@ -277,6 +283,9 @@ errno_t saveFITS(const char *__restrict inputimname,
     {
         naxesl[i] = (long) imgin.md->size[i];
     }
+    if (truncate >= 0) {
+        naxesl[naxis - 1] = truncate;
+    }
 
     long nelements = 1;
     for (int i = 0; i < naxis; i++)
@@ -428,6 +437,8 @@ errno_t saveFITS(const char *__restrict inputimname,
 */
 
     // Add FITS keywords from image keywords
+    // Skip keywords that start with a "!"
+    // These are technical keywords that shouldn't be propagated to FITS.
 
     {
         int NBkw  = imgin.md->NBkw;
@@ -435,6 +446,12 @@ errno_t saveFITS(const char *__restrict inputimname,
         printf("----------- NUMBER KW = %d ---------------\n", NBkw);
         for (int kw = 0; kw < NBkw; kw++)
         {
+            if (imgin.im->kw[kw].name[0] == '!')
+            {
+                // Skip keywords that start with a "!"
+                continue;
+            }
+
             char tmpkwvalstr[81];
             switch (imgin.im->kw[kw].type)
             {
@@ -601,6 +618,34 @@ errno_t saveFITS(const char *__restrict inputimname,
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
+ * optional input image truncation
+ *
+ * @param inputimname       input image name
+ * @param outputFITSname    output FITS file name
+ * @param outputbitpix      bitpix of output image. 0 if match input
+ * @param importheaderfile  optional FITS file from which to read keywords
+ * @param kwarray           optional keyword array. Set to NULL if unused
+ * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
+ * @return errno_t
+ */
+errno_t saveFITS(const char *__restrict inputimname,
+                 const char *__restrict outputFITSname,
+                 int outputbitpix,
+                 const char *__restrict importheaderfile,
+                 IMAGE_KEYWORD *kwarray,
+                 int            kwarraysize)
+{
+    return saveFITS_opt_trunc(inputimname,
+                               -1,
+                               outputFITSname,
+                               outputbitpix,
+                               importheaderfile,
+                               kwarray,
+                               kwarraysize);
 }
 
 
