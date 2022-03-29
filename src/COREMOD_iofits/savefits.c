@@ -283,7 +283,8 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     {
         naxesl[i] = (long) imgin.md->size[i];
     }
-    if (truncate >= 0) {
+    if (truncate >= 0)
+    {
         naxesl[naxis - 1] = truncate;
     }
 
@@ -416,25 +417,6 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     }
 
 
-    // if uint16, add BZERO and BSCALE keywords
-    /*if(datatype == _DATATYPE_UINT16)
-    {
-        char tmpkwvalstr[81];
-        COREMOD_iofits_data.FITSIO_status = 0;
-        fits_update_key(fptr,
-                        TLONG,
-                        "BSCALE",
-                        "1",
-                        "linear scale",
-                        &COREMOD_iofits_data.FITSIO_status);
-        fits_update_key(fptr,
-                        TLONG,
-                        "BZERO",
-                        "32768",
-                        "linear scale",
-                        &COREMOD_iofits_data.FITSIO_status);
-    }
-*/
 
     // Add FITS keywords from image keywords
     // Skip keywords that start with a "!"
@@ -577,6 +559,27 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         }
     }
 
+
+    // if uint16, force BZERO and BSCALE keywords to 1, 32768
+    if (datatype == _DATATYPE_UINT16)
+    {
+        char tmpkwvalstr[81];
+        COREMOD_iofits_data.FITSIO_status = 0;
+        fits_update_key(fptr,
+                        TFLOAT,
+                        "BSCALE",
+                        "1",
+                        "linear scale",
+                        &COREMOD_iofits_data.FITSIO_status);
+        fits_update_key(fptr,
+                        TFLOAT,
+                        "BZERO",
+                        "32768",
+                        "linear scale",
+                        &COREMOD_iofits_data.FITSIO_status);
+    }
+
+
     long fpixel                       = 1;
     COREMOD_iofits_data.FITSIO_status = 0;
     fits_write_img(fptr,
@@ -620,6 +623,9 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     return RETURN_SUCCESS;
 }
 
+
+
+
 /**
  * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
  * optional input image truncation
@@ -640,12 +646,12 @@ errno_t saveFITS(const char *__restrict inputimname,
                  int            kwarraysize)
 {
     return saveFITS_opt_trunc(inputimname,
-                               -1,
-                               outputFITSname,
-                               outputbitpix,
-                               importheaderfile,
-                               kwarray,
-                               kwarraysize);
+                              -1,
+                              outputFITSname,
+                              outputbitpix,
+                              importheaderfile,
+                              kwarray,
+                              kwarraysize);
 }
 
 
