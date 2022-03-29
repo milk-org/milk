@@ -17,6 +17,9 @@ errno_t delete_image_ID(const char *__restrict imname, int errmode);
 static char *imname;
 static long *errmode;
 
+
+
+
 // CLI function arguments and parameters
 static CLICMDARGDEF farg[] = {
     {CLIARG_IMG,
@@ -36,6 +39,8 @@ static CLICMDARGDEF farg[] = {
 
 // CLI function initialization data
 static CLICMDDATA CLIcmddata = {"rm", "remove image", CLICMD_FIELDS_DEFAULTS};
+
+
 
 // detailed help
 static errno_t help_function()
