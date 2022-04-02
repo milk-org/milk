@@ -579,7 +579,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 
 
     // if uint16, force BZERO and BSCALE keywords to 1, 32768
-    if (datatype == _DATATYPE_UINT16)
+    /* if (datatype == _DATATYPE_UINT16)
     {
         char tmpkwvalstr[81];
         COREMOD_iofits_data.FITSIO_status = 0;
@@ -595,7 +595,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                         "0",
                         "linear scale",
                         &COREMOD_iofits_data.FITSIO_status);
-    }
+    }*/
 
 
     long fpixel                       = 1;
