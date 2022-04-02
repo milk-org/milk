@@ -574,7 +574,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         fits_update_key(fptr,
                         TFLOAT,
                         "BZERO",
-                        "32768",
+                        "0",
                         "linear scale",
                         &COREMOD_iofits_data.FITSIO_status);
     }
