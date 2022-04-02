@@ -363,7 +363,13 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 
                 // keywords to not overwrite
                 int   writecard = 1;
-                char *keyexcl[] = {"BITPIX", "NAXIS", "SIMPLE", "EXTEND", 0};
+                char *keyexcl[] = {"BITPIX",
+                                   "NAXIS",
+                                   "SIMPLE",
+                                   "EXTEND",
+                                   "BSCALE",
+                                   "BZERO",
+                                   0};
                 int   ki        = 0;
                 while (keyexcl[ki])
                 {
@@ -578,6 +584,30 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     }
 
 
+    float bscaleval = 1.0;
+    float bzeroval  = 0.0;
+
+    char bscalestr[32];
+    sprintf(bscalestr, "%20f", bscaleval);
+
+    char bzerostr[32];
+    sprintf(bzerostr, "%20f", bzeroval);
+
+
+    fits_update_key(fptr,
+                    TFLOAT,
+                    "BSCALE",
+                    bscalestr,
+                    "Real=fits-value*BSCALE+BZERO",
+                    &COREMOD_iofits_data.FITSIO_status);
+    fits_update_key(fptr,
+                    TFLOAT,
+                    "BZERO",
+                    bzerostr,
+                    "Real=fits-value*BSCALE+BZERO",
+                    &COREMOD_iofits_data.FITSIO_status);
+
+
     // if uint16, force BZERO and BSCALE keywords to 1, 32768
     /* if (datatype == _DATATYPE_UINT16)
     {
@@ -587,13 +617,13 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                         TFLOAT,
                         "BSCALE",
                         "1",
-                        "linear scale",
+                        "Real=fits-value*BSCALE+BZERO",
                         &COREMOD_iofits_data.FITSIO_status);
         fits_update_key(fptr,
                         TFLOAT,
                         "BZERO",
                         "0",
-                        "linear scale",
+                        "Real=fits-value*BSCALE+BZERO",
                         &COREMOD_iofits_data.FITSIO_status);
     }*/
 
