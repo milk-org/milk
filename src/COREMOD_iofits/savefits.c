@@ -428,13 +428,15 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         printf("----------- NUMBER KW = %d ---------------\n", NBkw);
         for (int kw = 0; kw < NBkw; kw++)
         {
-            if (imgin.im->kw[kw].name[0] == '!')
+            if (imgin.im->kw[kw].name[0] == '_')
             {
-                // Skip keywords that start with a "!"
+                // Skip keywords that start with a "_"
                 continue;
             }
 
             char tmpkwvalstr[81];
+            // Don't rely on the stream keyword type, but instead rely
+            // On the existing type in the auxfitsheader. If any at all?
             switch (imgin.im->kw[kw].type)
             {
             case 'L':
@@ -474,12 +476,28 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                        tmpkwvalstr,
                        imgin.im->kw[kw].comment);
                 COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr,
-                                TSTRING,
-                                imgin.im->kw[kw].name,
-                                imgin.im->kw[kw].value.valstr,
-                                imgin.im->kw[kw].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
+                // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN sprintf!!
+                if ((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
+                    (strncmp("'#FALSE#'", tmpkwvalstr, 9) == 0))
+                { // Booleans through magic strings
+                    int tmpval_is_true =
+                        strncmp("'#TRUE#'", tmpkwvalstr, 6) == 0;
+                    fits_update_key(fptr,
+                                    TLOGICAL,
+                                    imgin.im->kw[kw].name,
+                                    &tmpval_is_true,
+                                    imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                }
+                else
+                { // Normal string
+                    fits_update_key(fptr,
+                                    TSTRING,
+                                    imgin.im->kw[kw].name,
+                                    imgin.im->kw[kw].value.valstr,
+                                    imgin.im->kw[kw].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                }
                 kwcnt++;
                 break;
 
