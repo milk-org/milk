@@ -599,13 +599,13 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     fits_update_key(fptr,
                     TFLOAT,
                     "BSCALE",
-                    bscalestr,
+                    &bscaleval,
                     "Real=fits-value*BSCALE+BZERO",
                     &COREMOD_iofits_data.FITSIO_status);
     fits_update_key(fptr,
                     TFLOAT,
                     "BZERO",
-                    bzerostr,
+                    &bzeroval,
                     "Real=fits-value*BSCALE+BZERO",
                     &COREMOD_iofits_data.FITSIO_status);
 
