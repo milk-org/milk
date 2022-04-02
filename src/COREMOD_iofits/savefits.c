@@ -593,6 +593,8 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     char bzerostr[32];
     sprintf(bzerostr, "%14f", bzeroval);
 
+    printf("----------- BSCALE = %s\n", bscalestr);
+    printf("-----------BZERO  = %s\n", bzerostr);
 
     fits_update_key(fptr,
                     TFLOAT,
