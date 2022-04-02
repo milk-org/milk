@@ -587,11 +587,11 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     float bscaleval = 1.0;
     float bzeroval  = 0.0;
 
-    char bscalestr[32];
-    sprintf(bscalestr, "%20f", bscaleval);
+    char bscalestr[16];
+    sprintf(bscalestr, "%14f", bscaleval);
 
     char bzerostr[32];
-    sprintf(bzerostr, "%20f", bzeroval);
+    sprintf(bzerostr, "%14f", bzeroval);
 
 
     fits_update_key(fptr,
