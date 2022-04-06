@@ -4,6 +4,7 @@
  */
 
 #include <sys/mman.h> // munmap
+#include <sys/stat.h> // fstat
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -16,9 +17,15 @@ int function_parameter_struct_disconnect(
     //funcparamstruct->md->NBparam = 0;
     funcparamstruct->parray = NULL;
 
-    munmap(funcparamstruct->md,
-           sizeof(FUNCTION_PARAMETER_STRUCT_MD) +
-               sizeof(FUNCTION_PARAMETER) * NBparamMAX);
+    // get file size
+    //
+    struct stat file_stat;
+    fstat(funcparamstruct->SMfd, &file_stat);
+
+    munmap(funcparamstruct->md, file_stat.st_size);
+    // note: file size should be equal to :
+    // sizeof(FUNCTION_PARAMETER_STRUCT_MD) +
+    // sizeof(FUNCTION_PARAMETER) * NBparamMAX)
 
     close(funcparamstruct->SMfd);
 
