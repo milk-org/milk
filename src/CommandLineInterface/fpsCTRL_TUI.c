@@ -556,6 +556,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     }
 
 
+    for (int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
+    {
+        keywnode[kindex].NBchild = 0;
+    }
+
+
     functionparameter_scan_fps(fpsCTRLvar.mode,
                                fpsCTRLvar.fpsnamemask,
                                data.fpsarray,
@@ -602,7 +608,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     }
 
     fpsCTRLvar.NBindex = 0;
-    char shmdname[200];
+    char shmdname[STRINGMAXLEN_SHMDIRNAME];
     function_parameter_struct_shmdirname(shmdname);
 
     if (run_display == 0)
@@ -2366,7 +2372,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
     functionparameter_outlog("FPSCTRL", "STOP");
 
-    free(keywnode);
 
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for (fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)
@@ -2374,9 +2379,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
         function_parameter_struct_disconnect(&data.fpsarray[fpsindex]);
     }
 
-
-    // free(fps);
-
+    free(keywnode);
 
     free(fpsctrltasklist);
     free(fpsctrlqueuelist);
