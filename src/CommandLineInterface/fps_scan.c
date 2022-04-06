@@ -29,22 +29,27 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
 {
     int fpsindex;
     int pindex;
-    //int fps_symlink[NB_FPS_MAX];
     int kwnindex;
     int NBkwn;
     int l;
 
-    // int nodechain[MAXNBLEVELS];
-    //int GUIlineSelected[MAXNBLEVELS];
 
     // FPS list file
     FILE *fpfpslist;
     int   fpslistcnt = 0;
-    char  FPSlist[200][100];
+    char  FPSlist[200][NB_FPS_MAX];
 
     // Static variables
     static int  shmdirname_init = 0;
-    static char shmdname[200];
+    static char shmdname[STRINGMAXLEN_SHMDIRNAME];
+
+
+
+    for (int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
+    {
+        keywnode[kindex].NBchild = 0;
+    }
+
 
     // scan filesystem for fps entries
 
@@ -62,6 +67,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
         shmdirname_init = 1;
     }
 
+
     // disconnect previous fps
     for (fpsindex = 0; fpsindex < NB_FPS_MAX; fpsindex++)
     {
@@ -70,6 +76,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
             function_parameter_struct_disconnect(&fps[fpsindex]);
         }
     }
+
 
     // request match to file ./fpscomd/fpslist.txt
     if (mode & 0x0001)
@@ -112,16 +119,6 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 printf("FPSname must match %s\n", FPSlist[fpsi]);
             }
         }
-    }
-
-    //  for(l = 0; l < MAXNBLEVELS; l++) {
-    // nodechain[l] = 0;
-    // GUIlineSelected[l] = 0;
-    //}
-
-    for (int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
-    {
-        keywnode[kindex].NBchild = 0;
     }
 
     //    NBparam = function_parameter_struct_connect(fpsname, &fps[fpsindex]);
@@ -173,6 +170,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
 
                 matchOK *= matchOKlist;
             }
+
 
             if ((pch) && (matchOK == 1))
             {
@@ -263,6 +261,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                         fpsindex);
                     fflush(stdout);
                 }
+
 
                 long NBparamMAX =
                     function_parameter_struct_connect(fpsname,
