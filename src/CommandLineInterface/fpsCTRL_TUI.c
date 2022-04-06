@@ -501,6 +501,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
         }
     }
 
+
+
     // initialize nodechain
     for (int l = 0; l < MAXNBLEVELS; l++)
     {
@@ -553,6 +555,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
         fpsCTRLvar.GUIlineSelected[level] = 0;
     }
 
+
     functionparameter_scan_fps(fpsCTRLvar.mode,
                                fpsCTRLvar.fpsnamemask,
                                data.fpsarray,
@@ -563,10 +566,13 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                                0 // quiet
     );
 
+
     printf("%d function parameter structure(s) imported, %ld parameters\n",
            fpsCTRLvar.NBfps,
            NBpindex);
     fflush(stdout);
+
+
 
     DEBUG_TRACEPOINT(" ");
 
@@ -617,6 +623,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     }
 
     int refresh_screen = 1; // 1 if screen should be refreshed
+
+
 
     while (loopOK == 1)
     {
@@ -2347,12 +2355,18 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
         }
     }
 
+
+
+
     if (run_display == 1)
     {
         TUI_exit();
     }
 
+
     functionparameter_outlog("FPSCTRL", "STOP");
+
+    free(keywnode);
 
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for (fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)
@@ -2360,13 +2374,13 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
         function_parameter_struct_disconnect(&data.fpsarray[fpsindex]);
     }
 
+
     // free(fps);
-    free(keywnode);
+
 
     free(fpsctrltasklist);
     free(fpsctrlqueuelist);
     functionparameter_outlog("LOGFILECLOSE", "close log file");
-
 
     DEBUG_TRACE_FEXIT();
 
