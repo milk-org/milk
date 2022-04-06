@@ -21,7 +21,7 @@ int functionparameter_UserInputSetParamValue(
     FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex)
 {
     int  inputOK;
-    int  strlenmax = 20;
+    int  strlenmax = 64;
     char buff[100];
     char c = -1;
 
@@ -32,18 +32,30 @@ int functionparameter_UserInputSetParamValue(
         inputOK = 0;
         fflush(stdout);
 
+
+        int esc_toggle = 0;
+
         while (inputOK == 0)
         {
-            printf("\nESC or update value : ");
+            printf("\n Update value (ESC + ENTER to abort) : ");
             fflush(stdout);
 
             int stringindex = 0;
 
             c = get_singlechar_block();
 
-            while ((c != 27) && (c != 10) && (c != 13) &&
-                   (stringindex < strlenmax - 1))
+            // 10 : line feed
+            // 27 : escape
+            // 13 : carriage return
+
+            while ((c != 10) && (c != 13) && (stringindex < strlenmax - 1))
             {
+
+                if (c == 27)
+                {
+                    esc_toggle = 1;
+                }
+
                 buff[stringindex] = c;
                 if (c == 127) // delete key
                 {
@@ -54,7 +66,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    putchar(c); // echo on screen
+                    putchar(c); // echo on screen for non-ncurses mode
                     fflush(stdout);
                     stringindex++;
                 }
@@ -69,7 +81,9 @@ int functionparameter_UserInputSetParamValue(
             inputOK           = 1;
         }
 
-        if (c != 27) // do not update value if escape key
+
+
+        if (esc_toggle == 0) // update value if escape key has not been pressed
         {
 
             long   lval = 0;
