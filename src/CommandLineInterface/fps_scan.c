@@ -27,7 +27,6 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                                    long                      *ptr_pindex,
                                    int                        verbose)
 {
-    int stringmaxlen = 500;
     int fpsindex;
     int pindex;
     //int fps_symlink[NB_FPS_MAX];
@@ -181,8 +180,8 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 // is file sym link ?
                 struct stat buf;
                 int         retv;
-                char        fullname[stringmaxlen];
-                char        shmdname[stringmaxlen];
+                char        fullname[STRINGMAXLEN_FULLFILENAME];
+                char        shmdname[STRINGMAXLEN_DIRNAME];
                 function_parameter_struct_shmdirname(shmdname);
 
                 sprintf(fullname, "%s/%s", shmdname, dir->d_name);
@@ -200,16 +199,16 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
 
                 if (S_ISLNK(buf.st_mode)) // resolve link name
                 {
-                    char fullname[stringmaxlen];
-                    char linknamefull[stringmaxlen];
-                    char linkname[stringmaxlen];
+                    char fullname[STRINGMAXLEN_FULLFILENAME];
+                    char linknamefull[STRINGMAXLEN_FULLFILENAME];
+                    char linkname[STRINGMAXLEN_FULLFILENAME];
 
-                    char shmdname[stringmaxlen];
+                    char shmdname[STRINGMAXLEN_DIRNAME];
                     function_parameter_struct_shmdirname(shmdname);
 
                     //fps_symlink[fpsindex] = 1;
                     if (snprintf(fullname,
-                                 stringmaxlen,
+                                 STRINGMAXLEN_FULLFILENAME,
                                  "%s/%s",
                                  shmdname,
                                  dir->d_name) < 0)
@@ -453,7 +452,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
     }
     else
     {
-        char shmdname[200];
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
         printf("ERROR: missing %s directory\n", shmdname);
         printf("File %s line %d\n", __FILE__, __LINE__);
