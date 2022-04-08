@@ -184,17 +184,19 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
     return (0);
 }
 
+
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname)
 {
     // Pass down to extended version and return retcode back up
     return COREMOD_TOOLS_mvProcCPUsetExt(getpid(), csetname, -1);
 }
 
+
 int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
                                   const char *csetname,
                                   const int   rtprio)
 {
-    char command[200];
+    char command[STRINGMAXLEN_COMMAND];
 
     /* FOR DEBUG - WARNING data.euid and data.ruid are NOT what they say
     PRINT_ERROR("(data) EUID %d - (data) RUID %d ", data.euid, data.ruid);
@@ -216,7 +218,15 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
             csetname);
     printf("Executing command: %s\n", command);
 
-    EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+    if (system("which cset > /dev/null 2>&1"))
+    {
+        // Command doesn't exist...
+    }
+    else
+    {
+        // Command does exist
+        EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+    }
 
     if (rtprio > 0)
     {
