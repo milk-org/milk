@@ -131,6 +131,9 @@ errno_t mkUTtimestring_sec_now(char *timestring)
     return RETURN_SUCCESS;
 }
 
+
+
+
 struct timespec timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec temp;
@@ -147,6 +150,8 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
     }
     return temp;
 }
+
+
 
 double timespec_diff_double(struct timespec start, struct timespec end)
 {
@@ -169,6 +174,9 @@ double timespec_diff_double(struct timespec start, struct timespec end)
 
     return val;
 }
+
+
+
 
 /**
  * @brief Returns time string in form of HH:MM:SS.SS
