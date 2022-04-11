@@ -511,7 +511,7 @@ typedef struct
 //
 
 // max number of entries in queues (total among all queues)
-#define NB_FPSCTRL_TASK_MAX       500
+#define NB_FPSCTRL_TASK_MAX       5000
 #define NB_FPSCTRL_TASK_PURGESIZE 50
 
 // flags
