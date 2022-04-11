@@ -84,7 +84,10 @@ int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
 
                 if (cmdindex == NB_FPSCTRL_TASK_MAX)
                 {
-                    printf("ERROR: fpscmdarray is full\n");
+                    printf(
+                        "ERROR: fpscmdarray is full, %d NB_FPSCTRL_TASK_MAX "
+                        "limit reached\n",
+                        NB_FPSCTRL_TASK_MAX);
                     exit(0);
                 }
 
