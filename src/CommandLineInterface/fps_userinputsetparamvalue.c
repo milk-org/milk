@@ -13,6 +13,9 @@
 
 #include "TUItools.h"
 
+
+
+
 /** @brief Enter new value for parameter
  *
  *
@@ -406,6 +409,8 @@ int functionparameter_UserInputSetParamValue(
                     pindex,
                     "setval",
                     "UserInputSetParamValue");
+
+                functionparameter_SaveFPS2disk(fpsentry);
             }
         }
     }

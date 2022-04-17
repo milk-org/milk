@@ -116,8 +116,9 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("u", "(u)pdate CONF process");
     print_help_entry("R / CTRL+r", "start/stop (R)UN process");
     print_help_entry("l", "list all entries");
-    print_help_entry(">", "export fpsdatadir values fpsconfdir");
-    print_help_entry("<", "import/load values from fpsconfdir");
+    print_help_entry("f", "export fps content to datadir file");
+    print_help_entry(">", "export fpsdatadir values to fpsconfdir");
+    print_help_entry("<", "import/load values from fpsconfdir to fps");
     print_help_entry("P", "(P)rocess input file \"confscript\"");
     TUI_printfw("        format: setval <paramfulname> <value>");
     TUI_newline();
