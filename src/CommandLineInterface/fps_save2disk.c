@@ -16,12 +16,17 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_printparameter_valuestring.h"
 
+
+
+
 int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                      const char                *paramname)
 {
     int pindex;
 
     pindex = functionparameter_GetParamIndex(fpsentry, paramname);
+
+
     functionparameter_WriteParameterToDisk(fpsentry,
                                            pindex,
                                            "setval",
@@ -29,6 +34,9 @@ int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                        char                      *dirname)
@@ -73,6 +81,7 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
     fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
     fprintf(fpoutval, "# PID        %d\n", getpid());
     fprintf(fpoutval, "# TID        %d\n", (int) tid);
+    fprintf(fpoutval, "# root dir   %s\n", fpsentry->md->workdir);
     fprintf(fpoutval, "#\n");
 
     for (int pindex = 0; pindex < fpsentry->md->NBparamMAX; pindex++)
@@ -96,12 +105,12 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
 
 /** @brief save entire FPS to disk
  *
- * Writes in subdirectory fpslog
+ * Writes in subdirectory fps datatir
  */
 int functionparameter_SaveFPS2disk(FUNCTION_PARAMETER_STRUCT *fps)
 {
-    char outdir[STRINGMAXLEN_DIRNAME];
-    WRITE_DIRNAME(outdir, "%s", fps->md->datadir);
+    char outdir[STRINGMAXLEN_FULLFILENAME];
+    WRITE_FULLFILENAME(outdir, "%s/%s", fps->md->workdir, fps->md->datadir);
     functionparameter_SaveFPS2disk_dir(fps, outdir);
 
     char timestring[100];
@@ -114,7 +123,8 @@ int functionparameter_SaveFPS2disk(FUNCTION_PARAMETER_STRUCT *fps)
     char  ffname[STRINGMAXLEN_FULLFILENAME];
     FILE *fpout;
     WRITE_FULLFILENAME(ffname,
-                       "%s/%s.fps.outlog",
+                       "%s/%s/%s.fps.outlog",
+                       fps->md->workdir,
                        fps->md->datadir,
                        fps->md->name);
     fpout = fopen(ffname, "w");
@@ -226,6 +236,9 @@ errno_t functionparameter_write_archivescript(FUNCTION_PARAMETER_STRUCT *fps)
     return RETURN_SUCCESS;
 }
 
+
+
+
 /** @brief Save image as FITS
  *
  * Standard function to save output of FPS RUN function.
@@ -315,6 +328,9 @@ FILE *fps_write_RUNoutput_file(FUNCTION_PARAMETER_STRUCT *fps,
     return fp;
 }
 
+
+
+
 /** @brief Get file extension
  */
 static char *get_filename_ext(const char *filename)
@@ -326,6 +342,9 @@ static char *get_filename_ext(const char *filename)
     }
     return dot + 1;
 }
+
+
+
 
 static char *remove_filename_ext(const char *filename)
 {
@@ -343,6 +362,9 @@ static char *remove_filename_ext(const char *filename)
     }
     return tmpstring;
 }
+
+
+
 
 /** @brief Copy file
  */
@@ -406,7 +428,7 @@ errno_t fps_datadir_to_confdir(FUNCTION_PARAMETER_STRUCT *fps)
 
     while ((indirentry = readdir(indir)) != NULL)
     {
-        printf("%s\n", indirentry->d_name);
+        //printf("%s\n", indirentry->d_name);
         file_ext = get_filename_ext(indirentry->d_name);
 
         if (strcmp(file_ext, "outlog") == 0)

@@ -5,49 +5,49 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
+/** @brief get parameter file name
+ *
+ * Most recent parameter value stored in this file
+ *
+ */
 int functionparameter_GetFileName(FUNCTION_PARAMETER_STRUCT *fps,
                                   FUNCTION_PARAMETER        *fparam,
                                   char                      *outfname,
                                   char                      *tagname)
 {
-    int  stringmaxlen = STRINGMAXLEN_DIRNAME / 2;
-    char ffname[STRINGMAXLEN_FULLFILENAME]; // full filename
-    char fname1[stringmaxlen];
+    char ffname[STRINGMAXLEN_FULLFILENAME];
+    char fname1[STRINGMAXLEN_FILENAME];
     int  l;
-    char fpsconfdirname[STRINGMAXLEN_DIRNAME];
+    //char fpsdatadirname[STRINGMAXLEN_DIRNAME];
 
-    if (snprintf(fpsconfdirname, stringmaxlen, "%s/fpsconf", fps->md->workdir) <
-        0)
-    {
-        PRINT_ERROR("snprintf error");
-    }
-
-    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
+    WRITE_DIRNAME(ffname, "%s/%s/fps/", fps->md->workdir, fps->md->datadir);
+    EXECUTE_SYSTEM_COMMAND("mkdir -p %s", ffname);
 
     // build up directory name
     for (l = 0; l < fparam->keywordlevel - 1; l++)
     {
-        if (snprintf(fname1, stringmaxlen, "/%s", fparam->keyword[l]) < 0)
+        if (snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[l]) <
+            0)
         {
             PRINT_ERROR("snprintf error");
         }
-        strncat(fpsconfdirname, fname1, STRINGMAXLEN_DIRNAME - 1);
-
-        EXECUTE_SYSTEM_COMMAND("mkdir -p %s", fpsconfdirname);
+        strncat(ffname, fname1, STRINGMAXLEN_DIRNAME - 1);
     }
 
     if (snprintf(fname1,
-                 stringmaxlen,
-                 "/%s.%s.txt",
+                 STRINGMAXLEN_FILENAME,
+                 "%s.%s.txt",
                  fparam->keyword[l],
                  tagname) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
 
-    snprintf(ffname, STRINGMAXLEN_FULLFILENAME, "%s%s", fpsconfdirname, fname1);
+    char ffname1[STRINGMAXLEN_FULLFILENAME]; // full filename
+    snprintf(ffname1, STRINGMAXLEN_FULLFILENAME, "%s%s", ffname, fname1);
 
-    strcpy(outfname, ffname);
+    strcpy(outfname, ffname1);
 
     return 0;
 }

@@ -382,6 +382,12 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
 
         break;
 
+
+    case 'f': // export fps content to single file in datadir
+        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+        functionparameter_SaveFPS2disk(&fps[fpsindex]);
+        break;
+
     case '>': // export to confdir
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         fps_datadir_to_confdir(&fps[fpsindex]);
