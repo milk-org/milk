@@ -32,7 +32,7 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                            char                      *tagname,
                                            char *commentstr)
 {
-    char  fname[200];
+    char  fname[STRINGMAXLEN_FULLFILENAME];
     FILE *fp;
 
     // create time change tag
@@ -69,6 +69,7 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                       &(fpsentry->parray[pindex]),
                                       fname,
                                       tagname);
+
         fp = fopen(fname, "w");
         switch (fpsentry->parray[pindex].type)
         {

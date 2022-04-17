@@ -26,6 +26,9 @@
 #include "fps_WriteParameterToDisk.h"
 #include "fps_printparameter_valuestring.h"
 
+
+
+
 /** @brief process command line
  *
  * ## Purpose
@@ -35,6 +38,7 @@
  * ## Commands
  *
  * - logsymlink  : create log sym link
+ * - fpswfile    : write fps file to disk (writes to datadir)
  * - setval      : set parameter value
  * - getval      : get value, write to output log
  * - fwrval      : get value, write to file or fifo
@@ -230,7 +234,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         }
     }
 
-    // exit
+    // rescan
     if ((cmdFOUND == 0) && (strcmp(FPScommand, "rescan") == 0))
     {
         cmdFOUND = 1;
@@ -605,9 +609,10 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
             }
         }
 
+
         // runwait
         // wait until run process is completed
-
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "runwait") == 0))
         {
             cmdFOUND = 1;
@@ -642,8 +647,9 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
             }
         }
 
-        // runstop
 
+        // runstop
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "runstop") == 0))
         {
             cmdFOUND = 1;
@@ -666,8 +672,35 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
             }
         }
 
-        // fpsrm
 
+        // fpswfile : write FPS to file
+        //
+        if ((cmdFOUND == 0) && (strcmp(FPScommand, "runstop") == 0))
+        {
+            cmdFOUND = 1;
+            if (nbword != 2)
+            {
+                functionparameter_outlog("ERROR",
+                                         "COMMAND fpswfile takes NBARGS = 1");
+                *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
+                cmdOK = 0;
+            }
+            else
+            {
+                DEBUG_TRACEPOINT(" ");
+                functionparameter_SaveFPS2disk(&fps[fpsindex]);
+                functionparameter_outlog("FPSWFILE",
+                                         "write FPS to file %d %s",
+                                         fpsindex,
+                                         fps[fpsindex].md->name);
+                cmdOK = 1;
+            }
+        }
+
+
+
+        // fpsrm
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
         {
             cmdFOUND = 1;
@@ -735,7 +768,10 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
             }
         }
 
+
+
         // setval
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "setval") == 0))
         {
             cmdFOUND = 1;
@@ -1182,6 +1218,9 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
             }
         }
 
+
+
+
         // getval or fwrval
         if ((cmdFOUND == 0) && ((strcmp(FPScommand, "getval") == 0) ||
                                 (strcmp(FPScommand, "fwrval") == 0)))
@@ -1419,6 +1458,9 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
 
     return fpsindex;
 }
+
+
+
 
 int functionparameter_FPSprocess_cmdfile(char                      *infname,
                                          FUNCTION_PARAMETER_STRUCT *fps,
