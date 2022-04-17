@@ -43,6 +43,8 @@
  * - getval      : get value, write to output log
  * - fwrval      : get value, write to file or fifo
  * - exec        : execute scripte (parameter must be FPTYPE_EXECFILENAME type)
+ * - tmuxstart   : start tmux session
+ * - tmuxstop    : stop tmux session
  * - confstart   : start RUN process associated with parameter
  * - confstop    : start RUN process associated with parameter
  * - confupdate  : update configuration
@@ -389,6 +391,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
     {
 
         // tmuxstart
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "tmuxstart") == 0))
         {
             cmdFOUND = 1;
@@ -414,6 +417,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         }
 
         // tmuxstop
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "tmuxstop") == 0))
         {
             cmdFOUND = 1;
@@ -439,6 +443,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         }
 
         // confstart
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "confstart") == 0))
         {
             cmdFOUND = 1;
@@ -464,6 +469,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         }
 
         // confstop
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "confstop") == 0))
         {
             cmdFOUND = 1;
@@ -487,7 +493,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         }
 
         // confupdate
-
+        //
         DEBUG_TRACEPOINT(" ");
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "confupdate") == 0))
         {
@@ -586,6 +592,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         }
 
         // runstart
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "runstart") == 0))
         {
             cmdFOUND = 1;
@@ -728,6 +735,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         DEBUG_TRACEPOINT(" ");
 
         // exec
+        //
         if ((cmdFOUND == 0) && (strcmp(FPScommand, "exec") == 0))
         {
             cmdFOUND = 1;
@@ -1222,6 +1230,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
 
 
         // getval or fwrval
+        //
         if ((cmdFOUND == 0) && ((strcmp(FPScommand, "getval") == 0) ||
                                 (strcmp(FPScommand, "fwrval") == 0)))
         {
