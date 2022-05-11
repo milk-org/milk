@@ -822,10 +822,6 @@ errno_t processinfo_CTRLscreen()
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                           __func__,
-                           __LINE__); //DEBUGTEST
-
     // default: use ncurses
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
@@ -948,10 +944,6 @@ errno_t processinfo_CTRLscreen()
     }
 
 
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                           __func__,
-                           __LINE__); //DEBUGTEST
-
     pindexActiveSelected = 0;
     procinfoproc.DisplayMode =
         PROCCTRL_DISPLAYMODE_CTRL; // default upon startup
@@ -968,11 +960,6 @@ errno_t processinfo_CTRLscreen()
 
     pthread_create(&threadscan, NULL, processinfo_scan, (void *) &procinfoproc);
 
-
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                           __func__,
-                           __LINE__); //DEBUGTEST
-
     // wait for first scan to be completed
     procinfoproc.SCANBLOCK_OK = 1;
     while (procinfoproc.loopcnt < 1)
@@ -981,10 +968,6 @@ errno_t processinfo_CTRLscreen()
         usleep(10000);
     }
 
-
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                           __func__,
-                           __LINE__); //DEBUGTEST
 
 
     int  loopOK  = 1;
@@ -1001,20 +984,12 @@ errno_t processinfo_CTRLscreen()
     pindexSelected       = 0;
     int pindexSelectedOK = 0; // no process selected by cursor
 
-
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                           __func__,
-                           __LINE__); //DEBUGTEST
     while (loopOK == 1)
     {
         int pid;
         //char command[200];
 
         DEBUG_TRACEPOINT(" ");
-
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                               __func__,
-                               __LINE__); //DEBUGTEST
 
         if (procinfoproc.SCANBLOCK_requested == 1)
         {
@@ -1048,10 +1023,6 @@ errno_t processinfo_CTRLscreen()
         scantime_CPUpcnt = 0.0;
 
         DEBUG_TRACEPOINT(" ");
-
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
-                               __func__,
-                               __LINE__); //DEBUGTEST
 
         if (freeze == 0)
         {
