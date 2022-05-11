@@ -57,20 +57,11 @@ void *processinfo_scan(void *thptr)
 
     pinfop->scandebugline = __LINE__;
 
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.loop%d.txt",
-                           __func__,
-                           __LINE__,
-                           pinfop->loop); //DEBUGTEST
+
 
     long loopcnt = 0;
     while (pinfop->loop == 1)
     {
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
-
-
 
         DEBUG_TRACEPOINT(" ");
 
@@ -124,20 +115,8 @@ void *processinfo_scan(void *thptr)
 
         DEBUG_TRACEPOINT(" ");
 
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
-
         for (pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
-
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%04ld.%04ld.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt,
-                                   pindex,
-                                   pinfop->NBpinfodisp); //DEBUGTEST
 
             if (pinfop->loop == 1)
             {
@@ -211,14 +190,6 @@ void *processinfo_scan(void *thptr)
                         // process doesn't exist -> flag as inactive
                         pinfolist->active[pindex] = 2;
                     }
-                    EXECUTE_SYSTEM_COMMAND(
-                        "touch line.%s.%03d.loop%d.%ld.%s.%d.txt",
-                        __func__,
-                        __LINE__,
-                        pinfop->loop,
-                        pindex,
-                        procfname,
-                        pinfolist->active[pindex]); //DEBUGTEST
                 }
 
 
@@ -307,20 +278,8 @@ void *processinfo_scan(void *thptr)
                 int line = __LINE__;
                 pthread_exit(&line);
             }
-
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%04ld.%04ld.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt,
-                                   pindex,
-                                   pinfop->NBpinfodisp); //DEBUGTEST
         }
 
-
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
 
         /** ### Build a time-sorted list of processes
           *
@@ -339,11 +298,6 @@ void *processinfo_scan(void *thptr)
                 pinfop->NBpindexActive++;
             }
 
-
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
 
 
         if (pinfop->NBpindexActive > 0)
@@ -365,21 +319,10 @@ void *processinfo_scan(void *thptr)
                 abort();
             }
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt); //DEBUGTEST
 
             int listcnt = 0;
             for (index = 0; index < pinfop->NBpindexActive; index++)
             {
-                EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%d.%d.txt",
-                                       __func__,
-                                       __LINE__,
-                                       loopcnt,
-                                       index,
-                                       pinfop->NBpindexActive); //DEBUGTEST
-
                 pindex = pinfop->pindexActive[index];
                 if (pinfop->pinfommapped[pindex] == 1)
                 {
@@ -394,18 +337,11 @@ void *processinfo_scan(void *thptr)
             }
             DEBUG_TRACEPOINT(" ");
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt); //DEBUGTEST
+
 
             pinfop->NBpindexActive = listcnt;
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%d.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt,
-                                   listcnt); //DEBUGTEST
+
 
             if (pinfop->NBpindexActive > 0)
             {
@@ -414,10 +350,6 @@ void *processinfo_scan(void *thptr)
                                     pinfop->NBpindexActive);
             }
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt); //DEBUGTEST
 
             for (index = 0; index < pinfop->NBpindexActive; index++)
             {
@@ -425,21 +357,12 @@ void *processinfo_scan(void *thptr)
             }
 
             DEBUG_TRACEPOINT(" ");
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                                   __func__,
-                                   __LINE__,
-                                   loopcnt); //DEBUGTEST
 
             free(timearray);
             free(indexarray);
         }
 
 
-
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
 
         pinfop->scandebugline = __LINE__;
 
@@ -451,10 +374,6 @@ void *processinfo_scan(void *thptr)
         DEBUG_TRACEPOINT(" ");
 
 
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
 
 
         if (pinfop->DisplayMode ==
@@ -642,13 +561,6 @@ void *processinfo_scan(void *thptr)
             int line = __LINE__;
             pthread_exit(&line);
         }
-
-
-
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
-                               __func__,
-                               __LINE__,
-                               loopcnt); //DEBUGTEST
     }
 
     if (pinfop->loop == 0)
