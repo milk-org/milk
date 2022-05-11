@@ -384,6 +384,13 @@ void *processinfo_scan(void *thptr)
 
         DEBUG_TRACEPOINT(" ");
 
+
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
+
+
         if (pinfop->DisplayMode ==
             PROCCTRL_DISPLAYMODE_RESOURCES) // only compute of displayed processes
         {
@@ -569,6 +576,13 @@ void *processinfo_scan(void *thptr)
             int line = __LINE__;
             pthread_exit(&line);
         }
+
+
+
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
     }
 
     if (pinfop->loop == 0)
