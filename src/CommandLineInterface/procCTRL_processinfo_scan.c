@@ -351,9 +351,22 @@ void *processinfo_scan(void *thptr)
                 PRINT_ERROR("malloc returns NULL pointer");
                 abort();
             }
+
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt); //DEBUGTEST
+
             int listcnt = 0;
             for (index = 0; index < pinfop->NBpindexActive; index++)
             {
+                EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%d.%d.txt",
+                                       __func__,
+                                       __LINE__,
+                                       loopcnt,
+                                       index,
+                                       pinfop->NBpindexActive); //DEBUGTEST
+
                 pindex = pinfop->pindexActive[index];
                 if (pinfop->pinfommapped[pindex] == 1)
                 {
