@@ -38,7 +38,6 @@ void *processinfo_scan(void *thptr)
 
     pinfop = (PROCINFOPROC *) thptr;
 
-    long pindex;
     long pindexdisp;
 
     pinfop->loopcnt = 0;
@@ -50,7 +49,7 @@ void *processinfo_scan(void *thptr)
     double                 tdiffv;
     struct timespec        tdiff;
 
-    char procdname[200];
+    char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
     pinfop->scanPID = getpid();
@@ -102,8 +101,9 @@ void *processinfo_scan(void *thptr)
                 pthread_exit(&line);
             }
         }
-        pinfop->SCANBLOCK_requested =
-            0; // acknowledge that request has been granted
+
+        pinfop->SCANBLOCK_requested = 0;
+        // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
 
         DEBUG_TRACEPOINT(" ");
@@ -115,7 +115,7 @@ void *processinfo_scan(void *thptr)
 
         DEBUG_TRACEPOINT(" ");
 
-        for (pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
+        for (long pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
 
             if (pinfop->loop == 1)
@@ -291,7 +291,7 @@ void *processinfo_scan(void *thptr)
         DEBUG_TRACEPOINT(" ");
 
         pinfop->NBpindexActive = 0;
-        for (pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
+        for (long pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
             if (pinfolist->active[pindex] != 0)
             {
                 pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
@@ -323,7 +323,7 @@ void *processinfo_scan(void *thptr)
             int listcnt = 0;
             for (index = 0; index < pinfop->NBpindexActive; index++)
             {
-                pindex = pinfop->pindexActive[index];
+                long pindex = pinfop->pindexActive[index];
                 if (pinfop->pinfommapped[pindex] == 1)
                 {
                     indexarray[index] = pindex;
@@ -433,7 +433,7 @@ void *processinfo_scan(void *thptr)
 
                             pinfop->scandebugline = __LINE__;
 
-                            pinfop->psysinfostatus[pindex] =
+                            pinfop->psysinfostatus[pindexdisp] =
                                 PIDcollectSystemInfo(
                                     &(pinfop->pinfodisp[pindexdisp]),
                                     0);
