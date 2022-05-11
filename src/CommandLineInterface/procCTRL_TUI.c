@@ -822,6 +822,8 @@ errno_t processinfo_CTRLscreen()
     procinfoproc.NBcpus = GetNumberCPUs(&procinfoproc);
     GetCPUloads(&procinfoproc);
 
+    EXECUTE_SYSTEM_COMMAND("touch line%d.txt", __LINE__);
+
     // default: use ncurses
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
@@ -843,8 +845,8 @@ errno_t processinfo_CTRLscreen()
     //atexit( processinfo_CTRLscreen_atexit );
 
     // set print string lengths
-    char
-        string[200]; // string to be printed. Used to keep track of total length
+    // string to be printed. Used to keep track of total length
+    char string[200];
 
     int pstrlen_status = 10;
     int pstrlen_pid    = 7;
@@ -889,8 +891,8 @@ errno_t processinfo_CTRLscreen()
 
     for (pindex = 0; pindex < procinfoproc.NBpinfodisp; pindex++)
     {
-        procinfoproc.pinfodisp[pindex].NBsubprocesses =
-            1; // by default, each process is assumed to be single-threaded
+        // by default, each process is assumed to be single-threaded
+        procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;
 
         procinfoproc.pinfodisp[pindex].active = 0;
         procinfoproc.pinfodisp[pindex].PID    = 0;
