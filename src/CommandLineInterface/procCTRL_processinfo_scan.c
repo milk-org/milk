@@ -120,6 +120,7 @@ void *processinfo_scan(void *thptr)
                                  pindex,
                                  pinfop->NBpinfodisp);
 
+                // shared memory file name
                 char SM_fname
                     [STRINGMAXLEN_FULLFILENAME]; // shared memory file name
                 struct stat file_stat;
