@@ -124,8 +124,20 @@ void *processinfo_scan(void *thptr)
 
         DEBUG_TRACEPOINT(" ");
 
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
+
         for (pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
+
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.%ld.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt,
+                                   pindex); //DEBUGTEST
+
             if (pinfop->loop == 1)
             {
 
