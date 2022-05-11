@@ -381,6 +381,11 @@ void *processinfo_scan(void *thptr)
             }
             DEBUG_TRACEPOINT(" ");
 
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt); //DEBUGTEST
+
             pinfop->NBpindexActive = listcnt;
             quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
 
@@ -390,6 +395,10 @@ void *processinfo_scan(void *thptr)
             }
 
             DEBUG_TRACEPOINT(" ");
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt); //DEBUGTEST
 
             free(timearray);
             free(indexarray);
