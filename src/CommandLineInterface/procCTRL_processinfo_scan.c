@@ -211,7 +211,17 @@ void *processinfo_scan(void *thptr)
                         // process doesn't exist -> flag as inactive
                         pinfolist->active[pindex] = 2;
                     }
+                    EXECUTE_SYSTEM_COMMAND(
+                        "touch line.%s.%03d.loop%d.%d.%s.%d.txt",
+                        __func__,
+                        __LINE__,
+                        pinfop->loop,
+                        pindex,
+                        procfname,
+                        pinfolist->active[pindex]); //DEBUGTEST
                 }
+
+
 
                 DEBUG_TRACEPOINT(" ");
 
@@ -222,6 +232,9 @@ void *processinfo_scan(void *thptr)
                 {
                     // (RE)LOAD
                     //struct stat file_stat;
+
+
+
 
                     DEBUG_TRACEPOINT(" ");
 
