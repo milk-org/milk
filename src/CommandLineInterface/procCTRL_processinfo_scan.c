@@ -57,7 +57,7 @@ void *processinfo_scan(void *thptr)
 
     pinfop->scandebugline = __LINE__;
 
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.loop%d.txt",
+    EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.loop%d.txt",
                            __func__,
                            __LINE__,
                            pinfop->loop); //DEBUGTEST
@@ -65,7 +65,7 @@ void *processinfo_scan(void *thptr)
     long loopcnt = 0;
     while (pinfop->loop == 1)
     {
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
                                __func__,
                                __LINE__,
                                loopcnt); //DEBUGTEST
@@ -132,7 +132,7 @@ void *processinfo_scan(void *thptr)
         for (pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.%04ld.%04ld.txt",
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%04ld.%04ld.txt",
                                    __func__,
                                    __LINE__,
                                    loopcnt,
@@ -295,7 +295,7 @@ void *processinfo_scan(void *thptr)
                 pthread_exit(&line);
             }
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.%04ld.%04ld.txt",
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%04ld.%04ld.txt",
                                    __func__,
                                    __LINE__,
                                    loopcnt,
@@ -304,7 +304,7 @@ void *processinfo_scan(void *thptr)
         }
 
 
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
                                __func__,
                                __LINE__,
                                loopcnt); //DEBUGTEST
@@ -325,6 +325,13 @@ void *processinfo_scan(void *thptr)
                 pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
                 pinfop->NBpindexActive++;
             }
+
+
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
+
 
         if (pinfop->NBpindexActive > 0)
         {
@@ -375,6 +382,13 @@ void *processinfo_scan(void *thptr)
             free(indexarray);
         }
 
+
+
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
+
         pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_OK = 0; // let display thread we're done
@@ -385,7 +399,7 @@ void *processinfo_scan(void *thptr)
         DEBUG_TRACEPOINT(" ");
 
 
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
                                __func__,
                                __LINE__,
                                loopcnt); //DEBUGTEST
@@ -579,7 +593,7 @@ void *processinfo_scan(void *thptr)
 
 
 
-        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
                                __func__,
                                __LINE__,
                                loopcnt); //DEBUGTEST
