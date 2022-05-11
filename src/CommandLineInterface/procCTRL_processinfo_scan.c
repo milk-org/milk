@@ -387,7 +387,19 @@ void *processinfo_scan(void *thptr)
                                    loopcnt); //DEBUGTEST
 
             pinfop->NBpindexActive = listcnt;
+
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.%d.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt,
+                                   listcnt); //DEBUGTEST
+
             quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
+
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt); //DEBUGTEST
 
             for (index = 0; index < pinfop->NBpindexActive; index++)
             {
