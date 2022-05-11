@@ -57,12 +57,21 @@ void *processinfo_scan(void *thptr)
 
     pinfop->scandebugline = __LINE__;
 
-    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.txt",
+    EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.loop%d.txt",
                            __func__,
-                           __LINE__); //DEBUGTEST
+                           __LINE__,
+                           pinfop->loop); //DEBUGTEST
 
+    long loopcnt = 0;
     while (pinfop->loop == 1)
     {
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
+
+
+
         DEBUG_TRACEPOINT(" ");
 
         pinfop->scandebugline = __LINE__;
