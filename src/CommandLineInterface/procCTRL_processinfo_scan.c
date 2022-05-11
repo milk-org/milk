@@ -132,11 +132,12 @@ void *processinfo_scan(void *thptr)
         for (pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
 
-            EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.%ld.txt",
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.%04ld.%04ld.txt",
                                    __func__,
                                    __LINE__,
                                    loopcnt,
-                                   pindex); //DEBUGTEST
+                                   pindex,
+                                   pinfop->NBpinfodisp); //DEBUGTEST
 
             if (pinfop->loop == 1)
             {
@@ -293,7 +294,20 @@ void *processinfo_scan(void *thptr)
                 int line = __LINE__;
                 pthread_exit(&line);
             }
+
+            EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.%04ld.%04ld.txt",
+                                   __func__,
+                                   __LINE__,
+                                   loopcnt,
+                                   pindex,
+                                   pinfop->NBpinfodisp); //DEBUGTEST
         }
+
+
+        EXECUTE_SYSTEM_COMMAND("touch line.%s.%d.%ld.txt",
+                               __func__,
+                               __LINE__,
+                               loopcnt); //DEBUGTEST
 
         /** ### Build a time-sorted list of processes
           *
