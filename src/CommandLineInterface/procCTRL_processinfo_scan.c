@@ -212,7 +212,7 @@ void *processinfo_scan(void *thptr)
                         pinfolist->active[pindex] = 2;
                     }
                     EXECUTE_SYSTEM_COMMAND(
-                        "touch line.%s.%03d.loop%d.%d.%s.%d.txt",
+                        "touch line.%s.%03d.loop%d.%ld.%s.%d.txt",
                         __func__,
                         __LINE__,
                         pinfop->loop,
@@ -407,7 +407,12 @@ void *processinfo_scan(void *thptr)
                                    loopcnt,
                                    listcnt); //DEBUGTEST
 
-            quick_sort2l_double(timearray, indexarray, pinfop->NBpindexActive);
+            if (pinfop->NBpindexActive > 0)
+            {
+                quick_sort2l_double(timearray,
+                                    indexarray,
+                                    pinfop->NBpindexActive);
+            }
 
             EXECUTE_SYSTEM_COMMAND("touch line.%s.%03d.%ld.txt",
                                    __func__,
