@@ -280,7 +280,7 @@ void *save_fits_function(void *ptr)
     // Local time
 
     // get time zone
-    time_t    t  = time(NULL);
+    time_t t = time(NULL);
     // OVERRIDE localtime to HST
     putenv("TZ=Pacific/Honolulu");
     struct tm lt = *localtime(&t);
@@ -349,10 +349,11 @@ void *save_fits_function(void *ptr)
         fprintf(fp, "# \n");
         fprintf(fp, "# col1 : datacube frame index\n");
         fprintf(fp, "# col2 : Main index\n");
-        fprintf(fp, "# col3 : Time since cube origin\n");
-        fprintf(fp, "# col4 : Absolute time\n");
-        fprintf(fp, "# col5 : stream cnt0 index\n");
-        fprintf(fp, "# col6 : stream cnt1 index\n");
+        fprintf(fp, "# col3 : Time since cube origin (logging)\n");
+        fprintf(fp, "# col4 : Absolute time (logging)\n");
+        fprintf(fp, "# col5 : Absolute time (acquisition)\n");
+        fprintf(fp, "# col6 : stream cnt0 index\n");
+        fprintf(fp, "# col7 : stream cnt1 index\n");
         fprintf(fp, "# \n");
 
         double t0; // time reference
@@ -369,14 +370,16 @@ void *save_fits_function(void *ptr)
             // - cnt0
             // - cnt1
 
-            fprintf(fp,
-                    "%10ld  %10lu  %15.9lf   %20.9lf  %10ld   %10ld\n",
-                    k,
-                    tmsg->arrayindex[k],
-                    tmsg->arraytime[k] - t0,
-                    tmsg->arraytime[k],
-                    tmsg->arraycnt0[k],
-                    tmsg->arraycnt1[k]);
+            fprintf(
+                fp,
+                "%10ld  %10lu  %15.9lf   %20.9lf  %17.6lf   %10ld   %10ld\n",
+                k,
+                tmsg->arrayindex[k],
+                tmsg->arraytime[k] - t0,
+                tmsg->arraytime[k],
+                tmsg->arrayaqtime[k],
+                tmsg->arraycnt0[k],
+                tmsg->arraycnt1[k]);
         }
         fclose(fp);
     }
@@ -674,6 +677,8 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     // recording time for each frame
     double *array_time;
     double *array_time_cp;
+    double *array_aqtime; // acquisition time
+    double *array_aqtime_cp;
 
     // counters
     uint64_t *array_cnt0;
@@ -776,16 +781,29 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                sizeof(IMAGE_KEYWORD) * data.image[ID].md[0].NBkw);
     }
 
+    // find creation time keyword
+    // _MAQTIME
+    int aqtimekwi = -1;
+    for (int kwi = 0; kwi < data.image[ID].md[0].NBkw; kwi++)
+    {
+        if (strcmp(data.image[ID].kw[kwi].name, "_MAQTIME") == 0)
+        {
+            aqtimekwi = kwi;
+        }
+    }
+
     COREMOD_MEMORY_image_set_semflush(logb0name, -1);
     COREMOD_MEMORY_image_set_semflush(logb1name, -1);
 
-    array_time = (double *) malloc(sizeof(double) * zsize);
-    array_cnt0 = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
-    array_cnt1 = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
+    array_time   = (double *) malloc(sizeof(double) * zsize);
+    array_aqtime = (double *) malloc(sizeof(double) * zsize);
+    array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
+    array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
 
-    array_time_cp = (double *) malloc(sizeof(double) * zsize);
-    array_cnt0_cp = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
-    array_cnt1_cp = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
+    array_time_cp   = (double *) malloc(sizeof(double) * zsize);
+    array_aqtime_cp = (double *) malloc(sizeof(double) * zsize);
+    array_cnt0_cp   = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
+    array_cnt1_cp   = (uint64_t *) malloc(sizeof(uint64_t) * zsize);
 
     IDb = IDb0;
 
@@ -976,13 +994,17 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                     tmsg->cubesize = index;
 
                     memcpy(array_time_cp, array_time, sizeof(double) * index);
+                    memcpy(array_aqtime_cp,
+                           array_aqtime,
+                           sizeof(double) * index);
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t) * index);
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t) * index);
 
-                    tmsg->arrayindex = array_cnt0_cp;
-                    tmsg->arraycnt0  = array_cnt0_cp;
-                    tmsg->arraycnt1  = array_cnt1_cp;
-                    tmsg->arraytime  = array_time_cp;
+                    tmsg->arrayindex  = array_cnt0_cp;
+                    tmsg->arraycnt0   = array_cnt0_cp;
+                    tmsg->arraycnt1   = array_cnt1_cp;
+                    tmsg->arraytime   = array_time_cp;
+                    tmsg->arrayaqtime = array_aqtime_cp;
 
                     timeout = 1;
                 }
@@ -1078,10 +1100,11 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                     memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t) * index);
                     memcpy(array_cnt1_cp, array_cnt1, sizeof(uint64_t) * index);
 
-                    tmsg->arrayindex = array_cnt0_cp;
-                    tmsg->arraycnt0  = array_cnt0_cp;
-                    tmsg->arraycnt1  = array_cnt1_cp;
-                    tmsg->arraytime  = array_time_cp;
+                    tmsg->arrayindex  = array_cnt0_cp;
+                    tmsg->arraycnt0   = array_cnt0_cp;
+                    tmsg->arraycnt1   = array_cnt1_cp;
+                    tmsg->arraytime   = array_time_cp;
+                    tmsg->arrayaqtime = array_aqtime_cp;
 
                     wOK = 0;
                     if (index == 0)
@@ -1167,6 +1190,15 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                 array_cnt1[index] = data.image[ID].md[0].cnt1;
                 //array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
                 array_time[index] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
+                if (aqtimekwi != -1)
+                {
+                    array_aqtime[index] =
+                        1.0e-6 * data.image[ID].kw[aqtimekwi].value.numl;
+                }
+                else
+                {
+                    array_aqtime[index] = 0.0;
+                }
 
                 index++;
             }
@@ -1323,6 +1355,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
             strcpy(tmsg->iname, iname);
 
             memcpy(array_time_cp, array_time, sizeof(double) * index);
+            memcpy(array_aqtime_cp, array_aqtime, sizeof(double) * index);
 
             memcpy(array_cnt0_cp, array_cnt0, sizeof(uint64_t) * index);
 
@@ -1345,10 +1378,11 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                 fflush(stdout);
             }
 
-            tmsg->arrayindex = array_cnt0_cp;
-            tmsg->arraycnt0  = array_cnt0_cp;
-            tmsg->arraycnt1  = array_cnt1_cp;
-            tmsg->arraytime  = array_time_cp;
+            tmsg->arrayindex  = array_cnt0_cp;
+            tmsg->arraycnt0   = array_cnt0_cp;
+            tmsg->arraycnt1   = array_cnt1_cp;
+            tmsg->arraytime   = array_time_cp;
+            tmsg->arrayaqtime = array_aqtime_cp;
             WRITE_FILENAME(tmsg->fname_auxFITSheader,
                            "%s/%s.auxFITSheader.shm",
                            data.shmdir,
@@ -1442,10 +1476,12 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     free(tmsg);
 
     free(array_time);
+    free(array_aqtime);
     free(array_cnt0);
     free(array_cnt1);
 
     free(array_time_cp);
+    free(array_aqtime_cp);
     free(array_cnt0_cp);
     free(array_cnt1_cp);
 

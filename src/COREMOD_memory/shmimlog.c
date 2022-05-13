@@ -159,8 +159,8 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
     int                buffer;
     uint8_t            datatype;
     uint32_t          *imsizearray;
-    char               fname[200];
-    char               iname[200];
+    char               fname[STRINGMAXLEN_FILENAME];
+    char               iname[STRINGMAXLEN_IMGNAME];
 
     time_t t;
     //    struct tm      *uttime;
@@ -180,7 +180,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
     long framesize; // in bytes
 
     //    FILE *fp;
-    char fnameascii[200];
+    char fnameascii[STRINGMAXLEN_FULLFILENAME];
 
     pthread_t                  thread_savefits;
     int                        tOK = 0;
