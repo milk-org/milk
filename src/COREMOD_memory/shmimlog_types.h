@@ -7,10 +7,11 @@
 #ifndef CLICORE_MEMORY_LOGSHMIM_TYPES_H
 #define CLICORE_MEMORY_LOGSHMIM_TYPES_H
 
+
 typedef struct
 {
-    char iname[100];
-    char fname[200];
+    char iname[STRINGMAXLEN_IMGNAME];
+    char fname[STRINGMAXLEN_FULLFILENAME];
     int  partial;  // 1 if partial cube
     long cubesize; // size of the cube
 
@@ -26,7 +27,8 @@ typedef struct
     uint64_t *arraycnt0;
     uint64_t *arraycnt1;
 
-    double *arraytime;
+    double *arraytime;   // time at which frame has arrived
+    double *arrayaqtime; // frame source time, earlier
 } STREAMSAVE_THREAD_MESSAGE;
 
 typedef struct
@@ -36,7 +38,7 @@ typedef struct
     long long filecnt;
     long      interval; /**<  log every x frames (default = 1) */
     int       logexit;  /**<  toggle to 1 when exiting */
-    char      fname[200];
+    char      fname[STRINGMAXLEN_FULLFILENAME];
 
     // circular buffer
     uint32_t CBsize;
