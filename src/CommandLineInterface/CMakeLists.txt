@@ -45,8 +45,8 @@ link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
 # main
 add_library(CLIcore
             SHARED
-            fpsCTRL_TUI.c
-            fpsCTRL_TUI_process_user_key.c
+            fpsCTRL/fpsCTRL_TUI.c
+            fpsCTRL/fpsCTRL_TUI_process_user_key.c
             streamCTRL_TUI.c
             timeutils.c
             fps/fps_add_entry.c
@@ -168,8 +168,8 @@ install(FILES CLIcore.h
               CLIcore_modules.h
               CLIcore_setSHMdir.h
               CLIcore_signals.h
-              fpsCTRL_TUI.h
-              fpsCTRL_TUI_process_user_key.h
+              fpsCTRL/fpsCTRL_TUI.h
+              fpsCTRL/fpsCTRL_TUI_process_user_key.h
               processinfo.h
               streamCTRL_TUI.h
               cmdsettings.h

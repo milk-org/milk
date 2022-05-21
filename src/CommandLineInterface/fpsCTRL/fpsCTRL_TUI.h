@@ -6,7 +6,7 @@
 #ifndef FPS_CTRLSCREEN_H
 #define FPS_CTRLSCREEN_H
 
-#include "processinfo.h"
+#include "../processinfo.h"
 
 errno_t functionparameter_CTRLscreen(uint32_t mode,
                                      char    *fpsnamemask,

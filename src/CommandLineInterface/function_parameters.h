@@ -618,7 +618,7 @@ typedef struct
 
 } KEYWORD_TREE_NODE;
 
-#include "fpsCTRL_TUI.h"
+#include "fpsCTRL/fpsCTRL_TUI.h"
 #include "fps/fps_FPCONFexit.h"
 #include "fps/fps_FPCONFloopstep.h"
 #include "fps/fps_FPCONFsetup.h"
