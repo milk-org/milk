@@ -16,7 +16,7 @@
 typedef int errno_t;
 #endif
 
-#include "CommandLineInterface/CLIcore_signals.h"
+#include "CommandLineInterface/CLIcore/CLIcore_signals.h"
 
 // error mode
 // defines function behavior on error

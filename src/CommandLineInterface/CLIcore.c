@@ -74,14 +74,14 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "CommandLineInterface/CLIcore_UI.h"
-#include "CommandLineInterface/CLIcore_checkargs.h"
-#include "CommandLineInterface/CLIcore_datainit.h"
-#include "CommandLineInterface/CLIcore_help.h"
-#include "CommandLineInterface/CLIcore_memory.h"
-#include "CommandLineInterface/CLIcore_modules.h"
-#include "CommandLineInterface/CLIcore_setSHMdir.h"
-#include "CommandLineInterface/CLIcore_signals.h"
+#include "CommandLineInterface/CLIcore/CLIcore_UI.h"
+#include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
+#include "CommandLineInterface/CLIcore/CLIcore_datainit.h"
+#include "CommandLineInterface/CLIcore/CLIcore_help.h"
+#include "CommandLineInterface/CLIcore/CLIcore_memory.h"
+#include "CommandLineInterface/CLIcore/CLIcore_modules.h"
+#include "CommandLineInterface/CLIcore/CLIcore_setSHMdir.h"
+#include "CommandLineInterface/CLIcore/CLIcore_signals.h"
 
 /*-----------------------------------------
 *       Globals exported to all modules
