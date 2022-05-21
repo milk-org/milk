@@ -22,6 +22,10 @@
 extern PROCESSINFOLIST *pinfolist;
 
 
+// comment out to debug: will write log to filesystem
+#define PROCESSINFO_SCAN_DEBUG 1
+
+
 /**
  * ## Purpose
  *
@@ -55,6 +59,17 @@ void *processinfo_scan(void *thptr)
     pinfop->scanPID = getpid();
 
     pinfop->scandebugline = __LINE__;
+
+
+#ifdef PROCESSINFO_SCAN_DEBUG
+    static long debuglogfilecnt = 0;
+    char        debuglogfile[STRINGMAXLEN_FILENAME];
+    WRITE_FILENAME(debuglogfile,
+                   "processinfo_scan.%06ld.debug.log",
+                   debuglogfilecnt);
+    debuglogfilecnt++;
+    FILE *fpdebuglog = fopen(debuglogfile, "w");
+#endif
 
 
 
@@ -561,6 +576,12 @@ void *processinfo_scan(void *thptr)
         int line = __LINE__;
         pthread_exit(&line);
     }
+
+
+#ifdef PROCESSINFO_SCAN_DEBUG
+    fclose(fpdebuglog);
+#endif
+
 
     return NULL;
 }
