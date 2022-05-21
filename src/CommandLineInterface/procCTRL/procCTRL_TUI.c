@@ -68,12 +68,12 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include "processinfo/processinfo_exec_end.h"
 
 
-#include "procCTRL_PIDcollectSystemInfo.h"
-#include "procCTRL_GetCPUloads.h"
-#include "procCTRL_GetNumberCPUs.h"
-#include "procCTRL_processinfo_scan.h"
+#include "procCTRL/procCTRL_PIDcollectSystemInfo.h"
+#include "procCTRL/procCTRL_GetCPUloads.h"
+#include "procCTRL/procCTRL_GetNumberCPUs.h"
+#include "procCTRL/procCTRL_processinfo_scan.h"
 
-#include "procCTRL_TUI.h"
+#include "procCTRL/procCTRL_TUI.h"
 
 #ifdef USE_HWLOC
 #include <hwloc.h>

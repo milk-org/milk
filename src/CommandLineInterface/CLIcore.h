@@ -54,11 +54,11 @@ typedef long variableID;
 
 #include "CommandLineInterface/function_parameters.h"
 #include "CommandLineInterface/processtools.h"
-#include "CommandLineInterface/streamCTRL_TUI.h"
+#include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
 
-#include "CommandLineInterface/CLIcore_checkargs.h"
-#include "CommandLineInterface/CLIcore_help.h"
-#include "CommandLineInterface/CLIcore_modules.h"
+#include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
+#include "CommandLineInterface/CLIcore/CLIcore_help.h"
+#include "CommandLineInterface/CLIcore/CLIcore_modules.h"
 
 #include "CommandLineInterface/milkDebugTools.h"
 
@@ -549,7 +549,7 @@ typedef struct
 
 extern DATA data;
 
-#include "CommandLineInterface/CLIcore_utils.h"
+#include "CommandLineInterface/CLIcore/CLIcore_utils.h"
 
 errno_t set_signal_catch();
 

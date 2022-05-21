@@ -8,7 +8,7 @@
 #ifndef CLICORE_CHECKARGS_H
 #define CLICORE_CHECKARGS_H
 
-#include "cmdsettings.h"
+#include "../cmdsettings.h"
 
 // testing argument type for command line interface
 // CLI ARGS consist of two 16-bit fields
