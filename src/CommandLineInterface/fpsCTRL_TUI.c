@@ -15,12 +15,12 @@
 #include "CommandLineInterface/timeutils.h"
 
 #include "fpsCTRL_TUI_process_user_key.h"
-#include "fps_GetTypeString.h"
-#include "fps_disconnect.h"
-#include "fps_outlog.h"
-#include "fps_process_fpsCMDarray.h"
-#include "fps_read_fpsCMD_fifo.h"
-#include "fps_scan.h"
+#include "fps/fps_GetTypeString.h"
+#include "fps/fps_disconnect.h"
+#include "fps/fps_outlog.h"
+#include "fps/fps_process_fpsCMDarray.h"
+#include "fps/fps_read_fpsCMD_fifo.h"
+#include "fps/fps_scan.h"
 
 #include "TUItools.h"
 

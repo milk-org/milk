@@ -47,49 +47,49 @@ add_library(CLIcore
             SHARED
             fpsCTRL_TUI.c
             fpsCTRL_TUI_process_user_key.c
-            procCTRL_TUI.c
             streamCTRL_TUI.c
             timeutils.c
-            fps_add_entry.c
-            fps_checkparameter.c
-            fps_connect.c
-            fps_connectExternalFPS.c
-            fps_CONFstart.c
-            fps_CONFstop.c
-            fps_disconnect.c
-            fps_execFPScmd.c
-            fps_FPCONFexit.c
-            fps_FPCONFloopstep.c
-            fps_FPCONFsetup.c
-            fps_FPSremove.c
-            fps_GetFileName.c
-            fps_getFPSargs.c
-            fps_GetParamIndex.c
-            fps_GetTypeString.c
-            fps_load.c
-            fps_loadstream.c
-            fps_outlog.c
-            fps_paramvalue.c
-            fps_printlist.c
-            fps_PrintParameterInfo.c
-            fps_printparameter_valuestring.c
-            fps_processcmdline.c
-            fps_process_fpsCMDarray.c
-            fps_processinfo_entries.c
-            fps_read_fpsCMD_fifo.c
-            fps_RUNexit.c
-            fps_RUNstart.c
-            fps_RUNstop.c
-            fps_save2disk.c
-            fps_scan.c
-            fps_shmdirname.c
-            fps_tmux.c
-            fps_userinputsetparamvalue.c
-            fps_WriteParameterToDisk.c
-            procCTRL_processinfo_scan.c
-            procCTRL_GetCPUloads.c
-            procCTRL_GetNumberCPUs.c
-            procCTRL_PIDcollectSystemInfo.c
+            fps/fps_add_entry.c
+            fps/fps_checkparameter.c
+            fps/fps_connect.c
+            fps/fps_connectExternalFPS.c
+            fps/fps_CONFstart.c
+            fps/fps_CONFstop.c
+            fps/fps_disconnect.c
+            fps/fps_execFPScmd.c
+            fps/fps_FPCONFexit.c
+            fps/fps_FPCONFloopstep.c
+            fps/fps_FPCONFsetup.c
+            fps/fps_FPSremove.c
+            fps/fps_GetFileName.c
+            fps/fps_getFPSargs.c
+            fps/fps_GetParamIndex.c
+            fps/fps_GetTypeString.c
+            fps/fps_load.c
+            fps/fps_loadstream.c
+            fps/fps_outlog.c
+            fps/fps_paramvalue.c
+            fps/fps_printlist.c
+            fps/fps_PrintParameterInfo.c
+            fps/fps_printparameter_valuestring.c
+            fps/fps_processcmdline.c
+            fps/fps_process_fpsCMDarray.c
+            fps/fps_processinfo_entries.c
+            fps/fps_read_fpsCMD_fifo.c
+            fps/fps_RUNexit.c
+            fps/fps_RUNstart.c
+            fps/fps_RUNstop.c
+            fps/fps_save2disk.c
+            fps/fps_scan.c
+            fps/fps_shmdirname.c
+            fps/fps_tmux.c
+            fps/fps_userinputsetparamvalue.c
+            fps/fps_WriteParameterToDisk.c
+            procCTRL/procCTRL_TUI.c
+            procCTRL/procCTRL_processinfo_scan.c
+            procCTRL/procCTRL_GetCPUloads.c
+            procCTRL/procCTRL_GetNumberCPUs.c
+            procCTRL/procCTRL_PIDcollectSystemInfo.c
             processtools_trigger.c
             processinfo/processinfo_procdirname.c
             processinfo/processinfo_exec_start.c
