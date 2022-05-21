@@ -75,7 +75,7 @@ void *processinfo_scan(void *thptr)
 
     if (processinfo_scan_debuglog == 1)
     {
-        FILE *fpdebuglog = fopen("processinfo_scan.debuglog", "w");
+        fpdebuglog = fopen("processinfo_scan.debuglog", "w");
     }
 
 
@@ -140,10 +140,12 @@ void *processinfo_scan(void *thptr)
         if (processinfo_scan_debuglog == 1)
         {
             fprintf(fpdebuglog,
-                    "%5d loop start %ld",
+                    "%5d loop start %ld\n",
                     __LINE__,
                     pinfop->NBpinfodisp);
         }
+
+
 
         for (long pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
@@ -157,7 +159,7 @@ void *processinfo_scan(void *thptr)
                 if (processinfo_scan_debuglog == 1)
                 {
                     fprintf(fpdebuglog,
-                            "%5d pindex %ld / %ld",
+                            "%5d pindex %ld / %ld\n",
                             __LINE__,
                             pindex,
                             pinfop->NBpinfodisp);
@@ -203,12 +205,28 @@ void *processinfo_scan(void *thptr)
                                    pinfolist->pnamearray[pindex],
                                    (int) pinfolist->PIDarray[pindex]);
 
+                // DEBUGLOG
+                if (processinfo_scan_debuglog == 1)
+                {
+                    fprintf(fpdebuglog,
+                            "%5d SM_fname %s\n",
+                            __LINE__,
+                            SM_fname);
+                }
+
                 // Does file exist ?
                 if (stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
                 {
                     // if not, don't (re)load and remove from process info list
                     pinfolist->active[pindex]   = 0;
                     pinfop->updatearray[pindex] = 0;
+
+                    if (processinfo_scan_debuglog == 1)
+                    {
+                        fprintf(fpdebuglog,
+                                "%5d    process does not exist\n",
+                                __LINE__);
+                    }
                 }
 
                 DEBUG_TRACEPOINT(" ");
