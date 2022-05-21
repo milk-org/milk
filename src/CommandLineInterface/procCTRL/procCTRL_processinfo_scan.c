@@ -75,7 +75,7 @@ void *processinfo_scan(void *thptr)
 
     if (processinfo_scan_debuglog == 1)
     {
-        FILE *fpdebuglog = fopen("processinfo_scan.debuglog", "w");
+        fpdebuglog = fopen("processinfo_scan.debuglog", "w");
     }
 
 
@@ -144,6 +144,8 @@ void *processinfo_scan(void *thptr)
                     __LINE__,
                     pinfop->NBpinfodisp);
         }
+
+
 
         for (long pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
