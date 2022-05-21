@@ -91,6 +91,13 @@ fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMode, int NBfps)
     DEBUG_TRACE_FEXIT();
 }
 
+
+
+
+/**
+ * @brief Print help
+ *
+ */
 inline static void fpsCTRLscreen_print_help()
 {
     DEBUG_TRACE_FSTART();
@@ -129,6 +136,15 @@ inline static void fpsCTRLscreen_print_help()
 
 
 
+/**
+ * @brief Print node information
+ *
+ * @param fps
+ * @param keywnode
+ * @param nodeSelected
+ * @param fpsindexSelected
+ * @param pindexSelected
+ */
 inline static void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
                                                 KEYWORD_TREE_NODE *keywnode,
                                                 int                nodeSelected,
