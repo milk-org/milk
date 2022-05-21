@@ -96,10 +96,13 @@ add_library(CLIcore
             processinfo/processinfo_exec_end.c
             processinfo/processinfo_loopstep.c
             processinfo/processinfo_setup.c
+            processinfo/processinfo_shm_close.c
             processinfo/processinfo_shm_create.c
+            processinfo/processinfo_shm_link.c
             processinfo/processinfo_shm_list_create.c
             processinfo/processinfo_signals.c
             processinfo/processinfo_SIGexit.c
+            processinfo/processinfo_update_output_stream.c
             processinfo/processinfo_WriteMessage.c
             TUItools.c
             ${CORE_FILES})
