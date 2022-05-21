@@ -220,6 +220,13 @@ void *processinfo_scan(void *thptr)
                     // if not, don't (re)load and remove from process info list
                     pinfolist->active[pindex]   = 0;
                     pinfop->updatearray[pindex] = 0;
+
+                    if (processinfo_scan_debuglog == 1)
+                    {
+                        fprintf(fpdebuglog,
+                                "%5d    process does not exist\n",
+                                __LINE__);
+                    }
                 }
 
                 DEBUG_TRACEPOINT(" ");
