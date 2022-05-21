@@ -28,15 +28,15 @@ flex_target(MilkFlex calc_flex.l ${PROJECT_SOURCE_DIR}/calc_flex.c)
 add_flex_bison_dependency(MilkFlex MilkBison)
 set(CORE_FILES
     CLIcore.c
-    CLIcore_utils.c
-    CLIcore_UI.c
-    CLIcore_checkargs.c
-    CLIcore_datainit.c
-    CLIcore_help.c
-    CLIcore_memory.c
-    CLIcore_modules.c
-    CLIcore_setSHMdir.c
-    CLIcore_signals.c
+    CLIcore/CLIcore_utils.c
+    CLIcore/CLIcore_UI.c
+    CLIcore/CLIcore_checkargs.c
+    CLIcore/CLIcore_datainit.c
+    CLIcore/CLIcore_help.c
+    CLIcore/CLIcore_memory.c
+    CLIcore/CLIcore_modules.c
+    CLIcore/CLIcore_setSHMdir.c
+    CLIcore/CLIcore_signals.c
     ${BISON_MilkBison_OUTPUTS}
     ${FLEX_MilkFlex_OUTPUTS})
 
@@ -47,7 +47,7 @@ add_library(CLIcore
             SHARED
             fpsCTRL/fpsCTRL_TUI.c
             fpsCTRL/fpsCTRL_TUI_process_user_key.c
-            streamCTRL_TUI.c
+            streamCTRL/streamCTRL_TUI.c
             timeutils.c
             fps/fps_add_entry.c
             fps/fps_checkparameter.c
@@ -159,19 +159,19 @@ endif()
 install(TARGETS CLIcore DESTINATION lib)
 
 install(FILES CLIcore.h
-              CLIcore_utils.h
-              CLIcore_UI.h
-              CLIcore_checkargs.h
-              CLIcore_datainit.h
-              CLIcore_help.h
-              CLIcore_memory.h
-              CLIcore_modules.h
-              CLIcore_setSHMdir.h
-              CLIcore_signals.h
+              CLIcore/CLIcore_utils.h
+              CLIcore/CLIcore_UI.h
+              CLIcore/CLIcore_checkargs.h
+              CLIcore/CLIcore_datainit.h
+              CLIcore/CLIcore_help.h
+              CLIcore/CLIcore_memory.h
+              CLIcore/CLIcore_modules.h
+              CLIcore/CLIcore_setSHMdir.h
+              CLIcore/CLIcore_signals.h
               fpsCTRL/fpsCTRL_TUI.h
               fpsCTRL/fpsCTRL_TUI_process_user_key.h
               processinfo.h
-              streamCTRL_TUI.h
+              streamCTRL/streamCTRL_TUI.h
               cmdsettings.h
               milkDebugTools.h
               processinfo.h

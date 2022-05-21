@@ -10,7 +10,7 @@
 
 #include <CommandLineInterface/CLIcore.h>
 
-#include "CLIcore_UI.h"
+#include "CLIcore/CLIcore_UI.h"
 
 #define STYLE_BOLD    "\033[1m"
 #define STYLE_NO_BOLD "\033[22m"

@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
-#include "CLIcore_utils.h"
+#include "CLIcore/CLIcore_utils.h"
 
 #include "processinfo.h"
 #include "processtools_trigger.h"
