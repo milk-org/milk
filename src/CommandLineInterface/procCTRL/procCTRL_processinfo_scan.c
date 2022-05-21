@@ -88,11 +88,9 @@ void *processinfo_scan(void *thptr)
         pinfop->scandebugline = __LINE__;
 
         pinfop->SCANBLOCK_requested = 1; // request scan
-        //system("echo \"scanblock request write 1\" > steplog.sRQw1.txt");//TEST
 
         while (pinfop->SCANBLOCK_OK == 0) // wait for display to OK scan
         {
-            //system("echo \"scanblock OK read 0\" > steplog.sOKr0.txt");//TEST
             usleep(100);
             pinfop->scandebugline = __LINE__;
             if (pinfop->loop == 0)
@@ -120,14 +118,12 @@ void *processinfo_scan(void *thptr)
 
             if (pinfop->loop == 1)
             {
-
                 DEBUG_TRACEPOINT("pindex %ld / %ld",
                                  pindex,
                                  pinfop->NBpinfodisp);
 
                 // shared memory file name
-                char SM_fname
-                    [STRINGMAXLEN_FULLFILENAME]; // shared memory file name
+                char        SM_fname[STRINGMAXLEN_FULLFILENAME];
                 struct stat file_stat;
 
                 pinfop->scandebugline    = __LINE__;
@@ -202,9 +198,6 @@ void *processinfo_scan(void *thptr)
                     (pinfop->updatearray[pindex] == 1))
                 {
                     // (RE)LOAD
-                    //struct stat file_stat;
-
-
 
 
                     DEBUG_TRACEPOINT(" ");

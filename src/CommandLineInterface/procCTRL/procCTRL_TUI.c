@@ -26,7 +26,6 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
-#include <sys/mman.h> // mmap()
 
 #include <signal.h>
 #include <sys/ioctl.h>
@@ -36,7 +35,6 @@ static int CTRLscreenExitLine = 0; // for debugging
 #include <sys/types.h>
 #include <unistd.h> // getpid()
 
-#include <sys/stat.h>
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -130,118 +128,6 @@ int processinfo_compute_status(PROCESSINFO *processinfo)
     }
 
     return compstatus;
-}
-
-
-
-
-PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
-{
-    struct stat file_stat;
-
-    *fd = open(pname, O_RDWR);
-    if (*fd == -1)
-    {
-        perror("Error opening file");
-        exit(0);
-    }
-    fstat(*fd, &file_stat);
-    //printf("[%d] File %s size: %zd\n", __LINE__, pname, file_stat.st_size);
-
-    PROCESSINFO *pinfolist = (PROCESSINFO *)
-        mmap(0, file_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
-    if (pinfolist == MAP_FAILED)
-    {
-        close(*fd);
-        fprintf(stderr, "Error mmapping the file");
-        exit(0);
-    }
-
-    return pinfolist;
-}
-
-
-
-int processinfo_shm_close(PROCESSINFO *pinfo, int fd)
-{
-    struct stat file_stat;
-    fstat(fd, &file_stat);
-    munmap(pinfo, file_stat.st_size);
-    close(fd);
-    return EXIT_SUCCESS;
-}
-
-
-
-
-/** @brief Update ouput stream at completion of processinfo-enabled loop iteration
- *
- */
-errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-                                         imageID      outstreamID)
-{
-    if (data.image[outstreamID].md[0].shared == 1)
-    {
-        imageID IDin;
-
-        DEBUG_TRACEPOINT(" ");
-
-        if (processinfo != NULL)
-        {
-            IDin = processinfo->triggerstreamID;
-            DEBUG_TRACEPOINT("trigger IDin = %ld", IDin);
-
-            if (IDin > -1)
-            {
-                int sptisize = data.image[IDin].md[0].NBproctrace - 1;
-
-                // copy streamproctrace from input to output
-                memcpy(&data.image[outstreamID].streamproctrace[1],
-                       &data.image[IDin].streamproctrace[0],
-                       sizeof(STREAM_PROC_TRACE) * sptisize);
-            }
-
-            DEBUG_TRACEPOINT("timing");
-            struct timespec ts;
-            if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-            {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
-            }
-
-            // write first streamproctrace entry
-            DEBUG_TRACEPOINT("trigger info");
-            data.image[outstreamID].streamproctrace[0].triggermode =
-                processinfo->triggermode;
-
-            data.image[outstreamID].streamproctrace[0].procwrite_PID = getpid();
-
-            data.image[outstreamID].streamproctrace[0].trigger_inode =
-                processinfo->triggerstreaminode;
-
-            data.image[outstreamID].streamproctrace[0].ts_procstart =
-                processinfo->texecstart[processinfo->timerindex];
-
-            data.image[outstreamID].streamproctrace[0].ts_streamupdate = ts;
-
-            data.image[outstreamID].streamproctrace[0].trigsemindex =
-                processinfo->triggersem;
-
-            data.image[outstreamID].streamproctrace[0].triggerstatus =
-                processinfo->triggerstatus;
-
-            if (IDin > -1)
-            {
-                data.image[outstreamID].streamproctrace[0].cnt0 =
-                    data.image[IDin].md[0].cnt0;
-            }
-        }
-        DEBUG_TRACEPOINT(" ");
-    }
-
-    ImageStreamIO_UpdateIm(&data.image[outstreamID]);
-
-    return RETURN_SUCCESS;
 }
 
 
@@ -699,21 +585,15 @@ errno_t processinfo_CTRLscreen()
 
         if (procinfoproc.SCANBLOCK_requested == 1)
         {
-            //system("echo \"scanblock request read 1\" > steplog.dQRr1.txt");//TEST
-
-            procinfoproc.SCANBLOCK_OK = 1; // issue OK to scan thread
-            //system("echo \"scanblock OK write 1\" > steplog.dOKw1.txt");//TEST
+            // issue OK to scan thread
+            procinfoproc.SCANBLOCK_OK = 1;
 
             // wait for scan thread to have completed scan
             while (procinfoproc.SCANBLOCK_OK == 1)
             {
-                //system("echo \"scanblock OK read 1\" > steplog.dOKr1.txt");//TEST
                 usleep(100);
             }
-            //system("echo \"scanblock OK read 0\" > steplog.dOKr0.txt");//TEST
         }
-        //		else
-        //			system("echo \"scanblock request read 0\" > steplog.dQRr0.txt");//TEST
 
         usleep((long) (1000000.0 / frequ));
         int ch = getch();
@@ -739,7 +619,8 @@ errno_t processinfo_CTRLscreen()
             //attroff(A_BOLD);
         }
 
-        int selectedOK = 0; // goes to 1 if at least one process is selected
+        // goes to 1 if at least one process is selected
+        int selectedOK = 0;
         switch (ch)
         {
         case 'f': // Freeze screen (toggle)
