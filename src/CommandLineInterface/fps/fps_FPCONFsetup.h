@@ -6,7 +6,7 @@
 #ifndef FPS_FPCONFSETUP_H
 #define FPS_FPCONFSETUP_H
 
-#include "function_parameters.h"
+#include "../function_parameters.h"
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname,
                                                          uint32_t    CMDmode);
