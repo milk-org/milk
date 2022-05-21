@@ -145,7 +145,7 @@ int processinfo_compute_status(PROCESSINFO *processinfo)
  *
  */
 
-int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
+static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 {
     char  line[200];
     FILE *fp;
@@ -195,7 +195,10 @@ int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
     return NBset;
 }
 
-int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
+
+
+
+static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 {
     int   selected = 0;
     long  i;
@@ -266,7 +269,7 @@ int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 }
 
 
-void processinfo_CTRLscreen_atexit()
+static void processinfo_CTRLscreen_atexit()
 {
     //echo();
     //endwin();
