@@ -12,6 +12,9 @@
 
 extern PROCESSINFOLIST *pinfolist;
 
+
+
+
 long processinfo_shm_list_create()
 {
     char SM_fname[STRINGMAXLEN_FULLFILENAME];
@@ -20,7 +23,10 @@ long processinfo_shm_list_create()
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
-    WRITE_FULLFILENAME(SM_fname, "%s/processinfo.list.shm", procdname);
+    WRITE_FULLFILENAME(SM_fname,
+                       "%s/processinfo.list.%d.shm",
+                       procdname,
+                       getpid());
 
     /*
     * Check if a file exist using stat() function.
