@@ -23,10 +23,7 @@ long processinfo_shm_list_create()
     char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
-    WRITE_FULLFILENAME(SM_fname,
-                       "%s/processinfo.list.%d.shm",
-                       procdname,
-                       getpid());
+    WRITE_FULLFILENAME(SM_fname, "%s/processinfo.list.shm", procdname);
 
     /*
     * Check if a file exist using stat() function.
