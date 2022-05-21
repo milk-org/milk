@@ -4,11 +4,11 @@
 extern "C"
 {
 #include "CLIcore.h"
-#include "CLIcore_datainit.h"
-#include "fps_CONFstart.h"
-#include "fps_CONFstop.h"
-#include "fps_RUNstart.h"
-#include "fps_RUNstop.h"
+#include "CLIcore/CLIcore_datainit.h"
+#include "fps/fps_CONFstart.h"
+#include "fps/fps_CONFstop.h"
+#include "fps/fps_RUNstart.h"
+#include "fps/fps_RUNstop.h"
 #include "processtools.h"
 }
 
