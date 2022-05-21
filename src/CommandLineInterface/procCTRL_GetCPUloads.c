@@ -3,7 +3,7 @@
 
 #include "CommandLineInterface/timeutils.h"
 
-#include "processinfo_procdirname.h"
+#include "processinfo/processinfo_procdirname.h"
 
 
 
