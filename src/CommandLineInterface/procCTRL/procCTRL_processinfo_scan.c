@@ -140,7 +140,7 @@ void *processinfo_scan(void *thptr)
         if (processinfo_scan_debuglog == 1)
         {
             fprintf(fpdebuglog,
-                    "%5d loop start %ld",
+                    "%5d loop start %ld\n",
                     __LINE__,
                     pinfop->NBpinfodisp);
         }
@@ -159,7 +159,7 @@ void *processinfo_scan(void *thptr)
                 if (processinfo_scan_debuglog == 1)
                 {
                     fprintf(fpdebuglog,
-                            "%5d pindex %ld / %ld",
+                            "%5d pindex %ld / %ld\n",
                             __LINE__,
                             pindex,
                             pinfop->NBpinfodisp);
@@ -204,6 +204,15 @@ void *processinfo_scan(void *thptr)
                                    procdname,
                                    pinfolist->pnamearray[pindex],
                                    (int) pinfolist->PIDarray[pindex]);
+
+                // DEBUGLOG
+                if (processinfo_scan_debuglog == 1)
+                {
+                    fprintf(fpdebuglog,
+                            "%5d SM_fname %s\n",
+                            __LINE__,
+                            SM_fname);
+                }
 
                 // Does file exist ?
                 if (stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
