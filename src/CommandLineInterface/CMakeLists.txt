@@ -91,16 +91,16 @@ add_library(CLIcore
             procCTRL_GetNumberCPUs.c
             procCTRL_PIDcollectSystemInfo.c
             processtools_trigger.c
-            processinfo_procdirname.c
-            processinfo_exec_start.c
-            processinfo_exec_end.c
-            processinfo_loopstep.c
-            processinfo_setup.c
-            processinfo_shm_create.c
-            processinfo_shm_list_create.c
-            processinfo_signals.c
-            processinfo_SIGexit.c
-            processinfo_WriteMessage.c
+            processinfo/processinfo_procdirname.c
+            processinfo/processinfo_exec_start.c
+            processinfo/processinfo_exec_end.c
+            processinfo/processinfo_loopstep.c
+            processinfo/processinfo_setup.c
+            processinfo/processinfo_shm_create.c
+            processinfo/processinfo_shm_list_create.c
+            processinfo/processinfo_signals.c
+            processinfo/processinfo_SIGexit.c
+            processinfo/processinfo_WriteMessage.c
             TUItools.c
             ${CORE_FILES})
 

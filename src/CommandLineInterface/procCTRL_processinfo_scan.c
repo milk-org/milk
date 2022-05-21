@@ -13,7 +13,7 @@
 #include "procCTRL_PIDcollectSystemInfo.h"
 #include "procCTRL_GetCPUloads.h"
 
-#include "processinfo_procdirname.h"
+#include "processinfo/processinfo_procdirname.h"
 
 
 #include "procCTRL_TUI.h"
