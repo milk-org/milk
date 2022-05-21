@@ -124,6 +124,7 @@ void *processinfo_scan(void *thptr)
             }
         }
 
+
         pinfop->SCANBLOCK_requested = 0;
         // acknowledge that request has been granted
         //system("echo \"scanblock request write 0\" > steplog.sRQw0.txt");//TEST
