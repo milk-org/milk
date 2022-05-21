@@ -22,8 +22,6 @@
 extern PROCESSINFOLIST *pinfolist;
 
 
-// comment out to debug: will write log to filesystem
-#define PROCESSINFO_SCAN_DEBUG 1
 
 
 /**
@@ -34,6 +32,11 @@ extern PROCESSINFOLIST *pinfolist;
  * ## Description
  *
  * Runs in background loop as thread initiated by processinfo_CTRL
+ *
+ *
+ * ## ENV variables
+ *
+ *  MILK_DEBUGLOG_PROCESSINFO_SCAN : write debug log
  *
  */
 void *processinfo_scan(void *thptr)
@@ -61,15 +64,20 @@ void *processinfo_scan(void *thptr)
     pinfop->scandebugline = __LINE__;
 
 
-#ifdef PROCESSINFO_SCAN_DEBUG
-    static long debuglogfilecnt = 0;
-    char        debuglogfile[STRINGMAXLEN_FILENAME];
-    WRITE_FILENAME(debuglogfile,
-                   "processinfo_scan.%06ld.debug.log",
-                   debuglogfilecnt);
-    debuglogfilecnt++;
-    FILE *fpdebuglog = fopen(debuglogfile, "w");
-#endif
+    // DEBUG LOG
+    //
+    FILE *fpdebuglog                = NULL;
+    int   processinfo_scan_debuglog = 0;
+    if (getenv("MILK_DEBUGLOG_PROCESSINFO_SCAN"))
+    {
+        processinfo_scan_debuglog = 1;
+    }
+
+    if (processinfo_scan_debuglog == 1)
+    {
+        FILE *fpdebuglog = fopen("processinfo_scan.debuglog", "w");
+    }
+
 
 
 
@@ -104,7 +112,8 @@ void *processinfo_scan(void *thptr)
 
         pinfop->SCANBLOCK_requested = 1; // request scan
 
-        while (pinfop->SCANBLOCK_OK == 0) // wait for display to OK scan
+        // wait for display to OK scan
+        while (pinfop->SCANBLOCK_OK == 0)
         {
             usleep(100);
             pinfop->scandebugline = __LINE__;
@@ -578,9 +587,10 @@ void *processinfo_scan(void *thptr)
     }
 
 
-#ifdef PROCESSINFO_SCAN_DEBUG
-    fclose(fpdebuglog);
-#endif
+    if (processinfo_scan_debuglog == 1)
+    {
+        fclose(fpdebuglog);
+    }
 
 
     return NULL;
