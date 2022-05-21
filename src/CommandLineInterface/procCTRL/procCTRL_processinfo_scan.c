@@ -137,6 +137,14 @@ void *processinfo_scan(void *thptr)
 
         DEBUG_TRACEPOINT(" ");
 
+        if (processinfo_scan_debuglog == 1)
+        {
+            fprintf(fpdebuglog,
+                    "%5d loop start %ld",
+                    __LINE__,
+                    pinfop->NBpinfodisp);
+        }
+
         for (long pindex = 0; pindex < pinfop->NBpinfodisp; pindex++)
         {
 
@@ -145,6 +153,15 @@ void *processinfo_scan(void *thptr)
                 DEBUG_TRACEPOINT("pindex %ld / %ld",
                                  pindex,
                                  pinfop->NBpinfodisp);
+
+                if (processinfo_scan_debuglog == 1)
+                {
+                    fprintf(fpdebuglog,
+                            "%5d pindex %ld / %ld",
+                            __LINE__,
+                            pindex,
+                            pinfop->NBpinfodisp);
+                }
 
                 // shared memory file name
                 char        SM_fname[STRINGMAXLEN_FULLFILENAME];
