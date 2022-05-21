@@ -5,7 +5,7 @@
 extern "C"
 {
 #include "CLIcore.h"
-#include "CLIcore_datainit.h"
+#include "CLIcore/CLIcore_datainit.h"
 #include "processinfo.h"
 #include "processtools.h"
 }
