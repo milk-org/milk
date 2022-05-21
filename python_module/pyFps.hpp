@@ -201,6 +201,7 @@ class pyFps
                                             entry_desc.c_str(),
                                             fptype,
                                             FPFLAG_DEFAULT_INPUT,
+                                            nullptr,
                                             nullptr);
     }
 
