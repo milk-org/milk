@@ -49,8 +49,12 @@ typedef struct
     int   active[PROCESSINFOLISTSIZE];
     char  pnamearray[PROCESSINFOLISTSIZE]
                    [STRINGMAXLEN_PROCESSINFO_NAME]; // short name
+    double createtime[PROCESSINFOLISTSIZE];
 
 } PROCESSINFOLIST;
+
+
+
 
 typedef struct
 {
