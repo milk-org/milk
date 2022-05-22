@@ -382,7 +382,7 @@ void *processinfo_scan(void *thptr)
                 pinfop->NBpindexActive++;
             }
 
-        PROCESSINFO_SCAN_DEBUGLOG(" ==== pinfop->NBpindexActive = %d\n",
+        PROCESSINFO_SCAN_DEBUGLOG(" ==== pinfop->NBpindexActive = %d\n\n",
                                   pinfop->NBpindexActive);
 
         if (pinfop->NBpindexActive > 0)
@@ -439,6 +439,9 @@ void *processinfo_scan(void *thptr)
             for (int index = 0; index < pinfop->NBpindexActive; index++)
             {
                 pinfop->sorted_pindex_time[index] = indexarray[index];
+                PROCESSINFO_SCAN_DEBUGLOG("sorted %4d  pindex = %ld\n",
+                                          index,
+                                          indexarray[index]);
             }
 
             DEBUG_TRACEPOINT(" ");
@@ -483,6 +486,11 @@ void *processinfo_scan(void *thptr)
                             pinfop->scandebugline = __LINE__;
 
                             // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
+                            PROCESSINFO_SCAN_DEBUGLOG(
+                                " pdispindex %3ld NBsubprocesses %d\n",
+                                pdispindex,
+                                pinfop->pinfodisp[pdispindex].NBsubprocesses);
+
                             if (pinfop->pinfodisp[pdispindex].NBsubprocesses !=
                                 0)
                             {
