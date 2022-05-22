@@ -352,7 +352,7 @@ void *processinfo_scan(void *thptr)
 
 
 
-        // Connect to selected shms
+        // CONNECT TO ALL ACTIVE SHMs
         //
 
         for (int pinfodispindex = 0; pinfodispindex < pinfop->NBpindexActive;
@@ -453,7 +453,7 @@ void *processinfo_scan(void *thptr)
 
 
 
-        // only compute of displayed processes
+        // SCAN RESOURCES IF IN RESOURCES MODE
         //
         if (pinfop->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
         {
