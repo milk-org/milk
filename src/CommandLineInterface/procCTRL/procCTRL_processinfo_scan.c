@@ -471,113 +471,118 @@ void *processinfo_scan(void *thptr)
 
             // collect required info for display
             {
-                long pindex = 0;
-                while (pindex < PROCESSINFOLISTSIZE)
+                long pdispindex = 0;
+                while (pdispindex < pinfop->NBpinfodisp)
                 {
                     if (pinfop->loop == 1)
                     {
                         DEBUG_TRACEPOINT(" ");
 
-                        if (pinfolist->active[pindex] != 0)
+                        if (pinfop->pindexActive[pdispindex] != 0)
                         {
                             pinfop->scandebugline = __LINE__;
 
                             // pinfop->pinfodisp[pindex].NBsubprocesses should never be zero - should be at least 1 (for main process)
-                            if (pinfop->pinfodisp[pindex].NBsubprocesses != 0)
+                            if (pinfop->pinfodisp[pdispindex].NBsubprocesses !=
+                                0)
                             {
 
                                 int spindex; // sub process index, 0 for main
 
-                                if (pinfop->psysinfostatus[pindex] != -1)
+                                if (pinfop->psysinfostatus[pdispindex] != -1)
                                 {
                                     for (spindex = 0;
-                                         spindex < pinfop->pinfodisp[pindex]
+                                         spindex < pinfop->pinfodisp[pdispindex]
                                                        .NBsubprocesses;
                                          spindex++)
                                     {
                                         // place info in subprocess arrays
-                                        pinfop->pinfodisp[pindex]
+                                        pinfop->pinfodisp[pdispindex]
                                             .sampletimearray_prev[spindex] =
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .sampletimearray[spindex];
                                         // Context Switches
 
-                                        pinfop->pinfodisp[pindex]
+                                        pinfop->pinfodisp[pdispindex]
                                             .ctxtsw_voluntary_prev[spindex] =
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .ctxtsw_voluntary[spindex];
-                                        pinfop->pinfodisp[pindex]
+                                        pinfop->pinfodisp[pdispindex]
                                             .ctxtsw_nonvoluntary_prev[spindex] =
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .ctxtsw_nonvoluntary[spindex];
 
                                         // CPU use
-                                        pinfop->pinfodisp[pindex]
+                                        pinfop->pinfodisp[pdispindex]
                                             .cpuloadcntarray_prev[spindex] =
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .cpuloadcntarray[spindex];
                                     }
                                 }
 
                                 pinfop->scandebugline = __LINE__;
 
-                                pinfop->psysinfostatus[pindex] =
+                                pinfop->psysinfostatus[pdispindex] =
                                     PIDcollectSystemInfo(
-                                        &(pinfop->pinfodisp[pindex]),
+                                        &(pinfop->pinfodisp[pdispindex]),
                                         0);
 
-                                if (pinfop->psysinfostatus[pindex] != -1)
+                                if (pinfop->psysinfostatus[pdispindex] != -1)
                                 {
                                     char cpuliststring[200];
                                     char cpustring[16];
 
                                     for (spindex = 0;
-                                         spindex < pinfop->pinfodisp[pindex]
+                                         spindex < pinfop->pinfodisp[pdispindex]
                                                        .NBsubprocesses;
                                          spindex++)
                                     {
-                                        if (pinfop->pinfodisp[pindex]
+                                        if (pinfop->pinfodisp[pdispindex]
                                                 .sampletimearray[spindex] !=
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .sampletimearray_prev[spindex])
                                         {
                                             // get CPU and MEM load
 
                                             // THIS DOES NOT WORK ON TICKLESS KERNEL
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .subprocCPUloadarray[spindex] =
                                                 100.0 *
-                                                ((1.0 *
-                                                      pinfop->pinfodisp[pindex]
-                                                          .cpuloadcntarray
-                                                              [spindex] -
-                                                  pinfop->pinfodisp[pindex]
+                                                ((1.0 * pinfop
+                                                            ->pinfodisp
+                                                                [pdispindex]
+                                                            .cpuloadcntarray
+                                                                [spindex] -
+                                                  pinfop->pinfodisp[pdispindex]
                                                       .cpuloadcntarray_prev
                                                           [spindex]) /
                                                  sysconf(_SC_CLK_TCK)) /
-                                                (pinfop->pinfodisp[pindex]
+                                                (pinfop->pinfodisp[pdispindex]
                                                      .sampletimearray[spindex] -
-                                                 pinfop->pinfodisp[pindex]
+                                                 pinfop->pinfodisp[pdispindex]
                                                      .sampletimearray_prev
                                                          [spindex]);
 
-                                            pinfop->pinfodisp[pindex]
+                                            pinfop->pinfodisp[pdispindex]
                                                 .subprocCPUloadarray_timeaveraged
                                                     [spindex] =
                                                 0.9 *
-                                                    pinfop->pinfodisp[pindex]
+                                                    pinfop
+                                                        ->pinfodisp[pdispindex]
                                                         .subprocCPUloadarray_timeaveraged
                                                             [spindex] +
-                                                0.1 * pinfop->pinfodisp[pindex]
-                                                          .subprocCPUloadarray
-                                                              [spindex];
+                                                0.1 *
+                                                    pinfop
+                                                        ->pinfodisp[pdispindex]
+                                                        .subprocCPUloadarray
+                                                            [spindex];
                                         }
                                     }
 
-                                    sprintf(
-                                        cpuliststring,
-                                        ",%s,",
-                                        pinfop->pinfodisp[pindex].cpusallowed);
+                                    sprintf(cpuliststring,
+                                            ",%s,",
+                                            pinfop->pinfodisp[pdispindex]
+                                                .cpusallowed);
 
                                     pinfop->scandebugline = __LINE__;
 
@@ -613,14 +618,14 @@ void *processinfo_scan(void *thptr)
                                                     cpuOK = 1;
                                                 }
                                             }
-                                        pinfop->pinfodisp[pindex]
+                                        pinfop->pinfodisp[pdispindex]
                                             .cpuOKarray[cpu] = cpuOK;
                                     }
                                 }
                             }
-                            pindex++;
+                            //pdispindex++;
                         }
-                        pindex++;
+                        pdispindex++;
                     }
                     else
                     {
