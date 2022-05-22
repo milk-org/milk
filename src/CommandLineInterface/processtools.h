@@ -101,6 +101,8 @@ typedef struct
 
 } PROCESSINFODISP;
 
+
+
 typedef struct
 {
     int  loop; // 1 : loop     0 : exit
@@ -115,8 +117,8 @@ typedef struct
     int SCANBLOCK_requested; // scan thread toggles to 1 to requests blocking
     int SCANBLOCK_OK; // display thread toggles to 1 to let scan know it can proceed
 
-    PROCESSINFOLIST
-    *pinfolist; // copy of pointer  static PROCESSINFOLIST *pinfolist
+    // copy of pointer  static PROCESSINFOLIST *pinfolist
+    PROCESSINFOLIST *pinfolist;
 
     long             NBpinfodisp;
     PROCESSINFODISP *pinfodisp;

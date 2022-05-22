@@ -293,9 +293,9 @@ errno_t processinfo_CTRLscreen()
 {
     long pindex, index;
 
-    PROCINFOPROC
-    procinfoproc; // Main structure - holds everything that needs to be shared with other functions and scan thread
-    pthread_t threadscan;
+    // Main structure - holds everything that needs to be shared with other functions and scan thread
+    PROCINFOPROC procinfoproc;
+    pthread_t    threadscan;
 
     int cpusocket;
 
