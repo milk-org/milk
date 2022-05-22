@@ -105,6 +105,9 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     DEBUG_TRACEPOINT("shared memory space = %ld bytes\n", sharedsize);
 
     clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
+    pinfolist->createtime[pindex] =
+        1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
+
     strcpy(pinfo->name, pname);
 
     pinfolist->active[pindex] = 1;
