@@ -164,10 +164,6 @@ void *processinfo_scan(void *thptr)
                                      PROCESSINFOLISTSIZE);
 
 
-                    PROCESSINFO_SCAN_DEBUGLOG("pinfolistindex %ld / %d\n",
-                                              pinfolistindex,
-                                              PROCESSINFOLISTSIZE);
-
                     // shared memory file name
                     char        SM_fname[STRINGMAXLEN_FULLFILENAME];
                     struct stat file_stat;
@@ -216,9 +212,6 @@ void *processinfo_scan(void *thptr)
                         pinfolist->pnamearray[pinfolistindex],
                         (int) pinfolist->PIDarray[pinfolistindex]);
 
-                    // DEBUGLOG
-                    PROCESSINFO_SCAN_DEBUGLOG("     SM_fname %s\n", SM_fname);
-
                     // Does file exist ?
                     //
                     if (stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
@@ -226,9 +219,6 @@ void *processinfo_scan(void *thptr)
                         // if not, don't (re)load and remove from process info list
                         pinfolist->active[pinfolistindex]   = 0;
                         pinfop->updatearray[pinfolistindex] = 0;
-
-                        PROCESSINFO_SCAN_DEBUGLOG(
-                            "     process does not exist\n");
                     }
 
 
@@ -252,11 +242,6 @@ void *processinfo_scan(void *thptr)
                         }
                     }
 
-
-                    PROCESSINFO_SCAN_DEBUGLOG(
-                        "     pinfop->updatearray %ld : %d\n",
-                        pinfolistindex,
-                        pinfop->updatearray[pinfolistindex]);
 
                     DEBUG_TRACEPOINT(" ");
 
