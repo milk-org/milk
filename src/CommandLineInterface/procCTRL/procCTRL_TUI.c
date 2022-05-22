@@ -1886,16 +1886,16 @@ errno_t processinfo_CTRLscreen()
 
                 for (dispindex = 0; dispindex < dispindexMax; dispindex++)
                 {
-                    if (TimeSorted == 0)
+                    /*if (TimeSorted == 0)
                     {
                         pindex = dispindex;
                     }
                     else
-                    {
-                        pindex = procinfoproc.sorted_pindex_time[dispindex];
-                    }
+                    {*/
+                    pindex = procinfoproc.sorted_pindex_time[dispindex];
+                    //}
 
-                    if (pindex < procinfoproc.NBpinfodisp)
+                    if (dispindex < procinfoproc.NBpinfodisp)
                     {
                         DEBUG_TRACEPOINT("%d %d   %ld %ld",
                                          dispindex,
