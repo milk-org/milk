@@ -482,54 +482,60 @@ errno_t processinfo_CTRLscreen()
         abort();
     }
 
-    for (pindex = 0; pindex < procinfoproc.NBpinfodisp; pindex++)
+    for (int pinfodispindex = 0; pinfodispindex < procinfoproc.NBpinfodisp;
+         pinfodispindex++)
     {
         // by default, each process is assumed to be single-threaded
-        procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;
+        procinfoproc.pinfodisp[pinfodispindex].NBsubprocesses = 1;
 
-        procinfoproc.pinfodisp[pindex].active = 0;
-        procinfoproc.pinfodisp[pindex].PID    = 0;
-        strcpy(procinfoproc.pinfodisp[pindex].name, "null");
-        procinfoproc.pinfodisp[pindex].updatecnt = 0;
+        procinfoproc.pinfodisp[pinfodispindex].active = 0;
+        procinfoproc.pinfodisp[pinfodispindex].PID    = 0;
+        strcpy(procinfoproc.pinfodisp[pinfodispindex].name, "null");
+        procinfoproc.pinfodisp[pinfodispindex].updatecnt = 0;
 
-        procinfoproc.pinfodisp[pindex].loopcnt  = 0;
-        procinfoproc.pinfodisp[pindex].loopstat = 0;
+        procinfoproc.pinfodisp[pinfodispindex].loopcnt  = 0;
+        procinfoproc.pinfodisp[pinfodispindex].loopstat = 0;
 
-        strcpy(procinfoproc.pinfodisp[pindex].cpuset, "null");
-        strcpy(procinfoproc.pinfodisp[pindex].cpusallowed, "null");
+        strcpy(procinfoproc.pinfodisp[pinfodispindex].cpuset, "null");
+        strcpy(procinfoproc.pinfodisp[pinfodispindex].cpusallowed, "null");
         for (int cpu = 0; cpu < MAXNBCPU; cpu++)
         {
-            procinfoproc.pinfodisp[pindex].cpuOKarray[cpu] = 0;
+            procinfoproc.pinfodisp[pinfodispindex].cpuOKarray[cpu] = 0;
         }
-        procinfoproc.pinfodisp[pindex].threads = 0;
+        procinfoproc.pinfodisp[pinfodispindex].threads = 0;
 
-        procinfoproc.pinfodisp[pindex].rt_priority = 0;
-        procinfoproc.pinfodisp[pindex].memload     = 0.0;
+        procinfoproc.pinfodisp[pinfodispindex].rt_priority = 0;
+        procinfoproc.pinfodisp[pinfodispindex].memload     = 0.0;
 
-        strcpy(procinfoproc.pinfodisp[pindex].statusmsg, "");
-        strcpy(procinfoproc.pinfodisp[pindex].tmuxname, "");
+        strcpy(procinfoproc.pinfodisp[pinfodispindex].statusmsg, "");
+        strcpy(procinfoproc.pinfodisp[pinfodispindex].tmuxname, "");
 
-        procinfoproc.pinfodisp[pindex].NBsubprocesses = 1;
+        procinfoproc.pinfodisp[pinfodispindex].NBsubprocesses = 1;
         for (int spi = 0; spi < MAXNBSUBPROCESS; spi++)
         {
-            procinfoproc.pinfodisp[pindex].sampletimearray[spi]      = 0.0;
-            procinfoproc.pinfodisp[pindex].sampletimearray_prev[spi] = 0.0;
+            procinfoproc.pinfodisp[pinfodispindex].sampletimearray[spi] = 0.0;
+            procinfoproc.pinfodisp[pinfodispindex].sampletimearray_prev[spi] =
+                0.0;
 
-            procinfoproc.pinfodisp[pindex].ctxtsw_voluntary[spi]         = 0;
-            procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary[spi]      = 0;
-            procinfoproc.pinfodisp[pindex].ctxtsw_voluntary_prev[spi]    = 0;
-            procinfoproc.pinfodisp[pindex].ctxtsw_nonvoluntary_prev[spi] = 0;
+            procinfoproc.pinfodisp[pinfodispindex].ctxtsw_voluntary[spi]    = 0;
+            procinfoproc.pinfodisp[pinfodispindex].ctxtsw_nonvoluntary[spi] = 0;
+            procinfoproc.pinfodisp[pinfodispindex].ctxtsw_voluntary_prev[spi] =
+                0;
+            procinfoproc.pinfodisp[pinfodispindex]
+                .ctxtsw_nonvoluntary_prev[spi] = 0;
 
-            procinfoproc.pinfodisp[pindex].cpuloadcntarray[spi]      = 0;
-            procinfoproc.pinfodisp[pindex].cpuloadcntarray_prev[spi] = 0;
-            procinfoproc.pinfodisp[pindex].subprocCPUloadarray[spi]  = 0.0;
-            procinfoproc.pinfodisp[pindex]
+            procinfoproc.pinfodisp[pinfodispindex].cpuloadcntarray[spi] = 0;
+            procinfoproc.pinfodisp[pinfodispindex].cpuloadcntarray_prev[spi] =
+                0;
+            procinfoproc.pinfodisp[pinfodispindex].subprocCPUloadarray[spi] =
+                0.0;
+            procinfoproc.pinfodisp[pinfodispindex]
                 .subprocCPUloadarray_timeaveraged[spi] = 0.0;
 
-            procinfoproc.pinfodisp[pindex].VmRSSarray[spi]     = 0;
-            procinfoproc.pinfodisp[pindex].processorarray[spi] = 0;
+            procinfoproc.pinfodisp[pinfodispindex].VmRSSarray[spi]     = 0;
+            procinfoproc.pinfodisp[pinfodispindex].processorarray[spi] = 0;
 
-            procinfoproc.pinfodisp[pindex].subprocPIDarray[spi] = 0;
+            procinfoproc.pinfodisp[pinfodispindex].subprocPIDarray[spi] = 0;
         }
     }
 
@@ -1881,17 +1887,16 @@ errno_t processinfo_CTRLscreen()
 
                 for (dispindex = 0; dispindex < dispindexMax; dispindex++)
                 {
-                    /*if (TimeSorted == 0)
-                    {
-                        pindex = dispindex;
-                    }
-                    else
-                    {*/
 
                     // pindex refers to pinfolist
-                    //
-                    pindex = procinfoproc.sorted_pindex_time[dispindex];
-                    //}
+                    if (TimeSorted == 0)
+                    {
+                        pindex = procinfoproc.pinfodisp[dispindex].pindex;
+                    }
+                    else
+                    {
+                        pindex = procinfoproc.sorted_pindex_time[dispindex];
+                    }
 
                     if (dispindex < procinfoproc.NBpinfodisp)
                     {

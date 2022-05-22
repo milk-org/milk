@@ -54,6 +54,8 @@ typedef struct
 
 typedef struct
 {
+    int pindex; // index in PROCESSINFOLIST array
+
     int   active;
     pid_t PID;
     char  name[40];
