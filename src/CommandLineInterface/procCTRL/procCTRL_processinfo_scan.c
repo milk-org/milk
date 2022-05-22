@@ -406,7 +406,7 @@ void *processinfo_scan(void *thptr)
             else
             {
                 PROCESSINFO_SCAN_DEBUGLOG(
-                    "     shm %ld linked to pinfodisp %ld/%ld\n",
+                    "     shm %d linked to pinfodisp %d/%ld\n",
                     pinfolistindex,
                     pinfodispindex,
                     pinfop->NBpinfodisp);
