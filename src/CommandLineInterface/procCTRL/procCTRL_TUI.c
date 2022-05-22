@@ -1892,6 +1892,9 @@ errno_t processinfo_CTRLscreen()
                     }
                     else
                     {*/
+
+                    // pindex refers to pinfolist
+                    //
                     pindex = procinfoproc.sorted_pindex_time[dispindex];
                     //}
 
@@ -1940,8 +1943,8 @@ errno_t processinfo_CTRLscreen()
                             "%d",
                             pinfolist->active[pindex]);
 
-                        if (pinfolist->active[pindex] ==
-                            2) // not active: error, crashed or terminated
+                        // not active: error, crashed or terminated
+                        if (pinfolist->active[pindex] == 2)
                         {
                             switch (procinfoproc.pinfoarray[pindex]->loopstat)
                             {
@@ -2006,7 +2009,10 @@ errno_t processinfo_CTRLscreen()
                                     " %-*.*s",
                                     pstrlen_pname,
                                     pstrlen_pname,
-                                    procinfoproc.pinfodisp[pindex].name);
+                                    pinfolist->pnamearray[pindex]);
+
+                            // procinfoproc.pinfodisp[pindex].name);
+
                             TUI_printfw("%s", string);
                             attroff(A_BOLD);
 
