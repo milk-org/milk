@@ -304,6 +304,9 @@ void *processinfo_scan(void *thptr)
                             PROCESSINFO_SCAN_DEBUGLOG("     shm %ld linked\n",
                                                       pinfolistindex);
                             pinfop->pinfommapped[pinfolistindex] = 1;
+                            PROCESSINFO_SCAN_DEBUGLOG(
+                                "     shm name : %s\n",
+                                pinfop->pinfoarray[pinfolistindex]->name);
                             strncpy(pinfop->pinfodisp[pinfolistindex].name,
                                     pinfop->pinfoarray[pinfolistindex]->name,
                                     40 - 1);
