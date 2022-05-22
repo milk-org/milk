@@ -382,7 +382,8 @@ void *processinfo_scan(void *thptr)
                 pinfop->NBpindexActive++;
             }
 
-
+        PROCESSINFO_SCAN_DEBUGLOG(" ==== pinfop->NBpindexActive = %d\n",
+                                  pinfop->NBpindexActive);
 
         if (pinfop->NBpindexActive > 0)
         {
