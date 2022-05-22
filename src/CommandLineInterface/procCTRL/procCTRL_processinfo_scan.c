@@ -160,7 +160,7 @@ void *processinfo_scan(void *thptr)
                     if (processinfo_scan_debuglog == 1)
                     {
                         fprintf(fpdebuglog,
-                                "%\n 5d pinfolistindex %ld / %d\n",
+                                "\n %5d pinfolistindex %ld / %d\n",
                                 __LINE__,
                                 pinfolistindex,
                                 PROCESSINFOLISTSIZE);
