@@ -160,7 +160,7 @@ void *processinfo_scan(void *thptr)
                     if (processinfo_scan_debuglog == 1)
                     {
                         fprintf(fpdebuglog,
-                                "%5d pinfolistindex %ld / %d\n",
+                                "%\n 5d pinfolistindex %ld / %d\n",
                                 __LINE__,
                                 pinfolistindex,
                                 PROCESSINFOLISTSIZE);
@@ -224,6 +224,7 @@ void *processinfo_scan(void *thptr)
                     }
 
                     // Does file exist ?
+                    //
                     if (stat(SM_fname, &file_stat) == -1 && errno == ENOENT)
                     {
                         // if not, don't (re)load and remove from process info list
@@ -260,7 +261,14 @@ void *processinfo_scan(void *thptr)
                     }
 
 
-
+                    if (processinfo_scan_debuglog == 1)
+                    {
+                        fprintf(fpdebuglog,
+                                "%5d    pinfop->updatearray %ld : %d\n",
+                                __LINE__,
+                                pinfolistindex,
+                                pinfop->updatearray[pinfolistindex]);
+                    }
 
                     DEBUG_TRACEPOINT(" ");
 
