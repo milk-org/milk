@@ -1912,6 +1912,8 @@ errno_t processinfo_CTRLscreen()
                             pindexSelectedOK = 1;
                         }
 
+                        TUI_printfw("%4d ", pindex);
+
                         if (procinfoproc.selectedarray[pindex] == 1)
                         {
                             TUI_printfw("*");
