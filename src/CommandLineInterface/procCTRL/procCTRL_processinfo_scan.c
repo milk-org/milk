@@ -347,6 +347,11 @@ void *processinfo_scan(void *thptr)
                             pinfop->pinfodisp[pinfodispindex].PID =
                                 pinfolist->PIDarray[pinfolistindex];
 
+                            PROCESSINFO_SCAN_DEBUGLOG(
+                                "     PID %ld  active %d\n",
+                                (long) pinfop->pinfodisp[pinfodispindex].PID,
+                                pinfop->pinfodisp[pinfodispindex].active);
+
                             pinfop->pinfodisp[pinfodispindex].updatecnt++;
 
                             pinfodispindex++;
