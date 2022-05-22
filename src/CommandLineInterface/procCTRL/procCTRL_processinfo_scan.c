@@ -153,6 +153,7 @@ void *processinfo_scan(void *thptr)
         // pinfolistindex is index in PROCESSINFOLIST
         {
             long pinfolistindex = 0;
+            long pinfodispindex = 0;
             while (pinfolistindex < PROCESSINFOLISTSIZE)
             {
 
@@ -301,30 +302,32 @@ void *processinfo_scan(void *thptr)
                         }
                         else
                         {
-                            PROCESSINFO_SCAN_DEBUGLOG("     shm %ld linked\n",
-                                                      pinfolistindex);
+                            PROCESSINFO_SCAN_DEBUGLOG(
+                                "     shm %ld linked to pinfodisp %ld\n",
+                                pinfolistindex,
+                                pinfodispindex);
                             pinfop->pinfommapped[pinfolistindex] = 1;
                             PROCESSINFO_SCAN_DEBUGLOG(
                                 "     shm name : %s\n",
                                 pinfop->pinfoarray[pinfolistindex]->name);
-                            strncpy(pinfop->pinfodisp[pinfolistindex].name,
+                            strncpy(pinfop->pinfodisp[pinfodispindex].name,
                                     pinfop->pinfoarray[pinfolistindex]->name,
                                     40 - 1);
                             PROCESSINFO_SCAN_DEBUGLOG(
                                 "     shm name : %s\n",
-                                pinfop->pinfodisp[pinfolistindex].name);
+                                pinfop->pinfodisp[pinfodispindex].name);
 
                             struct tm *createtm;
                             createtm =
                                 gmtime(&pinfop->pinfoarray[pinfolistindex]
                                             ->createtime.tv_sec);
-                            pinfop->pinfodisp[pinfolistindex].createtime_hr =
+                            pinfop->pinfodisp[pinfodispindex].createtime_hr =
                                 createtm->tm_hour;
-                            pinfop->pinfodisp[pinfolistindex].createtime_min =
+                            pinfop->pinfodisp[pinfodispindex].createtime_min =
                                 createtm->tm_min;
-                            pinfop->pinfodisp[pinfolistindex].createtime_sec =
+                            pinfop->pinfodisp[pinfodispindex].createtime_sec =
                                 createtm->tm_sec;
-                            pinfop->pinfodisp[pinfolistindex].createtime_ns =
+                            pinfop->pinfodisp[pinfodispindex].createtime_ns =
                                 pinfop->pinfoarray[pinfolistindex]
                                     ->createtime.tv_nsec;
 
@@ -332,18 +335,21 @@ void *processinfo_scan(void *thptr)
                                 "     shm loopcnt : %ld\n",
                                 pinfop->pinfoarray[pinfolistindex]->loopcnt);
 
-                            pinfop->pinfodisp[pinfolistindex].loopcnt =
+                            pinfop->pinfodisp[pinfodispindex].loopcnt =
                                 pinfop->pinfoarray[pinfolistindex]->loopcnt;
+
+
+                            DEBUG_TRACEPOINT(" ");
+
+                            pinfop->pinfodisp[pinfodispindex].active =
+                                pinfolist->active[pinfolistindex];
+                            pinfop->pinfodisp[pinfodispindex].PID =
+                                pinfolist->PIDarray[pinfolistindex];
+
+                            pinfop->pinfodisp[pinfodispindex].updatecnt++;
+
+                            pinfodispindex++;
                         }
-
-                        DEBUG_TRACEPOINT(" ");
-
-                        pinfop->pinfodisp[pinfolistindex].active =
-                            pinfolist->active[pinfolistindex];
-                        pinfop->pinfodisp[pinfolistindex].PID =
-                            pinfolist->PIDarray[pinfolistindex];
-
-                        pinfop->pinfodisp[pinfolistindex].updatecnt++;
 
                         // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
 
