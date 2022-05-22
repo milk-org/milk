@@ -248,96 +248,9 @@ void *processinfo_scan(void *thptr)
 
                     if (pinfop->updatearray[pinfolistindex] == 1)
                     {
+                        pinfop->pindexActive[pinfop->NBpindexActive] =
+                            pinfolistindex;
                         pinfop->NBpindexActive++;
-
-
-                        // (RE)LOAD
-
-
-                        DEBUG_TRACEPOINT(" ");
-
-                        // if already mmapped, first unmap
-                        if (pinfop->pinfommapped[pinfolistindex] == 1)
-                        {
-                            PROCESSINFO_SCAN_DEBUGLOG(
-                                "     already mmapped, first unmap\n");
-                            processinfo_shm_close(
-                                pinfop->pinfoarray[pinfolistindex],
-                                pinfop->fdarray[pinfolistindex]);
-                            pinfop->pinfommapped[pinfolistindex] = 0;
-                        }
-
-                        DEBUG_TRACEPOINT(" ");
-
-                        // COLLECT INFORMATION FROM PROCESSINFO FILE
-                        pinfop->pinfoarray[pinfolistindex] =
-                            processinfo_shm_link(
-                                SM_fname,
-                                &pinfop->fdarray[pinfolistindex]);
-
-                        if (pinfop->pinfoarray[pinfolistindex] == MAP_FAILED)
-                        {
-                            PROCESSINFO_SCAN_DEBUGLOG("     MAP_FAILED\n");
-                            close(pinfop->fdarray[pinfolistindex]);
-                            endwin();
-                            fprintf(stderr,
-                                    "[%d] Error mapping file %s\n",
-                                    __LINE__,
-                                    SM_fname);
-                            pinfolist->active[pinfolistindex]    = 3;
-                            pinfop->pinfommapped[pinfolistindex] = 0;
-                        }
-                        else
-                        {
-                            PROCESSINFO_SCAN_DEBUGLOG(
-                                "     shm %ld linked to pinfodisp %ld/%ld\n",
-                                pinfolistindex,
-                                pinfodispindex,
-                                pinfop->NBpinfodisp);
-                            pinfop->pinfommapped[pinfolistindex] = 1;
-
-                            pinfop->pinfodisp[pinfodispindex].pindex =
-                                pinfolistindex;
-
-
-                            PROCESSINFO_SCAN_DEBUGLOG(
-                                "     shm name : %s\n",
-                                pinfop->pinfoarray[pinfolistindex]->name);
-                            strncpy(pinfop->pinfodisp[pinfodispindex].name,
-                                    pinfop->pinfoarray[pinfolistindex]->name,
-                                    40 - 1);
-                            PROCESSINFO_SCAN_DEBUGLOG(
-                                "     shm name : %s\n",
-                                pinfop->pinfodisp[pinfodispindex].name);
-
-
-                            PROCESSINFO_SCAN_DEBUGLOG(
-                                "     shm loopcnt : %ld\n",
-                                pinfop->pinfoarray[pinfolistindex]->loopcnt);
-
-                            pinfop->pinfodisp[pinfodispindex].loopcnt =
-                                pinfop->pinfoarray[pinfolistindex]->loopcnt;
-
-
-                            DEBUG_TRACEPOINT(" ");
-
-                            pinfop->pinfodisp[pinfodispindex].active =
-                                pinfolist->active[pinfolistindex];
-                            pinfop->pinfodisp[pinfodispindex].PID =
-                                pinfolist->PIDarray[pinfolistindex];
-
-                            PROCESSINFO_SCAN_DEBUGLOG(
-                                "     PID %ld  active %d\n",
-                                (long) pinfop->pinfodisp[pinfodispindex].PID,
-                                pinfop->pinfodisp[pinfodispindex].active);
-
-                            pinfop->pinfodisp[pinfodispindex].updatecnt++;
-
-                            pinfodispindex++;
-                        }
-
-                        // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
-
 
                         PROCESSINFO_SCAN_DEBUGLOG("     \n");
 
@@ -366,15 +279,6 @@ void *processinfo_scan(void *thptr)
           */
         DEBUG_TRACEPOINT(" ");
 
-        // Idenfity active processes
-        //
-        //pinfop->NBpindexActive = 0;
-        /*for (long pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
-            if (pinfolist->active[pindex] != 0)
-            {
-                pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
-                pinfop->NBpindexActive++;
-            }*/
 
         PROCESSINFO_SCAN_DEBUGLOG(" ==== pinfop->NBpindexActive = %d\n\n",
                                   pinfop->NBpindexActive);
@@ -400,29 +304,16 @@ void *processinfo_scan(void *thptr)
 
 
             int listcnt = 0;
-            for (int pinfodispindex = 0;
-                 pinfodispindex < pinfop->NBpindexActive;
-                 pinfodispindex++)
+            for (int pinfoactindex = 0; pinfoactindex < pinfop->NBpindexActive;
+                 pinfoactindex++)
             {
-                long pindex = pinfop->pinfodisp[pinfodispindex].pindex;
-                //pinfop->pindexActive[index];
-                //if (pinfop->pinfommapped[pindex] == 1)
-                //{
-                indexarray[pinfodispindex] = pindex;
+                long pindex               = pinfop->pindexActive[pinfoactindex];
+                indexarray[pinfoactindex] = pindex;
+
                 // minus sign for most recent first
-                //TUI_printfw("index  %ld  ->  pindex  %ld\n", index, pindex);
-                timearray[pinfodispindex] = -pinfolist->createtime[pindex];
-                //                    -1.0 * pinfop->pinfoarray[pindex]->createtime.tv_sec -
-                //                    1.0e-9 * pinfop->pinfoarray[pindex]->createtime.tv_nsec;
-                //  listcnt++;
-                //}
+                timearray[pinfoactindex] = -pinfolist->createtime[pindex];
             }
             DEBUG_TRACEPOINT(" ");
-
-
-
-            //            pinfop->NBpindexActive = listcnt;
-
 
 
             if (pinfop->NBpindexActive > 0)
@@ -457,6 +348,110 @@ void *processinfo_scan(void *thptr)
         pinfop->scandebugline = __LINE__;
 
         DEBUG_TRACEPOINT(" ");
+
+
+
+
+        // Connect to selected shms
+        //
+
+        for (int pinfodispindex = 0; pinfodispindex < pinfop->NBpindexActive;
+             pinfodispindex++)
+        {
+            int pinfolistindex = pinfop->pindexActive[pinfodispindex];
+
+
+            // (RE)LOAD
+
+            DEBUG_TRACEPOINT(" ");
+
+            // if already mmapped, first unmap
+            if (pinfop->pinfommapped[pinfolistindex] == 1)
+            {
+                PROCESSINFO_SCAN_DEBUGLOG(
+                    "     already mmapped, first unmap\n");
+                processinfo_shm_close(pinfop->pinfoarray[pinfolistindex],
+                                      pinfop->fdarray[pinfolistindex]);
+                pinfop->pinfommapped[pinfolistindex] = 0;
+            }
+
+            DEBUG_TRACEPOINT(" ");
+
+
+
+            // COLLECT INFORMATION FROM PROCESSINFO FILE
+            char SM_fname[STRINGMAXLEN_FULLFILENAME];
+            WRITE_FULLFILENAME(SM_fname,
+                               "%s/proc.%s.%06d.shm",
+                               procdname,
+                               pinfolist->pnamearray[pinfolistindex],
+                               (int) pinfolist->PIDarray[pinfolistindex]);
+
+            pinfop->pinfoarray[pinfolistindex] =
+                processinfo_shm_link(SM_fname,
+                                     &pinfop->fdarray[pinfolistindex]);
+
+            if (pinfop->pinfoarray[pinfolistindex] == MAP_FAILED)
+            {
+                PROCESSINFO_SCAN_DEBUGLOG("     MAP_FAILED\n");
+                close(pinfop->fdarray[pinfolistindex]);
+                endwin();
+                fprintf(stderr,
+                        "[%d] Error mapping file %s\n",
+                        __LINE__,
+                        SM_fname);
+                pinfolist->active[pinfolistindex]    = 3;
+                pinfop->pinfommapped[pinfolistindex] = 0;
+            }
+            else
+            {
+                PROCESSINFO_SCAN_DEBUGLOG(
+                    "     shm %ld linked to pinfodisp %ld/%ld\n",
+                    pinfolistindex,
+                    pinfodispindex,
+                    pinfop->NBpinfodisp);
+                pinfop->pinfommapped[pinfolistindex] = 1;
+
+                pinfop->pinfodisp[pinfodispindex].pindex = pinfolistindex;
+
+
+                PROCESSINFO_SCAN_DEBUGLOG(
+                    "     shm name : %s\n",
+                    pinfop->pinfoarray[pinfolistindex]->name);
+                strncpy(pinfop->pinfodisp[pinfodispindex].name,
+                        pinfop->pinfoarray[pinfolistindex]->name,
+                        40 - 1);
+                PROCESSINFO_SCAN_DEBUGLOG(
+                    "     shm name : %s\n",
+                    pinfop->pinfodisp[pinfodispindex].name);
+
+
+                PROCESSINFO_SCAN_DEBUGLOG(
+                    "     shm loopcnt : %ld\n",
+                    pinfop->pinfoarray[pinfolistindex]->loopcnt);
+
+                pinfop->pinfodisp[pinfodispindex].loopcnt =
+                    pinfop->pinfoarray[pinfolistindex]->loopcnt;
+
+
+                DEBUG_TRACEPOINT(" ");
+
+                pinfop->pinfodisp[pinfodispindex].active =
+                    pinfolist->active[pinfolistindex];
+                pinfop->pinfodisp[pinfodispindex].PID =
+                    pinfolist->PIDarray[pinfolistindex];
+
+                PROCESSINFO_SCAN_DEBUGLOG(
+                    "     PID %ld  active %d\n",
+                    (long) pinfop->pinfodisp[pinfodispindex].PID,
+                    pinfop->pinfodisp[pinfodispindex].active);
+
+                pinfop->pinfodisp[pinfodispindex].updatecnt++;
+
+                pinfodispindex++;
+            }
+        }
+
 
 
 
