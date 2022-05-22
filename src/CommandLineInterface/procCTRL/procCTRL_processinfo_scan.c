@@ -23,6 +23,19 @@ extern PROCESSINFOLIST *pinfolist;
 
 
 
+static FILE *fpdebuglog                = NULL;
+static int   processinfo_scan_debuglog = 0;
+
+#define PROCESSINFO_SCAN_DEBUGLOG(...)                                         \
+    do                                                                         \
+    {                                                                          \
+        if (processinfo_scan_debuglog == 1)                                    \
+        {                                                                      \
+            fprintf(fpdebuglog, "%5d  : ", __LINE__);                          \
+            fprintf(fpdebuglog, __VA_ARGS__);                                  \
+        }                                                                      \
+    } while (0)
+
 
 /**
  * ## Purpose
@@ -64,8 +77,6 @@ void *processinfo_scan(void *thptr)
 
     // DEBUG LOG
     //
-    FILE *fpdebuglog                = NULL;
-    int   processinfo_scan_debuglog = 0;
     if (getenv("MILK_DEBUGLOG_PROCESSINFO_SCAN"))
     {
         processinfo_scan_debuglog = 1;
@@ -76,7 +87,7 @@ void *processinfo_scan(void *thptr)
         fpdebuglog = fopen("processinfo_scan.debuglog", "w");
     }
 
-
+    PROCESSINFO_SCAN_DEBUGLOG("START\n");
 
 
     long loopcnt = 0;
@@ -136,13 +147,7 @@ void *processinfo_scan(void *thptr)
 
         DEBUG_TRACEPOINT(" ");
 
-        if (processinfo_scan_debuglog == 1)
-        {
-            fprintf(fpdebuglog,
-                    "%5d loop start %ld\n",
-                    __LINE__,
-                    pinfop->NBpinfodisp);
-        }
+
 
 
         // pinfolistindex is index in PROCESSINFOLIST
@@ -157,14 +162,10 @@ void *processinfo_scan(void *thptr)
                                      pinfolistindex,
                                      PROCESSINFOLISTSIZE);
 
-                    if (processinfo_scan_debuglog == 1)
-                    {
-                        fprintf(fpdebuglog,
-                                "\n %5d pinfolistindex %ld / %d\n",
-                                __LINE__,
-                                pinfolistindex,
-                                PROCESSINFOLISTSIZE);
-                    }
+
+                    PROCESSINFO_SCAN_DEBUGLOG("pinfolistindex %ld / %d\n",
+                                              pinfolistindex,
+                                              PROCESSINFOLISTSIZE);
 
                     // shared memory file name
                     char        SM_fname[STRINGMAXLEN_FULLFILENAME];
@@ -215,13 +216,7 @@ void *processinfo_scan(void *thptr)
                         (int) pinfolist->PIDarray[pinfolistindex]);
 
                     // DEBUGLOG
-                    if (processinfo_scan_debuglog == 1)
-                    {
-                        fprintf(fpdebuglog,
-                                "%5d SM_fname %s\n",
-                                __LINE__,
-                                SM_fname);
-                    }
+                    PROCESSINFO_SCAN_DEBUGLOG("     SM_fname %s\n", SM_fname);
 
                     // Does file exist ?
                     //
@@ -231,12 +226,8 @@ void *processinfo_scan(void *thptr)
                         pinfolist->active[pinfolistindex]   = 0;
                         pinfop->updatearray[pinfolistindex] = 0;
 
-                        if (processinfo_scan_debuglog == 1)
-                        {
-                            fprintf(fpdebuglog,
-                                    "%5d    process does not exist\n",
-                                    __LINE__);
-                        }
+                        PROCESSINFO_SCAN_DEBUGLOG(
+                            "     process does not exist\n");
                     }
 
 
@@ -261,14 +252,10 @@ void *processinfo_scan(void *thptr)
                     }
 
 
-                    if (processinfo_scan_debuglog == 1)
-                    {
-                        fprintf(fpdebuglog,
-                                "%5d    pinfop->updatearray %ld : %d\n",
-                                __LINE__,
-                                pinfolistindex,
-                                pinfop->updatearray[pinfolistindex]);
-                    }
+                    PROCESSINFO_SCAN_DEBUGLOG(
+                        "     pinfop->updatearray %ld : %d\n",
+                        pinfolistindex,
+                        pinfop->updatearray[pinfolistindex]);
 
                     DEBUG_TRACEPOINT(" ");
 
@@ -284,6 +271,8 @@ void *processinfo_scan(void *thptr)
                         // if already mmapped, first unmap
                         if (pinfop->pinfommapped[pinfolistindex] == 1)
                         {
+                            PROCESSINFO_SCAN_DEBUGLOG(
+                                "     already mmapped, first unmap\n");
                             processinfo_shm_close(
                                 pinfop->pinfoarray[pinfolistindex],
                                 pinfop->fdarray[pinfolistindex]);
@@ -300,6 +289,7 @@ void *processinfo_scan(void *thptr)
 
                         if (pinfop->pinfoarray[pinfolistindex] == MAP_FAILED)
                         {
+                            PROCESSINFO_SCAN_DEBUGLOG("     MAP_FAILED\n");
                             close(pinfop->fdarray[pinfolistindex]);
                             endwin();
                             fprintf(stderr,
@@ -311,6 +301,7 @@ void *processinfo_scan(void *thptr)
                         }
                         else
                         {
+                            PROCESSINFO_SCAN_DEBUGLOG("     shm linked\n");
                             pinfop->pinfommapped[pinfolistindex] = 1;
                             strncpy(pinfop->pinfodisp[pinfolistindex].name,
                                     pinfop->pinfoarray[pinfolistindex]->name,
@@ -344,6 +335,9 @@ void *processinfo_scan(void *thptr)
                         pinfop->pinfodisp[pinfolistindex].updatecnt++;
 
                         // pinfop->updatearray[pindex] == 0; // by default, no need to re-connect
+
+
+                        PROCESSINFO_SCAN_DEBUGLOG("     \n");
 
                         DEBUG_TRACEPOINT(" ");
                     }
