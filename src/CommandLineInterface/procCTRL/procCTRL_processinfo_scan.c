@@ -149,7 +149,9 @@ void *processinfo_scan(void *thptr)
 
 
 
-
+        // SCAN PINFO LIST
+        //
+        pinfop->NBpindexActive = 0;
         // pinfolistindex is index in PROCESSINFOLIST
         {
             long pinfolistindex = 0;
@@ -246,6 +248,9 @@ void *processinfo_scan(void *thptr)
 
                     if (pinfop->updatearray[pinfolistindex] == 1)
                     {
+                        pinfop->NBpindexActive++;
+
+
                         // (RE)LOAD
 
 
@@ -363,13 +368,13 @@ void *processinfo_scan(void *thptr)
 
         // Idenfity active processes
         //
-        pinfop->NBpindexActive = 0;
-        for (long pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
+        //pinfop->NBpindexActive = 0;
+        /*for (long pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
             if (pinfolist->active[pindex] != 0)
             {
                 pinfop->pindexActive[pinfop->NBpindexActive] = pindex;
                 pinfop->NBpindexActive++;
-            }
+            }*/
 
         PROCESSINFO_SCAN_DEBUGLOG(" ==== pinfop->NBpindexActive = %d\n\n",
                                   pinfop->NBpindexActive);
@@ -395,25 +400,28 @@ void *processinfo_scan(void *thptr)
 
 
             int listcnt = 0;
-            for (int index = 0; index < pinfop->NBpindexActive; index++)
+            for (int pinfodispindex = 0;
+                 pinfodispindex < pinfop->NBpindexActive;
+                 pinfodispindex++)
             {
-                long pindex = pinfop->pindexActive[index];
-                if (pinfop->pinfommapped[pindex] == 1)
-                {
-                    indexarray[index] = pindex;
-                    // minus sign for most recent first
-                    //TUI_printfw("index  %ld  ->  pindex  %ld\n", index, pindex);
-                    timearray[index] =
-                        -1.0 * pinfop->pinfoarray[pindex]->createtime.tv_sec -
-                        1.0e-9 * pinfop->pinfoarray[pindex]->createtime.tv_nsec;
-                    listcnt++;
-                }
+                long pindex = pinfop->pinfodisp[pinfodispindex].pindex;
+                //pinfop->pindexActive[index];
+                //if (pinfop->pinfommapped[pindex] == 1)
+                //{
+                indexarray[pinfodispindex] = pindex;
+                // minus sign for most recent first
+                //TUI_printfw("index  %ld  ->  pindex  %ld\n", index, pindex);
+                timearray[pinfodispindex] = -pinfolist->createtime[pindex];
+                //                    -1.0 * pinfop->pinfoarray[pindex]->createtime.tv_sec -
+                //                    1.0e-9 * pinfop->pinfoarray[pindex]->createtime.tv_nsec;
+                //  listcnt++;
+                //}
             }
             DEBUG_TRACEPOINT(" ");
 
 
 
-            pinfop->NBpindexActive = listcnt;
+            //            pinfop->NBpindexActive = listcnt;
 
 
 
