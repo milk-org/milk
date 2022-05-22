@@ -447,8 +447,6 @@ void *processinfo_scan(void *thptr)
                     pinfop->pinfodisp[pinfodispindex].active);
 
                 pinfop->pinfodisp[pinfodispindex].updatecnt++;
-
-                pinfodispindex++;
             }
         }
 
