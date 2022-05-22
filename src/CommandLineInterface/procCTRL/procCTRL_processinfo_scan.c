@@ -171,9 +171,7 @@ void *processinfo_scan(void *thptr)
                     pinfop->scandebugline = __LINE__;
                     pinfop->PIDarray[pinfolistindex] =
                         pinfolist->PIDarray[pinfolistindex];
-                    DEBUG_TRACEPOINT("pinfolistindex %ld / %ld",
-                                     pinfolistindex,
-                                     PROCESSINFOLISTSIZE);
+
 
                     // SHOULD WE (RE)LOAD ?
                     if (pinfolist->active[pinfolistindex] == 0) // inactive
@@ -182,16 +180,15 @@ void *processinfo_scan(void *thptr)
                     }
 
                     if ((pinfolist->active[pinfolistindex] == 1) ||
-                        (pinfolist->active[pinfolistindex] ==
-                         2)) // active or crashed
+                        (pinfolist->active[pinfolistindex] == 2))
                     {
+                        // active or crashed
                         pinfop->updatearray[pinfolistindex] = 1;
                     }
-                    //    if(pinfolist->active[pindex] == 2) // mmap crashed, file may still be present
-                    //        updatearray[pindex] = 1;
 
-                    if (pinfolist->active[pinfolistindex] ==
-                        3) // file has gone away
+
+                    // file has gone away
+                    if (pinfolist->active[pinfolistindex] == 3)
                     {
                         pinfop->updatearray[pinfolistindex] = 0;
                     }
@@ -293,6 +290,11 @@ void *processinfo_scan(void *thptr)
                                 pinfodispindex,
                                 pinfop->NBpinfodisp);
                             pinfop->pinfommapped[pinfolistindex] = 1;
+
+                            pinfop->pinfodisp[pinfodispindex].pindex =
+                                pinfolistindex;
+
+
                             PROCESSINFO_SCAN_DEBUGLOG(
                                 "     shm name : %s\n",
                                 pinfop->pinfoarray[pinfolistindex]->name);
@@ -303,20 +305,7 @@ void *processinfo_scan(void *thptr)
                                 "     shm name : %s\n",
                                 pinfop->pinfodisp[pinfodispindex].name);
 
-                            /*                            struct tm *createtm;
-                            createtm =
-                                gmtime(&pinfop->pinfoarray[pinfolistindex]
-                                            ->createtime.tv_sec);
-                            pinfop->pinfodisp[pinfodispindex].createtime_hr =
-                                createtm->tm_hour;
-                            pinfop->pinfodisp[pinfodispindex].createtime_min =
-                                createtm->tm_min;
-                            pinfop->pinfodisp[pinfodispindex].createtime_sec =
-                                createtm->tm_sec;
-                            pinfop->pinfodisp[pinfodispindex].createtime_ns =
-                                pinfop->pinfoarray[pinfolistindex]
-                                    ->createtime.tv_nsec;
-*/
+
                             PROCESSINFO_SCAN_DEBUGLOG(
                                 "     shm loopcnt : %ld\n",
                                 pinfop->pinfoarray[pinfolistindex]->loopcnt);
