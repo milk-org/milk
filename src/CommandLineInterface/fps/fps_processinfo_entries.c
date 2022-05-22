@@ -7,6 +7,9 @@
 
 #include "fps_GetParamIndex.h"
 
+
+
+
 /** @brief Add parameters to FPS for real-time process settings
  *
  * Adds standard set of parameters for integration with process info
@@ -193,6 +196,9 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
 
 errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
                            PROCESSINFO               *procinfo)
