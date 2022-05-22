@@ -1155,7 +1155,7 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
                     data.cmd[data.cmdindex].argdata[argi].fpstag,
                     data.cmd[data.cmdindex].argdata[argi].descr,
                     FPTYPE_FPSNAME,
-                    FPFLAG_DEFAULT_INPUT,
+                    data.cmd[data.cmdindex].argdata[argi].flag,
                     data.cmd[data.cmdindex].argdata[argi].val.s,
                     NULL);
                 NBarg_processed++;
