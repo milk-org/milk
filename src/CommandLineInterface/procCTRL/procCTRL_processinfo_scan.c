@@ -303,9 +303,10 @@ void *processinfo_scan(void *thptr)
                         else
                         {
                             PROCESSINFO_SCAN_DEBUGLOG(
-                                "     shm %ld linked to pinfodisp %ld\n",
+                                "     shm %ld linked to pinfodisp %ld/%ld\n",
                                 pinfolistindex,
-                                pinfodispindex);
+                                pinfodispindex,
+                                pinfop->NBpinfodisp);
                             pinfop->pinfommapped[pinfolistindex] = 1;
                             PROCESSINFO_SCAN_DEBUGLOG(
                                 "     shm name : %s\n",
