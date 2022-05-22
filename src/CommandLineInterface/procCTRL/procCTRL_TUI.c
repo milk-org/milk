@@ -495,11 +495,6 @@ errno_t processinfo_CTRLscreen()
         procinfoproc.pinfodisp[pindex].loopcnt  = 0;
         procinfoproc.pinfodisp[pindex].loopstat = 0;
 
-        procinfoproc.pinfodisp[pindex].createtime_hr  = 0;
-        procinfoproc.pinfodisp[pindex].createtime_min = 0;
-        procinfoproc.pinfodisp[pindex].createtime_sec = 0;
-        procinfoproc.pinfodisp[pindex].createtime_ns  = 0;
-
         strcpy(procinfoproc.pinfodisp[pindex].cpuset, "null");
         strcpy(procinfoproc.pinfodisp[pindex].cpusallowed, "null");
         for (int cpu = 0; cpu < MAXNBCPU; cpu++)
