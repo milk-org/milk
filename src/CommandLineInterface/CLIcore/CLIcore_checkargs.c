@@ -11,9 +11,15 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-static int argcheck_process_flag = 1; // keep processing if 1
+// keep processing if 1
+static int argcheck_process_flag = 1;
 
-static int functionhelp_called = 0; // toggles to 1 if function help called
+
+// toggles to 1 if function help called
+static int functionhelp_called = 0;
+
+
+
 
 /**
  * @brief check that input CLI argument matches required argument type
@@ -420,6 +426,9 @@ static int CLI_checkarg0(int argnum, uint32_t argtype, int errmsg)
     return rval;
 }
 
+
+
+
 /**
  * @brief Check that input CLI argument matches required argument type
  *
@@ -791,6 +800,9 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
     }
 }
 
+
+
+
 /** @brief Build FPS content from FPSCLIARG list
  *
  * All CLI arguments converted to FPS parameters
@@ -921,6 +933,9 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
     DEBUG_TRACE_FEXIT();
     return NBarg_processed;
 }
+
+
+
 
 /** @brief Build FPS from command args
  */
@@ -1133,6 +1148,18 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
                     NULL);
                 NBarg_processed++;
                 break;
+
+            case CLIARG_FPSNAME:
+                function_parameter_add_entry(
+                    fps,
+                    data.cmd[data.cmdindex].argdata[argi].fpstag,
+                    data.cmd[data.cmdindex].argdata[argi].descr,
+                    FPTYPE_FPSNAME,
+                    FPFLAG_DEFAULT_INPUT,
+                    data.cmd[data.cmdindex].argdata[argi].val.s,
+                    NULL);
+                NBarg_processed++;
+                break;
             }
         }
     }
@@ -1140,6 +1167,9 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
     DEBUG_TRACE_FEXIT();
     return NBarg_processed;
 }
+
+
+
 
 /** @brief get FPS pointer to function argument/parameter
  */
