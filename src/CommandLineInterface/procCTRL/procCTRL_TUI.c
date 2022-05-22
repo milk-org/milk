@@ -2011,7 +2011,6 @@ errno_t processinfo_CTRLscreen()
                                     pstrlen_pname,
                                     pinfolist->pnamearray[pindex]);
 
-                            // procinfoproc.pinfodisp[pindex].name);
 
                             TUI_printfw("%s", string);
                             attroff(A_BOLD);
@@ -2113,18 +2112,24 @@ errno_t processinfo_CTRLscreen()
                                                     ->CTRLval);
                                 }
 
-                                sprintf(string,
-                                        " %02d:%02d:%"
-                                        "02d.%03d",
-                                        procinfoproc.pinfodisp[pindex]
-                                            .createtime_hr,
-                                        procinfoproc.pinfodisp[pindex]
-                                            .createtime_min,
-                                        procinfoproc.pinfodisp[pindex]
-                                            .createtime_sec,
+                                // Create time
+                                {
+                                    struct tm *createtm;
+                                    createtm =
+                                        gmtime(&procinfoproc.pinfoarray[pindex]
+                                                    ->createtime.tv_sec);
+
+                                    sprintf(
+                                        string,
+                                        " %02d:%02d:"
+                                        "%02d.%03d",
+                                        createtm->tm_hour,
+                                        createtm->tm_min,
+                                        createtm->tm_sec,
                                         (int) (0.000001 *
-                                               (procinfoproc.pinfodisp[pindex]
-                                                    .createtime_ns)));
+                                               (procinfoproc.pinfoarray[pindex]
+                                                    ->createtime.tv_nsec)));
+                                }
                                 TUI_printfw("%s", string);
 
                                 sprintf(
