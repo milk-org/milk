@@ -439,6 +439,9 @@ void *processinfo_scan(void *thptr)
             for (int index = 0; index < pinfop->NBpindexActive; index++)
             {
                 pinfop->sorted_pindex_time[index] = indexarray[index];
+                PROCESSINFO_SCAN_DEBUGLOG("sorted %4d  pindex = %ld\n",
+                                          index,
+                                          indexarray[index]);
             }
 
             DEBUG_TRACEPOINT(" ");
