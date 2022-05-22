@@ -23,6 +23,8 @@
 #define CLIARG_STR          0x00000005 // string
 #define CLIARG_FILENAME     0x00000006
 #define CLIARG_FITSFILENAME 0x00000007
+#define CLIARG_FPSNAME      0x00000008
+
 
 #define CLIARG_FLOAT32 0x00010001 // same as float
 #define CLIARG_FLOAT64 0x00020001 // same as double
@@ -36,6 +38,9 @@
 
 // image/stream types
 #define CLIARG_STREAM 0x00010004 // stream
+
+
+
 
 #define STRINGMAXLEN_FPSCLIARG_TAG       100
 #define STRINGMAXLEN_FPSCLIARG_DESCR     100
