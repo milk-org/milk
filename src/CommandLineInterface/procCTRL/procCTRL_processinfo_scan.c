@@ -303,7 +303,7 @@ void *processinfo_scan(void *thptr)
                                 "     shm name : %s\n",
                                 pinfop->pinfodisp[pinfodispindex].name);
 
-                            struct tm *createtm;
+                            /*                            struct tm *createtm;
                             createtm =
                                 gmtime(&pinfop->pinfoarray[pinfolistindex]
                                             ->createtime.tv_sec);
@@ -316,7 +316,7 @@ void *processinfo_scan(void *thptr)
                             pinfop->pinfodisp[pinfodispindex].createtime_ns =
                                 pinfop->pinfoarray[pinfolistindex]
                                     ->createtime.tv_nsec;
-
+*/
                             PROCESSINFO_SCAN_DEBUGLOG(
                                 "     shm loopcnt : %ld\n",
                                 pinfop->pinfoarray[pinfolistindex]->loopcnt);

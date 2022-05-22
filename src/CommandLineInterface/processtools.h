@@ -62,10 +62,6 @@ typedef struct
     long loopcnt;
     int  loopstat;
 
-    int  createtime_hr;
-    int  createtime_min;
-    int  createtime_sec;
-    long createtime_ns;
 
     char cpuset[16]; /**< cpuset name  */
     char cpusallowed[20];
