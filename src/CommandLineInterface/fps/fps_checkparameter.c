@@ -14,6 +14,9 @@
 #include "fps_disconnect.h"
 #include "fps_outlog.h"
 
+
+
+
 int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                      int                        pindex)
 {
@@ -262,15 +265,24 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
         }
     }
 
-    FUNCTION_PARAMETER_STRUCT fpstest;
     if (fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
     {
         if (fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED)
         {
-            long NBparamMAX = function_parameter_struct_connect(
-                fpsentry->parray[pindex].val.string[0],
-                &fpstest,
-                FPSCONNECT_SIMPLE);
+
+            FUNCTION_PARAMETER_STRUCT fpstest;
+            fpstest.SMfd = -1; // initialize
+
+            functionparameter_ConnectExternalFPS(fpsentry, pindex, &fpstest);
+
+            /*            long NBparamMAX = function_parameter_struct_connect(
+                                              fpsentry->parray[pindex].val.string[0],
+                                              &fpstest,
+                                              FPSCONNECT_SIMPLE);*/
+            long NBparamMAX = fpsentry->parray[pindex].info.fps.FPSNBparamMAX;
+            printf("%s NBparamMAX = %ld\n",
+                   fpsentry->parray[pindex].val.string[0],
+                   NBparamMAX);
             if (NBparamMAX < 1)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;

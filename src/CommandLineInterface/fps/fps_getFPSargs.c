@@ -5,6 +5,9 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
+
+
 /** @brief get FPS arguments from command line function call
  *
  * Write data.FPS_name and data.FPS_CMDCODE
@@ -24,7 +27,8 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     DEBUG_TRACEPOINT("pre-processing CLI arg");
 
-    int argpreprocess = 1; // by default, pre-process argument
+    // by default, pre-process argument
+    int argpreprocess = 1;
     switch (data.cmdargtoken[1].type)
     {
     case CLIARG_FLOAT:
