@@ -943,7 +943,9 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
 {
     DEBUG_TRACE_FSTART();
 
-    int NBarg_processed = 0;
+    int  NBarg_processed = 0;
+    long fpi             = 0;
+
 
     for (int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
     {
@@ -1151,7 +1153,6 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
 
             case CLIARG_FPSNAME:
                 //printf("ADDING FPS ENTRY %s at index %d\n", data.cmd[data.cmdindex].argdata[argi].fpstag, argi);
-                long fpi = 0;
                 function_parameter_add_entry(
                     fps,
                     data.cmd[data.cmdindex].argdata[argi].fpstag,
