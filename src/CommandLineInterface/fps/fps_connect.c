@@ -13,6 +13,9 @@
 #include "fps_loadstream.h"
 #include "fps_shmdirname.h"
 
+
+
+
 /** @brief Connect to function parameter structure
  *
  *
@@ -40,14 +43,15 @@ long function_parameter_struct_connect(const char                *name,
 
     DEBUG_TRACEPOINT("Connect to fps %s\n", name);
 
-    if (fps->SMfd > -1)
+    if (fps->SMfd > 0)
     {
-        printf("[%s %s %d] ERROR: file descriptor already allocated : %d\n",
+        printf("[%s %s %d] File descriptor already allocated (%d) -> closing\n",
                __FILE__,
                __func__,
                __LINE__,
                fps->SMfd);
-        //	exit(0);
+        close(fps->SMfd);
+        fps->SMfd = 0;
     }
 
     function_parameter_struct_shmdirname(shmdname);

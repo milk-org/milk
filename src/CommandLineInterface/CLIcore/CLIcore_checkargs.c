@@ -1150,6 +1150,8 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
                 break;
 
             case CLIARG_FPSNAME:
+                //printf("ADDING FPS ENTRY %s at index %d\n", data.cmd[data.cmdindex].argdata[argi].fpstag, argi);
+                long fpi = 0;
                 function_parameter_add_entry(
                     fps,
                     data.cmd[data.cmdindex].argdata[argi].fpstag,
@@ -1157,7 +1159,9 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
                     FPTYPE_FPSNAME,
                     FPFLAG_DEFAULT_INPUT | FPFLAG_FPS_RUN_REQUIRED,
                     data.cmd[data.cmdindex].argdata[argi].val.s,
-                    NULL);
+                    &fpi);
+                //printf("fpi = %ld\n", fpi);
+                fps->parray[fpi].info.fps.FPSNBparamMAX = 0;
                 NBarg_processed++;
                 break;
             }
