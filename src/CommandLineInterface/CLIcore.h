@@ -33,7 +33,6 @@ typedef int errno_t;
 
 #include <errno.h>
 #include <fftw3.h>
-#include <gsl/gsl_rng.h> // for random numbers
 #include <sched.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -420,7 +419,7 @@ typedef struct
     int      overwrite; // automatically overwrite FITS files
     int      rmSHMfile; // remove shared memory files upon delete
     double   INVRANDMAX;
-    gsl_rng *rndgen;    // random number generator
+    struct gsl_rng *rndgen;    // random number generator
     int      precision; // default precision: 0 for float, 1 for double
 
     // LOGGING, PROCESS MONITORING

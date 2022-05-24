@@ -61,21 +61,19 @@ Libraries required :
 - **openMP**
 - **fitsio**
 - **fftw** (single and double precision), for performing Fourier Transforms
-- **gsl**
 - **readline**, for reading the command line input
 - **tmux**
 - **bash dialog**, version 1.2 minimum
 - **flex**, for parsing the command line input
 - **bison**, to interpret the command line input
-- **gsl**, for math functions and tools
 
 Install above libraries (centOS):
 
-		sudo yum install readline-devel flex bison-devel fftw3-devel gsl-devel
+		sudo yum install readline-devel flex bison-devel fftw3-devel 
 
 Install above libraries (Ubuntu):
 
-		sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
+		sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev flex bison
 
 
 ## 2.2. FITSIO install {#page_installation_details_libraries_fitsio}

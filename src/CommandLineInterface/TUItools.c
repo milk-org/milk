@@ -7,8 +7,6 @@
 #include <termios.h>
 
 #include <ncurses.h>
-//#include <curses.h>
-#include <ncursesw/ncurses.h>
 
 #include <locale.h>
 #include <wchar.h>
