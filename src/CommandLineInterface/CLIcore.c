@@ -62,7 +62,6 @@
 #endif
 
 #include <fitsio.h>
-#include <gsl/gsl_rng.h> // for random numbers
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -367,19 +366,7 @@ static errno_t runCLI_initialize()
     }
 #endif
 
-    // Initialize random-number generator
-    //
-    const gsl_rng_type *rndgenType;
-    //rndgenType = gsl_rng_ranlxs2; // best algorithm but slow
-    //rndgenType = gsl_rng_ranlxs0; // not quite as good, slower
-    rndgenType  = gsl_rng_rand; // not as good but ~10x faster fast
-    data.rndgen = gsl_rng_alloc(rndgenType);
-    gsl_rng_set(data.rndgen, time(NULL));
-
-    // warm up
-    //for(i=0; i<10; i++)
-    //    v1 = gsl_rng_uniform (data.rndgen);
-
+    data.rndgen = NULL;
     data.progStatus = 0;
 
     data.Debug         = 0;
@@ -1055,9 +1042,6 @@ static void runCLI_free()
     }
 
 #endif
-    //  free(data.cmd);
-    DEBUG_TRACEPOINT("free data.rndgen");
-    gsl_rng_free(data.rndgen);
 }
 
 int user_function()
