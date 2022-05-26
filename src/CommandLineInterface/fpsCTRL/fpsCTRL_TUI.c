@@ -794,13 +794,11 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
                 if (fpsCTRLvar.NBfps > 0)
                 {
-                    /*TUI_printfw("node selected : %d", fpsCTRLvar.nodeSelected);
-                    TUI_newline();
-                     TUI_printfw("full keyword :  %s", keywnode[fpsCTRLvar.nodeSelected].keywordfull);
-                     TUI_newline();*/
+
                     if (strlen(keywnode[fpsCTRLvar.nodeSelected].keywordfull) <
-                        1) // if not OK, set to last valid entry
+                        1)
                     {
+                        // if not OK, set to last valid entry
                         fpsCTRLvar.nodeSelected = 1;
                         while ((strlen(keywnode[fpsCTRLvar.nodeSelected]
                                            .keywordfull) < 1) &&
@@ -831,31 +829,14 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                         fpsCTRLvar.directorynodeSelected;
 
 
-                    if (fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
+                    level = fpsCTRLvar.currentlevel - 1;
+                    while (level > 0)
                     {
-                        TUI_printfw("[level %d %d] ",
-                                    fpsCTRLvar.currentlevel + 1,
-                                    nodechain[fpsCTRLvar.currentlevel + 1]);
-
-                        if (fpsCTRLvar.currentlevel > 0)
-                        {
-                            TUI_printfw("[level %d %d] ",
-                                        fpsCTRLvar.currentlevel,
-                                        nodechain[fpsCTRLvar.currentlevel]);
-                        }
-                        level = fpsCTRLvar.currentlevel - 1;
-                        while (level > 0)
-                        {
-                            nodechain[level] =
-                                keywnode[nodechain[level + 1]].parent_index;
-                            TUI_printfw("[level %d %d] ",
-                                        level,
-                                        nodechain[level]);
-                            level--;
-                        }
-                        TUI_printfw("[level 0 0]");
-                        TUI_newline();
+                        nodechain[level] =
+                            keywnode[nodechain[level + 1]].parent_index;
+                        level--;
                     }
+                    TUI_newline();
                     nodechain[0] = 0; // root
 
                     DEBUG_TRACEPOINT("Get number of lines to be displayed");
@@ -944,9 +925,10 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                         child_index[level] = 0;
                     }
 
-                    for (int GUIline = 0; GUIline < GUIlineMax;
-                         GUIline++) // GUIline is the line number on GUI display
+
+                    for (int GUIline = 0; GUIline < GUIlineMax; GUIline++)
                     {
+                        // GUIline is the line number on GUI display
 
                         for (level = 0; level < fpsCTRLvar.currentlevel;
                              level++)
@@ -984,6 +966,10 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                                 int v1 =
                                     keywnode[nodechain[level]].child[GUIline];
                                 int v2 = nodechain[level + 1];
+
+                                // TEST
+                                //TUI_printfw("[[%d %d %d %d]] ", level, v1, nodechain[level], v2);
+
                                 if (v1 == v2)
                                 {
                                     snode = 1;
@@ -1062,21 +1048,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                                     1;
                             }
 
-                            /*
-                                                    if(fpsCTRLvar.currentlevel != 0) { // this does not apply to root menu
-                                                        while((!(fps[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE)) && // if not visible, advance to next one
-                                                                (child_index[level] < keywnode[fpsCTRLvar.directorynodeSelected].NBchild-1)) {
-                                                            child_index[level] ++;
-                                                            DEBUG_TRACEPOINT("knodeindex = %d  child %d / %d",
-                                                                      knodeindex,
-                                                                      child_index[level],
-                                                                      keywnode[fpsCTRLvar.directorynodeSelected].NBchild);
-                                                            knodeindex = keywnode[fpsCTRLvar.directorynodeSelected].child[child_index[level]];
-                                                            fpsindex = keywnode[knodeindex].fpsindex;
-                                                            pindex = keywnode[knodeindex].pindex;
-                                                        }
-                                                    }
-                            */
 
                             DEBUG_TRACEPOINT(" ");
 
@@ -1094,9 +1065,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
                                 DEBUG_TRACEPOINT(" ");
 
-                                if (keywnode[knodeindex].leaf ==
-                                    0) // If this is a directory
-                                {
+                                if (keywnode[knodeindex].leaf == 0)
+                                { // If this is a directory
                                     DEBUG_TRACEPOINT(" ");
                                     if (fpsCTRLvar.currentlevel ==
                                         0) // provide a status summary if at root
