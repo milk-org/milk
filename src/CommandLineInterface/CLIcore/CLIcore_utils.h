@@ -756,6 +756,11 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
 
 
 /** @brief Resolve image already in memory
+ *
+ * ERRMODE values
+ * ERRMODE_WARN : print warning
+ * ERRMODE_FAIL : error
+ * ERRMODE_ABORT : abort
  */
 static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 {
