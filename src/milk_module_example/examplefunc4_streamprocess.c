@@ -138,11 +138,15 @@ static CLICMDDATA CLIcmddata = {"streamprocess",
                                 "process input stream to output stream",
                                 CLICMD_FIELDS_DEFAULTS};
 
+
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
+
+
 
 static errno_t streamprocess(IMGID inimg, IMGID outimg)
 {
@@ -153,6 +157,9 @@ static errno_t streamprocess(IMGID inimg, IMGID outimg)
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 static errno_t compute_function()
 {
@@ -183,7 +190,11 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
+
 INSERT_STD_FPSCLIfunctions
+
+
 
     // Register function in CLI
     errno_t

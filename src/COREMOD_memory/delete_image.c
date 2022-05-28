@@ -76,6 +76,9 @@ INSERT_STD_FPSCLIfunctions
     return RETURN_SUCCESS;
 }
 
+
+
+
 /** @brief deletes an ID
  *
  * errmode values:
@@ -85,15 +88,14 @@ INSERT_STD_FPSCLIfunctions
  * DELETE_IMAGE_ERRMODE_EXIT
  *
  */
-errno_t delete_image_ID(const char *__restrict imname, int errmode)
+errno_t delete_image(IMGID img, int errmode)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID ID;
-    long    s;
-    char    fname[STRINGMAXLEN_FULLFILENAME];
+    long s;
+    char fname[STRINGMAXLEN_FULLFILENAME];
 
-    ID = image_ID(imname);
+    imageID ID = img.ID;
 
     if (ID == -1)
     {
@@ -256,6 +258,37 @@ errno_t delete_image_ID(const char *__restrict imname, int errmode)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
+
+/** @brief deletes an ID
+ *
+ * errmode values:
+ * DELETE_IMAGE_ERRMODE_IGNORE
+ * DELETE_IMAGE_ERRMODE_WARNING
+ * DELETE_IMAGE_ERRMODE_ERROR
+ * DELETE_IMAGE_ERRMODE_EXIT
+ *
+ */
+errno_t delete_image_ID(const char *__restrict imname, int errmode)
+{
+    DEBUG_TRACE_FSTART();
+
+    IMGID   img = mkIMGID_from_name(imname);
+    imageID ID  = resolveIMGID(&img, ERRMODE_WARN);
+
+    if (ID != -1)
+    {
+        delete_image(img, errmode);
+    }
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+
 
 // delete all images with a prefix
 errno_t delete_image_ID_prefix(const char *prefix)
