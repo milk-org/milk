@@ -47,6 +47,10 @@ add_library(CLIcore
             SHARED
             fpsCTRL/fpsCTRL_TUI.c
             fpsCTRL/fpsCTRL_TUI_process_user_key.c
+            fpsCTRL/fpsCTRL_FPSdisplay.c
+            fpsCTRL/print_nodeinfo.c
+            fpsCTRL/level0node_summary.c
+            fpsCTRL/scheduler_display.c
             streamCTRL/streamCTRL_TUI.c
             timeutils.c
             fps/fps_add_entry.c
