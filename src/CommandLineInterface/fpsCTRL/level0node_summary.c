@@ -1,5 +1,7 @@
 #include "CommandLineInterface/CLIcore.h"
 
+#include "TUItools.h"
+
 
 void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
                                       int                        fpsindex)
