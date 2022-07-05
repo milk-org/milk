@@ -705,6 +705,17 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
         target_img->im        = &data.image[target_img->ID];
         target_img->md        = &data.image[target_img->ID].md[0];
         target_img->createcnt = data.image[target_img->ID].createcnt;
+
+
+        target_img->size[0] = source_img->size[0];
+        if (source_img->naxis > 1)
+        {
+            target_img->size[1] = source_img->size[1];
+        }
+        if (source_img->naxis > 2)
+        {
+            target_img->size[2] = source_img->size[2];
+        }
     }
     return target_img->ID;
 }

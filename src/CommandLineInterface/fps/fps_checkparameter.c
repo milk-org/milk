@@ -267,22 +267,19 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
 
     if (fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
     {
+        FUNCTION_PARAMETER_STRUCT fpstest;
+        fpstest.SMfd = -1; // initialize
+
+        functionparameter_ConnectExternalFPS(fpsentry, pindex, &fpstest);
+
+        long NBparamMAX = fpsentry->parray[pindex].info.fps.FPSNBparamMAX;
+        printf("%s NBparamMAX = %ld\n",
+               fpsentry->parray[pindex].val.string[0],
+               NBparamMAX);
+
+
         if (fpsentry->parray[pindex].fpflag & FPFLAG_FPS_RUN_REQUIRED)
         {
-
-            FUNCTION_PARAMETER_STRUCT fpstest;
-            fpstest.SMfd = -1; // initialize
-
-            functionparameter_ConnectExternalFPS(fpsentry, pindex, &fpstest);
-
-            /*            long NBparamMAX = function_parameter_struct_connect(
-                                              fpsentry->parray[pindex].val.string[0],
-                                              &fpstest,
-                                              FPSCONNECT_SIMPLE);*/
-            long NBparamMAX = fpsentry->parray[pindex].info.fps.FPSNBparamMAX;
-            printf("%s NBparamMAX = %ld\n",
-                   fpsentry->parray[pindex].val.string[0],
-                   NBparamMAX);
             if (NBparamMAX < 1)
             {
                 fpsentry->md->msgpindex[fpsentry->md->msgcnt] = pindex;
@@ -290,8 +287,10 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                     FPS_MSG_FLAG_ERROR;
                 if (snprintf(fpsentry->md->message[fpsentry->md->msgcnt],
                              FUNCTION_PARAMETER_STRUCT_MSG_SIZE,
-                             "FPS %s: no connection",
-                             fpsentry->parray[pindex].val.string[0]) < 0)
+                             "FPS %s: no connection %lu",
+                             fpsentry->parray[pindex].val.string[0],
+                             fpsentry->parray[pindex].fpflag &
+                                 FPFLAG_FPS_RUN_REQUIRED) < 0)
                 {
                     PRINT_ERROR("snprintf error");
                 }
@@ -299,10 +298,7 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
-            else
-            {
-                function_parameter_struct_disconnect(&fpstest);
-            }
+            function_parameter_struct_disconnect(&fpstest);
         }
     }
 
