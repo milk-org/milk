@@ -484,7 +484,7 @@ Return:
                 return functionparameter_SetParamValue_FLOAT32(
                     cls,
                     key.c_str(),
-                    std::stol(value));
+                    std::stof(value));
             },
             R"pbdoc(Set the float32 value of the FPS key
 
@@ -502,7 +502,7 @@ Return:
                 return functionparameter_SetParamValue_FLOAT64(
                     cls,
                     key.c_str(),
-                    std::stol(value));
+                    std::stod(value));
             },
             R"pbdoc(Set the float64 value of the FPS key
 
