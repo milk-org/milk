@@ -485,7 +485,6 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                         // VALUE
 
-                        int paramsync = 1; // parameter is synchronized
 
                         if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                             FPFLAG_ERROR) // parameter setting error
@@ -551,6 +550,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                             if (intflag == 1)
                             {
+                                int paramsync = 1; // parameter is synchronized
+
                                 if (data.fpsarray[fpsindex]
                                         .parray[pindex]
                                         .fpflag &
@@ -618,6 +619,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                             if (floatflag == 1)
                             {
+                                int paramsync = 1; // parameter is synchronized
+
                                 if (data.fpsarray[fpsindex]
                                         .parray[pindex]
                                         .fpflag &
@@ -670,12 +673,16 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_PID)
                         {
+                            int paramsync = 1; // parameter is synchronized
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
+                                {
                                     if (data.fpsarray[fpsindex]
                                             .parray[pindex]
                                             .val.pid[0] !=
@@ -685,6 +692,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     {
                                         paramsync = 0;
                                     }
+                                }
+                            }
 
                             if (paramsync == 0)
                             {
@@ -732,12 +741,16 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_FILENAME)
                         {
+                            int paramsync = 1; // parameter is synchronized
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
+                                {
                                     if (strcmp(data.fpsarray[fpsindex]
                                                    .parray[pindex]
                                                    .val.string[0],
@@ -747,6 +760,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     {
                                         paramsync = 0;
                                     }
+                                }
+                            }
 
                             if (paramsync == 0)
                             {
@@ -774,12 +789,16 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_FITSFILENAME)
                         {
+                            int paramsync = 1; // parameter is synchronized
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
+                                {
                                     if (strcmp(data.fpsarray[fpsindex]
                                                    .parray[pindex]
                                                    .val.string[0],
@@ -789,6 +808,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     {
                                         paramsync = 0;
                                     }
+                                }
+                            }
 
                             if (paramsync == 0)
                             {
@@ -815,12 +836,16 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_EXECFILENAME)
                         {
+                            int paramsync = 1; // parameter is synchronized
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
+                                {
                                     if (strcmp(data.fpsarray[fpsindex]
                                                    .parray[pindex]
                                                    .val.string[0],
@@ -830,6 +855,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     {
                                         paramsync = 0;
                                     }
+                                }
+                            }
 
                             if (paramsync == 0)
                             {
@@ -852,16 +879,24 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                 }
                             }
                         }
+
+
+
                         DEBUG_TRACEPOINT(" ");
+
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_DIRNAME)
                         {
+                            int paramsync = 1; // parameter is synchronized
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
+                                {
                                     if (strcmp(data.fpsarray[fpsindex]
                                                    .parray[pindex]
                                                    .val.string[0],
@@ -871,6 +906,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     {
                                         paramsync = 0;
                                     }
+                                }
+                            }
 
                             if (paramsync == 0)
                             {
@@ -900,14 +937,12 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         {
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
-                                    //  if(strcmp(fps[fpsindex].parray[pindex].val.string[0], fps[fpsindex].parray[pindex].val.string[1])) {
-                                    //      paramsync = 0;
-                                    //  }
-
+                                {
                                     if (data.fpsarray[fpsindex]
                                             .parray[pindex]
                                             .info.stream.streamID > -1)
@@ -917,6 +952,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                             screenprint_setcolor(2);
                                         }
                                     }
+                                }
+                            }
 
                             TUI_printfw("[LOC %d]  %6s",
                                         data.fpsarray[fpsindex]
@@ -968,12 +1005,16 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_STRING)
                         {
+                            int paramsync = 1; // parameter is synchronized
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
+                            {
                                 if (!(data.fpsarray[fpsindex]
                                           .parray[pindex]
                                           .fpflag &
                                       FPFLAG_ERROR))
+                                {
                                     if (strcmp(data.fpsarray[fpsindex]
                                                    .parray[pindex]
                                                    .val.string[0],
@@ -983,6 +1024,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     {
                                         paramsync = 0;
                                     }
+                                }
+                            }
 
                             if (paramsync == 0)
                             {
@@ -1030,34 +1073,50 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
                             FPTYPE_FPSNAME)
                         {
+                            // is FPS connected ?
+                            int FPSconnected = 1;
+                            // 0 : not connected, ERR
+                            // 1 : connected, OK
+                            // 2 : not connected but not needed, WARN
+
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
                                 FPFLAG_FEEDBACK) // Check value feedback if available
-                                if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
-                                    if (strcmp(data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[0],
-                                               data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[1]))
-                                    {
-                                        paramsync = 0;
-                                    }
-
-                            if (paramsync == 0)
                             {
-                                if (isVISIBLE == 1)
+                                if ((data.fpsarray[fpsindex]
+                                         .parray[pindex]
+                                         .fpflag &
+                                     FPFLAG_ERROR) != 0)
                                 {
-                                    screenprint_setcolor(2);
+                                    // if error
+                                    FPSconnected = 0;
+                                }
+                                else if (data.fpsarray[fpsindex]
+                                             .parray[pindex]
+                                             .info.fps.FPSNBparamMAX < 0)
+                                {
+                                    FPSconnected = 2;
                                 }
                             }
-                            else
+
+                            if (FPSconnected == 0)
                             {
                                 if (isVISIBLE == 1)
                                 {
-                                    screenprint_setcolor(4);
+                                    screenprint_setcolor(COLOR_ERROR);
+                                }
+                            }
+                            else if (FPSconnected == 1)
+                            {
+                                if (isVISIBLE == 1)
+                                {
+                                    screenprint_setcolor(COLOR_OK);
+                                }
+                            }
+                            else if (FPSconnected == 2)
+                            {
+                                if (isVISIBLE == 1)
+                                {
+                                    screenprint_setcolor(COLOR_WARNING);
                                 }
                             }
 
@@ -1075,18 +1134,25 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                             .parray[pindex]
                                             .info.fps.FPSNBparamUsed);
 
-                            if (paramsync == 0)
+                            if (FPSconnected == 0)
                             {
                                 if (isVISIBLE == 1)
                                 {
-                                    screenprint_unsetcolor(2);
+                                    screenprint_unsetcolor(COLOR_ERROR);
                                 }
                             }
-                            else
+                            else if (FPSconnected == 1)
                             {
                                 if (isVISIBLE == 1)
                                 {
-                                    screenprint_unsetcolor(4);
+                                    screenprint_unsetcolor(COLOR_OK);
+                                }
+                            }
+                            else if (FPSconnected == 2)
+                            {
+                                if (isVISIBLE == 1)
+                                {
+                                    screenprint_unsetcolor(COLOR_WARNING);
                                 }
                             }
                         }

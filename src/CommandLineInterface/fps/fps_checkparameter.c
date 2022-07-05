@@ -384,6 +384,9 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
     return err;
 }
 
+
+
+
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
 {
     long NBparamMAX;
