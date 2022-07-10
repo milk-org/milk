@@ -70,10 +70,11 @@
 #define AECBOLDHIRED   "\033[1;91;40m"
 #define AECNORMAL      "\033[37;40;0m"
 
-#define COLOR_NONE    1
-#define COLOR_OK      2
-#define COLOR_WARNING 3
-#define COLOR_ERROR   4
+#define COLOR_NONE      1
+#define COLOR_OK        2
+#define COLOR_WARNING   3
+#define COLOR_ERROR     4
+#define COLOR_DIRECTORY 5
 
 
 
