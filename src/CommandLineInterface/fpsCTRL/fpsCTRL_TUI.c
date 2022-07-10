@@ -35,7 +35,10 @@ static short unsigned int wrow, wcol;
 
 
 inline static void
-fpsCTRLscreen_print_DisplayMode_status(int fpsCTRL_DisplayMode, int NBfps)
+fpsCTRLscreen_print_DisplayMode_status(
+    int fpsCTRL_DisplayMode,
+    int NBfps
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -151,9 +154,11 @@ inline static void fpsCTRLscreen_print_help()
  *
  *
  */
-errno_t functionparameter_CTRLscreen(uint32_t mode,
-                                     char    *fpsnamemask,
-                                     char    *fpsCTRLfifoname)
+errno_t functionparameter_CTRLscreen(
+    uint32_t mode,
+    char    *fpsnamemask,
+    char    *fpsCTRLfifoname
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -227,7 +232,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     //
     FPSCTRL_TASK_ENTRY *fpsctrltasklist;
     fpsctrltasklist = (FPSCTRL_TASK_ENTRY *) malloc(sizeof(FPSCTRL_TASK_ENTRY) *
-                                                    NB_FPSCTRL_TASK_MAX);
+                      NB_FPSCTRL_TASK_MAX);
     if (fpsctrltasklist == NULL)
     {
         PRINT_ERROR("malloc error");
@@ -243,14 +248,14 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     //
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist;
     fpsctrlqueuelist = (FPSCTRL_TASK_QUEUE *) malloc(
-        sizeof(FPSCTRL_TASK_QUEUE) * NB_FPSCTRL_TASKQUEUE_MAX);
+                           sizeof(FPSCTRL_TASK_QUEUE) * NB_FPSCTRL_TASKQUEUE_MAX);
     if (fpsctrlqueuelist == NULL)
     {
         PRINT_ERROR("malloc error");
         abort();
     }
     for (int queueindex = 0; queueindex < NB_FPSCTRL_TASKQUEUE_MAX;
-         queueindex++)
+            queueindex++)
     {
         fpsctrlqueuelist[queueindex].priority = 1; // 0 = not active
     }
@@ -286,7 +291,7 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                                    &fpsCTRLvar.NBfps,
                                    &NBpindex,
                                    0 // quiet
-        );
+                                  );
 
 
 
@@ -371,10 +376,10 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
             // execute next command in the queue
             int taskflag =
                 function_parameter_process_fpsCMDarray(fpsctrltasklist,
-                                                       fpsctrlqueuelist,
-                                                       keywnode,
-                                                       &fpsCTRLvar,
-                                                       data.fpsarray);
+                        fpsctrlqueuelist,
+                        keywnode,
+                        &fpsCTRLvar,
+                        data.fpsarray);
 
             if (taskflag > 0) // task has been performed
             {
@@ -519,9 +524,9 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
         loopcnt++;
 
         if ((data.signal_TERM == 1) || (data.signal_INT == 1) ||
-            (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-            (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-            (data.signal_PIPE == 1))
+                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
+                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
+                (data.signal_PIPE == 1))
         {
             printf("Exit condition met\n");
             loopOK = 0;
