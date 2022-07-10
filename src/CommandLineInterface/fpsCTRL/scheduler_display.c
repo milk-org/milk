@@ -7,9 +7,12 @@
 
 
 
-errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-                                  FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
-                                  int                 wrow)
+errno_t fpsCTRL_scheduler_display(
+    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
+    int                 wrow,
+    int                *firstrow
+)
 {
 
     struct timespec tnow;
@@ -57,7 +60,15 @@ errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
 
     DEBUG_TRACEPOINT(" ");
 
-    TUI_printfw(" showing   %d / %d  tasks", wrow - 8, sortcnt);
+    if (*firstrow < 0)
+    {
+        *firstrow = 0;
+    }
+    if (*firstrow > (sortcnt - (wrow-8)))
+    {
+        *firstrow = sortcnt - (wrow-8);
+    }
+    TUI_printfw(" showing   %5d / %5d  starting at %d", wrow - 8, sortcnt, *firstrow);
     TUI_newline();
 
     for (int sortindex = 0; sortindex < sortcnt; sortindex++)
@@ -69,59 +80,44 @@ errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
 
         DEBUG_TRACEPOINT("fpscmdindex = %d", fpscmdindex);
 
-        if (sortindex < wrow - 8) // display
+        if ( (sortindex - (*firstrow) < wrow - 8) && (sortindex >= *firstrow) ) // display
         {
             int attron2  = 0;
             int attrbold = 0;
 
-            if (fpsctrltasklist[fpscmdindex].status &
-                FPSTASK_STATUS_RUNNING) // task is running
-            {
+            if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RUNNING)
+            {   // task is running
                 attron2 = 1;
-                screenprint_setcolor(2);
+                screenprint_setcolor(COLOR_OK);
             }
-            else if (fpsctrltasklist[fpscmdindex].status &
-                     FPSTASK_STATUS_ACTIVE) // task is queued to run
-            {
+            else if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE)
+            {   // task is queued to run
                 attrbold = 1;
                 screenprint_setbold();
             }
 
             // measure age since submission
-            tdiff =
-                timespec_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
+            tdiff = timespec_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
             double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             TUI_printfw("%6.2f s ", tdiffv);
 
-            if (fpsctrltasklist[fpscmdindex].status &
-                FPSTASK_STATUS_RUNNING) // run time (ongoing)
-            {
-                tdiff =
-                    timespec_diff(fpsctrltasklist[fpscmdindex].activationtime,
-                                  tnow);
+            if (fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RUNNING)
+            {   // run time (ongoing)
+                tdiff = timespec_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 TUI_printfw(" %6.2f s ", tdiffv);
             }
-            else if (!(fpsctrltasklist[fpscmdindex].status &
-                       FPSTASK_STATUS_ACTIVE)) // run time (past)
-            {
-                tdiff =
-                    timespec_diff(fpsctrltasklist[fpscmdindex].activationtime,
-                                  fpsctrltasklist[fpscmdindex].completiontime);
+            else if (!(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_ACTIVE))
+            {   // run time (past)
+                tdiff = timespec_diff(fpsctrltasklist[fpscmdindex].activationtime,
+                                      fpsctrltasklist[fpscmdindex].completiontime);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                screenprint_setcolor(3);
+                screenprint_setcolor(COLOR_WARNING);
                 TUI_printfw(" %6.2f s ", tdiffv);
-                screenprint_unsetcolor(3);
+                screenprint_unsetcolor(COLOR_WARNING);
                 // age since completion
-                tdiff =
-                    timespec_diff(fpsctrltasklist[fpscmdindex].completiontime,
-                                  tnow);
-                double tdiffv = tdiffv =
-                    1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                //printfw("<%6.2f s>      ", tdiffv);
-
-                //if(tdiffv > 30.0)
-                //fpsctrltasklist[fpscmdindex].status &= ~FPSTASK_STATUS_SHOW;
+                tdiff = timespec_diff(fpsctrltasklist[fpscmdindex].completiontime, tnow);
+                double tdiffv = tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             }
             else
             {
@@ -171,7 +167,7 @@ errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
             }
 
             if (fpsctrltasklist[fpscmdindex].status &
-                FPSTASK_STATUS_CMDNOTFOUND)
+                    FPSTASK_STATUS_CMDNOTFOUND)
             {
                 screenprint_setcolor(3);
                 TUI_printfw(" NOTCMD");
@@ -183,22 +179,22 @@ errno_t fpsCTRL_scheduler_display(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
                 screenprint_setcolor(4);
                 TUI_printfw(" FAILED");
                 if (fpsctrltasklist[fpscmdindex].status &
-                    FPSTASK_STATUS_ERR_NBARG)
+                        FPSTASK_STATUS_ERR_NBARG)
                 {
                     TUI_printfw(" NBARG");
                 }
                 if (fpsctrltasklist[fpscmdindex].status &
-                    FPSTASK_STATUS_ERR_ARGTYPE)
+                        FPSTASK_STATUS_ERR_ARGTYPE)
                 {
                     TUI_printfw(" ARGTYPE");
                 }
                 if (fpsctrltasklist[fpscmdindex].status &
-                    FPSTASK_STATUS_ERR_TYPECONV)
+                        FPSTASK_STATUS_ERR_TYPECONV)
                 {
                     TUI_printfw(" TYPECOV");
                 }
                 if (fpsctrltasklist[fpscmdindex].status &
-                    FPSTASK_STATUS_ERR_NOFPS)
+                        FPSTASK_STATUS_ERR_NOFPS)
                 {
                     TUI_printfw(" NOFPS");
                 }
