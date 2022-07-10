@@ -12,6 +12,161 @@
 
 
 
+static errno_t fpselem_statusprint_ONOFF(
+    int fpsindex,
+    int pindex
+)
+{
+    if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)
+    {
+        screenprint_setcolor(COLOR_OK);
+        TUI_printfw("  ON ");
+        screenprint_unsetcolor(COLOR_OK);
+    }
+    else
+    {
+        screenprint_setcolor(COLOR_NONE);
+        TUI_printfw(" OFF ");
+        screenprint_unsetcolor(COLOR_NONE);
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+
+static errno_t fpselem_statusprint_FPSNAME(
+    int fpsindex,
+    int pindex,
+    int isVISIBLE
+)
+{
+
+    // is FPS connected ?
+    int FPSconnected = 1;
+    // 0 : not connected, ERR
+    // 1 : connected, OK
+    // 2 : not connected but not needed, WARN
+
+    if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)
+    {   // Check value feedback if available
+        {
+            if ((data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) != 0)
+            {
+                // if error
+                FPSconnected = 0;
+            }
+            else if (data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamMAX < 0)
+            {
+                FPSconnected = 2;
+            }
+        }
+    }
+
+    if (FPSconnected == 0)
+    {
+        if (isVISIBLE == 1)
+        {
+            screenprint_setcolor(COLOR_ERROR);
+        }
+    }
+    else if (FPSconnected == 1)
+    {
+        if (isVISIBLE == 1)
+        {
+            screenprint_setcolor(COLOR_OK);
+        }
+    }
+    else if (FPSconnected == 2)
+    {
+        if (isVISIBLE == 1)
+        {
+            screenprint_setcolor(COLOR_WARNING);
+        }
+    }
+
+    TUI_printfw(" %10s [%ld %ld %ld]",
+                data.fpsarray[fpsindex].parray[pindex].val.string[0],
+                data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
+                data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
+                data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
+
+    if (FPSconnected == 0)
+    {
+        if (isVISIBLE == 1)
+        {
+            screenprint_unsetcolor(COLOR_ERROR);
+        }
+    }
+    else if (FPSconnected == 1)
+    {
+        if (isVISIBLE == 1)
+        {
+            screenprint_unsetcolor(COLOR_OK);
+        }
+    }
+    else if (FPSconnected == 2)
+    {
+        if (isVISIBLE == 1)
+        {
+            screenprint_unsetcolor(COLOR_WARNING);
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+
+static errno_t fpselem_statusprint_STREAMNAME(
+    int fpsindex,
+    int pindex,
+    int isVISIBLE
+)
+{
+    if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)
+    {
+        // Check value feedback if available
+        {
+            if (!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
+            {
+                if (data.fpsarray[fpsindex].parray[pindex].info.stream.streamID > -1)
+                {
+                    if (isVISIBLE == 1)
+                    {
+                        screenprint_setcolor(COLOR_OK);
+                    }
+                }
+            }
+        }
+    }
+
+    TUI_printfw("[LOC %d]  %6s",
+                data.fpsarray[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
+                data.fpsarray[fpsindex].parray[pindex].val.string[0]);
+
+    if (data.fpsarray[fpsindex].parray[pindex].info.stream.streamID > -1)
+    {
+
+        TUI_printfw(" [ %d",
+                    data.fpsarray[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
+        if (data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 1)
+        {
+            TUI_printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
+        }
+        if (data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 2)
+        {
+            TUI_printfw("x%d", data.fpsarray[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
+        }
+
+        TUI_printfw(" ]");
+        if (isVISIBLE == 1)
+        {
+            screenprint_unsetcolor(COLOR_OK);
+        }
+    }
+    return RETURN_SUCCESS;
+}
 
 
 
@@ -227,8 +382,7 @@ errno_t fpsCTRL_FPSdisplay(
                     {
                         DEBUG_TRACEPOINT("provide a fps status summary if at root");
                         int fpsindex = keywnode[knodeindex].fpsindex;
-                        fpsCTRLscreen_level0node_summary(data.fpsarray,
-                                                         fpsindex);
+                        fpsCTRLscreen_level0node_summary(data.fpsarray,fpsindex);
                     }
 
                     // toggle highlight if node is in the chain
@@ -411,12 +565,12 @@ errno_t fpsCTRL_FPSdisplay(
                         if (child_index[fpsCTRLvar->currentlevel + 1] <
                                 keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
                         {
-                            screenprint_setcolor(5);
+                            screenprint_setcolor(COLOR_DIRECTORY);
 
                             TUI_printfw(
                                 "%-16s",
                                 keywnode[knodeindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
-                            screenprint_unsetcolor(5);
+                            screenprint_unsetcolor(COLOR_DIRECTORY);
 
                             if (GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
                             {
@@ -438,19 +592,16 @@ errno_t fpsCTRL_FPSdisplay(
 
                         DEBUG_TRACEPOINT(" ");
                         int isVISIBLE = 1;
-                        if (!(data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_VISIBLE)) // if invisible
+                        if (!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_VISIBLE))
                         {
+                            // if invisible
                             isVISIBLE = 0;
                             screenprint_setdim();
                             screenprint_setblink();
                         }
 
-                        //int kl;
 
-                        if (GUIline ==
-                                fpsCTRLvar
-                                ->GUIlineSelected[fpsCTRLvar->currentlevel])
+                        if (GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             fpsCTRLvar->pindexSelected = keywnode[knodeindex].pindex;
                             fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
@@ -530,6 +681,8 @@ errno_t fpsCTRL_FPSdisplay(
                             TUI_printfw("  %s", "-undef-");
                         }
 
+
+
                         DEBUG_TRACEPOINT("Integer types");
 
                         {
@@ -596,9 +749,8 @@ errno_t fpsCTRL_FPSdisplay(
                             }
                         }
 
-                        DEBUG_TRACEPOINT(" ");
 
-                        // float types
+                        DEBUG_TRACEPOINT("float types");
                         {
                             double val0      = 0.0;
                             double val3      = 0.0;
@@ -666,7 +818,9 @@ errno_t fpsCTRL_FPSdisplay(
                             }
                         }
 
-                        DEBUG_TRACEPOINT(" ");
+
+
+                        DEBUG_TRACEPOINT("PID type");
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_PID)
                         {
                             int paramsync = 1; // parameter is synchronized
@@ -705,8 +859,8 @@ errno_t fpsCTRL_FPSdisplay(
                             }
                         }
 
-                        DEBUG_TRACEPOINT(" ");
 
+                        DEBUG_TRACEPOINT("TIMESPEC type");
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_TIMESPEC)
                         {
                             TUI_printfw("  %10f",
@@ -717,7 +871,7 @@ errno_t fpsCTRL_FPSdisplay(
 
 
 
-                        // string types
+                        DEBUG_TRACEPOINT("generic string types");
                         if (
                             (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FILENAME)
                             || (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME)
@@ -766,151 +920,27 @@ errno_t fpsCTRL_FPSdisplay(
 
 
 
-                        DEBUG_TRACEPOINT(" ");
-                        if (data.fpsarray[fpsindex].parray[pindex].type ==
-                                FPTYPE_STREAMNAME)
+                        if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME)
                         {
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)
-                            {
-                                // Check value feedback if available
-                                {
-                                    if (!(data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR))
-                                    {
-                                        if (data.fpsarray[fpsindex].parray[pindex].info.stream.streamID > -1)
-                                        {
-                                            if (isVISIBLE == 1)
-                                            {
-                                                screenprint_setcolor(COLOR_OK);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            TUI_printfw("[LOC %d]  %6s",
-                                        data.fpsarray[fpsindex].parray[pindex].info.stream.stream_sourceLocation,
-                                        data.fpsarray[fpsindex].parray[pindex].val.string[0]);
-
-                            if (data.fpsarray[fpsindex].parray[pindex].info.stream.streamID > -1)
-                            {
-
-                                TUI_printfw(" [ %d",
-                                            data.fpsarray[fpsindex].parray[pindex].info.stream.stream_xsize[0]);
-                                if (data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 1)
-                                {
-                                    TUI_printfw(
-                                        "x%d",
-                                        data.fpsarray[fpsindex].parray[pindex].info.stream.stream_ysize[0]);
-                                }
-                                if (data.fpsarray[fpsindex].parray[pindex].info.stream.stream_naxis[0] > 2)
-                                {
-                                    TUI_printfw(
-                                        "x%d",
-                                        data.fpsarray[fpsindex].parray[pindex].info.stream.stream_zsize[0]);
-                                }
-
-                                TUI_printfw(" ]");
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(COLOR_OK);
-                                }
-                            }
+                            fpselem_statusprint_STREAMNAME(fpsindex, pindex, isVISIBLE);
                         }
 
-                        DEBUG_TRACEPOINT(" ");
 
 
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_ONOFF)
                         {
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)
-                            {
-                                screenprint_setcolor(COLOR_OK);
-                                TUI_printfw("  ON ");
-                                screenprint_unsetcolor(COLOR_OK);
-                                //TUI_printfw(" [ON  :%3s]", data.fpsarray[fpsindex].parray[pindex].val.string[0]);
-                            }
-                            else
-                            {
-                                screenprint_setcolor(COLOR_NONE);
-                                TUI_printfw(" OFF ");
-                                screenprint_unsetcolor(COLOR_NONE);
-                                //TUI_printfw(" [OFF :%3s]", data.fpsarray[fpsindex].parray[pindex].val.string[1]);
-                            }
+                            fpselem_statusprint_ONOFF(fpsindex, pindex);
                         }
+
 
                         if (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FPSNAME)
                         {
-                            // is FPS connected ?
-                            int FPSconnected = 1;
-                            // 0 : not connected, ERR
-                            // 1 : connected, OK
-                            // 2 : not connected but not needed, WARN
-
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_FEEDBACK)
-                            {   // Check value feedback if available
-                                {
-                                    if ((data.fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR) != 0)
-                                    {
-                                        // if error
-                                        FPSconnected = 0;
-                                    }
-                                    else if (data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamMAX < 0)
-                                    {
-                                        FPSconnected = 2;
-                                    }
-                                }
-                            }
-
-                            if (FPSconnected == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(COLOR_ERROR);
-                                }
-                            }
-                            else if (FPSconnected == 1)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(COLOR_OK);
-                                }
-                            }
-                            else if (FPSconnected == 2)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(COLOR_WARNING);
-                                }
-                            }
-
-                            TUI_printfw(" %10s [%ld %ld %ld]",
-                                        data.fpsarray[fpsindex].parray[pindex].val.string[0],
-                                        data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamMAX,
-                                        data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamActive,
-                                        data.fpsarray[fpsindex].parray[pindex].info.fps.FPSNBparamUsed);
-
-                            if (FPSconnected == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(COLOR_ERROR);
-                                }
-                            }
-                            else if (FPSconnected == 1)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(COLOR_OK);
-                                }
-                            }
-                            else if (FPSconnected == 2)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(COLOR_WARNING);
-                                }
-                            }
+                            fpselem_statusprint_FPSNAME(fpsindex, pindex, isVISIBLE);
                         }
+
+
+
+
 
                         DEBUG_TRACEPOINT(" ");
 
