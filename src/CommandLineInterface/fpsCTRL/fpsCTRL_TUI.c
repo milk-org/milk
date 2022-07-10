@@ -508,7 +508,8 @@ errno_t functionparameter_CTRLscreen(
             {
                 fpsCTRL_scheduler_display(fpsctrltasklist,
                                           fpsctrlqueuelist,
-                                          wrow);
+                                          wrow,
+                                          &fpsCTRLvar.scheduler_wrowstart);
             }
 
             DEBUG_TRACEPOINT(" ");

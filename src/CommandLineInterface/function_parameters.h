@@ -594,6 +594,7 @@ typedef struct
     char     fpsCTRLfifoname[200];
     int      fpsCTRLfifofd;
     int      direction;
+    int      scheduler_wrowstart;
 } FPSCTRL_PROCESS_VARS;
 
 #define NB_KEYWNODE_MAX 10000
