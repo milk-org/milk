@@ -265,8 +265,7 @@ errno_t functionparameter_CTRLscreen(
     set_signal_catch();
 
     // fifo
-    fpsCTRLvar.fpsCTRLfifofd =
-        open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
+    fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
     long fifocmdcnt = 0;
 
     for (int level = 0; level < MAXNBLEVELS; level++)
@@ -338,7 +337,9 @@ errno_t functionparameter_CTRLscreen(
         loopOK = 0;
     }
 
-    int getchardt_us_ref = 100000; // how long between getchar probes
+    // how long between getchar probes
+    int getchardt_us_ref = 100000;
+
     // refresh every 1 sec without input
     int refreshtimeoutus_ref = 1000000;
 
@@ -387,8 +388,9 @@ errno_t functionparameter_CTRLscreen(
             }
             else
             {
-                getchardt_us =
-                    (int) (1.01 * getchardt_us); // gradually slow down
+                // gradually slow down
+                getchardt_us = (int) (1.01 * getchardt_us);
+
                 if (getchardt_us > getchardt_us_ref)
                 {
                     getchardt_us = getchardt_us_ref;
@@ -414,9 +416,9 @@ errno_t functionparameter_CTRLscreen(
             else
             {
                 refresh_screen = 2;
+                getchardt_us = 10000; // check often
             }
 
-            //tcnt ++;
             timeoutuscnt += getchardt_us;
             if (timeoutuscnt > refreshtimeoutus)
             {
