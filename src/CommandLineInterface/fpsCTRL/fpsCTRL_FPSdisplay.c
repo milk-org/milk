@@ -9,8 +9,13 @@
 #include "level0node_summary.h"
 
 
-errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
-                           FPSCTRL_PROCESS_VARS *fpsCTRLvar)
+
+
+
+errno_t fpsCTRL_FPSdisplay(
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar
+)
 {
 
     DEBUG_TRACEPOINT("Check that selected node is OK : %d",
@@ -120,7 +125,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
         //              if( !(  fps[keywnode[fpsCTRLvar.nodeSelected].fpsindex].parray[keywnode[fpsCTRLvar.nodeSelected].pindex].fpflag & FPFLAG_VISIBLE)) { // if invisible
         //				if( !(  fps[fpsCTRLvar.fpsindexSelected].parray[fpsCTRLvar.pindexSelected].fpflag & FPFLAG_VISIBLE)) { // if invisible
         if (!(data.fpsarray[fpsCTRLvar->fpsindexSelected].parray[0].fpflag &
-              FPFLAG_VISIBLE)) // if invisible
+                FPFLAG_VISIBLE)) // if invisible
         {
             if (fpsCTRLvar->direction > 0)
             {
@@ -133,7 +138,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
         }
 
         while (fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-               keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+                keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
         {
             fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]--;
         }
@@ -199,10 +204,10 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                     // print keyword
                     if (snprintf(
-                            pword,
-                            10,
-                            "%s",
-                            keywnode[keywnode[nodechain[level]].child[GUIline]]
+                                pword,
+                                10,
+                                "%s",
+                                keywnode[keywnode[nodechain[level]].child[GUIline]]
                                 .keyword[level]) < 0)
                     {
                         PRINT_ERROR(
@@ -246,14 +251,14 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
             int knodeindex;
             knodeindex = keywnode[fpsCTRLvar->directorynodeSelected]
-                             .child[child_index[fpsCTRLvar->currentlevel]];
+                         .child[child_index[fpsCTRLvar->currentlevel]];
             if (knodeindex < fpsCTRLvar->NBkwn)
             {
                 int fpsindex = keywnode[knodeindex].fpsindex;
                 int pindex   = keywnode[knodeindex].pindex;
 
                 if (child_index[fpsCTRLvar->currentlevel] >
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+                        keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
                 {
                     child_index[fpsCTRLvar->currentlevel] =
                         keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
@@ -263,7 +268,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                 DEBUG_TRACEPOINT(" ");
 
                 if (child_index[fpsCTRLvar->currentlevel] <
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
+                        keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
                 {
 
                     if (fpsCTRLvar->currentlevel > 0)
@@ -276,10 +281,10 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                     DEBUG_TRACEPOINT(" ");
 
                     if (keywnode[knodeindex].leaf == 0)
-                    { // If this is a directory
+                    {   // If this is a directory
                         DEBUG_TRACEPOINT(" ");
                         if (fpsCTRLvar->currentlevel ==
-                            0) // provide a status summary if at root
+                                0) // provide a status summary if at root
                         {
                             DEBUG_TRACEPOINT(" ");
 
@@ -296,7 +301,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             else // PID not active
                             {
                                 if (data.fpsarray[fpsindex].md->status &
-                                    FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+                                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
                                 {
                                     // not clean exit
                                     screenprint_setcolor(4);
@@ -343,7 +348,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             else
                             {
                                 if (data.fpsarray[fpsindex].md->status &
-                                    FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+                                        FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
                                 {
                                     // not clean exit
                                     screenprint_setcolor(4);
@@ -359,7 +364,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         }
 
                         if (GUIline ==
-                            fpsCTRLvar
+                                fpsCTRLvar
                                 ->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             screenprint_setreverse();
@@ -369,19 +374,19 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         }
 
                         if (child_index[fpsCTRLvar->currentlevel + 1] <
-                            keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
+                                keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
                         {
                             screenprint_setcolor(5);
 
                             TUI_printfw(
                                 "%-16s",
                                 keywnode[knodeindex]
-                                    .keyword[keywnode[knodeindex].keywordlevel -
-                                             1]);
+                                .keyword[keywnode[knodeindex].keywordlevel -
+                                                                           1]);
                             screenprint_unsetcolor(5);
 
                             if (GUIline ==
-                                fpsCTRLvar
+                                    fpsCTRLvar
                                     ->GUIlineSelected[fpsCTRLvar->currentlevel])
                             {
                                 screenprint_unsetreverse();
@@ -403,7 +408,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         DEBUG_TRACEPOINT(" ");
                         int isVISIBLE = 1;
                         if (!(data.fpsarray[fpsindex].parray[pindex].fpflag &
-                              FPFLAG_VISIBLE)) // if invisible
+                                FPFLAG_VISIBLE)) // if invisible
                         {
                             isVISIBLE = 0;
                             screenprint_setdim();
@@ -413,7 +418,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         //int kl;
 
                         if (GUIline ==
-                            fpsCTRLvar
+                                fpsCTRLvar
                                 ->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             fpsCTRLvar->pindexSelected =
@@ -433,7 +438,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         if (isVISIBLE == 1)
                         {
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_WRITESTATUS)
+                                    FPFLAG_WRITESTATUS)
                             {
                                 screenprint_setcolor(10);
                                 screenprint_setblink();
@@ -459,7 +464,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         //level = keywnode[knodeindex].keywordlevel;
 
                         if (GUIline ==
-                            fpsCTRLvar
+                                fpsCTRLvar
                                 ->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             screenprint_setreverse();
@@ -469,12 +474,12 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             " %-"
                             "20s",
                             data.fpsarray[fpsindex]
-                                .parray[pindex]
-                                .keyword[keywnode[knodeindex].keywordlevel -
-                                         1]);
+                            .parray[pindex]
+                            .keyword[keywnode[knodeindex].keywordlevel -
+                                                                       1]);
 
                         if (GUIline ==
-                            fpsCTRLvar
+                                fpsCTRLvar
                                 ->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             screenprint_unsetcolor(10);
@@ -487,7 +492,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
 
                         if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                            FPFLAG_ERROR) // parameter setting error
+                                FPFLAG_ERROR) // parameter setting error
                         {
                             if (isVISIBLE == 1)
                             {
@@ -496,7 +501,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         }
 
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_UNDEF)
+                                FPTYPE_UNDEF)
                         {
                             TUI_printfw("  %s", "-undef-");
                         }
@@ -512,38 +517,38 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             {
                             case FPTYPE_INT32:
                                 val0 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.i32[0];
+                                       .parray[pindex]
+                                       .val.i32[0];
                                 val3 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.i32[3];
+                                       .parray[pindex]
+                                       .val.i32[3];
                                 intflag = 1;
                                 break;
                             case FPTYPE_UINT32:
                                 val0 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.ui32[0];
+                                       .parray[pindex]
+                                       .val.ui32[0];
                                 val3 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.ui32[3];
+                                       .parray[pindex]
+                                       .val.ui32[3];
                                 intflag = 1;
                                 break;
                             case FPTYPE_INT64:
                                 val0 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.i64[0];
+                                       .parray[pindex]
+                                       .val.i64[0];
                                 val3 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.i64[3];
+                                       .parray[pindex]
+                                       .val.i64[3];
                                 intflag = 1;
                                 break;
                             case FPTYPE_UINT64:
                                 val0 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.ui64[0];
+                                       .parray[pindex]
+                                       .val.ui64[0];
                                 val3 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.ui64[3];
+                                       .parray[pindex]
+                                       .val.ui64[3];
                                 intflag = 1;
                                 break;
                             }
@@ -555,13 +560,13 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                 if (data.fpsarray[fpsindex]
                                         .parray[pindex]
                                         .fpflag &
-                                    FPFLAG_FEEDBACK)
+                                        FPFLAG_FEEDBACK)
                                 {
                                     // Check value feedback if available
                                     if (!(data.fpsarray[fpsindex]
-                                              .parray[pindex]
-                                              .fpflag &
-                                          FPFLAG_ERROR))
+                                            .parray[pindex]
+                                            .fpflag &
+                                            FPFLAG_ERROR))
                                         if (val0 != val3)
                                         {
                                             paramsync = 0;
@@ -599,20 +604,20 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             {
                             case FPTYPE_FLOAT32:
                                 val0 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.f32[0];
+                                       .parray[pindex]
+                                       .val.f32[0];
                                 val3 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.f32[3];
+                                       .parray[pindex]
+                                       .val.f32[3];
                                 floatflag = 1;
                                 break;
                             case FPTYPE_FLOAT64:
                                 val0 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.f64[0];
+                                       .parray[pindex]
+                                       .val.f64[0];
                                 val3 = data.fpsarray[fpsindex]
-                                           .parray[pindex]
-                                           .val.f64[3];
+                                       .parray[pindex]
+                                       .val.f64[3];
                                 floatflag = 1;
                                 break;
                             }
@@ -624,11 +629,11 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                 if (data.fpsarray[fpsindex]
                                         .parray[pindex]
                                         .fpflag &
-                                    FPFLAG_FEEDBACK) // Check value feedback if available
+                                        FPFLAG_FEEDBACK) // Check value feedback if available
                                     if (!(data.fpsarray[fpsindex]
-                                              .parray[pindex]
-                                              .fpflag &
-                                          FPFLAG_ERROR))
+                                            .parray[pindex]
+                                            .fpflag &
+                                            FPFLAG_ERROR))
                                     {
                                         double absdiff;
                                         double abssum;
@@ -639,7 +644,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                         abssum  = fabs(val0) + fabs(val3);
 
                                         if ((absdiff < epsrel * abssum) ||
-                                            (absdiff < epsabs))
+                                                (absdiff < epsabs))
                                         {
                                             paramsync = 1;
                                         }
@@ -671,22 +676,22 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                         DEBUG_TRACEPOINT(" ");
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_PID)
+                                FPTYPE_PID)
                         {
                             int paramsync = 1; // parameter is synchronized
 
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
+                                    FPFLAG_FEEDBACK) // Check value feedback if available
                             {
                                 if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
+                                        .parray[pindex]
+                                        .fpflag &
+                                        FPFLAG_ERROR))
                                 {
                                     if (data.fpsarray[fpsindex]
                                             .parray[pindex]
                                             .val.pid[0] !=
-                                        data.fpsarray[fpsindex]
+                                            data.fpsarray[fpsindex]
                                             .parray[pindex]
                                             .val.pid[1])
                                     {
@@ -705,8 +710,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                             TUI_printfw("  %10d",
                                         (float) data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.pid[0]);
+                                        .parray[pindex]
+                                        .val.pid[0]);
 
                             if (paramsync == 0)
                             {
@@ -718,45 +723,53 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                             TUI_printfw("  %10d",
                                         (int) data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.pid[0]);
+                                        .parray[pindex]
+                                        .val.pid[0]);
                         }
 
                         DEBUG_TRACEPOINT(" ");
 
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_TIMESPEC)
+                                FPTYPE_TIMESPEC)
                         {
                             TUI_printfw("  %10f",
                                         1.0 * data.fpsarray[fpsindex]
-                                                    .parray[pindex]
-                                                    .val.ts[0]
-                                                    .tv_sec +
-                                            1e-9 * data.fpsarray[fpsindex]
-                                                       .parray[pindex]
-                                                       .val.ts[0]
-                                                       .tv_nsec);
+                                        .parray[pindex]
+                                        .val.ts[0]
+                                        .tv_sec +
+                                        1e-9 * data.fpsarray[fpsindex]
+                                        .parray[pindex]
+                                        .val.ts[0]
+                                        .tv_nsec);
                         }
 
-                        if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_FILENAME)
+
+
+                        // string types
+                        if (
+                            (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FILENAME)
+                            || (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_FITSFILENAME)
+                            || (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
+                            || (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_DIRNAME)
+                            || (data.fpsarray[fpsindex].parray[pindex].type == FPTYPE_STRING)
+                        )
                         {
                             int paramsync = 1; // parameter is synchronized
 
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
+                                    FPFLAG_FEEDBACK) // Check value feedback if available
                             {
                                 if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
+                                        .parray[pindex]
+                                        .fpflag &
+                                        FPFLAG_ERROR))
                                 {
                                     if (strcmp(data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[0],
+                                               .parray[pindex]
+                                               .val.string[0],
                                                data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[1]))
+                                               .parray[pindex]
+                                               .val.string[1]))
                                     {
                                         paramsync = 0;
                                     }
@@ -767,181 +780,38 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             {
                                 if (isVISIBLE == 1)
                                 {
-                                    screenprint_setcolor(3);
+                                    screenprint_setcolor(COLOR_WARNING);
                                 }
                             }
 
                             TUI_printfw("  %10s",
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0]);
+                                        .parray[pindex]
+                                        .val.string[0]);
 
                             if (paramsync == 0)
                             {
                                 if (isVISIBLE == 1)
                                 {
-                                    screenprint_unsetcolor(3);
-                                }
-                            }
-                        }
-                        DEBUG_TRACEPOINT(" ");
-
-                        if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_FITSFILENAME)
-                        {
-                            int paramsync = 1; // parameter is synchronized
-
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
-                            {
-                                if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
-                                {
-                                    if (strcmp(data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[0],
-                                               data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[1]))
-                                    {
-                                        paramsync = 0;
-                                    }
-                                }
-                            }
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(3);
-                                }
-                            }
-
-                            TUI_printfw("  %10s",
-                                        data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0]);
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(3);
-                                }
-                            }
-                        }
-                        DEBUG_TRACEPOINT(" ");
-                        if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_EXECFILENAME)
-                        {
-                            int paramsync = 1; // parameter is synchronized
-
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
-                            {
-                                if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
-                                {
-                                    if (strcmp(data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[0],
-                                               data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[1]))
-                                    {
-                                        paramsync = 0;
-                                    }
-                                }
-                            }
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(3);
-                                }
-                            }
-
-                            TUI_printfw("  %10s",
-                                        data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0]);
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(3);
+                                    screenprint_unsetcolor(COLOR_WARNING);
                                 }
                             }
                         }
 
 
 
-                        DEBUG_TRACEPOINT(" ");
-
-                        if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_DIRNAME)
-                        {
-                            int paramsync = 1; // parameter is synchronized
-
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
-                            {
-                                if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
-                                {
-                                    if (strcmp(data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[0],
-                                               data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[1]))
-                                    {
-                                        paramsync = 0;
-                                    }
-                                }
-                            }
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(3);
-                                }
-                            }
-
-                            TUI_printfw("  %10s",
-                                        data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0]);
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(3);
-                                }
-                            }
-                        }
 
                         DEBUG_TRACEPOINT(" ");
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_STREAMNAME)
+                                FPTYPE_STREAMNAME)
                         {
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
+                                    FPFLAG_FEEDBACK) // Check value feedback if available
                             {
                                 if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
+                                        .parray[pindex]
+                                        .fpflag &
+                                        FPFLAG_ERROR))
                                 {
                                     if (data.fpsarray[fpsindex]
                                             .parray[pindex]
@@ -957,11 +827,11 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                             TUI_printfw("[LOC %d]  %6s",
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .info.stream.stream_sourceLocation,
+                                        .parray[pindex]
+                                        .info.stream.stream_sourceLocation,
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0]);
+                                        .parray[pindex]
+                                        .val.string[0]);
 
                             if (data.fpsarray[fpsindex]
                                     .parray[pindex]
@@ -970,8 +840,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                                 TUI_printfw(" [ %d",
                                             data.fpsarray[fpsindex]
-                                                .parray[pindex]
-                                                .info.stream.stream_xsize[0]);
+                                            .parray[pindex]
+                                            .info.stream.stream_xsize[0]);
                                 if (data.fpsarray[fpsindex]
                                         .parray[pindex]
                                         .info.stream.stream_naxis[0] > 1)
@@ -979,8 +849,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     TUI_printfw(
                                         "x%d",
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .info.stream.stream_ysize[0]);
+                                        .parray[pindex]
+                                        .info.stream.stream_ysize[0]);
                                 }
                                 if (data.fpsarray[fpsindex]
                                         .parray[pindex]
@@ -989,8 +859,8 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                     TUI_printfw(
                                         "x%d",
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .info.stream.stream_zsize[0]);
+                                        .parray[pindex]
+                                        .info.stream.stream_zsize[0]);
                                 }
 
                                 TUI_printfw(" ]");
@@ -1000,61 +870,15 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                                 }
                             }
                         }
+
                         DEBUG_TRACEPOINT(" ");
 
-                        if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_STRING)
-                        {
-                            int paramsync = 1; // parameter is synchronized
-
-                            if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
-                            {
-                                if (!(data.fpsarray[fpsindex]
-                                          .parray[pindex]
-                                          .fpflag &
-                                      FPFLAG_ERROR))
-                                {
-                                    if (strcmp(data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[0],
-                                               data.fpsarray[fpsindex]
-                                                   .parray[pindex]
-                                                   .val.string[1]))
-                                    {
-                                        paramsync = 0;
-                                    }
-                                }
-                            }
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_setcolor(3);
-                                }
-                            }
-
-                            TUI_printfw("  %10s",
-                                        data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0]);
-
-                            if (paramsync == 0)
-                            {
-                                if (isVISIBLE == 1)
-                                {
-                                    screenprint_unsetcolor(3);
-                                }
-                            }
-                        }
-                        DEBUG_TRACEPOINT(" ");
 
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_ONOFF)
+                                FPTYPE_ONOFF)
                         {
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_ONOFF)
+                                    FPFLAG_ONOFF)
                             {
                                 screenprint_setcolor(2);
                                 TUI_printfw("  ON ");
@@ -1071,7 +895,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         }
 
                         if (data.fpsarray[fpsindex].parray[pindex].type ==
-                            FPTYPE_FPSNAME)
+                                FPTYPE_FPSNAME)
                         {
                             // is FPS connected ?
                             int FPSconnected = 1;
@@ -1080,19 +904,19 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             // 2 : not connected but not needed, WARN
 
                             if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                                FPFLAG_FEEDBACK) // Check value feedback if available
+                                    FPFLAG_FEEDBACK) // Check value feedback if available
                             {
                                 if ((data.fpsarray[fpsindex]
-                                         .parray[pindex]
-                                         .fpflag &
-                                     FPFLAG_ERROR) != 0)
+                                        .parray[pindex]
+                                        .fpflag &
+                                        FPFLAG_ERROR) != 0)
                                 {
                                     // if error
                                     FPSconnected = 0;
                                 }
                                 else if (data.fpsarray[fpsindex]
-                                             .parray[pindex]
-                                             .info.fps.FPSNBparamMAX < 0)
+                                         .parray[pindex]
+                                         .info.fps.FPSNBparamMAX < 0)
                                 {
                                     FPSconnected = 2;
                                 }
@@ -1122,17 +946,17 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
 
                             TUI_printfw(" %10s [%ld %ld %ld]",
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .val.string[0],
+                                        .parray[pindex]
+                                        .val.string[0],
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .info.fps.FPSNBparamMAX,
+                                        .parray[pindex]
+                                        .info.fps.FPSNBparamMAX,
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .info.fps.FPSNBparamActive,
+                                        .parray[pindex]
+                                        .info.fps.FPSNBparamActive,
                                         data.fpsarray[fpsindex]
-                                            .parray[pindex]
-                                            .info.fps.FPSNBparamUsed);
+                                        .parray[pindex]
+                                        .info.fps.FPSNBparamUsed);
 
                             if (FPSconnected == 0)
                             {
@@ -1160,7 +984,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                         DEBUG_TRACEPOINT(" ");
 
                         if (data.fpsarray[fpsindex].parray[pindex].fpflag &
-                            FPFLAG_ERROR) // parameter setting error
+                                FPFLAG_ERROR) // parameter setting error
                         {
                             if (isVISIBLE == 1)
                             {
@@ -1174,7 +998,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
                             data.fpsarray[fpsindex].parray[pindex].description);
 
                         if (GUIline ==
-                            fpsCTRLvar
+                                fpsCTRLvar
                                 ->GUIlineSelected[fpsCTRLvar->currentlevel])
                         {
                             if (isVISIBLE == 1)
@@ -1209,7 +1033,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
         fpsCTRLvar->NBindex = icnt;
 
         if (fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-            fpsCTRLvar->NBindex - 1)
+                fpsCTRLvar->NBindex - 1)
         {
             fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
                 fpsCTRLvar->NBindex - 1;
@@ -1220,7 +1044,7 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
         TUI_newline();
 
         if (data.fpsarray[fpsCTRLvar->fpsindexSelected].md->status &
-            FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
+                FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
         {
             screenprint_setcolor(2);
             TUI_printfw(
@@ -1234,29 +1058,29 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE    *keywnode,
         {
             int msgi;
 
-            screenprint_setcolor(4);
+            screenprint_setcolor(COLOR_ERROR);
             TUI_printfw(
                 "[%ld] %d PARAMETER SETTINGS "
                 "ERROR(s) :",
                 data.fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt,
                 data.fpsarray[fpsCTRLvar->fpsindexSelected].md->conferrcnt);
-            screenprint_unsetcolor(4);
+            screenprint_unsetcolor(COLOR_ERROR);
             TUI_newline();
 
             screenprint_setbold();
 
             for (msgi = 0;
-                 msgi < data.fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt;
-                 msgi++)
+                    msgi < data.fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt;
+                    msgi++)
             {
                 int pindex = data.fpsarray[fpsCTRLvar->fpsindexSelected]
-                                 .md->msgpindex[msgi];
+                             .md->msgpindex[msgi];
                 TUI_printfw("%-40s %s",
                             data.fpsarray[fpsCTRLvar->fpsindexSelected]
-                                .parray[pindex]
-                                .keywordfull,
+                            .parray[pindex]
+                            .keywordfull,
                             data.fpsarray[fpsCTRLvar->fpsindexSelected]
-                                .md->message[msgi]);
+                            .md->message[msgi]);
                 TUI_newline();
             }
 
