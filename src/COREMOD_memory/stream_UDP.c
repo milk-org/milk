@@ -19,62 +19,37 @@
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
 
-typedef struct
-{
-    long cnt0;
-    long cnt1;
-} TCP_BUFFER_METADATA;
 
 // ==========================================
 // Forward declaration(s)
 // ==========================================
 
-errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
-                                              int         semtrig,
-                                              int         testmode);
+imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
+                                            const char *IPaddr,
+                                            int         port,
+                                            int         do_counter_sync,
+                                            int         RT_priority);
 
-imageID COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname,
-                                             const char *IPaddr,
-                                             int         port,
-                                             int         mode,
-                                             int         RT_priority);
-
-imageID
-COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority);
+imageID COREMOD_MEMORY_image_NETUDPreceive(int port,
+                                           int do_counter_sync,
+                                           int RT_priority);
 
 // ==========================================
 // Command line interface wrapper function(s)
 // ==========================================
 
-static errno_t COREMOD_MEMORY_testfunction_semaphore__cli()
-{
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
-        0)
-    {
-        COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string,
-                                              data.cmdargtoken[2].val.numl,
-                                              data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
-
-static errno_t COREMOD_MEMORY_image_NETWORKtransmit__cli()
+static errno_t COREMOD_MEMORY_image_NETUDPtransmit__cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) +
             CLI_checkarg(5, CLIARG_LONG) ==
         0)
     {
-        COREMOD_MEMORY_image_NETWORKtransmit(data.cmdargtoken[1].val.string,
-                                             data.cmdargtoken[2].val.string,
-                                             data.cmdargtoken[3].val.numl,
-                                             data.cmdargtoken[4].val.numl,
-                                             data.cmdargtoken[5].val.numl);
+        COREMOD_MEMORY_image_NETUDPtransmit(data.cmdargtoken[1].val.string,
+                                            data.cmdargtoken[2].val.string,
+                                            data.cmdargtoken[3].val.numl,
+                                            data.cmdargtoken[4].val.numl,
+                                            data.cmdargtoken[5].val.numl);
         return CLICMD_SUCCESS;
     }
     else
@@ -83,15 +58,15 @@ static errno_t COREMOD_MEMORY_image_NETWORKtransmit__cli()
     }
 }
 
-static errno_t COREMOD_MEMORY_image_NETWORKreceive__cli()
+static errno_t COREMOD_MEMORY_image_NETUDPreceive__cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_LONG) +
             CLI_checkarg(3, CLIARG_LONG) ==
         0)
     {
-        COREMOD_MEMORY_image_NETWORKreceive(data.cmdargtoken[1].val.numl,
-                                            data.cmdargtoken[2].val.numl,
-                                            data.cmdargtoken[3].val.numl);
+        COREMOD_MEMORY_image_NETUDPreceive(data.cmdargtoken[1].val.numl,
+                                           data.cmdargtoken[2].val.numl,
+                                           data.cmdargtoken[3].val.numl);
         return CLICMD_SUCCESS;
     }
     else
@@ -104,142 +79,42 @@ static errno_t COREMOD_MEMORY_image_NETWORKreceive__cli()
 // Register CLI command(s)
 // ==========================================
 
-errno_t stream__TCP_addCLIcmd()
+errno_t stream__UDP_addCLIcmd()
 {
-    RegisterCLIcommand("testfuncsem",
-                       __FILE__,
-                       COREMOD_MEMORY_testfunction_semaphore__cli,
-                       "test semaphore loop",
-                       "<image> <semindex> <testmode>",
-                       "testfuncsem im1 1 0",
-                       "int COREMOD_MEMORY_testfunction_semaphore(const char "
-                       "*IDname, int semtrig, int testmode)");
 
-    RegisterCLIcommand("imnetwtransmit",
-                       __FILE__,
-                       COREMOD_MEMORY_image_NETWORKtransmit__cli,
-                       "transmit image over network",
-                       "<image> <IP addr> <port [long]> <sync mode [int]>",
-                       "imnetwtransmit im1 127.0.0.1 0 8888 0",
-                       "long COREMOD_MEMORY_image_NETWORKtransmit(const char "
-                       "*IDname, const char *IPaddr, int port, int mode)");
+    RegisterCLIcommand(
+        "imudptransmit",
+        __FILE__,
+        COREMOD_MEMORY_image_NETUDPtransmit__cli,
+        "transmit image over network",
+        "<image> <IP addr> <port [long]> <do_counter_sync [int]>",
+        "imudptransmit im1 127.0.0.1 0 8888 0",
+        "long COREMOD_MEMORY_image_NETWORKtransmit(const char "
+        "*IDname, const char *IPaddr, int port, int do_counter_sync)");
 
-    RegisterCLIcommand("imnetwreceive",
-                       __FILE__,
-                       COREMOD_MEMORY_image_NETWORKreceive__cli,
-                       "receive image(s) over network. mode=1 uses counter "
-                       "instead of semaphore",
-                       "<port [long]> <mode [int]> <RT priority>",
-                       "imnetwreceive 8887 0 80",
-                       "long COREMOD_MEMORY_image_NETWORKreceive(int port, int "
-                       "mode, int RT_priority)");
-
-    return RETURN_SUCCESS;
-}
-
-errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
-                                              int         semtrig,
-                                              int         testmode)
-{
-    imageID ID;
-    int     semval;
-    int     rv;
-    long    loopcnt = 0;
-
-    ID = image_ID(IDname);
-
-    char pinfomsg[200];
-
-    // ===========================
-    // Start loop
-    // ===========================
-    int loopOK = 1;
-    while (loopOK == 1)
-    {
-        printf("\n");
-        usleep(500);
-
-        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-        sprintf(pinfomsg,
-                "%ld TEST 0 semtrig %d  ID %ld  %d",
-                loopcnt,
-                semtrig,
-                ID,
-                semval);
-        printf("MSG: %s\n", pinfomsg);
-        fflush(stdout);
-
-        if (testmode == 0)
-        {
-            rv = sem_wait(data.image[ID].semptr[semtrig]);
-        }
-
-        if (testmode == 1)
-        {
-            rv = sem_trywait(data.image[ID].semptr[semtrig]);
-        }
-
-        if (testmode == 2)
-        {
-            sem_post(data.image[ID].semptr[semtrig]);
-            rv = sem_wait(data.image[ID].semptr[semtrig]);
-        }
-
-        if (rv == -1)
-        {
-            switch (errno)
-            {
-
-            case EINTR:
-                printf(
-                    "    sem_wait call was interrupted by a signal "
-                    "handler\n");
-                break;
-
-            case EINVAL:
-                printf("    not a valid semaphore\n");
-                break;
-
-            case EAGAIN:
-                printf(
-                    "    The operation could not be performed "
-                    "without blocking (i.e., the semaphore "
-                    "currently has "
-                    "the value zero)\n");
-                break;
-
-            default:
-                printf("    ERROR: unknown code %d\n", rv);
-                break;
-            }
-        }
-        else
-        {
-            printf("    OK\n");
-        }
-
-        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
-        sprintf(pinfomsg,
-                "%ld TEST 1 semtrig %d  ID %ld  %d",
-                loopcnt,
-                semtrig,
-                ID,
-                semval);
-        printf("MSG: %s\n", pinfomsg);
-        fflush(stdout);
-
-        loopcnt++;
-    }
+    RegisterCLIcommand(
+        "imudpreceive",
+        __FILE__,
+        COREMOD_MEMORY_image_NETUDPreceive__cli,
+        "receive image(s) over network. do_counter_sync=1 uses counter "
+        "instead of semaphore",
+        "<port [long]> <do_counter_sync [int]> <RT priority>",
+        "imupdreceive 8887 0 80",
+        "long COREMOD_MEMORY_image_NETWORKreceive(int port, int "
+        "do_counter_sync, int RT_priority)");
 
     return RETURN_SUCCESS;
 }
 
 /** continuously transmits 2D image through TCP link
- * mode = 1, force counter to be used for synchronization, ignore semaphores if they exist
+ * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
-imageID COREMOD_MEMORY_image_NETWORKtransmit(
-    const char *IDname, const char *IPaddr, int port, int mode, int RT_priority)
+imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
+                                            const char *IPaddr,
+                                            int         port,
+                                            int         do_counter_sync,
+                                            int         RT_priority)
 {
     imageID            ID;
     struct sockaddr_in sock_server;
@@ -250,8 +125,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     long long          iter = 0;
     long               framesize; // pixel data only
     uint32_t           xsize, ysize;
-    char              *ptr0; // source
-    char              *ptr1; // source - offset by slice
+    char              *ptr_img_data; // source
+    char              *ptr_img_data_slice; // source - offset by slice
     int                rs;
 
     struct timespec ts;
@@ -261,10 +136,12 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     int             slice, oldslice;
     int             NBslices;
 
-    TCP_BUFFER_METADATA *frame_md;
-    long                 framesize1; // pixel data + metadata
-    long  framesizeall; // total frame size : pixel data + metadata + kw
-    char *buff;         // transmit buffer
+    long            framesize1; // pixel data + metadata
+    long            framesizeall; // total frame size : pixel data + metadata + kw
+
+    char           *buff; // socket-side buffer (metadata at beginning)
+    char           *ptr_buff_data; // socket-side buffer + data offset
+    char           *ptr_buff_keywords; // socket-side buffer + keyword offset
 
     int semtrig = 6; // TODO - scan for available sem
     // IMPORTANT: do not use semtrig 0
@@ -272,7 +149,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     char errmsg[200];
 
-    printf("Transmit stream %s over IP %s port %d\n", IDname, IPaddr, port);
+    printf("Transmit stream %s over UDP/IP %s port %d\n", IDname, IPaddr, port);
     fflush(stdout);
 
     DEBUG_TRACEPOINT(" ");
@@ -307,26 +184,14 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     processinfo->RT_priority =
         RT_priority; // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
 
-    int loopOK = 1;
+    int loopOK = 1; // Master flag
 
     ID = image_ID(IDname);
 
-    if ((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    if ((fds_client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
         printf("ERROR creating socket\n");
         exit(0);
-    }
-
-    result = setsockopt(fds_client,     /* socket affected */
-                        IPPROTO_TCP,    /* set option at TCP level */
-                        TCP_NODELAY,    /* name of option */
-                        (char *) &flag, /* the cast is historical cruft */
-                        sizeof(int));   /* length of option value */
-
-    if (result < 0)
-    {
-        processinfo_error(processinfo, "ERROR: setsockopt() failed\n");
-        loopOK = 0;
     }
 
     if (loopOK == 1)
@@ -335,24 +200,15 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         sock_server.sin_family      = AF_INET;
         sock_server.sin_port        = htons(port);
         sock_server.sin_addr.s_addr = inet_addr(IPaddr);
-
-        if (connect(fds_client,
-                    (struct sockaddr *) &sock_server,
-                    sizeof(sock_server)) < 0)
-        {
-            perror("Error  connect() failed ");
-            printf("port = %d\n", port);
-            processinfo_error(processinfo, "ERROR: connect() failed\n");
-            loopOK = 0;
-        }
     }
 
-    if (loopOK == 1)
+    if (loopOK == 1) // Handshake over metadata
+    // We're gonna need a TCP socket for that anyway?
     {
-        if (send(fds_client,
+        if (sendto(fds_client,
                  (void *) data.image[ID].md,
                  sizeof(IMAGE_METADATA),
-                 0) != sizeof(IMAGE_METADATA))
+                 0, (const struct sockaddr *)&sock_server, sizeof(sock_server)) != sizeof(IMAGE_METADATA))
         {
             printf(
                 "send() sent a different number of bytes than expected "
@@ -380,54 +236,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     if (loopOK == 1)
     {
-        switch (data.image[ID].md[0].datatype)
-        {
-
-        case _DATATYPE_INT8:
-            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            break;
-        case _DATATYPE_UINT8:
-            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            break;
-
-        case _DATATYPE_INT16:
-            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            break;
-        case _DATATYPE_UINT16:
-            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            break;
-
-        case _DATATYPE_INT32:
-            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            break;
-        case _DATATYPE_UINT32:
-            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            break;
-
-        case _DATATYPE_INT64:
-            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            break;
-        case _DATATYPE_UINT64:
-            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            break;
-
-        case _DATATYPE_FLOAT:
-            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            break;
-        case _DATATYPE_DOUBLE:
-            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            break;
-
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            sprintf(errmsg,
-                    "WRONG DATA TYPE data type = %d\n",
-                    data.image[ID].md[0].datatype);
-            printf("data type = %d\n", data.image[ID].md[0].datatype);
-            processinfo_error(processinfo, errmsg);
-            loopOK = 0;
-            break;
-        }
+        framesize = ImageStreamIO_typesize(data.image[ID].md[0].datatype) * xsize * ysize;
 
         printf("IMAGE FRAME SIZE = %ld\n", framesize);
         fflush(stdout);
@@ -435,52 +244,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     if (loopOK == 1)
     {
-        switch (data.image[ID].md[0].datatype)
-        {
+        ptr_img_data = (char *) ImageStreamIO_get_image_d_ptr(&data.image[ID]);
 
-        case _DATATYPE_INT8:
-            ptr0 = (char *) data.image[ID].array.SI8;
-            break;
-        case _DATATYPE_UINT8:
-            ptr0 = (char *) data.image[ID].array.UI8;
-            break;
-
-        case _DATATYPE_INT16:
-            ptr0 = (char *) data.image[ID].array.SI16;
-            break;
-        case _DATATYPE_UINT16:
-            ptr0 = (char *) data.image[ID].array.UI16;
-            break;
-
-        case _DATATYPE_INT32:
-            ptr0 = (char *) data.image[ID].array.SI32;
-            break;
-        case _DATATYPE_UINT32:
-            ptr0 = (char *) data.image[ID].array.UI32;
-            break;
-
-        case _DATATYPE_INT64:
-            ptr0 = (char *) data.image[ID].array.SI64;
-            break;
-        case _DATATYPE_UINT64:
-            ptr0 = (char *) data.image[ID].array.UI64;
-            break;
-
-        case _DATATYPE_FLOAT:
-            ptr0 = (char *) data.image[ID].array.F;
-            break;
-        case _DATATYPE_DOUBLE:
-            ptr0 = (char *) data.image[ID].array.D;
-            break;
-
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            exit(0);
-            break;
-        }
-
-        frame_md = (TCP_BUFFER_METADATA *) malloc(sizeof(TCP_BUFFER_METADATA));
-        framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
+        framesize1 = framesize + sizeof(IMAGE_METADATA);
 
         if (TCPTRANSFERKW == 0)
         {
@@ -493,6 +259,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         }
 
         buff = (char *) malloc(sizeof(char) * framesizeall);
+        ptr_buff_data = buff + sizeof(IMAGE_METADATA);
+        ptr_buff_keywords = ptr_buff_data + framesize;
 
         printf("transfer buffer size = %ld\n", framesizeall);
         fflush(stdout);
@@ -503,7 +271,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         fflush(stdout);
     }
 
-    if ((data.image[ID].md[0].sem == 0) || (mode == 1))
+    if ((data.image[ID].md[0].sem == 0) || (do_counter_sync == 1))
     {
         processinfo_WriteMessage(processinfo, "sync using counter");
         UseSem = 0;
@@ -576,8 +344,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
             if (semr == 0)
             {
-                frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
-                frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
 
                 slice = data.image[ID].md[0].cnt1;
                 if (slice > oldslice + 1)
@@ -594,23 +360,20 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                     slice = 0;
                 }
 
-                frame_md[0].cnt1 = slice;
-
-                ptr1 =
-                    ptr0 +
-                    framesize *
-                        slice; //data.image[ID].md[0].cnt1; // frame that was just written
-                memcpy(buff, ptr1, framesize);
-                memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
+                ptr_img_data_slice =
+                    ptr_img_data + framesize * slice;
+                memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
+                memcpy(buff, &data.image[ID].md[0], sizeof(IMAGE_METADATA));
 
                 if (TCPTRANSFERKW == 1)
                 {
-                    memcpy(buff + framesize1,
+                    memcpy(ptr_buff_keywords,
                            (char *) data.image[ID].kw,
                            data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
-                rs = send(fds_client, buff, framesizeall, 0);
+                rs = sendto(fds_client, buff, framesizeall, 0,
+                (const struct sockaddr *)&sock_server, sizeof(sock_server));
 
                 if (rs != framesizeall)
                 {
@@ -622,7 +385,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                             rs,
                             (long) framesize,
                             (long) framesizeall,
-                            (long) sizeof(TCP_BUFFER_METADATA));
+                            (long) sizeof(IMAGE_METADATA));
                     printf("%s\n", errmsg);
                     fflush(stdout);
                     processinfo_WriteMessage(processinfo, errmsg);
@@ -653,24 +416,23 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     printf("port %d closed\n", port);
     fflush(stdout);
 
-    free(frame_md);
-
     return ID;
 }
 
 /** continuously receives 2D image through TCP link
- * mode = 1, force counter to be used for synchronization, ignore semaphores if they exist
+ * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
-imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
-                                            __attribute__((unused)) int mode,
-                                            int RT_priority)
+imageID COREMOD_MEMORY_image_NETUDPreceive(
+    int port,
+    __attribute__((unused)) int do_counter_sync,
+    int RT_priority)
 {
     struct sockaddr_in sock_server;
     struct sockaddr_in sock_client;
     int                fds_server;
     int                fds_client;
-    socklen_t          slen_client;
+    socklen_t          slen_client = (socklen_t) sizeof(sock_client);
 
     int  flag = 1;
     long recvsize;
@@ -679,11 +441,17 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     int  MAXPENDING = 5;
 
     IMAGE_METADATA *imgmd;
+    IMAGE_METADATA *imgmd_remote;
     imageID         ID;
     long            framesize;
     uint32_t        xsize;
     uint32_t        ysize;
-    char           *ptr0; // source
+    char           *ptr_dest_data; // Dest ISIO data buffer
+
+    char           *buff; // socket-side buffer (metadata at beginning)
+    char           *ptr_buff_data; // socket-side buffer + data offset
+    char           *ptr_buff_keywords; // socket-side buffer + keyword offset
+
     long            NBslices;
     int             socketOpen = 1; // 0 if socket is closed
     int             semval;
@@ -693,10 +461,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
-    TCP_BUFFER_METADATA *frame_md;
     long                 framesize1;    // pixel data + metadata
     long                 framesizefull; // pixel data + metadata + kw
-    char                *buff;          // buffer
 
     struct sched_param schedpar;
 
@@ -721,40 +487,41 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     }
 
     // CATCH SIGNALS
-
-    if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
     {
-        printf("\ncan't catch SIGTERM\n");
-    }
+        if (sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGTERM\n");
+        }
 
-    if (sigaction(SIGINT, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGINT\n");
-    }
+        if (sigaction(SIGINT, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGINT\n");
+        }
 
-    if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGABRT\n");
-    }
+        if (sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGABRT\n");
+        }
 
-    if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGBUS\n");
-    }
+        if (sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGBUS\n");
+        }
 
-    if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGSEGV\n");
-    }
+        if (sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGSEGV\n");
+        }
 
-    if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGHUP\n");
-    }
+        if (sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGHUP\n");
+        }
 
-    if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGPIPE\n");
+        if (sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        {
+            printf("\ncan't catch SIGPIPE\n");
+        }
     }
 
     schedpar.sched_priority = RT_priority;
@@ -771,7 +538,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     }
 
     // create TCP socket
-    if ((fds_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+    if ((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
         printf("ERROR creating socket\n");
         if (data.processinfo == 1)
@@ -784,25 +551,12 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     memset((char *) &sock_server, 0, sizeof(sock_server));
 
-    result = setsockopt(fds_server,     /* socket affected */
-                        IPPROTO_TCP,    /* set option at TCP level */
-                        TCP_NODELAY,    /* name of option */
-                        (char *) &flag, /* the cast is historical cruft */
-                        sizeof(int));   /* length of option value */
-    if (result < 0)
-    {
-        printf("ERROR setsockopt\n");
-        if (data.processinfo == 1)
-        {
-            processinfo->loopstat = 4;
-            processinfo_WriteMessage(processinfo, "ERROR socketopt");
-        }
-        exit(0);
-    }
-
     sock_server.sin_family      = AF_INET;
     sock_server.sin_port        = htons(port);
     sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(int));
+    setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(int));
 
     //bind socket to port
     if (bind(fds_server,
@@ -822,52 +576,28 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         exit(0);
     }
 
-    if (listen(fds_server, MAXPENDING) < 0)
+    /*
     {
-        char msgstring[200];
+        // flush socket for 1MB
 
-        sprintf(msgstring, "ERROR listen socket");
-        printf("%s\n", msgstring);
+        size_t flushsize = 1048576;
 
-        if (data.processinfo == 1)
-        {
-            processinfo->loopstat = 4;
-            processinfo_WriteMessage(processinfo, msgstring);
-        }
+        char *flushbuff;
+        flushbuff = (char *) malloc(flushsize);
 
-        exit(0);
+        recvsize = recvfrom(fds_server, flushbuff, flushsize, 0,
+                      (struct sockaddr*)&sock_client, &slen_client);
+        printf("Pre-flush: cleared %ld bytes\n", recvsize);
+        printf("%s error\n", strerror(errno));
+
+        free(flushbuff);
     }
-
-    //    cnt = 0;
-
-    /* Set the size of the in-out parameter */
-    slen_client = sizeof(sock_client);
-
-    /* Wait for a client to connect */
-    if ((fds_client = accept(fds_server,
-                             (struct sockaddr *) &sock_client,
-                             &slen_client)) == -1)
-    {
-        char msgstring[200];
-
-        sprintf(msgstring, "ERROR accept socket");
-        printf("%s\n", msgstring);
-
-        if (data.processinfo == 1)
-        {
-            processinfo->loopstat = 4;
-            processinfo_WriteMessage(processinfo, msgstring);
-        }
-
-        exit(0);
-    }
-
-    printf("Client connected\n");
-    fflush(stdout);
+    //*/
 
     // listen for image metadata
     if ((recvsize =
-             recv(fds_client, imgmd, sizeof(IMAGE_METADATA), MSG_WAITALL)) < 0)
+             recvfrom(fds_server, imgmd, sizeof(IMAGE_METADATA), 0,
+                      (struct sockaddr*)&sock_client, &slen_client)) < 0)
     {
         char msgstring[200];
 
@@ -883,24 +613,15 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         exit(0);
     }
 
+    char prout[2000];
+    memcpy(prout, (void*)&imgmd[0].name, 200);
+    printf("POST image metadata: %s", prout);
+
     if (data.processinfo == 1)
     {
         char msgstring[200];
         sprintf(msgstring, "Receiving stream %s", imgmd[0].name);
         processinfo_WriteMessage(processinfo, msgstring);
-    }
-
-    {
-        // flush socket for 1MB
-
-        size_t flushsize = 1048576;
-
-        char *flushbuff;
-        flushbuff = (char *) malloc(flushsize);
-
-        recv(fds_client, flushbuff, flushsize, MSG_DONTWAIT);
-
-        free(flushbuff);
     }
 
     // is image already in memory ?
@@ -990,111 +711,14 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     char typestring[8];
 
-    switch (data.image[ID].md[0].datatype)
-    {
-
-    case _DATATYPE_INT8:
-        framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-        sprintf(typestring, "INT8");
-        break;
-
-    case _DATATYPE_UINT8:
-        framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-        sprintf(typestring, "UINT8");
-        break;
-
-    case _DATATYPE_INT16:
-        framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-        sprintf(typestring, "INT16");
-        break;
-
-    case _DATATYPE_UINT16:
-        framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-        sprintf(typestring, "UINT16");
-        break;
-
-    case _DATATYPE_INT32:
-        framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-        sprintf(typestring, "INT32");
-        break;
-
-    case _DATATYPE_UINT32:
-        framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-        sprintf(typestring, "UINT32");
-        break;
-
-    case _DATATYPE_INT64:
-        framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-        sprintf(typestring, "INT64");
-        break;
-
-    case _DATATYPE_UINT64:
-        framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-        sprintf(typestring, "UINT64");
-        break;
-
-    case _DATATYPE_FLOAT:
-        framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-        sprintf(typestring, "FLOAT");
-        break;
-
-    case _DATATYPE_DOUBLE:
-        framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-        sprintf(typestring, "DOUBLE");
-        break;
-
-    default:
-        printf("ERROR: WRONG DATA TYPE\n");
-        sprintf(typestring, "ERR");
-        exit(0);
-        break;
-    }
+    framesize =
+        ImageStreamIO_typesize(data.image[ID].md[0].datatype) * xsize * ysize;
+    sprintf(typestring, ImageStreamIO_typename(data.image[ID].md[0].datatype));
 
     printf("image frame size = %ld\n", framesize);
 
-    switch (data.image[ID].md[0].datatype)
-    {
+    ptr_dest_data = (char *) ImageStreamIO_get_image_d_ptr(&data.image[ID]);
 
-    case _DATATYPE_INT8:
-        ptr0 = (char *) data.image[ID].array.SI8;
-        break;
-    case _DATATYPE_UINT8:
-        ptr0 = (char *) data.image[ID].array.UI8;
-        break;
-
-    case _DATATYPE_INT16:
-        ptr0 = (char *) data.image[ID].array.SI16;
-        break;
-    case _DATATYPE_UINT16:
-        ptr0 = (char *) data.image[ID].array.UI16;
-        break;
-
-    case _DATATYPE_INT32:
-        ptr0 = (char *) data.image[ID].array.SI32;
-        break;
-    case _DATATYPE_UINT32:
-        ptr0 = (char *) data.image[ID].array.UI32;
-        break;
-
-    case _DATATYPE_INT64:
-        ptr0 = (char *) data.image[ID].array.SI64;
-        break;
-    case _DATATYPE_UINT64:
-        ptr0 = (char *) data.image[ID].array.UI64;
-        break;
-
-    case _DATATYPE_FLOAT:
-        ptr0 = (char *) data.image[ID].array.F;
-        break;
-    case _DATATYPE_DOUBLE:
-        ptr0 = (char *) data.image[ID].array.D;
-        break;
-
-    default:
-        printf("ERROR: WRONG DATA TYPE\n");
-        exit(0);
-        break;
-    }
 
     if (data.processinfo == 1)
     {
@@ -1116,10 +740,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
-    // this line is not needed, as frame_md is declared below
-    // frame_md = (TCP_BUFFER_METADATA*) malloc(sizeof(TCP_BUFFER_METADATA));
-
-    framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
+    framesize1 = framesize + sizeof(IMAGE_METADATA);
     if (TCPTRANSFERKW == 0)
     {
         framesizefull = framesize1;
@@ -1130,8 +751,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     }
 
     buff = (char *) malloc(sizeof(char) * framesizefull);
-
-    frame_md = (TCP_BUFFER_METADATA *) (buff + framesize);
+    ptr_buff_data = buff + sizeof(IMAGE_METADATA);
+    ptr_buff_keywords = buff + framesize1;
 
     if (data.processinfo == 1)
     {
@@ -1172,7 +793,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             }
         }
 
-        if ((recvsize = recv(fds_client, buff, framesizefull, MSG_WAITALL)) < 0)
+        if ((recvsize = recvfrom(fds_server, buff, framesizefull, 0,
+            (struct sockaddr*)&sock_client, &slen_client)) < 0)
         {
             printf("ERROR recv()\n");
             socketOpen = 0;
@@ -1194,38 +816,39 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
         if (socketOpen == 1)
         {
-            frame_md = (TCP_BUFFER_METADATA *) (buff + framesize);
+            // Weak copy although we now have all the metadata
+            imgmd_remote = (IMAGE_METADATA *) (buff);
 
-            data.image[ID].md[0].cnt1 = frame_md[0].cnt1;
+            data.image[ID].md[0].cnt1 = imgmd_remote[0].cnt1; // For multi-slice only, really.
 
             // copy pixel data
             if (NBslices > 1)
             {
-                memcpy(ptr0 + framesize * frame_md[0].cnt1, buff, framesize);
+                memcpy(ptr_dest_data + framesize * imgmd_remote[0].cnt1, ptr_buff_data, framesize);
             }
             else
             {
-                memcpy(ptr0, buff, framesize);
+                memcpy(ptr_dest_data, ptr_buff_data, framesize);
             }
 
             if (TCPTRANSFERKW == 1)
             {
                 // copy kw
                 memcpy(data.image[ID].kw,
-                       (IMAGE_KEYWORD *) (buff + framesize1),
+                       (IMAGE_KEYWORD *) (ptr_buff_keywords),
                        nbkw * sizeof(IMAGE_KEYWORD));
             }
 
-            frameincr = (long) frame_md[0].cnt0 - cnt0previous;
+            frameincr = (long) imgmd_remote[0].cnt0 - cnt0previous;
             if (frameincr > 1)
             {
                 printf("Skipped %ld frame(s) at index %ld %ld\n",
                        frameincr - 1,
-                       (long) (frame_md[0].cnt0),
-                       (long) (frame_md[0].cnt1));
+                       (long) (imgmd_remote[0].cnt0),
+                       (long) (imgmd_remote[0].cnt1));
             }
 
-            cnt0previous = frame_md[0].cnt0;
+            cnt0previous = imgmd_remote[0].cnt0;
 
             if (monitorindex == monitorinterval)
             {
@@ -1233,12 +856,12 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                     "[%5ld]  input %20ld (+ %8ld) output %20ld (+ "
                     "%8ld)\n",
                     monitorloopindex,
-                    frame_md[0].cnt0,
-                    frame_md[0].cnt0 - minputcnt,
+                    imgmd_remote[0].cnt0,
+                    imgmd_remote[0].cnt0 - minputcnt,
                     data.image[ID].md[0].cnt0,
                     data.image[ID].md[0].cnt0 - moutputcnt);
 
-                minputcnt  = frame_md[0].cnt0;
+                minputcnt  = imgmd_remote[0].cnt0;
                 moutputcnt = data.image[ID].md[0].cnt0;
 
                 monitorloopindex++;
@@ -1276,66 +899,41 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
         // process signals
 
-        if (data.signal_TERM == 1)
+        if ((data.signal_TERM | data.signal_INT | data.signal_ABRT |
+             data.signal_BUS | data.signal_SEGV | data.signal_HUP |
+             data.signal_PIPE) != 0)
         {
             loopOK = 0;
             if (data.processinfo == 1)
             {
-                processinfo_SIGexit(processinfo, SIGTERM);
-            }
-        }
-
-        if (data.signal_INT == 1)
-        {
-            loopOK = 0;
-            if (data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGINT);
-            }
-        }
-
-        if (data.signal_ABRT == 1)
-        {
-            loopOK = 0;
-            if (data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGABRT);
-            }
-        }
-
-        if (data.signal_BUS == 1)
-        {
-            loopOK = 0;
-            if (data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGBUS);
-            }
-        }
-
-        if (data.signal_SEGV == 1)
-        {
-            loopOK = 0;
-            if (data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGSEGV);
-            }
-        }
-
-        if (data.signal_HUP == 1)
-        {
-            loopOK = 0;
-            if (data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGHUP);
-            }
-        }
-
-        if (data.signal_PIPE == 1)
-        {
-            loopOK = 0;
-            if (data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGPIPE);
+                if (data.signal_TERM == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGTERM);
+                }
+                else if (data.signal_INT == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGINT);
+                }
+                else if (data.signal_ABRT == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGABRT);
+                }
+                else if (data.signal_BUS == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGBUS);
+                }
+                else if (data.signal_SEGV == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGSEGV);
+                }
+                else if (data.signal_HUP == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGHUP);
+                }
+                else if (data.signal_PIPE == 1)
+                {
+                    processinfo_SIGexit(processinfo, SIGPIPE);
+                }
             }
         }
 
