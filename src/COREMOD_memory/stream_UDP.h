@@ -1,9 +1,9 @@
 /**
- * @file    stream_TCP.h
+ * @file    stream_UDP.h
  */
 
-#ifndef _STREAM_TCP_H
-#define _STREAM_TCP_H
+#ifndef _STREAM_UDP_H
+#define _STREAM_UDP_H
 
 errno_t stream__UDP_addCLIcmd();
 
