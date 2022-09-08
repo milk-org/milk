@@ -43,9 +43,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#ifndef __MACH__
 #include <sys/prctl.h>
-#endif
 #include <sched.h>
 #include <signal.h>
 
@@ -358,14 +356,12 @@ static errno_t runCLI_initialize()
     // to take advantage of kernel priority:
     // owner=root mode=4755
 
-#ifndef __MACH__
     getresuid(&data.ruid, &data.euid, &data.suid);
     //This sets it to the privileges of the normal user
     if (seteuid(data.ruid) != 0)
     {
         PRINT_ERROR("seteuid error");
     }
-#endif
 
     // Initialize random-number generator
     //
@@ -1199,7 +1195,6 @@ static int command_line_process_options(int argc, char **argv)
         case 'p':
             schedpar.sched_priority = atoi(optarg);
             printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
-#ifndef __MACH__
 
             if (seteuid(data.euid) != 0) //This goes up to maximum privileges
             {
@@ -1214,7 +1209,6 @@ static int command_line_process_options(int argc, char **argv)
             {
                 PRINT_ERROR("seteuid() returns non-zero value");
             }
-#endif
             break;
 
         case 'f':
