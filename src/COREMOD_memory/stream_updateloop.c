@@ -374,11 +374,9 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     int SyncSlice = 0;
 
     schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
-#endif
 
     PROCESSINFO *processinfo;
     if (data.processinfo == 1)
@@ -736,11 +734,9 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     struct sched_param schedpar;
 
     schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
-#endif
 
     printf("Creating / connecting to image stream ...\n");
     fflush(stdout);

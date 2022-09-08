@@ -353,7 +353,6 @@ int templatemodule_examplefunc01(const char *namein,
 
     /// ## Set up priviledges
 
-#ifndef __MACH__                    // Do not run code below if OS-X
     iretval = seteuid(euid_called); //This goes up to maximum privileges
     if (retval != 0)
         printERROR(__FILE__,
@@ -371,7 +370,6 @@ int templatemodule_examplefunc01(const char *namein,
                    __func__,
                    __LINE__,
                    "seteuid() returns non-zero value");
-#endif
 
     /// ## Execute loop
 

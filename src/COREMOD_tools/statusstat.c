@@ -100,9 +100,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     }
 
     schedpar.sched_priority = RT_priority;
-#ifndef __MACH__
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
-#endif
 
     printf("Measuring status distribution \n");
     fflush(stdout);
