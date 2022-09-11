@@ -52,6 +52,12 @@ Compile with Python module (check script help with -h option for details):
     ./compile.sh $PWD/local
 
 
+## Interactive tutorial
+
+Pre-requisites: tmux, nnn
+
+	milk-tutorial
+
 ## Adding plugins
 
 Compile with cacao plugins:
