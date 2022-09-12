@@ -1,6 +1,8 @@
 #ifndef PYFPS_H
 #define PYFPS_H
 
+#include <iostream>
+
 extern "C"
 {
 #include "CLIcore.h"
