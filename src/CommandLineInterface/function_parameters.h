@@ -759,6 +759,9 @@ typedef struct
         fps_to_processinfo(&fps, processinfo);                                 \
     } while (0)
 
+
+
+
 #define FPS_AUTORUN_SETUP(funcstring, shortname)                               \
     FUNCTION_PARAMETER_STRUCT fps;                                             \
     do                                                                         \
@@ -770,6 +773,9 @@ typedef struct
                                           &fps,                                \
                                           FPSCONNECT_SIMPLE);                  \
     } while (0)
+
+
+
 
 #define FPS_EXECFUNCTION_STD                                                   \
     static errno_t FPSEXECfunction()                                           \
@@ -786,6 +792,8 @@ typedef struct
         FPSRUNfunction();                                                      \
         return RETURN_SUCCESS;                                                 \
     }
+
+
 
 #define FPS_CLIFUNCTION_STD                                                    \
     static errno_t FPSCLIfunction(void)                                        \

@@ -24,7 +24,7 @@ static errno_t fps_create__cli()
 {
     if (0 + CLI_checkarg(1, CLIARG_LONG) +
             CLI_checkarg_noerrmsg(2, CLIARG_STR) ==
-        0)
+            0)
     {
         function_parameter_struct_create(data.cmdargtoken[1].val.numl,
                                          data.cmdargtoken[2].val.string);
@@ -55,7 +55,12 @@ errno_t fps_create_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
+
+
+errno_t function_parameter_struct_create(
+    int NBparamMAX,
+    const char *name
+)
 {
     int                       index;
     char                     *mapv;
@@ -72,7 +77,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
     function_parameter_struct_shmdirname(shmdname);
 
     if (snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name) <
-        0)
+            0)
     {
         PRINT_ERROR("snprintf error");
     }
@@ -122,7 +127,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
     }
 
     fps.md = (FUNCTION_PARAMETER_STRUCT_MD *)
-        mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+             mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
     if (fps.md == MAP_FAILED)
     {
         close(SM_fd);
@@ -184,7 +189,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name)
     for (int m = 0; m < data.NBmodule; m++)
     {
         if (data.module[m].type ==
-            MODULE_TYPE_CUSTOMLOAD) // custom loaded module
+                MODULE_TYPE_CUSTOMLOAD) // custom loaded module
         {
             strncpy(fps.md->modulename[fps.md->NBmodule],
                     data.module[m].loadname,

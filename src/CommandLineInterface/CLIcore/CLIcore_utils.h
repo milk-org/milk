@@ -151,6 +151,9 @@ typedef struct
         return retval;                                                         \
     }
 
+
+
+
 /** @brief FPS conf function
  * Sets up the FPS and its parameters.\n
  * Optional parameter checking can be included.\n
@@ -212,6 +215,7 @@ typedef struct
             fps_add_processinfo_entries(&fps);                                 \
         }                                                                      \
         data.fpsptr = &fps;                                                    \
+        strcpy(data.fpsptr->md->description, CLIcmddata.description);          \
         CMDargs_to_FPSparams_create(&fps);                                     \
         STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
         {                                                                      \
@@ -224,6 +228,9 @@ typedef struct
         data.fpsptr = NULL;                                                    \
         return RETURN_SUCCESS;                                                 \
     }
+
+
+
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                   \
     int          processloopOK = 1;                                            \

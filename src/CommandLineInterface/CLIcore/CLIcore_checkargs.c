@@ -491,6 +491,9 @@ int CLI_checkarg_noerrmsg(int argnum, uint32_t argtype)
     return rval;
 }
 
+
+
+
 /** @brief Check array of command line (CLI) arguments
  *
  * Use list of arguments in fpscliarg[].
@@ -803,6 +806,7 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
 
 
 
+
 /** @brief Build FPS content from FPSCLIARG list
  *
  * All CLI arguments converted to FPS parameters
@@ -939,7 +943,9 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
 
 /** @brief Build FPS from command args
  */
-int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
+int CMDargs_to_FPSparams_create(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -950,14 +956,14 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
     for (int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
     {
         if (!(data.cmd[data.cmdindex].argdata[argi].flag &
-              CLICMDARG_FLAG_NOFPS))
+                CLICMDARG_FLAG_NOFPS))
         {
             // if argument is part of FPS
             long tmpvall = 0;
 
             switch (data.cmd[data.cmdindex].argdata[argi].type)
             {
-                // float point types
+            // float point types
 
             case CLIARG_FLOAT32:
             {
@@ -989,7 +995,7 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
             }
             break;
 
-                // integer typtes
+            // integer typtes
 
             case CLIARG_ONOFF: // default to INT64
             {
@@ -1006,16 +1012,16 @@ int CMDargs_to_FPSparams_create(FUNCTION_PARAMETER_STRUCT *fps)
             }
             break;
 
-                /* case CLIARG_LONG: // default to INT64
-                 {
-                     tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
-                     function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                                  data.cmd[data.cmdindex].argdata[argi].descr,
-                                                  FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall,
-                                                  NULL);
-                     NBarg_processed++;
-                 }
-                 break;*/
+            /* case CLIARG_LONG: // default to INT64
+             {
+                 tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
+                 function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
+                                              data.cmd[data.cmdindex].argdata[argi].descr,
+                                              FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall,
+                                              NULL);
+                 NBarg_processed++;
+             }
+             break;*/
 
             case CLIARG_INT32:
             {
@@ -1192,8 +1198,8 @@ void *get_farg_ptr(char *tag, long *fpsi)
         // look for pointer in FPS
         // We use INT64 type as default
         ptr = (void *) functionparameter_GetParamPtr_generic(data.fpsptr,
-                                                             tag,
-                                                             fpsi);
+                tag,
+                fpsi);
     }
     else
     {
