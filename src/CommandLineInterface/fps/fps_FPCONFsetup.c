@@ -15,8 +15,10 @@
  * called by conf and run functions
  *
  */
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname,
-                                                         uint32_t    CMDmode)
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
+    const char *fpsname,
+    uint32_t    CMDmode
+)
 {
     long     NBparamMAX = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
     uint32_t FPSCONNECTFLAG;
@@ -110,7 +112,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname,
         }
 
         if (function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
-            -1)
+                -1)
         {
             //printf("=== FPS DOES NOT EXISTS -> CREATE\n");
             function_parameter_struct_create(NBparamMAX, fpsname);
@@ -134,7 +136,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname,
     }
 
     if ((CMDmode & FPSCMDCODE_FPSINITCREATE) ||
-        (CMDmode & FPSCMDCODE_FPSINIT) || (CMDmode & FPSCMDCODE_CONFSTOP))
+            (CMDmode & FPSCMDCODE_FPSINIT) || (CMDmode & FPSCMDCODE_CONFSTOP))
     {
         fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // do not start conf
     }

@@ -987,7 +987,7 @@ errno_t fpsCTRL_FPSdisplay(
 
             if(fpsCTRLvar->currentlevel == 0)
             {
-                TUI_printfw(" %s >> %s", data.fpsarray[GUIline].md->callfuncname, data.fpsarray[GUIline].md->description);
+                TUI_printfw(" %s", data.fpsarray[GUIline].md->description);
             }
 
 
