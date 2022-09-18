@@ -367,7 +367,6 @@ errno_t fpsCTRL_FPSdisplay(
 
             for (int level = 0; level < fpsCTRLvar->currentlevel; level++)
             {
-
                 if (GUIline < keywnode[nodechain[level]].NBchild)
                 {
                     int snode = 0; // selected node
@@ -984,6 +983,13 @@ errno_t fpsCTRL_FPSdisplay(
                     }
                 }
             }
+
+
+            if(fpsCTRLvar->currentlevel == 0)
+            {
+                TUI_printfw(" %s >> %s", data.fpsarray[GUIline].md->callfuncname, data.fpsarray[GUIline].md->description);
+            }
+
 
             TUI_newline();
         }
