@@ -7,6 +7,8 @@
 #include <libgen.h>   // basename
 #include <sys/stat.h> // fstat
 
+#include <regex.h>
+
 #include "CommandLineInterface/CLIcore.h"
 
 #include "TUItools.h"
@@ -161,12 +163,17 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 int fpsi;
 
                 for (fpsi = 0; fpsi < fpslistcnt; fpsi++)
-                    if (strncmp(dir->d_name,
-                                FPSlist[fpsi],
-                                strlen(FPSlist[fpsi])) == 0)
+                {
+                    regex_t reegex;
+
+                    regcomp( &reegex, FPSlist[fpsi], REG_EXTENDED|REG_NEWLINE);
+                    int rmatch = regexec( &reegex, dir->d_name, 0, NULL, 0);
+
+                    if(rmatch == 0)
                     {
                         matchOKlist = 1;
                     }
+                }
 
                 matchOK *= matchOKlist;
             }
