@@ -73,6 +73,10 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
         break;
 
 
+    case '?': // fps entry help
+        fpsCTRLvar->fpsCTRL_DisplayMode = 4;
+        break;
+
 
 
     case 'v':
