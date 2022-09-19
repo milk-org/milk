@@ -162,10 +162,10 @@ inline static void fpsCTRLscreen_print_FPShelp(
 //    TUI_printfw("============ FPS help");
 //    TUI_newline();
 
-/*    TUI_printfw("    FPS call              : %s -> %s\n",
-                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
-                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
-*/
+    /*    TUI_printfw("    FPS call              : %s -> %s\n",
+                    data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
+                    data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
+    */
 
     // module load string
     int mloadstring_maxlen = 2000;
@@ -184,16 +184,16 @@ inline static void fpsCTRLscreen_print_FPShelp(
 
     char helpfunctionstring[2000];
     sprintf(helpfunctionstring,
-            "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;cmd? %s\"\n",
+            "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
             mloadstring,
             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
            );
 
-  //  TUI_printfw("%s", helpfunctionstring);
+    //  TUI_printfw("%s", helpfunctionstring);
 
-  //  TUI_newline();
+    //  TUI_newline();
 
     {
         FILE *fp;
@@ -204,8 +204,27 @@ inline static void fpsCTRLscreen_print_FPShelp(
 
         fp = popen(helpfunctionstring, "r");
 
-        while (fgets(line, LINESLEN, fp) != NULL)
-            TUI_printfw("%s", line);
+        {
+            int printtoggle = 0;
+
+            while (fgets(line, LINESLEN, fp) != NULL)
+            {
+                if(strncmp(HELPDETAILSSTRINGSTART, line, strlen(HELPDETAILSSTRINGSTART)) == 0)
+                {
+                    printtoggle = 1;
+                }
+
+                if(strncmp(HELPDETAILSSTRINGEND, line, strlen(HELPDETAILSSTRINGEND)) == 0)
+                {
+                    printtoggle = 0;
+                }
+
+                if(printtoggle == 1)
+                {
+                    TUI_printfw("%s", line);
+                }
+            }
+        }
 
         pclose(fp);
     }

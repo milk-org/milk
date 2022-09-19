@@ -42,6 +42,11 @@ typedef const char *__restrict CONST_WORD;
 #define RETURN_CLICHECKARGARRAY_FUNCPARAMSET 2
 #define RETURN_CLICHECKARGARRAY_HELP         3
 
+#define HELPDETAILSSTRINGSTART "DETAILS:"
+
+#define HELPDETAILSSTRINGEND "-END"
+
+
 typedef struct
 {
     char *name;
@@ -429,8 +434,9 @@ typedef struct
         }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_HELP)                            \
         {                                                                      \
+            printf(HELPDETAILSSTRINGSTART "\n");                               \
             help_function();                                                   \
-            printf("\n");                                                      \
+            printf(HELPDETAILSSTRINGEND "\n");                                 \
             return RETURN_SUCCESS;                                             \
         }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)                    \
