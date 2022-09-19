@@ -143,6 +143,89 @@ inline static void fpsCTRLscreen_print_help()
 }
 
 
+/**
+ * @brief Print help
+ *
+ */
+inline static void fpsCTRLscreen_print_FPShelp(
+    KEYWORD_TREE_NODE *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar
+)
+{
+    DEBUG_TRACE_FSTART();
+    // int attrval = A_BOLD;
+
+    TUI_newline();
+    print_help_entry("x", "Exit");
+
+    TUI_newline();
+//    TUI_printfw("============ FPS help");
+//    TUI_newline();
+
+/*    TUI_printfw("    FPS call              : %s -> %s\n",
+                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
+                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
+*/
+
+    // module load string
+    int mloadstring_maxlen = 2000;
+    char mloadstring[mloadstring_maxlen];
+    char mloadstringcp[mloadstring_maxlen];
+    sprintf(mloadstring, " ");
+    for (int m = 0; m < data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule; m++)
+    {
+        snprintf(mloadstringcp,
+                 mloadstring_maxlen,
+                 "%smload %s;",
+                 mloadstring,
+                 data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[m]);
+        strcpy(mloadstring, mloadstringcp);
+    }
+
+    char helpfunctionstring[2000];
+    sprintf(helpfunctionstring,
+            "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;cmd? %s\"\n",
+            data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
+            data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
+            mloadstring,
+            data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
+           );
+
+  //  TUI_printfw("%s", helpfunctionstring);
+
+  //  TUI_newline();
+
+    {
+        FILE *fp;
+        int status;
+        int LINESLEN = 200;
+        char line[LINESLEN];
+
+
+        fp = popen(helpfunctionstring, "r");
+
+        while (fgets(line, LINESLEN, fp) != NULL)
+            TUI_printfw("%s", line);
+
+        pclose(fp);
+    }
+
+
+
+    /*
+        fpsCTRLscreen_print_nodeinfo(data.fpsarray,
+                                     keywnode,
+                                     fpsCTRLvar->nodeSelected,
+                                     fpsCTRLvar->fpsindexSelected,
+                                     fpsCTRLvar->pindexSelected);
+    */
+    TUI_newline();
+
+    DEBUG_TRACE_FEXIT();
+}
+
+
+
 
 
 /** @brief runs fpsCTRL GUI
@@ -205,6 +288,7 @@ errno_t functionparameter_CTRLscreen(
     // 1: [h]  help
     // 2: [F2] list of conf and run
     // 3: [F3] fpscmdarray
+    // 4: [?] fps entry help
 
 
 
@@ -511,6 +595,13 @@ errno_t functionparameter_CTRLscreen(
                                           wrow,
                                           &fpsCTRLvar.scheduler_wrowstart);
             }
+
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == 4) // help
+            {
+                fpsCTRLscreen_print_FPShelp(keywnode, &fpsCTRLvar);
+            }
+
+
 
             DEBUG_TRACEPOINT(" ");
 
