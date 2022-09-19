@@ -32,6 +32,11 @@
 
 static short unsigned int wrow, wcol;
 
+#define DISPLAYMODE_HELP      1
+#define DISPLAYMODE_FPSCTRL   2
+#define DISPLAYMODE_SEQUENCER 3
+#define DISPLAYMODE_FPSHELP   4
+
 
 
 inline static void
@@ -62,7 +67,10 @@ fpsCTRLscreen_print_DisplayMode_status(
     screenprint_unsetbold();
     TUI_newline();
 
-    if (fpsCTRL_DisplayMode == 1)
+
+
+
+    if (fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
     {
         screenprint_setreverse();
         TUI_printfw("[h] Help");
@@ -74,7 +82,20 @@ fpsCTRLscreen_print_DisplayMode_status(
     }
     TUI_printfw("   ");
 
-    if (fpsCTRL_DisplayMode == 2)
+    if (fpsCTRL_DisplayMode == DISPLAYMODE_FPSHELP)
+    {
+        screenprint_setreverse();
+        TUI_printfw("[?] FPS help");
+        screenprint_unsetreverse();
+    }
+    else
+    {
+        TUI_printfw("[?] FPS help");
+    }
+    TUI_printfw("   ");
+
+
+    if (fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
     {
         screenprint_setreverse();
         TUI_printfw("[F2] FPS CTRL");
@@ -86,7 +107,7 @@ fpsCTRLscreen_print_DisplayMode_status(
     }
     TUI_printfw("   ");
 
-    if (fpsCTRL_DisplayMode == 3)
+    if (fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
     {
         screenprint_setreverse();
         TUI_printfw("[F3] Sequencer");
@@ -156,16 +177,17 @@ inline static void fpsCTRLscreen_print_FPShelp(
     // int attrval = A_BOLD;
 
     TUI_newline();
-    print_help_entry("x", "Exit");
+
+    TUI_printfw("FPS entry     : %s\n", data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name);
+    TUI_printfw(" call key     : %s\n", data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
+
+    TUI_printfw(" src / line   : %s / %d\n",
+                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourcefname,
+                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourceline
+               );
 
     TUI_newline();
-//    TUI_printfw("============ FPS help");
-//    TUI_newline();
 
-    /*    TUI_printfw("    FPS call              : %s -> %s\n",
-                    data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
-                    data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
-    */
 
     // module load string
     int mloadstring_maxlen = 2000;
@@ -230,14 +252,6 @@ inline static void fpsCTRLscreen_print_FPShelp(
     }
 
 
-
-    /*
-        fpsCTRLscreen_print_nodeinfo(data.fpsarray,
-                                     keywnode,
-                                     fpsCTRLvar->nodeSelected,
-                                     fpsCTRLvar->fpsindexSelected,
-                                     fpsCTRLvar->pindexSelected);
-    */
     TUI_newline();
 
     DEBUG_TRACE_FEXIT();
@@ -303,12 +317,7 @@ errno_t functionparameter_CTRLscreen(
     strcpy(fpsCTRLvar.fpsnamemask, fpsnamemask);
     strcpy(fpsCTRLvar.fpsCTRLfifoname, fpsCTRLfifoname);
 
-    fpsCTRLvar.fpsCTRL_DisplayMode = 2;
-    // 1: [h]  help
-    // 2: [F2] list of conf and run
-    // 3: [F3] fpscmdarray
-    // 4: [?] fps entry help
-
+    fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
 
 
@@ -595,19 +604,19 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-            if (fpsCTRLvar.fpsCTRL_DisplayMode == 1) // help
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
             {
                 fpsCTRLscreen_print_help();
             }
 
-            if (fpsCTRLvar.fpsCTRL_DisplayMode == 2) // display FPS content
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
             {
                 fpsCTRL_FPSdisplay(keywnode, &fpsCTRLvar);
             }
 
             DEBUG_TRACEPOINT(" ");
 
-            if (fpsCTRLvar.fpsCTRL_DisplayMode == 3) // Task scheduler status
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
             {
                 fpsCTRL_scheduler_display(fpsctrltasklist,
                                           fpsctrlqueuelist,
@@ -615,7 +624,7 @@ errno_t functionparameter_CTRLscreen(
                                           &fpsCTRLvar.scheduler_wrowstart);
             }
 
-            if (fpsCTRLvar.fpsCTRL_DisplayMode == 4) // help
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSHELP)
             {
                 fpsCTRLscreen_print_FPShelp(keywnode, &fpsCTRLvar);
             }
