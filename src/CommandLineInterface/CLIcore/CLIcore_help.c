@@ -385,6 +385,9 @@ errno_t printInfo()
     return RETURN_SUCCESS;
 }
 
+
+
+
 errno_t list_commands()
 {
     int  cmdinfoslen = 38;
@@ -403,6 +406,9 @@ errno_t list_commands()
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 errno_t list_commands_module(const char *__restrict modulename)
 {
@@ -455,7 +461,7 @@ errno_t list_commands_module(const char *__restrict modulename)
 
                 strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
                 printf(COLORCMD "   %-24s" COLORRESET COLORINFO
-                                "  %-40s\n" COLORRESET,
+                       "  %-40s\n" COLORRESET,
                        data.cmd[i].key,
                        cmdinfoshort);
                 //                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
@@ -495,6 +501,8 @@ errno_t list_commands_module(const char *__restrict modulename)
     */
     return RETURN_SUCCESS;
 }
+
+
 
 /** @brief Construct command line (CLI) arguments help string
  *
@@ -565,6 +573,8 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
 
     return strlen(outargstring);
 }
+
+
 
 /** @brief Assemble command line (CLI) example command string
  *
@@ -638,7 +648,9 @@ static int checkFlag64(uint64_t flags, uint64_t testflag, char *flagdescription)
  * @param[in] cmdkey Commmand name
  */
 
-errno_t help_command(const char *__restrict cmdkey)
+errno_t help_command(
+    const char *__restrict cmdkey
+)
 {
     int cOK = 0;
 
@@ -648,7 +660,7 @@ errno_t help_command(const char *__restrict cmdkey)
         {
             printf("\n");
             printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO
-                            "%s\n" COLORRESET,
+                   "%s\n" COLORRESET,
                    data.cmd[cmdi].key,
                    data.cmd[cmdi].module,
                    data.module[data.cmd[cmdi].moduleindex].shortname,
@@ -703,14 +715,14 @@ errno_t help_command(const char *__restrict cmdkey)
                         "        triggerdelay       : "
                         "%lld.%09ld\n",
                         (long long) data.cmd[cmdi]
-                            .cmdsettings.triggerdelay.tv_sec,
+                        .cmdsettings.triggerdelay.tv_sec,
                         data.cmd[cmdi].cmdsettings.triggerdelay.tv_nsec);
 
                     printf(
                         "        triggertimeout     : "
                         "%lld.%09ld\n",
                         (long long) data.cmd[cmdi]
-                            .cmdsettings.triggertimeout.tv_sec,
+                        .cmdsettings.triggertimeout.tv_sec,
                         data.cmd[cmdi].cmdsettings.triggertimeout.tv_nsec);
 
                     printf("      Resources:\n");
@@ -756,10 +768,10 @@ errno_t help_command(const char *__restrict cmdkey)
 
                 switch (data.cmd[cmdi].argdata[argi].type)
                 {
-                    /*case CLIARG_FLOAT:
-                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]  %f",
-                                       data.cmd[cmdi].argdata[argi].val.f);
-                        break;*/
+                /*case CLIARG_FLOAT:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]  %f",
+                                   data.cmd[cmdi].argdata[argi].val.f);
+                    break;*/
 
                 case CLIARG_FLOAT32:
                     SNPRINTF_CHECK(valuestring,
@@ -782,10 +794,10 @@ errno_t help_command(const char *__restrict cmdkey)
                                    data.cmd[cmdi].argdata[argi].val.ui64);
                     break;
 
-                    /*case CLIARG_LONG:
-                        SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld",
-                                       data.cmd[cmdi].argdata[argi].val.l);
-                        break;*/
+                /*case CLIARG_LONG:
+                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.l);
+                    break;*/
 
                 case CLIARG_INT32:
                     SNPRINTF_CHECK(valuestring,
@@ -888,7 +900,7 @@ errno_t help_command(const char *__restrict cmdkey)
                 foundsubstring = 1;
                 matchsubstring = 1;
                 printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO
-                                "%s\n" COLORRESET,
+                       "%s\n" COLORRESET,
                        data.cmd[cmdi].key,
                        data.cmd[cmdi].module,
                        data.module[data.cmd[cmdi].moduleindex].shortname,
@@ -908,7 +920,7 @@ errno_t help_command(const char *__restrict cmdkey)
                 {
                     foundregexmatch = 1;
                     printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO
-                                    "%s\n" COLORRESET,
+                           "%s\n" COLORRESET,
                            data.cmd[cmdi].key,
                            data.cmd[cmdi].module,
                            data.module[data.cmd[cmdi].moduleindex].shortname,
@@ -964,6 +976,9 @@ errno_t help_command(const char *__restrict cmdkey)
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 /**
  * @brief search for string in command info
@@ -1115,9 +1130,9 @@ errno_t helpreadline()
 errno_t help_cmd()
 {
     if ((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
-        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
-        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
-        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
         help_command(data.cmdargtoken[1].val.string);
     }
@@ -1132,9 +1147,9 @@ errno_t help_cmd()
 errno_t cmdinfosearch()
 {
     if ((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
-        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
-        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
-        (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
     {
         command_info_search(data.cmdargtoken[1].val.string);
     }
