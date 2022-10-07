@@ -35,48 +35,56 @@ static long     fpi_ex0mode = -1;
 static int64_t *ex1mode;
 static long     fpi_ex1mode = -1;
 
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".in_name",
-                               "input image",
-                               "im1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inimname,
-                               NULL},
-                              {CLIARG_IMG,
-                               ".out_name",
-                               "output image",
-                               "out1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outimname,
-                               NULL},
-                              {CLIARG_UINT32,
-                               ".cntindex",
-                               "counter index",
-                               "5",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &cntindex,
-                               &fpi_cntindex},
-                              {CLIARG_UINT32,
-                               ".cntindexmax",
-                               "counter index max value",
-                               "100",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &cntindexmax,
-                               &fpi_cntindexmax},
-                              {CLIARG_ONOFF,
-                               ".option.ex0mode",
-                               "toggle0",
-                               "0",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &ex0mode,
-                               &fpi_ex0mode},
-                              {CLIARG_ONOFF,
-                               ".option.ex1mode",
-                               "toggle1 conditional on toggle0",
-                               "0",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &ex1mode,
-                               &fpi_ex1mode}};
+static CLICMDARGDEF farg[] = {
+    {   CLIARG_IMG,
+        ".in_name",
+        "input image",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {   CLIARG_IMG,
+        ".out_name",
+        "output image",
+        "out1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
+    },
+    {   CLIARG_UINT32,
+        ".cntindex",
+        "counter index",
+        "5",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &cntindex,
+        &fpi_cntindex
+    },
+    {   CLIARG_UINT32,
+        ".cntindexmax",
+        "counter index max value",
+        "100",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &cntindexmax,
+        &fpi_cntindexmax
+    },
+    {   CLIARG_ONOFF,
+        ".option.ex0mode",
+        "toggle0",
+        "0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &ex0mode,
+        &fpi_ex0mode
+    },
+    {   CLIARG_ONOFF,
+        ".option.ex1mode",
+        "toggle1 conditional on toggle0",
+        "0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &ex1mode,
+        &fpi_ex1mode
+    }
+};
 
 // Optional custom configuration setup
 // Runs once at conf startup
@@ -136,7 +144,8 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata = {"streamprocess",
                                 "process input stream to output stream",
-                                CLICMD_FIELDS_DEFAULTS};
+                                CLICMD_FIELDS_DEFAULTS
+                               };
 
 
 
@@ -196,9 +205,9 @@ INSERT_STD_FPSCLIfunctions
 
 
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_milk_module_example__streamprocess()
+// Register function in CLI
+errno_t
+CLIADDCMD_milk_module_example__streamprocess()
 {
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;

@@ -125,6 +125,7 @@ set(SCRIPTFILES
   scripts/milk-rmshmim
 	scripts/milk-shmimpurge
 	scripts/milk-shmimpoke
+  scripts/milk-shmimpoke-semtrig
 )
 
 
