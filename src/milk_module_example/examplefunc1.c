@@ -23,27 +23,31 @@ static double *scoeff;
 // For example: .input.xsize (note that first dot is optional)
 //
 static CLICMDARGDEF farg[] = {
-    {CLIARG_IMG,
-     ".in_name",
-     "input image",
-     "im1",
-     CLIARG_VISIBLE_DEFAULT,
-     (void **) &inimname,
-     NULL},
-    {// hidden argument is not part of CLI call, FPFLAG ignored
-     CLIARG_FLOAT,
-     ".scaling",
-     "scaling coefficient",
-     "1.0",
-     CLIARG_HIDDEN_DEFAULT,
-     (void **) &scoeff,
-     NULL}};
+    {   CLIARG_IMG,
+        ".in_name",
+        "input image",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {   // hidden argument is not part of CLI call, FPFLAG ignored
+        CLIARG_FLOAT,
+        ".scaling",
+        "scaling coefficient",
+        "1.0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &scoeff,
+        NULL
+    }
+};
 
 // CLI function initialization data
 static CLICMDDATA CLIcmddata = {
     "imsum1",                          // keyword to call function in CLI
     "compute total of image example1", // description of what the function does
-    CLICMD_FIELDS_NOFPS};
+    CLICMD_FIELDS_NOFPS
+};
 
 
 
@@ -116,15 +120,18 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
 INSERT_STD_CLIfunction
 
-    /** @brief Register CLI command
- *
- * Adds function to list of CLI commands.
- * Called by main module initialization function init_module_CLI().
- */
-    errno_t
-    CLIADDCMD_milk_module_example__simplefunc()
+
+
+/** @brief Register CLI command
+*
+* Adds function to list of CLI commands.
+* Called by main module initialization function init_module_CLI().
+*/
+errno_t
+CLIADDCMD_milk_module_example__simplefunc()
 {
     INSERT_STD_CLIREGISTERFUNC
 
