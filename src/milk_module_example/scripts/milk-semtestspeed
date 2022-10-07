@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# Test semaphore latency
+# Sets up two streams, imA and imB
+#
 
 echo "CTEST_FULL_OUTPUT"
 
@@ -21,9 +25,16 @@ tmux send-keys -t loopAB "milk" C-M
 tmux send-keys -t loopAB "readshmim imA" C-M
 tmux send-keys -t loopAB "readshmim imB" C-M
 tmux send-keys -t loopAB "shmimpoke ..procinfo 1" C-M
+
+# set trigger mode to semaphore
 tmux send-keys -t loopAB "shmimpoke ..triggermode 3" C-M
+
+# set trigger semaphore name
 tmux send-keys -t loopAB "shmimpoke ..triggersname imA" C-M
+
+# number of loops
 tmux send-keys -t loopAB "shmimpoke ..loopcntMax ${NBLOOP}" C-M
+
 tmux send-keys -t loopAB "shmimpoke imB" C-M
 tmux send-keys -t loopAB "exitCLI" C-M
 

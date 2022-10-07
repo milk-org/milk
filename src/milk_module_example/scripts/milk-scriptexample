@@ -13,7 +13,7 @@ Can poke in a loop
 "
 
 # standard configuration
-#
+# location ./scripts/
 source milk-script-std-config
 
 # prerequisites
@@ -24,14 +24,15 @@ RequiredDirs=()
 
 
 
-# SCRIPT ARGUMENTS (mandatory)
+# SCRIPT MANDATORY ARGUMENTS
 # syntax: "name:type(s)/test(s):description"
-
+#
 MSarg+=( "streamname:string:stream name" )
+
 
 # SCRIPT OPTIONS
 # syntax: "short:long:functioncall:args[types]:description"
-
+#
 NBpoke="0"
 MSopt+=( "n:nbpoke:set_NBpoke:nbpoke[long]:set number of pokes" )
 function set_NBpoke() {
