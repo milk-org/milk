@@ -75,6 +75,7 @@
 #include "stream_TCP.h"
 #include "stream_UDP.h"
 #include "stream_ave.h"
+#include "stream_copy.h"
 #include "stream_delay.h"
 #include "stream_diff.h"
 #include "stream_halfimdiff.h"
@@ -160,6 +161,7 @@ static errno_t init_module_CLI()
     stream__UDP_addCLIcmd();
     stream_pixmapdecode_addCLIcmd();
 
+    CLIADDCMD_COREMOD_memory__stream_copy();
     CLIADDCMD_COREMOD_memory__stream_poke();
 
     stream_diff_addCLIcmd();

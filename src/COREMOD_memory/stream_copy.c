@@ -1,6 +1,6 @@
 /**
- * @file    stream_poke.c
- * @brief   poke image stream
+ * @file    stream_copy.c
+ * @brief   copy image stream
  */
 
 #include "CommandLineInterface/CLIcore.h"
@@ -13,8 +13,10 @@
 
 // variables local to this translation unit
 static char *inimname;
+static char *outimname;
 
-static CLICMDARGDEF farg[] = {{
+static CLICMDARGDEF farg[] = {
+    {
         CLIARG_IMG,
         ".in_sname",
         "input stream",
@@ -22,11 +24,20 @@ static CLICMDARGDEF farg[] = {{
         CLIARG_VISIBLE_DEFAULT,
         (void **) &inimname,
         NULL
+    },
+    {
+        CLIARG_IMG,
+        ".out_sname",
+        "output stream",
+        "ims2",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
     }
 };
 
-static CLICMDDATA CLIcmddata = {"shmimpoke",
-                                "update stream without changing content",
+static CLICMDDATA CLIcmddata = {"shmimcopy",
+                                "copy in stream to existing out stream",
                                 CLICMD_FIELDS_DEFAULTS
                                };
 
@@ -43,11 +54,23 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = mkIMGID_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT);
+    IMGID imgin = mkIMGID_from_name(inimname);
+    resolveIMGID(&imgin, ERRMODE_ABORT);
+
+    IMGID imgout = mkIMGID_from_name(outimname);
+    resolveIMGID(&imgout, ERRMODE_ABORT);
+
+    uint64_t imdatasize = ImageStreamIO_typesize(imgin.im->md->datatype) * imgin.im->md->nelement;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    processinfo_update_output_stream(processinfo, img.ID);
+
+    memcpy(
+        imgout.im->array.F,
+        imgin.im->array.F,
+        imdatasize
+    );
+
+    processinfo_update_output_stream(processinfo, imgout.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
@@ -58,7 +81,7 @@ INSERT_STD_FPSCLIfunctions
 
 // Register function in CLI
 errno_t
-CLIADDCMD_COREMOD_memory__stream_poke()
+CLIADDCMD_COREMOD_memory__stream_copy()
 {
     INSERT_STD_CLIREGISTERFUNC
 
