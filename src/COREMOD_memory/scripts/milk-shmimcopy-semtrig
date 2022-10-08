@@ -5,11 +5,12 @@
 
 
 # script 1-line description
-MSdescr="poke existing stream from stream trigger"
+MSdescr="copy stream data contentr"
 
 # Extended description
-MSdescr="poke existing stream from stream trigger
-streamOUT is poked when streamTRIG is posted
+MSdescr="copy existing stream to other existing stream
+streamIN copied to streamOUT upon streamIN post
+Both streams should have the same size and format
 "
 
 # standard configuration
@@ -27,8 +28,8 @@ RequiredDirs=()
 # SCRIPT ARGUMENTS (mandatory)
 # syntax: "name:type(s)/test(s):description"
 
-MSarg+=( "streamnameOUT:string:stream to be poked" )
-MSarg+=( "streamnameTRIG:string:trigger stream" )
+MSarg+=( "streamnameIN:string:input stream" )
+MSarg+=( "streamnameOUT:string:output stream" )
 
 # SCRIPT OPTIONS
 # syntax: "short:long:functioncall:args[types]:description"
@@ -43,30 +44,30 @@ function set_NBpoke() {
 
 # parse arguments
 source milk-argparse
-streamnameOUT="${inputMSargARRAY[0]}"
-streamnameTRIG="${inputMSargARRAY[1]}"
+streamnameIN="${inputMSargARRAY[0]}"
+streamnameOUT="${inputMSargARRAY[1]}"
 
 
 echo ${streamnameOUT}
 
 MILK_QUIET=1 milk << EOF
 
+readshmim ${streamnameIN}
 readshmim ${streamnameOUT}
-readshmim ${streamnameTRIG}
 
 # Activate processinfo
-shmimpoke ..procinfo 1
+shmimcopy ..procinfo 1
 
 # Run computation N times
-shmimpoke ..loopcntMax ${NBpoke}
+shmimcopy ..loopcntMax ${NBpoke}
 
 # Change triggermode to 3 : semaphore
-shmimpoke ..triggermode 3
+shmimcopy ..triggermode 3
 
 # set trigger sname
-shmimpoke ..triggersname ${streamnameTRIG}
+shmimcopy ..triggersname ${streamnameIN}
 
-shmimpoke ${streamnameOUT}
+shmimcopy ${streamnameIN} ${streamnameOUT}
 listim
 exitCLI
 EOF
