@@ -48,6 +48,7 @@ set(SOURCEFILES
     shmim_purge.c
     shmim_setowner.c
     stream_ave.c
+    stream_copy.c
     stream_delay.c
     stream_diff.c
     stream_halfimdiff.c
@@ -106,6 +107,7 @@ set(INCLUDEFILES
     shmim_purge.h
     shmim_setowner.h
     stream_ave.h
+    stream_copy.h
     stream_delay.h
     stream_diff.h
     stream_halfimdiff.h
@@ -124,6 +126,7 @@ set(INCLUDEFILES
 set(SCRIPTFILES
   scripts/milk-rmshmim
 	scripts/milk-shmimpurge
+  scripts/milk-shmimcopy-semtrig
 	scripts/milk-shmimpoke
   scripts/milk-shmimpoke-semtrig
 )

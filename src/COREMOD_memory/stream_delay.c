@@ -28,69 +28,80 @@ static uint64_t *statusframelag;
 static uint64_t *statuskkin;
 static uint64_t *statuskkout;
 
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".in_name",
-                               "input image",
-                               "im1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inimname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".out_name",
-                               "output image",
-                               "out1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outimname,
-                               NULL},
-                              {CLIARG_FLOAT32,
-                               ".delaysec",
-                               "delay [s]",
-                               "0.001",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &delaysec,
-                               NULL},
-                              {CLIARG_UINT64,
-                               ".timebuffsize",
-                               "time buffer size",
-                               "10000",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &timebuffsize,
-                               NULL},
-                              {CLIARG_INT32,
-                               ".option.timeavemode",
-                               "Enable time window averaging (>0)",
-                               "0",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &avemode,
-                               &fpi_avemode},
-                              {CLIARG_UINT64,
-                               ".option.timeavedtns",
-                               "Averaging time window width [ns]",
-                               "10000",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &avedtns,
-                               &fpi_timeavedtns},
-                              {CLIARG_UINT64,
-                               ".status.framelag",
-                               "current time lag frame index",
-                               "100",
-                               CLIARG_OUTPUT_DEFAULT,
-                               (void **) &statusframelag,
-                               NULL},
-                              {CLIARG_UINT64,
-                               ".status.kkin",
-                               "input cube slice index",
-                               "100",
-                               CLIARG_OUTPUT_DEFAULT,
-                               (void **) &statuskkin,
-                               NULL},
-                              {CLIARG_UINT64,
-                               ".status.kkout",
-                               "output cube slice index",
-                               "100",
-                               CLIARG_OUTPUT_DEFAULT,
-                               (void **) &statuskkout,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_IMG,
+        ".in_name",
+        "input image",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {   CLIARG_STR,
+        ".out_name",
+        "output image",
+        "out1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
+    },
+    {   CLIARG_FLOAT32,
+        ".delaysec",
+        "delay [s]",
+        "0.001",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &delaysec,
+        NULL
+    },
+    {   CLIARG_UINT64,
+        ".timebuffsize",
+        "time buffer size",
+        "10000",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &timebuffsize,
+        NULL
+    },
+    {   CLIARG_INT32,
+        ".option.timeavemode",
+        "Enable time window averaging (>0)",
+        "0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &avemode,
+        &fpi_avemode
+    },
+    {   CLIARG_UINT64,
+        ".option.timeavedtns",
+        "Averaging time window width [ns]",
+        "10000",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &avedtns,
+        &fpi_timeavedtns
+    },
+    {   CLIARG_UINT64,
+        ".status.framelag",
+        "current time lag frame index",
+        "100",
+        CLIARG_OUTPUT_DEFAULT,
+        (void **) &statusframelag,
+        NULL
+    },
+    {   CLIARG_UINT64,
+        ".status.kkin",
+        "input cube slice index",
+        "100",
+        CLIARG_OUTPUT_DEFAULT,
+        (void **) &statuskkin,
+        NULL
+    },
+    {   CLIARG_UINT64,
+        ".status.kkout",
+        "output cube slice index",
+        "100",
+        CLIARG_OUTPUT_DEFAULT,
+        (void **) &statuskkout,
+        NULL
+    }
+};
 
 static errno_t customCONFsetup()
 {
@@ -118,7 +129,8 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata = {"streamdelay",
                                 "delay input stream to output stream",
-                                CLICMD_FIELDS_DEFAULTS};
+                                CLICMD_FIELDS_DEFAULTS
+                               };
 
 // detailed help
 static errno_t help_function()
@@ -237,9 +249,9 @@ static errno_t compute_function()
     imcreatelikewiseIMGID(&outimg, &inimg);
 
     IMGID bufferimg    = makeIMGID_3D("streamdelaybuff",
-                                   inimg.size[0],
-                                   inimg.size[1],
-                                   *timebuffsize);
+                                      inimg.size[0],
+                                      inimg.size[1],
+                                      *timebuffsize);
     bufferimg.datatype = inimg.datatype;
     imcreateIMGID(&bufferimg);
 
@@ -288,9 +300,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD_memory__streamdelay()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD_memory__streamdelay()
 {
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
