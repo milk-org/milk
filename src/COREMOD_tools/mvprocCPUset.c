@@ -24,7 +24,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
 
 errno_t COREMOD_TOOLS_mvProcTset_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
     {
         COREMOD_TOOLS_mvProcTset(data.cmdargtoken[1].val.string);
 
@@ -38,9 +38,9 @@ errno_t COREMOD_TOOLS_mvProcTset_cli()
 
 errno_t COREMOD_TOOLS_mvProcTsetExt_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_LONG) +
+    if(0 + CLI_checkarg(1, CLIARG_LONG) +
             CLI_checkarg(2, CLIARG_STR_NOT_IMG) ==
-        0)
+            0)
     {
         COREMOD_TOOLS_mvProcTsetExt(data.cmdargtoken[1].val.numl,
                                     data.cmdargtoken[2].val.string);
@@ -54,7 +54,7 @@ errno_t COREMOD_TOOLS_mvProcTsetExt_cli()
 
 errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
     {
         COREMOD_TOOLS_mvProcCPUset(data.cmdargtoken[1].val.string);
 
@@ -68,9 +68,9 @@ errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 
 errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(3, CLIARG_LONG) ==
-        0)
+            0)
     {
         COREMOD_TOOLS_mvProcCPUsetExt(data.cmdargtoken[1].val.numl,
                                       data.cmdargtoken[2].val.string,
@@ -164,8 +164,8 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
     PRINT_ERROR("AC EUID %d - SUID %d - RUID %d ", euid, suid, ruid);
     //*/
 
-    if (seteuid(data.euid) != 0 ||
-        setuid(data.euid) != 0) // This goes up to maximum privileges
+    if(seteuid(data.euid) != 0 ||
+            setuid(data.euid) != 0) // This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid/setuid error");
     }
@@ -175,8 +175,8 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
 
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
 
-    if (setresuid(data.ruid, data.ruid, data.euid) !=
-        0) // Go back to normal privileges
+    if(setresuid(data.ruid, data.ruid, data.euid) !=
+            0) // Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
@@ -206,8 +206,8 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
     //*/
 
     // Must make TWO calls - see COREMOD_TOOLS_mvProcTset
-    if (seteuid(data.euid) != 0 ||
-        setuid(data.euid) != 0) // This goes up to maximum privileges
+    if(seteuid(data.euid) != 0 ||
+            setuid(data.euid) != 0) // This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid/setuid error");
     }
@@ -218,7 +218,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
             csetname);
     printf("Executing command: %s\n", command);
 
-    if (system("which cset > /dev/null 2>&1"))
+    if(system("which cset > /dev/null 2>&1"))
     {
         // Command doesn't exist...
     }
@@ -228,7 +228,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
         EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
     }
 
-    if (rtprio > 0)
+    if(rtprio > 0)
     {
         sprintf(command, "chrt -f -p %d %d\n", rtprio, pid);
         printf("Executing command: %s\n", command);
@@ -236,8 +236,8 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
         EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
     }
 
-    if (setresuid(data.ruid, data.ruid, data.euid) !=
-        0) // Go back to normal privileges
+    if(setresuid(data.ruid, data.ruid, data.euid) !=
+            0) // Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }

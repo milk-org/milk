@@ -22,8 +22,10 @@ static double *scoeff;
 // series of words separated by dot "."
 // For example: .input.xsize (note that first dot is optional)
 //
-static CLICMDARGDEF farg[] = {
-    {   CLIARG_IMG,
+static CLICMDARGDEF farg[] =
+{
+    {
+        CLIARG_IMG,
         ".in_name",
         "input image",
         "im1",
@@ -31,7 +33,8 @@ static CLICMDARGDEF farg[] = {
         (void **) &inimname,
         NULL
     },
-    {   // hidden argument is not part of CLI call, FPFLAG ignored
+    {
+        // hidden argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT,
         ".scaling",
         "scaling coefficient",
@@ -43,7 +46,8 @@ static CLICMDARGDEF farg[] = {
 };
 
 // CLI function initialization data
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "imsum1",                          // keyword to call function in CLI
     "compute total of image example1", // description of what the function does
     CLICMD_FIELDS_NOFPS
@@ -86,7 +90,7 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
     uint_fast64_t xysize = xsize * ysize;
 
     double total = 0.0;
-    for (uint_fast64_t ii = 0; ii < xysize; ii++)
+    for(uint_fast64_t ii = 0; ii < xysize; ii++)
     {
         total += img.im->array.F[ii];
     }

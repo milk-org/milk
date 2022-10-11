@@ -38,8 +38,9 @@ static errno_t COREMOD_MEMORY_stream_monitorlimits__cli()
     // See code in function_parameter.c for detailed rules.
     function_parameter_getFPSargs_from_CLIfunc("streammlim");
 
-    if (data.FPS_CMDCODE != 0)
-    { // use FPS implementation
+    if(data.FPS_CMDCODE != 0)
+    {
+        // use FPS implementation
         // set pointers to CONF and RUN functions
         data.FPS_CONFfunc = stream_monitorlimits_FPCONF;
         data.FPS_RUNfunc  = stream_monitorlimits_RUN;
@@ -48,7 +49,7 @@ static errno_t COREMOD_MEMORY_stream_monitorlimits__cli()
     }
 
     // call non FPS implementation - all parameters specified at function launch
-    if (CLI_checkarg(1, CLIARG_IMG) == 0)
+    if(CLI_checkarg(1, CLIARG_IMG) == 0)
     {
         stream_monitorlimits(data.cmdargtoken[1].val.string);
 
@@ -229,8 +230,8 @@ errno_t stream_monitorlimits_RUN()
                                        PROCESSINFO_TRIGGERMODE_DELAY,
                                        -1);
     processinfo->triggerdelay.tv_sec  = 0;
-    processinfo->triggerdelay.tv_nsec = (long) (dtus * 1000);
-    while (processinfo->triggerdelay.tv_nsec > 1000000000)
+    processinfo->triggerdelay.tv_nsec = (long)(dtus * 1000);
+    while(processinfo->triggerdelay.tv_nsec > 1000000000)
     {
         processinfo->triggerdelay.tv_nsec -= 1000000000;
         processinfo->triggerdelay.tv_sec += 1;
@@ -243,7 +244,7 @@ errno_t stream_monitorlimits_RUN()
     // Notify processinfo that we are entering loop
     processinfo_loopstart(processinfo);
 
-    while (loopOK == 1)
+    while(loopOK == 1)
     {
         loopOK = processinfo_loopstep(processinfo);
 
@@ -251,7 +252,7 @@ errno_t stream_monitorlimits_RUN()
 
         processinfo_exec_start(processinfo);
 
-        if (processinfo_compute_status(processinfo) == 1)
+        if(processinfo_compute_status(processinfo) == 1)
         {
         }
 

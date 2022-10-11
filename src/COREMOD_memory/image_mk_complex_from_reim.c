@@ -7,30 +7,39 @@ static char *inreimname;
 static char *inimimname;
 static char *outimname;
 
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".imre_name",
-                               "real image",
-                               "imre",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inreimname,
-                               NULL},
-                              {CLIARG_IMG,
-                               ".imim_name",
-                               "imaginary image",
-                               "imim",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inimimname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".out_name",
-                               "output complex image",
-                               "outim",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outimname,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_IMG,
+        ".imre_name",
+        "real image",
+        "imre",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inreimname,
+        NULL
+    },
+    {
+        CLIARG_IMG,
+        ".imim_name",
+        "imaginary image",
+        "imim",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimimname,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".out_name",
+        "output complex image",
+        "outim",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
+    }
+};
 
-static CLICMDDATA CLIcmddata = {
-    "ri2c", "real, imaginary -> complex", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "ri2c", "real, imaginary -> complex", CLICMD_FIELDS_DEFAULTS
+};
 
 // detailed help
 static errno_t help_function()
@@ -62,19 +71,19 @@ errno_t mk_complex_from_reim(const char *re_name,
     naxis       = data.image[IDre].md[0].naxis;
 
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if (naxes == NULL)
+    if(naxes == NULL)
     {
         PRINT_ERROR("malloc error");
         abort();
     }
 
-    for (int8_t i = 0; i < naxis; i++)
+    for(int8_t i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[IDre].md[0].size[i];
     }
     uint64_t nelement = data.image[IDre].md[0].nelement;
 
-    if ((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
+    if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -85,14 +94,14 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           data.NBKEYWORD_DFT,
                                           0,
                                           &IDout));
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CF[ii].re = data.image[IDre].array.F[ii];
             data.image[IDout].array.CF[ii].im = data.image[IDim].array.F[ii];
         }
     }
-    else if ((datatype_re == _DATATYPE_FLOAT) &&
-             (datatype_im == _DATATYPE_DOUBLE))
+    else if((datatype_re == _DATATYPE_FLOAT) &&
+            (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -103,14 +112,14 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           data.NBKEYWORD_DFT,
                                           0,
                                           &IDout));
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.F[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
         }
     }
-    else if ((datatype_re == _DATATYPE_DOUBLE) &&
-             (datatype_im == _DATATYPE_FLOAT))
+    else if((datatype_re == _DATATYPE_DOUBLE) &&
+            (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -121,14 +130,14 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           data.NBKEYWORD_DFT,
                                           0,
                                           &IDout));
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.F[ii];
         }
     }
-    else if ((datatype_re == _DATATYPE_DOUBLE) &&
-             (datatype_im == _DATATYPE_DOUBLE))
+    else if((datatype_re == _DATATYPE_DOUBLE) &&
+            (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -139,7 +148,7 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           data.NBKEYWORD_DFT,
                                           0,
                                           &IDout));
-        for (uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
             data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
             data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
@@ -174,9 +183,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD__mk_complex_from_reim()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD__mk_complex_from_reim()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

@@ -51,7 +51,7 @@ typedef struct
     char name[STRINGMAXLEN_PROCESSINFO_NAME]; /// process name (human-readable)
 
     char source_FUNCTION
-        [STRINGMAXLEN_PROCESSINFO_SRCFUNC];             /// source code function
+    [STRINGMAXLEN_PROCESSINFO_SRCFUNC];             /// source code function
     char source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE]; /// source code file
     int  source_LINE;                                   /// source code line
 
@@ -61,7 +61,7 @@ typedef struct
 
     long loopcnt; // counter, useful for loop processes to monitor activity
     long
-        loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
+    loopcntMax; // exit loop if loopcnt = loopcntMax. Set to -1 for infinite loop
     int CTRLval; // control value to be externally written.
     // 0: run                     (default)
     // 1: pause
@@ -98,7 +98,7 @@ typedef struct
     char    triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
     int     triggersem; // semaphore index
     uint64_t
-        triggerstreamcnt; // previous value of trigger counter, updates on trigger
+    triggerstreamcnt; // previous value of trigger counter, updates on trigger
     struct timespec triggerdelay;   // for PROCESSINFO_TRIGGERMODE_DELAY
     struct timespec triggertimeout; // how long to wait until trigger ?
     uint64_t        trigggertimeoutcnt;

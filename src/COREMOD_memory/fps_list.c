@@ -44,12 +44,12 @@ errno_t fps_list()
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    for (fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
+    for(fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
     {
-        if (data.fpsarray[fpsID].SMfd > -1)
+        if(data.fpsarray[fpsID].SMfd > -1)
         {
 
-            if (fpscnt == 0)
+            if(fpscnt == 0)
             {
                 printf("FPSs currently connected :\n");
             }
@@ -67,7 +67,7 @@ errno_t fps_list()
             fpscnt++;
         }
     }
-    if (fpscnt == 0)
+    if(fpscnt == 0)
     {
         printf("No FPS currently connected\n");
     }
@@ -79,16 +79,16 @@ errno_t fps_list()
 
     struct dirent *de;
     DIR           *dr = opendir(data.shmdir);
-    if (dr == NULL)
+    if(dr == NULL)
     {
         printf("Could not open current directory");
         return RETURN_FAILURE;
     }
 
     fpscnt = 0;
-    while ((de = readdir(dr)) != NULL)
+    while((de = readdir(dr)) != NULL)
     {
-        if (strstr(de->d_name, ".fps.shm") != NULL)
+        if(strstr(de->d_name, ".fps.shm") != NULL)
         {
             char fpsname[100];
             int  slen  = strlen(de->d_name);

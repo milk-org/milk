@@ -130,15 +130,15 @@ errno_t list_image_ID_ncurses()
         "[percent]    LAST ACCESS\n");
     printw("\n");
 
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
     {
-        if (data.image[i].used == 1)
+        if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long) (data.image[i].md[0].nelement)) *
+            tmp_long = ((long long)(data.image[i].md[0].nelement)) *
                        ImageStreamIO_typesize(datatype);
 
-            if (data.image[i].md[0].shared == 1)
+            if(data.image[i].md[0].shared == 1)
             {
                 printw("%4ldS", i);
             }
@@ -147,7 +147,7 @@ errno_t list_image_ID_ncurses()
                 printw("%4ld ", i);
             }
 
-            if (data.image[i].md[0].shared == 1)
+            if(data.image[i].md[0].shared == 1)
             {
                 attron(A_BOLD | COLOR_PAIR(9));
             }
@@ -158,7 +158,7 @@ errno_t list_image_ID_ncurses()
             sprintf(str, "%10s ", data.image[i].name);
             printw(str);
 
-            if (data.image[i].md[0].shared == 1)
+            if(data.image[i].md[0].shared == 1)
             {
                 attroff(A_BOLD | COLOR_PAIR(9));
             }
@@ -169,7 +169,7 @@ errno_t list_image_ID_ncurses()
 
             sprintf(str, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
-            for (j = 1; j < data.image[i].md[0].naxis; j++)
+            for(j = 1; j < data.image[i].md[0].naxis; j++)
             {
                 sprintf(str1,
                         "%s x %6ld",
@@ -183,51 +183,51 @@ errno_t list_image_ID_ncurses()
             attron(COLOR_PAIR(3));
             n = 0;
 
-            if (datatype == _DATATYPE_UINT8)
+            if(datatype == _DATATYPE_UINT8)
             {
                 n = snprintf(type, STYPESIZE, "UINT8  ");
             }
-            if (datatype == _DATATYPE_INT8)
+            if(datatype == _DATATYPE_INT8)
             {
                 n = snprintf(type, STYPESIZE, "INT8   ");
             }
-            if (datatype == _DATATYPE_UINT16)
+            if(datatype == _DATATYPE_UINT16)
             {
                 n = snprintf(type, STYPESIZE, "UINT16 ");
             }
-            if (datatype == _DATATYPE_INT16)
+            if(datatype == _DATATYPE_INT16)
             {
                 n = snprintf(type, STYPESIZE, "INT16  ");
             }
-            if (datatype == _DATATYPE_UINT32)
+            if(datatype == _DATATYPE_UINT32)
             {
                 n = snprintf(type, STYPESIZE, "UINT32 ");
             }
-            if (datatype == _DATATYPE_INT32)
+            if(datatype == _DATATYPE_INT32)
             {
                 n = snprintf(type, STYPESIZE, "INT32  ");
             }
-            if (datatype == _DATATYPE_UINT64)
+            if(datatype == _DATATYPE_UINT64)
             {
                 n = snprintf(type, STYPESIZE, "UINT64 ");
             }
-            if (datatype == _DATATYPE_INT64)
+            if(datatype == _DATATYPE_INT64)
             {
                 n = snprintf(type, STYPESIZE, "INT64  ");
             }
-            if (datatype == _DATATYPE_FLOAT)
+            if(datatype == _DATATYPE_FLOAT)
             {
                 n = snprintf(type, STYPESIZE, "FLOAT  ");
             }
-            if (datatype == _DATATYPE_DOUBLE)
+            if(datatype == _DATATYPE_DOUBLE)
             {
                 n = snprintf(type, STYPESIZE, "DOUBLE ");
             }
-            if (datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype == _DATATYPE_COMPLEX_FLOAT)
             {
                 n = snprintf(type, STYPESIZE, "CFLOAT ");
             }
-            if (datatype == _DATATYPE_COMPLEX_DOUBLE)
+            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
             {
                 n = snprintf(type, STYPESIZE, "CDOUBLE");
             }
@@ -236,7 +236,7 @@ errno_t list_image_ID_ncurses()
 
             attroff(COLOR_PAIR(3));
 
-            if (n >= STYPESIZE)
+            if(n >= STYPESIZE)
             {
                 PRINT_ERROR(
                     "Attempted to write string buffer with too "
@@ -244,15 +244,15 @@ errno_t list_image_ID_ncurses()
             }
 
             printw("%10ld Kb %6.2f   ",
-                   (long) (tmp_long / 1024),
-                   (float) (100.0 * tmp_long / sizeb));
+                   (long)(tmp_long / 1024),
+                   (float)(100.0 * tmp_long / sizeb));
 
             timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
                 (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
                  0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
 
-            if (timediff < 0.01)
+            if(timediff < 0.01)
             {
                 attron(COLOR_PAIR(4));
                 printw("%15.9f\n", timediff);
@@ -274,17 +274,17 @@ errno_t list_image_ID_ncurses()
     sizeKb = 0;
     sizeb  = compute_image_memory();
 
-    if (sizeb > 1024 - 1)
+    if(sizeb > 1024 - 1)
     {
         sizeKb = sizeb / 1024;
         sizeb  = sizeb - 1024 * sizeKb;
     }
-    if (sizeKb > 1024 - 1)
+    if(sizeKb > 1024 - 1)
     {
         sizeMb = sizeKb / 1024;
         sizeKb = sizeKb - 1024 * sizeMb;
     }
-    if (sizeMb > 1024 - 1)
+    if(sizeMb > 1024 - 1)
     {
         sizeGb = sizeMb / 1024;
         sizeMb = sizeMb - 1024 * sizeGb;
@@ -293,27 +293,27 @@ errno_t list_image_ID_ncurses()
     //attron(A_BOLD);
 
     sprintf(str, "%ld image(s)      ", compute_nb_image());
-    if (sizeGb > 0)
+    if(sizeGb > 0)
     {
-        sprintf(str1, "%s %ld GB", str, (long) (sizeGb));
+        sprintf(str1, "%s %ld GB", str, (long)(sizeGb));
         strcpy(str, str1);
     }
 
-    if (sizeMb > 0)
+    if(sizeMb > 0)
     {
-        sprintf(str1, "%s %ld MB", str, (long) (sizeMb));
+        sprintf(str1, "%s %ld MB", str, (long)(sizeMb));
         strcpy(str, str1);
     }
 
-    if (sizeKb > 0)
+    if(sizeKb > 0)
     {
-        sprintf(str1, "%s %ld KB", str, (long) (sizeKb));
+        sprintf(str1, "%s %ld KB", str, (long)(sizeKb));
         strcpy(str, str1);
     }
 
-    if (sizeb > 0)
+    if(sizeb > 0)
     {
-        sprintf(str1, "%s %ld B", str, (long) (sizeb));
+        sprintf(str1, "%s %ld B", str, (long)(sizeb));
         strcpy(str, str1);
     }
 
@@ -362,14 +362,14 @@ errno_t list_image_ID_ofp(FILE *fo)
             "[percent]    LAST ACCESS\n");
     fprintf(fo, "\n");
 
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
-        if (data.image[i].used == 1)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+        if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long) (data.image[i].md[0].nelement)) *
+            tmp_long = ((long long)(data.image[i].md[0].nelement)) *
                        ImageStreamIO_typesize(datatype);
 
-            if (data.image[i].md[0].shared == 1)
+            if(data.image[i].md[0].shared == 1)
             {
                 fprintf(fo,
                         "%4ld %c[%d;%dm%14s%c[%d;m ",
@@ -397,7 +397,7 @@ errno_t list_image_ID_ofp(FILE *fo)
 
             sprintf(str, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
-            for (j = 1; j < data.image[i].md[0].naxis; j++)
+            for(j = 1; j < data.image[i].md[0].naxis; j++)
             {
                 sprintf(str1,
                         "%s x %6ld",
@@ -411,58 +411,58 @@ errno_t list_image_ID_ofp(FILE *fo)
             fprintf(fo, "%-32s", str);
 
             n = 0;
-            if (datatype == _DATATYPE_UINT8)
+            if(datatype == _DATATYPE_UINT8)
             {
                 n = snprintf(type, STYPESIZE, "UINT8  ");
             }
-            if (datatype == _DATATYPE_INT8)
+            if(datatype == _DATATYPE_INT8)
             {
                 n = snprintf(type, STYPESIZE, "INT8   ");
             }
-            if (datatype == _DATATYPE_UINT16)
+            if(datatype == _DATATYPE_UINT16)
             {
                 n = snprintf(type, STYPESIZE, "UINT16 ");
             }
-            if (datatype == _DATATYPE_INT16)
+            if(datatype == _DATATYPE_INT16)
             {
                 n = snprintf(type, STYPESIZE, "INT16  ");
             }
-            if (datatype == _DATATYPE_UINT32)
+            if(datatype == _DATATYPE_UINT32)
             {
                 n = snprintf(type, STYPESIZE, "UINT32 ");
             }
-            if (datatype == _DATATYPE_INT32)
+            if(datatype == _DATATYPE_INT32)
             {
                 n = snprintf(type, STYPESIZE, "INT32  ");
             }
-            if (datatype == _DATATYPE_UINT64)
+            if(datatype == _DATATYPE_UINT64)
             {
                 n = snprintf(type, STYPESIZE, "UINT64 ");
             }
-            if (datatype == _DATATYPE_INT64)
+            if(datatype == _DATATYPE_INT64)
             {
                 n = snprintf(type, STYPESIZE, "INT64  ");
             }
-            if (datatype == _DATATYPE_FLOAT)
+            if(datatype == _DATATYPE_FLOAT)
             {
                 n = snprintf(type, STYPESIZE, "FLOAT  ");
             }
-            if (datatype == _DATATYPE_DOUBLE)
+            if(datatype == _DATATYPE_DOUBLE)
             {
                 n = snprintf(type, STYPESIZE, "DOUBLE ");
             }
-            if (datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype == _DATATYPE_COMPLEX_FLOAT)
             {
                 n = snprintf(type, STYPESIZE, "CFLOAT ");
             }
-            if (datatype == _DATATYPE_COMPLEX_DOUBLE)
+            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
             {
                 n = snprintf(type, STYPESIZE, "CDOUBLE");
             }
 
             fprintf(fo, "%7s ", type);
 
-            if (n >= STYPESIZE)
+            if(n >= STYPESIZE)
             {
                 PRINT_ERROR(
                     "Attempted to write string buffer with too many "
@@ -471,8 +471,8 @@ errno_t list_image_ID_ofp(FILE *fo)
 
             fprintf(fo,
                     "%10ld Kb %6.2f   ",
-                    (long) (tmp_long / 1024),
-                    (float) (100.0 * tmp_long / sizeb));
+                    (long)(tmp_long / 1024),
+                    (float)(100.0 * tmp_long / sizeb));
 
             timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
@@ -488,38 +488,38 @@ errno_t list_image_ID_ofp(FILE *fo)
     sizeKb = 0;
     sizeb  = compute_image_memory();
 
-    if (sizeb > 1024 - 1)
+    if(sizeb > 1024 - 1)
     {
         sizeKb = sizeb / 1024;
         sizeb  = sizeb - 1024 * sizeKb;
     }
-    if (sizeKb > 1024 - 1)
+    if(sizeKb > 1024 - 1)
     {
         sizeMb = sizeKb / 1024;
         sizeKb = sizeKb - 1024 * sizeMb;
     }
-    if (sizeMb > 1024 - 1)
+    if(sizeMb > 1024 - 1)
     {
         sizeGb = sizeMb / 1024;
         sizeMb = sizeMb - 1024 * sizeGb;
     }
 
     fprintf(fo, "%ld image(s)   ", compute_nb_image());
-    if (sizeGb > 0)
+    if(sizeGb > 0)
     {
-        fprintf(fo, " %ld Gb", (long) (sizeGb));
+        fprintf(fo, " %ld Gb", (long)(sizeGb));
     }
-    if (sizeMb > 0)
+    if(sizeMb > 0)
     {
-        fprintf(fo, " %ld Mb", (long) (sizeMb));
+        fprintf(fo, " %ld Mb", (long)(sizeMb));
     }
-    if (sizeKb > 0)
+    if(sizeKb > 0)
     {
-        fprintf(fo, " %ld Kb", (long) (sizeKb));
+        fprintf(fo, " %ld Kb", (long)(sizeKb));
     }
-    if (sizeb > 0)
+    if(sizeb > 0)
     {
-        fprintf(fo, " %ld", (long) (sizeb));
+        fprintf(fo, " %ld", (long)(sizeb));
     }
     fprintf(fo, "\n");
 
@@ -534,8 +534,8 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
     //long long   tmp_long;
     uint8_t datatype;
 
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
-        if (data.image[i].used == 1)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+        if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
             //tmp_long = ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
@@ -548,7 +548,7 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
                     data.image[i].md[0].shared,
                     (long) data.image[i].md[0].size[0]);
 
-            for (j = 1; j < data.image[i].md[0].naxis; j++)
+            for(j = 1; j < data.image[i].md[0].naxis; j++)
             {
                 fprintf(fo, " %4ld", (long) data.image[i].md[0].size[j]);
             }
@@ -584,75 +584,75 @@ errno_t list_image_ID_file(const char *fname)
     int     n;
 
     fp = fopen(fname, "w");
-    if (fp == NULL)
+    if(fp == NULL)
     {
         PRINT_ERROR("Cannot create file %s", fname);
         abort();
     }
 
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
-        if (data.image[i].used == 1)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+        if(data.image[i].used == 1)
         {
             datatype = data.image[i].md[0].datatype;
             fprintf(fp, "%ld %s", i, data.image[i].name);
             fprintf(fp, " %ld", (long) data.image[i].md[0].naxis);
-            for (j = 0; j < data.image[i].md[0].naxis; j++)
+            for(j = 0; j < data.image[i].md[0].naxis; j++)
             {
                 fprintf(fp, " %ld", (long) data.image[i].md[0].size[j]);
             }
 
             n = 0;
 
-            if (datatype == _DATATYPE_UINT8)
+            if(datatype == _DATATYPE_UINT8)
             {
                 n = snprintf(type, STYPESIZE, "UINT8  ");
             }
-            if (datatype == _DATATYPE_INT8)
+            if(datatype == _DATATYPE_INT8)
             {
                 n = snprintf(type, STYPESIZE, "INT8   ");
             }
-            if (datatype == _DATATYPE_UINT16)
+            if(datatype == _DATATYPE_UINT16)
             {
                 n = snprintf(type, STYPESIZE, "UINT16 ");
             }
-            if (datatype == _DATATYPE_INT16)
+            if(datatype == _DATATYPE_INT16)
             {
                 n = snprintf(type, STYPESIZE, "INT16  ");
             }
-            if (datatype == _DATATYPE_UINT32)
+            if(datatype == _DATATYPE_UINT32)
             {
                 n = snprintf(type, STYPESIZE, "UINT32 ");
             }
-            if (datatype == _DATATYPE_INT32)
+            if(datatype == _DATATYPE_INT32)
             {
                 n = snprintf(type, STYPESIZE, "INT32  ");
             }
-            if (datatype == _DATATYPE_UINT64)
+            if(datatype == _DATATYPE_UINT64)
             {
                 n = snprintf(type, STYPESIZE, "UINT64 ");
             }
-            if (datatype == _DATATYPE_INT64)
+            if(datatype == _DATATYPE_INT64)
             {
                 n = snprintf(type, STYPESIZE, "INT64  ");
             }
-            if (datatype == _DATATYPE_FLOAT)
+            if(datatype == _DATATYPE_FLOAT)
             {
                 n = snprintf(type, STYPESIZE, "FLOAT  ");
             }
-            if (datatype == _DATATYPE_DOUBLE)
+            if(datatype == _DATATYPE_DOUBLE)
             {
                 n = snprintf(type, STYPESIZE, "DOUBLE ");
             }
-            if (datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype == _DATATYPE_COMPLEX_FLOAT)
             {
                 n = snprintf(type, STYPESIZE, "CFLOAT ");
             }
-            if (datatype == _DATATYPE_COMPLEX_DOUBLE)
+            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
             {
                 n = snprintf(type, STYPESIZE, "CDOUBLE");
             }
 
-            if (n >= STYPESIZE)
+            if(n >= STYPESIZE)
             {
                 PRINT_ERROR(
                     "Attempted to write string buffer with too many "
@@ -668,7 +668,7 @@ errno_t list_image_ID_file(const char *fname)
 
 errno_t memory_monitor(const char *termttyname)
 {
-    if (data.Debug > 0)
+    if(data.Debug > 0)
     {
         printf("starting memory_monitor on \"%s\"\n", termttyname);
     }

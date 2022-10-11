@@ -28,8 +28,8 @@ arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out)
     atype1 = data.image[ID1].md[0].datatype;
     atype2 = data.image[ID2].md[0].datatype;
 
-    if ((atype1 == _DATATYPE_COMPLEX_FLOAT) &&
-        (atype2 == _DATATYPE_COMPLEX_FLOAT))
+    if((atype1 == _DATATYPE_COMPLEX_FLOAT) &&
+            (atype2 == _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name,
                                        ID2_name,
@@ -38,8 +38,8 @@ arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out)
         return RETURN_SUCCESS;
     }
 
-    if ((atype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-        (atype2 == _DATATYPE_COMPLEX_DOUBLE))
+    if((atype1 == _DATATYPE_COMPLEX_DOUBLE) &&
+            (atype2 == _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name,
                                        ID2_name,
@@ -64,8 +64,8 @@ arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out)
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
 
-    if ((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
-        (datatype2 == _DATATYPE_COMPLEX_FLOAT))
+    if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
+            (datatype2 == _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name,
                                        ID2_name,
@@ -74,8 +74,8 @@ arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out)
         return RETURN_SUCCESS;
     }
 
-    if ((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-        (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
+    if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
+            (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name,
                                        ID2_name,
@@ -101,8 +101,8 @@ errno_t arith_image_Cmult(const char *ID1_name,
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
 
-    if ((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
-        (datatype2 == _DATATYPE_COMPLEX_FLOAT))
+    if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
+            (datatype2 == _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name,
                                        ID2_name,
@@ -111,8 +111,8 @@ errno_t arith_image_Cmult(const char *ID1_name,
         return RETURN_SUCCESS;
     }
 
-    if ((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-        (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
+    if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
+            (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name,
                                        ID2_name,
@@ -138,8 +138,8 @@ int arith_image_Cdiv(const char *ID1_name,
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
 
-    if ((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
-        (datatype2 == _DATATYPE_COMPLEX_FLOAT))
+    if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
+            (datatype2 == _DATATYPE_COMPLEX_FLOAT))
     {
         arith_image_function_CF_CF__CF(ID1_name,
                                        ID2_name,
@@ -148,8 +148,8 @@ int arith_image_Cdiv(const char *ID1_name,
         return RETURN_SUCCESS;
     }
 
-    if ((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-        (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
+    if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
+            (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
     {
         arith_image_function_CD_CD__CD(ID1_name,
                                        ID2_name,

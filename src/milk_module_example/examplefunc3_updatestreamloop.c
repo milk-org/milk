@@ -12,7 +12,8 @@
 // variables local to this translation unit
 static char *inimname;
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     {
         CLIARG_IMG,
         ".in_sname",
@@ -26,7 +27,8 @@ static CLICMDARGDEF farg[] = {
 
 
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "streamupdate", "update stream", CLICMD_FIELDS_DEFAULTS
 };
 

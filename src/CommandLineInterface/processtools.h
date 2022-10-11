@@ -48,7 +48,7 @@ typedef struct
     pid_t PIDarray[PROCESSINFOLISTSIZE];
     int   active[PROCESSINFOLISTSIZE];
     char  pnamearray[PROCESSINFOLISTSIZE]
-                   [STRINGMAXLEN_PROCESSINFO_NAME]; // short name
+    [STRINGMAXLEN_PROCESSINFO_NAME]; // short name
     double createtime[PROCESSINFOLISTSIZE];
 
 } PROCESSINFOLIST;
@@ -84,7 +84,7 @@ typedef struct
     int subprocPIDarray[MAXNBSUBPROCESS];
 
     double sampletimearray
-        [MAXNBSUBPROCESS]; // time at which sampling was performed [sec]
+    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec]
     double sampletimearray_prev[MAXNBSUBPROCESS];
 
     long ctxtsw_voluntary[MAXNBSUBPROCESS];
@@ -182,38 +182,38 @@ extern "C"
 {
 #endif
 
-    PROCESSINFO *processinfo_setup(char       *pinfoname,
-                                   const char *descriptionstring,
-                                   const char *msgstring,
-                                   const char *functionname,
-                                   const char *filename,
-                                   int         linenumber);
+PROCESSINFO *processinfo_setup(char       *pinfoname,
+                               const char *descriptionstring,
+                               const char *msgstring,
+                               const char *functionname,
+                               const char *filename,
+                               int         linenumber);
 
-    errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
+errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
 
-    errno_t processinfo_loopstart(PROCESSINFO *processinfo);
+errno_t processinfo_loopstart(PROCESSINFO *processinfo);
 
-    int processinfo_loopstep(PROCESSINFO *processinfo);
+int processinfo_loopstep(PROCESSINFO *processinfo);
 
-    int processinfo_compute_status(PROCESSINFO *processinfo);
+int processinfo_compute_status(PROCESSINFO *processinfo);
 
-    PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
-    PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
-    int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
-    int          processinfo_cleanExit(PROCESSINFO *processinfo);
-    int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
-    int processinfo_WriteMessage(PROCESSINFO *processinfo,
-                                 const char  *msgstring);
-    int processinfo_exec_start(PROCESSINFO *processinfo);
-    int processinfo_exec_end(PROCESSINFO *processinfo);
+PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
+PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
+int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
+int          processinfo_cleanExit(PROCESSINFO *processinfo);
+int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
+int processinfo_WriteMessage(PROCESSINFO *processinfo,
+                             const char  *msgstring);
+int processinfo_exec_start(PROCESSINFO *processinfo);
+int processinfo_exec_end(PROCESSINFO *processinfo);
 
-    int processinfo_CatchSignals();
-    int processinfo_ProcessSignals(PROCESSINFO *processinfo);
+int processinfo_CatchSignals();
+int processinfo_ProcessSignals(PROCESSINFO *processinfo);
 
-    errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-                                             imageID      outstreamID);
+errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
+        imageID      outstreamID);
 
-    errno_t processinfo_CTRLscreen();
+errno_t processinfo_CTRLscreen();
 
 #define PROCINFOLOOP_START                                                     \
     processinfo_loopstart(processinfo);                                        \

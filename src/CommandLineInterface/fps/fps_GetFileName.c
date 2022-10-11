@@ -25,21 +25,21 @@ int functionparameter_GetFileName(FUNCTION_PARAMETER_STRUCT *fps,
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", ffname);
 
     // build up directory name
-    for (l = 0; l < fparam->keywordlevel - 1; l++)
+    for(l = 0; l < fparam->keywordlevel - 1; l++)
     {
-        if (snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[l]) <
-            0)
+        if(snprintf(fname1, STRINGMAXLEN_FILENAME, "%s.", fparam->keyword[l]) <
+                0)
         {
             PRINT_ERROR("snprintf error");
         }
         strncat(ffname, fname1, STRINGMAXLEN_DIRNAME - 1);
     }
 
-    if (snprintf(fname1,
-                 STRINGMAXLEN_FILENAME,
-                 "%s.%s.txt",
-                 fparam->keyword[l],
-                 tagname) < 0)
+    if(snprintf(fname1,
+                STRINGMAXLEN_FILENAME,
+                "%s.%s.txt",
+                fparam->keyword[l],
+                tagname) < 0)
     {
         PRINT_ERROR("snprintf error");
     }

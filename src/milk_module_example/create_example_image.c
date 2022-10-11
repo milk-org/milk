@@ -16,7 +16,7 @@
 
 errno_t
 milk_module_example__create_image_with_value(const char *restrict imname,
-                                             double value);
+        double value);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -50,9 +50,9 @@ milk_module_example__create_image_with_value(const char *restrict imname,
  */
 static errno_t milk_module_example__create_image_with_value__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_FLOAT) ==
-        0)
+            0)
     {
         // If arguments meet requirements, command is executed
         //
@@ -93,7 +93,7 @@ errno_t create_example_image_addCLIcmd()
 //
 errno_t
 milk_module_example__create_image_with_value(const char *restrict imname,
-                                             double value)
+        double value)
 {
     uint32_t xsize =
         128; // by convention, pixel index variables are uint32_t type
@@ -109,7 +109,7 @@ milk_module_example__create_image_with_value(const char *restrict imname,
     imageID ID = create_2Dimage_ID(imname, xsize, ysize);
 
     // set each pixel to value
-    for (uint64_t ii = 0; ii < xysize; ii++)
+    for(uint64_t ii = 0; ii < xysize; ii++)
     {
         data.image[ID].array.F[ii] = value;
     }

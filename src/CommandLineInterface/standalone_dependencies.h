@@ -49,11 +49,11 @@ extern "C"
 {
 #endif
 
-    struct timespec timespec_diff(struct timespec start, struct timespec end);
-    int             print_header(const char *str, char c);
-    void            quick_sort2l(double *array, long *array1, long count);
-    void quick_sort2l_double(double *array, long *array1, long count);
-    void quick_sort_long(long *array, long count);
+struct timespec timespec_diff(struct timespec start, struct timespec end);
+int             print_header(const char *str, char c);
+void            quick_sort2l(double *array, long *array1, long count);
+void quick_sort2l_double(double *array, long *array1, long count);
+void quick_sort_long(long *array, long count);
 
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"

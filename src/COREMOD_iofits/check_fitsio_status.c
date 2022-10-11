@@ -15,9 +15,9 @@ int check_FITSIO_status(const char *restrict cfile,
 {
     int Ferr = 0;
 
-    if (COREMOD_iofits_data.FITSIO_status != 0)
+    if(COREMOD_iofits_data.FITSIO_status != 0)
     {
-        if (print == 1)
+        if(print == 1)
         {
             char errstr[STRINGMAXLEN_FITSIOCHECK_ERRSTRING];
             fits_get_errstatus(COREMOD_iofits_data.FITSIO_status, errstr);

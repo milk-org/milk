@@ -25,7 +25,7 @@ errno_t read_sharedmem_image_all(const char *name);
 
 static errno_t read_sharedmem_image_all__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_STR) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_STR) == 0)
     {
 
         read_sharedmem_image_all(data.cmdargtoken[1].val.string);
@@ -68,11 +68,11 @@ errno_t read_sharedmem_image_all(const char *strfilter)
     int NBstream = find_streams(streaminfo, 1, strfilter);
 
     //printf("%d streams found :\n", NBstream);
-    for (int sindex = 0; sindex < NBstream; sindex++)
+    for(int sindex = 0; sindex < NBstream; sindex++)
     {
         //printf(" %3d   %s\n", sindex, streaminfo[sindex].sname);
         imageID ID = image_ID(streaminfo[sindex].sname);
-        if (ID == -1)
+        if(ID == -1)
         {
             read_sharedmem_image(streaminfo[sindex].sname);
         }

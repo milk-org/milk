@@ -27,7 +27,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
 
 static errno_t COREMOD_MEMORY_SaveAll_snapshot__cli()
 {
-    if (0 + CLI_checkarg(1, 5) == 0)
+    if(0 + CLI_checkarg(1, 5) == 0)
     {
         COREMOD_MEMORY_SaveAll_snapshot(data.cmdargtoken[1].val.string);
         return CLICMD_SUCCESS;
@@ -40,9 +40,9 @@ static errno_t COREMOD_MEMORY_SaveAll_snapshot__cli()
 
 static errno_t COREMOD_MEMORY_SaveAll_sequ__cli()
 {
-    if (0 + CLI_checkarg(1, 5) + CLI_checkarg(2, CLIARG_IMG) +
+    if(0 + CLI_checkarg(1, 5) + CLI_checkarg(2, CLIARG_IMG) +
             CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) ==
-        0)
+            0)
     {
         COREMOD_MEMORY_SaveAll_sequ(data.cmdargtoken[1].val.string,
                                     data.cmdargtoken[2].val.string,
@@ -98,8 +98,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     char  fnamecp[STRINGMAXLEN_FULLFILENAME];
     long  ID;
 
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
-        if (data.image[i].used == 1)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+        if(data.image[i].used == 1)
         {
             imcnt++;
         }
@@ -108,9 +108,9 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     IDarraycp = (long *) malloc(sizeof(long) * imcnt);
 
     imcnt = 0;
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
     {
-        if (data.image[i].used == 1)
+        if(data.image[i].used == 1)
         {
             IDarray[imcnt] = i;
             imcnt++;
@@ -120,7 +120,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
 
     // create array for each image
-    for (i = 0; i < imcnt; i++)
+    for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
         WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
@@ -130,7 +130,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
 
     list_image_ID();
 
-    for (i = 0; i < imcnt; i++)
+    for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
         WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
@@ -170,8 +170,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     char     *ptr1;
     uint32_t *imsizearray;
 
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
-        if (data.image[i].used == 1)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+        if(data.image[i].used == 1)
         {
             imcnt++;
         }
@@ -180,8 +180,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     IDarrayout = (imageID *) malloc(sizeof(imageID) * imcnt);
 
     imcnt = 0;
-    for (i = 0; i < data.NB_MAX_IMAGE; i++)
-        if (data.image[i].used == 1)
+    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+        if(data.image[i].used == 1)
         {
             IDarray[imcnt] = i;
             imcnt++;
@@ -196,7 +196,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     fflush(stdout);
 
     // create 3D arrays
-    for (i = 0; i < imcnt; i++)
+    for(i = 0; i < imcnt; i++)
     {
         sprintf(imnameout, "%s_out", data.image[IDarray[i]].name);
         imsizearray[i] = sizeof(float) * data.image[IDarray[i]].md[0].size[0] *
@@ -219,15 +219,15 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     fflush(stdout);
 
     // drive semaphore to zero
-    while (sem_trywait(data.image[IDtrig].semptr[semtrig]) == 0)
+    while(sem_trywait(data.image[IDtrig].semptr[semtrig]) == 0)
     {
     }
 
     frame = 0;
-    while (frame < NBframes)
+    while(frame < NBframes)
     {
         sem_wait(data.image[IDtrig].semptr[semtrig]);
-        for (i = 0; i < imcnt; i++)
+        for(i = 0; i < imcnt; i++)
         {
             ID   = IDarray[i];
             ptr0 = (char *) data.image[IDarrayout[i]].array.F;
@@ -242,7 +242,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
 
     list_image_ID();
 
-    for (i = 0; i < imcnt; i++)
+    for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
         sprintf(imnameout, "%s_out", data.image[ID].name);

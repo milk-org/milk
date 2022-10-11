@@ -31,14 +31,14 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     clock_gettime(CLOCK_REALTIME, &t1);
 
     line = (char *) malloc(sizeof(char) * maxstrlen);
-    if (line == NULL)
+    if(line == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
     fp = fopen("/proc/stat", "r");
-    if (fp == NULL)
+    if(fp == NULL)
     {
         exit(EXIT_FAILURE);
     }
@@ -46,14 +46,14 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     cpu = 0;
 
     read = getline(&line, &maxstrlen, fp);
-    if (read == -1)
+    if(read == -1)
     {
         printf("[%s][%d]  ERROR: cannot read file\n", __FILE__, __LINE__);
         exit(EXIT_SUCCESS);
     }
 
-    while (((read = getline(&line, &maxstrlen, fp)) != -1) &&
-           (cpu < pinfop->NBcpus))
+    while(((read = getline(&line, &maxstrlen, fp)) != -1) &&
+            (cpu < pinfop->NBcpus))
     {
 
         sscanf(line,
@@ -128,13 +128,13 @@ int GetCPUloads(PROCINFOPROC *pinfop)
 
     // read and process psoutfname file
 
-    if (access(psoutfname, F_OK) != -1)
+    if(access(psoutfname, F_OK) != -1)
     {
 
         //        sprintf(command, "echo \"%5d READ\" >> cmdlog.txt\n", cnt);
         //        system(command);
 
-        for (cpu = 0; cpu < pinfop->NBcpus; cpu++)
+        for(cpu = 0; cpu < pinfop->NBcpus; cpu++)
         {
             char  outstring[STRINGMAXLEN_DEFAULT];
             FILE *fpout;
@@ -146,25 +146,25 @@ int GetCPUloads(PROCINFOPROC *pinfop)
                                     "space:]]+${CORENUM}\"|wc -l",
                                     cpu,
                                     psoutfname);
-                if (slen < 1)
+                if(slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
                 }
-                if (slen >= STRINGMAXLEN_COMMAND)
+                if(slen >= STRINGMAXLEN_COMMAND)
                 {
                     PRINT_ERROR("snprintf string truncation");
                     abort(); // can't handle this error any other way
                 }
             }
             fpout = popen(command, "r");
-            if (fpout == NULL)
+            if(fpout == NULL)
             {
                 printf("WARNING: cannot run command \"%s\"\n", command);
             }
             else
             {
-                if (fgets(outstring, STRINGMAXLEN_DEFAULT, fpout) == NULL)
+                if(fgets(outstring, STRINGMAXLEN_DEFAULT, fpout) == NULL)
                 {
                     printf("WARNING: fgets error\n");
                 }

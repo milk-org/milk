@@ -22,7 +22,7 @@ imageID shmim_setowner_init(const char *name);
 
 static errno_t shmim_setowner_creator__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
     {
 
         shmim_setowner_creator(data.cmdargtoken[1].val.string);
@@ -37,7 +37,7 @@ static errno_t shmim_setowner_creator__cli()
 
 static errno_t shmim_setowner_current__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
     {
 
         shmim_setowner_current(data.cmdargtoken[1].val.string);
@@ -52,7 +52,7 @@ static errno_t shmim_setowner_current__cli()
 
 static errno_t shmim_setowner_init__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
     {
 
         shmim_setowner_init(data.cmdargtoken[1].val.string);
@@ -105,7 +105,7 @@ imageID shmim_setowner_creator(const char *name)
     imageID ID;
 
     ID = image_ID(name);
-    if (ID != -1)
+    if(ID != -1)
     {
         data.image[ID].md[0].ownerPID = data.image[ID].md[0].creatorPID;
     }
@@ -119,7 +119,7 @@ imageID shmim_setowner_current(const char *name)
     imageID ID;
 
     ID = image_ID(name);
-    if (ID != -1)
+    if(ID != -1)
     {
         data.image[ID].md[0].ownerPID = getpid();
     }
@@ -136,7 +136,7 @@ imageID shmim_setowner_init(const char *name)
     imageID ID;
 
     ID = image_ID(name);
-    if (ID != -1)
+    if(ID != -1)
     {
         data.image[ID].md[0].ownerPID = 1;
     }

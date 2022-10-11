@@ -26,9 +26,9 @@ errno_t write_float_file(const char *fname, float value);
 
 static errno_t write_flot_file_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_FLOAT) ==
-        0)
+            0)
     {
         write_float_file(data.cmdargtoken[1].val.string,
                          data.cmdargtoken[2].val.numf);
@@ -69,15 +69,15 @@ int create_counter_file(const char *fname, unsigned long NBpts)
     unsigned long i;
     FILE         *fp;
 
-    if ((fp = fopen(fname, "w")) == NULL)
+    if((fp = fopen(fname, "w")) == NULL)
     {
         PRINT_ERROR("cannot create file \"%s\"", fname);
         abort();
     }
 
-    for (i = 0; i < NBpts; i++)
+    for(i = 0; i < NBpts; i++)
     {
-        fprintf(fp, "%ld %f\n", i, (double) (1.0 * i / NBpts));
+        fprintf(fp, "%ld %f\n", i, (double)(1.0 * i / NBpts));
     }
 
     fclose(fp);
@@ -93,21 +93,21 @@ int read_config_parameter_exists(const char *config_file, const char *keyword)
     int   read;
 
     read = 0;
-    if ((fp = fopen(config_file, "r")) == NULL)
+    if((fp = fopen(config_file, "r")) == NULL)
     {
         PRINT_ERROR("cannot open file \"%s\"", config_file);
         abort();
     }
 
-    while ((fgets(line, 1000, fp) != NULL) && (read == 0))
+    while((fgets(line, 1000, fp) != NULL) && (read == 0))
     {
         sscanf(line, " %20s", keyw);
-        if (strcmp(keyw, keyword) == 0)
+        if(strcmp(keyw, keyword) == 0)
         {
             read = 1;
         }
     }
-    if (read == 0)
+    if(read == 0)
     {
         PRINT_WARNING("parameter \"%s\" does not exist in file \"%s\"",
                       keyword,
@@ -130,24 +130,24 @@ int read_config_parameter(const char *config_file,
     int   read;
 
     read = 0;
-    if ((fp = fopen(config_file, "r")) == NULL)
+    if((fp = fopen(config_file, "r")) == NULL)
     {
         PRINT_ERROR("cannot open file \"%s\"", config_file);
         abort();
     }
 
     strcpy(content, "---");
-    while (fgets(line, 1000, fp) != NULL)
+    while(fgets(line, 1000, fp) != NULL)
     {
         sscanf(line, "%100s %100s", keyw, cont);
-        if (strcmp(keyw, keyword) == 0)
+        if(strcmp(keyw, keyword) == 0)
         {
             strcpy(content, cont);
             read = 1;
         }
         /*      printf("KEYWORD : \"%s\"   CONTENT : \"%s\"\n",keyw,cont);*/
     }
-    if (read == 0)
+    if(read == 0)
     {
         PRINT_ERROR("parameter \"%s\" does not exist in file \"%s\"",
                     keyword,
@@ -202,15 +202,15 @@ long file_number_lines(const char *file_name)
     int   c;
     FILE *fp;
 
-    if ((fp = fopen(file_name, "r")) == NULL)
+    if((fp = fopen(file_name, "r")) == NULL)
     {
         PRINT_ERROR("cannot open file \"%s\"", file_name);
         abort();
     }
 
     cnt = 0;
-    while ((c = fgetc(fp)) != EOF)
-        if (c == '\n')
+    while((c = fgetc(fp)) != EOF)
+        if(c == '\n')
         {
             cnt++;
         }
@@ -223,7 +223,7 @@ FILE *open_file_w(const char *filename)
 {
     FILE *fp;
 
-    if ((fp = fopen(filename, "w")) == NULL)
+    if((fp = fopen(filename, "w")) == NULL)
     {
         PRINT_ERROR("cannot create file \"%s\"", filename);
         abort();
@@ -236,7 +236,7 @@ FILE *open_file_r(const char *filename)
 {
     FILE *fp;
 
-    if ((fp = fopen(filename, "r")) == NULL)
+    if((fp = fopen(filename, "r")) == NULL)
     {
         PRINT_ERROR("cannot read file \"%s\"", filename);
         abort();
@@ -251,7 +251,7 @@ errno_t write_1D_array(double *array, long nbpoints, const char *filename)
     long  ii;
 
     fp = open_file_w(filename);
-    for (ii = 0; ii < nbpoints; ii++)
+    for(ii = 0; ii < nbpoints; ii++)
     {
         fprintf(fp, "%ld\t%f\n", ii, array[ii]);
     }
@@ -267,9 +267,9 @@ errno_t read_1D_array(double *array, long nbpoints, const char *filename)
     long  tmpl;
 
     fp = open_file_r(filename);
-    for (ii = 0; ii < nbpoints; ii++)
+    for(ii = 0; ii < nbpoints; ii++)
     {
-        if (fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
+        if(fscanf(fp, "%ld\t%lf\n", &tmpl, &array[ii]) != 2)
         {
             PRINT_ERROR("fscanf error");
             exit(0);
@@ -285,13 +285,13 @@ int read_int_file(const char *fname)
     int   value;
     FILE *fp;
 
-    if ((fp = fopen(fname, "r")) == NULL)
+    if((fp = fopen(fname, "r")) == NULL)
     {
         value = 0;
     }
     else
     {
-        if (fscanf(fp, "%d", &value) != 1)
+        if(fscanf(fp, "%d", &value) != 1)
         {
             PRINT_ERROR("fscanf error");
             exit(0);
@@ -306,7 +306,7 @@ errno_t write_int_file(const char *fname, int value)
 {
     FILE *fp;
 
-    if ((fp = fopen(fname, "w")) == NULL)
+    if((fp = fopen(fname, "w")) == NULL)
     {
         PRINT_ERROR("cannot create file \"%s\"\n", fname);
         abort();
@@ -323,14 +323,14 @@ errno_t write_float_file(const char *fname, float value)
     FILE *fp;
     int   mode = 0; // default, create single file
 
-    if (variable_ID("WRITE2FILE_APPEND") != -1)
+    if(variable_ID("WRITE2FILE_APPEND") != -1)
     {
         mode = 1;
     }
 
-    if (mode == 0)
+    if(mode == 0)
     {
-        if ((fp = fopen(fname, "w")) == NULL)
+        if((fp = fopen(fname, "w")) == NULL)
         {
             PRINT_ERROR("cannot create file \"%s\"\n", fname);
             abort();
@@ -339,9 +339,9 @@ errno_t write_float_file(const char *fname, float value)
         fclose(fp);
     }
 
-    if (mode == 1)
+    if(mode == 1)
     {
-        if ((fp = fopen(fname, "a")) == NULL)
+        if((fp = fopen(fname, "a")) == NULL)
         {
             PRINT_ERROR("cannot create file \"%s\"\n", fname);
             abort();
