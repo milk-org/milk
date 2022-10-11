@@ -23,9 +23,9 @@ imageID arith_image_merge3D(const char *ID_name1,
 
 static errno_t arith_image_merge3D_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
             CLI_checkarg(3, CLIARG_STR_NOT_IMG) ==
-        0)
+            0)
     {
         arith_image_merge3D(data.cmdargtoken[1].val.string,
                             data.cmdargtoken[2].val.string,
@@ -77,7 +77,7 @@ imageID arith_image_merge3D(const char *ID_name1,
     xsize = data.image[ID1].md[0].size[0];
     ysize = data.image[ID1].md[0].size[1];
 
-    if (data.image[ID1].md[0].naxis == 2)
+    if(data.image[ID1].md[0].naxis == 2)
     {
         zsize1 = 1;
     }
@@ -86,7 +86,7 @@ imageID arith_image_merge3D(const char *ID_name1,
         zsize1 = data.image[ID1].md[0].size[2];
     }
 
-    if (data.image[ID2].md[0].naxis == 2)
+    if(data.image[ID2].md[0].naxis == 2)
     {
         zsize2 = 1;
     }
@@ -95,8 +95,8 @@ imageID arith_image_merge3D(const char *ID_name1,
         zsize2 = data.image[ID2].md[0].size[2];
     }
 
-    if ((xsize != data.image[ID2].md[0].size[0]) ||
-        (ysize != data.image[ID2].md[0].size[1]))
+    if((xsize != data.image[ID2].md[0].size[0]) ||
+            (ysize != data.image[ID2].md[0].size[1]))
     {
         printf("ERROR: input images must have same x y sizes\n");
         printf("%s :  %u %u\n", ID_name1, xsize, ysize);
@@ -117,54 +117,54 @@ imageID arith_image_merge3D(const char *ID_name1,
     FUNC_CHECK_RETURN(
         create_image_ID(IDout_name, 3, sizearray, datatype, 0, 0, 0, &IDout));
 
-    switch (datatype)
+    switch(datatype)
     {
-    case _DATATYPE_FLOAT:
-        mapv = (void *) data.image[IDout].array.F;
-        memcpy(mapv,
-               (void *) data.image[ID1].array.F,
-               sizeof(float) * xsize * ysize * zsize1);
-        mapv += sizeof(float) * xsize * ysize * zsize1;
-        memcpy(mapv,
-               data.image[ID2].array.F,
-               sizeof(float) * xsize * ysize * zsize2);
-        break;
+        case _DATATYPE_FLOAT:
+            mapv = (void *) data.image[IDout].array.F;
+            memcpy(mapv,
+                   (void *) data.image[ID1].array.F,
+                   sizeof(float) * xsize * ysize * zsize1);
+            mapv += sizeof(float) * xsize * ysize * zsize1;
+            memcpy(mapv,
+                   data.image[ID2].array.F,
+                   sizeof(float) * xsize * ysize * zsize2);
+            break;
 
-    case _DATATYPE_DOUBLE:
-        mapv = (void *) data.image[IDout].array.D;
-        memcpy(mapv,
-               (void *) data.image[ID1].array.D,
-               sizeof(double) * xsize * ysize * zsize1);
-        mapv += sizeof(double) * xsize * ysize * zsize1;
-        memcpy(mapv,
-               data.image[ID2].array.D,
-               sizeof(double) * xsize * ysize * zsize2);
-        break;
+        case _DATATYPE_DOUBLE:
+            mapv = (void *) data.image[IDout].array.D;
+            memcpy(mapv,
+                   (void *) data.image[ID1].array.D,
+                   sizeof(double) * xsize * ysize * zsize1);
+            mapv += sizeof(double) * xsize * ysize * zsize1;
+            memcpy(mapv,
+                   data.image[ID2].array.D,
+                   sizeof(double) * xsize * ysize * zsize2);
+            break;
 
-    case _DATATYPE_INT16:
-        mapv = (void *) data.image[IDout].array.SI16;
-        memcpy(mapv,
-               (void *) data.image[ID1].array.SI16,
-               sizeof(int16_t) * xsize * ysize * zsize1);
-        mapv += sizeof(int16_t) * xsize * ysize * zsize1;
-        memcpy(mapv,
-               data.image[ID2].array.SI16,
-               sizeof(int16_t) * xsize * ysize * zsize2);
-        break;
+        case _DATATYPE_INT16:
+            mapv = (void *) data.image[IDout].array.SI16;
+            memcpy(mapv,
+                   (void *) data.image[ID1].array.SI16,
+                   sizeof(int16_t) * xsize * ysize * zsize1);
+            mapv += sizeof(int16_t) * xsize * ysize * zsize1;
+            memcpy(mapv,
+                   data.image[ID2].array.SI16,
+                   sizeof(int16_t) * xsize * ysize * zsize2);
+            break;
 
-    case _DATATYPE_UINT16:
-        mapv = (void *) data.image[IDout].array.UI16;
-        memcpy(mapv,
-               (void *) data.image[ID1].array.UI16,
-               sizeof(uint16_t) * xsize * ysize * zsize1);
-        mapv += sizeof(uint16_t) * xsize * ysize * zsize1;
-        memcpy(mapv,
-               data.image[ID2].array.UI16,
-               sizeof(uint16_t) * xsize * ysize * zsize2);
-        break;
+        case _DATATYPE_UINT16:
+            mapv = (void *) data.image[IDout].array.UI16;
+            memcpy(mapv,
+                   (void *) data.image[ID1].array.UI16,
+                   sizeof(uint16_t) * xsize * ysize * zsize1);
+            mapv += sizeof(uint16_t) * xsize * ysize * zsize1;
+            memcpy(mapv,
+                   data.image[ID2].array.UI16,
+                   sizeof(uint16_t) * xsize * ysize * zsize2);
+            break;
 
-    default:
-        printf("dataypte not supported\n");
+        default:
+            printf("dataypte not supported\n");
     }
 
     DEBUG_TRACE_FEXIT();

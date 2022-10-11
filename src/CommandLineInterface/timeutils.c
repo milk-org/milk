@@ -55,7 +55,7 @@ errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
             uttime->tm_hour,
             uttime->tm_min,
             uttime->tm_sec,
-            (long) (tnow.tv_nsec / 1000));
+            (long)(tnow.tv_nsec / 1000));
 
     return RETURN_SUCCESS;
 }
@@ -86,7 +86,7 @@ errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
             uttime->tm_hour,
             uttime->tm_min,
             uttime->tm_sec,
-            (long) (tnow.tv_nsec / 1000000));
+            (long)(tnow.tv_nsec / 1000000));
 
     return RETURN_SUCCESS;
 }
@@ -138,7 +138,7 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec temp;
 
-    if ((end.tv_nsec - start.tv_nsec) < 0)
+    if((end.tv_nsec - start.tv_nsec) < 0)
     {
         temp.tv_sec  = end.tv_sec - start.tv_sec - 1;
         temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
@@ -158,7 +158,7 @@ double timespec_diff_double(struct timespec start, struct timespec end)
     struct timespec temp;
     double          val;
 
-    if ((end.tv_nsec - start.tv_nsec) < 0)
+    if((end.tv_nsec - start.tv_nsec) < 0)
     {
         temp.tv_sec  = end.tv_sec - start.tv_sec - 1;
         temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;

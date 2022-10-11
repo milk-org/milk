@@ -23,7 +23,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);
 
 errno_t COREMOD_TOOLS_statusStat_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
     {
         COREMOD_TOOLS_statusStat(data.cmdargtoken[1].val.string,
                                  data.cmdargtoken[2].val.numl);
@@ -83,7 +83,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     IDstat = image_ID(IDstat_name);
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if (sizearray == NULL)
+    if(sizearray == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -94,7 +94,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0, 0, &IDout);
     free(sizearray);
 
-    for (st = 0; st < indexmax; st++)
+    for(st = 0; st < indexmax; st++)
     {
         data.image[IDout].array.SI64[st] = 0;
     }
@@ -106,13 +106,13 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     fflush(stdout);
 
     clock_gettime(CLOCK_REALTIME, &t1);
-    for (k = 0; k < NBkiter; k++)
+    for(k = 0; k < NBkiter; k++)
     {
         double tdiffv;
 
-        usleep((long) (usec0 + usec1 * (1.0 * k / NBkiter)));
+        usleep((long)(usec0 + usec1 * (1.0 * k / NBkiter)));
         st = data.image[IDstat].array.UI16[0];
-        if (st < indexmax)
+        if(st < indexmax)
         {
             data.image[IDout].array.SI64[st]++;
         }
@@ -121,19 +121,19 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
         tdiff  = timespec_diff(t1, t2);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-        if (tdiffv > tdiffv1)
+        if(tdiffv > tdiffv1)
         {
             tdiffv1 += tdisplay;
             printf("\n");
             printf("============== %10lld  %d  ==================\n", k, st);
             printf("\n");
             cnttot = 0;
-            for (st = 0; st < indexmax; st++)
+            for(st = 0; st < indexmax; st++)
             {
                 cnttot += data.image[IDout].array.SI64[st];
             }
 
-            for (st = 0; st < indexmax; st++)
+            for(st = 0; st < indexmax; st++)
             {
                 printf("STATUS  %5d    %20ld   %6.3f  \n",
                        st,
@@ -144,7 +144,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     }
 
     printf("\n");
-    for (st = 0; st < indexmax; st++)
+    for(st = 0; st < indexmax; st++)
     {
         printf("STATUS  %5d    %10ld\n", st, data.image[IDout].array.SI64[st]);
     }

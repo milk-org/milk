@@ -18,7 +18,7 @@
 errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
 {
 
-    if (fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
+    if(fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
     {
         long pindex;
 
@@ -30,7 +30,7 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         // set cset if applicable
         //
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.cset");
-        if (pindex > -1)
+        if(pindex > -1)
         {
             //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
             EXECUTE_SYSTEM_COMMAND(
@@ -50,7 +50,7 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         // set taskset if applicable
         //
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.taskset");
-        if (pindex > -1)
+        if(pindex > -1)
         {
             //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
             EXECUTE_SYSTEM_COMMAND(
@@ -71,11 +71,11 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         // set OMP_NUM_THREADS if applicable
         //
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.NBthread");
-        if (pindex > -1)
+        if(pindex > -1)
         {
             long NBthread =
                 functionparameter_GetParamValue_INT64(fps,
-                                                      ".procinfo.NBthread");
+                        ".procinfo.NBthread");
             EXECUTE_SYSTEM_COMMAND(
                 "tmux send-keys -t %s:run \"export "
                 "OMP_NUM_THREADS=%ld\" C-m",
@@ -86,12 +86,12 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         // override output directory if applicable
         //
         pindex = functionparameter_GetParamIndex(fps, ".conf.datadir");
-        if (pindex > -1)
+        if(pindex > -1)
         {
-            if (snprintf(fps->md->datadir,
-                         FUNCTION_PARAMETER_STRMAXLEN,
-                         "%s",
-                         fps->parray[pindex].val.string[0]) < 0)
+            if(snprintf(fps->md->datadir,
+                        FUNCTION_PARAMETER_STRMAXLEN,
+                        "%s",
+                        fps->parray[pindex].val.string[0]) < 0)
             {
                 PRINT_ERROR("snprintf error");
             }

@@ -122,7 +122,7 @@ int processinfo_compute_status(PROCESSINFO *processinfo)
     int compstatus = 1;
 
     // CTRLval = 5 will disable computations in loop (usually for testing)
-    if (processinfo->CTRLval == 5)
+    if(processinfo->CTRLval == 5)
     {
         compstatus = 0;
     }
@@ -164,9 +164,9 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 
     // first scan: get number of entries
     fp = fopen(fname, "r");
-    while (NBset < NBsetMax)
+    while(NBset < NBsetMax)
     {
-        if (fgets(line, 199, fp) == NULL)
+        if(fgets(line, 199, fp) == NULL)
         {
             break;
         }
@@ -177,9 +177,9 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList)
 
     setindex = 0;
     fp       = fopen(fname, "r");
-    while (1)
+    while(1)
     {
-        if (fgets(line, 199, fp) == NULL)
+        if(fgets(line, 199, fp) == NULL)
         {
             break;
         }
@@ -209,7 +209,7 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 
     printf("%d entries in list:\n", NBelem);
     fflush(stdout);
-    for (i = 0; i < NBelem; i++)
+    for(i = 0; i < NBelem; i++)
     {
         printf("   %3ld   : %16s   %s\n",
                i,
@@ -220,17 +220,17 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 
     inputOK = 0;
 
-    while (inputOK == 0)
+    while(inputOK == 0)
     {
         printf("\nEnter a number: ");
         fflush(stdout);
 
         int  stringindex = 0;
         char c;
-        while (((c = getchar()) != 13) && (stringindex < strlenmax - 1))
+        while(((c = getchar()) != 13) && (stringindex < strlenmax - 1))
         {
             buff[stringindex] = c;
-            if (c == 127) // delete key
+            if(c == 127)  // delete key
             {
                 putchar(0x8);
                 putchar(' ');
@@ -242,7 +242,7 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
                 putchar(c); // echo on screen
                 stringindex++;
             }
-            if (stringindex < 0)
+            if(stringindex < 0)
             {
                 stringindex = 0;
             }
@@ -251,7 +251,7 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 
         selected = strtol(buff, &p, strlenmax);
 
-        if ((selected < 0) || (selected > NBelem - 1))
+        if((selected < 0) || (selected > NBelem - 1))
         {
             printf("\nError: number not valid. Must be >= 0 and < %d\n",
                    NBelem);
@@ -351,7 +351,7 @@ errno_t processinfo_CTRLscreen()
 
     // initialize procinfoproc entries
     procinfoproc.loopcnt = 0;
-    for (pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
+    for(pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
     {
         procinfoproc.pinfoarray[pindex]   = NULL;
         procinfoproc.pinfommapped[pindex] = 0; // 1 if mmapped, 0 otherwise
@@ -368,7 +368,7 @@ errno_t processinfo_CTRLscreen()
     }
     procinfoproc.NBcpus      = 1;
     procinfoproc.NBcpusocket = 1;
-    for (int cpu = 0; cpu < MAXNBCPU; cpu++)
+    for(int cpu = 0; cpu < MAXNBCPU; cpu++)
     {
 
         procinfoproc.CPUload[cpu] = 0.0;
@@ -393,7 +393,7 @@ errno_t processinfo_CTRLscreen()
     STRINGLISTENTRY *CPUsetList;
     int              NBCPUset;
     CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
-    if (CPUsetList == NULL)
+    if(CPUsetList == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
@@ -403,7 +403,7 @@ errno_t processinfo_CTRLscreen()
 
     // Create / read process list
     //
-    if (processinfo_shm_list_create() == 0)
+    if(processinfo_shm_list_create() == 0)
     {
         printf("==== NO PROCESS TO DISPLAY ====\n");
         //return(0);
@@ -420,13 +420,13 @@ errno_t processinfo_CTRLscreen()
     // default: use ncurses
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
-    if (getenv("MILK_TUIPRINT_STDIO"))
+    if(getenv("MILK_TUIPRINT_STDIO"))
     {
         // use stdio instead of ncurses
         TUI_set_screenprintmode(SCREENPRINT_STDIO);
     }
 
-    if (getenv("MILK_TUIPRINT_NONE"))
+    if(getenv("MILK_TUIPRINT_NONE"))
     {
         TUI_set_screenprintmode(SCREENPRINT_NONE);
     }
@@ -475,15 +475,15 @@ errno_t processinfo_CTRLscreen()
 
     procinfoproc.NBpinfodisp = wrow - 5;
     procinfoproc.pinfodisp   = (PROCESSINFODISP *) malloc(
-        sizeof(PROCESSINFODISP) * procinfoproc.NBpinfodisp);
-    if (procinfoproc.pinfodisp == NULL)
+                                   sizeof(PROCESSINFODISP) * procinfoproc.NBpinfodisp);
+    if(procinfoproc.pinfodisp == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    for (int pinfodispindex = 0; pinfodispindex < procinfoproc.NBpinfodisp;
-         pinfodispindex++)
+    for(int pinfodispindex = 0; pinfodispindex < procinfoproc.NBpinfodisp;
+            pinfodispindex++)
     {
         // by default, each process is assumed to be single-threaded
         procinfoproc.pinfodisp[pinfodispindex].NBsubprocesses = 1;
@@ -498,7 +498,7 @@ errno_t processinfo_CTRLscreen()
 
         strcpy(procinfoproc.pinfodisp[pinfodispindex].cpuset, "null");
         strcpy(procinfoproc.pinfodisp[pinfodispindex].cpusallowed, "null");
-        for (int cpu = 0; cpu < MAXNBCPU; cpu++)
+        for(int cpu = 0; cpu < MAXNBCPU; cpu++)
         {
             procinfoproc.pinfodisp[pinfodispindex].cpuOKarray[cpu] = 0;
         }
@@ -511,7 +511,7 @@ errno_t processinfo_CTRLscreen()
         strcpy(procinfoproc.pinfodisp[pinfodispindex].tmuxname, "");
 
         procinfoproc.pinfodisp[pinfodispindex].NBsubprocesses = 1;
-        for (int spi = 0; spi < MAXNBSUBPROCESS; spi++)
+        for(int spi = 0; spi < MAXNBSUBPROCESS; spi++)
         {
             procinfoproc.pinfodisp[pinfodispindex].sampletimearray[spi] = 0.0;
             procinfoproc.pinfodisp[pinfodispindex].sampletimearray_prev[spi] =
@@ -522,7 +522,7 @@ errno_t processinfo_CTRLscreen()
             procinfoproc.pinfodisp[pinfodispindex].ctxtsw_voluntary_prev[spi] =
                 0;
             procinfoproc.pinfodisp[pinfodispindex]
-                .ctxtsw_nonvoluntary_prev[spi] = 0;
+            .ctxtsw_nonvoluntary_prev[spi] = 0;
 
             procinfoproc.pinfodisp[pinfodispindex].cpuloadcntarray[spi] = 0;
             procinfoproc.pinfodisp[pinfodispindex].cpuloadcntarray_prev[spi] =
@@ -530,7 +530,7 @@ errno_t processinfo_CTRLscreen()
             procinfoproc.pinfodisp[pinfodispindex].subprocCPUloadarray[spi] =
                 0.0;
             procinfoproc.pinfodisp[pinfodispindex]
-                .subprocCPUloadarray_timeaveraged[spi] = 0.0;
+            .subprocCPUloadarray_timeaveraged[spi] = 0.0;
 
             procinfoproc.pinfodisp[pinfodispindex].VmRSSarray[spi]     = 0;
             procinfoproc.pinfodisp[pinfodispindex].processorarray[spi] = 0;
@@ -558,7 +558,7 @@ errno_t processinfo_CTRLscreen()
 
     // wait for first scan to be completed
     procinfoproc.SCANBLOCK_OK = 1;
-    while (procinfoproc.loopcnt < 1)
+    while(procinfoproc.loopcnt < 1)
     {
         //printf("procinfoproc.loopcnt  = %ld\n", (long) procinfoproc.loopcnt);
         usleep(10000);
@@ -580,26 +580,26 @@ errno_t processinfo_CTRLscreen()
     pindexSelected       = 0;
     int pindexSelectedOK = 0; // no process selected by cursor
 
-    while (loopOK == 1)
+    while(loopOK == 1)
     {
         int pid;
         //char command[200];
 
         DEBUG_TRACEPOINT(" ");
 
-        if (procinfoproc.SCANBLOCK_requested == 1)
+        if(procinfoproc.SCANBLOCK_requested == 1)
         {
             // issue OK to scan thread
             procinfoproc.SCANBLOCK_OK = 1;
 
             // wait for scan thread to have completed scan
-            while (procinfoproc.SCANBLOCK_OK == 1)
+            while(procinfoproc.SCANBLOCK_OK == 1)
             {
                 usleep(100);
             }
         }
 
-        usleep((long) (1000000.0 / frequ));
+        usleep((long)(1000000.0 / frequ));
         int ch = getch();
 
         clock_gettime(CLOCK_REALTIME, &t1loop);
@@ -614,7 +614,7 @@ errno_t processinfo_CTRLscreen()
 
         DEBUG_TRACEPOINT(" ");
 
-        if (freeze == 0)
+        if(freeze == 0)
         {
             //attron(A_BOLD);
             sprintf(monstring, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
@@ -625,190 +625,207 @@ errno_t processinfo_CTRLscreen()
 
         // goes to 1 if at least one process is selected
         int selectedOK = 0;
-        switch (ch)
+        switch(ch)
         {
-        case 'f': // Freeze screen (toggle)
-            if (freeze == 0)
-            {
-                freeze = 1;
-            }
-            else
-            {
-                freeze = 0;
-            }
-            break;
-
-        case 'x': // Exit control screen
-            loopOK = 0;
-            Xexit  = 1;
-            break;
-
-        case ' ': // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
-            pindex = pindexSelected;
-            if (procinfoproc.selectedarray[pindex] == 1)
-            {
-                procinfoproc.selectedarray[pindex] = 0;
-            }
-            else
-            {
-                procinfoproc.selectedarray[pindex] = 1;
-            }
-            break;
-
-        case 'u': // undelect all
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                procinfoproc.selectedarray[pindex] = 0;
-            }
-            break;
-
-        case KEY_UP:
-            pindexActiveSelected--;
-            if (pindexActiveSelected < 0)
-            {
-                pindexActiveSelected = 0;
-            }
-            if (TimeSorted == 0)
-            {
-                pindexSelected =
-                    procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected =
-                    procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-        case KEY_DOWN:
-            pindexActiveSelected++;
-            if (pindexActiveSelected > procinfoproc.NBpindexActive - 1)
-            {
-                pindexActiveSelected = procinfoproc.NBpindexActive - 1;
-            }
-            if (TimeSorted == 0)
-            {
-                pindexSelected =
-                    procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected =
-                    procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-        case KEY_RIGHT:
-            procinfoproc.DisplayDetailedMode = 1;
-            break;
-
-        case KEY_LEFT:
-            procinfoproc.DisplayDetailedMode = 0;
-            break;
-
-        case KEY_PPAGE:
-            pindexActiveSelected -= 10;
-            if (pindexActiveSelected < 0)
-            {
-                pindexActiveSelected = 0;
-            }
-            if (TimeSorted == 0)
-            {
-                pindexSelected =
-                    procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected =
-                    procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-        case KEY_NPAGE:
-            pindexActiveSelected += 10;
-            if (pindexActiveSelected > procinfoproc.NBpindexActive - 1)
-            {
-                pindexActiveSelected = procinfoproc.NBpindexActive - 1;
-            }
-            if (TimeSorted == 0)
-            {
-                pindexSelected =
-                    procinfoproc.pindexActive[pindexActiveSelected];
-            }
-            else
-            {
-                pindexSelected =
-                    procinfoproc.sorted_pindex_time[pindexActiveSelected];
-            }
-            break;
-
-        case 'T':
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'f': // Freeze screen (toggle)
+                if(freeze == 0)
                 {
-                    selectedOK = 1;
-                    pid        = pinfolist->PIDarray[pindex];
+                    freeze = 1;
+                }
+                else
+                {
+                    freeze = 0;
+                }
+                break;
+
+            case 'x': // Exit control screen
+                loopOK = 0;
+                Xexit  = 1;
+                break;
+
+            case ' ': // Mark current PID as selected (if none selected, other commands only apply to highlighted process)
+                pindex = pindexSelected;
+                if(procinfoproc.selectedarray[pindex] == 1)
+                {
+                    procinfoproc.selectedarray[pindex] = 0;
+                }
+                else
+                {
+                    procinfoproc.selectedarray[pindex] = 1;
+                }
+                break;
+
+            case 'u': // undelect all
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    procinfoproc.selectedarray[pindex] = 0;
+                }
+                break;
+
+            case KEY_UP:
+                pindexActiveSelected--;
+                if(pindexActiveSelected < 0)
+                {
+                    pindexActiveSelected = 0;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected =
+                        procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected =
+                        procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+            case KEY_DOWN:
+                pindexActiveSelected++;
+                if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
+                {
+                    pindexActiveSelected = procinfoproc.NBpindexActive - 1;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected =
+                        procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected =
+                        procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+            case KEY_RIGHT:
+                procinfoproc.DisplayDetailedMode = 1;
+                break;
+
+            case KEY_LEFT:
+                procinfoproc.DisplayDetailedMode = 0;
+                break;
+
+            case KEY_PPAGE:
+                pindexActiveSelected -= 10;
+                if(pindexActiveSelected < 0)
+                {
+                    pindexActiveSelected = 0;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected =
+                        procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected =
+                        procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+            case KEY_NPAGE:
+                pindexActiveSelected += 10;
+                if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
+                {
+                    pindexActiveSelected = procinfoproc.NBpindexActive - 1;
+                }
+                if(TimeSorted == 0)
+                {
+                    pindexSelected =
+                        procinfoproc.pindexActive[pindexActiveSelected];
+                }
+                else
+                {
+                    pindexSelected =
+                        procinfoproc.sorted_pindex_time[pindexActiveSelected];
+                }
+                break;
+
+            case 'T':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        pid        = pinfolist->PIDarray[pindex];
+                        kill(pid, SIGTERM);
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
+                    pid    = pinfolist->PIDarray[pindex];
                     kill(pid, SIGTERM);
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                pid    = pinfolist->PIDarray[pindex];
-                kill(pid, SIGTERM);
-            }
-            break;
+                break;
 
-        case 'K':
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'K':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
-                    pid        = pinfolist->PIDarray[pindex];
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        pid        = pinfolist->PIDarray[pindex];
+                        kill(pid, SIGKILL);
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
+                    pid    = pinfolist->PIDarray[pindex];
                     kill(pid, SIGKILL);
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                pid    = pinfolist->PIDarray[pindex];
-                kill(pid, SIGKILL);
-            }
-            break;
+                break;
 
-        case 'I':
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'I':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
-                    pid        = pinfolist->PIDarray[pindex];
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        pid        = pinfolist->PIDarray[pindex];
+                        kill(pid, SIGINT);
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
+                    pid    = pinfolist->PIDarray[pindex];
                     kill(pid, SIGINT);
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                pid    = pinfolist->PIDarray[pindex];
-                kill(pid, SIGINT);
-            }
-            break;
+                break;
 
-        case 'r':
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'r':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
-                    if (pinfolist->active[pindex] != 1)
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
                     {
+                        selectedOK = 1;
+                        if(pinfolist->active[pindex] != 1)
+                        {
+                            char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                            WRITE_FULLFILENAME(SM_fname,
+                                               "%s/proc.%s.%06d.shm",
+                                               procdname,
+                                               pinfolist->pnamearray[pindex],
+                                               (int) pinfolist->PIDarray[pindex]);
+                            remove(SM_fname);
+                        }
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
+                    if(pinfolist->active[pindex] != 1)
+                    {
+                        remove(procinfoproc.pinfoarray[pindex]->logfilename);
+
                         char SM_fname[STRINGMAXLEN_FULLFILENAME];
                         WRITE_FULLFILENAME(SM_fname,
                                            "%s/proc.%s.%06d.shm",
@@ -818,53 +835,49 @@ errno_t processinfo_CTRLscreen()
                         remove(SM_fname);
                     }
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                if (pinfolist->active[pindex] != 1)
-                {
-                    remove(procinfoproc.pinfoarray[pindex]->logfilename);
+                break;
 
-                    char SM_fname[STRINGMAXLEN_FULLFILENAME];
-                    WRITE_FULLFILENAME(SM_fname,
-                                       "%s/proc.%s.%06d.shm",
-                                       procdname,
-                                       pinfolist->pnamearray[pindex],
-                                       (int) pinfolist->PIDarray[pindex]);
-                    remove(SM_fname);
+            case 'R':
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    if(pinfolist->active[pindex] != 1)
+                    {
+                        remove(procinfoproc.pinfoarray[pindex]->logfilename);
+
+                        char SM_fname[STRINGMAXLEN_FULLFILENAME];
+                        WRITE_FULLFILENAME(SM_fname,
+                                           "%s/proc.%s.%06d.shm",
+                                           procdname,
+                                           pinfolist->pnamearray[pindex],
+                                           (int) pinfolist->PIDarray[pindex]);
+                        remove(SM_fname);
+                    }
                 }
-            }
-            break;
+                break;
 
-        case 'R':
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (pinfolist->active[pindex] != 1)
+            // loop controls
+            case 'p': // pause toggle
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    remove(procinfoproc.pinfoarray[pindex]->logfilename);
-
-                    char SM_fname[STRINGMAXLEN_FULLFILENAME];
-                    WRITE_FULLFILENAME(SM_fname,
-                                       "%s/proc.%s.%06d.shm",
-                                       procdname,
-                                       pinfolist->pnamearray[pindex],
-                                       (int) pinfolist->PIDarray[pindex]);
-                    remove(SM_fname);
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 1;
+                        }
+                        else
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 0;
+                        }
+                    }
                 }
-            }
-            break;
-
-        // loop controls
-        case 'p': // pause toggle
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
                 {
-                    selectedOK = 1;
-                    if (procinfoproc.pinfoarray[pindex]->CTRLval == 0)
+                    pindex = pindexSelected;
+                    if(procinfoproc.pinfoarray[pindex]->CTRLval == 0)
                     {
                         procinfoproc.pinfoarray[pindex]->CTRLval = 1;
                     }
@@ -873,375 +886,362 @@ errno_t processinfo_CTRLscreen()
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                     }
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                if (procinfoproc.pinfoarray[pindex]->CTRLval == 0)
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 1;
-                }
-                else
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 0;
-                }
-            }
-            break;
+                break;
 
-        case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
-            DEBUG_TRACEPOINT(" ");
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'c': // compute toggle (toggles between 0-run and 5-run-without-compute)
+                DEBUG_TRACEPOINT(" ");
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
-                    if (procinfoproc.pinfoarray[pindex]->CTRLval ==
-                        0) // if running, turn compute to off
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                                0) // if running, turn compute to off
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 5;
+                        }
+                        else if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                                5) // if compute off, turn compute back on
+                        {
+                            procinfoproc.pinfoarray[pindex]->CTRLval = 0;
+                        }
+                    }
+                }
+                DEBUG_TRACEPOINT(" ");
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
+                    if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                            0) // if running, turn compute to off
                     {
                         procinfoproc.pinfoarray[pindex]->CTRLval = 5;
                     }
-                    else if (procinfoproc.pinfoarray[pindex]->CTRLval ==
-                             5) // if compute off, turn compute back on
+                    else if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                            5) // if procinfoproccompute off, turn compute back on
                     {
                         procinfoproc.pinfoarray[pindex]->CTRLval = 0;
                     }
                 }
-            }
-            DEBUG_TRACEPOINT(" ");
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                if (procinfoproc.pinfoarray[pindex]->CTRLval ==
-                    0) // if running, turn compute to off
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 5;
-                }
-                else if (procinfoproc.pinfoarray[pindex]->CTRLval ==
-                         5) // if procinfoproccompute off, turn compute back on
-                {
-                    procinfoproc.pinfoarray[pindex]->CTRLval = 0;
-                }
-            }
-            DEBUG_TRACEPOINT(" ");
-            break;
+                DEBUG_TRACEPOINT(" ");
+                break;
 
-        case 's': // step
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 's': // step
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK                               = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK                               = 1;
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 2;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex                                   = pindexSelected;
                     procinfoproc.pinfoarray[pindex]->CTRLval = 2;
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex                                   = pindexSelected;
-                procinfoproc.pinfoarray[pindex]->CTRLval = 2;
-            }
-            break;
+                break;
 
-        case '>': // move to other cpuset
-            pindex = pindexSelected;
-            if (pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-                if (system("clear") != 0) // clear screen
+            case '>': // move to other cpuset
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
                 {
-                    PRINT_ERROR("system() returns non-zero value");
+                    TUI_exit();
+                    if(system("clear") != 0)  // clear screen
+                    {
+                        PRINT_ERROR("system() returns non-zero value");
+                    }
+                    printf("CURRENT cpu set : %s\n",
+                           procinfoproc.pinfodisp[pindex].cpuset);
+                    listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+
+                    EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s",
+                                           pinfolist->PIDarray[pindex],
+                                           CPUsetList[listindex].name);
+
+                    TUI_init_terminal(&wrow, &wcol);
                 }
-                printf("CURRENT cpu set : %s\n",
-                       procinfoproc.pinfodisp[pindex].cpuset);
-                listindex = processinfo_SelectFromList(CPUsetList, NBCPUset);
+                break;
 
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d %s",
-                                       pinfolist->PIDarray[pindex],
-                                       CPUsetList[listindex].name);
-
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-        case '<': // move to same cpuset
-            pindex = pindexSelected;
-            if (pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-
-                EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
-                                       pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND(
-                    "sudo cset proc --force -m %d %s &> /dev/null",
-                    pinfolist->PIDarray[pindex],
-                    procinfoproc.pinfodisp[pindex].cpuset);
-
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-        case 'e': // exit
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case '<': // move to same cpuset
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
                 {
-                    selectedOK                               = 1;
+                    TUI_exit();
+
+                    EXECUTE_SYSTEM_COMMAND("sudo cset proc -m %d root &> /dev/null",
+                                           pinfolist->PIDarray[pindex]);
+                    EXECUTE_SYSTEM_COMMAND(
+                        "sudo cset proc --force -m %d %s &> /dev/null",
+                        pinfolist->PIDarray[pindex],
+                        procinfoproc.pinfodisp[pindex].cpuset);
+
+                    TUI_init_terminal(&wrow, &wcol);
+                }
+                break;
+
+            case 'e': // exit
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
+                {
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK                               = 1;
+                        procinfoproc.pinfoarray[pindex]->CTRLval = 3;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex                                   = pindexSelected;
                     procinfoproc.pinfoarray[pindex]->CTRLval = 3;
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex                                   = pindexSelected;
-                procinfoproc.pinfoarray[pindex]->CTRLval = 3;
-            }
-            break;
+                break;
 
-        case 'z': // apply current value as offset (zero loop counter)
-            selectedOK = 0;
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'z': // apply current value as offset (zero loop counter)
+                selectedOK = 0;
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK = 1;
+                        procinfoproc.loopcntoffsetarray[pindex] =
+                            procinfoproc.pinfoarray[pindex]->loopcnt;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex = pindexSelected;
                     procinfoproc.loopcntoffsetarray[pindex] =
                         procinfoproc.pinfoarray[pindex]->loopcnt;
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex = pindexSelected;
-                procinfoproc.loopcntoffsetarray[pindex] =
-                    procinfoproc.pinfoarray[pindex]->loopcnt;
-            }
-            break;
+                break;
 
-        case 'Z': // revert to original counter value
-            for (index = 0; index < procinfoproc.NBpindexActive; index++)
-            {
-                pindex = procinfoproc.pindexActive[index];
-                if (procinfoproc.selectedarray[pindex] == 1)
+            case 'Z': // revert to original counter value
+                for(index = 0; index < procinfoproc.NBpindexActive; index++)
                 {
-                    selectedOK                              = 1;
+                    pindex = procinfoproc.pindexActive[index];
+                    if(procinfoproc.selectedarray[pindex] == 1)
+                    {
+                        selectedOK                              = 1;
+                        procinfoproc.loopcntoffsetarray[pindex] = 0;
+                    }
+                }
+                if((selectedOK == 0) && (pindexSelectedOK == 1))
+                {
+                    pindex                                  = pindexSelected;
                     procinfoproc.loopcntoffsetarray[pindex] = 0;
                 }
-            }
-            if ((selectedOK == 0) && (pindexSelectedOK == 1))
-            {
-                pindex                                  = pindexSelected;
-                procinfoproc.loopcntoffsetarray[pindex] = 0;
-            }
-            break;
+                break;
 
-        case 't':
-            TUI_exit();
-            EXECUTE_SYSTEM_COMMAND(
-                "tmux a -t %s",
-                procinfoproc.pinfoarray[pindexSelected]->tmuxname);
-            TUI_init_terminal(&wrow, &wcol);
-            break;
-
-        case 'a':
-            pindex = pindexSelected;
-            if (pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
-                                       (int) pinfolist->PIDarray[pindex]);
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-        case 'd':
-            pindex = pindexSelected;
-            if (pinfolist->active[pindex] == 1)
-            {
-                TUI_exit();
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                       (int) pinfolist->PIDarray[pindex]);
-                EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
-                                       (int) pinfolist->PIDarray[pindex]);
-                TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
-
-        case 'o':
-            if (TimeSorted == 1)
-            {
-                TimeSorted = 0;
-            }
-            else
-            {
-                TimeSorted = 1;
-            }
-            break;
-
-        case 'L': // toggle time limit (iter)
-            pindex      = pindexSelected;
-            ToggleValue = procinfoproc.pinfoarray[pindex]->dtiter_limit_enable;
-            if (ToggleValue == 0)
-            {
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = 1;
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_value =
-                    (long) (1.5 *
-                            procinfoproc.pinfoarray[pindex]->dtmedian_iter_ns);
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt = 0;
-            }
-            else
-            {
-                ToggleValue++;
-                if (ToggleValue == 3)
-                {
-                    ToggleValue = 0;
-                }
-                procinfoproc.pinfoarray[pindex]->dtiter_limit_enable =
-                    ToggleValue;
-            }
-            break;
-            ;
-
-        case 'M': // toggle time limit (exec)
-            pindex      = pindexSelected;
-            ToggleValue = procinfoproc.pinfoarray[pindex]->dtexec_limit_enable;
-            if (ToggleValue == 0)
-            {
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = 1;
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_value =
-                    (long) (1.5 * procinfoproc.pinfoarray[pindex]
-                                      ->dtmedian_exec_ns +
-                            20000);
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt = 0;
-            }
-            else
-            {
-                ToggleValue++;
-                if (ToggleValue == 3)
-                {
-                    ToggleValue = 0;
-                }
-                procinfoproc.pinfoarray[pindex]->dtexec_limit_enable =
-                    ToggleValue;
-            }
-            break;
-            ;
-
-        case 'm': // message
-            pindex = pindexSelected;
-            if (pinfolist->active[pindex] == 1)
-            {
+            case 't':
                 TUI_exit();
                 EXECUTE_SYSTEM_COMMAND(
-                    "clear; tail -f %s",
-                    procinfoproc.pinfoarray[pindex]->logfilename);
+                    "tmux a -t %s",
+                    procinfoproc.pinfoarray[pindexSelected]->tmuxname);
                 TUI_init_terminal(&wrow, &wcol);
-            }
-            break;
+                break;
+
+            case 'a':
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    TUI_exit();
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/status",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    TUI_init_terminal(&wrow, &wcol);
+                }
+                break;
+
+            case 'd':
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    TUI_exit();
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    EXECUTE_SYSTEM_COMMAND("watch -n 0.1 cat /proc/%d/sched",
+                                           (int) pinfolist->PIDarray[pindex]);
+                    TUI_init_terminal(&wrow, &wcol);
+                }
+                break;
+
+            case 'o':
+                if(TimeSorted == 1)
+                {
+                    TimeSorted = 0;
+                }
+                else
+                {
+                    TimeSorted = 1;
+                }
+                break;
+
+            case 'L': // toggle time limit (iter)
+                pindex      = pindexSelected;
+                ToggleValue = procinfoproc.pinfoarray[pindex]->dtiter_limit_enable;
+                if(ToggleValue == 0)
+                {
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_enable = 1;
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_value =
+                        (long)(1.5 *
+                               procinfoproc.pinfoarray[pindex]->dtmedian_iter_ns);
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_cnt = 0;
+                }
+                else
+                {
+                    ToggleValue++;
+                    if(ToggleValue == 3)
+                    {
+                        ToggleValue = 0;
+                    }
+                    procinfoproc.pinfoarray[pindex]->dtiter_limit_enable =
+                        ToggleValue;
+                }
+                break;
+                ;
+
+            case 'M': // toggle time limit (exec)
+                pindex      = pindexSelected;
+                ToggleValue = procinfoproc.pinfoarray[pindex]->dtexec_limit_enable;
+                if(ToggleValue == 0)
+                {
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_enable = 1;
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_value =
+                        (long)(1.5 * procinfoproc.pinfoarray[pindex]
+                               ->dtmedian_exec_ns +
+                               20000);
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_cnt = 0;
+                }
+                else
+                {
+                    ToggleValue++;
+                    if(ToggleValue == 3)
+                    {
+                        ToggleValue = 0;
+                    }
+                    procinfoproc.pinfoarray[pindex]->dtexec_limit_enable =
+                        ToggleValue;
+                }
+                break;
+                ;
+
+            case 'm': // message
+                pindex = pindexSelected;
+                if(pinfolist->active[pindex] == 1)
+                {
+                    TUI_exit();
+                    EXECUTE_SYSTEM_COMMAND(
+                        "clear; tail -f %s",
+                        procinfoproc.pinfoarray[pindex]->logfilename);
+                    TUI_init_terminal(&wrow, &wcol);
+                }
+                break;
 
             // ============ SCREENS
 
-        case 'h': // help
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_HELP;
-            break;
+            case 'h': // help
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_HELP;
+                break;
 
-        case KEY_F(2): // control
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
-            break;
+            case KEY_F(2): // control
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
+                break;
 
-        case KEY_F(3): // resources
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
-            break;
+            case KEY_F(3): // resources
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
+                break;
 
-        case KEY_F(4): // triggering
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
-            break;
+            case KEY_F(4): // triggering
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
+                break;
 
-        case KEY_F(5): // timing
-            procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
-            break;
+            case KEY_F(5): // timing
+                procinfoproc.DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
+                break;
 
-        case KEY_F(6): // htop
-            TUI_exit();
-            if (system("htop") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            TUI_init_terminal(&wrow, &wcol);
-            break;
+            case KEY_F(6): // htop
+                TUI_exit();
+                if(system("htop") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                TUI_init_terminal(&wrow, &wcol);
+                break;
 
-        case KEY_F(7): // iotop
-            TUI_exit();
-            if (system("sudo iotop -o") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            TUI_init_terminal(&wrow, &wcol);
-            break;
+            case KEY_F(7): // iotop
+                TUI_exit();
+                if(system("sudo iotop -o") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                TUI_init_terminal(&wrow, &wcol);
+                break;
 
-        case KEY_F(8): // atop
-            TUI_exit();
-            if (system("sudo atop") != 0)
-            {
-                PRINT_ERROR("system() returns non-zero value");
-            }
-            TUI_init_terminal(&wrow, &wcol);
-            break;
+            case KEY_F(8): // atop
+                TUI_exit();
+                if(system("sudo atop") != 0)
+                {
+                    PRINT_ERROR("system() returns non-zero value");
+                }
+                TUI_init_terminal(&wrow, &wcol);
+                break;
 
             // ============ SCANNING
 
-        case '{': // slower scan update
-            procinfoproc.twaitus = (int) (1.2 * procinfoproc.twaitus);
-            if (procinfoproc.twaitus > 1000000)
-            {
-                procinfoproc.twaitus = 1000000;
-            }
-            break;
+            case '{': // slower scan update
+                procinfoproc.twaitus = (int)(1.2 * procinfoproc.twaitus);
+                if(procinfoproc.twaitus > 1000000)
+                {
+                    procinfoproc.twaitus = 1000000;
+                }
+                break;
 
-        case '}': // faster scan update
-            procinfoproc.twaitus =
-                (int) (0.83333333333333333333 * procinfoproc.twaitus);
-            if (procinfoproc.twaitus < 1000)
-            {
-                procinfoproc.twaitus = 1000;
-            }
-            break;
+            case '}': // faster scan update
+                procinfoproc.twaitus =
+                    (int)(0.83333333333333333333 * procinfoproc.twaitus);
+                if(procinfoproc.twaitus < 1000)
+                {
+                    procinfoproc.twaitus = 1000;
+                }
+                break;
 
             // ============ DISPLAY
 
-        case '-': // slower display update
-            frequ *= 0.5;
-            if (frequ < 1.0)
-            {
-                frequ = 1.0;
-            }
-            if (frequ > 64.0)
-            {
-                frequ = 64.0;
-            }
-            break;
+            case '-': // slower display update
+                frequ *= 0.5;
+                if(frequ < 1.0)
+                {
+                    frequ = 1.0;
+                }
+                if(frequ > 64.0)
+                {
+                    frequ = 64.0;
+                }
+                break;
 
-        case '+': // faster display update
-            frequ *= 2.0;
-            if (frequ < 1.0)
-            {
-                frequ = 1.0;
-            }
-            if (frequ > 64.0)
-            {
-                frequ = 64.0;
-            }
-            break;
+            case '+': // faster display update
+                frequ *= 2.0;
+                if(frequ < 1.0)
+                {
+                    frequ = 1.0;
+                }
+                if(frequ > 64.0)
+                {
+                    frequ = 64.0;
+                }
+                break;
         }
         clock_gettime(CLOCK_REALTIME, &t01loop);
 
         DEBUG_TRACEPOINT(" ");
 
-        if (freeze == 0)
+        if(freeze == 0)
         {
             erase();
 
-            if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
+            if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
             {
                 int attrval = A_BOLD;
 
@@ -1399,7 +1399,7 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc.DisplayMode);
                 TUI_newline();
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HELP)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[h] Help");
@@ -1411,7 +1411,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F2] CTRL");
@@ -1423,7 +1423,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F3] Resources");
@@ -1435,7 +1435,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F4] Triggering");
@@ -1447,7 +1447,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F5] Timing");
@@ -1459,7 +1459,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HTOP)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_HTOP)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F6] htop (F10 to exit)");
@@ -1471,7 +1471,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_IOTOP)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_IOTOP)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F7] iotop (q to exit)");
@@ -1483,7 +1483,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 TUI_printfw("   ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_ATOP)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_ATOP)
                 {
                     attron(A_REVERSE);
                     TUI_printfw("[F8] atop (q to exit)");
@@ -1502,32 +1502,32 @@ errno_t processinfo_CTRLscreen()
                 TUI_printfw(
                     "Display frequ = %2d Hz  [%ld] fscan=%5.2f Hz "
                     "( %5.2f Hz %5.2f %% busy )",
-                    (int) (frequ + 0.5),
+                    (int)(frequ + 0.5),
                     procinfoproc.loopcnt,
                     1.0 / procinfoproc.dtscan,
                     1000000.0 / procinfoproc.twaitus,
                     100.0 *
-                        (procinfoproc.dtscan - 1.0e-6 * procinfoproc.twaitus) /
-                        procinfoproc.dtscan);
+                    (procinfoproc.dtscan - 1.0e-6 * procinfoproc.twaitus) /
+                    procinfoproc.dtscan);
                 TUI_newline();
 
                 DEBUG_TRACEPOINT(" ");
 
-                if ((pindexSelected >= 0) &&
-                    (pindexSelected < PROCESSINFOLISTSIZE))
+                if((pindexSelected >= 0) &&
+                        (pindexSelected < PROCESSINFOLISTSIZE))
                 {
-                    if (procinfoproc.pinfommapped[pindexSelected] == 1)
+                    if(procinfoproc.pinfommapped[pindexSelected] == 1)
                     {
 
                         strcpy(pselected_FILE,
                                procinfoproc.pinfoarray[pindexSelected]
-                                   ->source_FILE);
+                               ->source_FILE);
                         strcpy(pselected_FUNCTION,
                                procinfoproc.pinfoarray[pindexSelected]
-                                   ->source_FUNCTION);
+                               ->source_FUNCTION);
                         pselected_LINE =
                             procinfoproc.pinfoarray[pindexSelected]
-                                ->source_LINE;
+                            ->source_LINE;
 
                         TUI_printfw(
                             "Source Code: %s line %d "
@@ -1568,7 +1568,7 @@ errno_t processinfo_CTRLscreen()
                  */
 
                 int dispindex;
-                if (TimeSorted == 0)
+                if(TimeSorted == 0)
                 {
                     dispindexMax = wrow - 4;
                 }
@@ -1579,7 +1579,7 @@ errno_t processinfo_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES)
                 {
                     int cpu;
                     DEBUG_TRACEPOINT(" ");
@@ -1620,15 +1620,15 @@ errno_t processinfo_CTRLscreen()
                         pstrlen_cset,
                         " ");
 
-                    for (cpusocket = 0; cpusocket < procinfoproc.NBcpusocket;
-                         cpusocket++)
+                    for(cpusocket = 0; cpusocket < procinfoproc.NBcpusocket;
+                            cpusocket++)
                     {
-                        if (cpusocket > 0)
+                        if(cpusocket > 0)
                         {
                             TUI_printfw("    ");
                         }
-                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
-                            if (procinfoproc.CPUphys[cpu] == cpusocket)
+                        for(cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
+                            if(procinfoproc.CPUphys[cpu] == cpusocket)
                             {
                                 TUI_printfw("|%02d", procinfoproc.CPUids[cpu]);
                             }
@@ -1656,50 +1656,50 @@ errno_t processinfo_CTRLscreen()
                         pstrlen_cset,
                         " ");
 
-                    for (cpusocket = 0; cpusocket < procinfoproc.NBcpusocket;
-                         cpusocket++)
+                    for(cpusocket = 0; cpusocket < procinfoproc.NBcpusocket;
+                            cpusocket++)
                     {
-                        if (cpusocket > 0)
+                        if(cpusocket > 0)
                         {
                             TUI_printfw("    ");
                         }
 
-                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
-                            if (procinfoproc.CPUphys[cpu] == cpusocket)
+                        for(cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
+                            if(procinfoproc.CPUphys[cpu] == cpusocket)
                             {
                                 int vint =
                                     procinfoproc
-                                        .CPUpcnt[procinfoproc.CPUids[cpu]];
-                                if (vint > 99)
+                                    .CPUpcnt[procinfoproc.CPUids[cpu]];
+                                if(vint > 99)
                                 {
                                     vint = 99;
                                 }
 
                                 ColorCode = 0;
-                                if (vint > CPUpcntLim1)
+                                if(vint > CPUpcntLim1)
                                 {
                                     ColorCode = 2;
                                 }
-                                if (vint > CPUpcntLim2)
+                                if(vint > CPUpcntLim2)
                                 {
                                     ColorCode = 3;
                                 }
-                                if (vint > CPUpcntLim3)
+                                if(vint > CPUpcntLim3)
                                 {
                                     ColorCode = 4;
                                 }
-                                if (vint < CPUpcntLim0)
+                                if(vint < CPUpcntLim0)
                                 {
                                     ColorCode = 5;
                                 }
 
                                 TUI_printfw("|");
-                                if (ColorCode != 0)
+                                if(ColorCode != 0)
                                 {
                                     attron(COLOR_PAIR(ColorCode));
                                 }
                                 TUI_printfw("%02d", vint);
-                                if (ColorCode != 0)
+                                if(ColorCode != 0)
                                 {
                                     attroff(COLOR_PAIR(ColorCode));
                                 }
@@ -1730,50 +1730,50 @@ errno_t processinfo_CTRLscreen()
                         "cset",
                         procinfoproc.NBcpus);
 
-                    for (cpusocket = 0; cpusocket < procinfoproc.NBcpusocket;
-                         cpusocket++)
+                    for(cpusocket = 0; cpusocket < procinfoproc.NBcpusocket;
+                            cpusocket++)
                     {
-                        if (cpusocket > 0)
+                        if(cpusocket > 0)
                         {
                             TUI_printfw("    ");
                         }
-                        for (cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
-                            if (procinfoproc.CPUphys[cpu] == cpusocket)
+                        for(cpu = 0; cpu < procinfoproc.NBcpus; cpu++)
+                            if(procinfoproc.CPUphys[cpu] == cpusocket)
                             {
                                 int vint =
-                                    (int) (100.0 *
-                                           procinfoproc.CPUload
-                                               [procinfoproc.CPUids[cpu]]);
-                                if (vint > 99)
+                                    (int)(100.0 *
+                                          procinfoproc.CPUload
+                                          [procinfoproc.CPUids[cpu]]);
+                                if(vint > 99)
                                 {
                                     vint = 99;
                                 }
 
                                 ColorCode = 0;
-                                if (vint > CPUloadLim1)
+                                if(vint > CPUloadLim1)
                                 {
                                     ColorCode = 2;
                                 }
-                                if (vint > CPUloadLim2)
+                                if(vint > CPUloadLim2)
                                 {
                                     ColorCode = 3;
                                 }
-                                if (vint > CPUloadLim3)
+                                if(vint > CPUloadLim3)
                                 {
                                     ColorCode = 4;
                                 }
-                                if (vint < CPUloadLim0)
+                                if(vint < CPUloadLim0)
                                 {
                                     ColorCode = 5;
                                 }
 
                                 TUI_printfw("|");
-                                if (ColorCode != 0)
+                                if(ColorCode != 0)
                                 {
                                     attron(COLOR_PAIR(ColorCode));
                                 }
                                 TUI_printfw("%02d", vint);
-                                if (ColorCode != 0)
+                                if(ColorCode != 0)
                                 {
                                     attroff(COLOR_PAIR(ColorCode));
                                 }
@@ -1787,7 +1787,7 @@ errno_t processinfo_CTRLscreen()
                 }
 
                 // print header for display mode PROCCTRL_DISPLAYMODE_CTRL
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_CTRL)
                 {
                     DEBUG_TRACEPOINT(" ");
                     TUI_newline();
@@ -1825,7 +1825,7 @@ errno_t processinfo_CTRLscreen()
                 }
 
                 // print header for display mode PROCCTRL_DISPLAYMODE_TRIGGER
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER)
                 {
                     DEBUG_TRACEPOINT(" ");
                     TUI_newline();
@@ -1863,7 +1863,7 @@ errno_t processinfo_CTRLscreen()
                 }
 
                 // print header for display mode PROCCTRL_DISPLAYMODE_TIMING
-                if (procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
+                if(procinfoproc.DisplayMode == PROCCTRL_DISPLAYMODE_TIMING)
                 {
                     DEBUG_TRACEPOINT(" ");
                     TUI_newline();
@@ -1885,11 +1885,11 @@ errno_t processinfo_CTRLscreen()
                 // ===========================================================================
                 pindexSelectedOK = 0;
 
-                for (dispindex = 0; dispindex < dispindexMax; dispindex++)
+                for(dispindex = 0; dispindex < dispindexMax; dispindex++)
                 {
 
                     // pindex refers to pinfolist
-                    if (TimeSorted == 0)
+                    if(TimeSorted == 0)
                     {
                         pindex = procinfoproc.pinfodisp[dispindex].pindex;
                     }
@@ -1898,7 +1898,7 @@ errno_t processinfo_CTRLscreen()
                         pindex = procinfoproc.sorted_pindex_time[dispindex];
                     }
 
-                    if (dispindex < procinfoproc.NBpinfodisp)
+                    if(dispindex < procinfoproc.NBpinfodisp)
                     {
                         DEBUG_TRACEPOINT("%d %d   %ld %ld",
                                          dispindex,
@@ -1906,7 +1906,7 @@ errno_t processinfo_CTRLscreen()
                                          pindex,
                                          procinfoproc.NBpinfodisp);
 
-                        if (pindex == pindexSelected)
+                        if(pindex == pindexSelected)
                         {
                             attron(A_REVERSE);
                             pindexSelectedOK = 1;
@@ -1914,7 +1914,7 @@ errno_t processinfo_CTRLscreen()
 
                         TUI_printfw("%4d ", pindex);
 
-                        if (procinfoproc.selectedarray[pindex] == 1)
+                        if(procinfoproc.selectedarray[pindex] == 1)
                         {
                             TUI_printfw("*");
                         }
@@ -1928,7 +1928,7 @@ errno_t processinfo_CTRLscreen()
                             "pindex] = %d",
                             procinfoproc.selectedarray[pindex]);
 
-                        if (pinfolist->active[pindex] == 1)
+                        if(pinfolist->active[pindex] == 1)
                         {
                             sprintf(string,
                                     "%-*.*s",
@@ -1946,42 +1946,42 @@ errno_t processinfo_CTRLscreen()
                             pinfolist->active[pindex]);
 
                         // not active: error, crashed or terminated
-                        if (pinfolist->active[pindex] == 2)
+                        if(pinfolist->active[pindex] == 2)
                         {
-                            switch (procinfoproc.pinfoarray[pindex]->loopstat)
+                            switch(procinfoproc.pinfoarray[pindex]->loopstat)
                             {
-                            case 3: // clean exit
-                                sprintf(string,
-                                        "%-*.*s",
-                                        pstrlen_status,
-                                        pstrlen_status,
-                                        "STOPPED");
-                                attron(COLOR_PAIR(3));
-                                TUI_printfw("%s", string);
-                                attroff(COLOR_PAIR(3));
-                                break;
+                                case 3: // clean exit
+                                    sprintf(string,
+                                            "%-*.*s",
+                                            pstrlen_status,
+                                            pstrlen_status,
+                                            "STOPPED");
+                                    attron(COLOR_PAIR(3));
+                                    TUI_printfw("%s", string);
+                                    attroff(COLOR_PAIR(3));
+                                    break;
 
-                            case 4: // error
-                                sprintf(string,
-                                        "%-*.*s",
-                                        pstrlen_status,
-                                        pstrlen_status,
-                                        "ERROR");
-                                attron(COLOR_PAIR(3));
-                                TUI_printfw("%s", string);
-                                attroff(COLOR_PAIR(3));
-                                break;
+                                case 4: // error
+                                    sprintf(string,
+                                            "%-*.*s",
+                                            pstrlen_status,
+                                            pstrlen_status,
+                                            "ERROR");
+                                    attron(COLOR_PAIR(3));
+                                    TUI_printfw("%s", string);
+                                    attroff(COLOR_PAIR(3));
+                                    break;
 
-                            default: // crashed
-                                sprintf(string,
-                                        "%-*.*s",
-                                        pstrlen_status,
-                                        pstrlen_status,
-                                        "CRASHED");
-                                attron(COLOR_PAIR(4));
-                                TUI_printfw("%s", string);
-                                attroff(COLOR_PAIR(4));
-                                break;
+                                default: // crashed
+                                    sprintf(string,
+                                            "%-*.*s",
+                                            pstrlen_status,
+                                            pstrlen_status,
+                                            "CRASHED");
+                                    attron(COLOR_PAIR(4));
+                                    TUI_printfw("%s", string);
+                                    attroff(COLOR_PAIR(4));
+                                    break;
                             }
                         }
 
@@ -1991,9 +1991,9 @@ errno_t processinfo_CTRLscreen()
                                          pindex,
                                          procinfoproc.NBpinfodisp);
 
-                        if (pinfolist->active[pindex] != 0)
+                        if(pinfolist->active[pindex] != 0)
                         {
-                            if (pindex == pindexSelected)
+                            if(pindex == pindexSelected)
                             {
                                 attron(A_REVERSE);
                             }
@@ -2018,100 +2018,100 @@ errno_t processinfo_CTRLscreen()
                             attroff(A_BOLD);
 
                             // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_CTRL ==================
-                            if (procinfoproc.DisplayMode ==
-                                PROCCTRL_DISPLAYMODE_CTRL)
+                            if(procinfoproc.DisplayMode ==
+                                    PROCCTRL_DISPLAYMODE_CTRL)
                             {
-                                switch (
+                                switch(
                                     procinfoproc.pinfoarray[pindex]->loopstat)
                                 {
-                                case 0:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "INIT");
-                                    break;
+                                    case 0:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "INIT");
+                                        break;
 
-                                case 1:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "RUN");
-                                    break;
+                                    case 1:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "RUN");
+                                        break;
 
-                                case 2:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "PAUS");
-                                    break;
+                                    case 2:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "PAUS");
+                                        break;
 
-                                case 3:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "TERM");
-                                    break;
+                                    case 3:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "TERM");
+                                        break;
 
-                                case 4:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "ERR");
-                                    break;
+                                    case 4:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "ERR");
+                                        break;
 
-                                case 5:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "OFF");
-                                    break;
+                                    case 5:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "OFF");
+                                        break;
 
-                                case 6:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "CRAS"
-                                            "H");
-                                    break;
+                                    case 6:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "CRAS"
+                                                "H");
+                                        break;
 
-                                default:
-                                    sprintf(string,
-                                            " %-*.*"
-                                            "s",
-                                            pstrlen_state,
-                                            pstrlen_state,
-                                            "??");
+                                    default:
+                                        sprintf(string,
+                                                " %-*.*"
+                                                "s",
+                                                pstrlen_state,
+                                                pstrlen_state,
+                                                "??");
                                 }
                                 TUI_printfw("%s", string);
 
-                                if (procinfoproc.pinfoarray[pindex]->CTRLval ==
-                                    0)
+                                if(procinfoproc.pinfoarray[pindex]->CTRLval ==
+                                        0)
                                 {
                                     attron(COLOR_PAIR(2));
                                     TUI_printfw(" C%d",
                                                 procinfoproc.pinfoarray[pindex]
-                                                    ->CTRLval);
+                                                ->CTRLval);
                                     attroff(COLOR_PAIR(2));
                                 }
                                 else
                                 {
                                     TUI_printfw(" C%d",
                                                 procinfoproc.pinfoarray[pindex]
-                                                    ->CTRLval);
+                                                ->CTRLval);
                                 }
 
                                 // Create time
@@ -2119,7 +2119,7 @@ errno_t processinfo_CTRLscreen()
                                     struct tm *createtm;
                                     createtm =
                                         gmtime(&procinfoproc.pinfoarray[pindex]
-                                                    ->createtime.tv_sec);
+                                               ->createtime.tv_sec);
 
                                     sprintf(
                                         string,
@@ -2128,9 +2128,9 @@ errno_t processinfo_CTRLscreen()
                                         createtm->tm_hour,
                                         createtm->tm_min,
                                         createtm->tm_sec,
-                                        (int) (0.000001 *
-                                               (procinfoproc.pinfoarray[pindex]
-                                                    ->createtime.tv_nsec)));
+                                        (int)(0.000001 *
+                                              (procinfoproc.pinfoarray[pindex]
+                                               ->createtime.tv_nsec)));
                                 }
                                 TUI_printfw("%s", string);
 
@@ -2148,11 +2148,11 @@ errno_t processinfo_CTRLscreen()
                                     pstrlen_loopcnt,
                                     pstrlen_loopcnt,
                                     procinfoproc.pinfoarray[pindex]->loopcnt -
-                                        procinfoproc
-                                            .loopcntoffsetarray[pindex]);
+                                    procinfoproc
+                                    .loopcntoffsetarray[pindex]);
                                 //if(procinfoproc.pinfoarray[pindex]->loopcnt == procinfoproc.loopcntarray[pindex])
-                                if (procinfoproc.pinfoarray[pindex]->loopcnt ==
-                                    procinfoproc.loopcntarray[pindex])
+                                if(procinfoproc.pinfoarray[pindex]->loopcnt ==
+                                        procinfoproc.loopcntarray[pindex])
                                 {
                                     // loopcnt has not changed
                                     TUI_printfw("%s", string);
@@ -2175,14 +2175,14 @@ errno_t processinfo_CTRLscreen()
                                         pstrlen_descr,
                                         pstrlen_descr,
                                         procinfoproc.pinfoarray[pindex]
-                                            ->description);
+                                        ->description);
                                 TUI_printfw("%s", string);
 
                                 TUI_printfw(" | ");
 
-                                if ((procinfoproc.pinfoarray[pindex]
-                                         ->loopstat == 4) ||
-                                    (procinfoproc.pinfoarray[pindex]
+                                if((procinfoproc.pinfoarray[pindex]
+                                        ->loopstat == 4) ||
+                                        (procinfoproc.pinfoarray[pindex]
                                          ->loopstat == 6)) // ERROR or CRASH
                                 {
                                     attron(COLOR_PAIR(4));
@@ -2196,9 +2196,9 @@ errno_t processinfo_CTRLscreen()
                                     procinfoproc.pinfoarray[pindex]->statusmsg);
                                 TUI_printfw("%s", string);
 
-                                if ((procinfoproc.pinfoarray[pindex]
-                                         ->loopstat == 4) ||
-                                    (procinfoproc.pinfoarray[pindex]
+                                if((procinfoproc.pinfoarray[pindex]
+                                        ->loopstat == 4) ||
+                                        (procinfoproc.pinfoarray[pindex]
                                          ->loopstat == 6)) // ERROR
                                 {
                                     attroff(COLOR_PAIR(4));
@@ -2206,12 +2206,12 @@ errno_t processinfo_CTRLscreen()
                             }
 
                             // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_RESOURCES ==================
-                            if (procinfoproc.DisplayMode ==
-                                PROCCTRL_DISPLAYMODE_RESOURCES)
+                            if(procinfoproc.DisplayMode ==
+                                    PROCCTRL_DISPLAYMODE_RESOURCES)
                             {
                                 int cpu;
 
-                                if (procinfoproc.psysinfostatus[pindex] == -1)
+                                if(procinfoproc.psysinfostatus[pindex] == -1)
                                 {
                                     sprintf(string,
                                             " no "
@@ -2227,15 +2227,15 @@ errno_t processinfo_CTRLscreen()
                                 {
 
                                     int spindex; // sub process index, 0 for main
-                                    for (spindex = 0;
-                                         spindex <
-                                         procinfoproc.pinfodisp[pindex]
-                                             .NBsubprocesses;
-                                         spindex++)
+                                    for(spindex = 0;
+                                            spindex <
+                                            procinfoproc.pinfodisp[pindex]
+                                            .NBsubprocesses;
+                                            spindex++)
                                     {
                                         //int TID; // thread ID
 
-                                        if (spindex > 0)
+                                        if(spindex > 0)
                                         {
                                             //TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
                                             sprintf(
@@ -2247,26 +2247,26 @@ errno_t processinfo_CTRLscreen()
                                                 pstrlen_pid,
                                                 pstrlen_pid,
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .subprocPIDarray[spindex],
+                                                .subprocPIDarray[spindex],
                                                 pstrlen_pname,
                                                 pstrlen_pname,
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .name);
+                                                .name);
                                             TUI_printfw("%s", string);
                                         }
                                         else
                                         {
                                             //TID = procinfoproc.pinfodisp[pindex].PID;
                                             procinfoproc.pinfodisp[pindex]
-                                                .subprocPIDarray[0] =
+                                            .subprocPIDarray[0] =
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .PID;
+                                                .PID;
                                         }
 
                                         sprintf(string,
                                                 " %2d",
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .rt_priority);
+                                                .rt_priority);
                                         TUI_printfw("%s", string);
 
                                         sprintf(string,
@@ -2274,30 +2274,30 @@ errno_t processinfo_CTRLscreen()
                                                 pstrlen_cset,
                                                 pstrlen_cset,
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .cpuset);
+                                                .cpuset);
                                         TUI_printfw("%s", string);
 
                                         sprintf(string,
                                                 " %2dx ",
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .threads);
+                                                .threads);
                                         TUI_printfw("%s", string);
 
                                         // Context Switches
 #ifdef CMDPROC_CONTEXTSWITCH
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .ctxtsw_nonvoluntary_prev
-                                                    [spindex] !=
-                                            procinfoproc.pinfodisp[pindex]
+                                                [spindex] !=
+                                                procinfoproc.pinfodisp[pindex]
                                                 .ctxtsw_nonvoluntary[spindex])
                                         {
                                             attron(COLOR_PAIR(4));
                                         }
-                                        else if (procinfoproc.pinfodisp[pindex]
-                                                     .ctxtsw_voluntary_prev
-                                                         [spindex] !=
-                                                 procinfoproc.pinfodisp[pindex]
-                                                     .ctxtsw_voluntary[spindex])
+                                        else if(procinfoproc.pinfodisp[pindex]
+                                                .ctxtsw_voluntary_prev
+                                                [spindex] !=
+                                                procinfoproc.pinfodisp[pindex]
+                                                .ctxtsw_voluntary[spindex])
                                         {
                                             attron(COLOR_PAIR(3));
                                         }
@@ -2307,33 +2307,33 @@ errno_t processinfo_CTRLscreen()
                                             " +%02ld +%02ld",
                                             labs(
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .ctxtsw_voluntary[spindex] -
+                                                .ctxtsw_voluntary[spindex] -
                                                 procinfoproc.pinfodisp[pindex]
-                                                    .ctxtsw_voluntary_prev
-                                                        [spindex]) %
-                                                100,
+                                                .ctxtsw_voluntary_prev
+                                                [spindex]) %
+                                            100,
                                             labs(procinfoproc.pinfodisp[pindex]
-                                                     .ctxtsw_nonvoluntary
-                                                         [spindex] -
+                                                 .ctxtsw_nonvoluntary
+                                                 [spindex] -
                                                  procinfoproc.pinfodisp[pindex]
-                                                     .ctxtsw_nonvoluntary_prev
-                                                         [spindex]) %
-                                                100);
+                                                 .ctxtsw_nonvoluntary_prev
+                                                 [spindex]) %
+                                            100);
                                         TUI_printfw("%s", string);
 
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .ctxtsw_nonvoluntary_prev
-                                                    [spindex] !=
-                                            procinfoproc.pinfodisp[pindex]
+                                                [spindex] !=
+                                                procinfoproc.pinfodisp[pindex]
                                                 .ctxtsw_nonvoluntary[spindex])
                                         {
                                             attroff(COLOR_PAIR(4));
                                         }
-                                        else if (procinfoproc.pinfodisp[pindex]
-                                                     .ctxtsw_voluntary_prev
-                                                         [spindex] !=
-                                                 procinfoproc.pinfodisp[pindex]
-                                                     .ctxtsw_voluntary[spindex])
+                                        else if(procinfoproc.pinfodisp[pindex]
+                                                .ctxtsw_voluntary_prev
+                                                [spindex] !=
+                                                procinfoproc.pinfodisp[pindex]
+                                                .ctxtsw_voluntary[spindex])
                                         {
                                             attroff(COLOR_PAIR(3));
                                         }
@@ -2346,47 +2346,47 @@ errno_t processinfo_CTRLscreen()
 
                                         //					if(pinfodisp[pindex].subprocCPUloadarray[spindex]>5.0)
                                         cpuColor = 1;
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .subprocCPUloadarray_timeaveraged
-                                                    [spindex] > 10.0)
+                                                [spindex] > 10.0)
                                         {
                                             cpuColor = 2;
                                         }
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .subprocCPUloadarray_timeaveraged
-                                                    [spindex] > 20.0)
+                                                [spindex] > 20.0)
                                         {
                                             cpuColor = 3;
                                         }
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .subprocCPUloadarray_timeaveraged
-                                                    [spindex] > 40.0)
+                                                [spindex] > 40.0)
                                         {
                                             cpuColor = 4;
                                         }
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .subprocCPUloadarray_timeaveraged
-                                                    [spindex] < 1.0)
+                                                [spindex] < 1.0)
                                         {
                                             cpuColor = 5;
                                         }
 
                                         // First group of cores (physical CPU 0)
-                                        for (cpu = 0;
-                                             cpu < procinfoproc.NBcpus /
-                                                       procinfoproc.NBcpusocket;
-                                             cpu++)
+                                        for(cpu = 0;
+                                                cpu < procinfoproc.NBcpus /
+                                                procinfoproc.NBcpusocket;
+                                                cpu++)
                                         {
                                             TUI_printfw("|");
 
-                                            if (procinfoproc.CPUids[cpu] ==
-                                                procinfoproc.pinfodisp[pindex]
+                                            if(procinfoproc.CPUids[cpu] ==
+                                                    procinfoproc.pinfodisp[pindex]
                                                     .processorarray[spindex])
                                             {
                                                 attron(COLOR_PAIR(cpuColor));
                                             }
 
-                                            if (procinfoproc.pinfodisp[pindex]
+                                            if(procinfoproc.pinfodisp[pindex]
                                                     .cpuOKarray[cpu] == 1)
                                             {
                                                 TUI_printfw(
@@ -2398,8 +2398,8 @@ errno_t processinfo_CTRLscreen()
                                                 TUI_printfw("  ");
                                             }
 
-                                            if (procinfoproc.CPUids[cpu] ==
-                                                procinfoproc.pinfodisp[pindex]
+                                            if(procinfoproc.CPUids[cpu] ==
+                                                    procinfoproc.pinfodisp[pindex]
                                                     .processorarray[spindex])
                                             {
                                                 attroff(COLOR_PAIR(cpuColor));
@@ -2410,21 +2410,21 @@ errno_t processinfo_CTRLscreen()
                                         TUI_printfw("%s", string);
 
                                         // Second group of cores (physical CPU 0)
-                                        for (cpu = procinfoproc.NBcpus /
-                                                   procinfoproc.NBcpusocket;
-                                             cpu < procinfoproc.NBcpus;
-                                             cpu++)
+                                        for(cpu = procinfoproc.NBcpus /
+                                                  procinfoproc.NBcpusocket;
+                                                cpu < procinfoproc.NBcpus;
+                                                cpu++)
                                         {
                                             TUI_printfw("|");
 
-                                            if (procinfoproc.CPUids[cpu] ==
-                                                procinfoproc.pinfodisp[pindex]
+                                            if(procinfoproc.CPUids[cpu] ==
+                                                    procinfoproc.pinfodisp[pindex]
                                                     .processorarray[spindex])
                                             {
                                                 attron(COLOR_PAIR(cpuColor));
                                             }
 
-                                            if (procinfoproc.pinfodisp[pindex]
+                                            if(procinfoproc.pinfodisp[pindex]
                                                     .cpuOKarray[cpu] == 1)
                                             {
                                                 TUI_printfw(
@@ -2436,8 +2436,8 @@ errno_t processinfo_CTRLscreen()
                                                 TUI_printfw("  ");
                                             }
 
-                                            if (procinfoproc.CPUids[cpu] ==
-                                                procinfoproc.pinfodisp[pindex]
+                                            if(procinfoproc.CPUids[cpu] ==
+                                                    procinfoproc.pinfodisp[pindex]
                                                     .processorarray[spindex])
                                             {
                                                 attroff(COLOR_PAIR(cpuColor));
@@ -2450,10 +2450,10 @@ errno_t processinfo_CTRLscreen()
                                             string,
                                             "%5.1f %6.2f",
                                             procinfoproc.pinfodisp[pindex]
-                                                .subprocCPUloadarray[spindex],
+                                            .subprocCPUloadarray[spindex],
                                             procinfoproc.pinfodisp[pindex]
-                                                .subprocCPUloadarray_timeaveraged
-                                                    [spindex]);
+                                            .subprocCPUloadarray_timeaveraged
+                                            [spindex]);
                                         TUI_printfw("%s", string);
                                         attroff(COLOR_PAIR(cpuColor));
 #endif
@@ -2465,7 +2465,7 @@ errno_t processinfo_CTRLscreen()
                                         int kBcnt, MBcnt, GBcnt;
 
                                         kBcnt = procinfoproc.pinfodisp[pindex]
-                                                    .VmRSSarray[spindex];
+                                                .VmRSSarray[spindex];
                                         MBcnt = kBcnt / 1024;
                                         kBcnt = kBcnt - MBcnt * 1024;
 
@@ -2474,27 +2474,27 @@ errno_t processinfo_CTRLscreen()
 
                                         //if(pinfodisp[pindex].subprocMEMloadarray[spindex]>0.5)
                                         memColor = 1;
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .VmRSSarray[spindex] >
-                                            10 * 1024) // 10 MB
+                                                10 * 1024) // 10 MB
                                         {
                                             memColor = 2;
                                         }
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .VmRSSarray[spindex] >
-                                            100 * 1024) // 100 MB
+                                                100 * 1024) // 100 MB
                                         {
                                             memColor = 3;
                                         }
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .VmRSSarray[spindex] >
-                                            1024 * 1024) // 1 GB
+                                                1024 * 1024) // 1 GB
                                         {
                                             memColor = 4;
                                         }
-                                        if (procinfoproc.pinfodisp[pindex]
+                                        if(procinfoproc.pinfodisp[pindex]
                                                 .VmRSSarray[spindex] <
-                                            1024) // 1 MB
+                                                1024) // 1 MB
                                         {
                                             memColor = 5;
                                         }
@@ -2502,7 +2502,7 @@ errno_t processinfo_CTRLscreen()
                                         TUI_printfw(" ");
 
                                         attron(COLOR_PAIR(memColor));
-                                        if (GBcnt > 0)
+                                        if(GBcnt > 0)
                                         {
                                             sprintf(string, "%3d GB ", GBcnt);
                                             TUI_printfw("%s", string);
@@ -2513,7 +2513,7 @@ errno_t processinfo_CTRLscreen()
                                             TUI_printfw("%s", string);
                                         }
 
-                                        if (MBcnt > 0)
+                                        if(MBcnt > 0)
                                         {
                                             sprintf(string, "%4d MB ", MBcnt);
                                             TUI_printfw("%s", string);
@@ -2524,7 +2524,7 @@ errno_t processinfo_CTRLscreen()
                                             TUI_printfw("%s", string);
                                         }
 
-                                        if (kBcnt > 0)
+                                        if(kBcnt > 0)
                                         {
                                             sprintf(string, "%4d kB ", kBcnt);
                                             TUI_printfw("%s", string);
@@ -2537,14 +2537,14 @@ errno_t processinfo_CTRLscreen()
                                         attroff(COLOR_PAIR(memColor));
 #endif
 
-                                        if (pindex == pindexSelected)
+                                        if(pindex == pindexSelected)
                                         {
                                             attroff(A_REVERSE);
                                         }
 
                                         TUI_newline();
                                     }
-                                    if (procinfoproc.pinfodisp[pindex]
+                                    if(procinfoproc.pinfodisp[pindex]
                                             .NBsubprocesses == 0)
                                     {
                                         TUI_printfw(
@@ -2552,10 +2552,10 @@ errno_t processinfo_CTRLscreen()
                                             "procinfoproc.pinfodisp[pindex]."
                                             "NBsubprocesses = %d",
                                             (int) procinfoproc.pinfodisp[pindex]
-                                                .NBsubprocesses);
+                                            .NBsubprocesses);
                                         TUI_newline();
 
-                                        if (pindex == pindexSelected)
+                                        if(pindex == pindexSelected)
                                         {
                                             attroff(A_REVERSE);
                                         }
@@ -2564,93 +2564,93 @@ errno_t processinfo_CTRLscreen()
                             }
 
                             // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TRIGGER ==================
-                            if (procinfoproc.DisplayMode ==
-                                PROCCTRL_DISPLAYMODE_TRIGGER)
+                            if(procinfoproc.DisplayMode ==
+                                    PROCCTRL_DISPLAYMODE_TRIGGER)
                             {
                                 TUI_printfw("%*d ",
                                             pstrlen_inode,
                                             procinfoproc.pinfoarray[pindex]
-                                                ->triggerstreaminode);
+                                            ->triggerstreaminode);
                                 TUI_printfw("%*s ",
                                             pstrlen_trigstreamname,
                                             procinfoproc.pinfoarray[pindex]
-                                                ->triggerstreamname);
+                                            ->triggerstreamname);
 
-                                switch (procinfoproc.pinfoarray[pindex]
-                                            ->triggermode)
+                                switch(procinfoproc.pinfoarray[pindex]
+                                        ->triggermode)
                                 {
 
-                                case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                                    TUI_printfw(
-                                        "%2d:"
-                                        "IMME ",
-                                        procinfoproc.pinfoarray[pindex]
+                                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                                        TUI_printfw(
+                                            "%2d:"
+                                            "IMME ",
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggermode);
-                                    break;
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_CNT0:
-                                    TUI_printfw(
-                                        "%2d:"
-                                        "CNT0 ",
-                                        procinfoproc.pinfoarray[pindex]
+                                    case PROCESSINFO_TRIGGERMODE_CNT0:
+                                        TUI_printfw(
+                                            "%2d:"
+                                            "CNT0 ",
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggermode);
-                                    break;
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_CNT1:
-                                    TUI_printfw(
-                                        "%2d:"
-                                        "CNT1 ",
-                                        procinfoproc.pinfoarray[pindex]
+                                    case PROCESSINFO_TRIGGERMODE_CNT1:
+                                        TUI_printfw(
+                                            "%2d:"
+                                            "CNT1 ",
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggermode);
-                                    break;
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                                    TUI_printfw(
-                                        "%2d:"
-                                        "sem%"
-                                        "01d ",
-                                        procinfoproc.pinfoarray[pindex]
+                                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                                        TUI_printfw(
+                                            "%2d:"
+                                            "sem%"
+                                            "01d ",
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggermode,
-                                        procinfoproc.pinfoarray[pindex]
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggersem);
 
-                                    break;
+                                        break;
 
-                                case PROCESSINFO_TRIGGERMODE_DELAY:
-                                    TUI_printfw(
-                                        "%2d:"
-                                        "DELA ",
-                                        procinfoproc.pinfoarray[pindex]
+                                    case PROCESSINFO_TRIGGERMODE_DELAY:
+                                        TUI_printfw(
+                                            "%2d:"
+                                            "DELA ",
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggermode);
-                                    break;
+                                        break;
 
-                                default:
-                                    TUI_printfw(
-                                        "%2d:"
-                                        "UNKN ",
-                                        procinfoproc.pinfoarray[pindex]
+                                    default:
+                                        TUI_printfw(
+                                            "%2d:"
+                                            "UNKN ",
+                                            procinfoproc.pinfoarray[pindex]
                                             ->triggermode);
                                 }
 
                                 TUI_printfw("  %*d ",
                                             pstrlen_missedfr,
                                             procinfoproc.pinfoarray[pindex]
-                                                ->triggermissedframe);
+                                            ->triggermissedframe);
                                 TUI_printfw("  %*llu ",
                                             pstrlen_missedfrc,
                                             procinfoproc.pinfoarray[pindex]
-                                                ->triggermissedframe_cumul);
+                                            ->triggermissedframe_cumul);
                                 TUI_printfw("  %*llu ",
                                             pstrlen_tocnt,
                                             procinfoproc.pinfoarray[pindex]
-                                                ->trigggertimeoutcnt);
+                                            ->trigggertimeoutcnt);
                             }
 
                             // ================ DISPLAY MODE PROCCTRL_DISPLAYMODE_TIMING ==================
-                            if (procinfoproc.DisplayMode ==
-                                PROCCTRL_DISPLAYMODE_TIMING)
+                            if(procinfoproc.DisplayMode ==
+                                    PROCCTRL_DISPLAYMODE_TIMING)
                             {
-                                if (procinfoproc.pinfoarray[pindex]
+                                if(procinfoproc.pinfoarray[pindex]
                                         ->MeasureTiming == 1)
                                 {
                                     TUI_printfw(" ON");
@@ -2660,7 +2660,7 @@ errno_t processinfo_CTRLscreen()
                                     TUI_printfw("OFF");
                                 }
 
-                                if (procinfoproc.pinfoarray[pindex]
+                                if(procinfoproc.pinfoarray[pindex]
                                         ->MeasureTiming == 1)
                                 {
                                     long *dtiter_array;
@@ -2673,25 +2673,25 @@ errno_t processinfo_CTRLscreen()
                                         "02ld "
                                         " ",
                                         procinfoproc.pinfoarray[pindex]
-                                            ->timerindex,
+                                        ->timerindex,
                                         procinfoproc.pinfoarray[pindex]
-                                                ->timingbuffercnt %
-                                            100);
+                                        ->timingbuffercnt %
+                                        100);
 
                                     // compute timing stat
                                     dtiter_array = (long *) malloc(
-                                        sizeof(long) *
-                                        (PROCESSINFO_NBtimer - 1));
-                                    if (dtiter_array == NULL)
+                                                       sizeof(long) *
+                                                       (PROCESSINFO_NBtimer - 1));
+                                    if(dtiter_array == NULL)
                                     {
                                         PRINT_ERROR(
                                             "malloc returns NULL pointer");
                                         abort();
                                     }
                                     dtexec_array = (long *) malloc(
-                                        sizeof(long) *
-                                        (PROCESSINFO_NBtimer - 1));
-                                    if (dtexec_array == NULL)
+                                                       sizeof(long) *
+                                                       (PROCESSINFO_NBtimer - 1));
+                                    if(dtexec_array == NULL)
                                     {
                                         PRINT_ERROR(
                                             "malloc returns NULL pointer");
@@ -2702,60 +2702,60 @@ errno_t processinfo_CTRLscreen()
                                     //dtindex = 0;
 
                                     // we exclude the current timerindex, as timers may not all be written
-                                    for (tindex = 0;
-                                         tindex < PROCESSINFO_NBtimer - 1;
-                                         tindex++)
+                                    for(tindex = 0;
+                                            tindex < PROCESSINFO_NBtimer - 1;
+                                            tindex++)
                                     {
                                         int ti0, ti1;
 
                                         ti1 = procinfoproc.pinfoarray[pindex]
-                                                  ->timerindex -
+                                              ->timerindex -
                                               tindex;
                                         ti0 = ti1 - 1;
 
-                                        if (ti0 < 0)
+                                        if(ti0 < 0)
                                         {
                                             ti0 += PROCESSINFO_NBtimer;
                                         }
 
-                                        if (ti1 < 0)
+                                        if(ti1 < 0)
                                         {
                                             ti1 += PROCESSINFO_NBtimer;
                                         }
 
                                         dtiter_array[tindex] =
                                             (procinfoproc.pinfoarray[pindex]
-                                                 ->texecstart[ti1]
-                                                 .tv_nsec -
+                                             ->texecstart[ti1]
+                                             .tv_nsec -
                                              procinfoproc.pinfoarray[pindex]
-                                                 ->texecstart[ti0]
-                                                 .tv_nsec) +
+                                             ->texecstart[ti0]
+                                             .tv_nsec) +
                                             1000000000 *
-                                                (procinfoproc
-                                                     .pinfoarray[pindex]
-                                                     ->texecstart[ti1]
-                                                     .tv_sec -
-                                                 procinfoproc
-                                                     .pinfoarray[pindex]
-                                                     ->texecstart[ti0]
-                                                     .tv_sec);
+                                            (procinfoproc
+                                             .pinfoarray[pindex]
+                                             ->texecstart[ti1]
+                                             .tv_sec -
+                                             procinfoproc
+                                             .pinfoarray[pindex]
+                                             ->texecstart[ti0]
+                                             .tv_sec);
 
                                         dtexec_array[tindex] =
                                             (procinfoproc.pinfoarray[pindex]
-                                                 ->texecend[ti0]
-                                                 .tv_nsec -
+                                             ->texecend[ti0]
+                                             .tv_nsec -
                                              procinfoproc.pinfoarray[pindex]
-                                                 ->texecstart[ti0]
-                                                 .tv_nsec) +
+                                             ->texecstart[ti0]
+                                             .tv_nsec) +
                                             1000000000 *
-                                                (procinfoproc
-                                                     .pinfoarray[pindex]
-                                                     ->texecend[ti0]
-                                                     .tv_sec -
-                                                 procinfoproc
-                                                     .pinfoarray[pindex]
-                                                     ->texecstart[ti0]
-                                                     .tv_sec);
+                                            (procinfoproc
+                                             .pinfoarray[pindex]
+                                             ->texecend[ti0]
+                                             .tv_sec -
+                                             procinfoproc
+                                             .pinfoarray[pindex]
+                                             ->texecstart[ti0]
+                                             .tv_sec);
                                     }
 
                                     quick_sort_long(dtiter_array,
@@ -2765,10 +2765,10 @@ errno_t processinfo_CTRLscreen()
 
                                     int colorcode;
 
-                                    if (procinfoproc.pinfoarray[pindex]
+                                    if(procinfoproc.pinfoarray[pindex]
                                             ->dtiter_limit_enable != 0)
                                     {
-                                        if (procinfoproc.pinfoarray[pindex]
+                                        if(procinfoproc.pinfoarray[pindex]
                                                 ->dtiter_limit_cnt == 0)
                                         {
                                             colorcode = COLOR_PAIR(2);
@@ -2786,13 +2786,13 @@ errno_t processinfo_CTRLscreen()
                                         "%5ld/"
                                         "%4ld",
                                         procinfoproc.pinfoarray[pindex]
-                                            ->dtiter_limit_enable,
-                                        (long) (0.001 *
-                                                procinfoproc.pinfoarray[pindex]
-                                                    ->dtiter_limit_value),
+                                        ->dtiter_limit_enable,
+                                        (long)(0.001 *
+                                               procinfoproc.pinfoarray[pindex]
+                                               ->dtiter_limit_value),
                                         procinfoproc.pinfoarray[pindex]
-                                            ->dtiter_limit_cnt);
-                                    if (procinfoproc.pinfoarray[pindex]
+                                        ->dtiter_limit_cnt);
+                                    if(procinfoproc.pinfoarray[pindex]
                                             ->dtiter_limit_enable != 0)
                                     {
                                         attroff(colorcode);
@@ -2800,10 +2800,10 @@ errno_t processinfo_CTRLscreen()
 
                                     TUI_printfw("  ");
 
-                                    if (procinfoproc.pinfoarray[pindex]
+                                    if(procinfoproc.pinfoarray[pindex]
                                             ->dtexec_limit_enable != 0)
                                     {
-                                        if (procinfoproc.pinfoarray[pindex]
+                                        if(procinfoproc.pinfoarray[pindex]
                                                 ->dtexec_limit_cnt == 0)
                                         {
                                             colorcode = COLOR_PAIR(2);
@@ -2822,13 +2822,13 @@ errno_t processinfo_CTRLscreen()
                                         "%5ld/"
                                         "%4ld ",
                                         procinfoproc.pinfoarray[pindex]
-                                            ->dtexec_limit_enable,
-                                        (long) (0.001 *
-                                                procinfoproc.pinfoarray[pindex]
-                                                    ->dtexec_limit_value),
+                                        ->dtexec_limit_enable,
+                                        (long)(0.001 *
+                                               procinfoproc.pinfoarray[pindex]
+                                               ->dtexec_limit_value),
                                         procinfoproc.pinfoarray[pindex]
-                                            ->dtexec_limit_cnt);
-                                    if (procinfoproc.pinfoarray[pindex]
+                                        ->dtexec_limit_cnt);
+                                    if(procinfoproc.pinfoarray[pindex]
                                             ->dtexec_limit_enable != 0)
                                     {
                                         attroff(colorcode);
@@ -2839,11 +2839,11 @@ errno_t processinfo_CTRLscreen()
                                     tval =
                                         0.001 *
                                         dtiter_array[(
-                                            long) (0.5 * PROCESSINFO_NBtimer)];
+                                                         long)(0.5 * PROCESSINFO_NBtimer)];
                                     procinfoproc.pinfoarray[pindex]
-                                        ->dtmedian_iter_ns = dtiter_array[(
-                                        long) (0.5 * PROCESSINFO_NBtimer)];
-                                    if (tval > 9999.9)
+                                    ->dtmedian_iter_ns = dtiter_array[(
+                                                                          long)(0.5 * PROCESSINFO_NBtimer)];
+                                    if(tval > 9999.9)
                                     {
                                         TUI_printfw(" ITER    >10ms ");
                                     }
@@ -2853,7 +2853,7 @@ errno_t processinfo_CTRLscreen()
                                     }
 
                                     tval = 0.001 * dtiter_array[0];
-                                    if (tval > 9999.9)
+                                    if(tval > 9999.9)
                                     {
                                         TUI_printfw("[   >10ms -");
                                     }
@@ -2865,7 +2865,7 @@ errno_t processinfo_CTRLscreen()
                                     tval =
                                         0.001 *
                                         dtiter_array[PROCESSINFO_NBtimer - 2];
-                                    if (tval > 9999.9)
+                                    if(tval > 9999.9)
                                     {
                                         TUI_printfw("    >10ms ]");
                                     }
@@ -2877,11 +2877,11 @@ errno_t processinfo_CTRLscreen()
                                     tval =
                                         0.001 *
                                         dtexec_array[(
-                                            long) (0.5 * PROCESSINFO_NBtimer)];
+                                                         long)(0.5 * PROCESSINFO_NBtimer)];
                                     procinfoproc.pinfoarray[pindex]
-                                        ->dtmedian_exec_ns = dtexec_array[(
-                                        long) (0.5 * PROCESSINFO_NBtimer)];
-                                    if (tval > 9999.9)
+                                    ->dtmedian_exec_ns = dtexec_array[(
+                                                                          long)(0.5 * PROCESSINFO_NBtimer)];
+                                    if(tval > 9999.9)
                                     {
                                         TUI_printfw(" EXEC    >10ms ");
                                     }
@@ -2891,7 +2891,7 @@ errno_t processinfo_CTRLscreen()
                                     }
 
                                     tval = 0.001 * dtexec_array[0];
-                                    if (tval > 9999.9)
+                                    if(tval > 9999.9)
                                     {
                                         TUI_printfw("[   >10ms -");
                                     }
@@ -2903,7 +2903,7 @@ errno_t processinfo_CTRLscreen()
                                     tval =
                                         0.001 *
                                         dtexec_array[PROCESSINFO_NBtimer - 2];
-                                    if (tval > 9999.9)
+                                    if(tval > 9999.9)
                                     {
                                         TUI_printfw("    >10ms ]");
                                     }
@@ -2923,32 +2923,32 @@ errno_t processinfo_CTRLscreen()
                                         "%6.2f "
                                         "%%",
                                         100.0 *
-                                            dtexec_array[(
-                                                long) (0.5 *
-                                                       PROCESSINFO_NBtimer)] /
-                                            (dtiter_array[(
-                                                 long) (0.5 *
-                                                        PROCESSINFO_NBtimer)] +
-                                             1));
+                                        dtexec_array[(
+                                                         long)(0.5 *
+                                                               PROCESSINFO_NBtimer)] /
+                                        (dtiter_array[(
+                                                          long)(0.5 *
+                                                                PROCESSINFO_NBtimer)] +
+                                         1));
 
                                     free(dtiter_array);
                                     free(dtexec_array);
                                 }
                             }
 
-                            if (pindex == pindexSelected)
+                            if(pindex == pindexSelected)
                             {
                                 attroff(A_REVERSE);
                             }
                         }
                     }
 
-                    if ((procinfoproc.DisplayMode ==
-                         PROCCTRL_DISPLAYMODE_CTRL) ||
-                        (procinfoproc.DisplayMode ==
-                         PROCCTRL_DISPLAYMODE_TRIGGER) ||
-                        (procinfoproc.DisplayMode ==
-                         PROCCTRL_DISPLAYMODE_TIMING))
+                    if((procinfoproc.DisplayMode ==
+                            PROCCTRL_DISPLAYMODE_CTRL) ||
+                            (procinfoproc.DisplayMode ==
+                             PROCCTRL_DISPLAYMODE_TRIGGER) ||
+                            (procinfoproc.DisplayMode ==
+                             PROCCTRL_DISPLAYMODE_TIMING))
                     {
                         TUI_newline();
                     }
@@ -2977,10 +2977,10 @@ errno_t processinfo_CTRLscreen()
             refresh();
         }
 
-        if ((data.signal_TERM == 1) || (data.signal_INT == 1) ||
-            (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-            (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-            (data.signal_PIPE == 1))
+        if((data.signal_TERM == 1) || (data.signal_INT == 1) ||
+                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
+                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
+                (data.signal_PIPE == 1))
         {
             loopOK = 0;
         }
@@ -2991,35 +2991,35 @@ errno_t processinfo_CTRLscreen()
 
     printf("loopOK = 0 -> exit\n");
 
-    if (Xexit == 1) // normal exit
+    if(Xexit == 1)  // normal exit
     {
         printf("[%4d] User typed x -> exiting\n", __LINE__);
     }
-    else if (data.signal_TERM == 1)
+    else if(data.signal_TERM == 1)
     {
         printf("[%4d] Received signal TERM\n", __LINE__);
     }
-    else if (data.signal_INT == 1)
+    else if(data.signal_INT == 1)
     {
         printf("[%4d] Received signal INT\n", __LINE__);
     }
-    else if (data.signal_ABRT == 1)
+    else if(data.signal_ABRT == 1)
     {
         printf("[%4d] Received signal ABRT\n", __LINE__);
     }
-    else if (data.signal_BUS == 1)
+    else if(data.signal_BUS == 1)
     {
         printf("[%4d] Received signal BUS\n", __LINE__);
     }
-    else if (data.signal_SEGV == 1)
+    else if(data.signal_SEGV == 1)
     {
         printf("[%4d] Received signal SEGV\n", __LINE__);
     }
-    else if (data.signal_HUP == 1)
+    else if(data.signal_HUP == 1)
     {
         printf("[%4d] Received signal HUP\n", __LINE__);
     }
-    else if (data.signal_PIPE == 1)
+    else if(data.signal_PIPE == 1)
     {
         printf("[%4d] Received signal PIPE\n", __LINE__);
     }
@@ -3029,7 +3029,7 @@ errno_t processinfo_CTRLscreen()
     int *line;
     int  ret = -1;
 
-    while (ret != 0)
+    while(ret != 0)
     {
         ret = pthread_tryjoin_np(threadscan, (void **) &line);
         /*
@@ -3041,9 +3041,9 @@ errno_t processinfo_CTRLscreen()
     }
 
     // cleanup
-    for (pindex = 0; pindex < procinfoproc.NBpinfodisp; pindex++)
+    for(pindex = 0; pindex < procinfoproc.NBpinfodisp; pindex++)
     {
-        if (procinfoproc.pinfommapped[pindex] == 1)
+        if(procinfoproc.pinfommapped[pindex] == 1)
         {
             processinfo_shm_close(procinfoproc.pinfoarray[pindex],
                                   procinfoproc.fdarray[pindex]);

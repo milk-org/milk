@@ -5,11 +5,11 @@
 int processinfo_exec_start(PROCESSINFO *processinfo)
 {
     DEBUG_TRACEPOINT(" ");
-    if (processinfo->MeasureTiming == 1)
+    if(processinfo->MeasureTiming == 1)
     {
 
         processinfo->timerindex++;
-        if (processinfo->timerindex == PROCESSINFO_NBtimer)
+        if(processinfo->timerindex == PROCESSINFO_NBtimer)
         {
             processinfo->timerindex = 0;
             processinfo->timingbuffercnt++;
@@ -18,12 +18,12 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
         clock_gettime(CLOCK_REALTIME,
                       &processinfo->texecstart[processinfo->timerindex]);
 
-        if (processinfo->dtiter_limit_enable != 0)
+        if(processinfo->dtiter_limit_enable != 0)
         {
             long dtiter;
             int  timerindexlast;
 
-            if (processinfo->timerindex == 0)
+            if(processinfo->timerindex == 0)
             {
                 timerindexlast = PROCESSINFO_NBtimer - 1;
             }
@@ -38,7 +38,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
                       (processinfo->texecstart[processinfo->timerindex].tv_sec -
                        processinfo->texecstart[timerindexlast].tv_sec);
 
-            if (dtiter > processinfo->dtiter_limit_value)
+            if(dtiter > processinfo->dtiter_limit_value)
             {
                 char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
@@ -51,12 +51,12 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
                                  processinfo->timerindex,
                                  0.001 * dtiter,
                                  0.001 * processinfo->dtiter_limit_value);
-                    if (slen < 1)
+                    if(slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");
                         abort(); // can't handle this error any other way
                     }
-                    if (slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
+                    if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
                     {
                         PRINT_ERROR("snprintf string truncation");
                         abort(); // can't handle this error any other way
@@ -65,8 +65,8 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
 
                 processinfo_WriteMessage(processinfo, msgstring);
 
-                if (processinfo->dtiter_limit_enable ==
-                    2) // pause process due to timing limit
+                if(processinfo->dtiter_limit_enable ==
+                        2) // pause process due to timing limit
                 {
                     processinfo->CTRLval = 1;
                     sprintf(msgstring, "dtiter lim -> paused");

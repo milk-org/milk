@@ -17,19 +17,19 @@ int read_keyword(const char *restrict file_name,
     int       exists = 0;
     int       n;
 
-    if (!fits_open_file(&fptr,
-                        file_name,
-                        READONLY,
-                        &COREMOD_iofits_data.FITSIO_status))
+    if(!fits_open_file(&fptr,
+                       file_name,
+                       READONLY,
+                       &COREMOD_iofits_data.FITSIO_status))
     {
         char comment[STRINGMAXLEN_FITSKEYWCOMMENT];
         char str1[STRINGMAXLEN_FITSKEYWORDVALUE];
 
-        if (fits_read_keyword(fptr,
-                              KEYWORD,
-                              str1,
-                              comment,
-                              &COREMOD_iofits_data.FITSIO_status))
+        if(fits_read_keyword(fptr,
+                             KEYWORD,
+                             str1,
+                             comment,
+                             &COREMOD_iofits_data.FITSIO_status))
         {
             PRINT_ERROR("Keyword \"%s\" does not exist in file \"%s\"",
                         KEYWORD,
@@ -39,7 +39,7 @@ int read_keyword(const char *restrict file_name,
         else
         {
             n = snprintf(content, STRINGMAXLEN_FITSKEYWORDVALUE, "%s\n", str1);
-            if (n >= STRINGMAXLEN_FITSKEYWORDVALUE)
+            if(n >= STRINGMAXLEN_FITSKEYWORDVALUE)
             {
                 PRINT_ERROR(
                     "Attempted to write string buffer with too "
@@ -48,7 +48,7 @@ int read_keyword(const char *restrict file_name,
         }
         fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
     }
-    if (check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1)
+    if(check_FITSIO_status(__FILE__, __func__, __LINE__, 0) == 1)
     {
         PRINT_ERROR("Error reading keyword \"%s\" in file \"%s\"",
                     KEYWORD,
@@ -64,7 +64,7 @@ errno_t read_keyword_alone(const char *restrict file_name,
     char *content =
         (char *) malloc(sizeof(char) * STRINGMAXLEN_FITSKEYWORDVALUE);
 
-    if (content == NULL)
+    if(content == NULL)
     {
         PRINT_ERROR("malloc error");
         exit(0);

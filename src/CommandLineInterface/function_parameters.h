@@ -303,14 +303,14 @@ typedef struct
 
     // Parameter name
     char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                     FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL]
-                [FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+    [FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel; // number of levels in keyword
 
     // if this parameter value imported from another parameter, source is:
     char keywordfrom[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                     FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
 
     char description[FUNCTION_PARAMETER_DESCR_STRMAXLEN];
 
@@ -603,9 +603,9 @@ typedef struct
 typedef struct
 {
     char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
-                     FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
+                                                          FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
     char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL]
-                [FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+    [FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel;
 
     int parent_index;

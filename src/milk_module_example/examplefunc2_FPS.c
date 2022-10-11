@@ -18,28 +18,36 @@ static char *inimname;
 static double *scoeff;
 
 // List of arguments to function
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     //    FARG_INPUTIM(inim),
-    {CLIARG_IMG,
-     ".in_name",
-     "input image",
-     "im1",
-     CLIARG_VISIBLE_DEFAULT,
-     (void **) &inimname,
-     NULL},
-    {// argument is not part of CLI call, FPFLAG ignored
-     CLIARG_FLOAT,
-     ".scaling",
-     "scaling coefficient",
-     "1.0",
-     CLIARG_HIDDEN_DEFAULT,
-     (void **) &scoeff,
-     NULL}};
+    {
+        CLIARG_IMG,
+        ".in_name",
+        "input image",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {
+        // argument is not part of CLI call, FPFLAG ignored
+        CLIARG_FLOAT,
+        ".scaling",
+        "scaling coefficient",
+        "1.0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &scoeff,
+        NULL
+    }
+};
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "imsum2",
     "compute total of image example2, FPS-compatible",
-    CLICMD_FIELDS_DEFAULTS};
+    CLICMD_FIELDS_DEFAULTS
+};
 
 
 
@@ -71,7 +79,7 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
     uint64_t xysize = xsize * ysize;
 
     double total = 0.0;
-    for (uint64_t ii = 0; ii < xysize; ii++)
+    for(uint64_t ii = 0; ii < xysize; ii++)
     {
         total += img.im->array.F[ii];
     }
@@ -116,8 +124,8 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    errno_t
-    CLIADDCMD_milk_module_example__simplefunc_FPS()
+errno_t
+CLIADDCMD_milk_module_example__simplefunc_FPS()
 {
     INSERT_STD_CLIREGISTERFUNC
 

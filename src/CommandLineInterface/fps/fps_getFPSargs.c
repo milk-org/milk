@@ -29,48 +29,48 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 
     // by default, pre-process argument
     int argpreprocess = 1;
-    switch (data.cmdargtoken[1].type)
+    switch(data.cmdargtoken[1].type)
     {
-    case CLIARG_FLOAT:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_FLOAT32:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT32:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_FLOAT64:
-        argpreprocess = 0;
-        break;
+        case CLIARG_FLOAT64:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_LONG:
-        argpreprocess = 0;
-        break;
+        case CLIARG_LONG:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_INT32:
-        argpreprocess = 0;
-        break;
+        case CLIARG_INT32:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_UINT32:
-        argpreprocess = 0;
-        break;
+        case CLIARG_UINT32:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_INT64:
-        argpreprocess = 0;
-        break;
+        case CLIARG_INT64:
+            argpreprocess = 0;
+            break;
 
-    case CLIARG_UINT64:
-        argpreprocess = 0;
-        break;
+        case CLIARG_UINT64:
+            argpreprocess = 0;
+            break;
     }
 
-    if (argpreprocess == 1)
+    if(argpreprocess == 1)
     {
         // modify function attribute
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..procinfo") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..procinfo") == 0)
         {
-            if (data.cmdargtoken[2].val.numl == 0)
+            if(data.cmdargtoken[2].val.numl == 0)
             {
                 printf("Command %ld: updating PROCINFO mode OFF\n",
                        data.cmdindex);
@@ -88,7 +88,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..RTprio") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..RTprio") == 0)
         {
             printf("Command %ld: updating RTprio to value %ld\n",
                    data.cmdindex,
@@ -99,7 +99,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..loopcntMax") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..loopcntMax") == 0)
         {
             printf("Command %ld: updating loopcntMax to value %ld\n",
                    data.cmdindex,
@@ -110,7 +110,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..triggermode") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggermode") == 0)
         {
             printf("Command %ld: updating triggermode to value %ld\n",
                    data.cmdindex,
@@ -121,7 +121,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..triggersname") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggersname") == 0)
         {
             printf("Command %ld: updating triggerstreamname to value %s\n",
                    data.cmdindex,
@@ -132,23 +132,23 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..triggerdelay") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggerdelay") == 0)
         {
             double x = 0.0;
-            switch (data.cmdargtoken[2].type)
+            switch(data.cmdargtoken[2].type)
             {
-            case CMDARGTOKEN_TYPE_FLOAT:
-                x = data.cmdargtoken[2].val.numf;
-                break;
+                case CMDARGTOKEN_TYPE_FLOAT:
+                    x = data.cmdargtoken[2].val.numf;
+                    break;
 
-            case CMDARGTOKEN_TYPE_LONG:
-                x = data.cmdargtoken[2].val.numl;
-                break;
+                case CMDARGTOKEN_TYPE_LONG:
+                    x = data.cmdargtoken[2].val.numl;
+                    break;
 
-            default:
-                printf(
-                    "wrong argument type, should be float or int "
-                    "-> setting to zero\n");
+                default:
+                    printf(
+                        "wrong argument type, should be float or int "
+                        "-> setting to zero\n");
             }
             printf("Command %ld: updating triggerdelay to value %f\n",
                    data.cmdindex,
@@ -163,7 +163,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
-        if (strcmp(data.cmdargtoken[1].val.string, "..triggertimeout") == 0)
+        if(strcmp(data.cmdargtoken[1].val.string, "..triggertimeout") == 0)
         {
             printf("Command %ld: updating triggertimeout to value %f\n",
                    data.cmdindex,
@@ -183,52 +183,52 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         // if it isn't, the non-FPS implementation should be called
 
         // check if recognized FPSCMDCODE
-        if (strcmp(data.cmdargtoken[1].val.string,
-                   "_FPSINIT_") == 0) // Initialize FPS
+        if(strcmp(data.cmdargtoken[1].val.string,
+                  "_FPSINIT_") == 0) // Initialize FPS
         {
             data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
         }
-        else if (strcmp(data.cmdargtoken[1].val.string,
-                        "_CONFSTART_") == 0) // Start conf process
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_CONFSTART_") == 0) // Start conf process
         {
             data.FPS_CMDCODE = FPSCMDCODE_CONFSTART;
         }
-        else if (strcmp(data.cmdargtoken[1].val.string,
-                        "_CONFSTOP_") == 0) // Stop conf process
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_CONFSTOP_") == 0) // Stop conf process
         {
             data.FPS_CMDCODE = FPSCMDCODE_CONFSTOP;
         }
-        else if (strcmp(data.cmdargtoken[1].val.string,
-                        "_RUNSTART_") == 0) // Run process
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_RUNSTART_") == 0) // Run process
         {
             data.FPS_CMDCODE = FPSCMDCODE_RUNSTART;
         }
-        else if (strcmp(data.cmdargtoken[1].val.string,
-                        "_RUNSTOP_") == 0) // Stop process
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_RUNSTOP_") == 0) // Stop process
         {
             data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP;
         }
-        else if (strcmp(data.cmdargtoken[1].val.string,
-                        "_TMUXSTART_") == 0) // Start tmux session
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_TMUXSTART_") == 0) // Start tmux session
         {
             data.FPS_CMDCODE = FPSCMDCODE_TMUXSTART;
         }
-        else if (strcmp(data.cmdargtoken[1].val.string,
-                        "_TMUXSTOP_") == 0) // Stop tmux session
+        else if(strcmp(data.cmdargtoken[1].val.string,
+                       "_TMUXSTOP_") == 0) // Stop tmux session
         {
             data.FPS_CMDCODE = FPSCMDCODE_TMUXSTOP;
         }
     }
 
     // if recognized FPSCMDCODE, use FPS implementation
-    if ((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
+    if((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
     {
         // ===============================
         //     SET FPS INTERFACE NAME
         // ===============================
 
         // if main CLI process has been named with -n option, then use the process name to construct fpsname
-        if (data.processnameflag == 1)
+        if(data.processnameflag == 1)
         {
             // Automatically set fps name to be process name up to first instance of character '.'
             strcpy(data.FPS_name, data.processname0);
@@ -240,12 +240,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                                 FUNCTION_PARAMETER_STRMAXLEN,
                                 "%s",
                                 fpsname_default);
-            if (slen < 1)
+            if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if (slen >= FUNCTION_PARAMETER_STRMAXLEN)
+            if(slen >= FUNCTION_PARAMETER_STRMAXLEN)
             {
                 PRINT_ERROR(
                     "snprintf string truncation.\n"
@@ -260,7 +260,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             // they should be appended to the default fps name
             //
             int argindex = 2; // start at arg #2
-            while (strlen(data.cmdargtoken[argindex].val.string) > 0)
+            while(strlen(data.cmdargtoken[argindex].val.string) > 0)
             {
                 char fpsname1[FUNCTION_PARAMETER_STRMAXLEN];
 
@@ -269,12 +269,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                                     "%s-%s",
                                     data.FPS_name,
                                     data.cmdargtoken[argindex].val.string);
-                if (slen < 1)
+                if(slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
                     abort(); // can't handle this error any other way
                 }
-                if (slen >= FUNCTION_PARAMETER_STRMAXLEN)
+                if(slen >= FUNCTION_PARAMETER_STRMAXLEN)
                 {
                     PRINT_ERROR(
                         "snprintf string truncation.\n"

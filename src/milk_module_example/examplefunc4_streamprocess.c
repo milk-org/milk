@@ -35,8 +35,10 @@ static long     fpi_ex0mode = -1;
 static int64_t *ex1mode;
 static long     fpi_ex1mode = -1;
 
-static CLICMDARGDEF farg[] = {
-    {   CLIARG_IMG,
+static CLICMDARGDEF farg[] =
+{
+    {
+        CLIARG_IMG,
         ".in_name",
         "input image",
         "im1",
@@ -44,7 +46,8 @@ static CLICMDARGDEF farg[] = {
         (void **) &inimname,
         NULL
     },
-    {   CLIARG_IMG,
+    {
+        CLIARG_IMG,
         ".out_name",
         "output image",
         "out1",
@@ -52,7 +55,8 @@ static CLICMDARGDEF farg[] = {
         (void **) &outimname,
         NULL
     },
-    {   CLIARG_UINT32,
+    {
+        CLIARG_UINT32,
         ".cntindex",
         "counter index",
         "5",
@@ -60,7 +64,8 @@ static CLICMDARGDEF farg[] = {
         (void **) &cntindex,
         &fpi_cntindex
     },
-    {   CLIARG_UINT32,
+    {
+        CLIARG_UINT32,
         ".cntindexmax",
         "counter index max value",
         "100",
@@ -68,7 +73,8 @@ static CLICMDARGDEF farg[] = {
         (void **) &cntindexmax,
         &fpi_cntindexmax
     },
-    {   CLIARG_ONOFF,
+    {
+        CLIARG_ONOFF,
         ".option.ex0mode",
         "toggle0",
         "0",
@@ -76,7 +82,8 @@ static CLICMDARGDEF farg[] = {
         (void **) &ex0mode,
         &fpi_ex0mode
     },
-    {   CLIARG_ONOFF,
+    {
+        CLIARG_ONOFF,
         ".option.ex1mode",
         "toggle1 conditional on toggle0",
         "0",
@@ -99,7 +106,7 @@ static errno_t customCONFsetup()
     // increment counter at every configuration check
     *cntindex = *cntindex + 1;
 
-    if (*cntindex >= *cntindexmax)
+    if(*cntindex >= *cntindexmax)
     {
         *cntindex = 0;
     }
@@ -117,9 +124,9 @@ static errno_t customCONFsetup()
 //
 static errno_t customCONFcheck()
 {
-    if (data.fpsptr != NULL)
+    if(data.fpsptr != NULL)
     {
-        if (data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF) // ON state
+        if(data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // ON state
         {
             data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
             data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
@@ -133,7 +140,7 @@ static errno_t customCONFcheck()
         // increment counter at every configuration check
         *cntindex = *cntindex + 1;
 
-        if (*cntindex >= *cntindexmax)
+        if(*cntindex >= *cntindexmax)
         {
             *cntindex = 0;
         }
@@ -183,7 +190,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
     }

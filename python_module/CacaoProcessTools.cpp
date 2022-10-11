@@ -18,61 +18,61 @@ int fps_value_to_key(pyFps             &cls,
                      const FPS_type     fps_type,
                      py::object         value)
 {
-    switch (fps_type)
+    switch(fps_type)
     {
-    case FPS_type::INT32:
-    case FPS_type::UINT32:
-    case FPS_type::INT64:
-    case FPS_type::UINT64:
-        return functionparameter_SetParamValue_INT64(cls,
-                                                     key.c_str(),
-                                                     py::int_(value));
-    case FPS_type::FLOAT32:
-        return functionparameter_SetParamValue_FLOAT32(cls,
-                                                       key.c_str(),
-                                                       py::float_(value));
-    case FPS_type::FLOAT64:
-        return functionparameter_SetParamValue_FLOAT64(cls,
-                                                       key.c_str(),
-                                                       py::float_(value));
-    case FPS_type::STRING:
-        return functionparameter_SetParamValue_STRING(
-            cls,
-            key.c_str(),
-            std::string(py::str(value)).c_str());
-    default:
-        return EXIT_FAILURE;
+        case FPS_type::INT32:
+        case FPS_type::UINT32:
+        case FPS_type::INT64:
+        case FPS_type::UINT64:
+            return functionparameter_SetParamValue_INT64(cls,
+                    key.c_str(),
+                    py::int_(value));
+        case FPS_type::FLOAT32:
+            return functionparameter_SetParamValue_FLOAT32(cls,
+                    key.c_str(),
+                    py::float_(value));
+        case FPS_type::FLOAT64:
+            return functionparameter_SetParamValue_FLOAT64(cls,
+                    key.c_str(),
+                    py::float_(value));
+        case FPS_type::STRING:
+            return functionparameter_SetParamValue_STRING(
+                       cls,
+                       key.c_str(),
+                       std::string(py::str(value)).c_str());
+        default:
+            return EXIT_FAILURE;
     }
 }
 
 py::object
 fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
-    switch (fps_type)
+    switch(fps_type)
     {
-    case FPS_type::INT32:
-    case FPS_type::UINT32:
-    case FPS_type::INT64:
-    case FPS_type::UINT64:
-        return py::int_(
-            functionparameter_GetParamValue_INT64(cls, key.c_str()));
-    case FPS_type::FLOAT32:
-        return py::float_(
-            functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
-    case FPS_type::FLOAT64:
-        return py::float_(
-            functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
-    case FPS_type::STRING:
-        return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
-    default:
-        return py::none();
+        case FPS_type::INT32:
+        case FPS_type::UINT32:
+        case FPS_type::INT64:
+        case FPS_type::UINT64:
+            return py::int_(
+                       functionparameter_GetParamValue_INT64(cls, key.c_str()));
+        case FPS_type::FLOAT32:
+            return py::float_(
+                       functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
+        case FPS_type::FLOAT64:
+            return py::float_(
+                       functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
+        case FPS_type::STRING:
+            return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
+        default:
+            return py::none();
     }
 }
 
 py::dict fps_to_dict(pyFps &cls)
 {
     py::dict fps_dict;
-    for (auto &key : cls.keys())
+    for(auto &key : cls.keys())
     {
         fps_dict[py::str(key.first)] =
             fps_value_from_key(cls, key.first, key.second);
@@ -566,24 +566,24 @@ Return:
           ret      [out]: error code
       )pbdoc")
 
-        //   .def("FPCONFsetup", &pyFps::FPCONFsetup,
-        //        R"pbdoc(FPS setup FPCONF process
+    //   .def("FPCONFsetup", &pyFps::FPCONFsetup,
+    //        R"pbdoc(FPS setup FPCONF process
 
-        //   Return:
-        //       ret      [out]: error code
-        //   )pbdoc")
+    //   Return:
+    //       ret      [out]: error code
+    //   )pbdoc")
 
-        .def("FPCONFloopstep",
-             &pyFps::FPCONFloopstep,
-             R"pbdoc(FPS loop step FPCONF process
+    .def("FPCONFloopstep",
+         &pyFps::FPCONFloopstep,
+         R"pbdoc(FPS loop step FPCONF process
 
       Return:
           ret      [out]: error code
       )pbdoc")
 
-        .def("RUNstart",
-             &pyFps::RUNstart,
-             R"pbdoc(FPS start RUN process
+    .def("RUNstart",
+         &pyFps::RUNstart,
+         R"pbdoc(FPS start RUN process
 
 Requires setup performed by milk-fpsinit, which performs the following setup
 - creates the FPS shared memory

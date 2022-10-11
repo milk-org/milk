@@ -9,6 +9,6 @@
 #include "../function_parameters.h"
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname,
-                                                         uint32_t    CMDmode);
+        uint32_t    CMDmode);
 
 #endif

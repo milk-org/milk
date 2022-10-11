@@ -7,30 +7,39 @@ static char *inimname;
 static char *outreimname;
 static char *outimimname;
 
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".imre_name",
-                               "input imaginary image",
-                               "imC",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inimname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".imim_name",
-                               "output real image",
-                               "outre",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outreimname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".out_name",
-                               "output imaginary image",
-                               "outim",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outimimname,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_IMG,
+        ".imre_name",
+        "input imaginary image",
+        "imC",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".imim_name",
+        "output real image",
+        "outre",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outreimname,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".out_name",
+        "output imaginary image",
+        "outim",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimimname,
+        NULL
+    }
+};
 
-static CLICMDDATA CLIcmddata = {
-    "c2ap", "complex -> re, im", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "c2ap", "complex -> re, im", CLICMD_FIELDS_DEFAULTS
+};
 
 // detailed help
 static errno_t help_function()
@@ -57,13 +66,13 @@ errno_t mk_reim_from_complex(const char *in_name,
     IDin     = image_ID(in_name);
     datatype = data.image[IDin].md[0].datatype;
     naxis    = data.image[IDin].md[0].naxis;
-    for (i = 0; i < naxis; i++)
+    for(i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[IDin].md[0].size[i];
     }
     nelement = data.image[IDin].md[0].nelement;
 
-    if (datatype == _DATATYPE_COMPLEX_FLOAT) // single precision
+    if(datatype == _DATATYPE_COMPLEX_FLOAT)  // single precision
     {
         FUNC_CHECK_RETURN(create_image_ID(re_name,
                                           naxis,
@@ -86,11 +95,11 @@ errno_t mk_reim_from_complex(const char *in_name,
         data.image[IDre].md[0].write = 1;
         data.image[IDim].md[0].write = 1;
 #ifdef _OPENMP
-#pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
-#pragma omp for
+            #pragma omp for
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDre].array.F[ii] = data.image[IDin].array.CF[ii].re;
                 data.image[IDim].array.F[ii] = data.image[IDin].array.CF[ii].im;
@@ -98,7 +107,7 @@ errno_t mk_reim_from_complex(const char *in_name,
 #ifdef _OPENMP
         }
 #endif
-        if (sharedmem == 1)
+        if(sharedmem == 1)
         {
             COREMOD_MEMORY_image_set_sempost_byID(IDre, -1);
             COREMOD_MEMORY_image_set_sempost_byID(IDim, -1);
@@ -108,7 +117,7 @@ errno_t mk_reim_from_complex(const char *in_name,
         data.image[IDre].md[0].write = 0;
         data.image[IDim].md[0].write = 0;
     }
-    else if (datatype == _DATATYPE_COMPLEX_DOUBLE) // double precision
+    else if(datatype == _DATATYPE_COMPLEX_DOUBLE)  // double precision
     {
         FUNC_CHECK_RETURN(create_image_ID(re_name,
                                           naxis,
@@ -130,11 +139,11 @@ errno_t mk_reim_from_complex(const char *in_name,
         data.image[IDre].md[0].write = 1;
         data.image[IDim].md[0].write = 1;
 #ifdef _OPENMP
-#pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
-#pragma omp for
+            #pragma omp for
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDre].array.D[ii] = data.image[IDin].array.CD[ii].re;
                 data.image[IDim].array.D[ii] = data.image[IDin].array.CD[ii].im;
@@ -142,7 +151,7 @@ errno_t mk_reim_from_complex(const char *in_name,
 #ifdef _OPENMP
         }
 #endif
-        if (sharedmem == 1)
+        if(sharedmem == 1)
         {
             COREMOD_MEMORY_image_set_sempost_byID(IDre, -1);
             COREMOD_MEMORY_image_set_sempost_byID(IDim, -1);
@@ -178,9 +187,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD__mk_reim_from_complex()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD__mk_reim_from_complex()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

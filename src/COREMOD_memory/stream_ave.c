@@ -24,59 +24,76 @@ static uint64_t *comprms;
 
 
 
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".in_name",
-                               "input image",
-                               "im1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inimname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".outave_name",
-                               "output average image",
-                               "out1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outimave,
-                               NULL},
-                              {CLIARG_STR,
-                               ".outrms_name",
-                               "output RMS image",
-                               "out1",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &outimrms,
-                               NULL},
-                              {CLIARG_UINT64,
-                               ".NBcoadd",
-                               "number of coadded frames",
-                               "100",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &NBcoadd,
-                               NULL},
-                              {CLIARG_UINT64,
-                               ".cntindex",
-                               "counter index",
-                               "5",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &cntindex,
-                               &fpi_cntindex},
-                              {CLIARG_ONOFF,
-                               ".comp.ave",
-                               "compute average",
-                               "1",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &compave,
-                               NULL},
-                              {CLIARG_ONOFF,
-                               ".comp.rms",
-                               "compute rms",
-                               "0",
-                               CLIARG_HIDDEN_DEFAULT,
-                               (void **) &comprms,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_IMG,
+        ".in_name",
+        "input image",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".outave_name",
+        "output average image",
+        "out1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimave,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".outrms_name",
+        "output RMS image",
+        "out1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &outimrms,
+        NULL
+    },
+    {
+        CLIARG_UINT64,
+        ".NBcoadd",
+        "number of coadded frames",
+        "100",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &NBcoadd,
+        NULL
+    },
+    {
+        CLIARG_UINT64,
+        ".cntindex",
+        "counter index",
+        "5",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &cntindex,
+        &fpi_cntindex
+    },
+    {
+        CLIARG_ONOFF,
+        ".comp.ave",
+        "compute average",
+        "1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &compave,
+        NULL
+    },
+    {
+        CLIARG_ONOFF,
+        ".comp.rms",
+        "compute rms",
+        "0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &comprms,
+        NULL
+    }
+};
 
 
-static CLICMDDATA CLIcmddata = {
-    "streamave", "average stream of images", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "streamave", "average stream of images", CLICMD_FIELDS_DEFAULTS
+};
 
 // detailed help
 static errno_t help_function()
@@ -104,7 +121,7 @@ static errno_t compute_function()
     IMGID outimgave  = makeIMGID_2D(outimave, xsize, ysize);
     outimgave.shared = 1;
 
-    if ((*compave) == 1)
+    if((*compave) == 1)
     {
         imcreateIMGID(&outimgave);
     }
@@ -112,7 +129,7 @@ static errno_t compute_function()
     IMGID outimgrms  = makeIMGID_2D(outimrms, xsize, ysize);
     outimgrms.shared = 1;
 
-    if ((*comprms) == 1)
+    if((*comprms) == 1)
     {
         imcreateIMGID(&outimgrms);
     }
@@ -123,7 +140,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+    if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
     }
@@ -140,15 +157,15 @@ static errno_t compute_function()
 
     printf("Adding image %lu / %lu\n", *cntindex, *NBcoadd);
 
-    if (*cntindex == 0)
+    if(*cntindex == 0)
     {
-        for (uint64_t pixi = 0; pixi < xysize; pixi++)
+        for(uint64_t pixi = 0; pixi < xysize; pixi++)
         {
             imdataarray[pixi] = inimg.im->array.F[pixi];
         }
-        if (*comprms == 1)
+        if(*comprms == 1)
         {
-            for (uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint64_t pixi = 0; pixi < xysize; pixi++)
             {
                 imdataarrayPOW[pixi] = imdataarray[pixi] * imdataarray[pixi];
             }
@@ -156,13 +173,13 @@ static errno_t compute_function()
     }
     else
     {
-        for (uint64_t pixi = 0; pixi < xysize; pixi++)
+        for(uint64_t pixi = 0; pixi < xysize; pixi++)
         {
             imdataarray[pixi] += inimg.im->array.F[pixi];
         }
-        if (*comprms == 1)
+        if(*comprms == 1)
         {
-            for (uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint64_t pixi = 0; pixi < xysize; pixi++)
             {
                 imdataarrayPOW[pixi] += imdataarray[pixi] * imdataarray[pixi];
             }
@@ -171,13 +188,13 @@ static errno_t compute_function()
 
 
     (*cntindex)++;
-    if ((*cntindex) >= (*NBcoadd))
+    if((*cntindex) >= (*NBcoadd))
     {
 
-        if (*compave == 1)
+        if(*compave == 1)
         {
             DEBUG_TRACEPOINT("Writing output AVE image");
-            for (uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint64_t pixi = 0; pixi < xysize; pixi++)
             {
                 outimgave.im->array.F[pixi] = imdataarray[pixi] / (*cntindex);
             }
@@ -185,10 +202,10 @@ static errno_t compute_function()
             processinfo_update_output_stream(processinfo, outimgave.ID);
         }
 
-        if (*comprms == 1)
+        if(*comprms == 1)
         {
             DEBUG_TRACEPOINT("Writing output RMS image");
-            for (uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint64_t pixi = 0; pixi < xysize; pixi++)
             {
                 outimgrms.im->array.F[pixi] =
                     sqrt(imdataarrayPOW[pixi]) / (*cntindex);
@@ -210,9 +227,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_streamaverage()
+// Register function in CLI
+errno_t
+CLIADDCMD_streamaverage()
 {
     INSERT_STD_CLIREGISTERFUNC
 

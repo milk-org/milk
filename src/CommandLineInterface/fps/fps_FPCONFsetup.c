@@ -36,66 +36,66 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     strcpy(data.FPS_PROCESS_TYPE, "UNDEF");
     //	char ptstring[STRINGMAXLEN_FPSPROCESSTYPE];
 
-    switch (CMDmode)
+    switch(CMDmode)
     {
-    case FPSCMDCODE_CONFSTART:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "confstart-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_CONFSTART:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "confstart-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_CONFSTOP:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "confstop-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_CONFSTOP:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "confstop-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_FPSINIT:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "fpsinit-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_FPSINIT:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "fpsinit-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_FPSINITCREATE:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "fpsinitcreate-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_FPSINITCREATE:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "fpsinitcreate-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_RUNSTART:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "runstart-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_RUNSTART:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "runstart-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_RUNSTOP:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "runstop-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_RUNSTOP:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "runstop-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_TMUXSTART:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "tmuxstart-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_TMUXSTART:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "tmuxstart-%s",
+                     fpsname);
+            break;
 
-    case FPSCMDCODE_TMUXSTOP:
-        snprintf(data.FPS_PROCESS_TYPE,
-                 STRINGMAXLEN_FPSPROCESSTYPE,
-                 "tmuxstop-%s",
-                 fpsname);
-        break;
+        case FPSCMDCODE_TMUXSTOP:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "tmuxstop-%s",
+                     fpsname);
+            break;
     }
 
-    if (CMDmode & FPSCMDCODE_FPSINITCREATE) // (re-)create fps even if it exists
+    if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
     {
         //printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
@@ -106,12 +106,12 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         //printf("=== CHECK IF FPS EXISTS\n");
 
         FPSCONNECTFLAG = FPSCONNECT_SIMPLE;
-        if (CMDmode & FPSCMDCODE_CONFSTART)
+        if(CMDmode & FPSCMDCODE_CONFSTART)
         {
             FPSCONNECTFLAG = FPSCONNECT_CONF;
         }
 
-        if (function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
+        if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
                 -1)
         {
             //printf("=== FPS DOES NOT EXISTS -> CREATE\n");
@@ -124,7 +124,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         }*/
     }
 
-    if (CMDmode & FPSCMDCODE_CONFSTOP) // stop conf
+    if(CMDmode & FPSCMDCODE_CONFSTOP)  // stop conf
     {
         fps.md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
         function_parameter_struct_disconnect(&fps);
@@ -135,13 +135,13 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
         fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }
 
-    if ((CMDmode & FPSCMDCODE_FPSINITCREATE) ||
+    if((CMDmode & FPSCMDCODE_FPSINITCREATE) ||
             (CMDmode & FPSCMDCODE_FPSINIT) || (CMDmode & FPSCMDCODE_CONFSTOP))
     {
         fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP; // do not start conf
     }
 
-    if (CMDmode & FPSCMDCODE_CONFSTART)
+    if(CMDmode & FPSCMDCODE_CONFSTART)
     {
         fps.localstatus |= FPS_LOCALSTATUS_CONFLOOP;
     }

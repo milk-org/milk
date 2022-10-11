@@ -22,7 +22,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
 static errno_t fps_create__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_LONG) +
+    if(0 + CLI_checkarg(1, CLIARG_LONG) +
             CLI_checkarg_noerrmsg(2, CLIARG_STR) ==
             0)
     {
@@ -76,7 +76,7 @@ errno_t function_parameter_struct_create(
     char shmdname[200];
     function_parameter_struct_shmdirname(shmdname);
 
-    if (snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name) <
+    if(snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name) <
             0)
     {
         PRINT_ERROR("snprintf error");
@@ -90,7 +90,7 @@ errno_t function_parameter_struct_create(
     sharedsize += sizeof(FUNCTION_PARAMETER) * NBparamMAX;
 
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
-    if (SM_fd == -1)
+    if(SM_fd == -1)
     {
         perror("Error opening file for writing");
         printf("STEP %s %d\n", __FILE__, __LINE__);
@@ -102,7 +102,7 @@ errno_t function_parameter_struct_create(
 
     int result;
     result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-    if (result == -1)
+    if(result == -1)
     {
         close(SM_fd);
         printf(
@@ -117,7 +117,7 @@ errno_t function_parameter_struct_create(
     }
 
     result = write(SM_fd, "", 1);
-    if (result != 1)
+    if(result != 1)
     {
         close(SM_fd);
         perror("Error writing last byte of the file");
@@ -128,7 +128,7 @@ errno_t function_parameter_struct_create(
 
     fps.md = (FUNCTION_PARAMETER_STRUCT_MD *)
              mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if (fps.md == MAP_FAILED)
+    if(fps.md == MAP_FAILED)
     {
         close(SM_fd);
         perror("Error mmapping the file");
@@ -146,7 +146,7 @@ errno_t function_parameter_struct_create(
 
     fps.md->NBparamMAX = NBparamMAX;
 
-    for (index = 0; index < NBparamMAX; index++)
+    for(index = 0; index < NBparamMAX; index++)
     {
         fps.parray[index].fpflag = 0; // not active
         fps.parray[index].cnt0   = 0; // update counter
@@ -161,7 +161,7 @@ errno_t function_parameter_struct_create(
             FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
     char cwd[FPS_CWD_STRLENMAX];
-    if (getcwd(cwd, sizeof(cwd)) != NULL)
+    if(getcwd(cwd, sizeof(cwd)) != NULL)
     {
         strncpy(fps.md->workdir, cwd, FPS_CWD_STRLENMAX - 1);
     }
@@ -186,9 +186,9 @@ errno_t function_parameter_struct_create(
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
-    for (int m = 0; m < data.NBmodule; m++)
+    for(int m = 0; m < data.NBmodule; m++)
     {
-        if (data.module[m].type ==
+        if(data.module[m].type ==
                 MODULE_TYPE_CUSTOMLOAD) // custom loaded module
         {
             strncpy(fps.md->modulename[fps.md->NBmodule],
