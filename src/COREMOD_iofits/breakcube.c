@@ -18,7 +18,7 @@ imageID break_cube(const char *restrict ID_name);
 
 errno_t break_cube_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
     {
         break_cube(data.cmdargtoken[1].val.string);
 
@@ -65,26 +65,26 @@ imageID break_cube(const char *restrict ID_name)
     naxes[1] = data.image[ID].md[0].size[1];
     naxes[2] = data.image[ID].md[0].size[2];
 
-    for (uint32_t kk = 0; kk < naxes[2]; kk++)
+    for(uint32_t kk = 0; kk < naxes[2]; kk++)
     {
         long ID1;
 
         CREATE_IMAGENAME(framename, "%s_%5u", ID_name, kk);
 
-        for (i = 0; i < (long) strlen(framename); i++)
+        for(i = 0; i < (long) strlen(framename); i++)
         {
-            if (framename[i] == ' ')
+            if(framename[i] == ' ')
             {
                 framename[i] = '0';
             }
         }
         create_2Dimage_ID(framename, naxes[0], naxes[1], &ID1);
-        for (uint32_t ii = 0; ii < naxes[0]; ii++)
-            for (uint32_t jj = 0; jj < naxes[1]; jj++)
+        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+            for(uint32_t jj = 0; jj < naxes[1]; jj++)
             {
                 data.image[ID1].array.F[jj * naxes[0] + ii] =
                     data.image[ID]
-                        .array.F[kk * naxes[0] * naxes[1] + jj * naxes[0] + ii];
+                    .array.F[kk * naxes[0] * naxes[1] + jj * naxes[0] + ii];
             }
     }
 

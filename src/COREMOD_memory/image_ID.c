@@ -16,12 +16,12 @@ imageID image_ID(const char *name)
 
     i      = 0;
     loopOK = 1;
-    while (loopOK == 1)
+    while(loopOK == 1)
     {
-        if (data.image[i].used == 1)
+        if(data.image[i].used == 1)
         {
-            if ((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
-                (data.image[i].name[strlen(name)] == '\0'))
+            if((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
+                    (data.image[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -31,7 +31,7 @@ imageID image_ID(const char *name)
         }
         i++;
 
-        if (i == data.NB_MAX_IMAGE)
+        if(i == data.NB_MAX_IMAGE)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -54,12 +54,12 @@ imageID image_ID_noaccessupdate(const char *name)
 
     i      = 0;
     loopOK = 1;
-    while (loopOK == 1)
+    while(loopOK == 1)
     {
-        if (data.image[i].used == 1)
+        if(data.image[i].used == 1)
         {
-            if ((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
-                (data.image[i].name[strlen(name)] == '\0'))
+            if((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
+                    (data.image[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -67,7 +67,7 @@ imageID image_ID_noaccessupdate(const char *name)
         }
         i++;
 
-        if (i == data.NB_MAX_IMAGE)
+        if(i == data.NB_MAX_IMAGE)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -87,12 +87,12 @@ imageID next_avail_image_ID()
     imageID ID = -1;
 
 #ifdef _OPENMP
-#pragma omp critical
+    #pragma omp critical
     {
 #endif
-        for (i = 0; i < data.NB_MAX_IMAGE; i++)
+        for(i = 0; i < data.NB_MAX_IMAGE; i++)
         {
-            if (data.image[i].used == 0)
+            if(data.image[i].used == 0)
             {
                 ID                  = i;
                 data.image[ID].used = 1;
@@ -103,7 +103,7 @@ imageID next_avail_image_ID()
     }
 #endif
 
-    if (ID == -1)
+    if(ID == -1)
     {
         printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
         printf("NB_MAX_IMAGE should be increased above current value (%ld)\n",

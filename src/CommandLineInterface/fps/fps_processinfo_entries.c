@@ -134,7 +134,8 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
     long loopcntMax_default[4] = {fps->cmdset.procinfo_loopcntMax,
                                   -1,
                                   5000000,
-                                  1};
+                                  1
+                                 };
     function_parameter_add_entry(fps,
                                  ".procinfo.loopcntMax",
                                  "max loop cnt",
@@ -164,7 +165,8 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
     long semindexrequested_default[4] = {fps->cmdset.semindexrequested,
                                          -1,
                                          10,
-                                         0};
+                                         0
+                                        };
     function_parameter_add_entry(fps,
                                  ".procinfo.semindexrequested",
                                  "trigger requested semaphore index",
@@ -174,7 +176,8 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  NULL);
 
     struct timespec triggerdelay_default[2] = {fps->cmdset.triggerdelay,
-                                               {1, 0}};
+        {1, 0}
+    };
     function_parameter_add_entry(fps,
                                  ".procinfo.triggerdelay",
                                  "trigger delay",
@@ -184,7 +187,8 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  NULL);
 
     struct timespec triggertimeout_default[2] = {fps->cmdset.triggertimeout,
-                                                 {1, 0}};
+        {1, 0}
+    };
     function_parameter_add_entry(fps,
                                  ".procinfo.triggertimeout",
                                  "trigger timeout",
@@ -206,7 +210,7 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
     DEBUG_TRACE_FSTART();
 
     DEBUG_TRACEPOINT("Checking fps pointer");
-    if (fps == NULL)
+    if(fps == NULL)
     {
         PRINT_ERROR("Null pointer - cannot proceed\n");
         abort();
@@ -215,7 +219,7 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
     DEBUG_TRACEPOINT("set RT_priority if applicable");
     {
         long pindex = functionparameter_GetParamIndex(fps, ".procinfo.RTprio");
-        if (pindex > -1)
+        if(pindex > -1)
         {
             long RTprio =
                 functionparameter_GetParamValue_INT64(fps, ".procinfo.RTprio");
@@ -227,11 +231,11 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
     {
         long pindex =
             functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
-        if (pindex > -1)
+        if(pindex > -1)
         {
             long loopcntMax =
                 functionparameter_GetParamValue_INT64(fps,
-                                                      ".procinfo.loopcntMax");
+                        ".procinfo.loopcntMax");
             procinfo->loopcntMax = loopcntMax;
         }
     }
@@ -241,11 +245,11 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
         long pindex =
             functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
-        if (pindex > -1)
+        if(pindex > -1)
         {
             long triggermode =
                 functionparameter_GetParamValue_INT64(fps,
-                                                      ".procinfo.triggermode");
+                        ".procinfo.triggermode");
             procinfo->triggermode = triggermode;
             printf(">>>>>>>>>>>>> SET TRIGGERMODE = %ld\n", triggermode);
         }

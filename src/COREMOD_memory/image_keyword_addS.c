@@ -14,7 +14,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &inimname,
         NULL
     },
-    {   CLIARG_STR,
+    {
+        CLIARG_STR,
         ".kwname",
         "keyword name",
         "KW1",
@@ -22,7 +23,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &kwname,
         NULL
     },
-    {   CLIARG_STR,
+    {
+        CLIARG_STR,
         ".kwval",
         "keyword value",
         "blue",
@@ -30,7 +32,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &kwval,
         NULL
     },
-    {   CLIARG_STR,
+    {
+        CLIARG_STR,
         ".comment",
         "comment",
         "keyword comment",
@@ -40,7 +43,8 @@ static CLICMDARGDEF farg[] = {{
     }
 };
 
-static CLICMDDATA CLIcmddata = {
+static CLICMDDATA CLIcmddata =
+{
     "imkwaddS", "add string type image keyword", CLICMD_FIELDS_NOFPS
 };
 
@@ -59,13 +63,13 @@ errno_t image_keyword_addS(
     int NBkw = img.md->NBkw; // max nb kw
 
     int kw = 0;
-    while ((img.im->kw[kw].type != 'N') && (kw < NBkw))
+    while((img.im->kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
     int kw0 = kw;
 
-    if (kw0 == NBkw)
+    if(kw0 == NBkw)
     {
         printf("WARNING: no available keyword entry -> ignored\n");
         //abort();

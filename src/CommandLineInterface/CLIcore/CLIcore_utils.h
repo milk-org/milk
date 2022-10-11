@@ -491,70 +491,70 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     char  namestring[200];
     strcpy(namestring, name);
     pch = strtok(namestring, ">");
-    while (pch != NULL)
+    while(pch != NULL)
     {
         pch1 = pch;
         //printf("[%2d] %s\n", nbword, pch);
 
-        if (strcmp(pch, "s") == 0)
+        if(strcmp(pch, "s") == 0)
         {
             printf("    shared memory\n");
             img.shared = 1;
         }
 
-        if (strcmp(pch, "tui8") == 0)
+        if(strcmp(pch, "tui8") == 0)
         {
             printf("    data type unsigned 8-bit int\n");
             img.datatype = _DATATYPE_UINT8;
         }
-        if (strcmp(pch, "tsi8") == 0)
+        if(strcmp(pch, "tsi8") == 0)
         {
             printf("    data type signed 8-bit int\n");
             img.datatype = _DATATYPE_INT8;
         }
-        if (strcmp(pch, "tui16") == 0)
+        if(strcmp(pch, "tui16") == 0)
         {
             printf("    data type unsigned 16-bit int\n");
             img.datatype = _DATATYPE_UINT16;
         }
-        if (strcmp(pch, "tsi16") == 0)
+        if(strcmp(pch, "tsi16") == 0)
         {
             printf("    data type signed 16-bit int\n");
             img.datatype = _DATATYPE_INT16;
         }
-        if (strcmp(pch, "tui32") == 0)
+        if(strcmp(pch, "tui32") == 0)
         {
             printf("    data type unsigned 32-bit int\n");
             img.datatype = _DATATYPE_UINT32;
         }
-        if (strcmp(pch, "tsi32") == 0)
+        if(strcmp(pch, "tsi32") == 0)
         {
             printf("    data type signed 32-bit int\n");
             img.datatype = _DATATYPE_INT32;
         }
-        if (strcmp(pch, "tui64") == 0)
+        if(strcmp(pch, "tui64") == 0)
         {
             printf("    data type unsigned 64-bit int\n");
             img.datatype = _DATATYPE_UINT64;
         }
-        if (strcmp(pch, "tsi64") == 0)
+        if(strcmp(pch, "tsi64") == 0)
         {
             printf("    data type signed 64-bit int\n");
             img.datatype = _DATATYPE_INT64;
         }
 
-        if (strcmp(pch, "tf32") == 0)
+        if(strcmp(pch, "tf32") == 0)
         {
             printf("    data type double (32)\n");
             img.datatype = _DATATYPE_FLOAT;
         }
-        if (strcmp(pch, "tf64") == 0)
+        if(strcmp(pch, "tf64") == 0)
         {
             printf("    data type float (64)\n");
             img.datatype = _DATATYPE_DOUBLE;
         }
 
-        if (pch[0] == 'k')
+        if(pch[0] == 'k')
         {
             int nbkw;
             sscanf(pch, "k%d", &nbkw);
@@ -562,7 +562,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
             img.NBkw = nbkw;
         }
 
-        if (pch[0] == 'c')
+        if(pch[0] == 'c')
         {
             int cbsize;
             sscanf(pch, "c%d", &cbsize);
@@ -685,11 +685,11 @@ static inline imageID createimagefromIMGID(IMGID *img)
 /** Create image according to IMGID entries of existing image
  */
 static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
-                                            IMGID *source_img)
+        IMGID *source_img)
 {
-    if (target_img->ID == -1)
+    if(target_img->ID == -1)
     {
-        if (target_img != source_img)
+        if(target_img != source_img)
         {
             printf("Creating image %s from %s, shared = %d, kw = %d\n",
                    target_img->name,
@@ -721,11 +721,11 @@ static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
 
 
         target_img->size[0] = source_img->size[0];
-        if (source_img->naxis > 1)
+        if(source_img->naxis > 1)
         {
             target_img->size[1] = source_img->size[1];
         }
-        if (source_img->naxis > 2)
+        if(source_img->naxis > 2)
         {
             target_img->size[2] = source_img->size[2];
         }
@@ -751,7 +751,7 @@ static inline errno_t updateIMGIDcreationparams(IMGID *img)
 {
     img->datatype = img->md->datatype;
     img->naxis    = img->md->naxis;
-    for (int ii = 0; ii < 3; ++ii)
+    for(int ii = 0; ii < 3; ++ii)
     {
         img->size[ii] = img->md->size[ii];
     }
@@ -791,11 +791,11 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 
     // IF:
     // Not resolved before OR create counter mismatch OR not used
-    if (img->ID == -1 || (img->createcnt != data.image[img->ID].createcnt) ||
-        (data.image[img->ID].used != 1))
+    if(img->ID == -1 || (img->createcnt != data.image[img->ID].createcnt) ||
+            (data.image[img->ID].used != 1))
     {
         img->ID = image_ID(img->name);
-        if (img->ID > -1) // Resolve success !
+        if(img->ID > -1)  // Resolve success !
         {
             img->im        = &data.image[img->ID];
             img->md        = &data.image[img->ID].md[0];
@@ -805,9 +805,9 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
         }
     }
 
-    if (img->ID == -1)
+    if(img->ID == -1)
     {
-        if ((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
+        if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
             printf("ERROR: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
                    (char) 27,
@@ -818,7 +818,7 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
                    0);
             abort();
         }
-        else if (ERRMODE == ERRMODE_WARN)
+        else if(ERRMODE == ERRMODE_WARN)
         {
             printf("WARNING: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
                    (char) 27,
@@ -843,10 +843,10 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
 {
     int compErr = 0;
 
-    if (imgtemplate.datatype != _DATATYPE_UNINITIALIZED)
+    if(imgtemplate.datatype != _DATATYPE_UNINITIALIZED)
     {
         printf("Checking datatype       ");
-        if (imgtemplate.datatype != img.datatype)
+        if(imgtemplate.datatype != img.datatype)
         {
             printf("FAIL\n");
             compErr++;
@@ -857,10 +857,10 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
         }
     }
 
-    if (imgtemplate.naxis != -1)
+    if(imgtemplate.naxis != -1)
     {
         printf("Checking naxis  %d %d    ", imgtemplate.naxis, img.naxis);
-        if (imgtemplate.naxis != img.naxis)
+        if(imgtemplate.naxis != img.naxis)
         {
             printf("FAIL\n");
             compErr++;
@@ -871,10 +871,10 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
         }
     }
 
-    if (imgtemplate.size[0] != 0)
+    if(imgtemplate.size[0] != 0)
     {
         printf("Checking size[0]        ");
-        if (imgtemplate.size[0] != img.size[0])
+        if(imgtemplate.size[0] != img.size[0])
         {
             printf("FAIL\n");
             compErr++;
@@ -885,10 +885,10 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
         }
     }
 
-    if (imgtemplate.size[1] != 0)
+    if(imgtemplate.size[1] != 0)
     {
         printf("Checking size[1]        ");
-        if (imgtemplate.size[1] != img.size[1])
+        if(imgtemplate.size[1] != img.size[1])
         {
             printf("FAIL\n");
             compErr++;
@@ -899,10 +899,10 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
         }
     }
 
-    if (imgtemplate.size[2] != 0)
+    if(imgtemplate.size[2] != 0)
     {
         printf("Checking size[2]        ");
-        if (imgtemplate.size[2] != img.size[2])
+        if(imgtemplate.size[2] != img.size[2])
         {
             printf("FAIL\n");
             compErr++;
@@ -935,7 +935,7 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         // if in local memory,
         // create blank img for comparison
@@ -948,7 +948,7 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
-        if (imgerr != 0)
+        if(imgerr != 0)
         {
             delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
             img.ID = -1;
@@ -956,7 +956,7 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
     }
 
     // if not in local memory, (re)-create
-    if (img.ID == -1)
+    if(img.ID == -1)
     {
         uint32_t *arraytmp;
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
@@ -969,7 +969,7 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
     }
 
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         imageID ID    = img.ID;
         img.im        = &data.image[ID];
@@ -983,14 +983,14 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
 
 
 static inline IMGID stream_connect_create_2D(char    *imname,
-                                             uint32_t xsize,
-                                             uint32_t ysize,
-                                             uint8_t  datatype)
+        uint32_t xsize,
+        uint32_t ysize,
+        uint8_t  datatype)
 {
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         // if in local memory,
         // create blank img for comparison
@@ -1003,7 +1003,7 @@ static inline IMGID stream_connect_create_2D(char    *imname,
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
-        if (imgerr != 0)
+        if(imgerr != 0)
         {
             delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
             img.ID = -1;
@@ -1011,7 +1011,7 @@ static inline IMGID stream_connect_create_2D(char    *imname,
     }
 
     // if not in local memory, (re)-create
-    if (img.ID == -1)
+    if(img.ID == -1)
     {
         uint32_t *arraytmp;
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
@@ -1024,7 +1024,7 @@ static inline IMGID stream_connect_create_2D(char    *imname,
     }
 
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         imageID ID    = img.ID;
         img.im        = &data.image[ID];
@@ -1051,15 +1051,15 @@ static inline IMGID stream_connect_create_2D(char    *imname,
  * @return IMGID
  */
 static inline IMGID stream_connect_create_3Df32(char    *imname,
-                                                uint32_t xsize,
-                                                uint32_t ysize,
-                                                uint32_t zsize)
+        uint32_t xsize,
+        uint32_t ysize,
+        uint32_t zsize)
 {
     printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         // if in local memory,
         // create blank img for comparison
@@ -1073,7 +1073,7 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
-        if (imgerr != 0)
+        if(imgerr != 0)
         {
             delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
             img.ID = -1;
@@ -1081,7 +1081,7 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
     }
 
     // if not in local memory, (re)-create
-    if (img.ID == -1)
+    if(img.ID == -1)
     {
         uint32_t *arraytmp;
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -1095,7 +1095,7 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
     }
 
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         imageID ID    = img.ID;
         img.im        = &data.image[ID];
@@ -1110,16 +1110,16 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
 
 
 static inline IMGID stream_connect_create_3D(char    *imname,
-                                             uint32_t xsize,
-                                             uint32_t ysize,
-                                             uint32_t zsize,
-                                             uint8_t  datatype)
+        uint32_t xsize,
+        uint32_t ysize,
+        uint32_t zsize,
+        uint8_t  datatype)
 {
     printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         // if in local memory,
         // create blank img for comparison
@@ -1133,7 +1133,7 @@ static inline IMGID stream_connect_create_3D(char    *imname,
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
-        if (imgerr != 0)
+        if(imgerr != 0)
         {
             delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
             img.ID = -1;
@@ -1141,7 +1141,7 @@ static inline IMGID stream_connect_create_3D(char    *imname,
     }
 
     // if not in local memory, (re)-create
-    if (img.ID == -1)
+    if(img.ID == -1)
     {
         uint32_t *arraytmp;
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -1155,7 +1155,7 @@ static inline IMGID stream_connect_create_3D(char    *imname,
     }
 
 
-    if (img.ID != -1)
+    if(img.ID != -1)
     {
         imageID ID    = img.ID;
         img.im        = &data.image[ID];

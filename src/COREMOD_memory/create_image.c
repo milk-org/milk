@@ -32,101 +32,101 @@ static errno_t create_image__cli()
     long      i;
     uint8_t   datatype;
 
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg_noerrmsg(2, CLIARG_LONG) ==
-        0)
+            0)
     {
         naxis  = 0;
         imsize = (uint32_t *) malloc(sizeof(uint32_t) * 5);
         i      = 2;
-        while (data.cmdargtoken[i].type == 2)
+        while(data.cmdargtoken[i].type == 2)
         {
             imsize[naxis] = data.cmdargtoken[i].val.numl;
             naxis++;
             i++;
         }
-        switch (data.precision)
+        switch(data.precision)
         {
-        case 0:
-            create_image_ID(data.cmdargtoken[1].val.string,
-                            naxis,
-                            imsize,
-                            _DATATYPE_FLOAT,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            NULL);
-            break;
-        case 1:
-            create_image_ID(data.cmdargtoken[1].val.string,
-                            naxis,
-                            imsize,
-                            _DATATYPE_DOUBLE,
-                            data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            NULL);
-            break;
+            case 0:
+                create_image_ID(data.cmdargtoken[1].val.string,
+                                naxis,
+                                imsize,
+                                _DATATYPE_FLOAT,
+                                data.SHARED_DFT,
+                                data.NBKEYWORD_DFT,
+                                0,
+                                NULL);
+                break;
+            case 1:
+                create_image_ID(data.cmdargtoken[1].val.string,
+                                naxis,
+                                imsize,
+                                _DATATYPE_DOUBLE,
+                                data.SHARED_DFT,
+                                data.NBKEYWORD_DFT,
+                                0,
+                                NULL);
+                break;
         }
         free(imsize);
         return CLICMD_SUCCESS;
     }
-    else if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-                 CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-                 CLI_checkarg(3, CLIARG_LONG) ==
-             0) // type option exists
+    else if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+            CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
+            CLI_checkarg(3, CLIARG_LONG) ==
+            0) // type option exists
     {
         datatype = 0;
 
-        if (strcmp(data.cmdargtoken[2].val.string, "c") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "c") == 0)
         {
             printf("type = CHAR\n");
             datatype = _DATATYPE_UINT8;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "i") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "i") == 0)
         {
             printf("type = INT\n");
             datatype = _DATATYPE_INT32;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "f") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "f") == 0)
         {
             printf("type = FLOAT\n");
             datatype = _DATATYPE_FLOAT;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "d") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "d") == 0)
         {
             printf("type = DOUBLE\n");
             datatype = _DATATYPE_DOUBLE;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "cf") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "cf") == 0)
         {
             printf("type = COMPLEX_FLOAT\n");
             datatype = _DATATYPE_COMPLEX_FLOAT;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "cd") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "cd") == 0)
         {
             printf("type = COMPLEX_DOUBLE\n");
             datatype = _DATATYPE_COMPLEX_DOUBLE;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "u") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "u") == 0)
         {
             printf("type = USHORT\n");
             datatype = _DATATYPE_UINT16;
         }
 
-        if (strcmp(data.cmdargtoken[2].val.string, "l") == 0)
+        if(strcmp(data.cmdargtoken[2].val.string, "l") == 0)
         {
             printf("type = LONG\n");
             datatype = _DATATYPE_INT64;
         }
 
-        if (datatype == 0)
+        if(datatype == 0)
         {
             printf("Data type \"%s\" not recognized\n",
                    data.cmdargtoken[2].val.string);
@@ -144,7 +144,7 @@ static errno_t create_image__cli()
         naxis  = 0;
         imsize = (uint32_t *) malloc(sizeof(uint32_t) * 5);
         i      = 3;
-        while (data.cmdargtoken[i].type == 2)
+        while(data.cmdargtoken[i].type == 2)
         {
             imsize[naxis] = data.cmdargtoken[i].val.numl;
             naxis++;
@@ -175,41 +175,41 @@ static errno_t create_image_shared__cli() // default precision
     long      naxis = 0;
     long      i;
 
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_LONG) ==
-        0)
+            0)
     {
         naxis  = 0;
         imsize = (uint32_t *) malloc(sizeof(uint32_t) * 5);
         i      = 2;
-        while (data.cmdargtoken[i].type == 2)
+        while(data.cmdargtoken[i].type == 2)
         {
             imsize[naxis] = data.cmdargtoken[i].val.numl;
             naxis++;
             i++;
         }
-        switch (data.precision)
+        switch(data.precision)
         {
-        case 0:
-            create_image_ID(data.cmdargtoken[1].val.string,
-                            naxis,
-                            imsize,
-                            _DATATYPE_FLOAT,
-                            1,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            NULL);
-            break;
-        case 1:
-            create_image_ID(data.cmdargtoken[1].val.string,
-                            naxis,
-                            imsize,
-                            _DATATYPE_DOUBLE,
-                            1,
-                            data.NBKEYWORD_DFT,
-                            0,
-                            NULL);
-            break;
+            case 0:
+                create_image_ID(data.cmdargtoken[1].val.string,
+                                naxis,
+                                imsize,
+                                _DATATYPE_FLOAT,
+                                1,
+                                data.NBKEYWORD_DFT,
+                                0,
+                                NULL);
+                break;
+            case 1:
+                create_image_ID(data.cmdargtoken[1].val.string,
+                                naxis,
+                                imsize,
+                                _DATATYPE_DOUBLE,
+                                1,
+                                data.NBKEYWORD_DFT,
+                                0,
+                                NULL);
+                break;
         }
         free(imsize);
         printf("Creating 10 semaphores\n");
@@ -229,14 +229,14 @@ static errno_t create_ushort_image_shared__cli() // default precision
     long      naxis = 0;
     long      i;
 
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_LONG) ==
-        0)
+            0)
     {
         naxis  = 0;
         imsize = (uint32_t *) malloc(sizeof(uint32_t) * 5);
         i      = 2;
-        while (data.cmdargtoken[i].type == 2)
+        while(data.cmdargtoken[i].type == 2)
         {
             imsize[naxis] = data.cmdargtoken[i].val.numl;
             naxis++;
@@ -266,14 +266,14 @@ static errno_t create_sshort_image_shared__cli() // default precision
     long      naxis = 0;
     long      i;
 
-    if (0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_LONG) ==
-        0)
+            0)
     {
         naxis  = 0;
         imsize = (uint32_t *) malloc(sizeof(uint32_t) * 5);
         i      = 2;
-        while (data.cmdargtoken[i].type == 2)
+        while(data.cmdargtoken[i].type == 2)
         {
             imsize[naxis] = data.cmdargtoken[i].val.numl;
             naxis++;
@@ -404,7 +404,7 @@ errno_t create_image_ID(const char *name,
     imageID ID;
 
     ID = -1;
-    if (image_ID(name) == -1)
+    if(image_ID(name) == -1)
     {
         ID = next_avail_image_ID();
 
@@ -422,19 +422,19 @@ errno_t create_image_ID(const char *name,
         // Cannot create image : name already in use
         ID = image_ID(name);
 
-        if (data.image[ID].md[0].datatype != datatype)
+        if(data.image[ID].md[0].datatype != datatype)
         {
             FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong type",
                                 name);
         }
-        if (data.image[ID].md[0].naxis != naxis)
+        if(data.image[ID].md[0].naxis != naxis)
         {
             FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong naxis",
                                 name);
         }
 
-        for (int i = 0; i < naxis; i++)
-            if (data.image[ID].md[0].size[i] != size[i])
+        for(int i = 0; i < naxis; i++)
+            if(data.image[ID].md[0].size[i] != size[i])
             {
                 FUNC_RETURN_FAILURE(
                     "Pre-existing image \"%s\" has wrong size: axis %d "
@@ -446,12 +446,12 @@ errno_t create_image_ID(const char *name,
             }
     }
 
-    if (data.MEM_MONITOR == 1)
+    if(data.MEM_MONITOR == 1)
     {
         list_image_ID_ncurses();
     }
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -470,8 +470,9 @@ errno_t create_1Dimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
 
     naxes[0] = xsize;
 
-    if (data.precision == 0)
-    { // single precision
+    if(data.precision == 0)
+    {
+        // single precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -481,8 +482,9 @@ errno_t create_1Dimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
                                           0,
                                           &ID));
     }
-    if (data.precision == 1)
-    { // double precision
+    if(data.precision == 1)
+    {
+        // double precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -493,7 +495,7 @@ errno_t create_1Dimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
                                           &ID));
     }
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -512,8 +514,9 @@ errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
 
     naxes[0] = xsize;
 
-    if (data.precision == 0)
-    { // single precision
+    if(data.precision == 0)
+    {
+        // single precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -523,8 +526,9 @@ errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
                                           0,
                                           &ID));
     }
-    if (data.precision == 1)
-    { // double precision
+    if(data.precision == 1)
+    {
+        // double precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -535,7 +539,7 @@ errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
                                           &ID));
     }
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -558,8 +562,9 @@ errno_t create_2Dimage_ID(const char *ID_name,
     naxes[0] = xsize;
     naxes[1] = ysize;
 
-    if (data.precision == 0)
-    { // single precision
+    if(data.precision == 0)
+    {
+        // single precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -569,8 +574,9 @@ errno_t create_2Dimage_ID(const char *ID_name,
                                           0,
                                           &ID));
     }
-    else if (data.precision == 1)
-    { // double precision
+    else if(data.precision == 1)
+    {
+        // double precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -581,7 +587,8 @@ errno_t create_2Dimage_ID(const char *ID_name,
                                           &ID));
     }
     else
-    { // single precision
+    {
+        // single precision
         printf(
             "Default precision (%d) invalid value: assuming single "
             "precision\n",
@@ -596,7 +603,7 @@ errno_t create_2Dimage_ID(const char *ID_name,
                                           &ID));
     }
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -628,7 +635,7 @@ errno_t create_2Dimage_ID_double(const char *ID_name,
                                       0,
                                       &ID));
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -652,8 +659,9 @@ errno_t create_2DCimage_ID(const char *ID_name,
     naxes[0] = xsize;
     naxes[1] = ysize;
 
-    if (data.precision == 0)
-    { // single precision
+    if(data.precision == 0)
+    {
+        // single precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -663,8 +671,9 @@ errno_t create_2DCimage_ID(const char *ID_name,
                                           0,
                                           &ID));
     }
-    if (data.precision == 1)
-    { // double precision
+    if(data.precision == 1)
+    {
+        // double precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -675,7 +684,7 @@ errno_t create_2DCimage_ID(const char *ID_name,
                                           &ID));
     }
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -708,7 +717,7 @@ errno_t create_2DCimage_ID_double(const char *ID_name,
                                       0,
                                       &ID));
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -749,7 +758,7 @@ errno_t create_3Dimage_ID_float(const char *ID_name,
     //  printf("IMAGE CREATED WITH ID = %ld\n",ID);
     //  fflush(stdout);
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -784,7 +793,7 @@ errno_t create_3Dimage_ID_double(const char *ID_name,
                                       0,
                                       &ID));
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -814,8 +823,9 @@ errno_t create_3Dimage_ID(const char *ID_name,
     naxes[1] = ysize;
     naxes[2] = zsize;
 
-    if (data.precision == 0)
-    { // single precision
+    if(data.precision == 0)
+    {
+        // single precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -826,8 +836,9 @@ errno_t create_3Dimage_ID(const char *ID_name,
                                           &ID));
     }
 
-    if (data.precision == 1)
-    { // double precision
+    if(data.precision == 1)
+    {
+        // double precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -840,7 +851,7 @@ errno_t create_3Dimage_ID(const char *ID_name,
 
     free(naxes);
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }
@@ -867,8 +878,9 @@ errno_t create_3DCimage_ID(const char *ID_name,
     naxes[1] = ysize;
     naxes[2] = zsize;
 
-    if (data.precision == 0)
-    { // single precision
+    if(data.precision == 0)
+    {
+        // single precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -879,8 +891,9 @@ errno_t create_3DCimage_ID(const char *ID_name,
                                           &ID));
     }
 
-    if (data.precision == 1)
-    { // double precision
+    if(data.precision == 1)
+    {
+        // double precision
         FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                           naxis,
                                           naxes,
@@ -893,7 +906,7 @@ errno_t create_3DCimage_ID(const char *ID_name,
 
     free(naxes);
 
-    if (outID != NULL)
+    if(outID != NULL)
     {
         *outID = ID;
     }

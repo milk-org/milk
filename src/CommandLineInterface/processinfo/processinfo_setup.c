@@ -8,7 +8,7 @@
 
 PROCESSINFO *processinfo_setup(
     char         *
-        pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
+    pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
     const char *descriptionstring,
     const char *msgstring,
     const char *functionname,
@@ -24,7 +24,7 @@ PROCESSINFO *processinfo_setup(
     DEBUG_TRACEPOINT(" ");
 
     DEBUG_TRACEPOINT(" ");
-    if (data.processinfoActive == 0)
+    if(data.processinfoActive == 0)
     {
         //        PROCESSINFO *processinfo;
         DEBUG_TRACEPOINT(" ");
@@ -35,12 +35,12 @@ PROCESSINFO *processinfo_setup(
                                 STRINGMAXLEN_PROCESSINFO_NAME,
                                 "%s",
                                 pinfoname);
-            if (slen < 1)
+            if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
                 abort(); // can't handle this error any other way
             }
-            if (slen >= STRINGMAXLEN_PROCESSINFO_NAME)
+            if(slen >= STRINGMAXLEN_PROCESSINFO_NAME)
             {
                 PRINT_ERROR("snprintf string truncation");
                 abort(); // can't handle this error any other way
@@ -94,7 +94,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
     processinfo->loopcnt  = 0;
     processinfo->loopstat = 1;
 
-    if (processinfo->RT_priority > -1)
+    if(processinfo->RT_priority > -1)
     {
         struct sched_param schedpar;
         // ===========================
@@ -102,7 +102,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
         // ===========================
         schedpar.sched_priority = processinfo->RT_priority;
 
-        if (seteuid(data.euid) != 0) //This goes up to maximum privileges
+        if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
         {
             PRINT_ERROR("seteuid error");
         }
@@ -110,7 +110,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
             0,
             SCHED_FIFO,
             &schedpar);              //other option is SCHED_RR, might be faster
-        if (seteuid(data.ruid) != 0) //Go back to normal privileges
+        if(seteuid(data.ruid) != 0)  //Go back to normal privileges
         {
             PRINT_ERROR("seteuid error");
         }

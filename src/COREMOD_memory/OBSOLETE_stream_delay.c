@@ -39,7 +39,7 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
 
     function_parameter_getFPSargs_from_CLIfunc("streamDelay");
 
-    if (data.FPS_CMDCODE != 0) // use FPS implementation
+    if(data.FPS_CMDCODE != 0)  // use FPS implementation
     {
         // set pointers to CONF and RUN functions
         data.FPS_CONFfunc = COREMOD_MEMORY_streamDelay_FPCONF;
@@ -49,9 +49,9 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
     }
 
     // non FPS implementation - all parameters specified at function launch
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, 5) +
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, 5) +
             CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) ==
-        0)
+            0)
     {
         COREMOD_MEMORY_streamDelay(data.cmdargtoken[1].val.string,
                                    data.cmdargtoken[2].val.string,
@@ -161,7 +161,7 @@ errno_t COREMOD_MEMORY_streamDelay_FPCONF()
     // start function parameter conf loop, defined in function_parameter.h
     FPS_CONFLOOP_START
 
-    if (fps.parray[fp_option_timeavemode].val.i64[0] != 0)
+    if(fps.parray[fp_option_timeavemode].val.i64[0] != 0)
     {
         // time averaging enabled
         fps.parray[fp_option_avedt].fpflag |= FPFLAG_WRITERUN;
@@ -273,7 +273,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     IDin = image_ID(IDin_name);
 
     // ERROR HANDLING
-    if (IDin == -1)
+    if(IDin == -1)
     {
         struct timespec errtime;
         struct tm      *errtm;
@@ -301,8 +301,8 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     xsize  = data.image[IDin].md[0].size[0];
     ysize  = data.image[IDin].md[0].size[1];
-    *zsize = (long) (2 * delayus / dtus);
-    if (*zsize < 1)
+    *zsize = (long)(2 * delayus / dtus);
+    if(*zsize < 1)
     {
         *zsize = 1;
     }
@@ -313,7 +313,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     create_3Dimage_ID("_tmpc", xsize, ysize, *zsize, &IDimc);
 
     IDout = image_ID(IDout_name);
-    if (IDout == -1) // CREATE IT
+    if(IDout == -1)  // CREATE IT
     {
         arraytmp    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
         arraytmp[0] = xsize;
@@ -338,7 +338,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     arraytmpf = (float *) malloc(sizeof(float) * xsize * ysize);
 
     clock_gettime(CLOCK_REALTIME, &tnow);
-    for (kk = 0; kk < *zsize; kk++)
+    for(kk = 0; kk < *zsize; kk++)
     {
         t0array[kk] = tnow;
     }
@@ -352,8 +352,8 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                                        PROCESSINFO_TRIGGERMODE_DELAY,
                                        -1);
     processinfo->triggerdelay.tv_sec  = 0;
-    processinfo->triggerdelay.tv_nsec = (long) (dtus * 1000);
-    while (processinfo->triggerdelay.tv_nsec > 1000000000)
+    processinfo->triggerdelay.tv_nsec = (long)(dtus * 1000);
+    while(processinfo->triggerdelay.tv_nsec > 1000000000)
     {
         processinfo->triggerdelay.tv_nsec -= 1000000000;
         processinfo->triggerdelay.tv_sec += 1;
@@ -368,7 +368,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     DEBUG_TRACEPOINT(" ");
 
-    while (loopOK == 1)
+    while(loopOK == 1)
     {
         int   kkinscan;
         float normframes = 0.0;
@@ -381,7 +381,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
         processinfo_exec_start(processinfo);
 
-        if (processinfo_compute_status(processinfo) == 1)
+        if(processinfo_compute_status(processinfo) == 1)
         {
             DEBUG_TRACEPOINT(" ");
 
@@ -393,7 +393,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                           &t0array[*kkin]); // record time of input frame
 
             DEBUG_TRACEPOINT(" ");
-            for (ii = 0; ii < xysize; ii++)
+            for(ii = 0; ii < xysize; ii++)
             {
                 data.image[IDimc].array.F[(*kkin) * xysize + ii] =
                     data.image[IDin].array.F[ii];
@@ -401,7 +401,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
             (*kkin)++;
             DEBUG_TRACEPOINT(" ");
 
-            if ((*kkin) == (*zsize))
+            if((*kkin) == (*zsize))
             {
                 (*kkin) = 0;
             }
@@ -415,11 +415,11 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
             DEBUG_TRACEPOINT(" ");
 
-            while ((tdiffv > 1.0e-6 * delayus) && (cntskip < *zsize))
+            while((tdiffv > 1.0e-6 * delayus) && (cntskip < *zsize))
             {
                 cntskip++; // advance index until time condition is satisfied
                 (*kkout)++;
-                if (*kkout == *zsize)
+                if(*kkout == *zsize)
                 {
                     *kkout = 0;
                 }
@@ -430,83 +430,83 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
             DEBUG_TRACEPOINT(" ");
 
             *framelag = *kkin - *kkout;
-            if (*framelag < 0)
+            if(*framelag < 0)
             {
                 *framelag += *zsize;
             }
 
             DEBUG_TRACEPOINT(" ");
 
-            switch (timeavemode)
+            switch(timeavemode)
             {
 
-            case 0: // no time averaging - pick more recent frame that matches requirement
-                DEBUG_TRACEPOINT(" ");
-                if (cntskip > 0)
-                {
-                    char *ptr; // pointer address
+                case 0: // no time averaging - pick more recent frame that matches requirement
+                    DEBUG_TRACEPOINT(" ");
+                    if(cntskip > 0)
+                    {
+                        char *ptr; // pointer address
 
-                    data.image[IDout].md[0].write = 1;
+                        data.image[IDout].md[0].write = 1;
 
-                    ptr = (char *) data.image[IDimc].array.F;
-                    ptr += SIZEOF_DATATYPE_FLOAT * xysize * *kkout;
+                        ptr = (char *) data.image[IDimc].array.F;
+                        ptr += SIZEOF_DATATYPE_FLOAT * xysize * *kkout;
 
-                    memcpy(data.image[IDout].array.F,
-                           ptr,
-                           SIZEOF_DATATYPE_FLOAT *
+                        memcpy(data.image[IDout].array.F,
+                               ptr,
+                               SIZEOF_DATATYPE_FLOAT *
                                xysize); // copy time-delayed input to output
 
-                    COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-                    data.image[IDout].md[0].cnt0++;
-                    data.image[IDout].md[0].write = 0;
-                }
-                break;
-
-            default: // strict time window (note: other modes will be coded in the future)
-                normframes = 0.0;
-                DEBUG_TRACEPOINT(" ");
-
-                for (ii = 0; ii < xysize; ii++)
-                {
-                    arraytmpf[ii] = 0.0;
-                }
-
-                for (kkinscan = 0; kkinscan < *zsize; kkinscan++)
-                {
-                    tdiff  = timespec_diff(t0array[kkinscan], tnow);
-                    tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
-                    if ((tdiffv > 0) &&
-                        (fabs(tdiffv - 1.0e-6 * delayus) < *avedt))
-                    {
-                        float coeff = 1.0;
-                        for (ii = 0; ii < xysize; ii++)
-                        {
-                            arraytmpf[ii] +=
-                                coeff * data.image[IDimc]
-                                            .array.F[kkinscan * xysize + ii];
-                        }
-                        normframes += coeff;
+                        COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+                        data.image[IDout].md[0].cnt0++;
+                        data.image[IDout].md[0].write = 0;
                     }
-                }
-                if (normframes < 0.0001)
-                {
-                    normframes = 0.0001; // avoid division by zero
-                }
+                    break;
 
-                data.image[IDout].md[0].write = 1;
-                for (ii = 0; ii < xysize; ii++)
-                {
-                    data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
-                }
+                default: // strict time window (note: other modes will be coded in the future)
+                    normframes = 0.0;
+                    DEBUG_TRACEPOINT(" ");
 
-                processinfo_update_output_stream(processinfo, IDout);
-                /*
-                    COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-                    data.image[IDout].md[0].cnt0++;
-                    data.image[IDout].md[0].write = 0;
-                    */
-                break;
+                    for(ii = 0; ii < xysize; ii++)
+                    {
+                        arraytmpf[ii] = 0.0;
+                    }
+
+                    for(kkinscan = 0; kkinscan < *zsize; kkinscan++)
+                    {
+                        tdiff  = timespec_diff(t0array[kkinscan], tnow);
+                        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
+                        if((tdiffv > 0) &&
+                                (fabs(tdiffv - 1.0e-6 * delayus) < *avedt))
+                        {
+                            float coeff = 1.0;
+                            for(ii = 0; ii < xysize; ii++)
+                            {
+                                arraytmpf[ii] +=
+                                    coeff * data.image[IDimc]
+                                    .array.F[kkinscan * xysize + ii];
+                            }
+                            normframes += coeff;
+                        }
+                    }
+                    if(normframes < 0.0001)
+                    {
+                        normframes = 0.0001; // avoid division by zero
+                    }
+
+                    data.image[IDout].md[0].write = 1;
+                    for(ii = 0; ii < xysize; ii++)
+                    {
+                        data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
+                    }
+
+                    processinfo_update_output_stream(processinfo, IDout);
+                    /*
+                        COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
+                        data.image[IDout].md[0].cnt0++;
+                        data.image[IDout].md[0].write = 0;
+                        */
+                    break;
             }
             DEBUG_TRACEPOINT(" ");
         }

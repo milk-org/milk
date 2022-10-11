@@ -21,7 +21,7 @@ imageID arith_image_dx(const char *ID_name, const char *IDout_name)
     ID       = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
     naxis    = data.image[ID].md[0].naxis;
-    if (naxis != 2)
+    if(naxis != 2)
     {
         PRINT_ERROR("Function only supports 2-D images\n");
         abort();
@@ -29,7 +29,7 @@ imageID arith_image_dx(const char *ID_name, const char *IDout_name)
 
     assert(naxis != 0);
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if (naxes == NULL)
+    if(naxes == NULL)
     {
         PRINT_ERROR("malloc error. size %d", (int) naxis);
         abort();
@@ -46,9 +46,9 @@ imageID arith_image_dx(const char *ID_name, const char *IDout_name)
                     data.NBKEYWORD_DFT,
                     0,
                     &IDout);
-    for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    for(uint32_t jj = 0; jj < naxes[1]; jj++)
     {
-        for (uint32_t ii = 1; ii < naxes[0] - 1; ii++)
+        for(uint32_t ii = 1; ii < naxes[0] - 1; ii++)
             data.image[IDout].array.F[jj * naxes[0] + ii] =
                 (data.image[ID].array.F[jj * naxes[0] + ii + 1] -
                  data.image[ID].array.F[jj * naxes[0] + ii - 1]) /
@@ -77,7 +77,7 @@ imageID arith_image_dy(const char *ID_name, const char *IDout_name)
     ID       = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
     naxis    = data.image[ID].md[0].naxis;
-    if (naxis != 2)
+    if(naxis != 2)
     {
         PRINT_ERROR("Function only supports 2-D images\n");
         abort();
@@ -85,7 +85,7 @@ imageID arith_image_dy(const char *ID_name, const char *IDout_name)
 
     assert(naxis != 0);
     naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if (naxes == NULL)
+    if(naxes == NULL)
     {
         PRINT_ERROR("malloc error. size %d", (int) naxis);
         abort();
@@ -102,9 +102,9 @@ imageID arith_image_dy(const char *ID_name, const char *IDout_name)
                     data.NBKEYWORD_DFT,
                     0,
                     &IDout);
-    for (uint32_t ii = 0; ii < naxes[0]; ii++)
+    for(uint32_t ii = 0; ii < naxes[0]; ii++)
     {
-        for (uint32_t jj = 1; jj < naxes[1] - 1; jj++)
+        for(uint32_t jj = 1; jj < naxes[1] - 1; jj++)
         {
             data.image[IDout].array.F[jj * naxes[0] + ii] =
                 (data.image[ID].array.F[(jj + 1) * naxes[0] + ii] -

@@ -69,7 +69,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     umask(0);
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
-    if (SM_fd == -1)
+    if(SM_fd == -1)
     {
         perror("Error opening file for writing");
         exit(0);
@@ -77,7 +77,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     int result;
     result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-    if (result == -1)
+    if(result == -1)
     {
         close(SM_fd);
         fprintf(stderr, "Error calling lseek() to 'stretch' the file");
@@ -85,7 +85,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     }
 
     result = write(SM_fd, "", 1);
-    if (result != 1)
+    if(result != 1)
     {
         close(SM_fd);
         perror("Error writing last byte of the file");
@@ -93,8 +93,8 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     }
 
     pinfo = (PROCESSINFO *)
-        mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if (pinfo == MAP_FAILED)
+            mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+    if(pinfo == MAP_FAILED)
     {
         close(SM_fd);
         perror("Error mmapping the file");
@@ -117,13 +117,13 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     int   notmux = 0;
 
     fpout = popen("tmuxsessionname", "r");
-    if (fpout == NULL)
+    if(fpout == NULL)
     {
         printf("WARNING: cannot run command \"tmuxsessionname\"\n");
     }
     else
     {
-        if (fgets(tmuxname, 100, fpout) == NULL)
+        if(fgets(tmuxname, 100, fpout) == NULL)
         {
             //printf("WARNING: fgets error\n");
             notmux = 1;
@@ -131,13 +131,13 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
         pclose(fpout);
     }
     // remove line feed
-    if (strlen(tmuxname) > 0)
+    if(strlen(tmuxname) > 0)
     {
         //  printf("tmux name : %s\n", tmuxname);
         //  printf("len: %d\n", (int) strlen(tmuxname));
         fflush(stdout);
 
-        if (tmuxname[strlen(tmuxname) - 1] == '\n')
+        if(tmuxname[strlen(tmuxname) - 1] == '\n')
         {
             tmuxname[strlen(tmuxname) - 1] = '\0';
         }
@@ -151,7 +151,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
         notmux = 1;
     }
 
-    if (notmux == 1)
+    if(notmux == 1)
     {
         sprintf(tmuxname, " ");
     }
@@ -196,19 +196,19 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
                             pinfo->name,
                             (int) pinfo->PID,
                             tnow.tv_sec);
-        if (slen < 1)
+        if(slen < 1)
         {
             PRINT_ERROR("snprintf wrote <1 char");
             abort();
         }
-        if (slen >= STRINGMAXLEN_PROCESSINFO_LOGFILENAME)
+        if(slen >= STRINGMAXLEN_PROCESSINFO_LOGFILENAME)
         {
             PRINT_ERROR("snprintf string truncation");
             abort();
         }
     }
 
-    if (LogFileCreated == 0)
+    if(LogFileCreated == 0)
     {
         pinfo->logFile = fopen(pinfo->logfilename, "w");
         LogFileCreated = 1;

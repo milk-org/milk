@@ -86,11 +86,11 @@ void CORE_logFunctionCall(const int                           funclevel,
 
     modechar = '?';
 
-    if (logfuncMODE == 0)
+    if(logfuncMODE == 0)
     {
         modechar = '>';
     }
-    else if (logfuncMODE == 1)
+    else if(logfuncMODE == 1)
     {
         modechar = '<';
     }
@@ -99,7 +99,7 @@ void CORE_logFunctionCall(const int                           funclevel,
         modechar = '?';
     }
 
-    if (funclevel <= loglevel)
+    if(funclevel <= loglevel)
     {
         char fname[500];
 

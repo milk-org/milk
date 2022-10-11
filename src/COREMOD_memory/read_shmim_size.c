@@ -17,24 +17,31 @@ static char *insname;
 static char *outfname;
 
 // List of arguments to function
-static CLICMDARGDEF farg[] = {{CLIARG_STR,
-                               ".in_sname",
-                               "input stream",
-                               "ims1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &insname,
-                               NULL},
-                              {CLIARG_STR_NOT_IMG,
-                               ".outfname",
-                               "output file name",
-                               "outsize.dat",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outfname,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_STR,
+        ".in_sname",
+        "input stream",
+        "ims1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &insname,
+        NULL
+    },
+    {
+        CLIARG_STR_NOT_IMG,
+        ".outfname",
+        "output file name",
+        "outsize.dat",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outfname,
+        NULL
+    }
+};
 
 // flag CLICMDFLAG_FPS enabled FPS capability
-static CLICMDDATA CLIcmddata = {
-    "readshmimsize", "read shared memory image size", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "readshmimsize", "read shared memory image size", CLICMD_FIELDS_DEFAULTS
+};
 
 // detailed help
 static errno_t help_function()
@@ -69,12 +76,12 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     FILE           *fp;
     imageID         ID = -1;
 
-    if ((ID = image_ID(name)) == -1)
+    if((ID = image_ID(name)) == -1)
     {
         WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", data.shmdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
-        if (SM_fd == -1)
+        if(SM_fd == -1)
         {
             printf("Cannot import file - continuing\n");
         }
@@ -89,7 +96,7 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
                                           MAP_SHARED,
                                           SM_fd,
                                           0);
-            if (map == MAP_FAILED)
+            if(map == MAP_FAILED)
             {
                 close(SM_fd);
                 perror("Error mmapping the file");
@@ -97,14 +104,14 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
             }
 
             fp = fopen(fname, "w");
-            for (i = 0; i < map[0].naxis; i++)
+            for(i = 0; i < map[0].naxis; i++)
             {
                 fprintf(fp, "%ld ", (long) map[0].size[i]);
             }
             fprintf(fp, "\n");
             fclose(fp);
 
-            if (munmap(map, sizeof(IMAGE_METADATA)) == -1)
+            if(munmap(map, sizeof(IMAGE_METADATA)) == -1)
             {
                 printf("unmapping %s\n", SM_fname);
                 perror("Error un-mmapping the file");
@@ -115,7 +122,7 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     else
     {
         fp = fopen(fname, "w");
-        for (i = 0; i < data.image[ID].md[0].naxis; i++)
+        for(i = 0; i < data.image[ID].md[0].naxis; i++)
         {
             fprintf(fp, "%ld ", (long) data.image[ID].md[0].size[i]);
         }
@@ -142,9 +149,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD_memory__read_sharedmem_image_size()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD_memory__read_sharedmem_image_size()
 {
     INSERT_STD_CLIREGISTERFUNC
 

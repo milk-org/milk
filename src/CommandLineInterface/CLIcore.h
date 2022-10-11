@@ -204,13 +204,13 @@ typedef struct
     char name[STRINGMAXLEN_MODULE_NAME]; // module name
 
     char shortname
-        [STRINGMAXLEN_MODULE_SHORTNAME]; // short name. If non-empty, access functions as <shortname>.<functionname>
+    [STRINGMAXLEN_MODULE_SHORTNAME]; // short name. If non-empty, access functions as <shortname>.<functionname>
 
     char loadname[STRINGMAXLEN_MODULE_LOADNAME];
     char sofilename[STRINGMAXLEN_MODULE_SOFILENAME];
 
     char package
-        [STRINGMAXLEN_MODULE_PACKAGENAME]; // package to which module belongs
+    [STRINGMAXLEN_MODULE_PACKAGENAME]; // package to which module belongs
     int versionmajor;                      // package version
     int versionminor;
     int versionpatch;
@@ -352,7 +352,7 @@ typedef struct
 
     char shmdir[STRINGMAXLEN_DIRNAME];
     char shmsemdirname
-        [STRINGMAXLEN_DIRNAME]; // same ad above with .s instead of /s
+    [STRINGMAXLEN_DIRNAME]; // same ad above with .s instead of /s
 
     // SIGNALS
     // =================================================
@@ -497,7 +497,7 @@ typedef struct
     // Which type of FPS process is the current process ?
     // conf, run, ctrl
     char FPS_PROCESS_TYPE
-        [STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
+    [STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
     long     FPS_TIMESTAMP;            // included in log file name
     uint32_t FPS_CMDCODE;              // current FPS mode
     errno_t (*FPS_CONFfunc)();         // pointer to FPS conf function

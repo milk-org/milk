@@ -38,9 +38,9 @@
 #include "processinfo.h"
 
 errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
-                                           imageID      trigID,
-                                           int          triggermode,
-                                           int          semindexrequested);
+        imageID      trigID,
+        int          triggermode,
+        int          semindexrequested);
 
 errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo);
 

@@ -7,30 +7,39 @@ static char *inampimname;
 static char *inphaimname;
 static char *outimname;
 
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".imamp_name",
-                               "amplitude image",
-                               "imamp",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inampimname,
-                               NULL},
-                              {CLIARG_IMG,
-                               ".impha_name",
-                               "phase image",
-                               "impha",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &inphaimname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".out_name",
-                               "output complex image",
-                               "outim",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &outimname,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_IMG,
+        ".imamp_name",
+        "amplitude image",
+        "imamp",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inampimname,
+        NULL
+    },
+    {
+        CLIARG_IMG,
+        ".impha_name",
+        "phase image",
+        "impha",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inphaimname,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".out_name",
+        "output complex image",
+        "outim",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
+    }
+};
 
-static CLICMDDATA CLIcmddata = {
-    "ap2c", "amplitude, phase -> complex", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "ap2c", "amplitude, phase -> complex", CLICMD_FIELDS_DEFAULTS
+};
 
 // detailed help
 static errno_t help_function()
@@ -62,13 +71,13 @@ errno_t mk_complex_from_amph(const char *am_name,
     datatype_ph = data.image[IDph].md[0].datatype;
 
     naxis = data.image[IDam].md[0].naxis;
-    for (i = 0; i < naxis; i++)
+    for(i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[IDam].md[0].size[i];
     }
     nelement = data.image[IDam].md[0].nelement;
 
-    if ((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
+    if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -82,11 +91,11 @@ errno_t mk_complex_from_amph(const char *am_name,
 
         data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
-#pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
-#pragma omp for
+            #pragma omp for
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CF[ii].re =
                     data.image[IDam].array.F[ii] *
@@ -101,8 +110,8 @@ errno_t mk_complex_from_amph(const char *am_name,
         data.image[IDout].md[0].cnt0++;
         data.image[IDout].md[0].write = 0;
     }
-    else if ((datatype_am == _DATATYPE_FLOAT) &&
-             (datatype_ph == _DATATYPE_DOUBLE))
+    else if((datatype_am == _DATATYPE_FLOAT) &&
+            (datatype_ph == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -115,11 +124,11 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           &IDout));
         data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
-#pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
-#pragma omp for
+            #pragma omp for
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CD[ii].re =
                     data.image[IDam].array.F[ii] *
@@ -134,8 +143,8 @@ errno_t mk_complex_from_amph(const char *am_name,
         data.image[IDout].md[0].cnt0++;
         data.image[IDout].md[0].write = 0;
     }
-    else if ((datatype_am == _DATATYPE_DOUBLE) &&
-             (datatype_ph == _DATATYPE_FLOAT))
+    else if((datatype_am == _DATATYPE_DOUBLE) &&
+            (datatype_ph == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -148,11 +157,11 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           &IDout));
         data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
-#pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
-#pragma omp for
+            #pragma omp for
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CD[ii].re =
                     data.image[IDam].array.D[ii] *
@@ -167,8 +176,8 @@ errno_t mk_complex_from_amph(const char *am_name,
         data.image[IDout].md[0].cnt0++;
         data.image[IDout].md[0].write = 0;
     }
-    else if ((datatype_am == _DATATYPE_DOUBLE) &&
-             (datatype_ph == _DATATYPE_DOUBLE))
+    else if((datatype_am == _DATATYPE_DOUBLE) &&
+            (datatype_ph == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         FUNC_CHECK_RETURN(create_image_ID(out_name,
@@ -181,11 +190,11 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           &IDout));
         data.image[IDout].md[0].write = 1;
 #ifdef _OPENMP
-#pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
-#pragma omp for
+            #pragma omp for
 #endif
-            for (uint64_t ii = 0; ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.CD[ii].re =
                     data.image[IDam].array.D[ii] *
@@ -226,9 +235,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD__mk_complex_from_amph()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD__mk_complex_from_amph()
 {
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;

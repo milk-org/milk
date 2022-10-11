@@ -10,26 +10,32 @@ static char *logstreamname;
 static char *logcmd;
 
 // List of arguments to function
-static CLICMDARGDEF farg[] = {{CLIARG_STR,
-                               ".in_sname",
-                               "input stream name",
-                               "im1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &logstreamname,
-                               NULL},
-                              {CLIARG_STR,
-                               ".logcmd",
-                               "log command",
-                               "logon",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &logcmd,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_STR,
+        ".in_sname",
+        "input stream name",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &logstreamname,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".logcmd",
+        "log command",
+        "logon",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &logcmd,
+        NULL
+    }
+};
 
 // flag CLICMDFLAG_FPS enabled FPS capability
 static CLICMDDATA CLIcmddata = {"shmimlogcmd",
                                 "log shared memory stream command\n"
                                 "logon, logoff",
-                                CLICMD_FIELDS_NOFPS};
+                                CLICMD_FIELDS_NOFPS
+                               };
 
 // set the on field in logshim
 // IDname is name of image logged
@@ -46,7 +52,7 @@ static errno_t logshim_cmd(const char *logshimname, const char *cmd)
     printf("Importing mmap file \"%s\"\n", SM_fname);
 
     SM_fd = open(SM_fname, O_RDWR);
-    if (SM_fd == -1)
+    if(SM_fd == -1)
     {
         printf("Cannot import file - continuing\n");
         exit(0);
@@ -62,29 +68,29 @@ static errno_t logshim_cmd(const char *logshimname, const char *cmd)
                                     MAP_SHARED,
                                     SM_fd,
                                     0);
-        if (map == MAP_FAILED)
+        if(map == MAP_FAILED)
         {
             close(SM_fd);
             perror("Error mmapping the file");
             exit(0);
         }
 
-        if (strcmp(cmd, "logon") == 0)
+        if(strcmp(cmd, "logon") == 0)
         {
             printf("Setting logging to ON\n");
             map[0].on = 1;
         }
-        else if (strcmp(cmd, "logoff") == 0)
+        else if(strcmp(cmd, "logoff") == 0)
         {
             printf("Setting logging to OFF\n");
             map[0].on = 0;
         }
-        else if (strcmp(cmd, "logexit") == 0)
+        else if(strcmp(cmd, "logexit") == 0)
         {
             printf("log exit\n");
             map[0].logexit = 1;
         }
-        else if (strcmp(cmd, "stat") == 0)
+        else if(strcmp(cmd, "stat") == 0)
         {
             printf("LOG   on = %d\n", map[0].on);
             printf("    cnt  = %lld\n", map[0].cnt);
@@ -93,7 +99,7 @@ static errno_t logshim_cmd(const char *logshimname, const char *cmd)
             printf("logexit  = %d\n", map[0].logexit);
         }
 
-        if (munmap(map, sizeof(LOGSHIM_CONF)) == -1)
+        if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
             printf("unmapping %s\n", SM_fname);
             perror("Error un-mmapping the file");
@@ -114,9 +120,9 @@ static errno_t compute_function()
 
 INSERT_STD_CLIfunction
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD_memory__shmimlogcmd()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD_memory__shmimlogcmd()
 {
     INSERT_STD_CLIREGISTERFUNC
 

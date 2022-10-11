@@ -28,9 +28,9 @@
  *
  */
 int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
-                                           int                        pindex,
-                                           char                      *tagname,
-                                           char *commentstr)
+        int                        pindex,
+        char                      *tagname,
+        char *commentstr)
 {
     char  fname[STRINGMAXLEN_FULLFILENAME];
     FILE *fp;
@@ -63,7 +63,7 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
             (int) tid,
             commentstr);
 
-    if (strcmp(tagname, "setval") == 0) // VALUE
+    if(strcmp(tagname, "setval") == 0)  // VALUE
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),
@@ -71,232 +71,232 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
                                       tagname);
 
         fp = fopen(fname, "w");
-        switch (fpsentry->parray[pindex].type)
+        switch(fpsentry->parray[pindex].type)
         {
 
-        case FPTYPE_INT64:
-            fprintf(fp,
-                    "%10ld  # %s\n",
-                    fpsentry->parray[pindex].val.i64[0],
-                    timestring);
-            break;
-
-        case FPTYPE_FLOAT64:
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f64[0],
-                    timestring);
-            break;
-
-        case FPTYPE_FLOAT32:
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f32[0],
-                    timestring);
-            break;
-
-        case FPTYPE_PID:
-            fprintf(fp,
-                    "%18ld  # %s\n",
-                    (long) fpsentry->parray[pindex].val.pid[0],
-                    timestring);
-            break;
-
-        case FPTYPE_TIMESPEC:
-            fprintf(fp,
-                    "%15ld %09ld  # %s\n",
-                    (long) fpsentry->parray[pindex].val.ts[0].tv_sec,
-                    (long) fpsentry->parray[pindex].val.ts[0].tv_nsec,
-                    timestring);
-            break;
-
-        case FPTYPE_FILENAME:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
-
-        case FPTYPE_FITSFILENAME:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
-
-        case FPTYPE_EXECFILENAME:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
-
-        case FPTYPE_DIRNAME:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
-
-        case FPTYPE_STREAMNAME:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
-
-        case FPTYPE_STRING:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
-
-        case FPTYPE_ONOFF:
-            if (fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
-            {
+            case FPTYPE_INT64:
                 fprintf(fp,
-                        "1  %10s # %s\n",
-                        fpsentry->parray[pindex].val.string[1],
+                        "%10ld  # %s\n",
+                        fpsentry->parray[pindex].val.i64[0],
                         timestring);
-            }
-            else
-            {
+                break;
+
+            case FPTYPE_FLOAT64:
                 fprintf(fp,
-                        "0  %10s # %s\n",
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f64[0],
+                        timestring);
+                break;
+
+            case FPTYPE_FLOAT32:
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f32[0],
+                        timestring);
+                break;
+
+            case FPTYPE_PID:
+                fprintf(fp,
+                        "%18ld  # %s\n",
+                        (long) fpsentry->parray[pindex].val.pid[0],
+                        timestring);
+                break;
+
+            case FPTYPE_TIMESPEC:
+                fprintf(fp,
+                        "%15ld %09ld  # %s\n",
+                        (long) fpsentry->parray[pindex].val.ts[0].tv_sec,
+                        (long) fpsentry->parray[pindex].val.ts[0].tv_nsec,
+                        timestring);
+                break;
+
+            case FPTYPE_FILENAME:
+                fprintf(fp,
+                        "%s  # %s\n",
                         fpsentry->parray[pindex].val.string[0],
                         timestring);
-            }
-            break;
+                break;
 
-        case FPTYPE_FPSNAME:
-            fprintf(fp,
-                    "%s  # %s\n",
-                    fpsentry->parray[pindex].val.string[0],
-                    timestring);
-            break;
+            case FPTYPE_FITSFILENAME:
+                fprintf(fp,
+                        "%s  # %s\n",
+                        fpsentry->parray[pindex].val.string[0],
+                        timestring);
+                break;
+
+            case FPTYPE_EXECFILENAME:
+                fprintf(fp,
+                        "%s  # %s\n",
+                        fpsentry->parray[pindex].val.string[0],
+                        timestring);
+                break;
+
+            case FPTYPE_DIRNAME:
+                fprintf(fp,
+                        "%s  # %s\n",
+                        fpsentry->parray[pindex].val.string[0],
+                        timestring);
+                break;
+
+            case FPTYPE_STREAMNAME:
+                fprintf(fp,
+                        "%s  # %s\n",
+                        fpsentry->parray[pindex].val.string[0],
+                        timestring);
+                break;
+
+            case FPTYPE_STRING:
+                fprintf(fp,
+                        "%s  # %s\n",
+                        fpsentry->parray[pindex].val.string[0],
+                        timestring);
+                break;
+
+            case FPTYPE_ONOFF:
+                if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
+                {
+                    fprintf(fp,
+                            "1  %10s # %s\n",
+                            fpsentry->parray[pindex].val.string[1],
+                            timestring);
+                }
+                else
+                {
+                    fprintf(fp,
+                            "0  %10s # %s\n",
+                            fpsentry->parray[pindex].val.string[0],
+                            timestring);
+                }
+                break;
+
+            case FPTYPE_FPSNAME:
+                fprintf(fp,
+                        "%s  # %s\n",
+                        fpsentry->parray[pindex].val.string[0],
+                        timestring);
+                break;
         }
         fclose(fp);
     }
 
-    if (strcmp(tagname, "minval") == 0) // MIN VALUE
+    if(strcmp(tagname, "minval") == 0)  // MIN VALUE
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),
                                       fname,
                                       tagname);
 
-        switch (fpsentry->parray[pindex].type)
+        switch(fpsentry->parray[pindex].type)
         {
 
-        case FPTYPE_INT64:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%10ld  # %s\n",
-                    fpsentry->parray[pindex].val.i64[1],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_INT64:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%10ld  # %s\n",
+                        fpsentry->parray[pindex].val.i64[1],
+                        timestring);
+                fclose(fp);
+                break;
 
-        case FPTYPE_FLOAT64:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f64[1],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_FLOAT64:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f64[1],
+                        timestring);
+                fclose(fp);
+                break;
 
-        case FPTYPE_FLOAT32:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f32[1],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_FLOAT32:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f32[1],
+                        timestring);
+                fclose(fp);
+                break;
         }
     }
 
-    if (strcmp(tagname, "maxval") == 0) // MAX VALUE
+    if(strcmp(tagname, "maxval") == 0)  // MAX VALUE
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),
                                       fname,
                                       tagname);
 
-        switch (fpsentry->parray[pindex].type)
+        switch(fpsentry->parray[pindex].type)
         {
 
-        case FPTYPE_INT64:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%10ld  # %s\n",
-                    fpsentry->parray[pindex].val.i64[2],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_INT64:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%10ld  # %s\n",
+                        fpsentry->parray[pindex].val.i64[2],
+                        timestring);
+                fclose(fp);
+                break;
 
-        case FPTYPE_FLOAT64:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f64[2],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_FLOAT64:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f64[2],
+                        timestring);
+                fclose(fp);
+                break;
 
-        case FPTYPE_FLOAT32:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f32[2],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_FLOAT32:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f32[2],
+                        timestring);
+                fclose(fp);
+                break;
         }
     }
 
-    if (strcmp(tagname, "currval") == 0) // CURRENT VALUE
+    if(strcmp(tagname, "currval") == 0)  // CURRENT VALUE
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),
                                       fname,
                                       tagname);
 
-        switch (fpsentry->parray[pindex].type)
+        switch(fpsentry->parray[pindex].type)
         {
 
-        case FPTYPE_INT64:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%10ld  # %s\n",
-                    fpsentry->parray[pindex].val.i64[3],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_INT64:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%10ld  # %s\n",
+                        fpsentry->parray[pindex].val.i64[3],
+                        timestring);
+                fclose(fp);
+                break;
 
-        case FPTYPE_FLOAT64:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f64[3],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_FLOAT64:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f64[3],
+                        timestring);
+                fclose(fp);
+                break;
 
-        case FPTYPE_FLOAT32:
-            fp = fopen(fname, "w");
-            fprintf(fp,
-                    "%18f  # %s\n",
-                    fpsentry->parray[pindex].val.f32[3],
-                    timestring);
-            fclose(fp);
-            break;
+            case FPTYPE_FLOAT32:
+                fp = fopen(fname, "w");
+                fprintf(fp,
+                        "%18f  # %s\n",
+                        fpsentry->parray[pindex].val.f32[3],
+                        timestring);
+                fclose(fp);
+                break;
         }
     }
 
-    if (strcmp(tagname, "fpsname") == 0) // FPS name
+    if(strcmp(tagname, "fpsname") == 0)  // FPS name
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),
@@ -307,7 +307,7 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
         fclose(fp);
     }
 
-    if (strcmp(tagname, "fpsdir") == 0) // FPS name
+    if(strcmp(tagname, "fpsdir") == 0)  // FPS name
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),
@@ -318,7 +318,7 @@ int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
         fclose(fp);
     }
 
-    if (strcmp(tagname, "status") == 0) // FPS name
+    if(strcmp(tagname, "status") == 0)  // FPS name
     {
         functionparameter_GetFileName(fpsentry,
                                       &(fpsentry->parray[pindex]),

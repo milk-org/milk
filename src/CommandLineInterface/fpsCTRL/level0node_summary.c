@@ -10,7 +10,7 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
     pid_t pid;
 
     pid = fps[fpsindex].md->confpid;
-    if ((getpgid(pid) >= 0) && (pid > 0))
+    if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
         TUI_printfw("%07d ", (int) pid);
@@ -18,7 +18,7 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
     }
     else // PID not active
     {
-        if (fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
         {
             // not clean exit
             screenprint_setcolor(4);
@@ -32,19 +32,19 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
         }
     }
 
-    if (fps[fpsindex].md->conferrcnt > 99)
+    if(fps[fpsindex].md->conferrcnt > 99)
     {
         screenprint_setcolor(4);
         TUI_printfw("[XX]");
         screenprint_unsetcolor(4);
     }
-    if (fps[fpsindex].md->conferrcnt > 0)
+    if(fps[fpsindex].md->conferrcnt > 0)
     {
         screenprint_setcolor(4);
         TUI_printfw("[%02d]", fps[fpsindex].md->conferrcnt);
         screenprint_unsetcolor(4);
     }
-    if (fps[fpsindex].md->conferrcnt == 0)
+    if(fps[fpsindex].md->conferrcnt == 0)
     {
         screenprint_setcolor(2);
         TUI_printfw("[%02d]", fps[fpsindex].md->conferrcnt);
@@ -52,7 +52,7 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
     }
 
     pid = fps[fpsindex].md->runpid;
-    if ((getpgid(pid) >= 0) && (pid > 0))
+    if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
         TUI_printfw("%07d ", (int) pid);
@@ -60,7 +60,7 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
     }
     else
     {
-        if (fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
         {
             // not clean exit
             screenprint_setcolor(4);

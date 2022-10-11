@@ -19,7 +19,7 @@ errno_t list_variable_ID_file(const char *fname);
 
 static errno_t list_variable_ID_file__cli()
 {
-    if (CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
+    if(CLI_checkarg(1, CLIARG_STR_NOT_IMG) == 0)
     {
         list_variable_ID_file(data.cmdargtoken[1].val.string);
         return CLICMD_SUCCESS;
@@ -60,8 +60,8 @@ errno_t list_variable_ID()
 {
     variableID i;
 
-    for (i = 0; i < data.NB_MAX_VARIABLE; i++)
-        if (data.variable[i].used == 1)
+    for(i = 0; i < data.NB_MAX_VARIABLE; i++)
+        if(data.variable[i].used == 1)
         {
             printf("%4ld %16s %25.18g\n",
                    i,
@@ -78,8 +78,8 @@ errno_t list_variable_ID_file(const char *fname)
     FILE   *fp;
 
     fp = fopen(fname, "w");
-    for (i = 0; i < data.NB_MAX_VARIABLE; i++)
-        if (data.variable[i].used == 1)
+    for(i = 0; i < data.NB_MAX_VARIABLE; i++)
+        if(data.variable[i].used == 1)
         {
             fprintf(fp,
                     "%s=%.18g\n",

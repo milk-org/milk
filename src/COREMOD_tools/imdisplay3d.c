@@ -20,7 +20,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 
 errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
     {
         COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string,
                                    data.cmdargtoken[2].val.numl);
@@ -67,7 +67,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
 
     snprintf(cmd, 512, "gnuplot");
 
-    if ((fpgnuplot = popen(cmd, "w")) == NULL)
+    if((fpgnuplot = popen(cmd, "w")) == NULL)
     {
         fprintf(stderr, "could not connect to gnuplot\n");
         return -1;
@@ -86,9 +86,9 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
 
     fp = fopen("pts.dat", "w");
     fprintf(fpgnuplot, "splot \"-\" w d notitle\n");
-    for (ii = 0; ii < xsize; ii += step)
+    for(ii = 0; ii < xsize; ii += step)
     {
-        for (jj = 0; jj < xsize; jj += step)
+        for(jj = 0; jj < xsize; jj += step)
         {
             fprintf(fpgnuplot,
                     "%ld %ld %f\n",

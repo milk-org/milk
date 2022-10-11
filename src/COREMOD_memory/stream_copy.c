@@ -15,7 +15,8 @@
 static char *inimname;
 static char *outimname;
 
-static CLICMDARGDEF farg[] = {
+static CLICMDARGDEF farg[] =
+{
     {
         CLIARG_IMG,
         ".in_sname",
@@ -60,7 +61,8 @@ static errno_t compute_function()
     IMGID imgout = mkIMGID_from_name(outimname);
     resolveIMGID(&imgout, ERRMODE_ABORT);
 
-    uint64_t imdatasize = ImageStreamIO_typesize(imgin.im->md->datatype) * imgin.im->md->nelement;
+    uint64_t imdatasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
+                          imgin.im->md->nelement;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

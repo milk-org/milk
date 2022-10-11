@@ -25,32 +25,42 @@ static char *outimname;
 static long *FITSIOerrmode;
 
 // CLI function arguments and parameters
-static CLICMDARGDEF farg[] = {
-    {CLIARG_STR,
-     ".infname",
-     "input file",
-     "imfname",
-     CLIARG_VISIBLE_DEFAULT,
-     (void **) &infilename,
-     NULL},
-    {CLIARG_STR_NOT_IMG,
-     ".outimname",
-     "output image name",
-     "outimname",
-     CLIARG_VISIBLE_DEFAULT,
-     (void **) &outimname,
-     NULL},
-    {CLIARG_LONG,
-     ".errmode",
-     "FITSIO errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)",
-     "1",
-     CLIARG_HIDDEN_DEFAULT,
-     (void **) &FITSIOerrmode,
-     NULL}};
+static CLICMDARGDEF farg[] =
+{
+    {
+        CLIARG_STR,
+        ".infname",
+        "input file",
+        "imfname",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &infilename,
+        NULL
+    },
+    {
+        CLIARG_STR_NOT_IMG,
+        ".outimname",
+        "output image name",
+        "outimname",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
+    },
+    {
+        CLIARG_LONG,
+        ".errmode",
+        "FITSIO errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)",
+        "1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &FITSIOerrmode,
+        NULL
+    }
+};
 
 // CLI function initialization data
-static CLICMDDATA CLIcmddata = {
-    "loadfits", "load FITS format file", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "loadfits", "load FITS format file", CLICMD_FIELDS_DEFAULTS
+};
 
 // detailed help
 static errno_t help_function()
@@ -110,27 +120,27 @@ errno_t load_fits(const char *restrict file_name,
         // tyr 3 consecutive times and then give up if not successful
         int fileOK = 0;
         int NBtry  = 3;
-        for (int tr = 0; tr < NBtry; tr++)
+        for(int tr = 0; tr < NBtry; tr++)
         {
-            if (fileOK == 0)
+            if(fileOK == 0)
             {
                 int status = 0;
                 fits_open_file(&fptr, file_name, READONLY, &status);
 
-                if (status != 0)
+                if(status != 0)
                 {
-                    if (errmode > 0)
+                    if(errmode > 0)
                     {
 
                         printf("attempt # %d failed\n", tr);
                     }
 
                     //void fits_get_errstatus(int status, char *err_text)
-                    if (status != 0)
+                    if(status != 0)
                     {
-                        if (errmode > 1)
+                        if(errmode > 1)
                         {
-                            if (tr == NBtry - 1)
+                            if(tr == NBtry - 1)
                             {
                                 FITSIO_CHECK_ERROR(status,
                                                    errmode,
@@ -140,7 +150,7 @@ errno_t load_fits(const char *restrict file_name,
                                                    NBtry);
                             }
                         }
-                        if (tr != NBtry - 1) // don't wait on last try
+                        if(tr != NBtry - 1)  // don't wait on last try
                         {
                             usleep(10000);
                         }
@@ -156,21 +166,21 @@ errno_t load_fits(const char *restrict file_name,
         }
         printf("fileOK = %d\n", fileOK);
 
-        if (fileOK == 0)
+        if(fileOK == 0)
         {
             // if image not loaded, set output identifier to -1
-            if (IDout != NULL)
+            if(IDout != NULL)
             {
                 *IDout = -1;
             }
 
-            if (errmode == 0)
+            if(errmode == 0)
             {
                 DEBUG_TRACE_FEXIT();
                 return RETURN_SUCCESS;
             }
 
-            if (errmode == 1)
+            if(errmode == 1)
             {
                 PRINT_WARNING(
                     "Image \"%s\" could not be loaded from file \"%s\"",
@@ -180,7 +190,7 @@ errno_t load_fits(const char *restrict file_name,
                 return RETURN_SUCCESS;
             }
 
-            if (errmode == 2)
+            if(errmode == 2)
             {
                 FUNC_RETURN_FAILURE(
                     "Image \"%s\" could not be loaded from file \"%s\"",
@@ -188,7 +198,7 @@ errno_t load_fits(const char *restrict file_name,
                     file_name);
             }
 
-            if (errmode == 3)
+            if(errmode == 3)
             {
                 abort();
             }
@@ -225,7 +235,7 @@ errno_t load_fits(const char *restrict file_name,
     printf("naxis = %ld\n", naxis);
     DEBUG_TRACEPOINT("naxis = %ld", naxis);
 
-    for (long i = 0; i < naxis; i++)
+    for(long i = 0; i < naxis; i++)
     {
         WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
 
@@ -250,7 +260,7 @@ errno_t load_fits(const char *restrict file_name,
     {
         int status = 0;
         fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, comment, &status);
-        if (status != 0)
+        if(status != 0)
         {
             bscale = 1.0;
         }
@@ -259,7 +269,7 @@ errno_t load_fits(const char *restrict file_name,
     {
         int status = 0;
         fits_read_key(fptr, TDOUBLE, "BZERO", &bzero, comment, &status);
-        if (status != 0)
+        if(status != 0)
         {
             bzero = 0.0;
         }
@@ -271,10 +281,10 @@ errno_t load_fits(const char *restrict file_name,
         FITSIO_CHECK_ERROR(status, errmode, "bscake set errror");
     }
 
-    if (1)
+    if(1)
     {
         printf("[%ld", (long) naxes[0]);
-        for (long i = 1; i < naxis; i++)
+        for(long i = 1; i < naxis; i++)
         {
             printf(",%ld", (long) naxes[i]);
         }
@@ -283,13 +293,13 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     nelements = 1;
-    for (long i = 0; i < naxis; i++)
+    for(long i = 0; i < naxis; i++)
     {
         nelements *= naxes[i];
     }
 
     /* bitpix = -32  TFLOAT */
-    if (bitpix == -32)
+    if(bitpix == -32)
     {
         create_image_ID(ID_name,
                         naxis,
@@ -318,7 +328,7 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     /* bitpix = -64  TDOUBLE */
-    if (bitpix == -64)
+    if(bitpix == -64)
     {
         create_image_ID(ID_name,
                         naxis,
@@ -347,7 +357,7 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     /* bitpix = 16   TSHORT */
-    if (bitpix == 16)
+    if(bitpix == 16)
     {
         // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
         create_image_ID(ID_name,
@@ -378,7 +388,7 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     /* bitpix = 32   TLONG */
-    if (bitpix == 32)
+    if(bitpix == 32)
     {
         create_image_ID(ID_name,
                         naxis,
@@ -389,7 +399,7 @@ errno_t load_fits(const char *restrict file_name,
                         0,
                         &ID);
         larray = (long *) malloc(sizeof(long) * nelements);
-        if (larray == NULL)
+        if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
             exit(0);
@@ -411,7 +421,7 @@ errno_t load_fits(const char *restrict file_name,
         }
 
         bzero = 0.0;
-        for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
             data.image[ID].array.SI32[ii] = larray[ii] * bscale + bzero;
         }
@@ -420,7 +430,7 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     /* bitpix = 64   TLONG  */
-    if (bitpix == 64)
+    if(bitpix == 64)
     {
         create_image_ID(ID_name,
                         naxis,
@@ -431,7 +441,7 @@ errno_t load_fits(const char *restrict file_name,
                         0,
                         &ID);
         larray = (long *) malloc(sizeof(long) * nelements);
-        if (larray == NULL)
+        if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
             abort();
@@ -454,7 +464,7 @@ errno_t load_fits(const char *restrict file_name,
         }
 
         bzero = 0.0;
-        for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
             data.image[ID].array.SI64[ii] = larray[ii] * bscale + bzero;
         }
@@ -463,7 +473,7 @@ errno_t load_fits(const char *restrict file_name,
     }
 
     /* bitpix = 8   TBYTE */
-    if (bitpix == 8)
+    if(bitpix == 8)
     {
         create_image_ID(ID_name,
                         naxis,
@@ -475,7 +485,7 @@ errno_t load_fits(const char *restrict file_name,
                         &ID);
         barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] *
                                           naxes[0]);
-        if (barray == NULL)
+        if(barray == NULL)
         {
             PRINT_ERROR("malloc error");
             exit(0);
@@ -497,7 +507,7 @@ errno_t load_fits(const char *restrict file_name,
                                bitpix);
         }
 
-        for (uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
             data.image[ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
         }
@@ -520,9 +530,10 @@ errno_t load_fits(const char *restrict file_name,
                              "NAXIS4",
                              "BSCALE",
                              "BZERO",
-                             0};
+                             0
+                            };
     printf("%d FITS keywords detected\n", nbFITSkeys);
-    for (int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
+    for(int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
     {
         char keyname[9];
         char kwvaluestr[21];
@@ -541,9 +552,9 @@ errno_t load_fits(const char *restrict file_name,
 
         int kwignore = 0;
         int ki       = 0;
-        while (keywordignore[ki])
+        while(keywordignore[ki])
         {
-            if (strcmp(keywordignore[ki], keyname) == 0)
+            if(strcmp(keywordignore[ki], keyname) == 0)
             {
                 //printf("%3d IGNORING %s\n", kwnum, keyname);
                 kwignore = 1;
@@ -552,14 +563,14 @@ errno_t load_fits(const char *restrict file_name,
             ki++;
         }
 
-        if ((kwignore == 0) && (strlen(kwvaluestr) > 0))
+        if((kwignore == 0) && (strlen(kwvaluestr) > 0))
         {
             int kwtypeOK = 0;
 
             // is this a long ?
             char *tailstr;
             long  kwlongval = strtol(kwvaluestr, &tailstr, 10);
-            if (strlen(tailstr) == 0)
+            if(strlen(tailstr) == 0)
             {
                 kwtypeOK = 1;
                 printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
@@ -570,11 +581,11 @@ errno_t load_fits(const char *restrict file_name,
                 image_keyword_addL(img, keyname, kwlongval, kwcomment);
             }
 
-            if (kwtypeOK == 0)
+            if(kwtypeOK == 0)
             {
                 // is this a float ?
                 double kwdoubleval = strtold(kwvaluestr, &tailstr);
-                if (strlen(tailstr) == 0)
+                if(strlen(tailstr) == 0)
                 {
                     kwtypeOK = 1;
                     printf("%3d FITS KEYW [D] %-8s= %20g / %s\n",
@@ -585,7 +596,7 @@ errno_t load_fits(const char *restrict file_name,
                     image_keyword_addD(img, keyname, kwdoubleval, kwcomment);
                 }
 
-                if (kwtypeOK == 0)
+                if(kwtypeOK == 0)
                 {
                     // default to string
                     printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n",
@@ -614,7 +625,7 @@ errno_t load_fits(const char *restrict file_name,
 
     list_image_ID();
 
-    if (IDout != NULL)
+    if(IDout != NULL)
     {
         *IDout = ID;
     }
@@ -644,9 +655,9 @@ static errno_t compute_function()
 
 INSERT_STD_FPSCLIfunctions
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD_iofits__loadfits()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD_iofits__loadfits()
 {
     //INSERT_STD_FPSCLIREGISTERFUNC
 

@@ -17,26 +17,26 @@
 // ==========================================
 
 errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
-                                         const char *IDout_name,
-                                         long        periodus);
+        const char *IDout_name,
+        long        periodus);
 
 imageID COREMOD_MEMORY_image_streamupdateloop(const char *IDinname,
-                                              const char *IDoutname,
-                                              long        usperiod,
-                                              long        NBcubes,
-                                              long        period,
-                                              long        offsetus,
-                                              const char *IDsync_name,
-                                              int         semtrig,
-                                              int         timingmode);
+        const char *IDoutname,
+        long        usperiod,
+        long        NBcubes,
+        long        period,
+        long        offsetus,
+        const char *IDsync_name,
+        int         semtrig,
+        int         timingmode);
 
 imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname,
-                                                      const char *IDoutname,
-                                                      long        period,
-                                                      long        offsetus,
-                                                      const char *IDsync_name,
-                                                      int         semtrig,
-                                                      int         timingmode);
+        const char *IDoutname,
+        long        period,
+        long        offsetus,
+        const char *IDsync_name,
+        int         semtrig,
+        int         timingmode);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -44,9 +44,9 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname,
 
 static errno_t COREMOD_MEMORY_image_streamburst__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
             CLI_checkarg(3, CLIARG_LONG) ==
-        0)
+            0)
     {
         COREMOD_MEMORY_image_streamburst(data.cmdargtoken[1].val.string,
                                          data.cmdargtoken[2].val.string,
@@ -61,12 +61,12 @@ static errno_t COREMOD_MEMORY_image_streamburst__cli()
 
 static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
             CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) +
             CLI_checkarg(5, CLIARG_LONG) + CLI_checkarg(6, CLIARG_LONG) +
             CLI_checkarg(7, CLIARG_STR) + CLI_checkarg(8, CLIARG_LONG) +
             CLI_checkarg(9, CLIARG_LONG) ==
-        0)
+            0)
     {
         COREMOD_MEMORY_image_streamupdateloop(data.cmdargtoken[1].val.string,
                                               data.cmdargtoken[2].val.string,
@@ -87,11 +87,11 @@ static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
 
 static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
             CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) +
             CLI_checkarg(5, CLIARG_STR) + CLI_checkarg(6, CLIARG_LONG) +
             CLI_checkarg(7, CLIARG_LONG) ==
-        0)
+            0)
     {
         COREMOD_MEMORY_image_streamupdateloop_semtrig(
             data.cmdargtoken[1].val.string,
@@ -158,8 +158,8 @@ errno_t stream_updateloop_addCLIcmd()
  */
 
 errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
-                                         const char *IDout_name,
-                                         long        periodus)
+        const char *IDout_name,
+        long        periodus)
 {
     imageID IDin;
     imageID IDout;
@@ -181,7 +181,7 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     long      naxis = data.image[IDin].md[0].naxis;
     uint32_t *arraysize;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if (naxis != 3)
+    if(naxis != 3)
     {
         printf("ERROR: input image %s should be 3D\n", IDin_name);
         exit(0);
@@ -194,104 +194,104 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
 
     // check that IDout has same format
     IDout = image_ID(IDout_name);
-    if (data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
+    if(data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
     {
         printf("ERROR: in and out have different size\n");
         free(arraysize);
         return RETURN_FAILURE;
     }
-    if (data.image[IDout].md[0].size[1] != data.image[IDin].md[0].size[1])
+    if(data.image[IDout].md[0].size[1] != data.image[IDin].md[0].size[1])
     {
         printf("ERROR: in and out have different size\n");
         free(arraysize);
         return RETURN_FAILURE;
     }
-    if (data.image[IDout].md[0].datatype != data.image[IDin].md[0].datatype)
+    if(data.image[IDout].md[0].datatype != data.image[IDin].md[0].datatype)
     {
         printf("ERROR: in and out have different datatype\n");
         free(arraysize);
         return RETURN_FAILURE;
     }
 
-    switch (datatype)
+    switch(datatype)
     {
-    case _DATATYPE_INT8:
-        ptr0s     = (char *) data.image[IDin].array.SI8;
-        ptr1      = (char *) data.image[IDout].array.SI8;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
-        break;
+        case _DATATYPE_INT8:
+            ptr0s     = (char *) data.image[IDin].array.SI8;
+            ptr1      = (char *) data.image[IDout].array.SI8;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
+            break;
 
-    case _DATATYPE_UINT8:
-        ptr0s     = (char *) data.image[IDin].array.UI8;
-        ptr1      = (char *) data.image[IDout].array.UI8;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
-        break;
+        case _DATATYPE_UINT8:
+            ptr0s     = (char *) data.image[IDin].array.UI8;
+            ptr1      = (char *) data.image[IDout].array.UI8;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
+            break;
 
-    case _DATATYPE_INT16:
-        ptr0s     = (char *) data.image[IDin].array.SI16;
-        ptr1      = (char *) data.image[IDout].array.SI16;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
-        break;
+        case _DATATYPE_INT16:
+            ptr0s     = (char *) data.image[IDin].array.SI16;
+            ptr1      = (char *) data.image[IDout].array.SI16;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
+            break;
 
-    case _DATATYPE_UINT16:
-        ptr0s     = (char *) data.image[IDin].array.UI16;
-        ptr1      = (char *) data.image[IDout].array.UI16;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
-        break;
+        case _DATATYPE_UINT16:
+            ptr0s     = (char *) data.image[IDin].array.UI16;
+            ptr1      = (char *) data.image[IDout].array.UI16;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
+            break;
 
-    case _DATATYPE_INT32:
-        ptr0s     = (char *) data.image[IDin].array.SI32;
-        ptr1      = (char *) data.image[IDout].array.SI32;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
-        break;
+        case _DATATYPE_INT32:
+            ptr0s     = (char *) data.image[IDin].array.SI32;
+            ptr1      = (char *) data.image[IDout].array.SI32;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
+            break;
 
-    case _DATATYPE_UINT32:
-        ptr0s     = (char *) data.image[IDin].array.UI32;
-        ptr1      = (char *) data.image[IDout].array.UI32;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
-        break;
+        case _DATATYPE_UINT32:
+            ptr0s     = (char *) data.image[IDin].array.UI32;
+            ptr1      = (char *) data.image[IDout].array.UI32;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
+            break;
 
-    case _DATATYPE_INT64:
-        ptr0s     = (char *) data.image[IDin].array.SI64;
-        ptr1      = (char *) data.image[IDout].array.SI64;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
-        break;
+        case _DATATYPE_INT64:
+            ptr0s     = (char *) data.image[IDin].array.SI64;
+            ptr1      = (char *) data.image[IDout].array.SI64;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
+            break;
 
-    case _DATATYPE_UINT64:
-        ptr0s     = (char *) data.image[IDin].array.UI64;
-        ptr1      = (char *) data.image[IDout].array.UI64;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
-        break;
+        case _DATATYPE_UINT64:
+            ptr0s     = (char *) data.image[IDin].array.UI64;
+            ptr1      = (char *) data.image[IDout].array.UI64;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
+            break;
 
-    case _DATATYPE_FLOAT:
-        ptr0s     = (char *) data.image[IDin].array.F;
-        ptr1      = (char *) data.image[IDout].array.F;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * sizeof(float);
-        break;
+        case _DATATYPE_FLOAT:
+            ptr0s     = (char *) data.image[IDin].array.F;
+            ptr1      = (char *) data.image[IDout].array.F;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * sizeof(float);
+            break;
 
-    case _DATATYPE_DOUBLE:
-        ptr0s     = (char *) data.image[IDin].array.D;
-        ptr1      = (char *) data.image[IDout].array.D;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * sizeof(double);
-        break;
+        case _DATATYPE_DOUBLE:
+            ptr0s     = (char *) data.image[IDin].array.D;
+            ptr1      = (char *) data.image[IDout].array.D;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * sizeof(double);
+            break;
     }
 
     tim.tv_sec  = 0;
-    tim.tv_nsec = (long) (1000 * periodus);
+    tim.tv_nsec = (long)(1000 * periodus);
 
-    for (int slice = 0; slice < NBslice; slice++)
+    for(int slice = 0; slice < NBslice; slice++)
     {
-        if (nanosleep(&tim, NULL) < 0)
+        if(nanosleep(&tim, NULL) < 0)
         {
             printf("Nano sleep system call failed \n");
         }
@@ -379,7 +379,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                        &schedpar); //other option is SCHED_RR, might be faster
 
     PROCESSINFO *processinfo;
-    if (data.processinfo == 1)
+    if(data.processinfo == 1)
     {
         // CREATE PROCESSINFO ENTRY
         // see processtools.c in module CommandLineInterface for details
@@ -398,7 +398,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
-    if (NBcubes < 1)
+    if(NBcubes < 1)
     {
         printf("ERROR: invalid number of input cubes, needs to be >0");
         return RETURN_FAILURE;
@@ -407,13 +407,13 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     int sync_semwaitindex;
     IDin      = (long *) malloc(sizeof(long) * NBcubes);
     SyncSlice = 0;
-    if (NBcubes == 1)
+    if(NBcubes == 1)
     {
         IDin[0] = image_ID(IDinname);
 
         // in single cube mode, optional sync stream drives updates to next slice within cube
         IDsync = image_ID(IDsync_name);
-        if (IDsync != -1)
+        if(IDsync != -1)
         {
             SyncSlice = 1;
             sync_semwaitindex =
@@ -426,12 +426,12 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         sync_semwaitindex =
             ImageStreamIO_getsemwaitindex(&data.image[IDsync], semtrig);
 
-        for (cubeindex = 0; cubeindex < NBcubes; cubeindex++)
+        for(cubeindex = 0; cubeindex < NBcubes; cubeindex++)
         {
             sprintf(imname, "%s_%03ld", IDinname, cubeindex);
             IDin[cubeindex] = image_ID(imname);
         }
-        offsetfr = (long) (0.5 + 1.0 * offsetus / usperiod);
+        offsetfr = (long)(0.5 + 1.0 * offsetus / usperiod);
 
         printf("FRAMES OFFSET = %ld\n", offsetfr);
     }
@@ -443,7 +443,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
     naxis     = data.image[IDin[0]].md[0].naxis;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if (naxis != 3)
+    if(naxis != 3)
     {
         printf("ERROR: input image %s should be 3D\n", IDinname);
         exit(0);
@@ -455,7 +455,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     datatype = data.image[IDin[0]].md[0].datatype;
 
     IDout = image_ID(IDoutname);
-    if (IDout == -1)
+    if(IDout == -1)
     {
         create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
@@ -463,7 +463,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
     cubeindex = 0;
     pcnt      = 0;
-    if (NBcubes > 1)
+    if(NBcubes > 1)
     {
         cntsync = data.image[IDsync].md[0].cnt0;
     }
@@ -472,7 +472,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     kk           = 0;
     cntDelayMode = 0;
 
-    if (data.processinfo == 1)
+    if(data.processinfo == 1)
     {
         processinfo->loopstat = 1; // loop running
     }
@@ -480,45 +480,45 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     int  loopCTRLexit = 0; // toggles to 1 when loop is set to exit cleanly
     long loopcnt      = 0;
 
-    while (loopOK == 1)
+    while(loopOK == 1)
     {
 
         // processinfo control
-        if (data.processinfo == 1)
+        if(data.processinfo == 1)
         {
-            while (processinfo->CTRLval == 1) // pause
+            while(processinfo->CTRLval == 1)  // pause
             {
                 usleep(50);
             }
 
-            if (processinfo->CTRLval == 2) // single iteration
+            if(processinfo->CTRLval == 2)  // single iteration
             {
                 processinfo->CTRLval = 1;
             }
 
-            if (processinfo->CTRLval == 3) // exit loop
+            if(processinfo->CTRLval == 3)  // exit loop
             {
                 loopCTRLexit = 1;
             }
         }
 
-        if (NBcubes > 1)
+        if(NBcubes > 1)
         {
-            if (cntsync != data.image[IDsync].md[0].cnt0)
+            if(cntsync != data.image[IDsync].md[0].cnt0)
             {
                 pcnt++;
                 cntsync = data.image[IDsync].md[0].cnt0;
             }
-            if (pcnt == period)
+            if(pcnt == period)
             {
                 pcnt         = 0;
                 offsetfrcnt  = 0;
                 cntDelayMode = 1;
             }
 
-            if (cntDelayMode == 1)
+            if(cntDelayMode == 1)
             {
-                if (offsetfrcnt < offsetfr)
+                if(offsetfrcnt < offsetfr)
                 {
                     offsetfrcnt++;
                 }
@@ -529,94 +529,94 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                     kk = 0;
                 }
             }
-            if (cubeindex == NBcubes)
+            if(cubeindex == NBcubes)
             {
                 cubeindex = 0;
             }
         }
 
-        switch (datatype)
+        switch(datatype)
         {
 
-        case _DATATYPE_INT8:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI8;
-            ptr1      = (char *) data.image[IDout].array.SI8;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT8;
-            break;
+            case _DATATYPE_INT8:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI8;
+                ptr1      = (char *) data.image[IDout].array.SI8;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_INT8;
+                break;
 
-        case _DATATYPE_UINT8:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI8;
-            ptr1      = (char *) data.image[IDout].array.UI8;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT8;
-            break;
+            case _DATATYPE_UINT8:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI8;
+                ptr1      = (char *) data.image[IDout].array.UI8;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_UINT8;
+                break;
 
-        case _DATATYPE_INT16:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI16;
-            ptr1      = (char *) data.image[IDout].array.SI16;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT16;
-            break;
+            case _DATATYPE_INT16:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI16;
+                ptr1      = (char *) data.image[IDout].array.SI16;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_INT16;
+                break;
 
-        case _DATATYPE_UINT16:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI16;
-            ptr1      = (char *) data.image[IDout].array.UI16;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT16;
-            break;
+            case _DATATYPE_UINT16:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI16;
+                ptr1      = (char *) data.image[IDout].array.UI16;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_UINT16;
+                break;
 
-        case _DATATYPE_INT32:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI32;
-            ptr1      = (char *) data.image[IDout].array.SI32;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT32;
-            break;
+            case _DATATYPE_INT32:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI32;
+                ptr1      = (char *) data.image[IDout].array.SI32;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_INT32;
+                break;
 
-        case _DATATYPE_UINT32:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI32;
-            ptr1      = (char *) data.image[IDout].array.UI32;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT32;
-            break;
+            case _DATATYPE_UINT32:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI32;
+                ptr1      = (char *) data.image[IDout].array.UI32;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_UINT32;
+                break;
 
-        case _DATATYPE_INT64:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI64;
-            ptr1      = (char *) data.image[IDout].array.SI64;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_INT64;
-            break;
+            case _DATATYPE_INT64:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.SI64;
+                ptr1      = (char *) data.image[IDout].array.SI64;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_INT64;
+                break;
 
-        case _DATATYPE_UINT64:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI64;
-            ptr1      = (char *) data.image[IDout].array.UI64;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        SIZEOF_DATATYPE_UINT64;
-            break;
+            case _DATATYPE_UINT64:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.UI64;
+                ptr1      = (char *) data.image[IDout].array.UI64;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            SIZEOF_DATATYPE_UINT64;
+                break;
 
-        case _DATATYPE_FLOAT:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.F;
-            ptr1      = (char *) data.image[IDout].array.F;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        sizeof(float);
-            break;
+            case _DATATYPE_FLOAT:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.F;
+                ptr1      = (char *) data.image[IDout].array.F;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            sizeof(float);
+                break;
 
-        case _DATATYPE_DOUBLE:
-            ptr0s     = (char *) data.image[IDin[cubeindex]].array.D;
-            ptr1      = (char *) data.image[IDout].array.D;
-            framesize = data.image[IDin[cubeindex]].md[0].size[0] *
-                        data.image[IDin[cubeindex]].md[0].size[1] *
-                        sizeof(double);
-            break;
+            case _DATATYPE_DOUBLE:
+                ptr0s     = (char *) data.image[IDin[cubeindex]].array.D;
+                ptr1      = (char *) data.image[IDout].array.D;
+                framesize = data.image[IDin[cubeindex]].md[0].size[0] *
+                            data.image[IDin[cubeindex]].md[0].size[1] *
+                            sizeof(double);
+                break;
         }
 
         clock_gettime(CLOCK_REALTIME, &t0);
@@ -630,12 +630,12 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 
         kk++;
-        if (kk == data.image[IDin[0]].md[0].size[2])
+        if(kk == data.image[IDin[0]].md[0].size[2])
         {
             kk = 0;
         }
 
-        if (SyncSlice == 0)
+        if(SyncSlice == 0)
         {
             usleep(twait1);
 
@@ -643,7 +643,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
             tdiff  = timespec_diff(t0, t1);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-            if (tdiffv < 1.0e-6 * usperiod)
+            if(tdiffv < 1.0e-6 * usperiod)
             {
                 twait1++;
             }
@@ -652,11 +652,11 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                 twait1--;
             }
 
-            if (twait1 < 0)
+            if(twait1 < 0)
             {
                 twait1 = 0;
             }
-            if (twait1 > usperiod)
+            if(twait1 > usperiod)
             {
                 twait1 = usperiod;
             }
@@ -666,10 +666,10 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
             sem_wait(data.image[IDsync].semptr[sync_semwaitindex]);
         }
 
-        if (loopCTRLexit == 1)
+        if(loopCTRLexit == 1)
         {
             loopOK = 0;
-            if (data.processinfo == 1)
+            if(data.processinfo == 1)
             {
                 struct timespec tstop;
                 struct tm      *tstoptm;
@@ -683,7 +683,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                         tstoptm->tm_hour,
                         tstoptm->tm_min,
                         tstoptm->tm_sec,
-                        (int) (0.000001 * (tstop.tv_nsec)));
+                        (int)(0.000001 * (tstop.tv_nsec)));
                 strncpy(processinfo->statusmsg,
                         msgstring,
                         STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
@@ -693,7 +693,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         }
 
         loopcnt++;
-        if (data.processinfo == 1)
+        if(data.processinfo == 1)
         {
             processinfo->loopcnt = loopcnt;
         }
@@ -744,7 +744,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     IDin      = image_ID(IDinname);
     naxis     = data.image[IDin].md[0].naxis;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if (naxis != 3)
+    if(naxis != 3)
     {
         printf("ERROR: input image %s should be 3D\n", IDinname);
         exit(0);
@@ -756,84 +756,84 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     datatype = data.image[IDin].md[0].datatype;
 
     IDout = image_ID(IDoutname);
-    if (IDout == -1)
+    if(IDout == -1)
     {
         create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
         COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
-    switch (datatype)
+    switch(datatype)
     {
 
-    case _DATATYPE_INT8:
-        ptr0s     = (char *) data.image[IDin].array.SI8;
-        ptr1      = (char *) data.image[IDout].array.SI8;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
-        break;
+        case _DATATYPE_INT8:
+            ptr0s     = (char *) data.image[IDin].array.SI8;
+            ptr1      = (char *) data.image[IDout].array.SI8;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT8;
+            break;
 
-    case _DATATYPE_UINT8:
-        ptr0s     = (char *) data.image[IDin].array.UI8;
-        ptr1      = (char *) data.image[IDout].array.UI8;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
-        break;
+        case _DATATYPE_UINT8:
+            ptr0s     = (char *) data.image[IDin].array.UI8;
+            ptr1      = (char *) data.image[IDout].array.UI8;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT8;
+            break;
 
-    case _DATATYPE_INT16:
-        ptr0s     = (char *) data.image[IDin].array.SI16;
-        ptr1      = (char *) data.image[IDout].array.SI16;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
-        break;
+        case _DATATYPE_INT16:
+            ptr0s     = (char *) data.image[IDin].array.SI16;
+            ptr1      = (char *) data.image[IDout].array.SI16;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT16;
+            break;
 
-    case _DATATYPE_UINT16:
-        ptr0s     = (char *) data.image[IDin].array.UI16;
-        ptr1      = (char *) data.image[IDout].array.UI16;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
-        break;
+        case _DATATYPE_UINT16:
+            ptr0s     = (char *) data.image[IDin].array.UI16;
+            ptr1      = (char *) data.image[IDout].array.UI16;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT16;
+            break;
 
-    case _DATATYPE_INT32:
-        ptr0s     = (char *) data.image[IDin].array.SI32;
-        ptr1      = (char *) data.image[IDout].array.SI32;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
-        break;
+        case _DATATYPE_INT32:
+            ptr0s     = (char *) data.image[IDin].array.SI32;
+            ptr1      = (char *) data.image[IDout].array.SI32;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT32;
+            break;
 
-    case _DATATYPE_UINT32:
-        ptr0s     = (char *) data.image[IDin].array.UI32;
-        ptr1      = (char *) data.image[IDout].array.UI32;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
-        break;
+        case _DATATYPE_UINT32:
+            ptr0s     = (char *) data.image[IDin].array.UI32;
+            ptr1      = (char *) data.image[IDout].array.UI32;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT32;
+            break;
 
-    case _DATATYPE_INT64:
-        ptr0s     = (char *) data.image[IDin].array.SI64;
-        ptr1      = (char *) data.image[IDout].array.SI64;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
-        break;
+        case _DATATYPE_INT64:
+            ptr0s     = (char *) data.image[IDin].array.SI64;
+            ptr1      = (char *) data.image[IDout].array.SI64;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_INT64;
+            break;
 
-    case _DATATYPE_UINT64:
-        ptr0s     = (char *) data.image[IDin].array.UI64;
-        ptr1      = (char *) data.image[IDout].array.UI64;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
-        break;
+        case _DATATYPE_UINT64:
+            ptr0s     = (char *) data.image[IDin].array.UI64;
+            ptr1      = (char *) data.image[IDout].array.UI64;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * SIZEOF_DATATYPE_UINT64;
+            break;
 
-    case _DATATYPE_FLOAT:
-        ptr0s     = (char *) data.image[IDin].array.F;
-        ptr1      = (char *) data.image[IDout].array.F;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * sizeof(float);
-        break;
+        case _DATATYPE_FLOAT:
+            ptr0s     = (char *) data.image[IDin].array.F;
+            ptr1      = (char *) data.image[IDout].array.F;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * sizeof(float);
+            break;
 
-    case _DATATYPE_DOUBLE:
-        ptr0s     = (char *) data.image[IDin].array.D;
-        ptr1      = (char *) data.image[IDout].array.D;
-        framesize = data.image[IDin].md[0].size[0] *
-                    data.image[IDin].md[0].size[1] * sizeof(double);
-        break;
+        case _DATATYPE_DOUBLE:
+            ptr0s     = (char *) data.image[IDin].array.D;
+            ptr1      = (char *) data.image[IDout].array.D;
+            framesize = data.image[IDin].md[0].size[0] *
+                        data.image[IDin].md[0].size[1] * sizeof(double);
+            break;
     }
 
     IDsync = image_ID(IDsync_name);
@@ -845,16 +845,16 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     sync_semwaitindex =
         ImageStreamIO_getsemwaitindex(&data.image[IDin], semtrig);
 
-    while (1)
+    while(1)
     {
         sem_wait(data.image[IDsync].semptr[sync_semwaitindex]);
 
         kk++;
-        if (kk == period) // UPDATE
+        if(kk == period)  // UPDATE
         {
             kk = 0;
             kk1++;
-            if (kk1 == data.image[IDin].md[0].size[2])
+            if(kk1 == data.image[IDin].md[0].size[2])
             {
                 kk1 = 0;
             }

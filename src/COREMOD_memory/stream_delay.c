@@ -37,7 +37,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &inimname,
         NULL
     },
-    {   CLIARG_STR,
+    {
+        CLIARG_STR,
         ".out_name",
         "output image",
         "out1",
@@ -45,7 +46,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &outimname,
         NULL
     },
-    {   CLIARG_FLOAT32,
+    {
+        CLIARG_FLOAT32,
         ".delaysec",
         "delay [s]",
         "0.001",
@@ -53,7 +55,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &delaysec,
         NULL
     },
-    {   CLIARG_UINT64,
+    {
+        CLIARG_UINT64,
         ".timebuffsize",
         "time buffer size",
         "10000",
@@ -61,7 +64,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &timebuffsize,
         NULL
     },
-    {   CLIARG_INT32,
+    {
+        CLIARG_INT32,
         ".option.timeavemode",
         "Enable time window averaging (>0)",
         "0",
@@ -69,7 +73,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &avemode,
         &fpi_avemode
     },
-    {   CLIARG_UINT64,
+    {
+        CLIARG_UINT64,
         ".option.timeavedtns",
         "Averaging time window width [ns]",
         "10000",
@@ -77,7 +82,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &avedtns,
         &fpi_timeavedtns
     },
-    {   CLIARG_UINT64,
+    {
+        CLIARG_UINT64,
         ".status.framelag",
         "current time lag frame index",
         "100",
@@ -85,7 +91,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &statusframelag,
         NULL
     },
-    {   CLIARG_UINT64,
+    {
+        CLIARG_UINT64,
         ".status.kkin",
         "input cube slice index",
         "100",
@@ -93,7 +100,8 @@ static CLICMDARGDEF farg[] = {{
         (void **) &statuskkin,
         NULL
     },
-    {   CLIARG_UINT64,
+    {
+        CLIARG_UINT64,
         ".status.kkout",
         "output cube slice index",
         "100",
@@ -110,9 +118,9 @@ static errno_t customCONFsetup()
 
 static errno_t customCONFcheck()
 {
-    if (data.fpsptr != NULL)
+    if(data.fpsptr != NULL)
     {
-        if (data.fpsptr->parray[fpi_avemode].val.i32[0] == 0) // no ave mode
+        if(data.fpsptr->parray[fpi_avemode].val.i32[0] == 0)  // no ave mode
         {
             data.fpsptr->parray[fpi_timeavedtns].fpflag &= ~FPFLAG_USED;
             data.fpsptr->parray[fpi_timeavedtns].fpflag &= ~FPFLAG_VISIBLE;
@@ -157,7 +165,7 @@ static errno_t streamdelay(IMGID            inimg,
     clock_gettime(CLOCK_REALTIME, &tnow);
 
     // update circular buffer if new frame has arrived
-    if (cnt0prev != inimg.md->cnt0)
+    if(cnt0prev != inimg.md->cnt0)
     {
         //printf("cnt %8ld %8ld   CIRC BUFFER UPDATE -> index %8ld / %8ld\n",
         //       cnt0prev, inimg.md->cnt0, bufferindex_input, *timebuffsize);
@@ -179,7 +187,7 @@ static errno_t streamdelay(IMGID            inimg,
         warray[bufferindex_input] = 0;
 
         bufferindex_input++;
-        if (bufferindex_input == (*timebuffsize))
+        if(bufferindex_input == (*timebuffsize))
         {
             // end of circular buffer reached
             bufferindex_input = 0;
@@ -196,7 +204,7 @@ static errno_t streamdelay(IMGID            inimg,
 
     int  updateflag              = 0;
     long bufferindex_output_last = 0;
-    while ((warray[bufferindex_output] == 0) && (tdiffv > (*delaysec)))
+    while((warray[bufferindex_output] == 0) && (tdiffv > (*delaysec)))
     {
         // update output frame
         updateflag                 = 1;
@@ -204,7 +212,7 @@ static errno_t streamdelay(IMGID            inimg,
 
         bufferindex_output_last = bufferindex_output;
         bufferindex_output++;
-        if (bufferindex_output == (*timebuffsize))
+        if(bufferindex_output == (*timebuffsize))
         {
             // end of circular buffer reached
             bufferindex_output = 0;
@@ -215,7 +223,7 @@ static errno_t streamdelay(IMGID            inimg,
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }
 
-    if (updateflag == 1)
+    if(updateflag == 1)
     {
         printf("     WRITE %8ld %8ld  :  %ld bytes\n",
                bufferindex_input,
@@ -261,7 +269,7 @@ static errno_t compute_function()
     // get current time
     struct timespec tnow;
     clock_gettime(CLOCK_REALTIME, &tnow);
-    for (uint64_t i = 0; i < *timebuffsize; i++)
+    for(uint64_t i = 0; i < *timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
         timeinarray[i].tv_nsec = tnow.tv_nsec;
@@ -271,7 +279,7 @@ static errno_t compute_function()
     // 0 if new, 1 if already sent to output
     int *warray;
     warray = (int *) malloc(sizeof(int) * (*timebuffsize));
-    for (uint64_t i = 0; i < *timebuffsize; i++)
+    for(uint64_t i = 0; i < *timebuffsize; i++)
     {
         warray[i] = 1;
     }
@@ -284,7 +292,7 @@ static errno_t compute_function()
 
     streamdelay(inimg, outimg, bufferimg, timeinarray, warray, &status);
     // status is 0 if no update to output, 1 otherwise
-    if (status != 0)
+    if(status != 0)
     {
         processinfo_update_output_stream(processinfo, outimg.ID);
     }

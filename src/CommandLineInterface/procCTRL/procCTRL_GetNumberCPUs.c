@@ -27,7 +27,7 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
 
     static int initStatus = 0;
 
-    if (initStatus == 0)
+    if(initStatus == 0)
     {
         initStatus             = 1;
         unsigned int     depth = 0;
@@ -57,7 +57,8 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
             pinfop->CPUids[pu_index] = obj->os_index;
             ++pu_index;
             obj = obj->next_cousin;
-        } while (obj != NULL);
+        }
+        while(obj != NULL);
 
         hwloc_topology_destroy(topology);
     }
@@ -71,13 +72,13 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
     //unsigned int tmp_index = 0;
 
     fpout = popen("getconf _NPROCESSORS_ONLN", "r");
-    if (fpout == NULL)
+    if(fpout == NULL)
     {
         printf("WARNING: cannot run command \"tmuxsessionname\"\n");
     }
     else
     {
-        if (fgets(outstring, 16, fpout) == NULL)
+        if(fgets(outstring, 16, fpout) == NULL)
         {
             printf("WARNING: fgets error\n");
         }
@@ -90,14 +91,14 @@ int GetNumberCPUs(PROCINFOPROC *pinfop)
               "r");
     pu_index            = 0;
     pinfop->NBcpusocket = 1;
-    while ((fgets(buf, sizeof(buf), fpout) != NULL) &&
-           (pu_index < pinfop->NBcpus))
+    while((fgets(buf, sizeof(buf), fpout) != NULL) &&
+            (pu_index < pinfop->NBcpus))
     {
         pinfop->CPUids[pu_index]  = pu_index;
         pinfop->CPUphys[pu_index] = atoi(buf);
 
         //printf("cpu %2d belongs to Physical CPU %d\n", pu_index, pinfop->CPUphys[pu_index] );
-        if (pinfop->CPUphys[pu_index] + 1 > pinfop->NBcpusocket)
+        if(pinfop->CPUphys[pu_index] + 1 > pinfop->NBcpusocket)
         {
             pinfop->NBcpusocket = pinfop->CPUphys[pu_index] + 1;
         }

@@ -26,7 +26,7 @@ errno_t images_to_cube_cli()
         return -1;
         }*/
 
-    if (data.cmdargtoken[2].type != 2)
+    if(data.cmdargtoken[2].type != 2)
     {
         printf("second argument has to be integer\n");
         return -1;
@@ -75,7 +75,7 @@ errno_t images_to_cube(const char *restrict img_name,
     CREATE_IMAGENAME(imname, "%s%05ld", img_name, frame);
 
     ID1 = image_ID(imname);
-    if (ID1 == -1)
+    if(ID1 == -1)
     {
         PRINT_ERROR("Image \"%s\" does not exist", imname);
         exit(0);
@@ -94,22 +94,22 @@ errno_t images_to_cube(const char *restrict img_name,
     FUNC_CHECK_RETURN(
         create_3Dimage_ID(cube_name, naxes[0], naxes[1], nbframes, &ID));
 
-    for (uint32_t ii = 0; ii < naxes[0]; ii++)
-        for (uint32_t jj = 0; jj < naxes[1]; jj++)
+    for(uint32_t ii = 0; ii < naxes[0]; ii++)
+        for(uint32_t jj = 0; jj < naxes[1]; jj++)
         {
             data.image[ID]
-                .array.F[frame * naxes[0] * naxes[1] + (jj * naxes[0] + ii)] =
+            .array.F[frame * naxes[0] * naxes[1] + (jj * naxes[0] + ii)] =
                 data.image[ID1].array.F[jj * naxes[0] + ii];
         }
 
-    for (frame = 1; frame < nbframes; frame++)
+    for(frame = 1; frame < nbframes; frame++)
     {
         WRITE_IMAGENAME(imname, "%s%05ld", img_name, frame);
         printf("Adding image %s -> %ld/%ld ... ", img_name, frame, nbframes);
         fflush(stdout);
 
         ID1 = image_ID(imname);
-        if (ID1 == -1)
+        if(ID1 == -1)
         {
             PRINT_ERROR("Image \"%s\" does not exist - skipping", imname);
         }
@@ -117,17 +117,17 @@ errno_t images_to_cube(const char *restrict img_name,
         {
             naxes[0] = data.image[ID1].md[0].size[0];
             naxes[1] = data.image[ID1].md[0].size[1];
-            if ((xsize != naxes[0]) || (ysize != naxes[1]))
+            if((xsize != naxes[0]) || (ysize != naxes[1]))
             {
                 PRINT_ERROR("Image has wrong size");
                 exit(0);
             }
-            for (uint32_t ii = 0; ii < naxes[0]; ii++)
-                for (uint32_t jj = 0; jj < naxes[1]; jj++)
+            for(uint32_t ii = 0; ii < naxes[0]; ii++)
+                for(uint32_t jj = 0; jj < naxes[1]; jj++)
                 {
                     data.image[ID].array.F[frame * naxes[0] * naxes[1] +
                                            (jj * naxes[0] + ii)] =
-                        data.image[ID1].array.F[jj * naxes[0] + ii];
+                                               data.image[ID1].array.F[jj * naxes[0] + ii];
                 }
         }
         printf("Done\n");

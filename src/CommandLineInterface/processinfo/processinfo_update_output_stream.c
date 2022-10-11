@@ -9,20 +9,20 @@
  */
 
 errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-                                         imageID      outstreamID)
+        imageID      outstreamID)
 {
-    if (data.image[outstreamID].md[0].shared == 1)
+    if(data.image[outstreamID].md[0].shared == 1)
     {
         imageID IDin;
 
         DEBUG_TRACEPOINT(" ");
 
-        if (processinfo != NULL)
+        if(processinfo != NULL)
         {
             IDin = processinfo->triggerstreamID;
             DEBUG_TRACEPOINT("trigger IDin = %ld", IDin);
 
-            if (IDin > -1)
+            if(IDin > -1)
             {
                 int sptisize = data.image[IDin].md[0].NBproctrace - 1;
 
@@ -34,7 +34,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
 
             DEBUG_TRACEPOINT("timing");
             struct timespec ts;
-            if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
@@ -61,7 +61,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
             data.image[outstreamID].streamproctrace[0].triggerstatus =
                 processinfo->triggerstatus;
 
-            if (IDin > -1)
+            if(IDin > -1)
             {
                 data.image[outstreamID].streamproctrace[0].cnt0 =
                     data.image[IDin].md[0].cnt0;

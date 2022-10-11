@@ -19,38 +19,47 @@ static char *logdir;
 static long *logcubesize;
 
 // List of arguments to function
-static CLICMDARGDEF farg[] = {{CLIARG_IMG,
-                               ".in_sname",
-                               "input stream name",
-                               "im1",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &instreamname,
-                               NULL},
-                              {CLIARG_LONG,
-                               ".cubesize",
-                               "cube size",
-                               "10000",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &logcubesize,
-                               NULL},
-                              {CLIARG_STR,
-                               ".logdir",
-                               "log directory",
-                               "/media/data",
-                               CLIARG_VISIBLE_DEFAULT,
-                               (void **) &logdir,
-                               NULL}};
+static CLICMDARGDEF farg[] = {{
+        CLIARG_IMG,
+        ".in_sname",
+        "input stream name",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &instreamname,
+        NULL
+    },
+    {
+        CLIARG_LONG,
+        ".cubesize",
+        "cube size",
+        "10000",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &logcubesize,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".logdir",
+        "log directory",
+        "/media/data",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &logdir,
+        NULL
+    }
+};
 
 // flag CLICMDFLAG_FPS enabled FPS capability
-static CLICMDDATA CLIcmddata = {
-    "shmimlog", "log shared memory stream", CLICMD_FIELDS_DEFAULTS};
+static CLICMDDATA CLIcmddata =
+{
+    "shmimlog", "log shared memory stream", CLICMD_FIELDS_DEFAULTS
+};
 
 // Forward declarations
 
 static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
-                                               uint32_t    zsize,
-                                               const char *logdir,
-                                               const char *IDlogdata_name);
+        uint32_t    zsize,
+        const char *logdir,
+        const char *IDlogdata_name);
 
 // adding INSERT_STD_PROCINFO statements enable processinfo support
 static errno_t compute_function()
@@ -64,9 +73,9 @@ static errno_t compute_function()
 
 INSERT_STD_CLIfunction
 
-    // Register function in CLI
-    errno_t
-    CLIADDCMD_COREMOD_memory__shmimlog()
+// Register function in CLI
+errno_t
+CLIADDCMD_COREMOD_memory__shmimlog()
 {
     INSERT_STD_CLIREGISTERFUNC
 
@@ -90,7 +99,7 @@ static LOGSHIM_CONF *shmimlog_create_SHMconf(const char *logshimname)
 
     umask(0);
     SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0666);
-    if (SM_fd == -1)
+    if(SM_fd == -1)
     {
         printf("File \"%s\"\n", SM_fname);
         fflush(stdout);
@@ -99,7 +108,7 @@ static LOGSHIM_CONF *shmimlog_create_SHMconf(const char *logshimname)
     }
 
     result = lseek(SM_fd, sharedsize - 1, SEEK_SET);
-    if (result == -1)
+    if(result == -1)
     {
         close(SM_fd);
         PRINT_ERROR("Error calling lseek() to 'stretch' the file");
@@ -107,7 +116,7 @@ static LOGSHIM_CONF *shmimlog_create_SHMconf(const char *logshimname)
     }
 
     result = write(SM_fd, "", 1);
-    if (result != 1)
+    if(result != 1)
     {
         close(SM_fd);
         perror("Error writing last byte of the file");
@@ -115,8 +124,8 @@ static LOGSHIM_CONF *shmimlog_create_SHMconf(const char *logshimname)
     }
 
     map = (LOGSHIM_CONF *)
-        mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
-    if (map == MAP_FAILED)
+          mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+    if(map == MAP_FAILED)
     {
         close(SM_fd);
         perror("Error mmapping the file");
@@ -141,9 +150,9 @@ static LOGSHIM_CONF *shmimlog_create_SHMconf(const char *logshimname)
  * if an image name logdata exists (should ideally be in shared mem), then this will be included in the timing txt file
  */
 static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
-                                               uint32_t    zsize,
-                                               const char *logdir,
-                                               const char *IDlogdata_name)
+        uint32_t    zsize,
+        const char *logdir,
+        const char *IDlogdata_name)
 {
     // WAIT time. If no new frame during this time, save existing cube
     int WaitSec = 5;
@@ -199,7 +208,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
     char logb1name[STRINGMAXLEN_STREAMNAME];
 
     int is3Dcube = 0; // this is a rolling buffer
-        //    int exitflag = 0; // toggles to 1 when loop must exit
+    //    int exitflag = 0; // toggles to 1 when loop must exit
 
     LOGSHIM_CONF *logshimconf;
 
@@ -225,25 +234,25 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
     // 2: print everything
 
     // convert wait time into number of couunter steps (counter mode only)
-    cntwaitlim = (long) (WaitSec * 1000000 / waitdelayus);
+    cntwaitlim = (long)(WaitSec * 1000000 / waitdelayus);
 
     schedpar.sched_priority = RT_priority;
-    if (seteuid(data.euid) != 0) //This goes up to maximum privileges
+    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
-    if (seteuid(data.ruid) != 0)   //Go back to normal privileges
+    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
 
     IDlogdata = image_ID(IDlogdata_name);
-    if (IDlogdata != -1)
+    if(IDlogdata != -1)
     {
-        if (data.image[IDlogdata].md[0].datatype != _DATATYPE_FLOAT)
+        if(data.image[IDlogdata].md[0].datatype != _DATATYPE_FLOAT)
         {
             IDlogdata = -1;
         }
@@ -265,7 +274,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
     xsize    = data.image[ID].md[0].size[0];
     ysize    = data.image[ID].md[0].size[1];
 
-    if (data.image[ID].md[0].naxis == 3)
+    if(data.image[ID].md[0].naxis == 3)
     {
         is3Dcube = 1;
     }
@@ -294,52 +303,52 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
     IDb = IDb0;
 
-    switch (datatype)
+    switch(datatype)
     {
-    case _DATATYPE_FLOAT:
-        framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-        break;
+        case _DATATYPE_FLOAT:
+            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
+            break;
 
-    case _DATATYPE_INT8:
-        framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-        break;
+        case _DATATYPE_INT8:
+            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
+            break;
 
-    case _DATATYPE_UINT8:
-        framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-        break;
+        case _DATATYPE_UINT8:
+            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
+            break;
 
-    case _DATATYPE_INT16:
-        framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-        break;
+        case _DATATYPE_INT16:
+            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
+            break;
 
-    case _DATATYPE_UINT16:
-        framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-        break;
+        case _DATATYPE_UINT16:
+            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
+            break;
 
-    case _DATATYPE_INT32:
-        framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-        break;
+        case _DATATYPE_INT32:
+            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
+            break;
 
-    case _DATATYPE_UINT32:
-        framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-        break;
+        case _DATATYPE_UINT32:
+            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
+            break;
 
-    case _DATATYPE_INT64:
-        framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-        break;
+        case _DATATYPE_INT64:
+            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
+            break;
 
-    case _DATATYPE_UINT64:
-        framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-        break;
+        case _DATATYPE_UINT64:
+            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
+            break;
 
-    case _DATATYPE_DOUBLE:
-        framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-        break;
+        case _DATATYPE_DOUBLE:
+            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
+            break;
 
-    default:
-        printf("ERROR: WRONG DATA TYPE\n");
-        exit(0);
-        break;
+        default:
+            printf("ERROR: WRONG DATA TYPE\n");
+            exit(0);
+            break;
     }
 
     ptr0_0 = (char *) data.image[ID].array.raw;
@@ -362,18 +371,18 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
     // using semlog ?
     use_semlog = 0;
-    if (data.image[ID].semlog != NULL)
+    if(data.image[ID].semlog != NULL)
     {
         use_semlog = 1;
         sem_getvalue(data.image[ID].semlog, &semval);
 
         // bring semaphore value to 1 to only save 1 frame
-        while (semval > 1)
+        while(semval > 1)
         {
             sem_wait(data.image[ID].semlog);
             sem_getvalue(data.image[ID].semlog, &semval);
         }
-        if (semval == 0)
+        if(semval == 0)
         {
             sem_post(data.image[ID].semlog);
         }
@@ -382,11 +391,11 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
     DEBUG_TRACEPOINT(" ");
 
     int SkipWait = 0; // wait for update
-    while ((logshimconf[0].filecnt != NBfiles) && (logshimconf[0].logexit == 0))
+    while((logshimconf[0].filecnt != NBfiles) && (logshimconf[0].logexit == 0))
     {
         int timeout; // 1 if timeout has occurred
 
-        if (logshimconf[0].filecnt == 3)
+        if(logshimconf[0].filecnt == 3)
         {
             //test
             logshimconf[0].on = 0;
@@ -396,7 +405,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
         noframe = 0;
         wOK     = 1;
 
-        if (VERBOSE > 1)
+        if(VERBOSE > 1)
         {
             printf("%5d  Entering wait loop   index = %ld %d\n",
                    __LINE__,
@@ -407,21 +416,21 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
         timeout = 0;
 
         // Keep CPU load light when not logging
-        if (logshimconf[0].on == 0)
+        if(logshimconf[0].on == 0)
         {
             float           tdelay_us = 100.0; // 10 kHz
             struct timespec tdel;
             tdel.tv_sec  = 0;
-            tdel.tv_nsec = (long) (1000.0 * tdelay_us); // * rand() / RAND_MAX);
+            tdel.tv_nsec = (long)(1000.0 * tdelay_us);  // * rand() / RAND_MAX);
             //printf("Waiting 0.%09ld sec\n", tdel.tv_nsec);
             nanosleep(&tdel, NULL);
         }
 
-        if (SkipWait == 1)
+        if(SkipWait == 1)
         {
-            if (VERBOSE > 0)
+            if(VERBOSE > 0)
             {
-                if (logshimconf[0].on == 1)
+                if(logshimconf[0].on == 1)
                 {
                     printf(">>>>>>> SKIPPING WAIT >>>>>>>>\n");
                 }
@@ -429,14 +438,14 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
         }
         else
         {
-            if (likely(use_semlog == 1))
+            if(likely(use_semlog == 1))
             {
-                if (VERBOSE > 1)
+                if(VERBOSE > 1)
                 {
                     printf("%5d  Waiting for semaphore\n", __LINE__);
                 }
 
-                if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+                if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
                 {
                     perror("clock_gettime");
                     exit(EXIT_FAILURE);
@@ -444,9 +453,9 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                 ts.tv_sec += WaitSec;
 
                 ret = sem_timedwait(data.image[ID].semlog, &ts);
-                if (ret == -1)
+                if(ret == -1)
                 {
-                    if (errno == ETIMEDOUT)
+                    if(errno == ETIMEDOUT)
                     {
                         printf(
                             "%5d  sem_timedwait() timed "
@@ -454,7 +463,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                             __LINE__,
                             WaitSec,
                             index);
-                        if (VERBOSE > 0)
+                        if(VERBOSE > 0)
                         {
                             printf(
                                 "%5d  sem time elapsed "
@@ -486,7 +495,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
                         timeout = 1;
                     }
-                    if (errno == EINTR)
+                    if(errno == EINTR)
                     {
                         printf(
                             "%5d  sem_timedwait [index "
@@ -497,7 +506,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                             index);
                     }
 
-                    if (errno == EINVAL)
+                    if(errno == EINVAL)
                     {
                         printf(
                             "%5d  sem_timedwait [index "
@@ -511,7 +520,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                             "equal to 1000 million\n");
                     }
 
-                    if (errno == EAGAIN)
+                    if(errno == EAGAIN)
                     {
                         printf(
                             "%5d  sem_timedwait [index "
@@ -525,7 +534,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     }
 
                     wOK = 0;
-                    if (index == 0)
+                    if(index == 0)
                     {
                         noframe = 1;
                     }
@@ -537,7 +546,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             }
             else
             {
-                if (VERBOSE > 1)
+                if(VERBOSE > 1)
                 {
                     printf(
                         "%5d  Not using semaphore, watching "
@@ -545,11 +554,11 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                         __LINE__);
                 }
 
-                while (((cnt == data.image[ID].md[0].cnt0) ||
+                while(((cnt == data.image[ID].md[0].cnt0) ||
                         (logshimconf[0].on == 0)) &&
-                       (wOK == 1))
+                        (wOK == 1))
                 {
-                    if (VERBOSE > 1)
+                    if(VERBOSE > 1)
                     {
                         printf("%5d  waiting time step\n", __LINE__);
                     }
@@ -557,15 +566,15 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     usleep(waitdelayus);
                     cntwait++;
 
-                    if (VERBOSE > 1)
+                    if(VERBOSE > 1)
                     {
                         printf("%5d  cntwait = %lld\n", __LINE__, cntwait);
                         fflush(stdout);
                     }
 
-                    if (cntwait > cntwaitlim) // save current cube
+                    if(cntwait > cntwaitlim)  // save current cube
                     {
-                        if (VERBOSE > 0)
+                        if(VERBOSE > 0)
                         {
                             printf(
                                 "%5d  cnt time elapsed "
@@ -595,7 +604,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                         tmsg->arraytime  = array_time_cp;
 
                         wOK = 0;
-                        if (index == 0)
+                        if(index == 0)
                         {
                             noframe = 1;
                         }
@@ -610,9 +619,9 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
         DEBUG_TRACEPOINT(" ");
 
-        if (index == 0)
+        if(index == 0)
         {
-            if (VERBOSE > 0)
+            if(VERBOSE > 0)
             {
                 printf("%5d  Setting cube start time [index %ld]\n",
                        __LINE__,
@@ -628,7 +637,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             //            sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
         }
 
-        if (VERBOSE > 1)
+        if(VERBOSE > 1)
         {
             printf("%5d  logshimconf[0].on = %d\n",
                    __LINE__,
@@ -637,11 +646,11 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
         DEBUG_TRACEPOINT(" ");
 
-        if (likely(logshimconf[0].on == 1))
+        if(likely(logshimconf[0].on == 1))
         {
-            if (likely(wOK == 1)) // normal step: a frame has arrived
+            if(likely(wOK == 1))  // normal step: a frame has arrived
             {
-                if (VERBOSE > 1)
+                if(VERBOSE > 1)
                 {
                     printf("%5d  Frame has arrived [index %ld]\n",
                            __LINE__,
@@ -662,9 +671,9 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                 long grabStart1 = 0;
                 long grabEnd1   = 0;
 
-                if (data.image[ID].md->CBsize > 0)
+                if(data.image[ID].md->CBsize > 0)
                 {
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf("\n");
 
@@ -677,7 +686,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     long currentCBcycle = data.image[ID].md->CBcycle;
                     long currentCBindex = data.image[ID].md->CBindex;
 
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf(
                             "    LAST WRITTEN IN CB  [%8ld "
@@ -694,10 +703,10 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
                     // number of frames behind
                     long NBframesbehind =
-                        (long) (CBcyclediff * (long) data.image[ID].md->CBsize +
-                                CBindexdiff);
+                        (long)(CBcyclediff * (long) data.image[ID].md->CBsize +
+                               CBindexdiff);
 
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf(
                             "    DIFF                [%8ld "
@@ -709,14 +718,14 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
                     long NBgrabmax = 20;
                     NBgrab         = NBframesbehind;
-                    if (NBgrab > NBgrabmax)
+                    if(NBgrab > NBgrabmax)
                     {
                         NBgrab = NBgrabmax;
                     }
                     // avoid crossing big cube boundary
                     long grabmax_logbuff = zsize - index;
 
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf(
                             "    -> GRABBING %4ld frames "
@@ -724,11 +733,11 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                             NBgrab,
                             grabmax_logbuff);
                     }
-                    if (NBgrab > grabmax_logbuff)
+                    if(NBgrab > grabmax_logbuff)
                     {
                         NBgrab = grabmax_logbuff;
                     }
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf("%6ld\n", NBgrab);
                     }
@@ -745,7 +754,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     grabEnd1   = 0;
                     grabSpan1  = 0;
 
-                    if (grabStart < 0)
+                    if(grabStart < 0)
                     {
                         grabStart0 = grabStart + data.image[ID].md->CBsize;
                         grabEnd0   = data.image[ID].md->CBsize - 1;
@@ -771,7 +780,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     index1start = index0end + 1;
                     index1end   = index1start + (grabSpan1 - 1);
 
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf(
                             "    CB BUFFER RANGE     %3ld "
@@ -804,7 +813,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     // total number of frames grabbed
                     NBgrab = grabSpan0 + grabSpan1;
 
-                    if (NBframesbehind > 1)
+                    if(NBframesbehind > 1)
                     {
                         SkipWait = 1; // don't wait, proceed to grab next frame
                     }
@@ -830,10 +839,10 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
                 // memcpy
                 //
-                if (data.image[ID].md->CBsize > 0) // circ buffer mode
+                if(data.image[ID].md->CBsize > 0)  // circ buffer mode
                 {
 
-                    if (grabSpan0 > 0)
+                    if(grabSpan0 > 0)
                     {
                         // source
                         ptr0 = (char *) data.image[ID].CBimdata;
@@ -847,7 +856,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                                framesize * grabSpan0);
                     }
 
-                    if (grabSpan1 > 0)
+                    if(grabSpan1 > 0)
                     {
                         // source
                         ptr0 = (char *) data.image[ID].CBimdata;
@@ -867,7 +876,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     // no circular buffer
 
                     // source
-                    if (is3Dcube == 1)
+                    if(is3Dcube == 1)
                     {
                         ptr0 = ptr0_0 + framesize * data.image[ID].md[0].cnt1;
                     }
@@ -879,7 +888,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     // destination
                     ptr1 = ptr1_0 + framesize * index;
 
-                    if (NBgrab > 0)
+                    if(NBgrab > 0)
                     {
                         memcpy((void *) ptr1,
                                (void *) ptr0,
@@ -902,7 +911,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             wOK = 0;
         }
 
-        if (VERBOSE > 1)
+        if(VERBOSE > 1)
         {
             printf("%5d  index = %ld  wOK = %d\n", __LINE__, index, wOK);
         }
@@ -911,12 +920,12 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
         /// cases:
         /// index>zsize-1  buffer full
         /// timeout==1 && index>0  : partial
-        if ((index > zsize - 1) || ((timeout == 1) && (index > 0)))
+        if((index > zsize - 1) || ((timeout == 1) && (index > 0)))
         {
             long NBframemissing;
 
             /// save image
-            if (VERBOSE > 0)
+            if(VERBOSE > 0)
             {
                 printf(
                     "%5d  Save image   [index  %ld]  [timeout %d] "
@@ -928,7 +937,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             }
 
             sprintf(iname, "%s_logbuff%d", IDname, buffer);
-            if (buffer == 0)
+            if(buffer == 0)
             {
                 IDb = IDb0;
             }
@@ -937,7 +946,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                 IDb = IDb1;
             }
 
-            if (VERBOSE > 0)
+            if(VERBOSE > 0)
             {
                 printf("%5d  Building file name: ascii\n", __LINE__);
                 fflush(stdout);
@@ -955,7 +964,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                     timenowStart.tv_sec % 60,
                     timenowStart.tv_nsec);
 
-            if (VERBOSE > 0)
+            if(VERBOSE > 0)
             {
                 printf("%5d  Building file name: fits\n", __LINE__);
                 fflush(stdout);
@@ -977,10 +986,10 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             strcpy(tmsg->fnameascii, fnameascii);
             tmsg->saveascii = 1;
 
-            if (wOK == 1) // full cube
+            if(wOK == 1)  // full cube
             {
                 tmsg->partial = 0; // full cube
-                if (VERBOSE > 0)
+                if(VERBOSE > 0)
                 {
                     printf("%5d  SAVING FULL CUBE\n", __LINE__);
                     fflush(stdout);
@@ -989,7 +998,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             else // partial cube
             {
                 tmsg->partial = 1; // partial cube
-                if (VERBOSE > 0)
+                if(VERBOSE > 0)
                 {
                     printf("%5d  SAVING PARTIAL CUBE\n", __LINE__);
                     fflush(stdout);
@@ -999,12 +1008,12 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             //  fclose(fp);
 
             // Wait for save thread to complete to launch next one
-            if (tOK == 1)
+            if(tOK == 1)
             {
-                if (pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
+                if(pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
                 {
                     VERBOSE = 1;
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf(
                             "%5d  PREVIOUS SAVE THREAD NOT "
@@ -1023,7 +1032,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                            tdiff.tv_sec,
                            tdiff.tv_nsec);
 
-                    if (VERBOSE > 0)
+                    if(VERBOSE > 0)
                     {
                         printf(
                             "%5d  PREVIOUS SAVE THREAD NOW "
@@ -1031,7 +1040,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                             __LINE__);
                     }
                 }
-                else if (VERBOSE > 0)
+                else if(VERBOSE > 0)
                 {
                     printf(
                         "%5d  PREVIOUS SAVE THREAD ALREADY "
@@ -1067,7 +1076,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                 index,
                 (long) zsize);
 
-            if (VERBOSE > 0)
+            if(VERBOSE > 0)
             {
                 printf("%5d  Starting image save thread\n", __LINE__);
                 fflush(stdout);
@@ -1089,7 +1098,7 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
             logshimconf[0].cnt++;
 
             tOK = 1;
-            if (iret_savefits)
+            if(iret_savefits)
             {
                 fprintf(stderr,
                         "Error - pthread_create() return code: %d\n",
@@ -1099,13 +1108,13 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
 
             index = 0;
             buffer++;
-            if (buffer == 2)
+            if(buffer == 2)
             {
                 buffer = 0;
             }
             //            printf("[%ld -> %d]", cnt, buffer);
             //           fflush(stdout);
-            if (buffer == 0)
+            if(buffer == 0)
             {
                 IDb = IDb0;
             }
@@ -1114,47 +1123,47 @@ static errno_t __attribute__((hot)) shmimlog2D(const char *IDname,
                 IDb = IDb1;
             }
 
-            switch (datatype)
+            switch(datatype)
             {
-            case _DATATYPE_FLOAT:
-                ptr1_0 = (char *) data.image[IDb].array.F;
-                break;
+                case _DATATYPE_FLOAT:
+                    ptr1_0 = (char *) data.image[IDb].array.F;
+                    break;
 
-            case _DATATYPE_INT8:
-                ptr1_0 = (char *) data.image[IDb].array.SI8;
-                break;
+                case _DATATYPE_INT8:
+                    ptr1_0 = (char *) data.image[IDb].array.SI8;
+                    break;
 
-            case _DATATYPE_UINT8:
-                ptr1_0 = (char *) data.image[IDb].array.UI8;
-                break;
+                case _DATATYPE_UINT8:
+                    ptr1_0 = (char *) data.image[IDb].array.UI8;
+                    break;
 
-            case _DATATYPE_INT16:
-                ptr1_0 = (char *) data.image[IDb].array.SI16;
-                break;
+                case _DATATYPE_INT16:
+                    ptr1_0 = (char *) data.image[IDb].array.SI16;
+                    break;
 
-            case _DATATYPE_UINT16:
-                ptr1_0 = (char *) data.image[IDb].array.UI16;
-                break;
+                case _DATATYPE_UINT16:
+                    ptr1_0 = (char *) data.image[IDb].array.UI16;
+                    break;
 
-            case _DATATYPE_INT32:
-                ptr1_0 = (char *) data.image[IDb].array.SI32;
-                break;
+                case _DATATYPE_INT32:
+                    ptr1_0 = (char *) data.image[IDb].array.SI32;
+                    break;
 
-            case _DATATYPE_UINT32:
-                ptr1_0 = (char *) data.image[IDb].array.UI32;
-                break;
+                case _DATATYPE_UINT32:
+                    ptr1_0 = (char *) data.image[IDb].array.UI32;
+                    break;
 
-            case _DATATYPE_INT64:
-                ptr1_0 = (char *) data.image[IDb].array.SI64;
-                break;
+                case _DATATYPE_INT64:
+                    ptr1_0 = (char *) data.image[IDb].array.SI64;
+                    break;
 
-            case _DATATYPE_UINT64:
-                ptr1_0 = (char *) data.image[IDb].array.UI64;
-                break;
+                case _DATATYPE_UINT64:
+                    ptr1_0 = (char *) data.image[IDb].array.UI64;
+                    break;
 
-            case _DATATYPE_DOUBLE:
-                ptr1_0 = (char *) data.image[IDb].array.D;
-                break;
+                case _DATATYPE_DOUBLE:
+                    ptr1_0 = (char *) data.image[IDb].array.D;
+                    break;
             }
 
             data.image[IDb].md[0].write = 1;

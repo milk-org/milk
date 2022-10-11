@@ -10,7 +10,7 @@ errno_t delete_variable_ID(const char *varname)
     imageID ID;
 
     ID = variable_ID(varname);
-    if (ID != -1)
+    if(ID != -1)
     {
         data.variable[ID].used = 0;
         /*      free(data.variable[ID].name);*/

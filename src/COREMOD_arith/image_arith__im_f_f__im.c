@@ -31,10 +31,10 @@ int arith_image_trunc(const char *ID_name,
 
 static errno_t arith_image_trunc_cli()
 {
-    if (0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT) +
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT) +
             CLI_checkarg(3, CLIARG_FLOAT) +
             CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
-        0)
+            0)
     {
         arith_image_trunc(data.cmdargtoken[1].val.string,
                           data.cmdargtoken[2].val.numf,

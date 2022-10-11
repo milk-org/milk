@@ -72,12 +72,12 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
     static FILE *fpout;
     static char  logfname[STRINGMAXLEN_FULLFILENAME];
 
-    if (LogOutOpen == 0) // file not open
+    if(LogOutOpen == 0)  // file not open
     {
         getFPSlogfname(logfname);
 
         fpout = fopen(logfname, "a");
-        if (fpout == NULL)
+        if(fpout == NULL)
         {
             printf("ERROR: cannot open file\n");
             exit(EXIT_FAILURE);
@@ -119,12 +119,12 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
 
     va_end(args);
 
-    if (strcmp(keyw, "LOGFILECLOSE") == 0)
+    if(strcmp(keyw, "LOGFILECLOSE") == 0)
     {
         // Normal exit
         // close log file and remove it from filesystem
 
-        if (LogOutOpen == 1)
+        if(LogOutOpen == 1)
         {
             fclose(fpout);
             LogOutOpen = 0;
@@ -154,13 +154,13 @@ errno_t functionparameter_outlog_namelink()
                        shmdname,
                        data.FPS_PROCESS_TYPE);
 
-    if (access(linkfname, F_OK) == 0) // link already exists, remove
+    if(access(linkfname, F_OK) == 0)  // link already exists, remove
     {
         printf("outlog file %s exists -> updating symlink\n", linkfname);
         remove(linkfname);
     }
 
-    if (symlink(logfname, linkfname) == -1)
+    if(symlink(logfname, linkfname) == -1)
     {
         int errnum = errno;
         fprintf(stderr, "Error symlink: %s\n", strerror(errnum));

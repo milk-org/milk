@@ -21,7 +21,7 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring)
             tmnow->tm_hour,
             tmnow->tm_min,
             tmnow->tm_sec,
-            (int) (0.001 * (tnow.tv_nsec)),
+            (int)(0.001 * (tnow.tv_nsec)),
             tnow.tv_sec,
             tnow.tv_nsec,
             (int) processinfo->PID,

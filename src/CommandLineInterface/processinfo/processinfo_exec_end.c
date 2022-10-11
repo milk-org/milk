@@ -8,12 +8,12 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
 
     DEBUG_TRACEPOINT("End of execution loop, measure timing = %d",
                      processinfo->MeasureTiming);
-    if (processinfo->MeasureTiming == 1)
+    if(processinfo->MeasureTiming == 1)
     {
         clock_gettime(CLOCK_REALTIME,
                       &processinfo->texecend[processinfo->timerindex]);
 
-        if (processinfo->dtexec_limit_enable != 0)
+        if(processinfo->dtexec_limit_enable != 0)
         {
             long dtexec;
 
@@ -23,7 +23,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
                       (processinfo->texecend[processinfo->timerindex].tv_sec -
                        processinfo->texecend[processinfo->timerindex].tv_sec);
 
-            if (dtexec > processinfo->dtexec_limit_value)
+            if(dtexec > processinfo->dtexec_limit_value)
             {
                 char msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
@@ -36,12 +36,12 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
                                  processinfo->timerindex,
                                  0.001 * dtexec,
                                  0.001 * processinfo->dtexec_limit_value);
-                    if (slen < 1)
+                    if(slen < 1)
                     {
                         PRINT_ERROR("snprintf wrote <1 char");
                         abort(); // can't handle this error any other way
                     }
-                    if (slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
+                    if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
                     {
                         PRINT_ERROR("snprintf string truncation");
                         abort(); // can't handle this error any other way
@@ -49,20 +49,20 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
                 }
                 processinfo_WriteMessage(processinfo, msgstring);
 
-                if (processinfo->dtexec_limit_enable ==
-                    2) // pause process due to timing limit
+                if(processinfo->dtexec_limit_enable ==
+                        2) // pause process due to timing limit
                 {
                     processinfo->CTRLval = 1;
                     {
                         int slen = snprintf(msgstring,
                                             STRINGMAXLEN_PROCESSINFO_STATUSMSG,
                                             "dtexec lim -> paused");
-                        if (slen < 1)
+                        if(slen < 1)
                         {
                             PRINT_ERROR("snprintf wrote <1 char");
                             abort(); // can't handle this error any other way
                         }
-                        if (slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
+                        if(slen >= STRINGMAXLEN_PROCESSINFO_STATUSMSG)
                         {
                             PRINT_ERROR(
                                 "snprintf string "
