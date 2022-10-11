@@ -35,6 +35,7 @@ static long     fpi_ex0mode = -1;
 static int64_t *ex1mode;
 static long     fpi_ex1mode = -1;
 
+
 static CLICMDARGDEF farg[] =
 {
     {
