@@ -24,7 +24,9 @@ static uint64_t *comprms;
 
 
 
-static CLICMDARGDEF farg[] = {{
+static CLICMDARGDEF farg[] =
+{
+    {
         CLIARG_IMG,
         ".in_name",
         "input image",
