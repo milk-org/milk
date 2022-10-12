@@ -7,8 +7,8 @@
 
 
 
-
 static char *inimname;
+
 
 static char *outimave;
 static char *outimrms;
@@ -19,9 +19,12 @@ static uint64_t *NBcoadd;
 static uint64_t *cntindex;
 static long      fpi_cntindex = -1;
 
-static uint64_t *compave;
-static uint64_t *comprms;
 
+static uint64_t *compave;
+static long     fpi_compave = -1;
+
+static uint64_t *comprms;
+static long     fpi_comprms = -1;
 
 
 static CLICMDARGDEF farg[] =
@@ -78,7 +81,7 @@ static CLICMDARGDEF farg[] =
         "1",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &compave,
-        NULL
+        &fpi_compave
     },
     {
         CLIARG_ONOFF,
@@ -87,14 +90,38 @@ static CLICMDARGDEF farg[] =
         "0",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &comprms,
-        NULL
+        &fpi_comprms
     }
 };
 
 
+
+
+static errno_t customCONFsetup()
+{
+
+    return RETURN_SUCCESS;
+}
+
+
+static errno_t customCONFcheck()
+{
+    if(data.fpsptr != NULL)
+    {
+
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
 static CLICMDDATA CLIcmddata =
 {
-    "streamave", "average stream of images", CLICMD_FIELDS_DEFAULTS
+    "streamave",
+    "average stream of images",
+    CLICMD_FIELDS_DEFAULTS
 };
 
 // detailed help
@@ -105,6 +132,9 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 
 
@@ -138,13 +168,13 @@ static errno_t compute_function()
 
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization
     if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
+        printf("PROCINFO IS ON\n");
     }
 
     DEBUG_TRACEPOINT("Allocating summation array");
@@ -155,7 +185,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
 
-    DEBUG_TRACEPOINT("cntindex = %lu / %lu", *cntindex, *NBcoadd);
+    //DEBUG_TRACEPOINT("cntindex = %lu / %lu", *cntindex, *NBcoadd);
 
     printf("Adding image %lu / %lu\n", *cntindex, *NBcoadd);
 
@@ -259,12 +289,21 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
+
+
 INSERT_STD_FPSCLIfunctions
+
+
+
 
 // Register function in CLI
 errno_t
 CLIADDCMD_streamaverage()
 {
+    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
+    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+
+
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
