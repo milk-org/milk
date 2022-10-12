@@ -458,6 +458,7 @@ typedef struct
             CLIcmddata.flags |= CLICMDFLAG_PROCINFO;                           \
         }                                                                      \
         int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);      \
+        printf("%d  %ld\n", cmdi, data.cmd[cmdi].cmdsettings.flags); \
         CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;                  \
     }
 
