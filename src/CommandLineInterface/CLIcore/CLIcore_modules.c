@@ -564,6 +564,11 @@ uint32_t RegisterCLIcmd(
                         (uint64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
+                case CLIARG_ONOFF:
+                    data.cmd[data.NBcmd].argdata[argi].val.ui64 =
+                        (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
+                    break;
+
                 case CLIARG_STR_NOT_IMG:
                     strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
                            CLIcmddata.funcfpscliarg[argi].example);
