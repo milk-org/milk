@@ -159,10 +159,27 @@ static errno_t compute_function()
 
     if(*cntindex == 0)
     {
-        for(uint64_t pixi = 0; pixi < xysize; pixi++)
+        // initialization
+        //
+
+        switch(inimg.datatype)
         {
-            imdataarray[pixi] = inimg.im->array.F[pixi];
+
+            case _DATATYPE_FLOAT :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] = inimg.im->array.F[pixi];
+                }
+                break;
+
+            case _DATATYPE_UINT16 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] = (float) inimg.im->array.UI16[pixi];
+                }
+                break;
         }
+
         if(*comprms == 1)
         {
             for(uint64_t pixi = 0; pixi < xysize; pixi++)
@@ -170,13 +187,28 @@ static errno_t compute_function()
                 imdataarrayPOW[pixi] = imdataarray[pixi] * imdataarray[pixi];
             }
         }
+
     }
     else
     {
-        for(uint64_t pixi = 0; pixi < xysize; pixi++)
+
+        switch(inimg.datatype)
         {
-            imdataarray[pixi] += inimg.im->array.F[pixi];
+            case _DATATYPE_FLOAT :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] += inimg.im->array.F[pixi];
+                }
+                break;
+            case _DATATYPE_UINT16 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] += (float) inimg.im->array.UI16[pixi];
+                }
+                break;
         }
+
+
         if(*comprms == 1)
         {
             for(uint64_t pixi = 0; pixi < xysize; pixi++)
