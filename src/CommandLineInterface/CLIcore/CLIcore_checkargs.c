@@ -563,6 +563,10 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
                     data.cmd[cmdi].argdata[argindexmatch].val.ui64 =
                         data.cmdargtoken[2].val.numl;
                     break;
+                case CLIARG_ONOFF:
+                    data.cmd[cmdi].argdata[argindexmatch].val.i64 =
+                        data.cmdargtoken[2].val.numl;
+                    break;
                 case CLIARG_STR_NOT_IMG:
                     strcpy(data.cmd[cmdi].argdata[argindexmatch].val.s,
                            data.cmdargtoken[2].val.string);
