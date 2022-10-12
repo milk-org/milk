@@ -8,6 +8,8 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+static int cmdindex;
+
 // required for create_2Dimage_ID()
 //#include "COREMOD_memory/COREMOD_memory.h"
 
@@ -20,6 +22,7 @@
 // Local variables pointers
 
 static char *inimname;
+
 
 static char *outimname;
 
@@ -34,6 +37,7 @@ static long     fpi_ex0mode = -1;
 
 static int64_t *ex1mode;
 static long     fpi_ex1mode = -1;
+
 
 
 static CLICMDARGDEF farg[] =
@@ -145,15 +149,19 @@ static errno_t customCONFcheck()
         {
             *cntindex = 0;
         }
+
     }
 
     return RETURN_SUCCESS;
 }
 
-static CLICMDDATA CLIcmddata = {"streamprocess",
-                                "process input stream to output stream",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+
+static CLICMDDATA CLIcmddata =
+{
+    "streamprocess",
+    "process input stream to output stream",
+    CLICMD_FIELDS_DEFAULTS
+};
 
 
 
@@ -188,9 +196,11 @@ static errno_t compute_function()
     IMGID outimg = mkIMGID_from_name(outimname);
     resolveIMGID(&outimg, ERRMODE_ABORT);
 
+    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     // custom initialization
+    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
     if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
     {
         // procinfo is accessible here
@@ -219,6 +229,7 @@ CLIADDCMD_milk_module_example__streamprocess()
 {
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;

@@ -218,6 +218,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         {
             data.FPS_CMDCODE = FPSCMDCODE_TMUXSTOP;
         }
+
     }
 
     // if recognized FPSCMDCODE, use FPS implementation

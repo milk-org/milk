@@ -426,7 +426,10 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
  Register command
 Replaces legacy function RegisterCLIcommand
 */
-uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
+uint32_t RegisterCLIcmd(
+    CLICMDDATA CLIcmddata,
+    errno_t (*CLIfptr)()
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -581,7 +584,12 @@ uint32_t RegisterCLIcmd(CLICMDDATA CLIcmddata, errno_t (*CLIfptr)())
 
     DEBUG_TRACEPOINT(
         "define CLI function flags from content of CLIcmddata.flags");
+
+
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
+
+    printf("COPY CMDSETTINGS FLAGS %3d   %30s  %ld\n", data.NBcmd,
+           data.cmd[data.NBcmd].key, data.cmd[data.NBcmd].cmdsettings.flags);//TBE
 
     // set default values
     //
