@@ -588,8 +588,6 @@ uint32_t RegisterCLIcmd(
 
     data.cmd[data.NBcmd].cmdsettings.flags = CLIcmddata.flags;
 
-    printf("COPY CMDSETTINGS FLAGS %3d   %30s  %ld\n", data.NBcmd,
-           data.cmd[data.NBcmd].key, data.cmd[data.NBcmd].cmdsettings.flags);//TBE
 
     // set default values
     //
