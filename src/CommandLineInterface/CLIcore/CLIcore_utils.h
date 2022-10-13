@@ -42,9 +42,9 @@ typedef const char *__restrict CONST_WORD;
 #define RETURN_CLICHECKARGARRAY_FUNCPARAMSET 2
 #define RETURN_CLICHECKARGARRAY_HELP         3
 
-#define HELPDETAILSSTRINGSTART "DETAILS:"
+#define HELPDETAILSSTRINGSTART "------- DETAILS ------"
 
-#define HELPDETAILSSTRINGEND "-END"
+#define HELPDETAILSSTRINGEND   "-------- END ---------"
 
 
 typedef struct

@@ -13,7 +13,7 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
     if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
-        TUI_printfw("%07d ", (int) pid);
+        TUI_printfw("C");
         screenprint_unsetcolor(2);
     }
     else // PID not active
@@ -22,32 +22,26 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
         {
             // not clean exit
             screenprint_setcolor(4);
-            TUI_printfw("%07d ", (int) pid);
+            TUI_printfw("C");
             screenprint_unsetcolor(4);
         }
         else
         {
             // All OK
-            TUI_printfw("%07d ", (int) pid);
+            TUI_printfw("C");
         }
     }
 
-    if(fps[fpsindex].md->conferrcnt > 99)
-    {
-        screenprint_setcolor(4);
-        TUI_printfw("[XX]");
-        screenprint_unsetcolor(4);
-    }
     if(fps[fpsindex].md->conferrcnt > 0)
     {
         screenprint_setcolor(4);
-        TUI_printfw("[%02d]", fps[fpsindex].md->conferrcnt);
+        TUI_printfw("E");
         screenprint_unsetcolor(4);
     }
     if(fps[fpsindex].md->conferrcnt == 0)
     {
         screenprint_setcolor(2);
-        TUI_printfw("[%02d]", fps[fpsindex].md->conferrcnt);
+        TUI_printfw(">");
         screenprint_unsetcolor(2);
     }
 
@@ -55,7 +49,7 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
     if((getpgid(pid) >= 0) && (pid > 0))
     {
         screenprint_setcolor(2);
-        TUI_printfw("%07d ", (int) pid);
+        TUI_printfw("R");
         screenprint_unsetcolor(2);
     }
     else
@@ -64,14 +58,16 @@ void fpsCTRLscreen_level0node_summary(FUNCTION_PARAMETER_STRUCT *fps,
         {
             // not clean exit
             screenprint_setcolor(4);
-            TUI_printfw("%07d ", (int) pid);
+            TUI_printfw("R");
             screenprint_unsetcolor(4);
         }
         else
         {
             // All OK
-            TUI_printfw("%07d ", (int) pid);
+            TUI_printfw("R");
         }
     }
+    TUI_printfw(" ");
+
     DEBUG_TRACE_FEXIT();
 }
