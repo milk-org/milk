@@ -441,7 +441,7 @@ errno_t fpsCTRL_FPSdisplay(
                 {
                     if(level == 0)
                     {
-                        TUI_printfw("                    ");
+                        TUI_printfw("    ");
                     }
                     TUI_printfw("            ");
                 }

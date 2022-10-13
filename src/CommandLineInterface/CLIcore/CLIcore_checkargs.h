@@ -119,11 +119,16 @@ typedef struct
     } val;
 } CLICMDARGDATA;
 
+
+#define CLICMDDATA_KEY_STRLENMAX            100
+#define CLICMDDATA_DESCRIPTION_STRLENMAX    100
+#define CLICMDDATA_SOURCEFILENAME_STRLENMAX 100
+
 typedef struct
 {
-    char key[100];
-    char description[100];
-    char sourcefilename[100];
+    char key[CLICMDDATA_KEY_STRLENMAX];
+    char description[CLICMDDATA_DESCRIPTION_STRLENMAX];
+    char sourcefilename[CLICMDDATA_SOURCEFILENAME_STRLENMAX];
 
     int           nbarg;
     CLICMDARGDEF *funcfpscliarg;
