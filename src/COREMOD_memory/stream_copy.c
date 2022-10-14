@@ -61,15 +61,19 @@ static errno_t compute_function()
     IMGID imgout = mkIMGID_from_name(outimname);
     resolveIMGID(&imgout, ERRMODE_ABORT);
 
-    uint64_t imdatasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
-                          imgin.im->md->nelement;
+    uint64_t im_in_datasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
+                              imgin.im->md->nelement;
+    uint64_t im_out_datasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
+                               imgout.im->md->nelement;
+    uint64_t byte_copy_size = im_in_datasize < im_out_datasize ? im_in_datasize :
+                              im_out_datasize;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     memcpy(
         imgout.im->array.F,
         imgin.im->array.F,
-        imdatasize
+        byte_copy_size
     );
 
     processinfo_update_output_stream(processinfo, imgout.ID);
