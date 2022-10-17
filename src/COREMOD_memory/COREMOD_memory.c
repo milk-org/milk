@@ -77,6 +77,7 @@
 #include "stream_ave.h"
 #include "stream_copy.h"
 #include "stream_delay.h"
+#include "stream_merge.h"
 #include "stream_diff.h"
 #include "stream_halfimdiff.h"
 #include "stream_monitorlimits.h"
@@ -162,6 +163,7 @@ static errno_t init_module_CLI()
     stream_pixmapdecode_addCLIcmd();
 
     CLIADDCMD_COREMOD_memory__stream_copy();
+    CLIADDCMD_COREMOD_memory__stream_merge();
     CLIADDCMD_COREMOD_memory__stream_poke();
 
     stream_diff_addCLIcmd();
