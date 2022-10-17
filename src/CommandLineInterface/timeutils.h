@@ -2,6 +2,8 @@
  * @file timeutils.h
  */
 
+errno_t milk_clock_gettime(struct timespec *tnow_p);
+
 errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow);
 errno_t mkUTtimestring_nanosec_now(char *timestring);
 
