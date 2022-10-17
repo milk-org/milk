@@ -49,6 +49,7 @@ set(SOURCEFILES
     shmim_setowner.c
     stream_ave.c
     stream_copy.c
+    stream_merge.c
     stream_delay.c
     stream_diff.c
     stream_halfimdiff.c
@@ -109,6 +110,7 @@ set(INCLUDEFILES
     stream_ave.h
     stream_copy.h
     stream_delay.h
+    stream_merge.h
     stream_diff.h
     stream_halfimdiff.h
     stream_monitorlimits.h
