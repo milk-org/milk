@@ -8,6 +8,11 @@
 #define CLOCK_MILK CLOCK_TAI
 // handles leap seconds better than CLOCK_REALTIME
 
+errno_t milk_clock_gettime(struct timespec *tnow_p)
+{
+    return clock_gettime(CLOCK_MILK, tnow_p);
+}
+
 errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
 {
     struct tm *uttime;
