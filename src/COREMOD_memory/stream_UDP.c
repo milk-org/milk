@@ -208,8 +208,11 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     setsockopt(fds_client, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
     setsockopt(fds_client, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
+    
+    #ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
                sizeof(flag));
+    #endif
 
     if(loopOK == 1)
     {
@@ -586,8 +589,11 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     setsockopt(fds_server, SOL_SOCKET, SO_NO_CHECK, (char *) & flag, sizeof(flag));
     setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
     setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
+
+    #ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
                sizeof(flag));
+    #endif
 
     //bind socket to port
     if(bind(fds_server,
