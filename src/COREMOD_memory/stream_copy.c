@@ -69,14 +69,24 @@ static errno_t compute_function()
                               im_out_datasize;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    {
 
-    memcpy(
-        imgout.im->array.F,
-        imgin.im->array.F,
-        byte_copy_size
-    );
+        //usleep(100);
 
-    processinfo_update_output_stream(processinfo, imgout.ID);
+        // We should probs flush the input semaphore.
+        // I'm afraid that when doing speed tests we're "overclocking" our pipeline.
+        // aka.... pipelining.
+        // This is even moreso necessary with the usleep.
+        ImageStreamIO_semflush(imgin.im, processinfo->triggersem);
+
+        memcpy(
+            imgout.im->array.F,
+            imgin.im->array.F,
+            byte_copy_size
+        );
+
+        processinfo_update_output_stream(processinfo, imgout.ID);
+    }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
