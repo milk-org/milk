@@ -89,7 +89,8 @@ static errno_t compute_function()
     for(int kk = 0;  kk < n_input; ++kk)
     {
         offset_bytes[kk] = acc;
-        size_bytes[kk] = img_in_arr[kk].size[0];
+        size_bytes[kk] = img_in_arr[kk].size[0] * ImageStreamIO_typesize(
+                             img_in_arr[kk].datatype);
         acc += size_bytes[kk]; // Wildly assuming naxis=1 here.
 
         sem_idxs[kk] = ImageStreamIO_getsemwaitindex(img_in_arr[kk].im, 0);
@@ -116,15 +117,16 @@ static errno_t compute_function()
         for(int kk = 0; kk < n_input; kk++)
         {
             ImageStreamIO_semtimedwait(img_in_arr[kk].im, sem_idxs[kk], &t_spec2);
-
             // In case one input got ahead of the others
             ImageStreamIO_semflush(img_in_arr[kk].im, sem_idxs[kk]);
-
-            // Start writing as soon as input 1 is ready
-            img_out.md->write = TRUE;
+        }
+        img_out.md->write = TRUE;
+        for(int kk = 0; kk < n_input; kk++)
+        {
             memcpy(img_out.im->array.raw + offset_bytes[kk], img_in_arr[kk].im->array.raw,
                    size_bytes[kk]);
         }
+
 
         // What about keywords?
 
