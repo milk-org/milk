@@ -204,12 +204,41 @@ static errno_t compute_function()
                 }
                 break;
 
+            case _DATATYPE_DOUBLE :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] = inimg.im->array.D[pixi];
+                }
+                break;
+
+            case _DATATYPE_INT16 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] = (float) inimg.im->array.SI16[pixi];
+                }
+                break;
+
             case _DATATYPE_UINT16 :
                 for(uint64_t pixi = 0; pixi < xysize; pixi++)
                 {
                     imdataarray[pixi] = (float) inimg.im->array.UI16[pixi];
                 }
                 break;
+
+            case _DATATYPE_INT32 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] = (float) inimg.im->array.SI32[pixi];
+                }
+                break;
+
+            case _DATATYPE_UINT32 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] = (float) inimg.im->array.UI32[pixi];
+                }
+                break;
+
         }
 
         if(*comprms == 1)
@@ -232,12 +261,42 @@ static errno_t compute_function()
                     imdataarray[pixi] += inimg.im->array.F[pixi];
                 }
                 break;
+
+            case _DATATYPE_DOUBLE :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] += inimg.im->array.D[pixi];
+                }
+                break;
+
+            case _DATATYPE_INT16 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] += (float) inimg.im->array.SI16[pixi];
+                }
+                break;
+
             case _DATATYPE_UINT16 :
                 for(uint64_t pixi = 0; pixi < xysize; pixi++)
                 {
                     imdataarray[pixi] += (float) inimg.im->array.UI16[pixi];
                 }
                 break;
+
+            case _DATATYPE_INT32 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] += (float) inimg.im->array.SI32[pixi];
+                }
+                break;
+
+            case _DATATYPE_UINT32 :
+                for(uint64_t pixi = 0; pixi < xysize; pixi++)
+                {
+                    imdataarray[pixi] += (float) inimg.im->array.UI32[pixi];
+                }
+                break;
+
         }
 
 
@@ -258,6 +317,7 @@ static errno_t compute_function()
         if(*compave == 1)
         {
             DEBUG_TRACEPOINT("Writing output AVE image");
+
             for(uint64_t pixi = 0; pixi < xysize; pixi++)
             {
                 outimgave.im->array.F[pixi] = imdataarray[pixi] / (*cntindex);
