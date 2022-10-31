@@ -76,45 +76,23 @@ void TUI_printfw(const char *fmt, ...)
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         int  x, y;
-        int  MAXLINELEN = 512;
-        char prtstring[MAXLINELEN];
+        int  MAXSTRLEN = 512;
 
         getyx(stdscr, y, x);
         (void) x;
         (void) y;
 
-        vsnprintf(prtstring, MAXLINELEN, fmt, args);
-        printw("%s", prtstring);
+        int remaining_cols = MAXSTRLEN < wcol - x ? MAXSTRLEN : wcol - x;
+        if(remaining_cols > 0)
+        {
+            char prtstring[remaining_cols];
+            vsnprintf(prtstring, remaining_cols, fmt, args);
+            printw("%s", prtstring);
+        }
     }
 
     va_end(args);
 }
-
-/*
-void TUI_wprintfw(const wchar_t *wstr)
-{
-    if (screenprintmode == SCREENPRINT_STDIO)
-    {
-        printf("%ls", wstr);
-    }
-
-    if (screenprintmode == SCREENPRINT_NCURSES)
-    {
-        int  x, y;
-        int  MAXLINELEN = 512;
-        //wchar_t prtstring[MAXLINELEN];
-
-        getyx(stdscr, y, x);
-        (void) x;
-        (void) y;
-
-        //vswprintf(prtstring, MAXLINELEN, fmt, args);
-//        printw("%ls", wstr);
-        //mvaddwstr(y, x, wstr);
-    }
-}
-*/
-
 
 
 void TUI_newline()
