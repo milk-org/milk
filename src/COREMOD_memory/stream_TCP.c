@@ -698,6 +698,11 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     long                 framesizefull; // pixel data + metadata + kw
     char                *buff;          // buffer
 
+    size_t flushsize;
+    char *socket_flush_buff;
+
+
+
     struct sched_param schedpar;
 
     PROCESSINFO *processinfo;
@@ -788,7 +793,11 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                         IPPROTO_TCP,    /* set option at TCP level */
                         TCP_NODELAY,    /* name of option */
                         (char *) &flag, /* the cast is historical cruft */
-                        sizeof(int));   /* length of option value */
+                        sizeof(flag));   /* length of option value */
+    result -= setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag,
+                         sizeof(flag));
+    result -= setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag,
+                         sizeof(flag));
     if(result < 0)
     {
         printf("ERROR setsockopt\n");
@@ -888,19 +897,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         char msgstring[200];
         sprintf(msgstring, "Receiving stream %s", imgmd[0].name);
         processinfo_WriteMessage(processinfo, msgstring);
-    }
-
-    {
-        // flush socket for 1MB
-
-        size_t flushsize = 1048576;
-
-        char *flushbuff;
-        flushbuff = (char *) malloc(flushsize);
-
-        recv(fds_client, flushbuff, flushsize, MSG_DONTWAIT);
-
-        free(flushbuff);
     }
 
     // is image already in memory ?
@@ -1152,6 +1148,27 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     long monitorloopindex = 0;
     long cnt0previous     = 0;
 
+    {
+        // Finally, just before we start, flush the TCP receive buffer. BUT we need to flush an integer number of frames, that's important,
+        // or we end up losing sync.
+        // This entire thing is kinda useless... it's legacy dating from ImageStreamIO version mismatches where headers could have different sizes
+        // at either end...
+        socket_flush_buff = (char *) malloc(framesizefull);
+        long recv_bytes = framesizefull;
+        while(recv_bytes == framesizefull)
+        {
+            recv_bytes = recv(fds_client, socket_flush_buff, framesizefull, MSG_DONTWAIT);
+            printf("TCP recv buffer flush. %ld stray bytes.\n", recv_bytes);
+        }
+        if(recv_bytes >
+                0)    // Will be -1 if we got 0 bytes at the last iteration above
+        {
+            recv_bytes = recv(fds_client, socket_flush_buff, framesizefull - recv_bytes,
+                              MSG_WAITALL);
+            printf("Buffer flush finalize. %ld extra bytes.\n", recv_bytes);
+        }
+    }
+
     while(loopOK == 1)
     {
         if(data.processinfo == 1)
@@ -1351,6 +1368,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         processinfo_cleanExit(processinfo);
     }
 
+    free(socket_flush_buff);
     free(buff);
 
     close(fds_client);
