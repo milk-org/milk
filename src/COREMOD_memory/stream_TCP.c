@@ -147,6 +147,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
     long    loopcnt = 0;
 
     ID = image_ID(IDname);
+    IMAGE *img_p = &data.image[ID];
 
     char pinfomsg[200];
 
@@ -159,7 +160,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
         printf("\n");
         usleep(500);
 
-        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+        sem_getvalue(img_p->semptr[semtrig], &semval);
         sprintf(pinfomsg,
                 "%ld TEST 0 semtrig %d  ID %ld  %d",
                 loopcnt,
@@ -171,18 +172,18 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
 
         if(testmode == 0)
         {
-            rv = sem_wait(data.image[ID].semptr[semtrig]);
+            rv = sem_wait(img_p->semptr[semtrig]);
         }
 
         if(testmode == 1)
         {
-            rv = sem_trywait(data.image[ID].semptr[semtrig]);
+            rv = sem_trywait(img_p->semptr[semtrig]);
         }
 
         if(testmode == 2)
         {
-            sem_post(data.image[ID].semptr[semtrig]);
-            rv = sem_wait(data.image[ID].semptr[semtrig]);
+            sem_post(img_p->semptr[semtrig]);
+            rv = sem_wait(img_p->semptr[semtrig]);
         }
 
         if(rv == -1)
@@ -218,7 +219,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
             printf("    OK\n");
         }
 
-        sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+        sem_getvalue(img_p->semptr[semtrig], &semval);
         sprintf(pinfomsg,
                 "%ld TEST 1 semtrig %d  ID %ld  %d",
                 loopcnt,
@@ -242,6 +243,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     const char *IDname, const char *IPaddr, int port, int mode, int RT_priority)
 {
     imageID            ID;
+    IMAGE             *img_p;
     struct sockaddr_in sock_server;
     int                fds_client;
     int                flag = 1;
@@ -310,6 +312,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     int loopOK = 1;
 
     ID = image_ID(IDname);
+    img_p = &data.image[ID];
 
     if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
     {
@@ -350,7 +353,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     if(loopOK == 1)
     {
         if(send(fds_client,
-                (void *) data.image[ID].md,
+                (void *) img_p->md,
                 sizeof(IMAGE_METADATA),
                 0) != sizeof(IMAGE_METADATA))
         {
@@ -368,116 +371,38 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     if(loopOK == 1)
     {
-        xsize    = data.image[ID].md[0].size[0];
-        ysize    = data.image[ID].md[0].size[1];
+        xsize    = img_p->md[0].size[0];
+        ysize    = img_p->md[0].size[1];
         NBslices = 1;
-        if(data.image[ID].md[0].naxis > 2)
-            if(data.image[ID].md[0].size[2] > 1)
+        if(img_p->md[0].naxis > 2)
+            if(img_p->md[0].size[2] > 1)
             {
-                NBslices = data.image[ID].md[0].size[2];
+                NBslices = img_p->md[0].size[2];
             }
     }
 
     if(loopOK == 1)
     {
-        switch(data.image[ID].md[0].datatype)
-        {
-
-            case _DATATYPE_INT8:
-                framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT8:
-                framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-                break;
-
-            case _DATATYPE_INT16:
-                framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT16:
-                framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-                break;
-
-            case _DATATYPE_INT32:
-                framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT32:
-                framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-                break;
-
-            case _DATATYPE_INT64:
-                framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-                break;
-            case _DATATYPE_UINT64:
-                framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-                break;
-
-            case _DATATYPE_FLOAT:
-                framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-                break;
-            case _DATATYPE_DOUBLE:
-                framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-                break;
-
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                sprintf(errmsg,
-                        "WRONG DATA TYPE data type = %d\n",
-                        data.image[ID].md[0].datatype);
-                printf("data type = %d\n", data.image[ID].md[0].datatype);
-                processinfo_error(processinfo, errmsg);
-                loopOK = 0;
-                break;
-        }
+        framesize = ImageStreamIO_typesize(img_p->md[0].datatype) * xsize * ysize;
 
         printf("IMAGE FRAME SIZE = %ld\n", framesize);
         fflush(stdout);
+
+        if(-1 == ImageStreamIO_checktype(img_p->md[0].datatype, 0))
+        {
+            printf("ERROR: WRONG DATA TYPE\n");
+            sprintf(errmsg,
+                    "WRONG DATA TYPE data type = %d\n",
+                    img_p->md[0].datatype);
+            printf("data type = %d\n", img_p->md[0].datatype);
+            processinfo_error(processinfo, errmsg);
+            loopOK = 0;
+        }
     }
 
     if(loopOK == 1)
     {
-        switch(data.image[ID].md[0].datatype)
-        {
-
-            case _DATATYPE_INT8:
-                ptr0 = (char *) data.image[ID].array.SI8;
-                break;
-            case _DATATYPE_UINT8:
-                ptr0 = (char *) data.image[ID].array.UI8;
-                break;
-
-            case _DATATYPE_INT16:
-                ptr0 = (char *) data.image[ID].array.SI16;
-                break;
-            case _DATATYPE_UINT16:
-                ptr0 = (char *) data.image[ID].array.UI16;
-                break;
-
-            case _DATATYPE_INT32:
-                ptr0 = (char *) data.image[ID].array.SI32;
-                break;
-            case _DATATYPE_UINT32:
-                ptr0 = (char *) data.image[ID].array.UI32;
-                break;
-
-            case _DATATYPE_INT64:
-                ptr0 = (char *) data.image[ID].array.SI64;
-                break;
-            case _DATATYPE_UINT64:
-                ptr0 = (char *) data.image[ID].array.UI64;
-                break;
-
-            case _DATATYPE_FLOAT:
-                ptr0 = (char *) data.image[ID].array.F;
-                break;
-            case _DATATYPE_DOUBLE:
-                ptr0 = (char *) data.image[ID].array.D;
-                break;
-
-            default:
-                printf("ERROR: WRONG DATA TYPE\n");
-                exit(0);
-                break;
-        }
+        ptr0 = (char *) img_p->array.raw;
 
         frame_md = (TCP_BUFFER_METADATA *) malloc(sizeof(TCP_BUFFER_METADATA));
         framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
@@ -489,7 +414,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         else
         {
             framesizeall =
-                framesize1 + data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD);
+                framesize1 + img_p->md[0].NBkw * sizeof(IMAGE_KEYWORD);
         }
 
         buff = (char *) malloc(sizeof(char) * framesizeall);
@@ -499,11 +424,11 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         oldslice = 0;
         //sockOK = 1;
-        printf("sem = %d\n", data.image[ID].md[0].sem);
+        printf("sem = %d\n", img_p->md[0].sem);
         fflush(stdout);
     }
 
-    if((data.image[ID].md[0].sem == 0) || (mode == 1))
+    if((img_p->md[0].sem == 0) || (mode == 1))
     {
         processinfo_WriteMessage(processinfo, "sync using counter");
         UseSem = 0;
@@ -527,11 +452,11 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         if(UseSem == 0)  // use counter
         {
-            while(data.image[ID].md[0].cnt0 == cnt)  // test if new frame exists
+            while(img_p->md[0].cnt0 == cnt)  // test if new frame exists
             {
                 usleep(5);
             }
-            cnt  = data.image[ID].md[0].cnt0;
+            cnt  = img_p->md[0].cnt0;
             semr = 0;
         }
         else
@@ -543,26 +468,26 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
             }
             ts.tv_sec += 2;
 
-            semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
+            semr = sem_timedwait(img_p->semptr[semtrig], &ts);
 
             if(iter == 0)
             {
                 processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                sem_getvalue(img_p->semptr[semtrig], &semval);
                 int semvalcnt = semval;
                 for(scnt = 0; scnt < semvalcnt; scnt++)
                 {
-                    sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                    sem_getvalue(img_p->semptr[semtrig], &semval);
                     printf("sem = %d\n", semval);
                     fflush(stdout);
-                    sem_trywait(data.image[ID].semptr[semtrig]);
+                    sem_trywait(img_p->semptr[semtrig]);
                 }
                 printf("done\n");
                 fflush(stdout);
 
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                sem_getvalue(img_p->semptr[semtrig], &semval);
                 printf("-> sem = %d\n", semval);
                 fflush(stdout);
 
@@ -576,10 +501,10 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
             if(semr == 0)
             {
-                frame_md[0].cnt0 = data.image[ID].md[0].cnt0;
-                frame_md[0].cnt1 = data.image[ID].md[0].cnt1;
+                frame_md[0].cnt0 = img_p->md[0].cnt0;
+                frame_md[0].cnt1 = img_p->md[0].cnt1;
 
-                slice = data.image[ID].md[0].cnt1;
+                slice = img_p->md[0].cnt1;
                 if(slice > oldslice + 1)
                 {
                     slice = oldslice + 1;
@@ -599,15 +524,15 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 ptr1 =
                     ptr0 +
                     framesize *
-                    slice; //data.image[ID].md[0].cnt1; // frame that was just written
+                    slice; //img_p->md[0].cnt1; // frame that was just written
                 memcpy(buff, ptr1, framesize);
                 memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
                 if(TCPTRANSFERKW == 1)
                 {
                     memcpy(buff + framesize1,
-                           (char *) data.image[ID].kw,
-                           data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                           (char *) img_p->kw,
+                           img_p->md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
                 rs = send(fds_client, buff, framesizeall, 0);
@@ -680,6 +605,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     IMAGE_METADATA *imgmd;
     imageID         ID;
+    IMAGE          *img_p;
     long            framesize;
     uint32_t        xsize;
     uint32_t        ysize;
@@ -727,39 +653,17 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     // CATCH SIGNALS
 
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if(
+        sigaction(SIGTERM, &data.sigact, NULL) == -1 ||
+        sigaction(SIGINT, &data.sigact, NULL) == -1 ||
+        sigaction(SIGABRT, &data.sigact, NULL) == -1 ||
+        sigaction(SIGBUS, &data.sigact, NULL) == -1 ||
+        sigaction(SIGSEGV, &data.sigact, NULL) == -1 ||
+        sigaction(SIGHUP, &data.sigact, NULL) == -1 ||
+        sigaction(SIGPIPE, &data.sigact, NULL) == -1
+    )
     {
-        printf("\ncan't catch SIGTERM\n");
-    }
-
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGINT\n");
-    }
-
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGABRT\n");
-    }
-
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGBUS\n");
-    }
-
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGSEGV\n");
-    }
-
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGHUP\n");
-    }
-
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGPIPE\n");
+        printf("\nCan't catch a requested signal (TERM, INT, ABRT, BUS, SEGV, HUP, PIPE)\n");
     }
 
     schedpar.sched_priority = RT_priority;
@@ -909,6 +813,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         ID = read_sharedmem_image(imgmd[0].name);
     }
 
+    img_p = &data.image[ID];
+
     list_image_ID();
 
     if(ID == -1)
@@ -918,19 +824,19 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     else
     {
         OKim = 1;
-        if(imgmd[0].naxis != data.image[ID].md[0].naxis)
+        if(imgmd[0].naxis != img_p->md[0].naxis)
         {
             OKim = 0;
         }
         if(OKim == 1)
         {
             for(axis = 0; axis < imgmd[0].naxis; axis++)
-                if(imgmd[0].size[axis] != data.image[ID].md[0].size[axis])
+                if(imgmd[0].size[axis] != img_p->md[0].size[axis])
                 {
                     OKim = 0;
                 }
         }
-        if(imgmd[0].datatype != data.image[ID].md[0].datatype)
+        if(imgmd[0].datatype != img_p->md[0].datatype)
         {
             OKim = 0;
         }
@@ -946,7 +852,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if(TCPTRANSFERKW == 1)
     {
         nbkw = imgmd[0].NBkw;
-        if(imgmd[0].NBkw != data.image[ID].md[0].NBkw)
+        if(imgmd[0].NBkw != img_p->md[0].NBkw)
         {
             OKim = 0;
         }
@@ -975,122 +881,30 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     COREMOD_MEMORY_image_set_createsem(imgmd[0].name, IMAGE_NB_SEMAPHORE);
 
-    xsize    = data.image[ID].md[0].size[0];
-    ysize    = data.image[ID].md[0].size[1];
+    xsize    = img_p->md[0].size[0];
+    ysize    = img_p->md[0].size[1];
     NBslices = 1;
-    if(data.image[ID].md[0].naxis > 2)
-        if(data.image[ID].md[0].size[2] > 1)
+    if(img_p->md[0].naxis > 2)
+        if(img_p->md[0].size[2] > 1)
         {
-            NBslices = data.image[ID].md[0].size[2];
+            NBslices = img_p->md[0].size[2];
         }
 
     char typestring[8];
 
-    switch(data.image[ID].md[0].datatype)
+    if(ImageStreamIO_checktype(img_p->md[0].datatype, 0) == -1)
     {
-
-        case _DATATYPE_INT8:
-            framesize = SIZEOF_DATATYPE_INT8 * xsize * ysize;
-            sprintf(typestring, "INT8");
-            break;
-
-        case _DATATYPE_UINT8:
-            framesize = SIZEOF_DATATYPE_UINT8 * xsize * ysize;
-            sprintf(typestring, "UINT8");
-            break;
-
-        case _DATATYPE_INT16:
-            framesize = SIZEOF_DATATYPE_INT16 * xsize * ysize;
-            sprintf(typestring, "INT16");
-            break;
-
-        case _DATATYPE_UINT16:
-            framesize = SIZEOF_DATATYPE_UINT16 * xsize * ysize;
-            sprintf(typestring, "UINT16");
-            break;
-
-        case _DATATYPE_INT32:
-            framesize = SIZEOF_DATATYPE_INT32 * xsize * ysize;
-            sprintf(typestring, "INT32");
-            break;
-
-        case _DATATYPE_UINT32:
-            framesize = SIZEOF_DATATYPE_UINT32 * xsize * ysize;
-            sprintf(typestring, "UINT32");
-            break;
-
-        case _DATATYPE_INT64:
-            framesize = SIZEOF_DATATYPE_INT64 * xsize * ysize;
-            sprintf(typestring, "INT64");
-            break;
-
-        case _DATATYPE_UINT64:
-            framesize = SIZEOF_DATATYPE_UINT64 * xsize * ysize;
-            sprintf(typestring, "UINT64");
-            break;
-
-        case _DATATYPE_FLOAT:
-            framesize = SIZEOF_DATATYPE_FLOAT * xsize * ysize;
-            sprintf(typestring, "FLOAT");
-            break;
-
-        case _DATATYPE_DOUBLE:
-            framesize = SIZEOF_DATATYPE_DOUBLE * xsize * ysize;
-            sprintf(typestring, "DOUBLE");
-            break;
-
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            sprintf(typestring, "ERR");
-            exit(0);
-            break;
+        printf("ERROR: WRONG DATA TYPE\n");
+        sprintf(typestring, "%s", "ERR");
+        exit(0);
     }
-
+    framesize = ImageStreamIO_typesize(img_p->md[0].datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
 
-    switch(data.image[ID].md[0].datatype)
-    {
+    sprintf(typestring, "%s", ImageStreamIO_typename(img_p->md[0].datatype));
 
-        case _DATATYPE_INT8:
-            ptr0 = (char *) data.image[ID].array.SI8;
-            break;
-        case _DATATYPE_UINT8:
-            ptr0 = (char *) data.image[ID].array.UI8;
-            break;
+    ptr0 = (char *) img_p->array.raw;
 
-        case _DATATYPE_INT16:
-            ptr0 = (char *) data.image[ID].array.SI16;
-            break;
-        case _DATATYPE_UINT16:
-            ptr0 = (char *) data.image[ID].array.UI16;
-            break;
-
-        case _DATATYPE_INT32:
-            ptr0 = (char *) data.image[ID].array.SI32;
-            break;
-        case _DATATYPE_UINT32:
-            ptr0 = (char *) data.image[ID].array.UI32;
-            break;
-
-        case _DATATYPE_INT64:
-            ptr0 = (char *) data.image[ID].array.SI64;
-            break;
-        case _DATATYPE_UINT64:
-            ptr0 = (char *) data.image[ID].array.UI64;
-            break;
-
-        case _DATATYPE_FLOAT:
-            ptr0 = (char *) data.image[ID].array.F;
-            break;
-        case _DATATYPE_DOUBLE:
-            ptr0 = (char *) data.image[ID].array.D;
-            break;
-
-        default:
-            printf("ERROR: WRONG DATA TYPE\n");
-            exit(0);
-            break;
-    }
 
     if(data.processinfo == 1)
     {
@@ -1213,7 +1027,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         {
             frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
 
-            data.image[ID].md[0].cnt1 = frame_md[0].cnt1;
+            img_p->md[0].cnt1 = frame_md[0].cnt1;
 
             // copy pixel data
             if(NBslices > 1)
@@ -1228,7 +1042,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             if(TCPTRANSFERKW == 1)
             {
                 // copy kw
-                memcpy(data.image[ID].kw,
+                memcpy(img_p->kw,
                        (IMAGE_KEYWORD *)(buff + framesize1),
                        nbkw * sizeof(IMAGE_KEYWORD));
             }
@@ -1252,11 +1066,11 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                     monitorloopindex,
                     frame_md[0].cnt0,
                     frame_md[0].cnt0 - minputcnt,
-                    data.image[ID].md[0].cnt0,
-                    data.image[ID].md[0].cnt0 - moutputcnt);
+                    img_p->md[0].cnt0,
+                    img_p->md[0].cnt0 - moutputcnt);
 
                 minputcnt  = frame_md[0].cnt0;
-                moutputcnt = data.image[ID].md[0].cnt0;
+                moutputcnt = img_p->md[0].cnt0;
 
                 monitorloopindex++;
                 monitorindex = 0;
@@ -1264,20 +1078,20 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             monitorindex++;
 
-            data.image[ID].md[0].cnt0++;
-            for(semnb = 0; semnb < data.image[ID].md[0].sem; semnb++)
+            img_p->md[0].cnt0++;
+            for(semnb = 0; semnb < img_p->md[0].sem; semnb++)
             {
-                sem_getvalue(data.image[ID].semptr[semnb], &semval);
+                sem_getvalue(img_p->semptr[semnb], &semval);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    sem_post(data.image[ID].semptr[semnb]);
+                    sem_post(img_p->semptr[semnb]);
                 }
             }
 
-            sem_getvalue(data.image[ID].semlog, &semval);
+            sem_getvalue(img_p->semlog, &semval);
             if(semval < 2)
             {
-                sem_post(data.image[ID].semlog);
+                sem_post(img_p->semlog);
             }
         }
 
@@ -1292,67 +1106,40 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         }
 
         // process signals
-
-        if(data.signal_TERM == 1)
+        if(data.signal_TERM || data.signal_INT || data.signal_ABRT || data.signal_BUS ||
+                data.signal_SEGV || data.signal_HUP || data.signal_PIPE)
         {
             loopOK = 0;
             if(data.processinfo == 1)
             {
-                processinfo_SIGexit(processinfo, SIGTERM);
-            }
-        }
-
-        if(data.signal_INT == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGINT);
-            }
-        }
-
-        if(data.signal_ABRT == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGABRT);
-            }
-        }
-
-        if(data.signal_BUS == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGBUS);
-            }
-        }
-
-        if(data.signal_SEGV == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGSEGV);
-            }
-        }
-
-        if(data.signal_HUP == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGHUP);
-            }
-        }
-
-        if(data.signal_PIPE == 1)
-        {
-            loopOK = 0;
-            if(data.processinfo == 1)
-            {
-                processinfo_SIGexit(processinfo, SIGPIPE);
+                if(data.signal_TERM)
+                {
+                    processinfo_SIGexit(processinfo, SIGTERM);
+                }
+                else if(data.signal_INT)
+                {
+                    processinfo_SIGexit(processinfo, SIGINT);
+                }
+                else if(data.signal_ABRT)
+                {
+                    processinfo_SIGexit(processinfo, SIGABRT);
+                }
+                else if(data.signal_BUS)
+                {
+                    processinfo_SIGexit(processinfo, SIGBUS);
+                }
+                else if(data.signal_SEGV)
+                {
+                    processinfo_SIGexit(processinfo, SIGSEGV);
+                }
+                else if(data.signal_HUP)
+                {
+                    processinfo_SIGexit(processinfo, SIGHUP);
+                }
+                else if(data.signal_PIPE)
+                {
+                    processinfo_SIGexit(processinfo, SIGPIPE);
+                }
             }
         }
 
