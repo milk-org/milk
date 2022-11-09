@@ -59,8 +59,8 @@ enum FPS_type : uint32_t
 
 class pyFps
 {
-    std::string                     name_;
-    FUNCTION_PARAMETER_STRUCT       fps_;
+    std::string name_;
+    FUNCTION_PARAMETER_STRUCT fps_;
     std::map<std::string, FPS_type> keys_;
 
     int read_keys()
@@ -69,9 +69,9 @@ class pyFps
         while((k < fps_.md->NBparamMAX) &&
                 (fps_.parray[k].keywordfull[0] != '\0'))
         {
-            int   offset = strlen(fps_.parray[k].keyword[0]) + 1;
-            char *key    = fps_.parray[k].keywordfull + offset;
-            keys_[key]   = static_cast<FPS_type>(fps_.parray[k].type);
+            int offset = strlen(fps_.parray[k].keyword[0]) + 1;
+            char *key = fps_.parray[k].keywordfull + offset;
+            keys_[key] = static_cast<FPS_type>(fps_.parray[k].type);
             k++;
         }
 
@@ -80,32 +80,32 @@ class pyFps
 
   public:
     /**
-    * @brief Read / connect to existing shared memory FPS
+     * @brief Read / connect to existing shared memory FPS
 
-    * @param name : the name of the shared memory file to connect
-    */
+     * @param name : the name of the shared memory file to connect
+     */
     pyFps(std::string name)
         : pyFps(name, false, FUNCTION_PARAMETER_NBPARAM_DEFAULT) {};
 
     /**
-    * @brief Read or create an shared FPS
-    *
-    * @param fps_name : the name of the shared memory file to connect
-    * @param create : flag for creating of shared memory identifier
-    * @param NBparamMAX : Max number of parameters
-    */
+     * @brief Read or create an shared FPS
+     *
+     * @param fps_name : the name of the shared memory file to connect
+     * @param create : flag for creating of shared memory identifier
+     * @param NBparamMAX : Max number of parameters
+     */
     pyFps(std::string fps_name, bool create, int NBparamMAX) : name_(fps_name)
     {
-        fps_.md     = nullptr;
-        fps_.parray = nullptr; // array of function parameters
+        fps_.md = nullptr;
+        fps_.parray = nullptr;  // array of function parameters
 
         // these variables are local to each process
-        fps_.localstatus = 0; // 1 if conf loop should be active
-        fps_.SMfd        = -1;
-        fps_.CMDmode     = 0;
+        fps_.localstatus = 0;  // 1 if conf loop should be active
+        fps_.SMfd = -1;
+        fps_.CMDmode = 0;
 
-        fps_.NBparam       = 0; // number of parameters in array
-        fps_.NBparamActive = 0; // number of active parameters
+        fps_.NBparam = 0;        // number of parameters in array
+        fps_.NBparamActive = 0;  // number of active parameters
 
         if(create)
         {
@@ -123,9 +123,9 @@ class pyFps
     }
 
     /**
-    * @brief Destroy the py Fps object
-    *
-    */
+     * @brief Destroy the py Fps object
+     *
+     */
     ~pyFps() = default;
 
     FUNCTION_PARAMETER_STRUCT *operator->()
@@ -150,11 +150,11 @@ class pyFps
     }
 
     /**
-    * @brief Create a and connect object
-    *
-    * @param NBparamMAX
-    * @return int
-    */
+     * @brief Create a and connect object
+     *
+     * @param NBparamMAX
+     * @return int
+     */
     int create_and_connect(int NBparamMAX)
     {
         if(connect() == -1)
@@ -173,56 +173,51 @@ class pyFps
     }
 
     /**
-    * @brief Connect to existing shared memory FPS
+     * @brief Connect to existing shared memory FPS
 
-    * @param name : the name of the shared memory file to connect
-    */
+     * @param name : the name of the shared memory file to connect
+     */
     int connect()
     {
-        return function_parameter_struct_connect(name_.c_str(),
-                &fps_,
+        return function_parameter_struct_connect(name_.c_str(), &fps_,
                 FPSCONNECT_SIMPLE);
     };
 
     /**
-    * @brief Add parameter to database with default settings
-    *
-    * If entry already exists, do not modify it
-    *
-    * @param entry_name : entry name
-    * @param entry_desc : entry description
-    * @param fptype : entry type ("int","double","float","string")
-    * @return int
-    */
-    int
-    add_entry(std::string entry_name, std::string entry_desc, uint32_t fptype)
+     * @brief Add parameter to database with default settings
+     *
+     * If entry already exists, do not modify it
+     *
+     * @param entry_name : entry name
+     * @param entry_desc : entry description
+     * @param fptype : entry type ("int","double","float","string")
+     * @return int
+     */
+    int add_entry(std::string entry_name, std::string entry_desc,
+                  uint32_t fptype)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
-        return function_parameter_add_entry(&fps_,
-                                            entry_name.c_str(),
-                                            entry_desc.c_str(),
-                                            fptype,
-                                            FPFLAG_DEFAULT_INPUT,
-                                            nullptr,
-                                            nullptr);
+        return function_parameter_add_entry(&fps_, entry_name.c_str(),
+                                            entry_desc.c_str(), fptype,
+                                            FPFLAG_DEFAULT_INPUT, nullptr, nullptr);
     }
 
     /**
-    * @brief Get the status object
-    *
-    * @return int
-    */
+     * @brief Get the status object
+     *
+     * @return int
+     */
     int get_status()
     {
         return fps_.md->status;
     }
 
     /**
-    * @brief Set the status object
-    *
-    * @param status
-    * @return int
-    */
+     * @brief Set the status object
+     *
+     * @param status
+     * @return int
+     */
     int set_status(int status)
     {
         fps_.md->status = status;
@@ -230,15 +225,15 @@ class pyFps
     }
 
     /**
-    * @brief Get the levelKeys object
-    *
-    * @param level
-    * @return std::vector<std::string>
-    */
+     * @brief Get the levelKeys object
+     *
+     * @param level
+     * @return std::vector<std::string>
+     */
     std::vector<std::string> get_levelKeys(int level)
     {
         std::vector<std::string> levelKeys = std::vector<std::string>();
-        int                      k         = 0;
+        int k = 0;
         while(fps_.parray[k].keywordfull[0] != '\0' && k < fps_.md->NBparamMAX)
         {
             std::string tmp = fps_.parray[k].keyword[level];
