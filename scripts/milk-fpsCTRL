@@ -1,46 +1,88 @@
 #!/usr/bin/env bash
 
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
 
-# number of arguments to script
-NBARGS=1
-
-# ======================= PROCESS NAME =================================
-#pname=`echo "$0" | sed "s/\.\///g"`
-pname=`basename "$0"`
-echo "pname = ${pname}"
+# script 1-line description
+MSdescr="Function Parameter Structure (PFS) control"
 
 
-function printHELP {
-    echo "------------------------------------------------------------------------"
-    echo "$(tput bold) $pname : function parameters control  $(tput sgr0)"
-    echo "------------------------------------------------------------------------"
-    echo "  Monitors and controls function parameters"
-    echo "  Connects to <name>.fps.shm shared memory structures"
-    echo "  Argument is string match filter to select fps structures"
-    echo "   "
-    echo " $(tput bold)USAGE:$(tput sgr0)"
-    echo "     $0 [-hlmD] <stringfilter>"
-    echo ""
-    echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
-    echo "     <stringfilter>                      string filter (optional)"
-    echo ""
-    echo " $(tput bold)OPTIONS:$(tput sgr0)"
-    echo "     $(tput bold)-h$(tput sgr0)          help"
-    echo "     $(tput bold)-f$(tput sgr0) <fname>  input (f)ifo name"
-    echo "     $(tput bold)-l$(tput sgr0)          (l)ist fps structures"
-    echo "     $(tput bold)-m$(tput sgr0)          must (m)atch fpscmd/fpslist.txt"
-    echo "     $(tput bold)-s$(tput sgr0)          use (s)tdio instead of ncurses"
-    echo "     $(tput bold)-q$(tput sgr0)          (q)uiet mode, do not print"
-    echo "     $(tput bold)-D$(tput sgr0)          (D)ebug mode, uses valgrind"
-    echo ""
-    echo "------------------------------------------------------------------------"
+scriptname=$(basename $0)
+
+
+
+# Extended description
+MSextdescr="Monitors and controls function parameters
+Connects to $MILK_SHM_DIR/*.fps.shm shared memory structures
+
+$(tput bold) ENVIRONMENT VARIABLES $(tput sgr0)
+
+Filtering to only display matching FPSs :
+    FPS_FILTSTRING_NAME         name
+    FPS_FILTSTRING_KEYWORD      keyword
+    FPS_FILTSTRING_CALLFUNC     call function in source code
+    FPS_FILTSTRING_MODULE       source code module
+
+
+$(tput bold) EXAMPLE $(tput sgr0)
+
+FPS_FILTSTRING_KEYWORD=\"aol1\" ${scriptname}
+"
+
+source milk-script-std-config
+
+
+# default fifo and outlog names
+ttystring=$( tty | tr -d \/ )
+pname="fpsCTRL"
+fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
+outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
+
+
+
+MSopt+=( "f:fifo:set_fifoname:fifo[string]:input (f)ifo name" )
+function set_fifoname() {
+	fifoname="$1"
 }
 
 
-printHELP1 ()
-{
-    printf "%20s       Monitor and control function parameters\n" "$0"
+MSopt+=( "q:q:set_quietmode::(q)uiet mode" )
+function set_quietmode () {
+	 export MILK_TUIPRINT_NONE=1
 }
+
+
+MSopt+=( "s:s:set_stdiomode::use (s)tdio instead of ncurses" )
+function set_stdiomode () {
+	 export MILK_TUIPRINT_STDIO=1
+}
+
+
+MATCHMODE=0
+MSopt+=( "m:m:set_matchmode::must (m)atch fpscmd/fpslist.txt" )
+function set_matchmode () {
+	 MATCHMODE=1
+}
+
+
+DEBUG=0
+MSopt+=( "d:d:set_debugmode::(d)ebug mode, uses valgrind" )
+function set_debugmode () {
+	 export DEBUG=1
+}
+
+
+
+
+RequiredCommands=( milk )
+RequiredFiles=()
+RequiredDirs=()
+
+source milk-argparse
+
+
+
+
 
 
 # change process short name to append tty number
@@ -50,94 +92,7 @@ echo -n "sh-${shortpname}" > /proc/self/comm
 
 
 
-# Transform long options to short ones
-singlelinehelp=0
-for arg in "$@"; do
-    shift
-    case "$arg" in
-        "--help") set -- "$@" "-h" ;;
-        "--help1")
-            set -- "$@" "-h"
-            singlelinehelp=1;
-            ;;
-        *)        set -- "$@" "$arg"
-    esac
-done
 
-
-
-
-MODE="0"
-DEBUG="0"
-
-#FIFONAME="$MILK_SHM_DIR/fpsCTRL.cmd.fifo"
-
-ttystring=$( tty | tr -d \/ )
-pname="fpsCTRL"
-fifoname="$MILK_SHM_DIR/milkCLIfifo.${pname}.${ttystring}"
-outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
-
-while getopts :hlmDf:o:sq FLAG; do
-    case $FLAG in
-        h)  #show help
-            if [ "$singlelinehelp" -eq "0" ]; then
-                printHELP
-            else
-                printHELP1
-            fi
-            exit
-            ;;
-        l) # list fps structures
-            echo ""
-            ls -l $MILK_SHM_DIR/*.fps.shm
-            echo ""
-            exit
-            ;;
-        f) # fifo name
-            fifoname=${OPTARG}
-            echo "using fifo name : ${fifoname}"
-            ;;
-        m)
-            MODE="1"
-            ;;
-        s) # use stdio instead of ncurses
-            export MILK_TUIPRINT_STDIO=1
-            ;;
-        q) # quiet mode - don't print status
-            export MILK_TUIPRINT_NONE=1
-            ;;
-        D)
-            DEBUG="1"
-            ;;
-        \?)
-            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-            printHELP
-            ;;
-    esac
-done
-
-shift $((OPTIND-1))
-
-### End getopts code ###
-
-
-NBargInput="$#"
-arg1="$1"
-
-if [ "$#" -eq 0 ]; then
-    arg1="_ALL"
-    NBargInput="1"
-fi
-
-
-
-if [ "$arg1" = "help" ] || [ "$NBargInput" -ne $NBARGS ]; then
-    if [ "$#" -ne $NBARGS ]; then
-        echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
-    fi
-    printHELP
-    exit
-fi
 
 
 mkfifo ${fifoname}
@@ -145,7 +100,7 @@ mkfifo ${fifoname}
 CLIfifoname="${MILK_SHM_DIR}/fpsCLIfifo"
 
 SF="$MILK_SHM_DIR/milkCLIstartup.${pname}.${ttystring}"
-echo "fpsCTRL ${MODE} \"$arg1\" \"$fifoname\"" > $SF
+echo "fpsCTRL ${MATCHMODE} \"_ALL\" \"$fifoname\"" > $SF
 echo "exitCLI" >> $SF
 
 echo "fifoname = ${fifoname}"

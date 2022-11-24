@@ -8,7 +8,7 @@
 MSdescr="poke existing stream"
 
 # Extended description
-MSdescr="poke existing stream
+MSextdescr="poke existing stream
 Can poke in a loop
 "
 
