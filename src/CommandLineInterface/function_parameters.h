@@ -400,14 +400,15 @@ typedef struct
 #define FPS_MSG_FLAG_ERROR 0x0008 // if ERROR, then cannot start function
 #define FPS_MSG_FLAG_INFO  0x0010
 
-#define FPS_CWD_STRLENMAX          200
-#define FPS_DIR_STRLENMAX          200
-#define FPS_SRCDIR_STRLENMAX       200
-#define FPS_PNAME_STRMAXLEN        100
-#define FPS_CALLPROGNAME_STRMAXLEN 80
-#define FPS_CALLFUNCNAME_STRMAXLEN 100
-#define FPS_DESCR_STRMAXLEN        200
-#define STRINGMAXLEN_FPS_DIRNAME   200
+#define FPS_CWD_STRLENMAX            200
+#define FPS_DIR_STRLENMAX            200
+#define FPS_SRCDIR_STRLENMAX         200
+#define FPS_PNAME_STRMAXLEN          100
+#define FPS_CALLPROGNAME_STRMAXLEN    80
+#define FPS_CALLFUNCNAME_STRMAXLEN   100
+#define FPS_DESCR_STRMAXLEN          200
+#define FPS_KEYWORDARRAY_STRMAXLEN   200
+#define STRINGMAXLEN_FPS_DIRNAME     200
 
 #define FPS_MAXNB_MODULE     20
 #define FPS_MODULE_STRMAXLEN 200
@@ -421,6 +422,11 @@ typedef struct
     char name[STRINGMAXLEN_FPS_NAME]; // example: pname-01-32
 
     char description[FPS_DESCR_STRMAXLEN];
+
+    // keyword array, convenient to classify/sort FPSs
+    // Upon FPS creation by function_parameter_struct_create, keywordarray is imported from env variable FPS_KEYWORDARRAY
+    // syntax is ":keyw0:keyw1:keyw2:"
+    char keywordarray[FPS_KEYWORDARRAY_STRMAXLEN];
 
     // where should processes run from ?
     char workdir[FPS_CWD_STRLENMAX];
