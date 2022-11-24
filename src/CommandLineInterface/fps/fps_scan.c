@@ -328,8 +328,21 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 char *fps_filtstring_module = getenv("FPS_FILTSTRING_MODULE");
                 if(fps_filtstring_module)
                 {
-                    char *ptr = strstr(fps[fpsindex].md->modulename, fps_filtstring_module);
-                    if(ptr == NULL)  // string not found
+                    int modulematch = 0;
+                    for(int mdindex = 0; mdindex < FPS_MAXNB_MODULE; mdindex++)
+                    {
+                        if(strlen(fps[fpsindex].md->modulename[mdindex]) > 1)
+                        {
+                            char *ptr = strstr(fps[fpsindex].md->modulename[mdindex],
+                                               fps_filtstring_module);
+                            if(ptr != NULL)  // string found
+                            {
+                                modulematch = 1;
+                            }
+                        }
+
+                    }
+                    if(modulematch == 0)
                     {
                         fpskeep = 0;
                     }
