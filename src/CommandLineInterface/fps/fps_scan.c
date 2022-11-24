@@ -132,6 +132,9 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
     keywnode[0].NBchild = 0;
     NBkwn               = 1;
 
+
+    // scan directory for FPS files
+    //
     DIR           *d;
     struct dirent *dir;
     d = opendir(shmdname);
@@ -144,7 +147,10 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
             char *pch = strstr(dir->d_name, ".fps.shm");
 
             int matchOK = 0;
+
             // name filtering
+            // if mask is "_ALL", display all
+            //
             if(strcmp(fpsnamemask, "_ALL") == 0)
             {
                 matchOK = 1;
@@ -156,6 +162,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                     matchOK = 1;
                 }
             }
+
 
             if(mode & 0x0001)  // enforce match to list
             {
@@ -275,171 +282,231 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                                                       &fps[fpsindex],
                                                       FPSCONNECT_SIMPLE);
 
-                long pindex0;
-                for(pindex0 = 0; pindex0 < NBparamMAX; pindex0++)
+
+
+                // FILTERING
+                int fpskeep = 1; // 0 if not kept
+
+                // name
+                char *fps_filtstring_name = getenv("FPS_FILTSTRING_NAME");
+                if(fps_filtstring_name)
                 {
-                    if(fps[fpsindex].parray[pindex0].fpflag &
-                            FPFLAG_ACTIVE) // if entry is active
+                    char *ptr = strstr(fps[fpsindex].md->name, fps_filtstring_name);
+                    if(ptr == NULL)  // string not found
                     {
-                        // find or allocate keyword node
-                        int level;
-                        for(level = 1;
-                                level <
-                                fps[fpsindex].parray[pindex0].keywordlevel + 1;
-                                level++)
+                        fpskeep = 0;
+                    }
+                }
+
+
+                // keyword
+                char *fps_filtstring_keyword = getenv("FPS_FILTSTRING_KEYWORD");
+                if(fps_filtstring_keyword)
+                {
+                    char *ptr = strstr(fps[fpsindex].md->keywordarray, fps_filtstring_keyword);
+                    if(ptr == NULL)  // string not found
+                    {
+                        fpskeep = 0;
+                    }
+                }
+
+
+
+                // call function
+                char *fps_filtstring_callfunc = getenv("FPS_FILTSTRING_CALLFUNC");
+                if(fps_filtstring_callfunc)
+                {
+                    char *ptr = strstr(fps[fpsindex].md->callfuncname, fps_filtstring_callfunc);
+                    if(ptr == NULL)  // string not found
+                    {
+                        fpskeep = 0;
+                    }
+                }
+
+
+                // module name
+                char *fps_filtstring_module = getenv("FPS_FILTSTRING_MODULE");
+                if(fps_filtstring_module)
+                {
+                    char *ptr = strstr(fps[fpsindex].md->modulename, fps_filtstring_module);
+                    if(ptr == NULL)  // string not found
+                    {
+                        fpskeep = 0;
+                    }
+                }
+
+
+
+
+
+                if(fpskeep == 1)
+                {
+
+
+                    long pindex0;
+                    for(pindex0 = 0; pindex0 < NBparamMAX; pindex0++)
+                    {
+                        if(fps[fpsindex].parray[pindex0].fpflag &
+                                FPFLAG_ACTIVE) // if entry is active
                         {
-
-                            // does node already exist ?
-                            int scanOK = 0;
-                            for(
-                                kwnindex = 0; kwnindex < NBkwn;
-                                kwnindex++) // scan existing nodes looking for match
-                            {
-                                if(keywnode[kwnindex].keywordlevel ==
-                                        level) // levels have to match
-                                {
-                                    int match = 1;
-                                    for(
-                                        l = 0; l < level;
-                                        l++) // keywords at all levels need to match
-                                    {
-                                        if(strcmp(fps[fpsindex]
-                                                  .parray[pindex0]
-                                                  .keyword[l],
-                                                  keywnode[kwnindex]
-                                                  .keyword[l]) != 0)
-                                        {
-                                            match = 0;
-                                        }
-                                        //                        printf("TEST MATCH : %16s %16s  %d\n", fps[fpsindex].parray[i].keyword[l], keywnode[kwnindex].keyword[l], match);
-                                    }
-                                    if(match == 1)  // we have a match
-                                    {
-                                        scanOK = 1;
-                                    }
-                                    //             printf("   -> %d\n", scanOK);
-                                }
-                            }
-
-                            if(scanOK == 0)  // node does not exit -> create it
+                            // find or allocate keyword node
+                            int level;
+                            for(level = 1;
+                                    level <
+                                    fps[fpsindex].parray[pindex0].keywordlevel + 1;
+                                    level++)
                             {
 
-                                // look for parent
-                                int scanparentOK = 0;
-                                int kwnindexp    = 0;
-                                keywnode[kwnindex].parent_index =
-                                    0; // default value, not found -> assigned to ROOT
-
-                                while((kwnindexp < NBkwn) &&
-                                        (scanparentOK == 0))
+                                // does node already exist ?
+                                int scanOK = 0;
+                                // scan existing nodes looking for match
+                                for(kwnindex = 0; kwnindex < NBkwn; kwnindex++)
                                 {
-                                    if(keywnode[kwnindexp].keywordlevel ==
-                                            level - 1) // check parent has level-1
+                                    if(keywnode[kwnindex].keywordlevel ==
+                                            level) // levels have to match
                                     {
                                         int match = 1;
+                                        // keywords at all levels need to match
 
-                                        for(
-                                            l = 0; l < level - 1;
-                                            l++) // keywords at all levels need to match
+                                        for(l = 0; l < level; l++)
                                         {
                                             if(strcmp(fps[fpsindex]
                                                       .parray[pindex0]
                                                       .keyword[l],
-                                                      keywnode[kwnindexp]
+                                                      keywnode[kwnindex]
                                                       .keyword[l]) != 0)
                                             {
                                                 match = 0;
                                             }
+                                            //  printf("TEST MATCH : %16s %16s  %d\n", fps[fpsindex].parray[i].keyword[l], keywnode[kwnindex].keyword[l], match);
                                         }
                                         if(match == 1)  // we have a match
                                         {
-                                            scanparentOK = 1;
+                                            scanOK = 1;
+                                        }
+                                        //             printf("   -> %d\n", scanOK);
+                                    }
+                                }
+
+                                if(scanOK == 0)  // node does not exit -> create it
+                                {
+                                    // look for parent
+                                    int scanparentOK = 0;
+                                    int kwnindexp    = 0;
+                                    keywnode[kwnindex].parent_index =
+                                        0; // default value, not found -> assigned to ROOT
+
+                                    while((kwnindexp < NBkwn) &&
+                                            (scanparentOK == 0))
+                                    {
+                                        if(keywnode[kwnindexp].keywordlevel ==
+                                                level - 1) // check parent has level-1
+                                        {
+                                            int match = 1;
+
+                                            for(
+                                                l = 0; l < level - 1;
+                                                l++) // keywords at all levels need to match
+                                            {
+                                                if(strcmp(fps[fpsindex]
+                                                          .parray[pindex0]
+                                                          .keyword[l],
+                                                          keywnode[kwnindexp]
+                                                          .keyword[l]) != 0)
+                                                {
+                                                    match = 0;
+                                                }
+                                            }
+                                            if(match == 1)  // we have a match
+                                            {
+                                                scanparentOK = 1;
+                                            }
+                                        }
+                                        kwnindexp++;
+                                    }
+
+                                    if(scanparentOK == 1)
+                                    {
+                                        keywnode[kwnindex].parent_index =
+                                            kwnindexp - 1;
+                                        int cindex;
+                                        cindex = keywnode[keywnode[kwnindex]
+                                                          .parent_index]
+                                                 .NBchild;
+                                        keywnode[keywnode[kwnindex].parent_index]
+                                        .child[cindex] = kwnindex;
+                                        keywnode[keywnode[kwnindex].parent_index]
+                                        .NBchild++;
+                                    }
+
+                                    if(verbose > 0)
+                                    {
+                                        printf(
+                                            "CREATI"
+                                            "NG "
+                                            "NODE "
+                                            "%d ",
+                                            kwnindex);
+                                    }
+                                    keywnode[kwnindex].keywordlevel = level;
+
+                                    for(l = 0; l < level; l++)
+                                    {
+                                        char tmpstring[200];
+                                        strcpy(keywnode[kwnindex].keyword[l],
+                                               fps[fpsindex]
+                                               .parray[pindex0]
+                                               .keyword[l]);
+                                        printf(" %s",
+                                               keywnode[kwnindex].keyword[l]);
+                                        if(l == 0)
+                                        {
+                                            strcpy(keywnode[kwnindex].keywordfull,
+                                                   keywnode[kwnindex].keyword[l]);
+                                        }
+                                        else
+                                        {
+                                            sprintf(tmpstring,
+                                                    ".%s",
+                                                    keywnode[kwnindex].keyword[l]);
+                                            strcat(keywnode[kwnindex].keywordfull,
+                                                   tmpstring);
                                         }
                                     }
-                                    kwnindexp++;
-                                }
-
-                                if(scanparentOK == 1)
-                                {
-                                    keywnode[kwnindex].parent_index =
-                                        kwnindexp - 1;
-                                    int cindex;
-                                    cindex = keywnode[keywnode[kwnindex]
-                                                      .parent_index]
-                                             .NBchild;
-                                    keywnode[keywnode[kwnindex].parent_index]
-                                    .child[cindex] = kwnindex;
-                                    keywnode[keywnode[kwnindex].parent_index]
-                                    .NBchild++;
-                                }
-
-                                if(verbose > 0)
-                                {
-                                    printf(
-                                        "CREATI"
-                                        "NG "
-                                        "NODE "
-                                        "%d ",
-                                        kwnindex);
-                                }
-                                keywnode[kwnindex].keywordlevel = level;
-
-                                for(l = 0; l < level; l++)
-                                {
-                                    char tmpstring[200];
-                                    strcpy(keywnode[kwnindex].keyword[l],
-                                           fps[fpsindex]
-                                           .parray[pindex0]
-                                           .keyword[l]);
-                                    printf(" %s",
-                                           keywnode[kwnindex].keyword[l]);
-                                    if(l == 0)
+                                    if(verbose > 0)
                                     {
-                                        strcpy(keywnode[kwnindex].keywordfull,
-                                               keywnode[kwnindex].keyword[l]);
+                                        printf(
+                                            "   %d "
+                                            "%d\n",
+                                            keywnode[kwnindex].keywordlevel,
+                                            fps[fpsindex]
+                                            .parray[pindex0]
+                                            .keywordlevel);
+                                    }
+
+                                    if(keywnode[kwnindex].keywordlevel ==
+                                            fps[fpsindex].parray[pindex0].keywordlevel)
+                                    {
+                                        //									strcpy(keywnode[kwnindex].keywordfull, fps[fpsindex].parray[i].keywordfull);
+
+                                        keywnode[kwnindex].leaf     = 1;
+                                        keywnode[kwnindex].fpsindex = fpsindex;
+                                        keywnode[kwnindex].pindex   = pindex0;
                                     }
                                     else
                                     {
-                                        sprintf(tmpstring,
-                                                ".%s",
-                                                keywnode[kwnindex].keyword[l]);
-                                        strcat(keywnode[kwnindex].keywordfull,
-                                               tmpstring);
+
+                                        keywnode[kwnindex].leaf     = 0;
+                                        keywnode[kwnindex].fpsindex = fpsindex;
+                                        keywnode[kwnindex].pindex   = 0;
                                     }
-                                }
-                                if(verbose > 0)
-                                {
-                                    printf(
-                                        "   %d "
-                                        "%d\n",
-                                        keywnode[kwnindex].keywordlevel,
-                                        fps[fpsindex]
-                                        .parray[pindex0]
-                                        .keywordlevel);
-                                }
 
-                                if(keywnode[kwnindex].keywordlevel ==
-                                        fps[fpsindex].parray[pindex0].keywordlevel)
-                                {
-                                    //									strcpy(keywnode[kwnindex].keywordfull, fps[fpsindex].parray[i].keywordfull);
-
-                                    keywnode[kwnindex].leaf     = 1;
-                                    keywnode[kwnindex].fpsindex = fpsindex;
-                                    keywnode[kwnindex].pindex   = pindex0;
+                                    kwnindex++;
+                                    NBkwn = kwnindex;
                                 }
-                                else
-                                {
-
-                                    keywnode[kwnindex].leaf     = 0;
-                                    keywnode[kwnindex].fpsindex = fpsindex;
-                                    keywnode[kwnindex].pindex   = 0;
-                                }
-
-                                kwnindex++;
-                                NBkwn = kwnindex;
                             }
+                            pindex++;
                         }
-                        pindex++;
                     }
                 }
 
