@@ -410,7 +410,7 @@ typedef struct
 #define FPS_KEYWORDARRAY_STRMAXLEN   200
 #define STRINGMAXLEN_FPS_DIRNAME     200
 
-#define FPS_MAXNB_MODULE     20
+#define FPS_MAXNB_MODULE     50
 #define FPS_MODULE_STRMAXLEN 200
 
 // metadata
