@@ -14,7 +14,9 @@
 /** @brief Kill FPS tmux sesssion
  *
  */
-errno_t functionparameter_FPS_tmux_kill(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_FPS_tmux_kill(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
 {
     // terminate tmux sessions
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl C-c 2> /dev/null",
@@ -46,23 +48,33 @@ errno_t functionparameter_FPS_tmux_kill(FUNCTION_PARAMETER_STRUCT *fps)
 /** @brief Initialize FPS tmux sesssion
  *
  */
-errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_FPS_tmux_init(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
 {
     int funcstring_maxlen  = 10000;
     int argstring_maxlen   = 1000;
     int mloadstring_maxlen = 2000;
 
+
+    // delay to allow for tmux commands to be completed
+    float tmuxwait = 0.1;
+
     // terminate tmux sessions
     functionparameter_FPS_tmux_kill(fps);
 
+    sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null",
                            fps->md->name);
-
+    sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d", fps->md->name);
+    sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps->md->name);
-
+    sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n conf", fps->md->name);
+    sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps->md->name);
+    sleep(tmuxwait);
 
     // Write functions to tmux windows
     //
