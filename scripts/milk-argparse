@@ -83,6 +83,16 @@ function checkFile {
     fi
 }
 
+function checkPipe {
+    if [ -p $1 ]; then
+        echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Pipe $(tput bold)$1$(tput sgr0) found"
+    else
+        echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] Pipe $(tput bold)$1$(tput sgr0) not found"
+        EXITSTATUS=1
+    fi
+}
+
+
 function checkDir {
     if [ -d $1 ]; then
         echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Directory $(tput bold)$1$(tput sgr0) found"
@@ -200,6 +210,10 @@ function checkallprerequisites()
 
     for fname in ${RequiredFiles[@]}; do
         checkFile $fname
+    done
+
+    for pname in ${RequiredPipes[@]}; do
+        checkPipe $pname
     done
 
     for dname in ${RequiredDirs[@]}; do
