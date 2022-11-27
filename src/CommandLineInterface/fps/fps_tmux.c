@@ -56,12 +56,21 @@ errno_t functionparameter_FPS_tmux_init(
     int argstring_maxlen   = 1000;
     int mloadstring_maxlen = 2000;
 
+    EXECUTE_SYSTEM_COMMAND("echo \" \" >> tmux.log");
+    EXECUTE_SYSTEM_COMMAND("echo \"---------------------------------------------\" >> tmux.log");
+    EXECUTE_SYSTEM_COMMAND("echo \">>>>>>>>>>>>>> functionparameter_FPS_tmux_init  %s\">> tmux.log",
+                           fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("echo \" \" >> tmux.log");
+    EXECUTE_SYSTEM_COMMAND("tmux ls >> tmux.log");
 
     // delay to allow for tmux commands to be completed
     float tmuxwait = 0.1;
 
     // terminate tmux sessions
     functionparameter_FPS_tmux_kill(fps);
+    EXECUTE_SYSTEM_COMMAND("echo \" \" >> tmux.log");
+    EXECUTE_SYSTEM_COMMAND("tmux ls >> tmux.log");
+
 
     sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null",
@@ -75,6 +84,10 @@ errno_t functionparameter_FPS_tmux_init(
     sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps->md->name);
     sleep(tmuxwait);
+
+    EXECUTE_SYSTEM_COMMAND("echo \" \" >> tmux.log");
+    EXECUTE_SYSTEM_COMMAND("tmux ls >> tmux.log");
+    EXECUTE_SYSTEM_COMMAND("echo \"---------------------------------------------\" >> tmux.log");
 
     // Write functions to tmux windows
     //
