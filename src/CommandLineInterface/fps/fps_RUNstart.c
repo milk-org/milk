@@ -15,7 +15,9 @@
  * - create up tmux sessions
  * - create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
  */
-errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t functionparameter_RUNstart(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
 {
 
     if(fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
@@ -97,6 +99,9 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
             }
         }
 
+        // TEST
+        EXECUTE_SYSTEM_COMMAND("echo \"tmux start %s\" >> tmux.log", fps->md->name);
+
         // create output directory if it does not already exit
         EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"mkdir %s\" C-m",
                                fps->md->name,
@@ -111,5 +116,7 @@ errno_t functionparameter_RUNstart(FUNCTION_PARAMETER_STRUCT *fps)
         fps->md->signal |=
             FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
     }
+
+
     return RETURN_SUCCESS;
 }
