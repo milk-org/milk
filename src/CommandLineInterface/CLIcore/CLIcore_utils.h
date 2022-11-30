@@ -930,7 +930,11 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
  * @return IMGID
  */
 static inline IMGID
-stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
+stream_connect_create_2Df32(
+    char *imname,
+    uint32_t xsize,
+    uint32_t ysize
+)
 {
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
@@ -964,7 +968,7 @@ stream_connect_create_2Df32(char *imname, uint32_t xsize, uint32_t ysize)
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
 
-        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
+        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 10, 0, &img.ID);
         free(arraytmp);
     }
 
