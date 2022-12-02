@@ -58,6 +58,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                 PRINT_ERROR("snprintf error");
             }
             fpsentry->md->msgcnt++;
+            if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+            {
+                // max number of msg reached, write to last one
+                fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+            }
             fpsentry->md->conferrcnt++;
             err = 1;
         }
@@ -84,6 +89,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                         PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
+                    if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                    {
+                        // max number of msg reached, write to last one
+                        fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                    }
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
@@ -105,6 +115,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                         PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
+                    if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                    {
+                        // max number of msg reached, write to last one
+                        fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                    }
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
@@ -126,6 +141,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                         PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
+                    if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                    {
+                        // max number of msg reached, write to last one
+                        fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                    }
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
@@ -151,6 +171,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                         PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
+                    if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                    {
+                        // max number of msg reached, write to last one
+                        fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                    }
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
@@ -172,6 +197,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                         PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
+                    if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                    {
+                        // max number of msg reached, write to last one
+                        fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                    }
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
@@ -193,6 +223,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                         PRINT_ERROR("snprintf error");
                     }
                     fpsentry->md->msgcnt++;
+                    if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                    {
+                        // max number of msg reached, write to last one
+                        fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                    }
                     fpsentry->md->conferrcnt++;
                     err = 1;
                 }
@@ -215,6 +250,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                     PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
+                if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                {
+                    // max number of msg reached, write to last one
+                    fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                }
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
@@ -223,7 +263,7 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
 
     if(fpsentry->parray[pindex].type == FPTYPE_FITSFILENAME)
     {
-        /*
+
         if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED)
         {
             if(is_fits_file(fpsentry->parray[pindex].val.string[0]) == 0)
@@ -236,14 +276,21 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                             "FITS file %s does not exist",
                             fpsentry->parray[pindex].val.string[0]) < 0)
                 {
-                    PRINT_ERROR("snprintf error");
+                    PRINT_ERROR("snprintf error msgcnt %ld file %s line %d", fpsentry->md->msgcnt,
+                                __FILE__, __LINE__);
                 }
                 fpsentry->md->msgcnt++;
+
+                if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                {
+                    // max number of msg reached, write to last one
+                    fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                }
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
         }
-        */
+
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_EXECFILENAME)
@@ -265,6 +312,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                     PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
+                if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                {
+                    // max number of msg reached, write to last one
+                    fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                }
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
@@ -301,6 +353,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                     PRINT_ERROR("snprintf error");
                 }
                 fpsentry->md->msgcnt++;
+                if(fpsentry->md->msgcnt > FPS_NB_MSG - 1)
+                {
+                    // max number of msg reached, write to last one
+                    fpsentry->md->msgcnt = FPS_NB_MSG - 1;
+                }
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
@@ -311,6 +368,7 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
     // STREAM CHECK
     if((fpsentry->parray[pindex].type & FPTYPE_STREAMNAME))
     {
+        /*
         uint32_t imLOC;
         long     ID =
             COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0],
@@ -379,8 +437,9 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
                 fpsentry->md->conferrcnt++;
                 err = 1;
             }
-        }
 
+        }
+        */
 
     }
 
