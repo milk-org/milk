@@ -31,7 +31,7 @@ int is_fits_file(const char *restrict file_name)
     {
         fitsfile *fptr;
 
-        EXECUTE_SYSTEM_COMMAND("cat fitscheck.%s", file_name);
+        EXECUTE_SYSTEM_COMMAND("touch fitscheck.%s", file_name);
 
         if(!fits_open_file(&fptr,
                            file_name,
