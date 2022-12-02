@@ -10,9 +10,26 @@ extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
 int is_fits_file(const char *restrict file_name)
 {
-    int       value = 1;
+    int       value = 0;
 
-    /*    fitsfile *fptr;
+    // check if string contains FITS or fits
+    int fnameOK = 0;
+    if(strstr(file_name, ".fits") != NULL)
+    {
+        fnameOK = 1;
+    }
+    if(strstr(file_name, ".FITS") != NULL)
+    {
+        fnameOK = 1;
+    }
+
+    if(fnameOK == 0)
+    {
+        value = 0;
+    }
+    else
+    {
+        fitsfile *fptr;
 
         EXECUTE_SYSTEM_COMMAND("cat fitscheck.%s", file_name);
 
@@ -28,6 +45,7 @@ int is_fits_file(const char *restrict file_name)
         {
             PRINT_ERROR("Error in function is_fits_file(%s)", file_name);
         }
-    */
+    }
+
     return (value);
 }
