@@ -447,6 +447,8 @@ errno_t fpsCTRL_FPSdisplay(
                 }
             }
 
+
+
             int knodeindex;
             knodeindex =
                 keywnode[fpsCTRLvar->directorynodeSelected].child[child_index[fpsCTRLvar->currentlevel]];
@@ -647,6 +649,7 @@ errno_t fpsCTRL_FPSdisplay(
                         {
                             TUI_printfw("  ");
                         }
+
 
                         DEBUG_TRACEPOINT(" ");
                         //level = keywnode[knodeindex].keywordlevel;
@@ -999,7 +1002,6 @@ errno_t fpsCTRL_FPSdisplay(
             {
                 TUI_printfw(" %s", data.fpsarray[GUIline].md->description);
             }
-
 
             TUI_newline();
         }
