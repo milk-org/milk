@@ -56,6 +56,9 @@ errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout)
     return RETURN_SUCCESS;
 }
 
+
+
+
 /**
  * @brief Add log entry to fps log
  *
@@ -134,6 +137,9 @@ errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 /** @brief Establish sym link for convenience
  *
