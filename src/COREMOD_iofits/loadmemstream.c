@@ -15,11 +15,27 @@
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
-// High-level load to stream
 
-imageID COREMOD_IOFITS_LoadMemStream(const char *sname,
-                                     uint64_t   *streamflag,
-                                     uint32_t   *imLOC)
+
+
+/**
+ * @brief High-level load to stream
+ *
+ * @param sname
+ * @param streamflag
+ * @param imLOC
+ * @return imageID
+ *
+ * Steps:
+ * - check if in local memory
+ * -
+ *
+ */
+imageID COREMOD_IOFITS_LoadMemStream(
+    const char *sname,
+    uint64_t   *streamflag,
+    uint32_t   *imLOC
+)
 {
     imageID ID = -1;
 
