@@ -368,7 +368,6 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
     // STREAM CHECK
     if((fpsentry->parray[pindex].type & FPTYPE_STREAMNAME))
     {
-        /*
         uint32_t imLOC;
         long     ID =
             COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0],
@@ -439,7 +438,6 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
             }
 
         }
-        */
 
     }
 
