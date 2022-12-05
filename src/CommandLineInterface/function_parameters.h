@@ -610,8 +610,7 @@ typedef struct
 {
     char keywordfull[FUNCTION_PARAMETER_KEYWORD_STRMAXLEN *
                                                           FUNCTION_PARAMETER_KEYWORD_MAXLEVEL];
-    char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL]
-    [FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
+    char keyword[FUNCTION_PARAMETER_KEYWORD_MAXLEVEL][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN];
     int keywordlevel;
 
     int parent_index;

@@ -15,7 +15,7 @@
  */
 errno_t setSHMdir()
 {
-    char shmdirname[200];
+    char shmdirname[STRINGMAXLEN_DIRNAME];
     int  shmdirOK = 0; // toggles to 1 when directory is found
     DIR *tmpdir;
 
@@ -27,7 +27,7 @@ errno_t setSHMdir()
         {
             printf("        MILK_SHM_DIR '%s'\n", MILK_SHM_DIR);
         }
-        sprintf(shmdirname, "%s", MILK_SHM_DIR);
+        snprintf(shmdirname, STRINGMAXLEN_DIRNAME, "%s", MILK_SHM_DIR);
 
         // does this direcory exist ?
         tmpdir = opendir(shmdirname);
@@ -84,7 +84,7 @@ errno_t setSHMdir()
         tmpdir = opendir(SHAREDMEMDIR);
         if(tmpdir)  // directory exits
         {
-            sprintf(shmdirname, "%s", SHAREDMEMDIR);
+            snprintf(shmdirname, STRINGMAXLEN_DIRNAME, "%s", SHAREDMEMDIR);
             shmdirOK = 1;
             closedir(tmpdir);
             if(data.quiet == 0)
@@ -116,7 +116,7 @@ errno_t setSHMdir()
         }
         else
         {
-            sprintf(shmdirname, "/tmp");
+            snprintf(shmdirname, STRINGMAXLEN_DIRNAME, "/tmp");
             shmdirOK = 1;
             if(data.quiet == 0)
             {
@@ -137,7 +137,7 @@ errno_t setSHMdir()
         }
     }
 
-    sprintf(data.shmdir, "%s", shmdirname);
+    snprintf(data.shmdir, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
 
     // change / to . and write to shmsemdirname
     unsigned int stri;
@@ -147,7 +147,7 @@ errno_t setSHMdir()
             shmdirname[stri] = '.';
         }
 
-    sprintf(data.shmsemdirname, "%s", shmdirname);
+    snprintf(data.shmsemdirname, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
     if(data.quiet == 0)
     {
         printf("        semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n",

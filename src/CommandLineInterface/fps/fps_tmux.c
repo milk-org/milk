@@ -117,7 +117,7 @@ errno_t functionparameter_FPS_tmux_init(
     // module load string
     char mloadstring[mloadstring_maxlen];
     char mloadstringcp[mloadstring_maxlen];
-    sprintf(mloadstring, " ");
+    snprintf(mloadstring, mloadstring_maxlen, " ");
     for(int m = 0; m < fps->md->NBmodule; m++)
     {
         snprintf(mloadstringcp,
@@ -136,16 +136,17 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"bash\" C-m",
                            fps->md->name);
 
-    sprintf(functionstring,
-            "function fpsconfstart {\n"
-            "echo \"STARTING CONF PROCESS\"\n"
-            "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"%s%s _CONFSTART_ %s\\\"\n"
-            "}\n",
-            fps->md->callprogname,
-            fps->md->name,
-            mloadstring,
-            fps->md->callfuncname,
-            argstring);
+    snprintf(functionstring,
+             funcstring_maxlen,
+             "function fpsconfstart {\n"
+             "echo \"STARTING CONF PROCESS\"\n"
+             "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"%s%s _CONFSTART_ %s\\\"\n"
+             "}\n",
+             fps->md->callprogname,
+             fps->md->name,
+             mloadstring,
+             fps->md->callfuncname,
+             argstring);
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"%s\" C-m",
                            fps->md->name,
@@ -156,17 +157,18 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"bash\" C-m",
                            fps->md->name);
 
-    sprintf(functionstring,
-            "function fpsrunstart {\n"
-            "echo \"STARTING RUN PROCESS\"\n"
-            "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
-            "_RUNSTART_ %s\\\"\n"
-            "}\n",
-            fps->md->callprogname,
-            fps->md->name,
-            mloadstring,
-            fps->md->callfuncname,
-            argstring);
+    snprintf(functionstring,
+             funcstring_maxlen,
+             "function fpsrunstart {\n"
+             "echo \"STARTING RUN PROCESS\"\n"
+             "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
+             "_RUNSTART_ %s\\\"\n"
+             "}\n",
+             fps->md->callprogname,
+             fps->md->name,
+             mloadstring,
+             fps->md->callfuncname,
+             argstring);
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s\" C-m",
                            fps->md->name,
@@ -174,16 +176,17 @@ errno_t functionparameter_FPS_tmux_init(
 
     // runstop
     //
-    sprintf(functionstring,
-            "function fpsrunstop {\n"
-            "echo \"STOPPING RUN PROCESS\"\n"
-            "%s-exec -n %s \\\"%s%s _RUNSTOP_ %s\\\"\n"
-            "}\n",
-            fps->md->callprogname,
-            fps->md->name,
-            mloadstring,
-            fps->md->callfuncname,
-            argstring);
+    snprintf(functionstring,
+             funcstring_maxlen,
+             "function fpsrunstop {\n"
+             "echo \"STOPPING RUN PROCESS\"\n"
+             "%s-exec -n %s \\\"%s%s _RUNSTOP_ %s\\\"\n"
+             "}\n",
+             fps->md->callprogname,
+             fps->md->name,
+             mloadstring,
+             fps->md->callfuncname,
+             argstring);
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"%s\" C-m",
                            fps->md->name,

@@ -4,7 +4,10 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-errno_t functionparameter_GetTypeString(uint32_t type, char *typestring)
+errno_t functionparameter_GetTypeString(
+    uint32_t type,
+    char *typestring
+)
 {
 
     sprintf(typestring, " ");

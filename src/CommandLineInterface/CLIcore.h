@@ -203,14 +203,14 @@ typedef struct
 
     char name[STRINGMAXLEN_MODULE_NAME]; // module name
 
-    char shortname
-    [STRINGMAXLEN_MODULE_SHORTNAME]; // short name. If non-empty, access functions as <shortname>.<functionname>
+    // short name. If non-empty, access functions as <shortname>.<functionname>
+    char shortname[STRINGMAXLEN_MODULE_SHORTNAME];
 
     char loadname[STRINGMAXLEN_MODULE_LOADNAME];
     char sofilename[STRINGMAXLEN_MODULE_SOFILENAME];
 
-    char package
-    [STRINGMAXLEN_MODULE_PACKAGENAME]; // package to which module belongs
+    // package to which module belongs
+    char package [STRINGMAXLEN_MODULE_PACKAGENAME];
     int versionmajor;                      // package version
     int versionminor;
     int versionpatch;
@@ -279,6 +279,7 @@ typedef struct
 #define CMDARGTOKEN_TYPE_COMMAND       5
 #define CMDARGTOKEN_TYPE_RAWSTRING     6
 
+#define STRINGMAXLEN_CMDARGTOKEN_VAL 200
 typedef struct
 {
     int type;
@@ -286,7 +287,7 @@ typedef struct
     {
         double numf;
         long   numl;
-        char   string[200];
+        char   string[STRINGMAXLEN_CMDARGTOKEN_VAL];
     } val;
 } CMDARGTOKEN;
 
@@ -351,8 +352,8 @@ typedef struct
     char installdir[STRINGMAXLEN_DIRNAME];
 
     char shmdir[STRINGMAXLEN_DIRNAME];
-    char shmsemdirname
-    [STRINGMAXLEN_DIRNAME]; // same ad above with .s instead of /s
+    // same ad above with .s instead of /s
+    char shmsemdirname[STRINGMAXLEN_DIRNAME];
 
     // SIGNALS
     // =================================================
