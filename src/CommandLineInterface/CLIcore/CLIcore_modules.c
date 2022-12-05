@@ -286,11 +286,12 @@ errno_t RegisterModule(const char *__restrict FileName,
 
     if(strlen(data.modulename) == 0)
     {
-        strcpy(data.module[moduleindex].name, "???");
+        strncpy(data.module[moduleindex].name, "???", STRINGMAXLEN_MODULE_NAME - 1);
     }
     else
     {
-        strcpy(data.module[moduleindex].name, data.modulename);
+        strncpy(data.module[moduleindex].name, data.modulename,
+                STRINGMAXLEN_MODULE_NAME - 1);
     }
 
     int stringlen = strlen(data.moduleshortname);
@@ -300,17 +301,23 @@ errno_t RegisterModule(const char *__restrict FileName,
         if(strlen(data.moduleshortname_default) > 0)
         {
             // otherwise, construct call key as <shortname_default>.<CLIkey>
-            strcpy(data.moduleshortname, data.moduleshortname_default);
+            strncpy(data.moduleshortname, data.moduleshortname_default,
+                    STRINGMAXLEN_MODULE_SHORTNAME - 1);
         }
     }
 
-    strcpy(data.module[moduleindex].package, PackageName);
-    strcpy(data.module[moduleindex].info, InfoString);
+    strncpy(data.module[moduleindex].package, PackageName,
+            STRINGMAXLEN_MODULE_PACKAGENAME - 1);
+    strncpy(data.module[moduleindex].info, InfoString,
+            STRINGMAXLEN_MODULE_INFOSTRING - 1);
 
-    strcpy(data.module[moduleindex].shortname, data.moduleshortname);
+    strncpy(data.module[moduleindex].shortname, data.moduleshortname,
+            STRINGMAXLEN_MODULE_SHORTNAME - 1);
 
-    strcpy(data.module[moduleindex].datestring, data.moduledatestring);
-    strcpy(data.module[moduleindex].timestring, data.moduletimestring);
+    strncpy(data.module[moduleindex].datestring, data.moduledatestring,
+            STRINGMAXLEN_MODULE_DATESTRING - 1);
+    strncpy(data.module[moduleindex].timestring, data.moduletimestring,
+            STRINGMAXLEN_MODULE_TIMESTRING - 1);
 
     data.module[moduleindex].versionmajor = versionmajor;
     data.module[moduleindex].versionminor = versionminor;
@@ -404,34 +411,36 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
 
     if(data.cmd[data.NBcmd].moduleindex == -1)
     {
-        strcpy(data.cmd[data.NBcmd].module, "MAIN");
-        strcpy(data.cmd[data.NBcmd].key, CLIkey);
+        strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
+        strncpy(data.cmd[data.NBcmd].key, CLIkey, STRINGMAXLEN_CMD_KEY - 1);
     }
     else
     {
 
         if(strlen(data.module[data.moduleindex].shortname) == 0)
         {
-            strcpy(data.cmd[data.NBcmd].key, CLIkey);
+            strncpy(data.cmd[data.NBcmd].key, CLIkey, STRINGMAXLEN_CMD_KEY - 1);
         }
         else
         {
             // otherwise, construct call key as <shortname>.<CLIkey>
-            sprintf(data.cmd[data.NBcmd].key,
-                    "%s.%s",
-                    data.module[data.moduleindex].shortname,
-                    CLIkey);
+            snprintf(data.cmd[data.NBcmd].key,
+                     STRINGMAXLEN_CMD_KEY,
+                     "%s.%s",
+                     data.module[data.moduleindex].shortname,
+                     CLIkey);
         }
     }
 
     DEBUG_TRACEPOINT("set module name");
     if(strlen(data.modulename) == 0)
     {
-        strcpy(data.cmd[data.NBcmd].module, "unknown");
+        strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
     }
     else
     {
-        strcpy(data.cmd[data.NBcmd].module, data.modulename);
+        strncpy(data.cmd[data.NBcmd].module, data.modulename,
+                STRINGMAXLEN_MODULE_NAME - 1);
     }
 
     DEBUG_TRACEPOINT("load function data");
@@ -483,15 +492,15 @@ uint32_t RegisterCLIcmd(
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
     if(data.cmd[data.NBcmd].moduleindex == -1)
     {
-        strcpy(data.cmd[data.NBcmd].module, "MAIN");
-        strcpy(data.cmd[data.NBcmd].key, CLIcmddata.key);
+        strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
+        strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY - 1);
     }
     else
     {
 
         if(strlen(data.module[data.moduleindex].shortname) == 0)
         {
-            strcpy(data.cmd[data.NBcmd].key, CLIcmddata.key);
+            strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY);
         }
         else
         {
@@ -516,24 +525,27 @@ uint32_t RegisterCLIcmd(
 
     if(strlen(data.modulename) == 0)
     {
-        strcpy(data.cmd[data.NBcmd].module, "unknown");
+        strncpy(data.cmd[data.NBcmd].module, "unknown", STRINGMAXLEN_MODULE_NAME - 1);
     }
     else
     {
-        strcpy(data.cmd[data.NBcmd].module, data.modulename);
+        strncpy(data.cmd[data.NBcmd].module, data.modulename,
+                STRINGMAXLEN_MODULE_NAME - 1);
     }
 
     DEBUG_TRACEPOINT("settingsrcfile to %s", CLIcmddata.sourcefilename);
-    strcpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename);
+    strncpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename,
+            STRINGMAXLEN_CMD_SRCFILE - 1);
     data.cmd[data.NBcmd].fp = CLIfptr;
-    strcpy(data.cmd[data.NBcmd].info, CLIcmddata.description);
+    strncpy(data.cmd[data.NBcmd].info, CLIcmddata.description,
+            STRINGMAXLEN_CMD_INFO - 1);
 
     // assemble argument syntax string for help
     char argstring[STRINGMAXLEN_CMD_SYNTAX];
     CLIhelp_make_argstring(CLIcmddata.funcfpscliarg,
                            CLIcmddata.nbarg,
                            argstring);
-    strcpy(data.cmd[data.NBcmd].syntax, argstring);
+    strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
 
     // assemble example string for help
     char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
@@ -541,9 +553,11 @@ uint32_t RegisterCLIcmd(
                                   CLIcmddata.nbarg,
                                   CLIcmddata.key,
                                   cmdexamplestring);
-    strcpy(data.cmd[data.NBcmd].example, cmdexamplestring);
+    strncpy(data.cmd[data.NBcmd].example, cmdexamplestring,
+            STRINGMAXLEN_CMD_EXAMPLE - 1);
 
-    strcpy(data.cmd[data.NBcmd].Ccall, "--callstring--");
+    strncpy(data.cmd[data.NBcmd].Ccall, "--callstring--",
+            STRINGMAXLEN_CMD_CCALL - 1);
 
     DEBUG_TRACEPOINT(
         "define arguments to CLI function from content of "
@@ -560,12 +574,18 @@ uint32_t RegisterCLIcmd(
                 CLIcmddata.funcfpscliarg[argi].type;
             data.cmd[data.NBcmd].argdata[argi].flag =
                 CLIcmddata.funcfpscliarg[argi].flag;
-            strcpy(data.cmd[data.NBcmd].argdata[argi].descr,
-                   CLIcmddata.funcfpscliarg[argi].descr);
-            strcpy(data.cmd[data.NBcmd].argdata[argi].fpstag,
-                   CLIcmddata.funcfpscliarg[argi].fpstag);
-            strcpy(data.cmd[data.NBcmd].argdata[argi].example,
-                   CLIcmddata.funcfpscliarg[argi].example);
+
+            strncpy(data.cmd[data.NBcmd].argdata[argi].descr,
+                    CLIcmddata.funcfpscliarg[argi].descr,
+                    STRINGMAXLEN_FPSCLIARG_DESCR - 1);
+
+            strncpy(data.cmd[data.NBcmd].argdata[argi].fpstag,
+                    CLIcmddata.funcfpscliarg[argi].fpstag,
+                    STRINGMAXLEN_FPSCLIARG_TAG - 1);
+
+            strncpy(data.cmd[data.NBcmd].argdata[argi].example,
+                    CLIcmddata.funcfpscliarg[argi].example,
+                    STRINGMAXLEN_FPSCLIARG_EXAMPLE - 1);
 
             // Set default values
             switch(data.cmd[data.NBcmd].argdata[argi].type)
@@ -617,18 +637,21 @@ uint32_t RegisterCLIcmd(
                     break;
 
                 case CLIARG_STR_NOT_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                           CLIcmddata.funcfpscliarg[argi].example);
+                    strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                            CLIcmddata.funcfpscliarg[argi].example,
+                            STRINGMAXLEN_CLICMDARG - 1);
                     break;
 
                 case CLIARG_IMG:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                           CLIcmddata.funcfpscliarg[argi].example);
+                    strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                            CLIcmddata.funcfpscliarg[argi].example,
+                            STRINGMAXLEN_CLICMDARG - 1);
                     break;
 
                 case CLIARG_STR:
-                    strcpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                           CLIcmddata.funcfpscliarg[argi].example);
+                    strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
+                            CLIcmddata.funcfpscliarg[argi].example,
+                            STRINGMAXLEN_CLICMDARG - 1);
                     break;
             }
         }

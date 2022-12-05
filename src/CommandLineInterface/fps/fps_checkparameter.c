@@ -409,10 +409,11 @@ int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
 
         if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED)
         {
-            char msg[200];
-            sprintf(msg,
-                    "Loading stream %s",
-                    fpsentry->parray[pindex].val.string[0]);
+            int msglen = 200;
+            char msg[msglen];
+            snprintf(msg, msglen,
+                     "Loading stream %s",
+                     fpsentry->parray[pindex].val.string[0]);
             functionparameter_outlog("LOADMEMSTREAM", "%s", msg);
 
             if(imLOC == STREAM_LOAD_SOURCE_NOTFOUND)
@@ -462,11 +463,12 @@ int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)
     long pindex;
     int  errcnt = 0;
 
-    char msg[200];
-    sprintf(msg, "%s", fpsentry->md->name);
+
+    char msg[FUNCTION_PARAMETER_STRUCT_MSG_LEN];
+    snprintf(msg, FUNCTION_PARAMETER_STRUCT_MSG_LEN, "%s", fpsentry->md->name);
     functionparameter_outlog("CHECKPARAMALL", "%s", msg);
 
-    strcpy(fpsentry->md->message[0], "\0");
+    strncpy(fpsentry->md->message[0], "\0", FUNCTION_PARAMETER_STRUCT_MSG_LEN - 1);
     NBparamMAX = fpsentry->md->NBparamMAX;
 
     // Check if Value is OK

@@ -34,7 +34,6 @@ errno_t functionparameter_RUNstart(
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.cset");
         if(pindex > -1)
         {
-            //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
             EXECUTE_SYSTEM_COMMAND(
                 "tmux send-keys -t %s:run \"export "
                 "TCSETCMDPREFIX=\\\"csetpmove %s;\\\"\" C-m",
@@ -54,7 +53,6 @@ errno_t functionparameter_RUNstart(
         pindex = functionparameter_GetParamIndex(fps, ".procinfo.taskset");
         if(pindex > -1)
         {
-            //sprintf(cmdprefix, "taskset --cpu-list %s ", fps->parray[pindex].val.string[0]);
             EXECUTE_SYSTEM_COMMAND(
                 "tmux send-keys -t %s:run \"export "
                 "TCSETCMDPREFIX=\\\"\\${TCSETCMDPREFIX} tsetpmove "

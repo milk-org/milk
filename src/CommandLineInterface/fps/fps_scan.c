@@ -39,7 +39,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
     // FPS list file
     FILE *fpfpslist;
     int   fpslistcnt = 0;
-    char  FPSlist[200][NB_FPS_MAX];
+    char  FPSlist[NB_FPS_MAX][200];
 
     // Static variables
     static int  shmdirname_init = 0;
@@ -98,7 +98,8 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                     pch = strtok(FPSlistline, " \t\n\r");
                     if(pch != NULL)
                     {
-                        sprintf(FPSlist[fpslistcnt], "%s", pch);
+                        snprintf(FPSlist[fpslistcnt], 200,
+                                 "%s", pch);
                         fpslistcnt++;
                     }
                 }
@@ -127,7 +128,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
 
     // create ROOT node (invisible)
     keywnode[0].keywordlevel = 0;
-    sprintf(keywnode[0].keyword[0], "ROOT");
+    snprintf(keywnode[0].keyword[0], 64, "ROOT");
     keywnode[0].leaf    = 0;
     keywnode[0].NBchild = 0;
     NBkwn               = 1;
@@ -196,7 +197,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 char        shmdname[STRINGMAXLEN_DIRNAME];
                 function_parameter_struct_shmdirname(shmdname);
 
-                sprintf(fullname, "%s/%s", shmdname, dir->d_name);
+                snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", shmdname, dir->d_name);
 
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
@@ -479,9 +480,10 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                                         }
                                         else
                                         {
-                                            sprintf(tmpstring,
-                                                    ".%s",
-                                                    keywnode[kwnindex].keyword[l]);
+                                            snprintf(tmpstring,
+                                                     200,
+                                                     ".%s",
+                                                     keywnode[kwnindex].keyword[l]);
                                             strcat(keywnode[kwnindex].keywordfull,
                                                    tmpstring);
                                         }
