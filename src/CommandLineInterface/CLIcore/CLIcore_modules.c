@@ -25,7 +25,12 @@ static int   DLib_index;
 static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
-errno_t load_sharedobj(const char *__restrict libname)
+
+
+
+errno_t load_sharedobj(
+    const char *__restrict libname
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -69,7 +74,11 @@ errno_t load_sharedobj(const char *__restrict libname)
     return RETURN_SUCCESS;
 }
 
-errno_t load_module_shared(const char *__restrict modulename)
+
+
+errno_t load_module_shared(
+    const char *__restrict modulename
+)
 {
     DEBUG_TRACE_FSTART();
     char libname[STRINGMAXLEN_MODULE_SOFILENAME];
@@ -123,25 +132,42 @@ errno_t load_module_shared(const char *__restrict modulename)
 
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
 
+
+
+
+
     // a custom module is about to be loaded, so we set the type accordingly
     // this variable will be written by module register function into module struct
-    data.moduletype = MODULE_TYPE_CUSTOMLOAD;
     strncpy(data.moduleloadname,
             modulenameLC,
             STRINGMAXLEN_MODULE_LOADNAME - 1);
     strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+
+
     if(load_sharedobj(libname) == RETURN_SUCCESS)
     {
-        //
+        // RegisterModule called here
     }
-    // reset to default for next load
-    data.moduletype = MODULE_TYPE_STARTUP;
-    strncpy(data.moduleloadname, "", STRINGMAXLEN_MODULE_LOADNAME - 1);
-    strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+
+    data.module[data.moduleindex].type = MODULE_TYPE_CUSTOMLOAD;
+
+    strncpy(data.module[data.moduleindex].sofilename,
+            data.modulesofilename,
+            STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+    strncpy(data.module[data.moduleindex].loadname,
+            data.moduleloadname,
+            STRINGMAXLEN_MODULE_LOADNAME - 1);
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
 
 errno_t load_module_shared_ALL()
 {
@@ -235,6 +261,11 @@ errno_t load_module_shared_ALL()
     return RETURN_SUCCESS;
 }
 
+
+
+
+
+
 errno_t RegisterModule(const char *__restrict FileName,
                        const char *__restrict PackageName,
                        const char *__restrict InfoString,
@@ -246,15 +277,20 @@ errno_t RegisterModule(const char *__restrict FileName,
 
     int OKmsg = 0;
 
-    //printf("REGISTERING MODULE %s\n", FileName);
+    int moduleindex =  data.NBmodule;
+    data.moduleindex = moduleindex; // current module index
+
+    data.NBmodule++;
+
+
 
     if(strlen(data.modulename) == 0)
     {
-        strcpy(data.module[data.NBmodule].name, "???");
+        strcpy(data.module[moduleindex].name, "???");
     }
     else
     {
-        strcpy(data.module[data.NBmodule].name, data.modulename);
+        strcpy(data.module[moduleindex].name, data.modulename);
     }
 
     int stringlen = strlen(data.moduleshortname);
@@ -268,33 +304,25 @@ errno_t RegisterModule(const char *__restrict FileName,
         }
     }
 
-    data.moduleindex = data.NBmodule; // current module index
+    strcpy(data.module[moduleindex].package, PackageName);
+    strcpy(data.module[moduleindex].info, InfoString);
 
-    strcpy(data.module[data.NBmodule].package, PackageName);
-    strcpy(data.module[data.NBmodule].info, InfoString);
+    strcpy(data.module[moduleindex].shortname, data.moduleshortname);
 
-    strcpy(data.module[data.NBmodule].shortname, data.moduleshortname);
+    strcpy(data.module[moduleindex].datestring, data.moduledatestring);
+    strcpy(data.module[moduleindex].timestring, data.moduletimestring);
 
-    strcpy(data.module[data.NBmodule].datestring, data.moduledatestring);
-    strcpy(data.module[data.NBmodule].timestring, data.moduletimestring);
+    data.module[moduleindex].versionmajor = versionmajor;
+    data.module[moduleindex].versionminor = versionminor;
+    data.module[moduleindex].versionpatch = versionpatch;
 
-    data.module[data.NBmodule].versionmajor = versionmajor;
-    data.module[data.NBmodule].versionminor = versionminor;
-    data.module[data.NBmodule].versionpatch = versionpatch;
+    data.module[moduleindex].type = data.moduletype;
 
-    data.module[data.NBmodule].type = data.moduletype;
 
-    strncpy(data.module[data.NBmodule].loadname,
-            data.moduleloadname,
-            STRINGMAXLEN_MODULE_LOADNAME - 1);
-    strncpy(data.module[data.NBmodule].sofilename,
-            data.modulesofilename,
-            STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
 
     //printf("--- libnameloaded : %s\n", libnameloaded);
-    strncpy(data.module[data.NBmodule].sofilename,
-            libnameloaded,
-            STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
 
     if(data.progStatus == 0)
     {
@@ -313,7 +341,7 @@ errno_t RegisterModule(const char *__restrict FileName,
         DEBUG_TRACEPOINT(
             "  %02ld  Found unloaded shared object in ./libs/ -> LOADING "
             "%10s  module %40s",
-            data.NBmodule,
+            moduleindex,
             PackageName,
             FileName);
         fflush(stdout);
@@ -322,19 +350,38 @@ errno_t RegisterModule(const char *__restrict FileName,
     if(OKmsg == 0)
     {
         printf(
-            "  %02ld  ERROR: module load requested outside of normal step "
+            "  %02d  ERROR: module load requested outside of normal step "
             "-> LOADING %10s  module %40s",
-            data.NBmodule,
+            moduleindex,
             PackageName,
             FileName);
         fflush(stdout);
     }
 
-    data.NBmodule++;
+
+    // default
+    // may be overridden by load_module_shared
+    //
+    //data.moduletype = MODULE_TYPE_STARTUP;
+
+    data.module[data.moduleindex].type = MODULE_TYPE_STARTUP;
+
+    //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    strncpy(data.module[data.moduleindex].sofilename,
+            "",
+            STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+    //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    strncpy(data.module[data.moduleindex].loadname,
+            "",
+            STRINGMAXLEN_MODULE_LOADNAME - 1);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
 
 // Legacy function
 //
