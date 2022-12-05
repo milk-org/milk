@@ -76,7 +76,8 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
     //
     char *pch;
     int   nbword = 0;
-    char  FPScommand[100];
+    int commandstringmaxlen = 200;
+    char  FPScommand[commandstringmaxlen];
 
     int cmdOK    = 2; // 0 : failed, 1: OK
     int cmdFOUND = 0; // toggles to 1 when command has been found
@@ -128,7 +129,7 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
     if(strlen(inputcmd) > 1)
     {
         pch = strtok(inputcmd, " \t");
-        sprintf(FPScommand, "%s", pch);
+        snprintf(FPScommand, commandstringmaxlen, "%s", pch);
     }
     else
     {
@@ -156,7 +157,9 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
         if(nbword == 1)  // first arg (0)
         {
             char *pos;
-            sprintf(FPSarg0, "%s", pch);
+            snprintf(FPSarg0,
+                     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN * FUNCTION_PARAMETER_KEYWORD_MAXLEVEL,
+                     "%s", pch);
             if((pos = strchr(FPSarg0, '\n')) != NULL)
             {
                 *pos = '\0';
@@ -363,9 +366,6 @@ int functionparameter_FPSprocess_cmdline(char                 *FPScmdline,
                 kwnindexscan++;
             }
         }
-
-        //            sprintf(msgstring, "nbword = %d  cmdOK = %d   kwnindex = %d",  nbword, cmdOK, kwnindex);
-        //            functionparameter_outlog("INFO", "%s", msgstring);
 
         if(kwnindex != -1)
         {
