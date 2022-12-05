@@ -206,8 +206,8 @@ errno_t function_parameter_struct_create(
     fps.md->NBmodule = 0;
     for(int m = 0; m < data.NBmodule; m++)
     {
-        if(data.module[m].type ==
-                MODULE_TYPE_CUSTOMLOAD) // custom loaded module
+        // custom loaded module
+        if(data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
         {
             strncpy(fps.md->modulename[fps.md->NBmodule],
                     data.module[m].loadname,
