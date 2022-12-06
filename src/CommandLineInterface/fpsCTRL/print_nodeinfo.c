@@ -85,7 +85,8 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
     TUI_newline();
 
     DEBUG_TRACEPOINT(" ");
-    TUI_printfw("    FPS tmux sessions     :  ");
+    TUI_printfw("    FPS tmux sessions  [%2d] %s  :  ",
+                keywnode[nodeSelected].fpsindex, fps[keywnode[nodeSelected].fpsindex].md->name);
 
     EXECUTE_SYSTEM_COMMAND("tmux has-session -t %s:ctrl 2> /dev/null",
                            fps[keywnode[nodeSelected].fpsindex].md->name);
