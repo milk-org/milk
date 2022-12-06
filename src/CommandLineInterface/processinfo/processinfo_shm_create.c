@@ -55,7 +55,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
             STRINGMAXLEN_PROCESSINFO_NAME - 1);
 
     DEBUG_TRACEPOINT("getting procdname");
-    char procdname[STRINGMAXLEN_FULLFILENAME];
+    char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
 
@@ -112,7 +112,8 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     pinfolist->active[pindex] = 1;
 
-    char  tmuxname[100];
+    int tmuxnamestrlen = 100;
+    char  tmuxname[tmuxnamestrlen];
     FILE *fpout;
     int   notmux = 0;
 
@@ -123,7 +124,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     }
     else
     {
-        if(fgets(tmuxname, 100, fpout) == NULL)
+        if(fgets(tmuxname, tmuxnamestrlen, fpout) == NULL)
         {
             //printf("WARNING: fgets error\n");
             notmux = 1;
@@ -153,7 +154,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     if(notmux == 1)
     {
-        sprintf(tmuxname, " ");
+        snprintf(tmuxname, tmuxnamestrlen, " ");
     }
 
     // force last char to be term, just in case
@@ -161,7 +162,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     DEBUG_TRACEPOINT("tmux name : %s\n", tmuxname);
 
-    strncpy(pinfo->tmuxname, tmuxname, 100);
+    strncpy(pinfo->tmuxname, tmuxname, tmuxnamestrlen - 1);
 
     // set control value (default 0)
     // 1 : pause
@@ -214,8 +215,9 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
         LogFileCreated = 1;
     }
 
-    char msgstring[300];
-    sprintf(msgstring, "LOG START %s", pinfo->logfilename);
+    int msgstrlen = 300;
+    char msgstring[msgstrlen];
+    snprintf(msgstring, msgstrlen, "LOG START %s", pinfo->logfilename);
     processinfo_WriteMessage(pinfo, msgstring);
 
     DEBUG_TRACE_FEXIT();

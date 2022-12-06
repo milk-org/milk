@@ -80,7 +80,6 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
         // fprintf(stderr, "reading /proc/%d/task\n", PID);
         WRITE_FULLFILENAME(dirname, "/proc/%d/task/", PID);
-        //sprintf(dirname, "/proc/%d/task/", PID);
         dp = opendir(dirname);
 
         if(dp != NULL)

@@ -110,12 +110,13 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
         if(processinfo->CTRLval == 3)  // loop exit from processinfo control
         {
-            sprintf(msgstring,
-                    "CTRLexit %02d:%02d:%02d.%03d",
-                    tstoptm->tm_hour,
-                    tstoptm->tm_min,
-                    tstoptm->tm_sec,
-                    (int)(0.000001 * (tstop.tv_nsec)));
+            snprintf(msgstring,
+                     STRINGMAXLEN_PROCESSINFO_STATUSMSG,
+                     "CTRLexit %02d:%02d:%02d.%03d",
+                     tstoptm->tm_hour,
+                     tstoptm->tm_min,
+                     tstoptm->tm_sec,
+                     (int)(0.000001 * (tstop.tv_nsec)));
             strncpy(processinfo->statusmsg,
                     msgstring,
                     STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
@@ -123,12 +124,13 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
 
         if(processinfo->loopstat == 1)
         {
-            sprintf(msgstring,
-                    "Loop exit %02d:%02d:%02d.%03d",
-                    tstoptm->tm_hour,
-                    tstoptm->tm_min,
-                    tstoptm->tm_sec,
-                    (int)(0.000001 * (tstop.tv_nsec)));
+            snprintf(msgstring,
+                     STRINGMAXLEN_PROCESSINFO_STATUSMSG,
+                     "Loop exit %02d:%02d:%02d.%03d",
+                     tstoptm->tm_hour,
+                     tstoptm->tm_min,
+                     tstoptm->tm_sec,
+                     (int)(0.000001 * (tstop.tv_nsec)));
             strncpy(processinfo->statusmsg,
                     msgstring,
                     STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);
@@ -138,7 +140,7 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
     }
 
     // Remove processinfo shm file on clean exit
-    char procdname[STRINGMAXLEN_FULLFILENAME];
+    char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
     char SM_fname[STRINGMAXLEN_FULLFILENAME];

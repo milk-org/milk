@@ -383,7 +383,7 @@ static errno_t runCLI_initialize()
     data.precision     = 0;  // float is default precision
     data.SHARED_DFT    = 0;  // do not allocate shared memory for images
     data.NBKEYWORD_DFT = 50; // allocate memory for 10 keyword per image
-    sprintf(data.SAVEDIR, ".");
+    snprintf(data.SAVEDIR, STRINGMAXLEN_DIRNAME, ".");
 
     data.CLIlogON          = 0; // log every command
     data.fifoON            = 0;
@@ -460,7 +460,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     strcpy(data.processname, argv[0]);
 
     // Set CLI prompt
-    char prompt[200];
+    char prompt[STRINGMAXLEN_CLIPROMPT];
     runCLI_prompt(promptstring, prompt);
 
     // CLI initialize
@@ -473,7 +473,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     // initialize fifo to process name
     DEBUG_TRACEPOINT("set default fifo name");
-    //sprintf(data.fifoname, "%s.fifo.%07d", data.processname, getpid());
     WRITE_FULLFILENAME(data.fifoname,
                        "%s/.%s.fifo.%07d",
                        data.shmdir,
@@ -1077,7 +1076,7 @@ static int command_line_process_options(int argc, char **argv)
 {
     int                option_index = 0;
     struct sched_param schedpar;
-    char               command[200];
+    char               command[STRINGMAXLEN_COMMAND];
 
     static struct option long_options[] =
     {
@@ -1166,7 +1165,8 @@ static int command_line_process_options(int argc, char **argv)
                     "Idle mode: only runs process when X is idle (pid "
                     "%ld)\n",
                     (long) getpid());
-                sprintf(command, "runidle %ld > /dev/null &\n", (long) getpid());
+                snprintf(command, STRINGMAXLEN_COMMAND, "runidle %ld > /dev/null &\n",
+                         (long) getpid());
                 if(system(command) != 0)
                 {
                     PRINT_ERROR("system() returns non-zero value");
@@ -1226,7 +1226,7 @@ static int command_line_process_options(int argc, char **argv)
             case 'F':
                 printf("using input fifo '%s'\n", optarg);
                 data.fifoON = 1;
-                sprintf(data.fifoname, "%s", optarg);
+                snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", optarg);
                 printf("FIFO NAME = %s\n", data.fifoname);
                 break;
 

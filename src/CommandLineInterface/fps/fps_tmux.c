@@ -101,7 +101,7 @@ errno_t functionparameter_FPS_tmux_init(
     }
     else
     {
-        sprintf(argstring, " ");
+        snprintf(argstring, argstring_maxlen, " ");
     }
 
     for(int i = 1; i < fps->md->NBnameindex; i++)

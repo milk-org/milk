@@ -171,14 +171,14 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
     // ===========================
     PROCESSINFO *processinfo;
 
-    char pinfoname[200];
-    sprintf(pinfoname, "ntw-tx-%s", IDname);
+    char pinfoname[STRINGMAXLEN_FILENAME];
+    snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-tx-%s", IDname);
 
     char descr[200];
-    sprintf(descr, "%s->%s/%d", IDname, IPaddr, port);
+    snprintf(descr, 200, "%s->%s/%d", IDname, IPaddr, port);
 
     char pinfomsg[200];
-    sprintf(pinfomsg, "setup");
+    snprintf(pinfomsg, 200, "setup");
 
     printf("Setup processinfo ...");
     fflush(stdout);
@@ -208,11 +208,11 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     setsockopt(fds_client, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
     setsockopt(fds_client, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
-    
-    #ifdef SO_ATTACH_REUSEPORT_CBPF
+
+#ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
                sizeof(flag));
-    #endif
+#endif
 
     if(loopOK == 1)
     {
@@ -286,7 +286,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
     else
     {
         char msgstring[200];
-        sprintf(msgstring, "sync using semaphore %d", semtrig);
+        snprintf(msgstring, 200, "sync using semaphore %d", semtrig);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
@@ -403,12 +403,13 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 if(byte_sock_count != framesizeall + 2 * n_udp_dgrams)
                 {
                     perror("socket send error ");
-                    sprintf(errmsg,
-                            "ERROR: send() sent a different "
-                            "number of bytes (%d) than "
-                            "expected %ld",
-                            byte_sock_count,
-                            framesizeall + 2 * n_udp_dgrams);
+                    snprintf(errmsg,
+                             200,
+                             "ERROR: send() sent a different "
+                             "number of bytes (%d) than "
+                             "expected %ld",
+                             byte_sock_count,
+                             framesizeall + 2 * n_udp_dgrams);
                     printf("%s\n", errmsg);
                     fflush(stdout);
                     processinfo_WriteMessage(processinfo, errmsg);
@@ -505,8 +506,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         // CREATE PROCESSINFO ENTRY
         // see processtools.c in module CommandLineInterface for details
         //
-        char pinfoname[200];
-        sprintf(pinfoname, "ntw-receive-%d", port);
+        char pinfoname[STRINGMAXLEN_FILENAME];
+        snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-receive-%d", port);
         processinfo           = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = PROCESSINFO_LOOPSTAT_INIT;
 
@@ -514,9 +515,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         strcpy(processinfo->source_FILE, __FILE__);
         processinfo->source_LINE = __LINE__;
 
-        char msgstring[200];
-        sprintf(msgstring, "Waiting for input stream");
-        processinfo_WriteMessage(processinfo, msgstring);
+        processinfo_WriteMessage(processinfo, "Waiting for input stream");
     }
 
     // CATCH SIGNALS
@@ -590,10 +589,10 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
     setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
 
-    #ifdef SO_ATTACH_REUSEPORT_CBPF
+#ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
                sizeof(flag));
-    #endif
+#endif
 
     //bind socket to port
     if(bind(fds_server,
@@ -602,7 +601,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     {
         char msgstring[200];
 
-        sprintf(msgstring, "ERROR binding socket, port %d", port);
+        snprintf(msgstring, 200, "ERROR binding socket, port %d", port);
         printf("%s\n", msgstring);
 
         if(data.processinfo == 1)
@@ -625,9 +624,10 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         {
             char msgstring[200];
 
-            sprintf(msgstring,
-                    "ERROR receiving image metadata, recvsize = %ld, n_dgram_wait = %d",
-                    recvsize, n_dgram_wait);
+            snprintf(msgstring,
+                     200,
+                     "ERROR receiving image metadata, recvsize = %ld, n_dgram_wait = %d",
+                     recvsize, n_dgram_wait);
             printf("%s\n", msgstring);
 
             if(data.processinfo == 1)
@@ -652,7 +652,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     if(data.processinfo == 1)
     {
         char msgstring[200];
-        sprintf(msgstring, "Receiving stream %s", imgmd[0].name);
+        snprintf(msgstring, 200, "Receiving stream %s", imgmd[0].name);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
@@ -746,23 +746,25 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     if(data.processinfo == 1)
     {
         char typestring[8];
-        sprintf(typestring, "%s",
-                ImageStreamIO_typename(data.image[ID].md[0].datatype));
+        snprintf(typestring, 8, "%s",
+                 ImageStreamIO_typename(data.image[ID].md[0].datatype));
         char msgstring[200];
-        sprintf(msgstring,
-                "<- %s [%d x %d x %ld] %s",
-                imgmd[0].name,
-                (int) xsize,
-                (int) ysize,
-                NBslices,
-                typestring);
-        sprintf(processinfo->description,
-                "%s %dx%dx%ld %s",
-                imgmd[0].name,
-                (int) xsize,
-                (int) ysize,
-                NBslices,
-                typestring);
+        snprintf(msgstring,
+                 200,
+                 "<- %s [%d x %d x %ld] %s",
+                 imgmd[0].name,
+                 (int) xsize,
+                 (int) ysize,
+                 NBslices,
+                 typestring);
+        snprintf(processinfo->description,
+                 STRINGMAXLEN_PROCESSINFO_DESCRIPTION,
+                 "%s %dx%dx%ld %s",
+                 imgmd[0].name,
+                 (int) xsize,
+                 (int) ysize,
+                 NBslices,
+                 typestring);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 

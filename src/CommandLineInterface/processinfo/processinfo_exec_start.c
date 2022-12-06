@@ -69,7 +69,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
                         2) // pause process due to timing limit
                 {
                     processinfo->CTRLval = 1;
-                    sprintf(msgstring, "dtiter lim -> paused");
+                    snprintf(msgstring, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "dtiter lim -> paused");
                     processinfo_WriteMessage(processinfo, msgstring);
                 }
                 processinfo->dtiter_limit_cnt++;

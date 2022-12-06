@@ -299,8 +299,9 @@ errno_t processinfo_CTRLscreen()
 
     int cpusocket;
 
-    char pselected_FILE[200];
-    char pselected_FUNCTION[200];
+    int stringlen = 200;
+    char pselected_FILE[stringlen];
+    char pselected_FUNCTION[stringlen];
     int  pselected_LINE;
 
     // timers
@@ -317,7 +318,8 @@ errno_t processinfo_CTRLscreen()
     struct timespec t07loop;
 
     float frequ = 32.0; // Hz
-    char  monstring[200];
+    int monstringlen = 200;
+    char  monstring[monstringlen];
 
     // list of active indices
     int pindexActiveSelected;
@@ -329,7 +331,7 @@ errno_t processinfo_CTRLscreen()
 
     DEBUG_TRACEPOINT(" ");
 
-    char procdname[200];
+    char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
     processinfo_CatchSignals();
@@ -439,7 +441,7 @@ errno_t processinfo_CTRLscreen()
 
     // set print string lengths
     // string to be printed. Used to keep track of total length
-    char string[200];
+    char string[stringlen];
 
     int pstrlen_status = 10;
     int pstrlen_pid    = 7;
@@ -617,7 +619,7 @@ errno_t processinfo_CTRLscreen()
         if(freeze == 0)
         {
             //attron(A_BOLD);
-            sprintf(monstring, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
+            snprintf(monstring, monstringlen, "Mode %d   PRESS x TO STOP MONITOR", MonMode);
             //processtools__print_header(monstring, '-');
             TUI_print_header(monstring, '-');
             //attroff(A_BOLD);
@@ -1539,8 +1541,8 @@ errno_t processinfo_CTRLscreen()
                     }
                     else
                     {
-                        sprintf(pselected_FILE, "?");
-                        sprintf(pselected_FUNCTION, "?");
+                        snprintf(pselected_FILE, stringlen, "?");
+                        snprintf(pselected_FUNCTION, stringlen, "?");
                         pselected_LINE = 0;
                         TUI_newline();
                     }
@@ -1930,11 +1932,12 @@ errno_t processinfo_CTRLscreen()
 
                         if(pinfolist->active[pindex] == 1)
                         {
-                            sprintf(string,
-                                    "%-*.*s",
-                                    pstrlen_status,
-                                    pstrlen_status,
-                                    "ACTIVE");
+                            snprintf(string,
+                                     stringlen,
+                                     "%-*.*s",
+                                     pstrlen_status,
+                                     pstrlen_status,
+                                     "ACTIVE");
                             attron(COLOR_PAIR(2));
                             TUI_printfw("%s", string);
                             attroff(COLOR_PAIR(2));
@@ -1951,33 +1954,36 @@ errno_t processinfo_CTRLscreen()
                             switch(procinfoproc.pinfoarray[pindex]->loopstat)
                             {
                                 case 3: // clean exit
-                                    sprintf(string,
-                                            "%-*.*s",
-                                            pstrlen_status,
-                                            pstrlen_status,
-                                            "STOPPED");
+                                    snprintf(string,
+                                             stringlen,
+                                             "%-*.*s",
+                                             pstrlen_status,
+                                             pstrlen_status,
+                                             "STOPPED");
                                     attron(COLOR_PAIR(3));
                                     TUI_printfw("%s", string);
                                     attroff(COLOR_PAIR(3));
                                     break;
 
                                 case 4: // error
-                                    sprintf(string,
-                                            "%-*.*s",
-                                            pstrlen_status,
-                                            pstrlen_status,
-                                            "ERROR");
+                                    snprintf(string,
+                                             stringlen,
+                                             "%-*.*s",
+                                             pstrlen_status,
+                                             pstrlen_status,
+                                             "ERROR");
                                     attron(COLOR_PAIR(3));
                                     TUI_printfw("%s", string);
                                     attroff(COLOR_PAIR(3));
                                     break;
 
                                 default: // crashed
-                                    sprintf(string,
-                                            "%-*.*s",
-                                            pstrlen_status,
-                                            pstrlen_status,
-                                            "CRASHED");
+                                    snprintf(string,
+                                             stringlen,
+                                             "%-*.*s",
+                                             pstrlen_status,
+                                             pstrlen_status,
+                                             "CRASHED");
                                     attron(COLOR_PAIR(4));
                                     TUI_printfw("%s", string);
                                     attroff(COLOR_PAIR(4));
@@ -1998,20 +2004,22 @@ errno_t processinfo_CTRLscreen()
                                 attron(A_REVERSE);
                             }
 
-                            sprintf(string,
-                                    " %-*.*d",
-                                    pstrlen_pid,
-                                    pstrlen_pid,
-                                    pinfolist->PIDarray[pindex]);
+                            snprintf(string,
+                                     stringlen,
+                                     " %-*.*d",
+                                     pstrlen_pid,
+                                     pstrlen_pid,
+                                     pinfolist->PIDarray[pindex]);
                             TUI_printfw("%s", string);
 
                             attron(A_BOLD);
 
-                            sprintf(string,
-                                    " %-*.*s",
-                                    pstrlen_pname,
-                                    pstrlen_pname,
-                                    pinfolist->pnamearray[pindex]);
+                            snprintf(string,
+                                     stringlen,
+                                     " %-*.*s",
+                                     pstrlen_pname,
+                                     pstrlen_pname,
+                                     pinfolist->pnamearray[pindex]);
 
 
                             TUI_printfw("%s", string);
@@ -2025,76 +2033,84 @@ errno_t processinfo_CTRLscreen()
                                     procinfoproc.pinfoarray[pindex]->loopstat)
                                 {
                                     case 0:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "INIT");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "INIT");
                                         break;
 
                                     case 1:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "RUN");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "RUN");
                                         break;
 
                                     case 2:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "PAUS");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "PAUS");
                                         break;
 
                                     case 3:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "TERM");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "TERM");
                                         break;
 
                                     case 4:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "ERR");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "ERR");
                                         break;
 
                                     case 5:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "OFF");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "OFF");
                                         break;
 
                                     case 6:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "CRAS"
-                                                "H");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "CRAS"
+                                                 "H");
                                         break;
 
                                     default:
-                                        sprintf(string,
-                                                " %-*.*"
-                                                "s",
-                                                pstrlen_state,
-                                                pstrlen_state,
-                                                "??");
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*"
+                                                 "s",
+                                                 pstrlen_state,
+                                                 pstrlen_state,
+                                                 "??");
                                 }
                                 TUI_printfw("%s", string);
 
@@ -2121,8 +2137,9 @@ errno_t processinfo_CTRLscreen()
                                         gmtime(&procinfoproc.pinfoarray[pindex]
                                                ->createtime.tv_sec);
 
-                                    sprintf(
+                                    snprintf(
                                         string,
+                                        stringlen,
                                         " %02d:%02d:"
                                         "%02d.%03d",
                                         createtm->tm_hour,
@@ -2134,16 +2151,18 @@ errno_t processinfo_CTRLscreen()
                                 }
                                 TUI_printfw("%s", string);
 
-                                sprintf(
+                                snprintf(
                                     string,
+                                    stringlen,
                                     " %-*.*s",
                                     pstrlen_tmux,
                                     pstrlen_tmux,
                                     procinfoproc.pinfoarray[pindex]->tmuxname);
                                 TUI_printfw("%s", string);
 
-                                sprintf(
+                                snprintf(
                                     string,
+                                    stringlen,
                                     " %- *.*ld",
                                     pstrlen_loopcnt,
                                     pstrlen_loopcnt,
@@ -2170,12 +2189,13 @@ errno_t processinfo_CTRLscreen()
 
                                 TUI_printfw(" | ");
 
-                                sprintf(string,
-                                        "%-*.*s",
-                                        pstrlen_descr,
-                                        pstrlen_descr,
-                                        procinfoproc.pinfoarray[pindex]
-                                        ->description);
+                                snprintf(string,
+                                         stringlen,
+                                         "%-*.*s",
+                                         pstrlen_descr,
+                                         pstrlen_descr,
+                                         procinfoproc.pinfoarray[pindex]
+                                         ->description);
                                 TUI_printfw("%s", string);
 
                                 TUI_printfw(" | ");
@@ -2188,8 +2208,9 @@ errno_t processinfo_CTRLscreen()
                                     attron(COLOR_PAIR(4));
                                 }
 
-                                sprintf(
+                                snprintf(
                                     string,
+                                    stringlen,
                                     "%-*.*s",
                                     pstrlen_msg,
                                     pstrlen_msg,
@@ -2213,13 +2234,14 @@ errno_t processinfo_CTRLscreen()
 
                                 if(procinfoproc.psysinfostatus[pindex] == -1)
                                 {
-                                    sprintf(string,
-                                            " no "
-                                            "proces"
-                                            "s "
-                                            "info "
-                                            "availa"
-                                            "ble");
+                                    snprintf(string,
+                                             stringlen,
+                                             " no "
+                                             "proces"
+                                             "s "
+                                             "info "
+                                             "availa"
+                                             "ble");
                                     TUI_printfw("%s", string);
                                     TUI_newline();
                                 }
@@ -2238,8 +2260,9 @@ errno_t processinfo_CTRLscreen()
                                         if(spindex > 0)
                                         {
                                             //TID = procinfoproc.pinfodisp[pindex].subprocPIDarray[spindex];
-                                            sprintf(
+                                            snprintf(
                                                 string,
+                                                stringlen,
                                                 " %*.*s %-*.*d %-*.*s",
                                                 pstrlen_status,
                                                 pstrlen_status,
@@ -2263,24 +2286,27 @@ errno_t processinfo_CTRLscreen()
                                                 .PID;
                                         }
 
-                                        sprintf(string,
-                                                " %2d",
-                                                procinfoproc.pinfodisp[pindex]
-                                                .rt_priority);
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %2d",
+                                                 procinfoproc.pinfodisp[pindex]
+                                                 .rt_priority);
                                         TUI_printfw("%s", string);
 
-                                        sprintf(string,
-                                                " %-*.*s",
-                                                pstrlen_cset,
-                                                pstrlen_cset,
-                                                procinfoproc.pinfodisp[pindex]
-                                                .cpuset);
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %-*.*s",
+                                                 pstrlen_cset,
+                                                 pstrlen_cset,
+                                                 procinfoproc.pinfodisp[pindex]
+                                                 .cpuset);
                                         TUI_printfw("%s", string);
 
-                                        sprintf(string,
-                                                " %2dx ",
-                                                procinfoproc.pinfodisp[pindex]
-                                                .threads);
+                                        snprintf(string,
+                                                 stringlen,
+                                                 " %2dx ",
+                                                 procinfoproc.pinfodisp[pindex]
+                                                 .threads);
                                         TUI_printfw("%s", string);
 
                                         // Context Switches
@@ -2302,8 +2328,9 @@ errno_t processinfo_CTRLscreen()
                                             attron(COLOR_PAIR(3));
                                         }
 
-                                        sprintf(
+                                        snprintf(
                                             string,
+                                            stringlen,
                                             " +%02ld +%02ld",
                                             labs(
                                                 procinfoproc.pinfodisp[pindex]
@@ -2406,7 +2433,7 @@ errno_t processinfo_CTRLscreen()
                                             }
                                         }
 
-                                        sprintf(string, "|    ");
+                                        snprintf(string, stringlen, "|    ");
                                         TUI_printfw("%s", string);
 
                                         // Second group of cores (physical CPU 0)
@@ -2446,8 +2473,9 @@ errno_t processinfo_CTRLscreen()
                                         TUI_printfw("| ");
 
                                         attron(COLOR_PAIR(cpuColor));
-                                        sprintf(
+                                        snprintf(
                                             string,
+                                            stringlen,
                                             "%5.1f %6.2f",
                                             procinfoproc.pinfodisp[pindex]
                                             .subprocCPUloadarray[spindex],
@@ -2504,34 +2532,34 @@ errno_t processinfo_CTRLscreen()
                                         attron(COLOR_PAIR(memColor));
                                         if(GBcnt > 0)
                                         {
-                                            sprintf(string, "%3d GB ", GBcnt);
+                                            snprintf(string, stringlen, "%3d GB ", GBcnt);
                                             TUI_printfw("%s", string);
                                         }
                                         else
                                         {
-                                            sprintf(string, "       ");
+                                            snprintf(string, stringlen, "       ");
                                             TUI_printfw("%s", string);
                                         }
 
                                         if(MBcnt > 0)
                                         {
-                                            sprintf(string, "%4d MB ", MBcnt);
+                                            snprintf(string, stringlen, "%4d MB ", MBcnt);
                                             TUI_printfw("%s", string);
                                         }
                                         else
                                         {
-                                            sprintf(string, "       ");
+                                            snprintf(string, stringlen, "       ");
                                             TUI_printfw("%s", string);
                                         }
 
                                         if(kBcnt > 0)
                                         {
-                                            sprintf(string, "%4d kB ", kBcnt);
+                                            snprintf(string, stringlen, "%4d kB ", kBcnt);
                                             TUI_printfw("%s", string);
                                         }
                                         else
                                         {
-                                            sprintf(string, "       ");
+                                            snprintf(string, stringlen, "       ");
                                             TUI_printfw("%s", string);
                                         }
                                         attroff(COLOR_PAIR(memColor));

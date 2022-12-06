@@ -175,12 +175,12 @@ errno_t function_parameter_struct_create(
     fps.md->sourceline = 0;
 
     // set default fpsdatadir
-    sprintf(fps.md->datadir, "fps.%s.datadir", fps.md->name);
+    snprintf(fps.md->datadir, FPS_DIR_STRLENMAX, "fps.%s.datadir", fps.md->name);
     // and create the directory
     mkdir(fps.md->datadir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
     // set default fpsconfdir
-    sprintf(fps.md->confdir, "fps.%s.confdir", fps.md->name);
+    snprintf(fps.md->confdir, FPS_DIR_STRLENMAX, "fps.%s.confdir", fps.md->name);
     // and create the directory
     mkdir(fps.md->confdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 

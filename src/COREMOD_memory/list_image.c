@@ -104,8 +104,11 @@ errno_t init_list_image_ID_ncurses(const char *termttyname)
 
 errno_t list_image_ID_ncurses()
 {
-    char      str[300];
+    int strmaxlen = 300;
+    char      str[strmaxlen];
+    int str1maxlen = 500;
     char      str1[500];
+    int str2maxlen = 512;
     char      str2[512];
     long      i, j;
     long long tmp_long;
@@ -155,7 +158,7 @@ errno_t list_image_ID_ncurses()
             {
                 attron(A_BOLD | COLOR_PAIR(6));
             }
-            sprintf(str, "%10s ", data.image[i].name);
+            snprintf(str, strmaxlen, "%10s ", data.image[i].name);
             printw(str);
 
             if(data.image[i].md[0].shared == 1)
@@ -167,16 +170,17 @@ errno_t list_image_ID_ncurses()
                 attroff(A_BOLD | COLOR_PAIR(6));
             }
 
-            sprintf(str, "[ %6ld", (long) data.image[i].md[0].size[0]);
+            snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
             for(j = 1; j < data.image[i].md[0].naxis; j++)
             {
-                sprintf(str1,
-                        "%s x %6ld",
-                        str,
-                        (long) data.image[i].md[0].size[j]);
+                snprintf(str1,
+                         str1maxlen,
+                         "%s x %6ld",
+                         str,
+                         (long) data.image[i].md[0].size[j]);
             }
-            sprintf(str2, "%s]", str1);
+            snprintf(str2, str2maxlen, "%s]", str1);
 
             printw("%-28s", str2);
 
@@ -292,28 +296,28 @@ errno_t list_image_ID_ncurses()
 
     //attron(A_BOLD);
 
-    sprintf(str, "%ld image(s)      ", compute_nb_image());
+    snprintf(str, strmaxlen, "%ld image(s)      ", compute_nb_image());
     if(sizeGb > 0)
     {
-        sprintf(str1, "%s %ld GB", str, (long)(sizeGb));
+        snprintf(str1, str1maxlen, "%s %ld GB", str, (long)(sizeGb));
         strcpy(str, str1);
     }
 
     if(sizeMb > 0)
     {
-        sprintf(str1, "%s %ld MB", str, (long)(sizeMb));
+        snprintf(str1, str1maxlen, "%s %ld MB", str, (long)(sizeMb));
         strcpy(str, str1);
     }
 
     if(sizeKb > 0)
     {
-        sprintf(str1, "%s %ld KB", str, (long)(sizeKb));
+        snprintf(str1, str1maxlen, "%s %ld KB", str, (long)(sizeKb));
         strcpy(str, str1);
     }
 
     if(sizeb > 0)
     {
-        sprintf(str1, "%s %ld B", str, (long)(sizeb));
+        snprintf(str1, str1maxlen, "%s %ld B", str, (long)(sizeb));
         strcpy(str, str1);
     }
 
@@ -344,8 +348,10 @@ errno_t list_image_ID_ofp(FILE *fo)
     uint8_t            datatype;
     int                n;
     unsigned long long sizeb, sizeKb, sizeMb, sizeGb;
-    char               str[500];
-    char               str1[512];
+    int strmaxlen = 500;
+    char               str[strmaxlen];
+    int str1maxlen = 512;
+    char               str1[str1maxlen];
     struct timespec    timenow;
     double             timediff;
     //struct mallinfo minfo;
@@ -395,17 +401,18 @@ errno_t list_image_ID_ofp(FILE *fo)
             }
             //fprintf(fo, "%s", str);
 
-            sprintf(str, "[ %6ld", (long) data.image[i].md[0].size[0]);
+            snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
 
             for(j = 1; j < data.image[i].md[0].naxis; j++)
             {
-                sprintf(str1,
-                        "%s x %6ld",
-                        str,
-                        (long) data.image[i].md[0].size[j]);
+                snprintf(str1,
+                         str1maxlen,
+                         "%s x %6ld",
+                         str,
+                         (long) data.image[i].md[0].size[j]);
                 strcpy(str, str1);
             }
-            sprintf(str1, "%s]", str);
+            snprintf(str1, str1maxlen, "%s]", str);
             strcpy(str, str1);
 
             fprintf(fo, "%-32s", str);
