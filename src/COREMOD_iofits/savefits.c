@@ -279,7 +279,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         char errstring[200];
         if(access(fnametmp, F_OK) == 0)
         {
-            sprintf(errstring, "File already exists");
+            snprintf(errstring, 200, "File already exists");
         }
         PRINT_ERROR("fits_create_file error %d on file %s %s",
                     COREMOD_iofits_data.FITSIO_status,
@@ -370,7 +370,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
             while(*hptr)
             {
                 char fitscard[81];
-                sprintf(fitscard, "%.80s", hptr);
+                snprintf(fitscard, 81, "%.80s", hptr);
 
                 // keywords to not overwrite
                 int   writecard = 1;
@@ -488,13 +488,13 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                     break;
 
                 case 'S':
-                    sprintf(tmpkwvalstr, "'%s'", imgin.im->kw[kw].value.valstr);
+                    snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
                     printf("writing keyword [S] %-8s= %20s / %s\n",
                            imgin.im->kw[kw].name,
                            tmpkwvalstr,
                            imgin.im->kw[kw].comment);
                     COREMOD_iofits_data.FITSIO_status = 0;
-                    // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN sprintf!!
+                    // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN snprintf!!
                     if((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
                             (strncmp("'#FALSE#'", tmpkwvalstr, 9) == 0))
                     {
@@ -570,7 +570,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                     break;
 
                 case 'S':
-                    sprintf(tmpkwvalstr, "'%s'", kwarray[kwi].value.valstr);
+                    snprintf(tmpkwvalstr, 81, "'%s'", kwarray[kwi].value.valstr);
                     printf("writing keyword [S] %-8s= %20s / %s\n",
                            kwarray[kwi].name,
                            tmpkwvalstr,
