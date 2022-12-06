@@ -26,7 +26,10 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
                      nodeSelected,
                      keywnode[nodeSelected].fpsindex);
 
-    TUI_printfw("======== FPS info ( # %5d)", keywnode[nodeSelected].fpsindex);
+    TUI_printfw("======== FPS info ( # %2d) fd = %d (sdterr = %d)",
+                keywnode[nodeSelected].fpsindex,
+                fps[keywnode[nodeSelected].fpsindex].SMfd,
+                fileno(stderr));
     TUI_newline();
 
     char teststring[200];
