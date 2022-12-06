@@ -161,12 +161,13 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
         usleep(500);
 
         sem_getvalue(img_p->semptr[semtrig], &semval);
-        sprintf(pinfomsg,
-                "%ld TEST 0 semtrig %d  ID %ld  %d",
-                loopcnt,
-                semtrig,
-                ID,
-                semval);
+        snprintf(pinfomsg,
+                 200,
+                 "%ld TEST 0 semtrig %d  ID %ld  %d",
+                 loopcnt,
+                 semtrig,
+                 ID,
+                 semval);
         printf("MSG: %s\n", pinfomsg);
         fflush(stdout);
 
@@ -220,12 +221,13 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
         }
 
         sem_getvalue(img_p->semptr[semtrig], &semval);
-        sprintf(pinfomsg,
-                "%ld TEST 1 semtrig %d  ID %ld  %d",
-                loopcnt,
-                semtrig,
-                ID,
-                semval);
+        snprintf(pinfomsg,
+                 200,
+                 "%ld TEST 1 semtrig %d  ID %ld  %d",
+                 loopcnt,
+                 semtrig,
+                 ID,
+                 semval);
         printf("MSG: %s\n", pinfomsg);
         fflush(stdout);
 
@@ -285,13 +287,13 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     PROCESSINFO *processinfo;
 
     char pinfoname[200];
-    sprintf(pinfoname, "ntw-tx-%s", IDname);
+    snprintf(pinfoname, 200, "ntw-tx-%s", IDname);
 
     char descr[200];
-    sprintf(descr, "%s->%s/%d", IDname, IPaddr, port);
+    snprintf(descr, 200, "%s->%s/%d", IDname, IPaddr, port);
 
     char pinfomsg[200];
-    sprintf(pinfomsg, "setup");
+    snprintf(pinfomsg, 200, "setup");
 
     printf("Setup processinfo ...");
     fflush(stdout);
@@ -391,9 +393,10 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         if(-1 == ImageStreamIO_checktype(img_p->md[0].datatype, 0))
         {
             printf("ERROR: WRONG DATA TYPE\n");
-            sprintf(errmsg,
-                    "WRONG DATA TYPE data type = %d\n",
-                    img_p->md[0].datatype);
+            snprintf(errmsg,
+                     200,
+                     "WRONG DATA TYPE data type = %d\n",
+                     img_p->md[0].datatype);
             printf("data type = %d\n", img_p->md[0].datatype);
             processinfo_error(processinfo, errmsg);
             loopOK = 0;
@@ -436,7 +439,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     else
     {
         char msgstring[200];
-        sprintf(msgstring, "sync using semaphore %d", semtrig);
+        snprintf(msgstring, 200, "sync using semaphore %d", semtrig);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
@@ -540,14 +543,15 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 if(rs != framesizeall)
                 {
                     perror("socket send error ");
-                    sprintf(errmsg,
-                            "ERROR: send() sent a different "
-                            "number of bytes (%d) than "
-                            "expected %ld  %ld  %ld",
-                            rs,
-                            (long) framesize,
-                            (long) framesizeall,
-                            (long) sizeof(TCP_BUFFER_METADATA));
+                    snprintf(errmsg,
+                             200,
+                             "ERROR: send() sent a different "
+                             "number of bytes (%d) than "
+                             "expected %ld  %ld  %ld",
+                             rs,
+                             (long) framesize,
+                             (long) framesizeall,
+                             (long) sizeof(TCP_BUFFER_METADATA));
                     printf("%s\n", errmsg);
                     fflush(stdout);
                     processinfo_WriteMessage(processinfo, errmsg);
@@ -638,7 +642,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         // see processtools.c in module CommandLineInterface for details
         //
         char pinfoname[200];
-        sprintf(pinfoname, "ntw-receive-%d", port);
+        snprintf(pinfoname, 200, "ntw-receive-%d", port);
         processinfo           = processinfo_shm_create(pinfoname, 0);
         processinfo->loopstat = 0; // loop initialization
 
@@ -647,7 +651,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         processinfo->source_LINE = __LINE__;
 
         char msgstring[200];
-        sprintf(msgstring, "Waiting for input stream");
+        snprintf(msgstring, 200, "Waiting for input stream");
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
@@ -724,7 +728,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     {
         char msgstring[200];
 
-        sprintf(msgstring, "ERROR binding socket, port %d", port);
+        snprintf(msgstring, 200, "ERROR binding socket, port %d", port);
         printf("%s\n", msgstring);
 
         if(data.processinfo == 1)
@@ -739,7 +743,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     {
         char msgstring[200];
 
-        sprintf(msgstring, "ERROR listen socket");
+        snprintf(msgstring, 200, "ERROR listen socket");
         printf("%s\n", msgstring);
 
         if(data.processinfo == 1)
@@ -763,7 +767,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     {
         char msgstring[200];
 
-        sprintf(msgstring, "ERROR accept socket");
+        snprintf(msgstring, 200, "ERROR accept socket");
         printf("%s\n", msgstring);
 
         if(data.processinfo == 1)
@@ -784,7 +788,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     {
         char msgstring[200];
 
-        sprintf(msgstring, "ERROR receiving image metadata");
+        snprintf(msgstring, 200, "ERROR receiving image metadata");
         printf("%s\n", msgstring);
 
         if(data.processinfo == 1)
@@ -799,7 +803,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if(data.processinfo == 1)
     {
         char msgstring[200];
-        sprintf(msgstring, "Receiving stream %s", imgmd[0].name);
+        snprintf(msgstring, 200, "Receiving stream %s", imgmd[0].name);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
@@ -895,13 +899,13 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if(ImageStreamIO_checktype(img_p->md[0].datatype, 0) == -1)
     {
         printf("ERROR: WRONG DATA TYPE\n");
-        sprintf(typestring, "%s", "ERR");
+        snprintf(typestring, 8, "%s", "ERR");
         exit(0);
     }
     framesize = ImageStreamIO_typesize(img_p->md[0].datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
 
-    sprintf(typestring, "%s", ImageStreamIO_typename(img_p->md[0].datatype));
+    snprintf(typestring, 8, "%s", ImageStreamIO_typename(img_p->md[0].datatype));
 
     ptr0 = (char *) img_p->array.raw;
 
@@ -909,20 +913,22 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if(data.processinfo == 1)
     {
         char msgstring[200];
-        sprintf(msgstring,
-                "<- %s [%d x %d x %ld] %s",
-                imgmd[0].name,
-                (int) xsize,
-                (int) ysize,
-                NBslices,
-                typestring);
-        sprintf(processinfo->description,
-                "%s %dx%dx%ld %s",
-                imgmd[0].name,
-                (int) xsize,
-                (int) ysize,
-                NBslices,
-                typestring);
+        snprintf(msgstring,
+                 200,
+                 "<- %s [%d x %d x %ld] %s",
+                 imgmd[0].name,
+                 (int) xsize,
+                 (int) ysize,
+                 NBslices,
+                 typestring);
+        snprintf(processinfo->description,
+                 200,
+                 "%s %dx%dx%ld %s",
+                 imgmd[0].name,
+                 (int) xsize,
+                 (int) ysize,
+                 NBslices,
+                 typestring);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
