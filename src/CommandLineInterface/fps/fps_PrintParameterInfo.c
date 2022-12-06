@@ -59,7 +59,7 @@ functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry,
            pindex,
            fpsentry->parray[pindex].keywordfull);
 
-    char typestring[100];
+    char typestring[STRINGMAXLEN_FPSTYPE];
     functionparameter_GetTypeString(fpsentry->parray[pindex].type, typestring);
     printf("type: %s\n", typestring);
 

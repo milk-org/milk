@@ -432,10 +432,11 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                 PRINT_ERROR("system() returns non-zero value");
             }
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            sprintf(fname,
-                    "%s/%s.fps",
-                    fps[fpsindex].md->confdir,
-                    fps[fpsindex].md->name);
+            snprintf(fname,
+                     STRINGMAXLEN_FULLFILENAME,
+                     "%s/%s.fps",
+                     fps[fpsindex].md->confdir,
+                     fps[fpsindex].md->name);
             //printf("LOADING FPS FILE %s\n", fname);
 
             fpin = fopen(fname, "r");
@@ -475,7 +476,7 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                     //printf("%s [%s] -< %s\n", varname, vartype, varvalue);
 
                     char FPScmdline[200];
-                    sprintf(FPScmdline, "setval %s %s", varname, varvalue);
+                    snprintf(FPScmdline, 200, "setval %s %s", varname, varvalue);
                     free(inputCopy);
                     functionparameter_FPSprocess_cmdline(FPScmdline,
                                                          fpsctrlqueuelist,

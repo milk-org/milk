@@ -49,6 +49,8 @@ void rl_cb_linehandler(char *linein)
     free(linein);
 }
 
+
+
 errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
     //int color_cyan = 36;
@@ -57,23 +59,29 @@ errno_t runCLI_prompt(char *promptstring, char *prompt)
     {
         if(data.processnameflag == 0)
         {
-            sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, promptstring);
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " COLORRESET,
+                     promptstring);
         }
         else
         {
-            sprintf(prompt,
-                    COLORHBOLDCYAN "%s-%s > " COLORRESET,
-                    promptstring,
-                    data.processname);
+            snprintf(prompt,
+                     FPS_DIR_STRLENMAX,
+                     COLORHBOLDCYAN "%s-%s > " COLORRESET,
+                     promptstring,
+                     data.processname);
         }
     }
     else
     {
-        sprintf(prompt, COLORHBOLDCYAN "%s > " COLORRESET, data.processname);
+        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " COLORRESET,
+                 data.processname);
     }
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 static void *xmalloc(int size)
 {
@@ -251,7 +259,7 @@ errno_t write_tracedebugfile()
 
             if(data.testpointarray[j].line != 0)
             {
-                char timestring[20];
+                char timestring[TIMESTRINGLEN];
                 mkUTtimestring_nanosec(timestring, data.testpointarray[j].time);
 
                 // extract last word
@@ -295,7 +303,8 @@ errno_t CLI_execute_line()
     DEBUG_TRACE_FSTART();
 
     char            *cmdargstring;
-    char             str[200];
+    int strmaxlen = 200;
+    char             str[strmaxlen];
     FILE            *fp;
     time_t           t;
     struct tm       *uttime;
@@ -340,16 +349,17 @@ errno_t CLI_execute_line()
             uttime = gmtime(&t);
             clock_gettime(CLOCK_REALTIME, thetime);
 
-            sprintf(data.CLIlogname,
-                    "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log",
-                    getenv("HOME"),
-                    1900 + uttime->tm_year,
-                    1 + uttime->tm_mon,
-                    uttime->tm_mday,
-                    1900 + uttime->tm_year,
-                    1 + uttime->tm_mon,
-                    uttime->tm_mday,
-                    data.processname);
+            snprintf(data.CLIlogname,
+                     STRINGMAXLEN_FULLFILENAME,
+                     "%s/logdir/%04d%02d%02d/%04d%02d%02d_CLI-%s.log",
+                     getenv("HOME"),
+                     1900 + uttime->tm_year,
+                     1 + uttime->tm_mon,
+                     uttime->tm_mday,
+                     1900 + uttime->tm_year,
+                     1 + uttime->tm_mon,
+                     uttime->tm_mday,
+                     data.processname);
 
             fp = fopen(data.CLIlogname, "a");
             if(fp == NULL)
@@ -411,7 +421,7 @@ errno_t CLI_execute_line()
                 while(cmdargstring != NULL)  // iterate on words
                 {
                     // printf("\t processing -- %s\n", cmdargstring);
-                    sprintf(str, "%s\n", cmdargstring);
+                    snprintf(str, strmaxlen, "%s\n", cmdargstring);
                     yy_scan_string(str);
                     data.calctmp_imindex = 0;
                     yyparse();
@@ -550,7 +560,6 @@ errno_t CLI_execute_line()
         for(int i = 0; i < data.calctmp_imindex; i++)
         {
             CREATE_IMAGENAME(calctmpimname, "_tmpcalc%d", i);
-            //sprintf(calctmpimname, "_tmpcalc%ld", i);
             if(image_ID(calctmpimname) != -1)
             {
                 if(data.Debug == 1)

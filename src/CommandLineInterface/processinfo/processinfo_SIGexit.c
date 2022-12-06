@@ -12,12 +12,13 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
     clock_gettime(CLOCK_REALTIME, &tstop);
     tstoptm = gmtime(&tstop.tv_sec);
 
-    sprintf(timestring,
-            "%02d:%02d:%02d.%03d",
-            tstoptm->tm_hour,
-            tstoptm->tm_min,
-            tstoptm->tm_sec,
-            (int)(0.000001 * (tstop.tv_nsec)));
+    snprintf(timestring,
+             200,
+             "%02d:%02d:%02d.%03d",
+             tstoptm->tm_hour,
+             tstoptm->tm_min,
+             tstoptm->tm_sec,
+             (int)(0.000001 * (tstop.tv_nsec)));
     processinfo->loopstat = 3; // clean exit
 
     char SIGstr[12];

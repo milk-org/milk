@@ -5,8 +5,12 @@
 #include "CommandLineInterface/CLIcore.h"
 #include <time.h>
 
+#include "timeutils.h"
+
 #define CLOCK_MILK CLOCK_TAI
 // handles leap seconds better than CLOCK_REALTIME
+
+
 
 errno_t milk_clock_gettime(struct timespec *tnow_p)
 {
@@ -21,15 +25,16 @@ errno_t mkUTtimestring_nanosec(char *timestring, struct timespec tnow)
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-    sprintf(timestring,
-            "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
-            1900 + uttime->tm_year,
-            1 + uttime->tm_mon,
-            uttime->tm_mday,
-            uttime->tm_hour,
-            uttime->tm_min,
-            uttime->tm_sec,
-            tnow.tv_nsec);
+    snprintf(timestring,
+             TIMESTRINGLEN,
+             "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
+             1900 + uttime->tm_year,
+             1 + uttime->tm_mon,
+             uttime->tm_mday,
+             uttime->tm_hour,
+             uttime->tm_min,
+             uttime->tm_sec,
+             tnow.tv_nsec);
 
     return RETURN_SUCCESS;
 }
@@ -52,15 +57,16 @@ errno_t mkUTtimestring_microsec(char *timestring, struct timespec tnow)
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-    sprintf(timestring,
-            "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ",
-            1900 + uttime->tm_year,
-            1 + uttime->tm_mon,
-            uttime->tm_mday,
-            uttime->tm_hour,
-            uttime->tm_min,
-            uttime->tm_sec,
-            (long)(tnow.tv_nsec / 1000));
+    snprintf(timestring,
+             TIMESTRINGLEN,
+             "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ",
+             1900 + uttime->tm_year,
+             1 + uttime->tm_mon,
+             uttime->tm_mday,
+             uttime->tm_hour,
+             uttime->tm_min,
+             uttime->tm_sec,
+             (long)(tnow.tv_nsec / 1000));
 
     return RETURN_SUCCESS;
 }
@@ -83,15 +89,16 @@ errno_t mkUTtimestring_millisec(char *timestring, struct timespec tnow)
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-    sprintf(timestring,
-            "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ",
-            1900 + uttime->tm_year,
-            1 + uttime->tm_mon,
-            uttime->tm_mday,
-            uttime->tm_hour,
-            uttime->tm_min,
-            uttime->tm_sec,
-            (long)(tnow.tv_nsec / 1000000));
+    snprintf(timestring,
+             TIMESTRINGLEN,
+             "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ",
+             1900 + uttime->tm_year,
+             1 + uttime->tm_mon,
+             uttime->tm_mday,
+             uttime->tm_hour,
+             uttime->tm_min,
+             uttime->tm_sec,
+             (long)(tnow.tv_nsec / 1000000));
 
     return RETURN_SUCCESS;
 }
@@ -114,14 +121,15 @@ errno_t mkUTtimestring_sec(char *timestring, struct timespec tnow)
     tvsec0 = tnow.tv_sec;
     uttime = gmtime(&tvsec0);
 
-    sprintf(timestring,
-            "%04d-%02d-%02dT%02d:%02d:%02dZ",
-            1900 + uttime->tm_year,
-            1 + uttime->tm_mon,
-            uttime->tm_mday,
-            uttime->tm_hour,
-            uttime->tm_min,
-            uttime->tm_sec);
+    snprintf(timestring,
+             TIMESTRINGLEN,
+             "%04d-%02d-%02dT%02d:%02d:%02dZ",
+             1900 + uttime->tm_year,
+             1 + uttime->tm_mon,
+             uttime->tm_mday,
+             uttime->tm_hour,
+             uttime->tm_min,
+             uttime->tm_sec);
 
     return RETURN_SUCCESS;
 }
@@ -214,7 +222,7 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
            timetm->tm_sec,
            sec);
 
-    sprintf(tstring, "%02d:%02d:%05.2f", timetm->tm_hour, timetm->tm_min, sec);
+    snprintf(tstring, 12, "%02d:%02d:%05.2f", timetm->tm_hour, timetm->tm_min, sec);
 
     return tstring;
 }

@@ -176,7 +176,6 @@ errno_t get_process_name_by_pid(const int pid, char *pname)
     char *fname = (char *) calloc(STRINGMAXLEN_FULLFILENAME, sizeof(char));
 
     WRITE_FULLFILENAME(fname, "/proc/%d/cmdline", pid);
-    //    sprintf(fname, "/proc/%d/cmdline", pid);
     FILE *fp = fopen(fname, "r");
     if(fp)
     {
@@ -838,7 +837,7 @@ void *streamCTRL_scan(void *argptr)
                         if(fgets(plistoutline, STRINGMAXLEN_LINE - 1, fp) ==
                                 NULL)
                         {
-                            sprintf(plistoutline, " ");
+                            snprintf(plistoutline, STRINGMAXLEN_LINE, " ");
                         }
                         pclose(fp);
                     }
@@ -890,7 +889,7 @@ void *streamCTRL_scan(void *argptr)
                         if(fgets(plistoutline, STRINGMAXLEN_LINE - 1, fp) ==
                                 NULL)
                         {
-                            sprintf(plistoutline, " ");
+                            snprintf(plistoutline, STRINGMAXLEN_LINE, " ");
                         }
 
                         fclose(fp);
@@ -1106,7 +1105,7 @@ static int streamCTRL_print_procpid(int      DispPID_NBchar,
     if(is_upstream)
     {
         char upstreamstring[DispPID_NBchar + 1];
-        sprintf(upstreamstring, "%2d >>", upstreamindex);
+        snprintf(upstreamstring, DispPID_NBchar, "%2d >>", upstreamindex);
         TUI_printfw("%*s", DispPID_NBchar, upstreamstring);
     }
     else
@@ -1346,7 +1345,8 @@ errno_t streamCTRL_CTRLscreen()
     long ssindex[streamNBID_MAX]; // sorted index array
 
     float frequ = 32.0; // Hz
-    char  monstring[200];
+    int monstrlen = 200;
+    char  monstring[monstrlen];
 
     int SORTING     = 0;
     int SORT_TOGGLE = 0;
@@ -1471,7 +1471,7 @@ errno_t streamCTRL_CTRLscreen()
                        "%s/stderr.cli.%d.txt",
                        SHAREDSHMDIR,
                        CLIPID);
-    //sprintf(newstderrfname, "%s/stderr.cli.%d.txt", SHAREDSHMDIR, CLIPID);
+
     umask(0);
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
     dup2(newstderr, STDERR_FILENO);
@@ -1742,12 +1742,13 @@ errno_t streamCTRL_CTRLscreen()
 
         //attron(A_BOLD);
         screenprint_setbold();
-        sprintf(monstring,
-                "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) "
-                "FOR HELP",
-                wrow,
-                wcol,
-                getpid());
+        snprintf(monstring,
+                 monstrlen,
+                 "[%d x %d] [PID %d] STREAM MONITOR: PRESS (x) TO STOP, (h) "
+                 "FOR HELP",
+                 wrow,
+                 wcol,
+                 getpid());
         //streamCTRL__print_header(monstring, '-');
         DEBUG_TRACEPOINT("Print header");
         TUI_print_header(monstring, '-');
@@ -2262,7 +2263,8 @@ errno_t streamCTRL_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
-                char string[200];
+                int stringlen = 200;
+                char string[stringlen];
 
                 if(DisplayFlag == 1)
                 {
@@ -2333,71 +2335,71 @@ errno_t streamCTRL_CTRLscreen()
 
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        sprintf(string, " ???");
+                        snprintf(string, stringlen, " ???");
                     }
                     else
                     {
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT8)
                         {
-                            sprintf(string, " UI8");
+                            snprintf(string, stringlen, " UI8");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT8)
                         {
-                            sprintf(string, "  I8");
+                            snprintf(string, stringlen, "  I8");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT16)
                         {
-                            sprintf(string, "UI16");
+                            snprintf(string, stringlen, "UI16");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT16)
                         {
-                            sprintf(string, " I16");
+                            snprintf(string, stringlen, " I16");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT32)
                         {
-                            sprintf(string, "UI32");
+                            snprintf(string, stringlen, "UI32");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT32)
                         {
-                            sprintf(string, " I32");
+                            snprintf(string, stringlen, " I32");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_UINT64)
                         {
-                            sprintf(string, "UI64");
+                            snprintf(string, stringlen, "UI64");
                         }
                         if(streaminfo[sindex].datatype == _DATATYPE_INT64)
                         {
-                            sprintf(string, " I64");
+                            snprintf(string, stringlen, " I64");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_HALF)
                         {
-                            sprintf(string, " HLF");
+                            snprintf(string, stringlen, " HLF");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_FLOAT)
                         {
-                            sprintf(string, " FLT");
+                            snprintf(string, stringlen, " FLT");
                         }
 
                         if(streaminfo[sindex].datatype == _DATATYPE_DOUBLE)
                         {
-                            sprintf(string, " DBL");
+                            snprintf(string, stringlen, " DBL");
                         }
 
                         if(streaminfo[sindex].datatype ==
                                 _DATATYPE_COMPLEX_FLOAT)
                         {
-                            sprintf(string, "CFLT");
+                            snprintf(string, stringlen, "CFLT");
                         }
 
                         if(streaminfo[sindex].datatype ==
                                 _DATATYPE_COMPLEX_DOUBLE)
                         {
-                            sprintf(string, "CDBL");
+                            snprintf(string, stringlen, "CDBL");
                         }
                     }
                     TUI_printfw(string);
@@ -2405,13 +2407,14 @@ errno_t streamCTRL_CTRLscreen()
                     DEBUG_TRACEPOINT(" ");
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        sprintf(str, "???");
+                        snprintf(str, stringlen, "???");
                     }
                     else
                     {
-                        sprintf(str,
-                                " [%3ld",
-                                (long) streamCTRLimages[ID].md[0].size[0]);
+                        snprintf(str,
+                                 stringlen,
+                                 " [%3ld",
+                                 (long) streamCTRLimages[ID].md[0].size[0]);
 
                         for(j = 1; j < streamCTRLimages[ID].md[0].naxis; j++)
                         {
@@ -2468,24 +2471,26 @@ errno_t streamCTRL_CTRLscreen()
 
                     DEBUG_TRACEPOINT(" ");
 
-                    sprintf(string,
-                            "%-*.*s ",
-                            DispSize_NBchar,
-                            DispSize_NBchar,
-                            str);
+                    snprintf(string,
+                             stringlen,
+                             "%-*.*s ",
+                             DispSize_NBchar,
+                             DispSize_NBchar,
+                             str);
                     TUI_printfw(string);
 
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        sprintf(string, "???");
+                        snprintf(string, stringlen, "???");
                     }
                     else
                     {
 
-                        sprintf(string,
-                                " %*ld ",
-                                Dispcnt0_NBchar,
-                                streamCTRLimages[ID].md[0].cnt0);
+                        snprintf(string,
+                                 stringlen,
+                                 " %*ld ",
+                                 Dispcnt0_NBchar,
+                                 streamCTRLimages[ID].md[0].cnt0);
                     }
                     if(streaminfo[sindex].deltacnt0 == 0)
                     {
@@ -2504,7 +2509,7 @@ errno_t streamCTRL_CTRLscreen()
                     // ownerPID
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        sprintf(string, "???");
+                        snprintf(string, stringlen, "???");
                     }
                     else
                     {
@@ -2532,14 +2537,15 @@ errno_t streamCTRL_CTRLscreen()
                     //
                     if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                     {
-                        sprintf(string, "???");
+                        snprintf(string, stringlen, "???");
                     }
                     else
                     {
-                        sprintf(string,
-                                " %*.2f Hz",
-                                Dispfreq_NBchar,
-                                streaminfo[sindex].updatevalue);
+                        snprintf(string,
+                                 stringlen,
+                                 " %*.2f Hz",
+                                 Dispfreq_NBchar,
+                                 streaminfo[sindex].updatevalue);
                     }
                     TUI_printfw(string);
                 }
@@ -2552,9 +2558,10 @@ errno_t streamCTRL_CTRLscreen()
                             (DisplayFlag == 1)) // sem vals
                     {
 
-                        sprintf(string,
-                                " %3d sems ",
-                                streamCTRLimages[ID].md[0].sem);
+                        snprintf(string,
+                                 stringlen,
+                                 " %3d sems ",
+                                 streamCTRLimages[ID].md[0].sem);
                         TUI_printfw(string);
 
                         int s;
@@ -2566,7 +2573,7 @@ errno_t streamCTRL_CTRLscreen()
                             int semval;
                             sem_getvalue(streamCTRLimages[ID].semptr[s],
                                          &semval);
-                            sprintf(string, " %7d", semval);
+                            snprintf(string, stringlen, " %7d", semval);
                             TUI_printfw(string);
                         }
                     }
@@ -2578,9 +2585,10 @@ errno_t streamCTRL_CTRLscreen()
                     if((DisplayMode == DISPLAY_MODE_WRITE) &&
                             (DisplayFlag == 1)) // sem write PIDs
                     {
-                        sprintf(string,
-                                " %3d sems ",
-                                streamCTRLimages[ID].md[0].sem);
+                        snprintf(string,
+                                 stringlen,
+                                 " %3d sems ",
+                                 streamCTRLimages[ID].md[0].sem);
                         TUI_printfw(string);
 
                         int s;
@@ -2607,9 +2615,10 @@ errno_t streamCTRL_CTRLscreen()
                     if((DisplayMode == DISPLAY_MODE_READ) &&
                             (DisplayFlag == 1)) // sem read PIDs
                     {
-                        sprintf(string,
-                                " %3d sems ",
-                                streamCTRLimages[ID].md[0].sem);
+                        snprintf(string,
+                                 stringlen,
+                                 " %3d sems ",
+                                 streamCTRLimages[ID].md[0].sem);
                         TUI_printfw(string);
 
                         int s;
@@ -2634,9 +2643,10 @@ errno_t streamCTRL_CTRLscreen()
                     if((DisplayMode == DISPLAY_MODE_SPTRACE) &&
                             (DisplayFlag == 1)) // sem read PIDs
                     {
-                        sprintf(string,
-                                " %2d ",
-                                streamCTRLimages[ID].md[0].NBproctrace);
+                        snprintf(string,
+                                 stringlen,
+                                 " %2d ",
+                                 streamCTRLimages[ID].md[0].NBproctrace);
                         TUI_printfw(string);
 
                         for(int spti = 0;
@@ -2658,27 +2668,27 @@ errno_t streamCTRL_CTRLscreen()
                                     .triggermode)
                             {
                                 case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
-                                    sprintf(string, "(%7lu IM ", inode);
+                                    snprintf(string, stringlen, "(%7lu IM ", inode);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_CNT0:
-                                    sprintf(string, "(%7lu C0 ", inode);
+                                    snprintf(string, stringlen, "(%7lu C0 ", inode);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_CNT1:
-                                    sprintf(string, "(%7lu C1 ", inode);
+                                    snprintf(string, stringlen, "(%7lu C1 ", inode);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
-                                    sprintf(string, "(%7lu %02d ", inode, sem);
+                                    snprintf(string, stringlen, "(%7lu %02d ", inode, sem);
                                     break;
 
                                 case PROCESSINFO_TRIGGERMODE_DELAY:
-                                    sprintf(string, "(%7lu DL ", inode);
+                                    snprintf(string, stringlen, "(%7lu DL ", inode);
                                     break;
 
                                 default:
-                                    sprintf(string, "(%7lu ?? ", inode);
+                                    snprintf(string, stringlen, "(%7lu ?? ", inode);
                                     break;
                             }
                             TUI_printfw(string);
@@ -2736,11 +2746,12 @@ errno_t streamCTRL_CTRLscreen()
                                 if((getpgid(pid) >= 0) && (pid != getpid()))
                                 {
 
-                                    sprintf(string,
-                                            ":%-*.*s",
-                                            PIDnameStringLen,
-                                            PIDnameStringLen,
-                                            PIDname_array[pid]);
+                                    snprintf(string,
+                                             stringlen,
+                                             ":%-*.*s",
+                                             PIDnameStringLen,
+                                             PIDnameStringLen,
+                                             PIDname_array[pid]);
                                     TUI_printfw(string);
 
                                     streaminfo[sindex].streamOpenPID_cnt1++;
@@ -2749,12 +2760,12 @@ errno_t streamCTRL_CTRLscreen()
                             break;
 
                         case 2:
-                            sprintf(string, "FAILED");
+                            snprintf(string, stringlen, "FAILED");
                             TUI_printfw(string);
                             break;
 
                         default:
-                            sprintf(string, "NOT SCANNED");
+                            snprintf(string, stringlen, "NOT SCANNED");
                             TUI_printfw(string);
                             break;
                     }

@@ -35,7 +35,7 @@ errno_t write_process_log()
 
     if(fplog != NULL)
     {
-        char timestring[20];
+        char timestring[TIMESTRINGLEN];
         mkUTtimestring_nanosec(timestring, data.testpoint.time);
 
         fprintf(fplog, "%18ld  %s ", logcnt, timestring);

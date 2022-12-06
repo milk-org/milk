@@ -94,7 +94,7 @@ errno_t function_parameter_struct_shmdirname(char *shmdname)
             }
             else
             {
-                sprintf(shmdname, "/tmp");
+                snprintf(shmdname, STRINGMAXLEN_DIRNAME, "/tmp");
                 shmdirOK = 1;
                 closedir(tmpdir);
             }
