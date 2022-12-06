@@ -195,7 +195,7 @@ inline static void fpsCTRLscreen_print_FPShelp(
     int mloadstring_maxlen = 2000;
     char mloadstring[mloadstring_maxlen];
     char mloadstringcp[mloadstring_maxlen];
-    sprintf(mloadstring, " ");
+    snprintf(mloadstring, mloadstring_maxlen, " ");
     for(int m = 0;
             m < data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
             m++)
@@ -209,13 +209,14 @@ inline static void fpsCTRLscreen_print_FPShelp(
     }
 
     char helpfunctionstring[2000];
-    sprintf(helpfunctionstring,
-            "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
-            data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
-            data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
-            mloadstring,
-            data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
-           );
+    snprintf(helpfunctionstring,
+             2000,
+             "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
+             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
+             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
+             mloadstring,
+             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
+            );
 
     //  TUI_printfw("%s", helpfunctionstring);
 

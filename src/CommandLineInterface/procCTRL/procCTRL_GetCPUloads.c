@@ -104,15 +104,12 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     // number of process per CPU -> we can get that from ps
     char command[STRINGMAXLEN_COMMAND];
     char psoutfname[STRINGMAXLEN_FULLFILENAME];
-    char procdname[200];
+    char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
 
     WRITE_FULLFILENAME(psoutfname, "%s/_psoutput.txt", procdname);
 
     // use ps command to scan processes, store result in file psoutfname
-
-    //    sprintf(command, "echo \"%5d CREATE\" >> cmdlog.txt\n", cnt);
-    //    system(command);
 
     EXECUTE_SYSTEM_COMMAND(
         "{ if [ ! -f %s/_psOKlock ]; then touch %s/_psOKlock; ps -e -o "
@@ -123,16 +120,11 @@ int GetCPUloads(PROCINFOPROC *pinfop)
         psoutfname,
         procdname);
 
-    //    sprintf(command, "echo \"%5d CREATED\" >> cmdlog.txt\n", cnt);
-    //    system(command);
 
     // read and process psoutfname file
 
     if(access(psoutfname, F_OK) != -1)
     {
-
-        //        sprintf(command, "echo \"%5d READ\" >> cmdlog.txt\n", cnt);
-        //        system(command);
 
         for(cpu = 0; cpu < pinfop->NBcpus; cpu++)
         {
@@ -172,8 +164,6 @@ int GetCPUloads(PROCINFOPROC *pinfop)
                 pinfop->CPUpcnt[cpu] = atoi(outstring);
             }
         }
-        //        sprintf(command, "echo \"%5d REMOVE\" >> cmdlog.txt\n", cnt);
-        //        system(command);
         remove(psoutfname);
     }
     cnt++;

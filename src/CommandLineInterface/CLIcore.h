@@ -77,6 +77,12 @@ extern char  BuildTime[200];
 
 extern int C_ERRNO; // C errno (from errno.h)
 
+
+
+
+#define STRINGMAXLEN_CLIPROMPT 200
+
+
 /* #define DEBUG */
 #define CFITSEXIT                                                              \
     printf("Program abnormally terminated, File \"%s\", line %d\n",            \
@@ -429,7 +435,7 @@ typedef struct
 
     int          CLIloopON;
     int          CLIlogON;
-    char         CLIlogname[200];
+    char         CLIlogname[STRINGMAXLEN_FULLFILENAME];
     int          processinfo;       // 1 if processes info is to be logged
     int          processinfoActive; // 1 is the process is currently logged
     PROCESSINFO *pinfo;             // pointer to process info structure

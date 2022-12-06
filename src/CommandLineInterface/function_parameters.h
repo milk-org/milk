@@ -72,6 +72,11 @@
 
 #define FPTYPE_FPSNAME 0x00020000 // connection to another FPS
 
+#define STRINGMAXLEN_FPSTYPE  20
+
+
+
+
 #define FUNCTION_PARAMETER_DESCR_STRMAXLEN 64
 #define FUNCTION_PARAMETER_STRMAXLEN       64
 
@@ -771,7 +776,7 @@ typedef struct
     FUNCTION_PARAMETER_STRUCT fps;                                             \
     do                                                                         \
     {                                                                          \
-        sprintf(data.FPS_name, "%s-%06ld", (shortname), (long) getpid());      \
+        snprintf(data.FPS_name,STRINGMAXLEN_FPS_NAME,  "%s-%06ld", (shortname), (long) getpid());      \
         data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
         FPSCONF_##funcstring();                                                \
         function_parameter_struct_connect(data.FPS_name,                       \
@@ -786,7 +791,7 @@ typedef struct
     static errno_t FPSEXECfunction()                                           \
     {                                                                          \
         FUNCTION_PARAMETER_STRUCT fps;                                         \
-        sprintf(data.FPS_name, "%s-%06ld", CLIcmddata.key, (long) getpid());   \
+        snprintf(data.FPS_name, STRINGMAXLEN_FPS_NAME, "%s-%06ld", CLIcmddata.key, (long) getpid());   \
         data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
         FPSCONFfunction();                                                     \
         function_parameter_struct_connect(data.FPS_name,                       \

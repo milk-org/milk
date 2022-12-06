@@ -54,7 +54,7 @@ errno_t processinfo_procdirname(char *procdname)
         tmpdir = opendir(SHAREDPROCDIR);
         if(tmpdir)  // directory exits
         {
-            sprintf(procdname, "%s", SHAREDPROCDIR);
+            snprintf(procdname, STRINGMAXLEN_DIRNAME, "%s", SHAREDPROCDIR);
             procdirOK = 1;
             closedir(tmpdir);
         }
@@ -70,7 +70,7 @@ errno_t processinfo_procdirname(char *procdname)
         }
         else
         {
-            sprintf(procdname, "/tmp");
+            snprintf(procdname, STRINGMAXLEN_DIRNAME, "/tmp");
             procdirOK = 1;
         }
     }

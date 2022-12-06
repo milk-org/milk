@@ -577,10 +577,11 @@ void *processinfo_scan(void *thptr)
                                         }
                                     }
 
-                                    sprintf(cpuliststring,
-                                            ",%s,",
-                                            pinfop->pinfodisp[pdispindex]
-                                            .cpusallowed);
+                                    snprintf(cpuliststring,
+                                             200,
+                                             ",%s,",
+                                             pinfop->pinfodisp[pdispindex]
+                                             .cpusallowed);
 
                                     pinfop->scandebugline = __LINE__;
 
@@ -590,9 +591,10 @@ void *processinfo_scan(void *thptr)
                                         int cpuOK = 0;
                                         int cpumin, cpumax;
 
-                                        sprintf(cpustring,
-                                                ",%d,",
-                                                pinfop->CPUids[cpu]);
+                                        snprintf(cpustring,
+                                                 16,
+                                                 ",%d,",
+                                                 pinfop->CPUids[cpu]);
                                         if(strstr(cpuliststring, cpustring) !=
                                                 NULL)
                                         {
@@ -606,10 +608,11 @@ void *processinfo_scan(void *thptr)
                                                     cpumax < pinfop->NBcpus;
                                                     cpumax++)
                                             {
-                                                sprintf(cpustring,
-                                                        ",%d-%d,",
-                                                        cpumin,
-                                                        cpumax);
+                                                snprintf(cpustring,
+                                                         16,
+                                                         ",%d-%d,",
+                                                         cpumin,
+                                                         cpumax);
                                                 if(strstr(cpuliststring,
                                                           cpustring) != NULL)
                                                 {

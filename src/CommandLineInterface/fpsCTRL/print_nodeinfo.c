@@ -30,9 +30,10 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
     TUI_newline();
 
     char teststring[200];
-    sprintf(teststring,
-            "%s",
-            fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
+    snprintf(teststring,
+             200,
+             "%s",
+             fps[keywnode[nodeSelected].fpsindex].md->sourcefname);
     DEBUG_TRACEPOINT("TEST STRING : %s", teststring);
 
     DEBUG_TRACEPOINT("TEST LINE : %d",
@@ -177,7 +178,7 @@ void fpsCTRLscreen_print_nodeinfo(FUNCTION_PARAMETER_STRUCT *fps,
 
     if(keywnode[nodeSelected].leaf > 0)  // If this is not a directory
     {
-        char typestring[100];
+        char typestring[STRINGMAXLEN_FPSTYPE];
         functionparameter_GetTypeString(
             fps[fpsindexSelected].parray[pindexSelected].type,
             typestring);

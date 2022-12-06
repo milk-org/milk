@@ -10,79 +10,79 @@ errno_t functionparameter_GetTypeString(
 )
 {
 
-    sprintf(typestring, " ");
+    snprintf(typestring, STRINGMAXLEN_FPSTYPE, " ");
 
     // using if statements (not switch) to allow for multiple types
     if(type & FPTYPE_UNDEF)
     {
-        strcat(typestring, "UNDEF ");
+        strncat(typestring, "UNDEF ", STRINGMAXLEN_FPSTYPE - 1);
     }
 
     if(type & FPTYPE_INT32)
     {
-        strcat(typestring, "INT32 ");
+        strncat(typestring, "INT32 ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_UINT32)
     {
-        strcat(typestring, "UINT32 ");
+        strncat(typestring, "UINT32 ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_INT64)
     {
-        strcat(typestring, "INT64 ");
+        strncat(typestring, "INT64 ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_UINT64)
     {
-        strcat(typestring, "UINT64 ");
+        strncat(typestring, "UINT64 ", STRINGMAXLEN_FPSTYPE - 1);
     }
 
     if(type & FPTYPE_FLOAT64)
     {
-        strcat(typestring, "FLOAT64 ");
+        strncat(typestring, "FLOAT64 ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_FLOAT32)
     {
-        strcat(typestring, "FLOAT32 ");
+        strncat(typestring, "FLOAT32 ", STRINGMAXLEN_FPSTYPE - 1);
     }
 
     if(type & FPTYPE_PID)
     {
-        strcat(typestring, "PID ");
+        strncat(typestring, "PID ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_TIMESPEC)
     {
-        strcat(typestring, "TIMESPEC ");
+        strncat(typestring, "TIMESPEC ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_FILENAME)
     {
-        strcat(typestring, "FILENAME ");
+        strncat(typestring, "FILENAME ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_FITSFILENAME)
     {
-        strcat(typestring, "FITSFILENAME ");
+        strncat(typestring, "FITSFILENAME ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_EXECFILENAME)
     {
-        strcat(typestring, "EXECFILENAME");
+        strncat(typestring, "EXECFILENAME", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_DIRNAME)
     {
-        strcat(typestring, "DIRNAME");
+        strncat(typestring, "DIRNAME", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_STREAMNAME)
     {
-        strcat(typestring, "STREAMNAME");
+        strncat(typestring, "STREAMNAME", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_STRING)
     {
-        strcat(typestring, "STRING ");
+        strncat(typestring, "STRING ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_ONOFF)
     {
-        strcat(typestring, "ONOFF ");
+        strncat(typestring, "ONOFF ", STRINGMAXLEN_FPSTYPE - 1);
     }
     if(type & FPTYPE_FPSNAME)
     {
-        strcat(typestring, "FPSNAME ");
+        strncat(typestring, "FPSNAME ", STRINGMAXLEN_FPSTYPE - 1);
     }
 
     return RETURN_SUCCESS;
