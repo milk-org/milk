@@ -37,13 +37,13 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
 
 
     // FPS list file
-    FILE *fpfpslist;
+    FILE *fpfpslist = NULL;
     int   fpslistcnt = 0;
-    char  FPSlist[NB_FPS_MAX][200];
+    char  FPSlist[NB_FPS_MAX][200] = {0};
 
     // Static variables
     static int  shmdirname_init = 0;
-    static char shmdname[STRINGMAXLEN_SHMDIRNAME];
+    static char shmdname[STRINGMAXLEN_SHMDIRNAME] = {0};
 
 
 
