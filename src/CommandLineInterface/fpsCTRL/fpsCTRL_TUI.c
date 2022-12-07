@@ -49,6 +49,8 @@ fpsCTRLscreen_print_DisplayMode_status(
 
     int  stringmaxlen = 500;
     char monstring[stringmaxlen];
+    memset(monstring, 0, stringmaxlen * sizeof(
+               char)); // Must use memset for a C VLA
 
     screenprint_setbold();
 
@@ -194,7 +196,9 @@ inline static void fpsCTRLscreen_print_FPShelp(
     // module load string
     int mloadstring_maxlen = 2000;
     char mloadstring[mloadstring_maxlen];
+    memset(mloadstring, 0, sizeof(mloadstring)); // We could macro this eventually
     char mloadstringcp[mloadstring_maxlen];
+    memset(mloadstringcp, 0, sizeof(mloadstringcp));
     snprintf(mloadstring, mloadstring_maxlen, " ");
     for(int m = 0;
             m < data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
@@ -208,7 +212,7 @@ inline static void fpsCTRLscreen_print_FPShelp(
         strcpy(mloadstring, mloadstringcp);
     }
 
-    char helpfunctionstring[2000];
+    char helpfunctionstring[2000] = {0};
     snprintf(helpfunctionstring,
              2000,
              "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
@@ -223,10 +227,11 @@ inline static void fpsCTRLscreen_print_FPShelp(
     //  TUI_newline();
 
     {
-        FILE *fp;
-        int status;
+        FILE *fp = NULL;
+        int status = 0;
         int LINESLEN = 200;
         char line[LINESLEN];
+        memset(line, 0, sizeof(line));
 
 
         fp = popen(helpfunctionstring, "r");
@@ -283,10 +288,10 @@ errno_t functionparameter_CTRLscreen(
 {
     DEBUG_TRACE_FSTART();
 
-    FPSCTRL_PROCESS_VARS fpsCTRLvar;
+    FPSCTRL_PROCESS_VARS fpsCTRLvar = {0};
 
     // keyword tree
-    KEYWORD_TREE_NODE *keywnode;
+    KEYWORD_TREE_NODE *keywnode = NULL;
 
 
     int       loopOK  = 1;
@@ -300,7 +305,7 @@ errno_t functionparameter_CTRLscreen(
     int run_display = 1;
     loopOK          = 1;
 
-    struct timespec tnow;
+    struct timespec tnow = {0};
     clock_gettime(CLOCK_REALTIME, &tnow);
     data.FPS_TIMESTAMP = tnow.tv_sec;
     strcpy(data.FPS_PROCESS_TYPE, "ctrl");
@@ -328,8 +333,7 @@ errno_t functionparameter_CTRLscreen(
 
     // All parameters held in this array
     //
-    keywnode = (KEYWORD_TREE_NODE *) malloc(sizeof(KEYWORD_TREE_NODE) *
-                                            NB_KEYWNODE_MAX);
+    keywnode = calloc(NB_KEYWNODE_MAX, sizeof(*keywnode));
     if(keywnode == NULL)
     {
         PRINT_ERROR("malloc error: can't allocate keywnode");
@@ -347,9 +351,8 @@ errno_t functionparameter_CTRLscreen(
 
     // Set up instruction buffer to sequence commands
     //
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist;
-    fpsctrltasklist = (FPSCTRL_TASK_ENTRY *) malloc(sizeof(FPSCTRL_TASK_ENTRY) *
-                      NB_FPSCTRL_TASK_MAX);
+    FPSCTRL_TASK_ENTRY *fpsctrltasklist = calloc(NB_FPSCTRL_TASK_MAX,
+                                          sizeof(*fpsctrltasklist));
     if(fpsctrltasklist == NULL)
     {
         PRINT_ERROR("malloc error");
@@ -363,9 +366,8 @@ errno_t functionparameter_CTRLscreen(
 
     // Set up task queue list
     //
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist;
-    fpsctrlqueuelist = (FPSCTRL_TASK_QUEUE *) malloc(
-                           sizeof(FPSCTRL_TASK_QUEUE) * NB_FPSCTRL_TASKQUEUE_MAX);
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist = calloc(NB_FPSCTRL_TASKQUEUE_MAX,
+                                           sizeof(* fpsctrlqueuelist));
     if(fpsctrlqueuelist == NULL)
     {
         PRINT_ERROR("malloc error");
