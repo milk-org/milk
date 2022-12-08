@@ -7,9 +7,10 @@
 
 #include "fps_connect.h"
 
-int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *FPS,
-        int                        pindex,
-        FUNCTION_PARAMETER_STRUCT *FPSext)
+int functionparameter_ConnectExternalFPS(
+    FUNCTION_PARAMETER_STRUCT *FPS,
+    int                        pindex,
+    FUNCTION_PARAMETER_STRUCT *FPSext)
 {
     FPS->parray[pindex].info.fps.FPSNBparamMAX =
         function_parameter_struct_connect(FPS->parray[pindex].val.string[0],
