@@ -35,7 +35,7 @@ long function_parameter_struct_connect(
 )
 {
     int  stringmaxlen = 500;
-    char SM_fname[stringmaxlen] = "";
+    char SM_fname[stringmaxlen];
     int  SM_fd; // shared memory file descriptor
     long NBparamMAX;
     //    long NBparamActive;
