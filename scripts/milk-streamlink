@@ -1,92 +1,59 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
 
-# number of arguments to script
-NBARGS=1
-
-pname=`basename "$0"`
-
-function printHELP {
-    echo "------------------------------------------------------------------------"
-    echo "$(tput bold) $pname : CONNECT TO STREAM $(tput sgr0)"
-    echo " Full path name : $0"
-    echo "------------------------------------------------------------------------"
-    echo "  Establishes a stream sym link from TARGET=<sourcestrem> to LINKNAME=<streamname>."
-    echo "  Reads conf/streamlink.<streamname>.name.txt to identify source stream."
-    echo "  - Create $MILK_SHM_DIR/<streamname>.im.shm that points to $MI_SHM_DIR/<sourcestream>.im.shm"
-    echo "  - Runs milk, connects to <streamname> and writes its size to ./conf/streamlink.<streamname>.imsize.txt"
-    echo "   "
-    echo " $(tput bold)USAGE:$(tput sgr0)"
-    echo "     $0 [-h] <streamname>"
-    echo ""
-    echo " $(tput bold)OPTIONS:$(tput sgr0)"
-    echo "     $(tput bold)-h$(tput sgr0)                help"
-    echo "     $(tput bold)-p$(tput sgr0) <prefix>       stream prefix"
-    echo ""
-    echo " $(tput bold)INPUT:$(tput sgr0)"
-    echo "     <streamname>           stream name (full name: <prefix><streamname>)"
-    echo ""
-    echo " $(tput bold)OUTPUT:$(tput sgr0)"
-    echo "  ./conf/streamlink.<streamname>.imsize.txt :   stream aimage size"
-    echo ""
-    echo "------------------------------------------------------------------------"
-}
+# script 1-line description
+MSdescr="Establish sym link to stream"
 
 
-printHELP1 ()
-{
-    printf "     $(tput bold)%-25s$(tput sgr0)       Connect to shared memory stream\n" "$0"
-}
+# Extended description
+MSextdescr="Establishes a stream sym link from TARGET=<sourcestrem> to LINKNAME=<streamname>
+Reads conf/streamlink.<streamname>.name.txt to identify source stream
+
+Reads conf/streamlink.<streamname>.name.txt to identify source stream.
+  - Create $MILK_SHM_DIR/<streamname>.im.shm that points to $MI_SHM_DIR/<sourcestream>.im.shm
+  - If stream exists, runs milk, connects to <streamname> and writes its size to ./conf/streamlink.<streamname>.imsize.txt
+"
+
+# standard configuration
+# location ./scripts/
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk )
+RequiredFiles=()
+RequiredDirs=()
 
 
 
 
-
-# Transform long options to short ones
-singlelinehelp=0
-for arg in "$@"; do
-    shift
-    case "$arg" in
-        "--help") set -- "$@" "-h" ;;
-        "--help1")
-            set -- "$@" "-h"
-            singlelinehelp=1;
-            ;;
-        *)        set -- "$@" "$arg"
-    esac
-done
+# SCRIPT MANDATORY ARGUMENTS
+# syntax: "name:type(s)/test(s):description"
+#
+MSarg+=( "streamname:string:link stream name" )
 
 
 
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+#
 SMPREFIX=""
-while getopts :hp: FLAG; do
-    case $FLAG in
-        h)  #show help
-            if [ "$singlelinehelp" -eq "0" ]; then
-                printHELP
-            else
-                printHELP1
-            fi
-            exit
-            ;;
-        p)
-            SMPREFIX="$OPTARG"
-            ;;
-        \?) #unrecognized option - show help
-            echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
-            printHELP
-            ;;
-    esac
-done
-
-shift $((OPTIND-1))
+MSopt+=( "p:prefix:set_SMPREFIX:prefix[string]:stream prefix" )
+function set_SMPREFIX() {
+	SMPREFIX="$1"
+}
 
 
-fullname="${SMPREFIX}$1"
+# parse arguments
+source milk-argparse
+linkstreamname="${inputMSargARRAY[0]}"
 
 
 
+echo "linking ${linkstreamname}"
 
 
 
@@ -104,22 +71,35 @@ echo "SHMDIR = $SHMDIR"
 
 
 
-file="./conf/streamlink.$1.name.txt"
-if [ -a $file ]; then
+file="./conf/streamlink.${linkstreamname}.name.txt"
+if [ -e $file ]; then
 
     streamname=$( head -1 $file )  # source
-    rm $SHMDIR/${fullname}.im.shm  # remove dest
-    ln -s $SHMDIR/${streamname}.im.shm $SHMDIR/${fullname}.im.shm  # establish link
 
-echo "    Linking ${fullname}"
+    if [ -e $SHMDIR/${linkstreamname}.im.shm  ]; then
+        rm $SHMDIR/${linkstreamname}.im.shm  # remove dest
+    fi
+
+    ln -s $SHMDIR/${streamname}.im.shm $SHMDIR/${linkstreamname}.im.shm  # establish link
+
+
+echo "    Linking ${linkstreamname}: ln -s $SHMDIR/${streamname}.im.shm $SHMDIR/${linkstreamname}.im.shm"
 
 
 
+if [ -e $SHMDIR/${streamname}.im.shm ]; then
 
 milk << EOF
-readshmim ${fullname}
-readshmimsize ${fullname} "./conf/streamlink.$1.imsize.txt"
+readshmim ${streamname}
+readshmimsize ${streamname} "./conf/streamlink.${linkstreamname}.imsize.txt"
 exitCLI
 EOF
+
+fi
+
+
+else
+
+echo "Cannot find file $file : nothing to do"
 
 fi
