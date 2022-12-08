@@ -72,18 +72,19 @@ echo "SHMDIR = $SHMDIR"
 
 
 file="./conf/streamlink.${linkstreamname}.name.txt"
+fulllinkname="$SHMDIR/${SMPREFIX}${linkstreamname}.im.shm"
 if [ -e $file ]; then
 
     streamname=$( head -1 $file )  # source
 
-    if [ -e $SHMDIR/${linkstreamname}.im.shm  ]; then
-        rm $SHMDIR/${linkstreamname}.im.shm  # remove dest
+    if [ -e ${fulllinkname}  ]; then
+        rm ${fulllinkname}  # remove dest
     fi
 
-    ln -s $SHMDIR/${streamname}.im.shm $SHMDIR/${linkstreamname}.im.shm  # establish link
+    ln -s $SHMDIR/${streamname}.im.shm ${fulllinkname} # establish link
 
 
-echo "    Linking ${linkstreamname}: ln -s $SHMDIR/${streamname}.im.shm $SHMDIR/${linkstreamname}.im.shm"
+echo "    Linking ${linkstreamname}: ln -s $SHMDIR/${streamname}.im.shm ${fulllinkname}"
 
 
 
