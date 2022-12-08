@@ -76,7 +76,7 @@ errno_t function_parameter_struct_create(
     char shmdname[200];
     function_parameter_struct_shmdirname(shmdname);
 
-    if(snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name) <
+    if(snprintf(SM_fname, 200, "%s/%s.fps.shm", shmdname, name) <
             0)
     {
         PRINT_ERROR("snprintf error");

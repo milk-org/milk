@@ -28,12 +28,14 @@
  * FPSCONNECT_RUN    : connect as RUN process
  *
  */
-long function_parameter_struct_connect(const char                *name,
-                                       FUNCTION_PARAMETER_STRUCT *fps,
-                                       int fpsconnectmode)
+long function_parameter_struct_connect(
+    const char                *name,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int fpsconnectmode
+)
 {
     int  stringmaxlen = 500;
-    char SM_fname[stringmaxlen];
+    char SM_fname[stringmaxlen] = "";
     int  SM_fd; // shared memory file descriptor
     long NBparamMAX;
     //    long NBparamActive;
@@ -56,8 +58,7 @@ long function_parameter_struct_connect(const char                *name,
 
     function_parameter_struct_shmdirname(shmdname);
 
-    if(snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, name) <
-            0)
+    if(snprintf(SM_fname, stringmaxlen, "%s/%s.fps.shm", shmdname, name) < 0)
     {
         PRINT_ERROR("snprintf error");
     }
