@@ -23,13 +23,13 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     long     NBparamMAX = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
     uint32_t FPSCONNECTFLAG;
 
-    FUNCTION_PARAMETER_STRUCT fps;
+    FUNCTION_PARAMETER_STRUCT fps = {0};
 
     fps.CMDmode = CMDmode;
     fps.SMfd    = -1;
 
     // record timestamp
-    struct timespec tnow;
+    struct timespec tnow = {0};
     clock_gettime(CLOCK_REALTIME, &tnow);
     data.FPS_TIMESTAMP = tnow.tv_sec;
 
