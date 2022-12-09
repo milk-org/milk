@@ -45,7 +45,7 @@ long function_parameter_struct_connect(
 
     DEBUG_TRACEPOINT("Connect to fps %s\n", name);
 
-    if(fps->SMfd > 0)
+    if(fps->SMfd > 2)
     {
         printf("[%s %s %d] File descriptor already allocated (%d) -> closing\n",
                __FILE__,
