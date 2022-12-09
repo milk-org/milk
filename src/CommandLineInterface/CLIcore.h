@@ -141,7 +141,7 @@ extern int C_ERRNO; // C errno (from errno.h)
             strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT, STRINGMAXLEN_MODULE_SHORTNAME-1);    \
             strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING-1);                           \
             strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING-1);                           \
-            strncpy(data.modulename, (#modname));                               \
+            strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                               \
             RegisterModule(__FILE__,                                           \
                            PROJECT_NAME,                                       \
                            MODULE_DESCRIPTION,                                 \
