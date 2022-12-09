@@ -28,7 +28,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     size_t       sharedsize = 0; // shared memory size in bytes
     int          SM_fd;          // shared memory file descriptor
-    PROCESSINFO *pinfo;
+    PROCESSINFO *pinfo = NULL;
 
     static int LogFileCreated = 0;
     // toggles to 1 when created. To avoid re-creating file on same process
