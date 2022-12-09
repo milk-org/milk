@@ -21,7 +21,7 @@ typedef struct
     int64_t createcnt;
 
 
-    char            name[32]; // used to resolve if needed
+    char            name[STRINGMAXLEN_IMAGE_NAME]; // used to resolve if needed
     IMAGE          *im;
     IMAGE_METADATA *md; // pointer to metadata
 

@@ -205,8 +205,8 @@ typedef struct
             fps.cmdset.procinfo_loopcntMax =                                   \
                 CLIcmddata.cmdsettings->procinfo_loopcntMax;                   \
             fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;      \
-            strcpy(fps.cmdset.triggerstreamname,                               \
-                   CLIcmddata.cmdsettings->triggerstreamname);                 \
+            strncpy(fps.cmdset.triggerstreamname,                              \
+                   CLIcmddata.cmdsettings->triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1); \
             fps.cmdset.semindexrequested =                                     \
                 CLIcmddata.cmdsettings->semindexrequested;                     \
             fps.cmdset.triggerdelay.tv_sec =                                   \
@@ -220,7 +220,7 @@ typedef struct
             fps_add_processinfo_entries(&fps);                                 \
         }                                                                      \
         data.fpsptr = &fps;                                                    \
-        strcpy(data.fpsptr->md->description, CLIcmddata.description);          \
+        strncpy(data.fpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
         CMDargs_to_FPSparams_create(&fps);                                     \
         STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
         {                                                                      \
@@ -251,8 +251,8 @@ typedef struct
         CLIcmddata.cmdsettings->procinfo_loopcntMax =                          \
             data.fpsptr->cmdset.procinfo_loopcntMax;                           \
         CLIcmddata.cmdsettings->triggermode = data.fpsptr->cmdset.triggermode; \
-        strcpy(CLIcmddata.cmdsettings->triggerstreamname,                      \
-               data.fpsptr->cmdset.triggerstreamname);                         \
+        strncpy(CLIcmddata.cmdsettings->triggerstreamname,                     \
+               data.fpsptr->cmdset.triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1);   \
         CLIcmddata.cmdsettings->semindexrequested =                            \
             data.fpsptr->cmdset.semindexrequested;                             \
         CLIcmddata.cmdsettings->triggerdelay.tv_sec =                          \
@@ -302,8 +302,8 @@ typedef struct
         processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax; \
         processinfo->triggerstreamID = -2;                                     \
         processinfo->triggermode     = CLIcmddata.cmdsettings->triggermode;    \
-        strcpy(processinfo->triggerstreamname,                                 \
-               CLIcmddata.cmdsettings->triggerstreamname);                     \
+        strncpy(processinfo->triggerstreamname,                                \
+               CLIcmddata.cmdsettings->triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1);  \
         processinfo->triggerdelay   = CLIcmddata.cmdsettings->triggerdelay;    \
         processinfo->triggertimeout = CLIcmddata.cmdsettings->triggertimeout;  \
         processinfo->triggerstreamID =                                         \
@@ -488,8 +488,10 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     char *pch;
     char *pch1;
     int   nbword = 0;
+
     char  namestring[200];
-    strcpy(namestring, name);
+    strncpy(namestring, name, 199);
+
     pch = strtok(namestring, ">");
     while(pch != NULL)
     {
@@ -576,7 +578,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
 
     img.ID        = -1;
     img.createcnt = -1;
-    strcpy(img.name, pch1);
+    strncpy(img.name, pch1, STRINGMAXLEN_IMAGE_NAME - 1);
     img.im = NULL;
     img.md = NULL;
 
@@ -606,7 +608,7 @@ static inline IMGID makeIMGID_blank()
 
     img.ID        = -1;
     img.createcnt = -1;
-    strcpy(img.name, "");
+    strncpy(img.name, "", STRINGMAXLEN_IMAGE_NAME - 1);
     img.im = NULL;
     img.md = NULL;
 
@@ -767,7 +769,7 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
     IMGID img;
 
     img.ID = ID;
-    strcpy(img.name, name);
+    strncpy(img.name, name, STRINGMAXLEN_IMAGE_NAME - 1);
 
     img.im        = &data.image[ID];
     img.md        = &data.image[ID].md[0];
