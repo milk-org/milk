@@ -78,7 +78,7 @@ extern char  BuildTime[200];
 extern int C_ERRNO; // C errno (from errno.h)
 
 
-
+#define STRINGMAXLEN_CLISTARTUPFILENAME 200
 
 #define STRINGMAXLEN_CLIPROMPT 200
 
@@ -138,10 +138,10 @@ extern int C_ERRNO; // C errno (from errno.h)
     {                                                                          \
         if (INITSTATUS_##modname == 0) /* only run once */                     \
         {                                                                      \
-            strcpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT);    \
-            strcpy(data.moduledatestring, __DATE__);                           \
-            strcpy(data.moduletimestring, __TIME__);                           \
-            strcpy(data.modulename, (#modname));                               \
+            strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT, STRINGMAXLEN_MODULE_SHORTNAME-1);    \
+            strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING-1);                           \
+            strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING-1);                           \
+            strncpy(data.modulename, (#modname));                               \
             RegisterModule(__FILE__,                                           \
                            PROJECT_NAME,                                       \
                            MODULE_DESCRIPTION,                                 \
@@ -150,9 +150,9 @@ extern int C_ERRNO; // C errno (from errno.h)
                            VERSION_PATCH);                                     \
             init_module_CLI();                                                 \
             INITSTATUS_##modname = 1;                                          \
-            strcpy(data.modulename, "");              /* reset after use */    \
-            strcpy(data.moduleshortname_default, ""); /* reset after use */    \
-            strcpy(data.moduleshortname, "");         /* reset after use */    \
+            strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME-1);              /* reset after use */    \
+            strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME-1); /* reset after use */    \
+            strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME-1);         /* reset after use */    \
         }                                                                      \
     }                                                                          \
     void __attribute__((destructor)) libclose_##modname()                      \
@@ -345,6 +345,10 @@ typedef struct
 // number of entries stored in testpoint trace array
 #define CODETESTPOINTARRAY_NBCNT 100000
 
+
+#define STRINGMAXLEN_PROCESSNAME 100
+
+
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
 typedef struct
 {
@@ -444,8 +448,8 @@ typedef struct
     // =================================================
 
     int      fifoON;
-    char     processname[100];
-    char     processname0[100];
+    char     processname[STRINGMAXLEN_PROCESSNAME];
+    char     processname0[STRINGMAXLEN_PROCESSNAME];
     int      processnameflag;
     char     fifoname[STRINGMAXLEN_FULLFILENAME];
     uint32_t NBcmd;
