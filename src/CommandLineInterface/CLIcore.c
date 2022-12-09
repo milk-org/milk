@@ -94,7 +94,8 @@ int C_ERRNO;
 int Verbose    = 0;
 int Listimfile = 0;
 
-char CLIstartupfilename[200] = "CLIstartup.txt";
+
+char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = "CLIstartup.txt";
 
 // fifo input
 static int    fifofd;
@@ -172,7 +173,8 @@ static errno_t CLIcore__load_module_as__cli()
     DEBUG_TRACEPOINT("calling CLI_checkarg");
     if(0 + CLI_checkarg(1, CLIARG_STR) + CLI_checkarg(2, CLIARG_STR) == 0)
     {
-        strcpy(data.moduleshortname, data.cmdargtoken[2].val.string);
+        strncpy(data.moduleshortname, data.cmdargtoken[2].val.string,
+                STRINGMAXLEN_MODULE_SHORTNAME - 1);
         load_module_shared(data.cmdargtoken[1].val.string);
         return CLICMD_SUCCESS;
     }
@@ -457,7 +459,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     int            cliwaitus     = 100;
     struct timeval tv; // sleep 100 us after reading FIFO
 
-    strcpy(data.processname, argv[0]);
+    strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
     // Set CLI prompt
     char prompt[STRINGMAXLEN_CLIPROMPT];
@@ -752,7 +754,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         if(buf0[0] == '\n')
                         {
                             buf1[total_bytes - 1] = '\0';
-                            strcpy(data.CLIcmdline, buf1);
+                            strncpy(data.CLIcmdline, buf1, STRINGMAXLEN_CLICMDLINE - 1);
 
                             DEBUG_TRACEPOINT(
                                 "CLI executing line: "
@@ -1183,16 +1185,16 @@ static int command_line_process_options(int argc, char **argv)
                 {
                     printf("process name '%s'\n", optarg);
                 }
-                strcpy(data.processname, optarg);
+                strncpy(data.processname, optarg, STRINGMAXLEN_PROCESSNAME - 1);
                 data.processnameflag = 1; // this process has been named
 
                 // extract first word before '.'
                 // it can be used to name processinfo and function parameter structure for process
                 char tmpstring[200];
-                strcpy(tmpstring, data.processname);
+                strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
                 char *firstword;
                 firstword = strtok(tmpstring, ".");
-                strcpy(data.processname0, firstword);
+                strncpy(data.processname0, firstword, STRINGMAXLEN_PROCESSNAME - 1);
                 prctl(PR_SET_NAME, optarg, 0, 0, 0);
                 break;
 
@@ -1231,7 +1233,7 @@ static int command_line_process_options(int argc, char **argv)
                 break;
 
             case 's':
-                strcpy(CLIstartupfilename, optarg);
+                strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
                 if(data.quiet == 0)
                 {
                     printf("Startup file : %s\n", CLIstartupfilename);
