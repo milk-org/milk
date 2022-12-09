@@ -63,8 +63,8 @@ errno_t function_parameter_struct_create(
 )
 {
     int                       index;
-    char                     *mapv;
-    FUNCTION_PARAMETER_STRUCT fps;
+    char                     *mapv = NULL;
+    FUNCTION_PARAMETER_STRUCT fps = {0};
 
     //  FUNCTION_PARAMETER_STRUCT_MD *funcparammd;
     //  FUNCTION_PARAMETER *funcparamarray;
@@ -146,11 +146,14 @@ errno_t function_parameter_struct_create(
 
     fps.md->NBparamMAX = NBparamMAX;
 
+    memset(fps.parray, 0, NBparamMAX * sizeof(*fps.parray));
+    /*
     for(index = 0; index < NBparamMAX; index++)
     {
         fps.parray[index].fpflag = 0; // not active
         fps.parray[index].cnt0   = 0; // update counter
     }
+    */
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
     strncpy(fps.md->callprogname,

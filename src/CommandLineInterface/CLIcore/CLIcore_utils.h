@@ -474,7 +474,7 @@ typedef struct
 */
 static inline IMGID mkIMGID_from_name(CONST_WORD name)
 {
-    IMGID img;
+    IMGID img = {0};
 
     // default values for image creation
     img.datatype = _DATATYPE_FLOAT;

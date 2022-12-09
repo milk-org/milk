@@ -17,7 +17,7 @@ PROCESSINFO *processinfo_setup(
 {
     DEBUG_TRACE_FSTART();
 
-    static PROCESSINFO *processinfo;
+    static PROCESSINFO *processinfo = NULL;
     // Only one instance of processinfo created by process
     // subsequent calls to this function will re-use the same processinfo structure
 

@@ -30,7 +30,7 @@ typedef int errno_t;
 #define STRINGMAXLEN_CLICMDLINE   1000 // CPU input command line
 #define STRINGMAXLEN_COMMAND      1000
 #define STRINGMAXLEN_STREAMNAME   100
-#define STRINGMAXLEN_IMGNAME      100
+#define STRINGMAXLEN_IMGNAME      STRINGMAXLEN_STREAMNAME
 #define STRINGMAXLEN_FILENAME     200 // without directory, includes extension
 #define STRINGMAXLEN_DIRNAME      800
 #define STRINGMAXLEN_FULLFILENAME 1000 // includes directory name
