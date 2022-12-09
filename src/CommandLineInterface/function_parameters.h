@@ -276,7 +276,7 @@
 #define FPFLAG_DEFAULT_STATUS FPFLAG_ACTIVE | FPFLAG_USED | FPFLAG_VISIBLE
 
 #define FUNCTION_PARAMETER_NBPARAM_DEFAULT                                     \
-    100 // size of dynamically allocated array of parameters
+    200 // size of dynamically allocated array of parameters
 
 typedef struct
 {
@@ -668,7 +668,7 @@ typedef struct
  * @param[in] VARCMDmode command code
  */
 #define FPS_SETUP_INIT(VARfpsname, VARCMDmode)                                 \
-    FUNCTION_PARAMETER_STRUCT fps;                                             \
+    FUNCTION_PARAMETER_STRUCT fps;                                       \
     do                                                                         \
     {                                                                          \
         fps.SMfd = -1;                                                         \
@@ -744,7 +744,7 @@ typedef struct
  */
 
 #define FPSPROCINFOLOOP_RUNINIT(...)                                           \
-    PROCESSINFO *processinfo;                                                  \
+    PROCESSINFO *processinfo = NULL;                                                  \
     int          processloopOK = 1;                                            \
     do                                                                         \
     {                                                                          \
