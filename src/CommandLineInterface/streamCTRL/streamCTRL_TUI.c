@@ -1610,8 +1610,10 @@ errno_t streamCTRL_CTRLscreen()
             // ============ ACTIONS
 
             case ctrl('e'): // erase stream
-                DEBUG_TRACEPOINT(" ");
+                DEBUG_TRACEPOINT("removing stream sindex = %d", sindex);
                 sindex = ssindex[dindexSelected];
+                DEBUG_TRACEPOINT("removing stream sindex = %d", sindex);
+                DEBUG_TRACEPOINT("removing stream ID = %ld", streaminfo[sindex].ID);
 
                 ImageStreamIO_destroyIm(&streamCTRLimages[streaminfo[sindex].ID]);
 
