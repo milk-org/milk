@@ -2242,21 +2242,24 @@ errno_t streamCTRL_CTRLscreen()
                 }
                 else
                 {
-                    DEBUG_TRACEPOINT(" ");
+                    DEBUG_TRACEPOINT("ID = %ld", ID);
+                    DEBUG_TRACEPOINT("used = %d", streamCTRLimages[ID].used);
                     print_pid_mode = PRINT_PID_DEFAULT;
-
-                    for(int spti = 0;
-                            spti < streamCTRLimages[ID].md[0].NBproctrace;
-                            spti++)
+                    if(streamCTRLimages[ID].used == 1)
                     {
-                        ino_t inode = streamCTRLimages[ID]
-                                      .streamproctrace[spti]
-                                      .trigger_inode;
-                        if(inode == inodeselected)
+                        for(int spti = 0;
+                                spti < streamCTRLimages[ID].md[0].NBproctrace;
+                                spti++)
                         {
-                            if(spti < downstreammin)
+                            ino_t inode = streamCTRLimages[ID]
+                                          .streamproctrace[spti]
+                                          .trigger_inode;
+                            if(inode == inodeselected)
                             {
-                                downstreammin = spti;
+                                if(spti < downstreammin)
+                                {
+                                    downstreammin = spti;
+                                }
                             }
                         }
                     }
@@ -2271,10 +2274,13 @@ errno_t streamCTRL_CTRLscreen()
                 if(DisplayFlag == 1)
                 {
                     // print file inode
-                    streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode,
-                                           upstreaminode,
-                                           NBupstreaminode,
-                                           downstreammin);
+                    if(streamCTRLimages[ID].used == 1)
+                    {
+                        streamCTRL_print_inode(streamCTRLimages[ID].md[0].inode,
+                                               upstreaminode,
+                                               NBupstreaminode,
+                                               downstreammin);
+                    }
                     TUI_printfw(" ");
                 }
 
