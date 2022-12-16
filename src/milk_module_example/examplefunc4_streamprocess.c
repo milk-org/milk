@@ -175,11 +175,13 @@ static errno_t help_function()
 
 static errno_t streamprocess(IMGID inimg, IMGID outimg)
 {
+    DEBUG_TRACE_FSTART();
     // custom stream process function code
 
     (void) inimg;
     (void) outimg;
 
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
