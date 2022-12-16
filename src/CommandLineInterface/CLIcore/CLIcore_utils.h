@@ -63,9 +63,9 @@ typedef struct
     char     *name;
     uint32_t *xsize;
     uint32_t *ysize;
-    int      *shared;
-    int      *NBkw;
-    int      *CBsize;
+    uint32_t  *shared;
+    uint32_t  *NBkw;
+    uint32_t  *CBsize;
 } LOCVAR_OUTIMG2D;
 
 /** @brief Template for ouput image argument to CLI function
@@ -79,28 +79,28 @@ typedef struct
      CLIARG_VISIBLE_DEFAULT,                                                   \
      (void **) &imkey.name,                                                    \
      NULL},                                                                    \
-        {CLIARG_LONG,                                                          \
+        {CLIARG_UINT32,                                                        \
          "." #imkey ".xsize",                                                  \
          "x size",                                                             \
          "256",                                                                \
          CLIARG_VISIBLE_DEFAULT,                                               \
          (void **) &imkey.xsize,                                               \
          NULL},                                                                \
-        {CLIARG_LONG,                                                          \
+        {CLIARG_UINT32,                                                        \
          "." #imkey ".ysize",                                                  \
          "y size",                                                             \
          "256",                                                                \
          CLIARG_VISIBLE_DEFAULT,                                               \
          (void **) &imkey.ysize,                                               \
          NULL},                                                                \
-        {CLIARG_LONG,                                                          \
+        {CLIARG_UINT32,                                                        \
          "." #imkey ".shared",                                                 \
          "shared flag",                                                        \
          "0",                                                                  \
          CLIARG_HIDDEN_DEFAULT,                                                \
          (void **) &imkey.shared,                                              \
          NULL},                                                                \
-        {CLIARG_LONG,                                                          \
+        {CLIARG_UINT32,                                                        \
          "." #imkey ".NBkw",                                                   \
          "number keywords",                                                    \
          "10",                                                                 \
@@ -108,7 +108,7 @@ typedef struct
          (void **) &imkey.NBkw,                                                \
          NULL},                                                                \
     {                                                                          \
-        CLIARG_LONG, "." #imkey ".CBsize", "circ buffer size", "0",            \
+        CLIARG_UINT32, "." #imkey ".CBsize", "circ buffer size", "0",          \
             CLIARG_HIDDEN_DEFAULT, (void **) &imkey.CBsize, NULL               \
     }
 

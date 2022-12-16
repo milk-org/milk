@@ -29,7 +29,11 @@ static int functionhelp_called = 0;
  * @param errmsg    error message printing flag (1 if printing errors)
  * @return int
  */
-static int CLI_checkarg0(int argnum, uint32_t argtype, int errmsg)
+static int CLI_checkarg0(
+    int argnum,
+    uint32_t argtype,
+    int errmsg
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -1209,7 +1213,10 @@ int CMDargs_to_FPSparams_create(
 
 /** @brief get FPS pointer to function argument/parameter
  */
-void *get_farg_ptr(char *tag, long *fpsi)
+void *get_farg_ptr(
+    char *tag,
+    long *fpsi
+)
 {
     DEBUG_TRACE_FSTART();
 
