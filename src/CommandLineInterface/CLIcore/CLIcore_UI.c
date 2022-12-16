@@ -298,12 +298,15 @@ errno_t write_tracedebugfile()
     return RETURN_SUCCESS;
 }
 
+
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
 
     char            *cmdargstring;
-    int strmaxlen = 200;
+    int strmaxlen   = 200;
     char             str[strmaxlen];
     FILE            *fp;
     time_t           t;
