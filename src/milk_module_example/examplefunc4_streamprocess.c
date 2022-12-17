@@ -209,10 +209,12 @@ static errno_t compute_function()
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    {
 
-    streamprocess(inimg, outimg);
-    processinfo_update_output_stream(processinfo, outimg.ID);
+        streamprocess(inimg, outimg);
+        processinfo_update_output_stream(processinfo, outimg.ID);
 
+    }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
