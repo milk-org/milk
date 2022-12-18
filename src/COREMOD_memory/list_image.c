@@ -266,6 +266,7 @@ errno_t list_image_ID_ncurses()
             {
                 printw("%15.9f\n", timediff);
             }
+
         }
         else
         {
@@ -338,6 +339,10 @@ void close_list_image_ID_ncurses(void)
     fclose(listim_scr_fpi);
     data.MEM_MONITOR = 0;
 }
+
+
+
+
 
 errno_t list_image_ID_ofp(FILE *fo)
 {
@@ -535,6 +540,10 @@ errno_t list_image_ID_ofp(FILE *fo)
     return RETURN_SUCCESS;
 }
 
+
+
+
+
 errno_t list_image_ID_ofp_simple(FILE *fo)
 {
     long i, j;
@@ -560,11 +569,17 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
                 fprintf(fo, " %4ld", (long) data.image[i].md[0].size[j]);
             }
             fprintf(fo, "\n");
+
         }
     fprintf(fo, "\n");
 
     return RETURN_SUCCESS;
 }
+
+
+
+
+
 
 errno_t list_image_ID()
 {
@@ -581,6 +596,9 @@ errno_t list_image_ID()
    size
    type
  */
+
+
+
 
 errno_t list_image_ID_file(const char *fname)
 {
