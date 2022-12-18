@@ -80,12 +80,12 @@ typedef int errno_t;
 #define nameNBchar          100
 #define PIDnameStringLen    12
 
-#define DISPLAY_MODE_HELP    1
-#define DISPLAY_MODE_SEMVAL  2
-#define DISPLAY_MODE_WRITE   3
-#define DISPLAY_MODE_READ    4
-#define DISPLAY_MODE_SPTRACE 5
-#define DISPLAY_MODE_FUSER   6
+#define DISPLAY_MODE_HELP     1
+#define DISPLAY_MODE_SUMMARY  2
+#define DISPLAY_MODE_WRITE    3
+#define DISPLAY_MODE_READ     4
+#define DISPLAY_MODE_SPTRACE  5
+#define DISPLAY_MODE_FUSER    6
 
 #define PRINT_PID_DEFAULT          0
 #define PRINT_PID_FORCE_NOUPSTREAM 1
@@ -1128,11 +1128,17 @@ static int streamCTRL_print_procpid(int      DispPID_NBchar,
     return DispPID_NBchar;
 }
 
-static errno_t streamCTRL_print_SPTRACE_details(IMAGE   *streamCTRLimages,
-        imageID  ID,
-        pid_t   *upstreamproc,
-        int      NBupstreamproc,
-        uint32_t print_pid_mode)
+
+
+
+
+static errno_t streamCTRL_print_SPTRACE_details(
+    IMAGE   *streamCTRLimages,
+    imageID  ID,
+    pid_t   *upstreamproc,
+    int      NBupstreamproc,
+    uint32_t print_pid_mode
+)
 {
     /*
        	int             triggermode;
@@ -1432,7 +1438,7 @@ errno_t streamCTRL_CTRLscreen()
 
     int dindexSelected = 0;
 
-    int DisplayMode      = DISPLAY_MODE_SEMVAL;
+    int DisplayMode      = DISPLAY_MODE_SUMMARY;
     int DISPLAY_ALL_SEMS = 1; // Display all semaphores / just the first 2.
 
     struct tm *uttime_lastScan;
@@ -1575,7 +1581,7 @@ errno_t streamCTRL_CTRLscreen()
                 break;
 
             case KEY_F(2): // semvals
-                DisplayMode = DISPLAY_MODE_SEMVAL;
+                DisplayMode = DISPLAY_MODE_SUMMARY;
                 break;
 
             case KEY_F(3): // write PIDs
@@ -1816,15 +1822,15 @@ errno_t streamCTRL_CTRLscreen()
             }
             TUI_printfw("   ");
 
-            if(DisplayMode == DISPLAY_MODE_SEMVAL)
+            if(DisplayMode == DISPLAY_MODE_SUMMARY)
             {
                 screenprint_setreverse();
-                TUI_printfw("[F2] sem values");
+                TUI_printfw("[F2] summary");
                 screenprint_unsetreverse();
             }
             else
             {
-                TUI_printfw("[F2] sem values");
+                TUI_printfw("[F2] summary");
             }
             TUI_printfw("   ");
 
@@ -1979,7 +1985,7 @@ errno_t streamCTRL_CTRLscreen()
 
             switch(DisplayMode)
             {
-                case DISPLAY_MODE_SEMVAL:
+                case DISPLAY_MODE_SUMMARY:
                     TUI_printfw("     Semaphore values ....");
                     TUI_newline();
                     break;
@@ -2562,7 +2568,7 @@ errno_t streamCTRL_CTRLscreen()
 
                 if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                 {
-                    if((DisplayMode == DISPLAY_MODE_SEMVAL) &&
+                    if((DisplayMode == DISPLAY_MODE_SUMMARY) &&
                             (DisplayFlag == 1)) // sem vals
                     {
 
@@ -2649,7 +2655,7 @@ errno_t streamCTRL_CTRLscreen()
                 if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                 {
                     if((DisplayMode == DISPLAY_MODE_SPTRACE) &&
-                            (DisplayFlag == 1)) // sem read PIDs
+                            (DisplayFlag == 1))
                     {
                         snprintf(string,
                                  stringlen,
@@ -2716,6 +2722,61 @@ errno_t streamCTRL_CTRLscreen()
                                                              upstreamproc,
                                                              NBupstreamproc,
                                                              PRINT_PID_DEFAULT);
+                        }
+                    }
+                    if((DisplayMode == DISPLAY_MODE_SUMMARY) &&
+                            (DisplayFlag == 1))
+                    {
+                        if(DisplayDetailLevel == 1)
+                        {
+                            TUI_newline();
+                            TUI_newline();
+                            TUI_printfw("name            %10s\n", streamCTRLimages[ID].name);
+                            TUI_printfw("createcnt       %10ld\n", streamCTRLimages[ID].createcnt);
+                            TUI_printfw("shmfd           %10d\n", streamCTRLimages[ID].shmfd);
+                            TUI_printfw("memsize         %10lu\n", streamCTRLimages[ID].memsize);
+                            TUI_printfw("md.version      %10s\n", streamCTRLimages[ID].md->version);
+                            TUI_printfw("md.name         %10s\n", streamCTRLimages[ID].md->name);
+                            TUI_printfw("md.naxis        %10d\n", (int) streamCTRLimages[ID].md->naxis);
+                            for(int axis = 0; axis < streamCTRLimages[ID].md->naxis; axis++)
+                            {
+                                TUI_printfw("   md.size[%d]   %10d\n", axis,
+                                            (int) streamCTRLimages[ID].md->size[axis]);
+                            }
+                            TUI_printfw("md.nelement         %10lu\n", streamCTRLimages[ID].md->nelement);
+                            TUI_printfw("md.datatype         %10d\n",
+                                        (int) streamCTRLimages[ID].md->datatype);
+                            TUI_printfw("md.creationtime     %10ld.%09d\n",
+                                        streamCTRLimages[ID].md->creationtime.tv_sec,
+                                        streamCTRLimages[ID].md->creationtime.tv_nsec);
+                            TUI_printfw("md.lastaccesstime   %10ld.%09d\n",
+                                        streamCTRLimages[ID].md->lastaccesstime.tv_sec,
+                                        streamCTRLimages[ID].md->lastaccesstime.tv_nsec);
+                            TUI_printfw("md.atime            %10ld.%09d\n",
+                                        streamCTRLimages[ID].md->atime.tv_sec, streamCTRLimages[ID].md->atime.tv_nsec);
+                            TUI_printfw("md.writetime        %10ld.%09d\n",
+                                        streamCTRLimages[ID].md->writetime.tv_sec,
+                                        streamCTRLimages[ID].md->writetime.tv_nsec);
+                            TUI_printfw("md.creatorPID       %10ld\n",
+                                        (long) streamCTRLimages[ID].md->creatorPID);
+                            TUI_printfw("md.ownerPID         %10ld\n",
+                                        (long) streamCTRLimages[ID].md->ownerPID);
+                            TUI_printfw("md.shared           %10d\n",
+                                        (int) streamCTRLimages[ID].md->shared);
+                            TUI_printfw("md.inode            %10lu\n",
+                                        (int) streamCTRLimages[ID].md->inode);
+                            TUI_newline();
+                            TUI_printfw("md.sem              %10d\n", (int) streamCTRLimages[ID].md->sem);
+                            for(int semindex = 0; semindex < streamCTRLimages[ID].md->sem; semindex++)
+                            {
+                                TUI_printfw(" %2d   %6ld  %s\n",
+                                            semindex,
+                                            streamCTRLimages[ID].semfile[semindex].inode,
+                                            streamCTRLimages[ID].semfile[semindex].fname);
+                            }
+
+
+
                         }
                     }
                 }
