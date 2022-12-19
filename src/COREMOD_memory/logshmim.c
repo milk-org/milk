@@ -1384,7 +1384,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
             tmsg->arraytime   = array_time_cp;
             tmsg->arrayaqtime = array_aqtime_cp;
             WRITE_FILENAME(tmsg->fname_auxFITSheader,
-                           "%s/%s.auxFITSheader.shm",
+                           "%s/%s.aux.fits",
                            data.shmdir,
                            IDname);
 
