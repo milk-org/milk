@@ -2987,18 +2987,23 @@ errno_t processinfo_CTRLscreen()
 
             DEBUG_TRACEPOINT(" ");
 
-            clock_gettime(CLOCK_REALTIME, &t07loop);
+            //clock_gettime(CLOCK_REALTIME, &t07loop);
 
             cnt++;
+
+
+            tdiff = timespec_diff(t2loop, t06loop);
+            double tdiffvloop = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
 
             clock_gettime(CLOCK_REALTIME, &t2loop);
 
             tdiff             = timespec_diff(t1loop, t2loop);
-            double tdiffvloop = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+            double tdiffvloopexec = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
             TUI_newline();
-            TUI_printfw("Loop time = %9.8f s  ( max rate = %7.2f Hz)",
-                        tdiffvloop,
+            TUI_printfw("procCTRL display thread load : %5.3f %%  @ %7.2f Hz",
+                        100.0 * tdiffvloopexec / tdiffvloop,
                         1.0 / tdiffvloop);
             TUI_newline();
 
