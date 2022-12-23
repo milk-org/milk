@@ -94,7 +94,7 @@ echo -n "sh-${shortpname}" > /proc/self/comm
 
 
 
-
+rm -f ${fifoname}
 mkfifo ${fifoname}
 
 CLIfifoname="${MILK_SHM_DIR}/fpsCLIfifo"
