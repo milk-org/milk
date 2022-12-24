@@ -20,8 +20,8 @@ source milk-script-std-config
 #
 RequiredCommands=( milk )
 RequiredFiles=()
+RequiredPipes=()
 RequiredDirs=()
-
 
 
 # SCRIPT MANDATORY ARGUMENTS
