@@ -26,6 +26,7 @@ source milk-script-std-config
 RequiredCommands=( milk ls cd )
 RequiredFiles=()
 RequiredDirs=()
+RequiredPipes=()
 '
 
 # list SCRIPT ARGUMENTS
@@ -129,7 +130,6 @@ function checkCommand {
 
 
 
-
 function printHELP {
 
     optlistshort=""
@@ -219,6 +219,7 @@ function checkallprerequisites()
     for dname in ${RequiredDirs[@]}; do
         checkDir $dname
     done
+
     set -o nounset
 }
 
