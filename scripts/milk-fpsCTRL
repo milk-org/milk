@@ -40,6 +40,9 @@ outlogname="$MILK_SHM_DIR/milkCLIlog.${pname}.${ttystring}"
 
 
 
+
+# OPTIONS
+
 MSopt+=( "f:fifo:set_fifoname:fifo[string]:input (f)ifo name" )
 function set_fifoname() {
 	fifoname="$1"
