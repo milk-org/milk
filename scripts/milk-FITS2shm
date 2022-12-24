@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 NBARGS=2
 pname=`echo "$0" | sed "s/\.\///g"`
@@ -314,8 +314,7 @@ fi
 
 if [ "$LOADfile" = "1" ]; then
 
-
-    milk -n $pname << EOF
+MILK_QUIET=1 milk -n $pname << EOF
 loadfits "${FITSfname}" im
 readshmim "${STREAMname}"
 cpsh im "${STREAMname}"
