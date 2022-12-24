@@ -97,9 +97,6 @@ errno_t functionparameter_RUNstart(
             }
         }
 
-        // TEST
-        EXECUTE_SYSTEM_COMMAND("echo \"tmux start %s\" >> tmux.log", fps->md->name);
-
         // create output directory if it does not already exit
         EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"mkdir %s\" C-m",
                                fps->md->name,
