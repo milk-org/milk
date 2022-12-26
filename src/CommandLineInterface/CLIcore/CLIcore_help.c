@@ -830,6 +830,13 @@ errno_t help_command(
                                        "[  STR  ]  %s",
                                        data.cmd[cmdi].argdata[argi].val.s);
                         break;
+
+                    case CLIARG_STREAM:
+                        SNPRINTF_CHECK(valuestring,
+                                       STRINGMAXLEN_CLICMDARG,
+                                       "[ STREA ]  %s",
+                                       data.cmd[cmdi].argdata[argi].val.s);
+                        break;
                 }
 
                 if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
