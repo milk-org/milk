@@ -17,8 +17,10 @@
 
 
 
-int functionparameter_CheckParameter(FUNCTION_PARAMETER_STRUCT *fpsentry,
-                                     int                        pindex)
+int functionparameter_CheckParameter(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int                        pindex
+)
 {
     int err = 0;
 
