@@ -74,6 +74,14 @@ QUIET=0
 #echo "Running argparse, $# args"
 
 
+# User scripts can perform custom tests prior to entering this script
+# ... in which case, EXITSTATUS is already set
+# If not, create it an initialize it to 0 (no error)
+if [ -z ${EXITSTATUS+x} ]; then
+EXITSTATUS=0
+fi
+
+
 
 function checkFile {
     if [ -f $1 ]; then
@@ -212,8 +220,8 @@ function checkallprerequisites()
         checkFile $fname
     done
 
-    for pname in ${RequiredPipes[@]}; do
-        checkPipe $pname
+    for pipename in ${RequiredPipes[@]}; do
+        checkPipe $pipename
     done
 
     for dname in ${RequiredDirs[@]}; do
@@ -416,3 +424,7 @@ function settrap()
 
 # call settrap function
 settrap
+
+if [ ${EXITSTATUS} = 1 ]; then
+exit
+fi
