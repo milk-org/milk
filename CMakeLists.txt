@@ -317,7 +317,8 @@ install(PROGRAMS
 			scripts/milk-logshimstat
       scripts/milk-makecsetandrt
 			scripts/merge3DfitsTelemetry
-			scripts/milk-script-std-config
+			scripts/milk-scriptexample
+      scripts/milk-script-std-config
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
