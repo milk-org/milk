@@ -123,6 +123,10 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"bash\" C-m",
                            fps->md->name);
 
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"source ../fpstmuxenv\" C-m",
+                           fps->md->name);
+
+
     snprintf(functionstring,
              funcstring_maxlen,
              "function fpsconfstart {\n"
