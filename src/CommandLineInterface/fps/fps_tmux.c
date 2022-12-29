@@ -118,7 +118,7 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"bash\" C-m",
                            fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"source ../fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"source fpstmuxenv\" C-m",
                            fps->md->name);
 
 
@@ -127,7 +127,7 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"bash\" C-m",
                            fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"source ../fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"source fpstmuxenv\" C-m",
                            fps->md->name);
 
 
@@ -153,7 +153,7 @@ errno_t functionparameter_FPS_tmux_init(
                            fps->md->name);
 
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"source ../fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"source fpstmuxenv\" C-m",
                            fps->md->name);
 
     snprintf(functionstring,
