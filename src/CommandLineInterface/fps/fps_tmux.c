@@ -66,7 +66,10 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null",
                            fps->md->name);
     sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d", fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d",
+                           fps->md->name);
+
+
     sleep(tmuxwait);
     EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps->md->name);
     sleep(tmuxwait);
@@ -117,6 +120,8 @@ errno_t functionparameter_FPS_tmux_init(
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"bash\" C-m",
                            fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"cd %s\" C-m",
+                           fps->md->name, fps->md->workdir);
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"source fpstmuxenv\" C-m",
                            fps->md->name);
@@ -126,6 +131,9 @@ errno_t functionparameter_FPS_tmux_init(
     //
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"bash\" C-m",
                            fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"cd %s\" C-m",
+                           fps->md->name, fps->md->workdir);
+
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"source  fpstmuxenv\" C-m",
                            fps->md->name);
@@ -151,7 +159,8 @@ errno_t functionparameter_FPS_tmux_init(
     //
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"bash\" C-m",
                            fps->md->name);
-
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
+                           fps->md->name, fps->md->workdir);
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"source fpstmuxenv\" C-m",
                            fps->md->name);

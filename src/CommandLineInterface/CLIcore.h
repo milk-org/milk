@@ -494,6 +494,9 @@ typedef struct
     char moduledatestring[STRINGMAXLEN_MODULE_DATESTRING];
     char moduletimestring[STRINGMAXLEN_MODULE_TIMESTRING];
 
+
+
+
     // FUNCTION PARAMETER STRUCTURES (FPSs)
     // =================================================
 
@@ -505,14 +508,20 @@ typedef struct
     // These entries are set when CLI process links to FPS
     FUNCTION_PARAMETER_STRUCT *fpsptr;
     char FPS_name[STRINGMAXLEN_FPS_NAME]; // name of FPS if in use
+
+
     // Which type of FPS process is the current process ?
     // conf, run, ctrl
-    char FPS_PROCESS_TYPE
-    [STRINGMAXLEN_FPSPROCESSTYPE]; // included in log file name
+    char FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE];
+    // included in log file name
+
     long     FPS_TIMESTAMP;            // included in log file name
     uint32_t FPS_CMDCODE;              // current FPS mode
     errno_t (*FPS_CONFfunc)();         // pointer to FPS conf function
     errno_t (*FPS_RUNfunc)();          // pointer to FPS run function
+
+
+
 
     // IMAGES
     // =================================================
