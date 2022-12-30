@@ -145,78 +145,10 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 
     // data types
     uint8_t datatype       = imgin.md->datatype;
-    int     FITSIOdatatype = TFLOAT;
-    int     bitpix         = FLOAT_IMG;
+    int     FITSIOdatatype = ImageStreamIO_FITSIOdatatype(datatype);
+    char *datainptr = (char *) imgin.im->array.raw;
 
-    char *datainptr;
-
-
-
-    //printf("datatype = %d\n", (int) datatype);
-    switch(datatype)
-    {
-        case _DATATYPE_UINT8:
-            FITSIOdatatype = TBYTE;
-            bitpix         = BYTE_IMG;
-            datainptr      = (char *) imgin.im->array.UI8;
-            break;
-
-        case _DATATYPE_INT8:
-            FITSIOdatatype = TSBYTE;
-            bitpix         = SBYTE_IMG;
-            datainptr      = (char *) imgin.im->array.SI8;
-            break;
-
-        case _DATATYPE_UINT16:
-            FITSIOdatatype = TUSHORT;
-            bitpix         = USHORT_IMG;
-            datainptr      = (char *) imgin.im->array.UI16;
-            break;
-
-        case _DATATYPE_INT16:
-            FITSIOdatatype = TSHORT;
-            bitpix         = SHORT_IMG;
-            datainptr      = (char *) imgin.im->array.SI16;
-            break;
-
-        case _DATATYPE_UINT32:
-            FITSIOdatatype = TUINT;
-            bitpix         = ULONG_IMG;
-            datainptr      = (char *) imgin.im->array.UI32;
-            break;
-
-        case _DATATYPE_INT32:
-            FITSIOdatatype = TINT;
-            bitpix         = LONG_IMG;
-            datainptr      = (char *) imgin.im->array.SI32;
-            break;
-
-        case _DATATYPE_UINT64:
-            FITSIOdatatype = TULONG;
-            bitpix         = ULONGLONG_IMG;
-            datainptr      = (char *) imgin.im->array.UI64;
-            break;
-
-        case _DATATYPE_INT64:
-            FITSIOdatatype = TLONG;
-            bitpix         = LONGLONG_IMG;
-            datainptr      = (char *) imgin.im->array.SI64;
-            break;
-
-        case _DATATYPE_FLOAT:
-            FITSIOdatatype = TFLOAT;
-            bitpix         = FLOAT_IMG;
-            datainptr      = (char *) imgin.im->array.F;
-            break;
-
-        case _DATATYPE_DOUBLE:
-            FITSIOdatatype = TDOUBLE;
-            bitpix         = DOUBLE_IMG;
-            datainptr      = (char *) imgin.im->array.D;
-            break;
-    }
-
-    //printf("bitpix = %d\n", bitpix);
+    int     bitpix;
 
     switch(outputbitpix)
     {
@@ -613,26 +545,6 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                     &bzeroval,
                     "Real=fits-value*BSCALE+BZERO",
                     &COREMOD_iofits_data.FITSIO_status);
-
-
-    // if uint16, force BZERO and BSCALE keywords to 1, 32768
-    /* if (datatype == _DATATYPE_UINT16)
-    {
-        char tmpkwvalstr[81];
-        COREMOD_iofits_data.FITSIO_status = 0;
-        fits_update_key(fptr,
-                        TFLOAT,
-                        "BSCALE",
-                        "1",
-                        "Real=fits-value*BSCALE+BZERO",
-                        &COREMOD_iofits_data.FITSIO_status);
-        fits_update_key(fptr,
-                        TFLOAT,
-                        "BZERO",
-                        "0",
-                        "Real=fits-value*BSCALE+BZERO",
-                        &COREMOD_iofits_data.FITSIO_status);
-    }*/
 
 
     long fpixel                       = 1;

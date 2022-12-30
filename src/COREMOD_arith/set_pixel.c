@@ -453,71 +453,16 @@ imageID arith_image_zero(const char *ID_name)
     {
         nelem = data.image[ID].md[0].nelement;
 
-        data.image[ID].md[0].write = 0;
+        data.image[ID].md[0].write = 1;
 
-        if(data.image[ID].md[0].datatype == _DATATYPE_FLOAT)
-        {
-            memset(data.image[ID].array.F, 0, SIZEOF_DATATYPE_FLOAT * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_DOUBLE)
-        {
-            memset(data.image[ID].array.D, 0, SIZEOF_DATATYPE_DOUBLE * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_INT8)
-        {
-            memset(data.image[ID].array.SI8, 0, SIZEOF_DATATYPE_INT8 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_INT16)
-        {
-            memset(data.image[ID].array.SI16, 0, SIZEOF_DATATYPE_INT16 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_INT32)
-        {
-            memset(data.image[ID].array.SI32, 0, SIZEOF_DATATYPE_INT32 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_INT64)
-        {
-            memset(data.image[ID].array.SI64, 0, SIZEOF_DATATYPE_INT64 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_UINT8)
-        {
-            memset(data.image[ID].array.UI8, 0, SIZEOF_DATATYPE_UINT8 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_UINT16)
-        {
-            memset(data.image[ID].array.UI16,
-                   0,
-                   SIZEOF_DATATYPE_UINT16 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_UINT32)
-        {
-            memset(data.image[ID].array.UI32,
-                   0,
-                   SIZEOF_DATATYPE_UINT32 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_UINT64)
-        {
-            memset(data.image[ID].array.UI64,
-                   0,
-                   SIZEOF_DATATYPE_UINT64 * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_COMPLEX_FLOAT)
-        {
-            memset(data.image[ID].array.CF,
-                   0,
-                   SIZEOF_DATATYPE_COMPLEX_FLOAT * nelem);
-        }
-        else if(data.image[ID].md[0].datatype == _DATATYPE_COMPLEX_DOUBLE)
-        {
-            memset(data.image[ID].array.CD,
-                   0,
-                   SIZEOF_DATATYPE_COMPLEX_DOUBLE * nelem);
-        }
-        else
+        int typesize = ImageStreamIO_typesize(data.image[ID].md[0].datatype);
+        if(typesize == -1)
         {
             PRINT_ERROR("cannot detect image type for image %s", ID_name);
             exit(0);
         }
+        memset(data.image[ID].array.raw, 0, typesize * nelem);
+
         data.image[ID].md[0].write = 0;
         data.image[ID].md[0].cnt0++;
         COREMOD_MEMORY_image_set_sempost(ID_name, -1);

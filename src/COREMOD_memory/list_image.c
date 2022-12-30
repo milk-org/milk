@@ -185,56 +185,8 @@ errno_t list_image_ID_ncurses()
             printw("%-28s", str2);
 
             attron(COLOR_PAIR(3));
-            n = 0;
 
-            if(datatype == _DATATYPE_UINT8)
-            {
-                n = snprintf(type, STYPESIZE, "UINT8  ");
-            }
-            if(datatype == _DATATYPE_INT8)
-            {
-                n = snprintf(type, STYPESIZE, "INT8   ");
-            }
-            if(datatype == _DATATYPE_UINT16)
-            {
-                n = snprintf(type, STYPESIZE, "UINT16 ");
-            }
-            if(datatype == _DATATYPE_INT16)
-            {
-                n = snprintf(type, STYPESIZE, "INT16  ");
-            }
-            if(datatype == _DATATYPE_UINT32)
-            {
-                n = snprintf(type, STYPESIZE, "UINT32 ");
-            }
-            if(datatype == _DATATYPE_INT32)
-            {
-                n = snprintf(type, STYPESIZE, "INT32  ");
-            }
-            if(datatype == _DATATYPE_UINT64)
-            {
-                n = snprintf(type, STYPESIZE, "UINT64 ");
-            }
-            if(datatype == _DATATYPE_INT64)
-            {
-                n = snprintf(type, STYPESIZE, "INT64  ");
-            }
-            if(datatype == _DATATYPE_FLOAT)
-            {
-                n = snprintf(type, STYPESIZE, "FLOAT  ");
-            }
-            if(datatype == _DATATYPE_DOUBLE)
-            {
-                n = snprintf(type, STYPESIZE, "DOUBLE ");
-            }
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
-            {
-                n = snprintf(type, STYPESIZE, "CFLOAT ");
-            }
-            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
-            {
-                n = snprintf(type, STYPESIZE, "CDOUBLE");
-            }
+            n = snprintf(type, STYPESIZE, ImageStreamIO_typename_7(datatype));
 
             printw("%7s ", type);
 
@@ -422,55 +374,7 @@ errno_t list_image_ID_ofp(FILE *fo)
 
             fprintf(fo, "%-32s", str);
 
-            n = 0;
-            if(datatype == _DATATYPE_UINT8)
-            {
-                n = snprintf(type, STYPESIZE, "UINT8  ");
-            }
-            if(datatype == _DATATYPE_INT8)
-            {
-                n = snprintf(type, STYPESIZE, "INT8   ");
-            }
-            if(datatype == _DATATYPE_UINT16)
-            {
-                n = snprintf(type, STYPESIZE, "UINT16 ");
-            }
-            if(datatype == _DATATYPE_INT16)
-            {
-                n = snprintf(type, STYPESIZE, "INT16  ");
-            }
-            if(datatype == _DATATYPE_UINT32)
-            {
-                n = snprintf(type, STYPESIZE, "UINT32 ");
-            }
-            if(datatype == _DATATYPE_INT32)
-            {
-                n = snprintf(type, STYPESIZE, "INT32  ");
-            }
-            if(datatype == _DATATYPE_UINT64)
-            {
-                n = snprintf(type, STYPESIZE, "UINT64 ");
-            }
-            if(datatype == _DATATYPE_INT64)
-            {
-                n = snprintf(type, STYPESIZE, "INT64  ");
-            }
-            if(datatype == _DATATYPE_FLOAT)
-            {
-                n = snprintf(type, STYPESIZE, "FLOAT  ");
-            }
-            if(datatype == _DATATYPE_DOUBLE)
-            {
-                n = snprintf(type, STYPESIZE, "DOUBLE ");
-            }
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
-            {
-                n = snprintf(type, STYPESIZE, "CFLOAT ");
-            }
-            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
-            {
-                n = snprintf(type, STYPESIZE, "CDOUBLE");
-            }
+            n = snprintf(type, STYPESIZE, ImageStreamIO_typename_7(datatype));
 
             fprintf(fo, "%7s ", type);
 
@@ -626,56 +530,7 @@ errno_t list_image_ID_file(const char *fname)
                 fprintf(fp, " %ld", (long) data.image[i].md[0].size[j]);
             }
 
-            n = 0;
-
-            if(datatype == _DATATYPE_UINT8)
-            {
-                n = snprintf(type, STYPESIZE, "UINT8  ");
-            }
-            if(datatype == _DATATYPE_INT8)
-            {
-                n = snprintf(type, STYPESIZE, "INT8   ");
-            }
-            if(datatype == _DATATYPE_UINT16)
-            {
-                n = snprintf(type, STYPESIZE, "UINT16 ");
-            }
-            if(datatype == _DATATYPE_INT16)
-            {
-                n = snprintf(type, STYPESIZE, "INT16  ");
-            }
-            if(datatype == _DATATYPE_UINT32)
-            {
-                n = snprintf(type, STYPESIZE, "UINT32 ");
-            }
-            if(datatype == _DATATYPE_INT32)
-            {
-                n = snprintf(type, STYPESIZE, "INT32  ");
-            }
-            if(datatype == _DATATYPE_UINT64)
-            {
-                n = snprintf(type, STYPESIZE, "UINT64 ");
-            }
-            if(datatype == _DATATYPE_INT64)
-            {
-                n = snprintf(type, STYPESIZE, "INT64  ");
-            }
-            if(datatype == _DATATYPE_FLOAT)
-            {
-                n = snprintf(type, STYPESIZE, "FLOAT  ");
-            }
-            if(datatype == _DATATYPE_DOUBLE)
-            {
-                n = snprintf(type, STYPESIZE, "DOUBLE ");
-            }
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
-            {
-                n = snprintf(type, STYPESIZE, "CFLOAT ");
-            }
-            if(datatype == _DATATYPE_COMPLEX_DOUBLE)
-            {
-                n = snprintf(type, STYPESIZE, "CDOUBLE");
-            }
+            n = snprintf(type, STYPESIZE, ImageStreamIO_typename_7(datatype));
 
             if(n >= STYPESIZE)
             {

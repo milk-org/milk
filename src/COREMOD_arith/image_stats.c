@@ -424,33 +424,26 @@ double arith_image_percentile(const char *ID_name, double fraction)
 
     nelement = data.image[ID].md[0].nelement;
 
+    void *array_raw = malloc(ImageStreamIO_typesize(datatype) * nelement);
+    if(array_raw == NULL)
+    {
+        PRINT_ERROR("malloc() error");
+        exit(EXIT_FAILURE);
+    }
+    memcpy(array_raw, data.image[ID].array.raw,
+           ImageStreamIO_typesize(datatype) * nelement);
+
+
     switch(datatype)
     {
-
         case _DATATYPE_FLOAT:
-            arrayF = (float *) malloc(sizeof(float) * nelement);
-            if(arrayF == NULL)
-            {
-                PRINT_ERROR("malloc() error");
-                exit(EXIT_FAILURE);
-            }
-            memcpy(arrayF, data.image[ID].array.F, sizeof(float) * nelement);
             quick_sort_float(arrayF, nelement);
             value = (double) arrayF[(long)(fraction * nelement)];
-            free(arrayF);
             break;
 
         case _DATATYPE_DOUBLE:
-            arrayD = (double *) malloc(sizeof(double) * nelement);
-            if(arrayD == NULL)
-            {
-                PRINT_ERROR("malloc() error");
-                exit(EXIT_FAILURE);
-            }
-            memcpy(arrayD, data.image[ID].array.D, sizeof(double) * nelement);
             quick_sort_double(arrayD, nelement);
             value = arrayD[(long)(fraction * nelement)];
-            free(arrayD);
             break;
 
         case _DATATYPE_UINT8:
