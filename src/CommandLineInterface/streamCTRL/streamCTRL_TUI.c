@@ -2353,68 +2353,8 @@ errno_t streamCTRL_CTRLscreen()
                     }
                     else
                     {
-                        if(streaminfo[sindex].datatype == _DATATYPE_UINT8)
-                        {
-                            snprintf(string, stringlen, " UI8");
-                        }
-                        if(streaminfo[sindex].datatype == _DATATYPE_INT8)
-                        {
-                            snprintf(string, stringlen, "  I8");
-                        }
-
-                        if(streaminfo[sindex].datatype == _DATATYPE_UINT16)
-                        {
-                            snprintf(string, stringlen, "UI16");
-                        }
-                        if(streaminfo[sindex].datatype == _DATATYPE_INT16)
-                        {
-                            snprintf(string, stringlen, " I16");
-                        }
-
-                        if(streaminfo[sindex].datatype == _DATATYPE_UINT32)
-                        {
-                            snprintf(string, stringlen, "UI32");
-                        }
-                        if(streaminfo[sindex].datatype == _DATATYPE_INT32)
-                        {
-                            snprintf(string, stringlen, " I32");
-                        }
-
-                        if(streaminfo[sindex].datatype == _DATATYPE_UINT64)
-                        {
-                            snprintf(string, stringlen, "UI64");
-                        }
-                        if(streaminfo[sindex].datatype == _DATATYPE_INT64)
-                        {
-                            snprintf(string, stringlen, " I64");
-                        }
-
-                        if(streaminfo[sindex].datatype == _DATATYPE_HALF)
-                        {
-                            snprintf(string, stringlen, " HLF");
-                        }
-
-                        if(streaminfo[sindex].datatype == _DATATYPE_FLOAT)
-                        {
-                            snprintf(string, stringlen, " FLT");
-                        }
-
-                        if(streaminfo[sindex].datatype == _DATATYPE_DOUBLE)
-                        {
-                            snprintf(string, stringlen, " DBL");
-                        }
-
-                        if(streaminfo[sindex].datatype ==
-                                _DATATYPE_COMPLEX_FLOAT)
-                        {
-                            snprintf(string, stringlen, "CFLT");
-                        }
-
-                        if(streaminfo[sindex].datatype ==
-                                _DATATYPE_COMPLEX_DOUBLE)
-                        {
-                            snprintf(string, stringlen, "CDBL");
-                        }
+                        snprintf(string, stringlen,
+                                 ImageStreamIO_typename_short(streaminfo[sindex].datatype));
                     }
                     TUI_printfw(string);
 
