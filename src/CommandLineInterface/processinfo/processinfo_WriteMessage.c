@@ -1,8 +1,13 @@
+#include <stdarg.h>
+
 #include "CLIcore.h"
 #include <processtools.h>
 
 
-int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring)
+int processinfo_WriteMessage(
+    PROCESSINFO *processinfo,
+    const char *msgstring
+)
 {
     struct timespec tnow;
     struct tm      *tmnow;
@@ -29,5 +34,37 @@ int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring)
 
     DEBUG_TRACEPOINT(" ");
     fflush(processinfo->logFile);
-    return 0;
+
+    return EXIT_SUCCESS;
+}
+
+
+
+int processinfo_WriteMessage_fmt(
+    PROCESSINFO *processinfo,
+    const char *format,
+    ...
+)
+{
+    // determine required buffer size
+    va_list args;
+    va_start(args, format);
+    int len = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    if(len < 0)
+    {
+        return EXIT_FAILURE;
+    }
+
+    // format message
+    char msg[len +
+                 1]; // or use heap allocation if implementation doesn't support VLAs
+    va_start(args, format);
+    vsnprintf(msg, len + 1, format, args);
+    va_end(args);
+
+    // call myFunction
+    processinfo_WriteMessage(processinfo, msg);
+
+    return EXIT_SUCCESS;
 }

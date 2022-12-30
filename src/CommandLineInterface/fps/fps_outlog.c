@@ -30,7 +30,11 @@ errno_t getFPSlogfname(char *logfname)
 }
 
 
-errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout)
+errno_t functionparameter_outlog_file(
+    char *keyw,
+    char *msgstring,
+    FILE *fpout
+)
 {
     // Get GMT time
     struct timespec tnow;
@@ -70,7 +74,9 @@ errno_t functionparameter_outlog_file(char *keyw, char *msgstring, FILE *fpout)
  * @param ...      Parameters
  * @return errno_t Error code
  */
-errno_t functionparameter_outlog(char *keyw, const char *fmt, ...)
+errno_t functionparameter_outlog(
+    char *keyw,
+    const char *fmt, ...)
 {
     // identify logfile and open file
 

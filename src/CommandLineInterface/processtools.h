@@ -202,8 +202,16 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
 int          processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
+
 int processinfo_WriteMessage(PROCESSINFO *processinfo,
                              const char  *msgstring);
+
+int processinfo_WriteMessage_fmt(
+    PROCESSINFO *processinfo,
+    const char *format,
+    ...
+);
+
 int processinfo_exec_start(PROCESSINFO *processinfo);
 int processinfo_exec_end(PROCESSINFO *processinfo);
 

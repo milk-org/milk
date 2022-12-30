@@ -305,10 +305,12 @@ errno_t functionparameter_CTRLscreen(
     int run_display = 1;
     loopOK          = 1;
 
-    struct timespec tnow = {0};
-    clock_gettime(CLOCK_REALTIME, &tnow);
-    data.FPS_TIMESTAMP = tnow.tv_sec;
-    strcpy(data.FPS_PROCESS_TYPE, "ctrl");
+    {
+        struct timespec tnow = {0};
+        clock_gettime(CLOCK_REALTIME, &tnow);
+        data.FPS_TIMESTAMP = tnow.tv_sec;
+        strcpy(data.FPS_PROCESS_TYPE, "ctrl");
+    }
 
     functionparameter_outlog("FPSCTRL", "START\n");
 

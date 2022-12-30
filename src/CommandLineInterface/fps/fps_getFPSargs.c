@@ -182,16 +182,27 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         // check that first arg is a string
         // if it isn't, the non-FPS implementation should be called
 
+
+
+        {
+            //struct timespec tnow = {0};
+            //clock_gettime(CLOCK_REALTIME, &tnow);
+            //data.FPS_TIMESTAMP = tnow.tv_sec;
+            //strcpy(data.FPS_PROCESS_TYPE, "undef");
+        }
+
         // check if recognized FPSCMDCODE
         if(strcmp(data.cmdargtoken[1].val.string,
                   "_FPSINIT_") == 0) // Initialize FPS
         {
             data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
+            //strcpy(data.FPS_PROCESS_TYPE, "fpsinit");
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_CONFSTART_") == 0) // Start conf process
         {
             data.FPS_CMDCODE = FPSCMDCODE_CONFSTART;
+            //strcpy(data.FPS_PROCESS_TYPE, "conf");
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_CONFSTOP_") == 0) // Stop conf process
@@ -202,6 +213,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                        "_RUNSTART_") == 0) // Run process
         {
             data.FPS_CMDCODE = FPSCMDCODE_RUNSTART;
+            //strcpy(data.FPS_PROCESS_TYPE, "run");
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_RUNSTOP_") == 0) // Stop process
@@ -212,6 +224,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                        "_TMUXSTART_") == 0) // Start tmux session
         {
             data.FPS_CMDCODE = FPSCMDCODE_TMUXSTART;
+            //strcpy(data.FPS_PROCESS_TYPE, "tmux");
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_TMUXSTOP_") == 0) // Stop tmux session
