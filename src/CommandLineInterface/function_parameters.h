@@ -63,11 +63,16 @@
 #define FPTYPE_EXECFILENAME 0x00000800 // executable file
 
 #define FPTYPE_DIRNAME 0x00001000 // directory name
-#define FPTYPE_STREAMNAME                                                      \
-    0x00002000 // stream name -> process may load from shm if required. See loading stream section below and associated flags
+
+// stream name -> process may load from shm if required. See loading stream section below and associated flags
+#define FPTYPE_STREAMNAME 0x00002000
+
 #define FPTYPE_STRING 0x00004000 // generic string
-#define FPTYPE_ONOFF                                                           \
-    0x00008000 // uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
+
+// uses ONOFF bit flag, string[0] and string[1] for OFF and ON descriptions respectively. setval saves ONOFF as integer
+#define FPTYPE_ONOFF  0x00008000
+
+
 #define FPTYPE_PROCESS 0x00010000
 
 #define FPTYPE_FPSNAME 0x00020000 // connection to another FPS
@@ -82,22 +87,31 @@
 
 // Function Parameter (FP) flags
 
+
 // parameter use and visibility
-#define FPFLAG_ACTIVE 0x0000000000000001 // is this entry registered ?
-#define FPFLAG_USED                                                            \
-    0x0000000000000002 // is this entry used ? if not, skip all checks
-#define FPFLAG_VISIBLE                                                         \
-    0x0000000000000004 // is this entry visible (=displayed) ?
+
+// is this entry registered ?
+#define FPFLAG_ACTIVE       0x0000000000000001
+
+// is this entry used ? if not, skip all checks
+#define FPFLAG_USED         0x0000000000000002
+
+// is this entry visible (=displayed) ?
+#define FPFLAG_VISIBLE      0x0000000000000004
 
 // write permission
-#define FPFLAG_WRITE                                                           \
-    0x0000000000000010 // is value writable when neither CONF and RUN are active
-#define FPFLAG_WRITECONF                                                       \
-    0x0000000000000020 // can user change value at configuration time ?
-#define FPFLAG_WRITERUN                                                        \
-    0x0000000000000040 // can user change value at run time ?
-#define FPFLAG_WRITESTATUS                                                     \
-    0x0000000000000080 // current write status (computed from above flags, initialized at 1)
+
+// is value writable when neither CONF and RUN are active
+#define FPFLAG_WRITE        0x0000000000000010
+
+// can user change value at configuration time ?
+#define FPFLAG_WRITECONF    0x0000000000000020
+
+// can user change value at run time ?
+#define FPFLAG_WRITERUN     0x0000000000000040
+
+// current write status (computed from above flags, initialized at 1)
+#define FPFLAG_WRITESTATUS  0x0000000000000080
 
 // logging and saving
 #define FPFLAG_LOG          0x0000000000000100 // log on change
@@ -105,18 +119,29 @@
 #define FPFLAG_SAVEONCLOSE  0x0000000000000400 // save to disk on close
 
 // special types
-#define FPFLAG_IMPORTED                                                        \
-    0x0000000000001000 // is this entry imported from another parameter ?
-#define FPFLAG_FEEDBACK                                                        \
-    0x0000000000002000 // is there a separate current value feedback ?
-#define FPFLAG_ONOFF 0x0000000000004000 // bit controlled under TYPE_ONOFF
+
+// is this entry imported from another parameter ?
+#define FPFLAG_IMPORTED     0x0000000000001000
+
+// is there a separate current value feedback ?
+#define FPFLAG_FEEDBACK     0x0000000000002000
+
+// bit controlled under TYPE_ONOFF
+// status of ON/OFF entries is defined by the value of this bit
+// AND the value of the uint64_t integer holding the parameter
+// The bit value is used for FPS-style control
+// The parameter value if used for non-FPS control (command line)
+//
+#define FPFLAG_ONOFF        0x0000000000004000
 
 // parameter testing
-#define FPFLAG_CHECKINIT                                                       \
-    0x0000000000010000 // should parameter be initialized prior to function start ?
-#define FPFLAG_MINLIMIT 0x0000000000020000 // enforce min limit
-#define FPFLAG_MAXLIMIT 0x0000000000040000 // enforce max limit
-#define FPFLAG_ERROR    0x0000000000080000 // is current parameter value OK ?
+
+// should parameter be initialized prior to function start ?
+#define FPFLAG_CHECKINIT    0x0000000000010000
+
+#define FPFLAG_MINLIMIT     0x0000000000020000 // enforce min limit
+#define FPFLAG_MAXLIMIT     0x0000000000040000 // enforce max limit
+#define FPFLAG_ERROR        0x0000000000080000 // is current parameter value OK ?
 
 // if FPTYPE_STREAMNAME
 // STREAM FLAGS: actions and tests related to streams
