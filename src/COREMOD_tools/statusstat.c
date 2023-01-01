@@ -23,7 +23,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);
 
 errno_t COREMOD_TOOLS_statusStat_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_TOOLS_statusStat(data.cmdargtoken[1].val.string,
                                  data.cmdargtoken[2].val.numl);

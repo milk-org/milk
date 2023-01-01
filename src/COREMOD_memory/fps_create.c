@@ -22,7 +22,7 @@ errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
 static errno_t fps_create__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_LONG) +
+    if(0 + CLI_checkarg(1, CLIARG_INT64) +
             CLI_checkarg_noerrmsg(2, CLIARG_STR) ==
             0)
     {

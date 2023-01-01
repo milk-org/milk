@@ -24,7 +24,7 @@ static CLICMDARGDEF farg[] = {{
         NULL
     },
     {
-        CLIARG_LONG,
+        CLIARG_INT64,
         ".kwval",
         "keyword value",
         "1",

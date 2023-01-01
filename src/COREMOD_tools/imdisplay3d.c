@@ -20,7 +20,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 
 errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string,
                                    data.cmdargtoken[2].val.numl);
