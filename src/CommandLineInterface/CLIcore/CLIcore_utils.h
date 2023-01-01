@@ -618,8 +618,8 @@ static inline IMGID makeIMGID_blank()
 
 
 
-static inline IMGID
-makeIMGID_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
+static inline IMGID makeIMGID_2D(CONST_WORD name, uint32_t xsize,
+                                 uint32_t ysize)
 {
     IMGID img   = mkIMGID_from_name(name);
     img.naxis   = 2;
@@ -629,8 +629,8 @@ makeIMGID_2D(CONST_WORD name, uint32_t xsize, uint32_t ysize)
     return img;
 }
 
-static inline IMGID
-makeIMGID_3D(CONST_WORD name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
+static inline IMGID makeIMGID_3D(CONST_WORD name, uint32_t xsize,
+                                 uint32_t ysize, uint32_t zsize)
 {
     IMGID img   = mkIMGID_from_name(name);
     img.naxis   = 3;
