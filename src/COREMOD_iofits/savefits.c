@@ -47,7 +47,7 @@ static CLICMDARGDEF farg[] = {{
     },
     {
         // non-CLI parameter
-        CLIARG_LONG,
+        CLIARG_INT64,
         ".bitpix",
         "0: auto\n"
         "8 /(10) : (un)sig   8-b int\n"

@@ -33,7 +33,7 @@ static errno_t create_image__cli()
     uint8_t   datatype;
 
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg_noerrmsg(2, CLIARG_LONG) ==
+            CLI_checkarg_noerrmsg(2, CLIARG_INT64) ==
             0)
     {
         naxis  = 0;
@@ -73,7 +73,7 @@ static errno_t create_image__cli()
     }
     else if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
             CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+            CLI_checkarg(3, CLIARG_INT64) ==
             0) // type option exists
     {
         datatype = 0;
@@ -176,7 +176,7 @@ static errno_t create_image_shared__cli() // default precision
     long      i;
 
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_LONG) ==
+            CLI_checkarg(2, CLIARG_INT64) ==
             0)
     {
         naxis  = 0;
@@ -230,7 +230,7 @@ static errno_t create_ushort_image_shared__cli() // default precision
     long      i;
 
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_LONG) ==
+            CLI_checkarg(2, CLIARG_INT64) ==
             0)
     {
         naxis  = 0;
@@ -267,7 +267,7 @@ static errno_t create_sshort_image_shared__cli() // default precision
     long      i;
 
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_LONG) ==
+            CLI_checkarg(2, CLIARG_INT64) ==
             0)
     {
         naxis  = 0;

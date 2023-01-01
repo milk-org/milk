@@ -31,19 +31,11 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
     int argpreprocess = 1;
     switch(data.cmdargtoken[1].type)
     {
-        case CLIARG_FLOAT:
-            argpreprocess = 0;
-            break;
-
         case CLIARG_FLOAT32:
             argpreprocess = 0;
             break;
 
         case CLIARG_FLOAT64:
-            argpreprocess = 0;
-            break;
-
-        case CLIARG_LONG:
             argpreprocess = 0;
             break;
 

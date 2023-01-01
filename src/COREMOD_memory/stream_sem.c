@@ -48,7 +48,7 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
 
 static errno_t COREMOD_MEMORY_image_set_createsem__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_createsem(data.cmdargtoken[1].val.string,
                                            data.cmdargtoken[2].val.numl);
@@ -75,7 +75,7 @@ static errno_t COREMOD_MEMORY_image_seminfo__cli()
 
 static errno_t COREMOD_MEMORY_image_set_sempost__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_sempost(data.cmdargtoken[1].val.string,
                                          data.cmdargtoken[2].val.numl);
@@ -89,8 +89,8 @@ static errno_t COREMOD_MEMORY_image_set_sempost__cli()
 
 static errno_t COREMOD_MEMORY_image_set_sempost_loop__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) +
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_image_set_sempost_loop(data.cmdargtoken[1].val.string,
@@ -106,7 +106,7 @@ static errno_t COREMOD_MEMORY_image_set_sempost_loop__cli()
 
 static errno_t COREMOD_MEMORY_image_set_semwait__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_semwait(data.cmdargtoken[1].val.string,
                                          data.cmdargtoken[2].val.numl);
@@ -120,7 +120,7 @@ static errno_t COREMOD_MEMORY_image_set_semwait__cli()
 
 static errno_t COREMOD_MEMORY_image_set_semflush__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_semflush(data.cmdargtoken[1].val.string,
                                           data.cmdargtoken[2].val.numl);

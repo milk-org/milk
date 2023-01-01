@@ -19,8 +19,10 @@
 
 
 
-int functionparameter_SaveParam2disk(FUNCTION_PARAMETER_STRUCT *fpsentry,
-                                     const char                *paramname)
+int functionparameter_SaveParam2disk(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    const char                *paramname
+)
 {
     int pindex;
 

@@ -25,7 +25,7 @@ static errno_t COREMOD_MEMORY_streamDiff__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
             CLI_checkarg(3, 5) + CLI_checkarg(4, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(5, CLIARG_LONG) ==
+            CLI_checkarg(5, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_streamDiff(data.cmdargtoken[1].val.string,

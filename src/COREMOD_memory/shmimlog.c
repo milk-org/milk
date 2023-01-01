@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] = {{
         NULL
     },
     {
-        CLIARG_LONG,
+        CLIARG_INT64,
         ".cubesize",
         "cube size",
         "10000",
