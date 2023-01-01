@@ -23,7 +23,7 @@ long image_list_keywords(const char *IDname);
 errno_t image_write_keyword_L__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_LONG) +
+            CLI_checkarg(3, CLIARG_INT64) +
             CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
             0)
     {

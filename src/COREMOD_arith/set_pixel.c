@@ -30,8 +30,8 @@ imageID arith_image_zero(const char *ID_name);
 
 static errno_t arith_set_pixel_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT) +
-            CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT64) +
+            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) ==
             0)
     {
         arith_set_pixel(data.cmdargtoken[1].val.string,
@@ -49,8 +49,8 @@ static errno_t arith_set_pixel_cli()
 
 static errno_t arith_set_pixel_1Drange_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT) +
-            CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT64) +
+            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) ==
             0)
     {
         arith_set_pixel_1Drange(data.cmdargtoken[1].val.string,
@@ -68,8 +68,8 @@ static errno_t arith_set_pixel_1Drange_cli()
 
 static errno_t arith_set_row_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT64) +
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         arith_set_row(data.cmdargtoken[1].val.string,
@@ -86,8 +86,8 @@ static errno_t arith_set_row_cli()
 
 static errno_t arith_set_col_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT64) +
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         arith_set_col(data.cmdargtoken[1].val.string,

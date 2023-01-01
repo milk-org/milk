@@ -228,7 +228,7 @@ errno_t milk_usleep__cli()
 errno_t functionparameter_CTRLscreen__cli()
 {
     DEBUG_TRACEPOINT("calling CLI_checkarg");
-    if((CLI_checkarg(1, CLIARG_LONG) == 0) &&
+    if((CLI_checkarg(1, CLIARG_INT64) == 0) &&
             (CLI_checkarg(2, CLIARG_STR) == 0) &&
             (CLI_checkarg(3, CLIARG_STR) == 0))
     {

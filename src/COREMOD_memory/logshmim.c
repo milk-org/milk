@@ -71,7 +71,7 @@ static errno_t COREMOD_MEMORY_logshim_printstatus__cli()
 static errno_t COREMOD_MEMORY_logshim_set_on__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_LONG) ==
+            CLI_checkarg(2, CLIARG_INT64) ==
             0)
     {
         printf("logshim_set_on ----------------------\n");
@@ -88,7 +88,7 @@ static errno_t COREMOD_MEMORY_logshim_set_on__cli()
 static errno_t COREMOD_MEMORY_logshim_set_logexit__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_LONG) ==
+            CLI_checkarg(2, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_logshim_set_logexit(data.cmdargtoken[1].val.string,
@@ -109,7 +109,7 @@ static errno_t COREMOD_MEMORY_sharedMem_2Dim_log__cli()
         sprintf(data.cmdargtoken[4].val.string, "null");
     }
 
-    if(0 + CLI_checkarg(1, 3) + CLI_checkarg(2, CLIARG_LONG) +
+    if(0 + CLI_checkarg(1, 3) + CLI_checkarg(2, CLIARG_INT64) +
             CLI_checkarg(3, 3) ==
             0)
     {

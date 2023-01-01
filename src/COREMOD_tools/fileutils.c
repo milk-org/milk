@@ -27,7 +27,7 @@ errno_t write_float_file(const char *fname, float value);
 static errno_t write_flot_file_cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_FLOAT) ==
+            CLI_checkarg(2, CLIARG_FLOAT64) ==
             0)
     {
         write_float_file(data.cmdargtoken[1].val.string,

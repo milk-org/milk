@@ -22,7 +22,7 @@ errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1);
 
 static errno_t COREMOD_MEMORY_image_set_status__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_status(data.cmdargtoken[1].val.string,
                                         (int) data.cmdargtoken[2].val.numl);
@@ -36,7 +36,7 @@ static errno_t COREMOD_MEMORY_image_set_status__cli()
 
 static errno_t COREMOD_MEMORY_image_set_cnt0__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_cnt0(data.cmdargtoken[1].val.string,
                                       (int) data.cmdargtoken[2].val.numl);
@@ -50,7 +50,7 @@ static errno_t COREMOD_MEMORY_image_set_cnt0__cli()
 
 static errno_t COREMOD_MEMORY_image_set_cnt1__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) == 0)
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
     {
         COREMOD_MEMORY_image_set_cnt1(data.cmdargtoken[1].val.string,
                                       (int) data.cmdargtoken[2].val.numl);

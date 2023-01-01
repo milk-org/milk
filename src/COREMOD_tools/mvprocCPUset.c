@@ -38,7 +38,7 @@ errno_t COREMOD_TOOLS_mvProcTset_cli()
 
 errno_t COREMOD_TOOLS_mvProcTsetExt_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_LONG) +
+    if(0 + CLI_checkarg(1, CLIARG_INT64) +
             CLI_checkarg(2, CLIARG_STR_NOT_IMG) ==
             0)
     {
@@ -68,8 +68,8 @@ errno_t COREMOD_TOOLS_mvProcCPUset_cli()
 
 errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_INT64) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         COREMOD_TOOLS_mvProcCPUsetExt(data.cmdargtoken[1].val.numl,

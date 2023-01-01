@@ -11,10 +11,11 @@
  * Most recent parameter value stored in this file
  *
  */
-int functionparameter_GetFileName(FUNCTION_PARAMETER_STRUCT *fps,
-                                  FUNCTION_PARAMETER        *fparam,
-                                  char                      *outfname,
-                                  char                      *tagname)
+int functionparameter_GetFileName(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    FUNCTION_PARAMETER        *fparam,
+    char                      *outfname,
+    char                      *tagname)
 {
     char ffname[STRINGMAXLEN_FULLFILENAME];
     char fname1[STRINGMAXLEN_FILENAME];

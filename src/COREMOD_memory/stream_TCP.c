@@ -48,8 +48,8 @@ COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority);
 
 static errno_t COREMOD_MEMORY_testfunction_semaphore__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_LONG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) +
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string,
@@ -66,8 +66,8 @@ static errno_t COREMOD_MEMORY_testfunction_semaphore__cli()
 static errno_t COREMOD_MEMORY_image_NETWORKtransmit__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) +
-            CLI_checkarg(5, CLIARG_LONG) ==
+            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
+            CLI_checkarg(5, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_image_NETWORKtransmit(data.cmdargtoken[1].val.string,
@@ -85,8 +85,8 @@ static errno_t COREMOD_MEMORY_image_NETWORKtransmit__cli()
 
 static errno_t COREMOD_MEMORY_image_NETWORKreceive__cli()
 {
-    if(0 + CLI_checkarg(1, CLIARG_LONG) + CLI_checkarg(2, CLIARG_LONG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+    if(0 + CLI_checkarg(1, CLIARG_INT64) + CLI_checkarg(2, CLIARG_INT64) +
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_image_NETWORKreceive(data.cmdargtoken[1].val.numl,

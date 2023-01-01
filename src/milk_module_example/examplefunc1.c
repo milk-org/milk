@@ -35,7 +35,7 @@ static CLICMDARGDEF farg[] =
     },
     {
         // hidden argument is not part of CLI call, FPFLAG ignored
-        CLIARG_FLOAT,
+        CLIARG_FLOAT64,
         ".scaling",
         "scaling coefficient",
         "1.0",

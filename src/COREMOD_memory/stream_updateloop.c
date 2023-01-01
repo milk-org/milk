@@ -45,7 +45,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname,
 static errno_t COREMOD_MEMORY_image_streamburst__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, CLIARG_LONG) ==
+            CLI_checkarg(3, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_image_streamburst(data.cmdargtoken[1].val.string,
@@ -62,10 +62,10 @@ static errno_t COREMOD_MEMORY_image_streamburst__cli()
 static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
-            CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) +
-            CLI_checkarg(5, CLIARG_LONG) + CLI_checkarg(6, CLIARG_LONG) +
-            CLI_checkarg(7, CLIARG_STR) + CLI_checkarg(8, CLIARG_LONG) +
-            CLI_checkarg(9, CLIARG_LONG) ==
+            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
+            CLI_checkarg(5, CLIARG_INT64) + CLI_checkarg(6, CLIARG_INT64) +
+            CLI_checkarg(7, CLIARG_STR) + CLI_checkarg(8, CLIARG_INT64) +
+            CLI_checkarg(9, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_image_streamupdateloop(data.cmdargtoken[1].val.string,
@@ -88,9 +88,9 @@ static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
 static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
-            CLI_checkarg(3, CLIARG_LONG) + CLI_checkarg(4, CLIARG_LONG) +
-            CLI_checkarg(5, CLIARG_STR) + CLI_checkarg(6, CLIARG_LONG) +
-            CLI_checkarg(7, CLIARG_LONG) ==
+            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
+            CLI_checkarg(5, CLIARG_STR) + CLI_checkarg(6, CLIARG_INT64) +
+            CLI_checkarg(7, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_image_streamupdateloop_semtrig(

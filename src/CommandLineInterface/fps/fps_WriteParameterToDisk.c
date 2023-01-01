@@ -27,10 +27,11 @@
  *
  *
  */
-int functionparameter_WriteParameterToDisk(FUNCTION_PARAMETER_STRUCT *fpsentry,
-        int                        pindex,
-        char                      *tagname,
-        char *commentstr)
+int functionparameter_WriteParameterToDisk(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int                        pindex,
+    char                      *tagname,
+    char *commentstr)
 {
     char  fname[STRINGMAXLEN_FULLFILENAME];
     FILE *fp;

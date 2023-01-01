@@ -33,7 +33,7 @@ static CLICMDARGDEF farg[] =
         NULL
     },
     {
-        CLIARG_LONG,
+        CLIARG_INT64,
         ".errmode",
         "errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)",
         "1",

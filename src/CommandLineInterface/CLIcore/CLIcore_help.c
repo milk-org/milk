@@ -503,12 +503,28 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
 
             switch(fpscliarg[arg].type)
             {
-                case CLIARG_FLOAT:
-                    strcpy(typestring, "float");
+                case CLIARG_FLOAT32:
+                    strcpy(typestring, "float32");
                     break;
 
-                case CLIARG_LONG:
-                    strcpy(typestring, "long");
+                case CLIARG_FLOAT64:
+                    strcpy(typestring, "float64");
+                    break;
+
+                case CLIARG_INT32:
+                    strcpy(typestring, "int32");
+                    break;
+
+                case CLIARG_UINT32:
+                    strcpy(typestring, "uint32");
+                    break;
+
+                case CLIARG_INT64:
+                    strcpy(typestring, "int64");
+                    break;
+
+                case CLIARG_UINT64:
+                    strcpy(typestring, "uint64");
                     break;
 
                 case CLIARG_STR_NOT_IMG:

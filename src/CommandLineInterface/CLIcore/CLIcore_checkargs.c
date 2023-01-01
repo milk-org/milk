@@ -56,10 +56,10 @@ static int CLI_checkarg0(
 
     switch(argtype & 0x0000FFFF)  // compare lowest 16-bit
     {
-        case CLIARG_FLOAT: // should be float
+        case CLIARG_FLOAT64: // should be float
             switch(data.cmdargtoken[argnum].type)
             {
-                case CLIARG_FLOAT: // is float -> OK
+                case CLIARG_FLOAT32: // is float -> OK
                     data.cmdargtoken[argnum].val.numl =
                         (long) data.cmdargtoken[argnum].val.numf;
                     snprintf(data.cmdargtoken[argnum].val.string,
@@ -69,14 +69,14 @@ static int CLI_checkarg0(
                     rval = 0;
                     break;
 
-                case CLIARG_LONG: // is long -> convert long to float
+                case CLIARG_INT64: // is long -> convert long to float
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%ld",
                              data.cmdargtoken[argnum].val.numl);
                     data.cmdargtoken[argnum].val.numf =
                         (double) data.cmdargtoken[argnum].val.numl;
-                    data.cmdargtoken[argnum].type = CLIARG_FLOAT;
+                    data.cmdargtoken[argnum].type = CLIARG_FLOAT64;
                     rval                          = 0;
                     break;
 
@@ -98,16 +98,16 @@ static int CLI_checkarg0(
                     {
                         switch(data.variable[IDv].type)
                         {
-                            case CLIARG_FLOAT:
+                            case CLIARG_FLOAT64:
                                 data.cmdargtoken[argnum].val.numf =
                                     data.variable[IDv].value.f;
-                                data.cmdargtoken[argnum].type = CLIARG_FLOAT;
+                                data.cmdargtoken[argnum].type = CLIARG_FLOAT64;
                                 rval                          = 0;
                                 break;
-                            case CLIARG_LONG:
+                            case CLIARG_INT64:
                                 data.cmdargtoken[argnum].val.numf =
                                     1.0 * data.variable[IDv].value.l;
-                                data.cmdargtoken[argnum].type = CLIARG_FLOAT;
+                                data.cmdargtoken[argnum].type = CLIARG_FLOAT64;
                                 rval                          = 0;
                                 break;
                             default:
@@ -154,17 +154,17 @@ static int CLI_checkarg0(
                         atof(data.cmdargtoken[argnum].val.string);
                     snprintf(data.cmdargtoken[argnum].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL,
                              " ");
-                    data.cmdargtoken[argnum].type = CLIARG_FLOAT;
+                    data.cmdargtoken[argnum].type = CLIARG_FLOAT64;
                     rval                          = 0;
                     break;
             }
             break;
 
-        case CLIARG_LONG: // should be integer
+        case CLIARG_INT64: // should be integer
             switch(data.cmdargtoken[argnum].type)
             {
 
-                case CLIARG_FLOAT:
+                case CLIARG_FLOAT64:
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%f",
@@ -176,11 +176,11 @@ static int CLI_checkarg0(
                     }
                     data.cmdargtoken[argnum].val.numl =
                         (long)(data.cmdargtoken[argnum].val.numf + 0.5);
-                    data.cmdargtoken[argnum].type = CLIARG_LONG;
+                    data.cmdargtoken[argnum].type = CLIARG_INT64;
                     rval                          = 0;
                     break;
 
-                case CLIARG_LONG:
+                case CLIARG_INT64:
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%ld",
@@ -206,16 +206,16 @@ static int CLI_checkarg0(
                     {
                         switch(data.variable[IDv].type)
                         {
-                            case CLIARG_FLOAT: // double
+                            case CLIARG_FLOAT64: // double
                                 data.cmdargtoken[argnum].val.numl =
                                     (long)(data.variable[IDv].value.f);
-                                data.cmdargtoken[argnum].type = CLIARG_LONG;
+                                data.cmdargtoken[argnum].type = CLIARG_INT64;
                                 rval                          = 0;
                                 break;
-                            case CLIARG_LONG: // long
+                            case CLIARG_INT64: // long
                                 data.cmdargtoken[argnum].val.numl =
                                     data.variable[IDv].value.l;
-                                data.cmdargtoken[argnum].type = CLIARG_LONG;
+                                data.cmdargtoken[argnum].type = CLIARG_INT64;
                                 rval                          = 0;
                                 break;
                             default:
@@ -258,7 +258,7 @@ static int CLI_checkarg0(
         case CLIARG_STR_NOT_IMG: // should be string, but not image
             switch(data.cmdargtoken[argnum].type)
             {
-                case CLIARG_FLOAT: // if float -> not OK
+                case CLIARG_FLOAT64: // if float -> not OK
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%f",
@@ -272,7 +272,7 @@ static int CLI_checkarg0(
                     rval = 1;
                     break;
 
-                case CLIARG_LONG: // if long -> not OK
+                case CLIARG_INT64: // if long -> not OK
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%ld",
@@ -317,7 +317,7 @@ static int CLI_checkarg0(
             switch(data.cmdargtoken[argnum].type)
             {
 
-                case CLIARG_FLOAT: // if float -> not OK
+                case CLIARG_FLOAT64: // if float -> not OK
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%f",
@@ -331,7 +331,7 @@ static int CLI_checkarg0(
                     rval = 1;
                     break;
 
-                case CLIARG_LONG: // if long -> not OK
+                case CLIARG_INT64: // if long -> not OK
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%ld",
@@ -379,7 +379,7 @@ static int CLI_checkarg0(
             switch(data.cmdargtoken[argnum].type)
             {
 
-                case CLIARG_FLOAT: // if float -> not OK
+                case CLIARG_FLOAT64: // if float -> not OK
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%f",
@@ -393,7 +393,7 @@ static int CLI_checkarg0(
                     rval = 1;
                     break;
 
-                case CLIARG_LONG: // if long -> not OK
+                case CLIARG_INT64: // if long -> not OK
                     snprintf(data.cmdargtoken[argnum].val.string,
                              STRINGMAXLEN_CMDARGTOKEN_VAL,
                              "%ld",
@@ -624,9 +624,6 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
         char argtypestring[16];
         switch(fpscliarg[arg].type)
         {
-            case CLIARG_FLOAT:
-                strcpy(argtypestring, "FLOAT");
-                break;
             case CLIARG_FLOAT32:
                 strcpy(argtypestring, "FLT32");
                 break;
@@ -635,9 +632,6 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
                 break;
             case CLIARG_ONOFF:
                 strcpy(argtypestring, "ONOFF");
-                break;
-            case CLIARG_LONG:
-                strcpy(argtypestring, "LONG");
                 break;
             case CLIARG_INT32:
                 strcpy(argtypestring, "INT32");
@@ -685,37 +679,37 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
                     case CLIARG_FLOAT32: // if desired type is float single precision
                         data.cmdargtoken[CLIarg + 1].val.numf =
                             data.cmd[cmdi].argdata[arg].val.f32;
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT32;
                         break;
 
                     case CLIARG_FLOAT64: // if desired type is float double precision
                         data.cmdargtoken[CLIarg + 1].val.numf =
                             data.cmd[cmdi].argdata[arg].val.f64;
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_FLOAT64;
                         break;
 
                     case CLIARG_INT32:
                         data.cmdargtoken[CLIarg + 1].val.numl =
                             data.cmd[cmdi].argdata[arg].val.i32;
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_LONG;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_INT32;
                         break;
 
                     case CLIARG_INT64:
                         data.cmdargtoken[CLIarg + 1].val.numl =
                             data.cmd[cmdi].argdata[arg].val.i64;
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_LONG;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_INT64;
                         break;
 
                     case CLIARG_UINT32:
                         data.cmdargtoken[CLIarg + 1].val.numl =
                             data.cmd[cmdi].argdata[arg].val.ui32;
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_LONG;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_UINT32;
                         break;
 
                     case CLIARG_UINT64:
                         data.cmdargtoken[CLIarg + 1].val.numl =
                             data.cmd[cmdi].argdata[arg].val.ui64;
-                        data.cmdargtoken[CLIarg + 1].type = CLIARG_LONG;
+                        data.cmdargtoken[CLIarg + 1].type = CLIARG_UINT64;
                         break;
 
                     case CLIARG_STR_NOT_IMG: // if desired is string not image
@@ -856,14 +850,6 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
             // if argument is part of FPS
             switch(fpscliarg[arg].type)
             {
-                case CLIARG_FLOAT:
-                    functionparameter_SetParamValue_FLOAT64(
-                        fps,
-                        fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numf);
-                    NBarg_processed++;
-                    break;
-
                 case CLIARG_FLOAT32:
                     functionparameter_SetParamValue_FLOAT32(
                         fps,
@@ -885,14 +871,6 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                         fps,
                         fpscliarg[arg].fpstag,
                         (int) data.cmdargtoken[arg + 1].val.numl);
-                    NBarg_processed++;
-                    break;
-
-                case CLIARG_LONG:
-                    functionparameter_SetParamValue_INT64(
-                        fps,
-                        fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numl);
                     NBarg_processed++;
                     break;
 

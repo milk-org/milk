@@ -26,8 +26,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
 static errno_t COREMOD_MEMORY_streamPaste__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, 5) + CLI_checkarg(4, CLIARG_LONG) +
-            CLI_checkarg(5, CLIARG_LONG) + CLI_checkarg(6, CLIARG_LONG) ==
+            CLI_checkarg(3, 5) + CLI_checkarg(4, CLIARG_INT64) +
+            CLI_checkarg(5, CLIARG_INT64) + CLI_checkarg(6, CLIARG_INT64) ==
             0)
     {
         COREMOD_MEMORY_streamPaste(data.cmdargtoken[1].val.string,
