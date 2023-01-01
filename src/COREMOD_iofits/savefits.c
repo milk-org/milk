@@ -81,6 +81,13 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
+
+
+
+
+
+
+
 /**
  * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
  * optional input image truncation
@@ -118,7 +125,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 
     char fnametmp[STRINGMAXLEN_FILENAME];
 
-    printf("saving %s to %s\n", inputimname, outputFITSname);
+    printf(">> saving %s to %s\n", inputimname, outputFITSname);
     /*
         WRITE_FILENAME(fnametmp,
                        "_savefits_atomic_%s_%d_%ld.tmp.fits",
@@ -198,7 +205,65 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
             break;
     }
 
-    //printf("bitpix = %d\n", bitpix);
+    if(outputbitpix == 0)
+    {
+        // match input
+        switch(datatype)
+        {
+
+            case _DATATYPE_INT8:
+                bitpix = SBYTE_IMG;
+                break;
+
+            case _DATATYPE_UINT8:
+                bitpix = BYTE_IMG;
+                break;
+
+
+            case _DATATYPE_INT16:
+                bitpix = SHORT_IMG;
+                break;
+
+            case _DATATYPE_UINT16:
+                bitpix = USHORT_IMG;
+                break;
+
+            case _DATATYPE_INT32:
+                bitpix = LONG_IMG;
+                break;
+
+            case _DATATYPE_UINT32:
+                bitpix = ULONG_IMG;
+                break;
+
+            case _DATATYPE_INT64:
+                bitpix = LONGLONG_IMG;
+                break;
+
+            case _DATATYPE_UINT64:
+                bitpix = ULONGLONG_IMG;
+                break;
+
+            case _DATATYPE_FLOAT:
+                bitpix = FLOAT_IMG;
+                break;
+
+
+            case _DATATYPE_DOUBLE:
+                bitpix = DOUBLE_IMG;
+                break;
+
+            default:
+                bitpix = FLOAT_IMG;
+                break;
+
+        }
+    }
+
+
+
+    printf("%d -> bitpix = %d\n", outputbitpix, bitpix);
+    fflush(stdout);
 
     fitsfile *fptr;
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -589,6 +654,14 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
+
+
+
+
+
+
 
 
 
