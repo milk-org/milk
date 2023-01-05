@@ -149,7 +149,7 @@ message("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
 
 # link-time optimizer
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-fwhole-program>)
 #add_compile_options(-fwhole-program)
 # NOTE: -fstack-usage is incompatible with link-time optimizer
