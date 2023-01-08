@@ -437,11 +437,13 @@ double arith_image_percentile(const char *ID_name, double fraction)
     switch(datatype)
     {
         case _DATATYPE_FLOAT:
+            arrayF = array_raw;
             quick_sort_float(arrayF, nelement);
-            value = (double) arrayF[(long)(fraction * nelement)];
+            value = 0.0;//(double) arrayF[(long)(fraction * nelement)];
             break;
 
         case _DATATYPE_DOUBLE:
+            arrayD = array_raw;
             quick_sort_double(arrayD, nelement);
             value = arrayD[(long)(fraction * nelement)];
             break;
