@@ -31,6 +31,13 @@ else()
 endif()
 endif(USE_CUDA)
 
+
+
+find_package(PkgConfig REQUIRED)
+find_package(MKL CONFIG)
+pkg_check_modules(OPENBLAS openblas)
+
+
 enable_language(C)
 
 
@@ -76,6 +83,7 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # main libraries
 # linked to executable by default
 #
+
 
 # =======================================
 # MODULES INCLUDED
@@ -181,8 +189,14 @@ message("USE_MAGMA                = ${USE_MAGMA}")
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
 
+
+
+
+
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
 
 
 # ADD SOURCE DIRECTORIES
@@ -218,6 +232,7 @@ if(USE_CUDA)
 target_link_libraries (milk PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
 set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
 endif(USE_CUDA)
+
 
 
 
