@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+
+MSdescr="copy FITS cube slice to shared memory stream"
+
+MSextdescr=""
+
+source milk-script-std-config
+
+RequiredCommands=(milk)
+RequiredFiles=()
+RequiredDirs=()
+
+MSarg+=( "file:string:FITS cube file name" )
+MSarg+=( "slice:int:cube slice" )
+MSarg+=( "stream:string:stream name" )
+
+
+
+source milk-argparse
+
+fname="${inputMSargARRAY[0]}"
+slice="${inputMSargARRAY[1]}"
+sname="${inputMSargARRAY[2]}"
+
+
+set +u
+if [ -w "${MILK_SHM_DIR}/" ];
+then
+SFDIR="${MILK_SHM_DIR}/"
+else
+SFDIR="/tmp"
+fi
+set -u
+
+SF="${SFDIR}/milkCLIstartup.${pname}.$$"
+echo "loadfits \"${fname}[*, *, ${slice}:${slice}]\" im" > $SF
+echo "readshmim ${sname}" >> $SF
+echo "cpsh im ${sname}" >> $SF
+echo "exitCLI" >> $SF
+
+
+MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
+
+rm ${SF}
+
+

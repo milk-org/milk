@@ -317,6 +317,7 @@ install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
 			scripts/milk-all
 			scripts/milk-argparse
+			scripts/milk-cubeslice2shm
 			scripts/milk-exec
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
@@ -330,15 +331,15 @@ install(PROGRAMS
 			scripts/milk-logshimoff
 			scripts/milk-logshimon
 			scripts/milk-logshimstat
-      scripts/milk-makecsetandrt
+			scripts/milk-makecsetandrt
 			scripts/merge3DfitsTelemetry
 			scripts/milk-scriptexample
-      scripts/milk-script-std-config
+			scripts/milk-script-std-config
 			scripts/milk-streamlink
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
 			scripts/milk-shmim-rm
-      scripts/milk-shmim-zero
+			scripts/milk-shmim-zero
 			scripts/milk-shmimmon
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
