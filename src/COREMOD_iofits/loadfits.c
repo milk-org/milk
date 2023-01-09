@@ -124,6 +124,8 @@ errno_t load_fits(const char *restrict file_name,
         {
             if(fileOK == 0)
             {
+
+                printf(">>>>>>> loadfits file \"%s\"\n", file_name);
                 int status = 0;
                 fits_open_file(&fptr, file_name, READONLY, &status);
 
