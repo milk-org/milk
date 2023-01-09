@@ -62,6 +62,7 @@ static int CLI_checkarg0(
         //
         case CLIARG_FLOAT32: // should be float32
         case CLIARG_FLOAT64: // should be float64
+        case CLIARG_FLOAT: // to be deprecated
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
@@ -196,7 +197,8 @@ static int CLI_checkarg0(
         case CLIARG_UINT32: // should be  uint32
         case CLIARG_UINT64: // should be uint64
         case CLIARG_ONOFF:  // should be on/off (= uint64)
-            //printf("ARG is CLIARG_XINTXX\n");
+        case CLIARG_LONG: // to be deprecated
+            printf("ARG is CLIARG_XINTXX\n");
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
@@ -608,6 +610,10 @@ static int CLI_checkarg0(
                     rval = 0;
                     break;
             }
+            break;
+
+        default :
+            printf("Can't resolve arg type\n");
             break;
     }
 
