@@ -16,8 +16,8 @@
 // higher 16-bit can be more specific and used for conversion
 
 #define CLIARG_MISSING      0x00000000
-//#define CLIARG_FLOAT        0x00000001 // floating point number, defaults to float64
-//#define CLIARG_LONG         0x00000002 // integer, default to int64
+#define CLIARG_FLOAT        0x00000001 // floating point number, defaults to float64
+#define CLIARG_LONG         0x00000002 // integer, default to int64
 #define CLIARG_STR_NOT_IMG  0x00000003 // string, not existing image
 #define CLIARG_IMG          0x00000004 // existing image or stream
 #define CLIARG_STR          0x00000005 // string
