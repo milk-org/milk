@@ -492,88 +492,91 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     char  namestring[200];
     strncpy(namestring, name, 199);
 
-    pch = strtok(namestring, ">");
-    while(pch != NULL)
+    if(strlen(namestring) != 0)
     {
-        pch1 = pch;
-        //printf("[%2d] %s\n", nbword, pch);
+        pch = strtok(namestring, ">");
+        while(pch != NULL)
+        {
+            pch1 = pch;
+            //printf("[%2d] %s\n", nbword, pch);
 
-        if(strcmp(pch, "s") == 0)
-        {
-            printf("    shared memory\n");
-            img.shared = 1;
-        }
+            if(strcmp(pch, "s") == 0)
+            {
+                printf("    shared memory\n");
+                img.shared = 1;
+            }
 
-        if(strcmp(pch, "tui8") == 0)
-        {
-            printf("    data type unsigned 8-bit int\n");
-            img.datatype = _DATATYPE_UINT8;
-        }
-        if(strcmp(pch, "tsi8") == 0)
-        {
-            printf("    data type signed 8-bit int\n");
-            img.datatype = _DATATYPE_INT8;
-        }
-        if(strcmp(pch, "tui16") == 0)
-        {
-            printf("    data type unsigned 16-bit int\n");
-            img.datatype = _DATATYPE_UINT16;
-        }
-        if(strcmp(pch, "tsi16") == 0)
-        {
-            printf("    data type signed 16-bit int\n");
-            img.datatype = _DATATYPE_INT16;
-        }
-        if(strcmp(pch, "tui32") == 0)
-        {
-            printf("    data type unsigned 32-bit int\n");
-            img.datatype = _DATATYPE_UINT32;
-        }
-        if(strcmp(pch, "tsi32") == 0)
-        {
-            printf("    data type signed 32-bit int\n");
-            img.datatype = _DATATYPE_INT32;
-        }
-        if(strcmp(pch, "tui64") == 0)
-        {
-            printf("    data type unsigned 64-bit int\n");
-            img.datatype = _DATATYPE_UINT64;
-        }
-        if(strcmp(pch, "tsi64") == 0)
-        {
-            printf("    data type signed 64-bit int\n");
-            img.datatype = _DATATYPE_INT64;
-        }
+            if(strcmp(pch, "tui8") == 0)
+            {
+                printf("    data type unsigned 8-bit int\n");
+                img.datatype = _DATATYPE_UINT8;
+            }
+            if(strcmp(pch, "tsi8") == 0)
+            {
+                printf("    data type signed 8-bit int\n");
+                img.datatype = _DATATYPE_INT8;
+            }
+            if(strcmp(pch, "tui16") == 0)
+            {
+                printf("    data type unsigned 16-bit int\n");
+                img.datatype = _DATATYPE_UINT16;
+            }
+            if(strcmp(pch, "tsi16") == 0)
+            {
+                printf("    data type signed 16-bit int\n");
+                img.datatype = _DATATYPE_INT16;
+            }
+            if(strcmp(pch, "tui32") == 0)
+            {
+                printf("    data type unsigned 32-bit int\n");
+                img.datatype = _DATATYPE_UINT32;
+            }
+            if(strcmp(pch, "tsi32") == 0)
+            {
+                printf("    data type signed 32-bit int\n");
+                img.datatype = _DATATYPE_INT32;
+            }
+            if(strcmp(pch, "tui64") == 0)
+            {
+                printf("    data type unsigned 64-bit int\n");
+                img.datatype = _DATATYPE_UINT64;
+            }
+            if(strcmp(pch, "tsi64") == 0)
+            {
+                printf("    data type signed 64-bit int\n");
+                img.datatype = _DATATYPE_INT64;
+            }
 
-        if(strcmp(pch, "tf32") == 0)
-        {
-            printf("    data type double (32)\n");
-            img.datatype = _DATATYPE_FLOAT;
-        }
-        if(strcmp(pch, "tf64") == 0)
-        {
-            printf("    data type float (64)\n");
-            img.datatype = _DATATYPE_DOUBLE;
-        }
+            if(strcmp(pch, "tf32") == 0)
+            {
+                printf("    data type double (32)\n");
+                img.datatype = _DATATYPE_FLOAT;
+            }
+            if(strcmp(pch, "tf64") == 0)
+            {
+                printf("    data type float (64)\n");
+                img.datatype = _DATATYPE_DOUBLE;
+            }
 
-        if(pch[0] == 'k')
-        {
-            int nbkw;
-            sscanf(pch, "k%d", &nbkw);
-            printf("    %d keywords\n", nbkw);
-            img.NBkw = nbkw;
-        }
+            if(pch[0] == 'k')
+            {
+                int nbkw;
+                sscanf(pch, "k%d", &nbkw);
+                printf("    %d keywords\n", nbkw);
+                img.NBkw = nbkw;
+            }
 
-        if(pch[0] == 'c')
-        {
-            int cbsize;
-            sscanf(pch, "c%d", &cbsize);
-            printf("    %d circular buffer size\n", cbsize);
-            img.CBsize = cbsize;
-        }
+            if(pch[0] == 'c')
+            {
+                int cbsize;
+                sscanf(pch, "c%d", &cbsize);
+                printf("    %d circular buffer size\n", cbsize);
+                img.CBsize = cbsize;
+            }
 
-        pch = strtok(NULL, ">");
-        nbword++;
+            pch = strtok(NULL, ">");
+            nbword++;
+        }
     }
 
     img.ID        = -1;
@@ -790,7 +793,6 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
  */
 static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
 {
-
     // IF:
     // Not resolved before OR create counter mismatch OR not used
     if(img->ID == -1 || (img->createcnt != data.image[img->ID].createcnt) ||
