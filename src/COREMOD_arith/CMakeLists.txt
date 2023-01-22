@@ -43,6 +43,11 @@ set(INCLUDEFILES
 	execute_arith.h
 )
 
+set(SCRIPTS
+    scripts/cacao-cacao-fpslistadd-WFSCROPMASK
+)
+
+
 
 # DEFAULT SETTINGS
 # Do not change unless needed
