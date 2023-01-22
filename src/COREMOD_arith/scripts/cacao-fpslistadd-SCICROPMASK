@@ -10,15 +10,15 @@ else
 
 
 
-if [ "${CACAO_FPSPROC_WFSCROPMASK}" = "ON" ]; then
+if [ "${CACAO_FPSPROC_SCICROPMASK}" = "ON" ]; then
 
-    echolog "ON  CACAO_FPSPROC_WFSCROPMASK"
+    echolog "ON  CACAO_FPSPROC_SCICROPMASK"
     # ==============================================================================
     # ==========  streamdelay for simulation mode ==================================
     # ==============================================================================
 
     # FPS name
-    fpsname="wfscropmask"
+    fpsname="scicropmask"
     fpsarg0="${CACAO_LOOPNUMBER}"
 
     # FPS full name
@@ -35,7 +35,7 @@ if [ "${CACAO_FPSPROC_WFSCROPMASK}" = "ON" ]; then
         addfpscmdheader
         
         addfpscmd "setval ${fpsfname}.insname ${CACAO_WFSSTREAM}"
-        addfpscmd "setval ${fpsfname}.outsname aol${CACAO_LOOPNUMBER}_wfsim"
+        addfpscmd "setval ${fpsfname}.outsname aol${CACAO_LOOPNUMBER}_outsci"
     fi
 
 
