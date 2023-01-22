@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+
+# script 1-line description
+MSdescr="average stream frames"
+
+# Extended description
+MSdescr="average stream frames
+"
+
+# standard configuration
+#
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk )
+RequiredFiles=()
+RequiredDirs=()
+
+
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "streamname:string:stream name" )
+MSarg+=( "nbave:integer:number of frames" )
+MSarg+=( "outfits:string:output FITS filename" )
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+
+# parse arguments
+source milk-argparse
+streamname="${inputMSargARRAY[0]}"
+NBframe="${inputMSargARRAY[1]}"
+outfname="${inputMSargARRAY[2]}"
+
+echo ${streamname}
+
+MILK_QUIET=1 milk << EOF
+
+readshmim ${streamname}
+streamave ..procinfo 1
+streamave ..triggersname ${streamname}
+streamave ..triggermode 3
+streamave ..loopcntMax ${NBframe}
+streamave ${streamname} imave ${NBframe}
+saveFITS imave "${outfname}"
+exitCLI
+EOF
