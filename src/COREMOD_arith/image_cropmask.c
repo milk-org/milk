@@ -52,12 +52,12 @@ static CLICMDARGDEF farg[] =
     },
     {
         CLIARG_STREAM,
-        ".insname",
-        "input stream name",
+        ".outsname",
+        "output stream name",
         "outim",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &insname,
-        &fpi_insname
+        (void **) &outsname,
+        &fpi_outsname
     },
     {
         CLIARG_UINT32,
