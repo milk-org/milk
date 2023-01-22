@@ -35,6 +35,9 @@ if [ "${CACAO_FPSPROC_SCICROPMASK}" = "ON" ]; then
         addfpscmdheader
         
         addfpscmd "setval ${fpsfname}.insname ${CACAO_WFSSTREAM}"
+        addfpscmd "setval ${fpsfname}.procinfo.loopcntMax -1"
+        addfpscmd "setval ${fpsfname}.procinfo.triggermode 3"
+        addfpscmd "setval ${fpsfname}.procinfo.triggersname ${CACAO_WFSSTREAM}"
         addfpscmd "setval ${fpsfname}.outsname aol${CACAO_LOOPNUMBER}_outsci"
     fi
 
