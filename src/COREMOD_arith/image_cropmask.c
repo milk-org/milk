@@ -178,6 +178,7 @@ static errno_t compute_function()
                 * imgin.im->array.F[ indjj + ii + (*cropxstart) ];
             }
         }
+        processinfo_update_output_stream(processinfo, imgout.ID);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
