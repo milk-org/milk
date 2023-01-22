@@ -44,7 +44,8 @@ set(INCLUDEFILES
 )
 
 set(SCRIPTS
-    scripts/cacao-cacao-fpslistadd-WFSCROPMASK
+    scripts/cacao-fpslistadd-WFSCROPMASK
+	scripts/cacao-fpslistadd-SCICROPMASK
 )
 
 
