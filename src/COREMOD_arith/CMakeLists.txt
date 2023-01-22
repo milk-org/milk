@@ -9,6 +9,7 @@ set(SOURCEFILES
 	${SRCNAME}.c
 	set_pixel.c
 	image_crop.c
+	image_cropmask.c
 	image_merge3D.c
 	image_total.c
 	image_stats.c
@@ -27,6 +28,7 @@ set(INCLUDEFILES
 	${SRCNAME}.h
 	set_pixel.h
 	image_crop.h
+	image_cropmask.h
 	image_merge3D.h
 	image_total.h
 	image_stats.h
