@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
+project(milk LANGUAGES C)
+
 
 # Examples :
 # cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON
@@ -40,8 +42,6 @@ pkg_check_modules(OPENBLAS openblas)
 
 enable_language(C)
 
-
-project(milk LANGUAGES C)
 
 # Version number
 set ( VERSION_MAJOR 1 )
