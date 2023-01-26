@@ -32,40 +32,62 @@ Module inclues key frameworks :
 
 ## Download
 
-	git clone https://github.com/milk-org/milk.git
-	cd milk
-	./fetch_milk_dev.sh
-
+```bash
+git clone https://github.com/milk-org/milk.git
+cd milk
+./fetch_milk_dev.sh
+```
 
 ## Compile
 
 Standard compile:
 
-	mkdir _build
-	cd _build
-	cmake ..
-	make
-	sudo make install
+```bash
+mkdir _build
+cd _build
+cmake ..
+make
+sudo make install
+```
 
 Compile with Python module (check script help with -h option for details):
 
-    ./compile.sh $PWD/local
+```bash
+./compile.sh $PWD/local
+```
+
+Set environment variables (.bashrc or equivalent):
+- MILK_ROOT: Source code directory, for example "/home/coldpenguin/src/milk"
+- MILK_INSTALLDIR: Installation directory, for example "/usr/local/milk"
+- MILK_SHM_DIR: Shared memory directory, for exmaple "/milk/shm"
+
+
+Check installation (from any directory) :
+```bash
+milk-check
+```
+
+
 
 
 ## Interactive tutorial
 
 Pre-requisites: tmux, nnn
-
-	milk-tutorial
+```bash
+milk-tutorial
+```
 
 ## Adding plugins
 
 Compile with cacao plugins:
 
-    ./fetch_cacao_dev.sh
-    ./compile.sh $PWD/local
-
+```bash
+./fetch_cacao_dev.sh
+./compile.sh $PWD/local
+```
 Compile with coffee plugins:
 
-    ./fetch_coffee_dev.sh
-    ./compile.sh $PWD/local
+```bash
+./fetch_coffee_dev.sh
+./compile.sh $PWD/local
+```
