@@ -317,7 +317,8 @@ install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
 			scripts/milk-all
 			scripts/milk-argparse
-			scripts/milk-cubeslice2shm
+			scripts/milk-check
+      scripts/milk-cubeslice2shm
 			scripts/milk-exec
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
@@ -344,7 +345,7 @@ install(PROGRAMS
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
 			scripts/waitforfile
-        DESTINATION bin)
+      DESTINATION bin)
 
 
 # ====================================
