@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+echo "Checking milk installation and configuration ..."
+
+# Color shortcuts
+colR=`tput setaf 1`
+colG=`tput setaf 2`
+colreset=`tput sgr0`
+
+pOK="${colG}[OK ]${colreset}"
+pERR="${colR}[ERR]${colreset}"
+
+# Checking MILK_ROOT
+if [ -z ${MILK_ROOT+x} ]; then 
+	echo "${pERR} MILK_ROOT is unset"
+else 
+	if [ -d ${MILK_ROOT} ]; then
+	echo "${pOK} Directory MILK_ROOT = ${MILK_ROOT} found"
+	else
+	echo "${pERR} Directory MILK_ROOT = ${MILK_ROOT} not found"
+	fi
+fi
+
+# Checking MILK_INSTALLDIR
+if [ -z ${MILK_INSTALLDIR+x} ]; then 
+	echo "${pERR} MILK_INSTALLDIR is unset"
+else 
+	if [ -d ${MILK_INSTALLDIR} ]; then
+	echo "${pOK} Directory MILK_INSTALLDIR = ${MILK_INSTALLDIR} found"
+	else
+	echo "${pERR} Directory MILK_INSTALLDIR = ${MILK_INSTALLDIR} not found"
+	fi
+fi
+
+# Checking MILK_SHM_DIR
+if [ -z ${MILK_SHM_DIR+x} ]; then 
+	echo "${pERR} MILK_SHM_DIR is unset"
+else 
+	if [ -d ${MILK_SHM_DIR} ]; then
+		echo "${pOK} Directory MILK_SHM_DIR = ${MILK_SHM_DIR} found"
+		if [ -w ${MILK_SHM_DIR} ]; then
+			echo "${pOK} Directory MILK_SHM_DIR = ${MILK_SHM_DIR} is writable"
+		else
+			echo "${pERR} Directory MILK_SHM_DIR = ${MILK_SHM_DIR} is not writable"
+		fi
+	else
+		echo "${pERR} Directory MILK_SHM_DIR = ${MILK_SHM_DIR} not found"
+	fi
+fi
+
+# Checking commands
+if command -v milk &> /dev/null
+then
+    echo "${pOK} command milk found"
+else
+	echo "${pERR} command milk not found"
+fi
+
+if command -v milk-all &> /dev/null
+then
+    echo "${pOK} command milk-all found"
+else
+	echo "${pERR} command milk-all not found"
+fi
