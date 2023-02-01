@@ -341,7 +341,6 @@ install(PROGRAMS
 			scripts/milk-shm2FITSloop
 			scripts/milk-shmim-rm
 			scripts/milk-shmim-zero
-			scripts/milk-shmimmon
 			scripts/tmuxkillall
 			scripts/tmuxsessionname
 			scripts/waitforfile
