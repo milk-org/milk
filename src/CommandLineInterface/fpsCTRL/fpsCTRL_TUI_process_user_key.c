@@ -101,26 +101,6 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
             clear();
             break;
 
-        /*    case ctrl('e'): // erase FPS
-        fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-        functionparameter_FPSremove(&fps[fpsindex]);
-
-        functionparameter_scan_fps(fpsCTRLvar->mode,
-                                   fpsCTRLvar->fpsnamemask,
-                                   fps,
-                                   keywnode,
-                                   &fpsCTRLvar->NBkwn,
-                                   &(fpsCTRLvar->NBfps),
-                                   &fpsCTRLvar->NBindex,
-                                   0);
-        clear();
-        //DEBUG_TRACEPOINT("fpsCTRLvar->NBfps = %d\n", fpsCTRLvar->NBfps);
-        // abort();
-        fpsCTRLvar->run_display = 0; // skip next display
-        fpsCTRLvar->fpsindexSelected =
-            0; // safeguard in case current selection disappears
-        break;
-        */
         case 'T': // initialize tmux session
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             functionparameter_FPS_tmux_init(&fps[fpsindex]);
@@ -131,9 +111,11 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
             functionparameter_FPS_tmux_kill(&fps[fpsindex]);
             break;
 
-        case ctrl('e'): // Erase FPS and close tmux sessions
+        case ctrl('e'): // Close tmux sessions and erase FPS
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-
+            functionparameter_RUNstop(&fps[fpsindex]);
+            functionparameter_CONFstop(&fps[fpsindex]);
+            functionparameter_FPS_tmux_kill(&fps[fpsindex]);
             functionparameter_FPSremove(&fps[fpsindex]);
             functionparameter_scan_fps(fpsCTRLvar->mode,
                                        fpsCTRLvar->fpsnamemask,
@@ -330,60 +312,31 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
 
         case 'u': // update conf process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            fps[fpsindex].md->signal |=
-                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-            if(snprintf(msg, stringmaxlen, "UPDATE %s", fps[fpsindex].md->name) <
-                    0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", "%s", msg);
-            //functionparameter_CONFupdate(fps, fpsindex);
+            fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+            functionparameter_outlog("FPSCTRL", "UPDATE %s", fps[fpsindex].md->name);
             break;
 
         case 'R': // start run process if possible
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "RUNSTART %s", fps[fpsindex].md->name) <
-                    0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", "RUNSTART %s", fps[fpsindex].md->name);
             functionparameter_RUNstart(&fps[fpsindex]);
             break;
 
         case ctrl('r'): // stop run process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "RUNSTOP %s", fps[fpsindex].md->name) <
-                    0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", "RUNSTOP %s", fps[fpsindex].md->name);
             functionparameter_RUNstop(&fps[fpsindex]);
             break;
 
         case 'O': // start conf process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg,
-                        stringmaxlen,
-                        "CONFSTART %s",
-                        fps[fpsindex].md->name) < 0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", "CONFSTART %s", fps[fpsindex].md->name);
             functionparameter_CONFstart(&fps[fpsindex]);
             break;
 
         case ctrl('o'): // kill conf process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if(snprintf(msg, stringmaxlen, "CONFSTOP %s", fps[fpsindex].md->name) <
-                    0)
-            {
-                PRINT_ERROR("snprintf error");
-            }
-            functionparameter_outlog("FPSCTRL", msg);
+            functionparameter_outlog("FPSCTRL", "CONFSTOP %s", fps[fpsindex].md->name);
             functionparameter_CONFstop(&fps[fpsindex]);
             break;
 
