@@ -42,7 +42,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
 
             // write first streamproctrace entry
             DEBUG_TRACEPOINT("trigger info");
-            data.image[outstreamID].streamproctrace[0].triggermode =
+            data.image[outstreamID].streamproctrace[0].trigsemindex =
                 processinfo->triggermode;
 
             data.image[outstreamID].streamproctrace[0].procwrite_PID = getpid();
@@ -67,6 +67,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
                     data.image[IDin].md[0].cnt0;
             }
         }
+
         DEBUG_TRACEPOINT(" ");
     }
 
