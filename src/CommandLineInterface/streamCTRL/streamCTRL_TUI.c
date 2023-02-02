@@ -2567,6 +2567,7 @@ errno_t streamCTRL_CTRLscreen()
 
                         if(DisplayDetailLevel == 1)
                         {
+#ifdef IMAGESTRUCT_WRITEHISTORY
                             TUI_newline();
                             TUI_printfw("WRITE timings :\n");
                             int windexref = streamCTRLimages[ID].md->wCBindex;
@@ -2645,6 +2646,7 @@ errno_t streamCTRL_CTRLscreen()
 
 
                             free(dtarray);
+#endif
                         }
                     }
                 }
