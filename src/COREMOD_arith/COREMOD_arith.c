@@ -103,7 +103,7 @@ static errno_t init_module_CLI()
     image_arith__im_f_f__im_addCLIcmd();
 
     image_merge3D_addCLIcmd();
-    
+
     CLIADDCMD_COREMODE_arith__cropmask();
 
     // add atexit functions here
