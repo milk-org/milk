@@ -22,7 +22,10 @@ extern PROCESSINFOLIST *pinfolist;
  *
 */
 
-PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
+PROCESSINFO *processinfo_shm_create(
+    const char *pname,
+    int CTRLval
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -189,6 +192,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
     clock_gettime(CLOCK_REALTIME, &tnow);
 
+#ifdef PROCESSINFO_LOGFILE
     {
         int slen = snprintf(pinfo->logfilename,
                             STRINGMAXLEN_PROCESSINFO_LOGFILENAME,
@@ -219,6 +223,7 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     char msgstring[msgstrlen];
     snprintf(msgstring, msgstrlen, "LOG START %s", pinfo->logfilename);
     processinfo_WriteMessage(pinfo, msgstring);
+#endif
 
     DEBUG_TRACE_FEXIT();
 

@@ -36,6 +36,11 @@
 
 #include "CLIcore.h"
 
+
+// uncomment to enable LOGFILE for debugging
+//#define PROCESSINFO_LOGFILE
+
+
 /**
  *
  * This structure hold process information and hooks required for basic
@@ -84,8 +89,10 @@ typedef struct
     char statusmsg[STRINGMAXLEN_PROCESSINFO_STATUSMSG]; // status message
     int  statuscode;                                    // status code
 
+#ifdef PROCESSINFO_LOGFILE
     FILE *logFile;
     char  logfilename[STRINGMAXLEN_PROCESSINFO_LOGFILENAME];
+#endif
 
     // OPTIONAL INPUT STREAM SETUP
     // Used to specify which stream will trigger the computation and track trigger state
