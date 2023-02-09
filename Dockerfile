@@ -20,12 +20,12 @@ RUN apt-get update && \
         libfl-dev \
         libreadline-dev \
 	pkg-config \
-	gcc-10 \
-	g++-10
+	gcc \
+	g++
 
-RUN rm /usr/bin/gcc /usr/bin/g++
-RUN ln /usr/bin/gcc-10 /usr/bin/gcc
-RUN ln /usr/bin/g++-10 /usr/bin/g++
+#RUN rm /usr/bin/gcc /usr/bin/g++
+#RUN ln /usr/bin/gcc-10 /usr/bin/gcc
+#RUN ln /usr/bin/g++-10 /usr/bin/g++
 RUN git clone https://github.com/milk-org/milk.git /build
 WORKDIR /build
 ENV MILK_PYTHON="OFF"
