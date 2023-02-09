@@ -40,6 +40,8 @@ cd milk
 
 ## Compile
 
+Check required package in Dockerfile.
+
 Standard compile:
 
 ```bash
