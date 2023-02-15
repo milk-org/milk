@@ -11,9 +11,9 @@ pOK="${colG}[OK ]${colreset}"
 pERR="${colR}[ERR]${colreset}"
 
 # Checking MILK_ROOT
-if [ -z ${MILK_ROOT+x} ]; then 
+if [ -z ${MILK_ROOT+x} ]; then
 	echo "${pERR} MILK_ROOT is unset"
-else 
+else
 	if [ -d ${MILK_ROOT} ]; then
 	echo "${pOK} Directory MILK_ROOT = ${MILK_ROOT} found"
 	else
@@ -22,9 +22,9 @@ else
 fi
 
 # Checking MILK_INSTALLDIR
-if [ -z ${MILK_INSTALLDIR+x} ]; then 
+if [ -z ${MILK_INSTALLDIR+x} ]; then
 	echo "${pERR} MILK_INSTALLDIR is unset"
-else 
+else
 	if [ -d ${MILK_INSTALLDIR} ]; then
 	echo "${pOK} Directory MILK_INSTALLDIR = ${MILK_INSTALLDIR} found"
 	else
@@ -33,9 +33,9 @@ else
 fi
 
 # Checking MILK_SHM_DIR
-if [ -z ${MILK_SHM_DIR+x} ]; then 
+if [ -z ${MILK_SHM_DIR+x} ]; then
 	echo "${pERR} MILK_SHM_DIR is unset"
-else 
+else
 	if [ -d ${MILK_SHM_DIR} ]; then
 		echo "${pOK} Directory MILK_SHM_DIR = ${MILK_SHM_DIR} found"
 		if [ -w ${MILK_SHM_DIR} ]; then
