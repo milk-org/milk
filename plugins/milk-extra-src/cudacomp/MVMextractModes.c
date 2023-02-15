@@ -478,53 +478,53 @@ static errno_t compute_function()
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outcoeff, arraytmp[0], arraytmp[1]);
- 
- /*
-    // try to connect to local memory
-    IMGID imgout = mkIMGID_from_name(outcoeff);
-    resolveIMGID(&imgout, ERRMODE_WARN);
-    imageID ID_modeval = imgout.ID;
+
+    /*
+       // try to connect to local memory
+       IMGID imgout = mkIMGID_from_name(outcoeff);
+       resolveIMGID(&imgout, ERRMODE_WARN);
+       imageID ID_modeval = imgout.ID;
 
 
 
-    if(imgout.ID != -1)
-    {
-        // if in local memory,
-        // create blank img for comparison
-        IMGID imgc = makeIMGID_blank();
-        imgc.datatype = _DATATYPE_FLOAT;
-        imgc.naxis = 2;
-        imgc.size[0] = arraytmp[0];
-        imgc.size[1] = arraytmp[1];
-        uint64_t imgerr = IMGIDcompare(imgout, imgc);
-        printf("%lu errors\n", imgerr);
+       if(imgout.ID != -1)
+       {
+           // if in local memory,
+           // create blank img for comparison
+           IMGID imgc = makeIMGID_blank();
+           imgc.datatype = _DATATYPE_FLOAT;
+           imgc.naxis = 2;
+           imgc.size[0] = arraytmp[0];
+           imgc.size[1] = arraytmp[1];
+           uint64_t imgerr = IMGIDcompare(imgout, imgc);
+           printf("%lu errors\n", imgerr);
 
-        // if doesn't pass test, erase from local memory
-        if(imgerr != 0)
-        {
-            delete_image_ID(outcoeff, DELETE_IMAGE_ERRMODE_WARNING);
-            imgout.ID = -1;
-        }
-    }
+           // if doesn't pass test, erase from local memory
+           if(imgerr != 0)
+           {
+               delete_image_ID(outcoeff, DELETE_IMAGE_ERRMODE_WARNING);
+               imgout.ID = -1;
+           }
+       }
 
-    // if not in local memory, (re)-create
-    if(imgout.ID == -1)
-    {
-        create_image_ID(outcoeff,
-                        2,
-                        arraytmp,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &ID_modeval);
-    }
-*/
+       // if not in local memory, (re)-create
+       if(imgout.ID == -1)
+       {
+           create_image_ID(outcoeff,
+                           2,
+                           arraytmp,
+                           _DATATYPE_FLOAT,
+                           1,
+                           0,
+                           0,
+                           &ID_modeval);
+       }
+    */
     MODEVALCOMPUTE = 1;
 
     free(arraytmp);
 
- 
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
 
@@ -533,7 +533,7 @@ static errno_t compute_function()
     if(MODEVALCOMPUTE == 1)
     {
 
-        if( ((*GPUindex) >= 0) && ((*GPUindex) != 99) )
+        if(((*GPUindex) >= 0) && ((*GPUindex) != 99))
         {
 
 #ifdef HAVE_CUDA
@@ -882,20 +882,20 @@ static errno_t compute_function()
 
 
 
-    float *ColMajorMatrix = (float *) malloc(sizeof(float)*m*n);
-    if( *axmode == 0)
+    float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
+    if(*axmode == 0)
     {
-        for(int ii=0; ii<m; ii++)
+        for(int ii = 0; ii < m; ii++)
         {
-            for(int jj=0; jj<n; jj++)
+            for(int jj = 0; jj < n; jj++)
             {
-                ColMajorMatrix[ii*n + jj] = imgmodes.im->array.F[jj*m+ii];
+                ColMajorMatrix[ii * n + jj] = imgmodes.im->array.F[jj * m + ii];
             }
         }
     }
     else
     {
-        memcpy(ColMajorMatrix, imgmodes.im->array.F, sizeof(float)*m*n);
+        memcpy(ColMajorMatrix, imgmodes.im->array.F, sizeof(float)*m * n);
     }
 
     printf(">>> START MVM loop\n");
@@ -919,8 +919,9 @@ static errno_t compute_function()
 #ifdef BLASLIB
             struct timespec t0, t1;
             clock_gettime(CLOCK_REALTIME, &t0);
-            processinfo_WriteMessage_fmt(processinfo, "imgout %s ID %d", imgout.md->name, imgout.ID);
-            if( imgout.ID == -1 )
+            processinfo_WriteMessage_fmt(processinfo, "imgout %s ID %d", imgout.md->name,
+                                         imgout.ID);
+            if(imgout.ID == -1)
             {
                 list_image_ID();
             }
@@ -956,7 +957,8 @@ static errno_t compute_function()
                 struct timespec tdiff;
                 tdiff = timespec_diff(t0, t1);
                 double t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "%s %dx%d MVM %.3f us", BLASLIB, n, m, t01d*1e6);
+                processinfo_WriteMessage_fmt(processinfo, "%s %dx%d MVM %.3f us", BLASLIB, n, m,
+                                             t01d * 1e6);
             }
 #else
             // Run on CPU without lib
@@ -1140,7 +1142,8 @@ static errno_t compute_function()
                 struct timespec tdiff;
                 tdiff = timespec_diff(t0, t1);
                 double t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-                processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", *GPUindex, n, m, t01d*1e6);
+                processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", *GPUindex,
+                                             n, m, t01d * 1e6);
 
 
 
