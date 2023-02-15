@@ -111,7 +111,7 @@ static CLICMDARGDEF farg[] =
         (void **) &radiusmaskfactor,
         &fpi_radiusmaskfactor
     },
-     {
+    {
         CLIARG_FLOAT32,
         ".TTfactor",
         "amplitude factor on TTr",
@@ -226,7 +226,7 @@ static errno_t compute_function()
             for(uint32_t jj = 0; jj < *ysize; jj++)
             {
                 float y = (*ycent) - jj;
-                polar_r[jj * (*xsize) + ii] = sqrt(x*x+y*y) / (*radius);
+                polar_r[jj * (*xsize) + ii] = sqrt(x * x + y * y) / (*radius);
 
                 polar_theta[jj * (*xsize) + ii] = atan2(y, x);
             }
@@ -251,7 +251,8 @@ static errno_t compute_function()
                 float r = polar_r[ii];
                 if(r < (*radiusmaskfactor))
                 {
-                    imgout.im->array.F[zi*xysize + ii] = ampl * Zernike_value(zi+1, r, polar_theta[ii]);
+                    imgout.im->array.F[zi * xysize + ii] = ampl * Zernike_value(zi + 1, r,
+                                                           polar_theta[ii]);
                 }
                 else
                 {

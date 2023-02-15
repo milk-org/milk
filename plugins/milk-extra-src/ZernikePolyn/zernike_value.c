@@ -99,8 +99,8 @@ int zernike_init()
         n = 0;
         m = 0;
 
-        double *Nolldouble = (double*) malloc(sizeof(double) * Zernike.ZERMAX);
-        long *index_Nollsort = (long*) malloc(sizeof(double) * Zernike.ZERMAX);
+        double *Nolldouble = (double *) malloc(sizeof(double) * Zernike.ZERMAX);
+        long *index_Nollsort = (long *) malloc(sizeof(double) * Zernike.ZERMAX);
         Zernike.Zer_Nollindex[0] = 1;
 
         while(j < Zernike.ZERMAX)
@@ -114,24 +114,24 @@ int zernike_init()
                 n++;
                 m = -n;
             }
-            long Noll_n = n*(n+1)/2;
-            int nmod = n%4;
+            long Noll_n = n * (n + 1) / 2;
+            int nmod = n % 4;
             Zernike.Zer_Nollindex[j] = Noll_n + abs(m);
-            if( (nmod==0) || (nmod==1) )
+            if((nmod == 0) || (nmod == 1))
             {
-                if ( m <= 0 )
+                if(m <= 0)
                 {
                     Zernike.Zer_Nollindex[j]++;
                 }
             }
             else
             {
-                if ( m >= 0 )
+                if(m >= 0)
                 {
                     Zernike.Zer_Nollindex[j]++;
                 }
             }
-            Nolldouble[j] = 1.0*Zernike.Zer_Nollindex[j];
+            Nolldouble[j] = 1.0 * Zernike.Zer_Nollindex[j];
             index_Nollsort[j] = j;
         }
 
@@ -166,7 +166,7 @@ int zernike_init()
 
         quick_sort2l(Nolldouble, index_Nollsort, Zernike.ZERMAX);
 
-        for(int zi=0; zi<Zernike.ZERMAX; zi++)
+        for(int zi = 0; zi < Zernike.ZERMAX; zi++)
         {
             Zernike.Zer_reverseNollindex[zi] = index_Nollsort[zi];
         }
@@ -263,5 +263,3 @@ double Zernike_value(
 
     return (value);
 }
-
-

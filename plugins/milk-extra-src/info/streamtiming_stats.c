@@ -16,10 +16,10 @@
 // ==========================================
 
 errno_t info_image_streamtiming_stats_disp(
-        double *tdiffvarray,
-        long    NBsamples,
-        double  tdiffvmax,
-        long    tdiffcntmax);
+    double *tdiffvarray,
+    long    NBsamples,
+    double  tdiffvmax,
+    long    tdiffcntmax);
 
 //
 //
@@ -76,13 +76,15 @@ errno_t info_image_streamtiming_stats(
 
     clock_gettime(CLOCK_REALTIME, &tstart);
     t0 = tstart;
-    t_timeout = t0; t_timeout.tv_sec += 2;
+    t_timeout = t0;
+    t_timeout.tv_sec += 2;
     sem_timedwait(image->semptr[sem], &t_timeout);
 
     while(loopOK == 1)
     {
         //for (long framecnt = 0; framecnt < NBsamplesmax; framecnt++)
-        if(sem_timedwait(image->semptr[sem], &t_timeout)) {
+        if(sem_timedwait(image->semptr[sem], &t_timeout))
+        {
             return RETURN_FAILURE;
         }
 
@@ -93,7 +95,8 @@ errno_t info_image_streamtiming_stats(
 
         t0 = t1;
         t_timeout = t0;
-        t_timeout = t0; t_timeout.tv_sec += 2;
+        t_timeout = t0;
+        t_timeout.tv_sec += 2;
 
         if(tdiffv > tdiffvmax || framecnt == tdiffcntmax)
         {
