@@ -231,7 +231,7 @@ CLIADDCMD_info__imagemon()
 
 errno_t printstatus(imageID ID)
 {
-    IMAGE* image = &data.image[ID];
+    IMAGE *image = &data.image[ID];
 
     long          j;
     double        frequ;
@@ -689,7 +689,8 @@ errno_t printstatus(imageID ID)
                 attron(COLOR_PAIR(customcolor));
 
                 cnt = vcnt[h] * (wcol - 2 - strlen(line1)) / vcntmax;
-                for(i = 0; i < cnt; ++i) {
+                for(i = 0; i < cnt; ++i)
+                {
                     TUI_printfw(" ");
                 }
                 attroff(COLOR_PAIR(customcolor));
