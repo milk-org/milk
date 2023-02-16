@@ -150,6 +150,8 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("s", "rescan");
     print_help_entry("T / CRTL+t",
                      "initialize (T)mux session / kill (t)mux session");
+    print_help_entry("CRTL+a",
+                     "(a)ttach tmux session (then, CTRL+b, D to detach.)");
     print_help_entry("CTRL+e", "(E)rase FPS and tmux sessions");
     print_help_entry("O / CTRL+o", "start/stop C(O)NF process");
     print_help_entry("u", "(u)pdate CONF process");
