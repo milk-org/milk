@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-./fetch_milk_dev.sh
-
 CWD=$PWD
 cd plugins/milk-extra-src
 for mod in WFpropagate OpticsMaterials AtmosphereModel AtmosphericTurbulence

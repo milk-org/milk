@@ -43,5 +43,3 @@ echo "exitCLI" >> $SF
 MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
 
 rm ${SF}
-
-

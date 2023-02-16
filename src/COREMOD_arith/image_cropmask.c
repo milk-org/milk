@@ -167,14 +167,14 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        for(uint32_t jj = 0; jj< *cropysize; jj++)
+        for(uint32_t jj = 0; jj < *cropysize; jj++)
         {
             uint64_t indjj = jj + (*cropystart);
             indjj *=  imgin.md->size[0];
-            for(uint32_t ii = 0; ii< *cropxsize; ii++)
+            for(uint32_t ii = 0; ii < *cropxsize; ii++)
             {
-                imgout.im->array.F[ jj*(*cropxsize)+ii ]
-                = imgmask.im->array.F[ jj*(*cropxsize)+ii ]
+                imgout.im->array.F[ jj * (*cropxsize) + ii ]
+                = imgmask.im->array.F[ jj * (*cropxsize) + ii ]
                 * imgin.im->array.F[ indjj + ii + (*cropxstart) ];
             }
         }
