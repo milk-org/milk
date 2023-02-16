@@ -312,7 +312,8 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
 
         case 'u': // update conf process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            fps[fpsindex].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+            fps[fpsindex].md->signal |=
+                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             functionparameter_outlog("FPSCTRL", "UPDATE %s", fps[fpsindex].md->name);
             break;
 
