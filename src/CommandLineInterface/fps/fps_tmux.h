@@ -11,6 +11,8 @@
 
 errno_t functionparameter_FPS_tmux_kill(FUNCTION_PARAMETER_STRUCT *fps);
 
+errno_t functionparameter_FPS_tmux_attach(FUNCTION_PARAMETER_STRUCT *fps);
+
 errno_t functionparameter_FPS_tmux_init(FUNCTION_PARAMETER_STRUCT *fps);
 
 #endif
