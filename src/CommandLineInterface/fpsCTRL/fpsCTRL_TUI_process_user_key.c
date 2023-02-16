@@ -24,7 +24,7 @@
 
 
 
-#define ctrl(x) ((x) &0x1f)
+#define ctrl(x) ((x) & 0x1f)
 
 static short unsigned int wrow, wcol;
 
@@ -99,6 +99,14 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
                                        &fpsCTRLvar->NBindex,
                                        0);
             clear();
+            break;
+
+        case ctrl('a'): // tmux attach
+            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            functionparameter_FPS_tmux_attach(&fps[fpsindex]);
+            // Returns upon tmux detach.
+            // Need full display refresh and keyboard re-bind?
+            TUI_init_terminal(&wrow, &wcol);
             break;
 
         case 'T': // initialize tmux session
