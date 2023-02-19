@@ -645,7 +645,8 @@ static errno_t compute_function()
                 exit(EXIT_FAILURE);
             }
 #else
-            processinfo_WriteMessage(processinfo, "NO CUDA");
+            processinfo_WriteMessage(processinfo, "NO CUDA - CPU fallback");
+            *GPUindex = 99;
 #endif
         }
     }

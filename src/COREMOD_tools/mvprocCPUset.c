@@ -221,11 +221,26 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
     if(system("which cset > /dev/null 2>&1"))
     {
         // Command doesn't exist...
+        printf("Error: cset command is not installed\n");
     }
     else
     {
         // Command does exist
-        EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+        EXECUTE_SYSTEM_COMMAND("%s", command);
+        if(data.retvalue != 0)
+        {
+            if(data.retvalue == 512)
+            {
+                PRINT_ERROR("Error: cset-proc returns error 512 - cpuset %s does not exist.\n",
+                            csetname);
+            }
+            else
+            {
+                // Re-raise as would EXECUTE_SYTEM_COMMAND_ERRCHECK
+                PRINT_ERROR("Error: cset-proc returns error %d.", data.retvalue);
+                abort();
+            }
+        }
     }
 
     if(rtprio > 0)
