@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
+# Test semaphore latency
+# Sets up two streams, imA and imB
+#
+
+# script 1-line description
+MSdescr="measure semaphore latency"
+
+# Extended description
+MSdescr="create 2 streams and 2 processes
+process 1 waits on imA, pokes imB
+process 2 waits on imB, pokes imA
+"
+
+# standard configuration
+#
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk tmux )
+RequiredFiles=()
+RequiredDirs=()
+
+
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "nbloop:int:number of loop interations" )
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+
+# parse arguments
+source milk-argparse
+NBLOOP="${inputMSargARRAY[0]}"
+
+
+
+
+SEMTRIG="3"
+
+
+milk << EOF
+creaimshm imA 100 100
+creaimshm imB 100 100
+imsetsempost imA -1
+imsetsempost imB -1
+exitCLI
+EOF
+
+set +e
+tmux new-session -d -s loopAB
+#tmux new-session -d -s loopBA
+
+
+tmux send-keys -t loopAB "milk" C-M
+tmux send-keys -t loopAB "readshmim imA" C-M
+tmux send-keys -t loopAB "readshmim imB" C-M
+tmux send-keys -t loopAB "shmimpoke ..procinfo 1" C-M
+
+# set trigger mode to semaphore
+tmux send-keys -t loopAB "shmimpoke ..triggermode 3" C-M
+
+# set trigger semaphore name
+tmux send-keys -t loopAB "shmimpoke ..triggersname imA" C-M
+
+# number of loops
+tmux send-keys -t loopAB "shmimpoke ..loopcntMax ${NBLOOP}" C-M
+
+tmux send-keys -t loopAB "shmimpoke imB" C-M
+tmux send-keys -t loopAB "exitCLI" C-M
+
+
+
+milk << EOF
+readshmim imA
+readshmim imB
+shmimpoke ..procinfo 1
+shmimpoke ..triggermode 3
+shmimpoke ..triggersname imB
+shmimpoke ..loopcntMax ${NBLOOP}
+shmimpoke imA
+imseminfo imA
+exitCLI
+EOF

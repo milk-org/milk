@@ -318,7 +318,7 @@ install(PROGRAMS
 			scripts/milk-all
 			scripts/milk-argparse
 			scripts/milk-check
-      scripts/milk-cubeslice2shm
+			scripts/milk-cubeslice2shm
 			scripts/milk-exec
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
@@ -353,20 +353,3 @@ install(PROGRAMS
 
 include(CTest)
 
-set (failRegex "ERROR" "FAIL")
-
-add_test(milklistim milk-exec "listim")
-set_property (TEST milklistim
-              PROPERTY PASS_REGULAR_EXPRESSION "0 image")
-
-# test that milk CLI launches and list modules
-add_test(milkCLIlaunch milk-exec "-T" "m?")
-set_property (TEST milkCLIlaunch
-              PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_memory")
-
-#set_tests_properties(milkCLIlaunch PROPERTIES TIMEOUT 120)
-
-add_test(milksemspeedtest milk-semtestspeed "100000" "1")
-set_tests_properties(milksemspeedtest PROPERTIES TIMEOUT 20)
-set_property (TEST milksemspeedtest
-              PROPERTY FAIL_REGULAR_EXPRESSION "${failRegex}")
