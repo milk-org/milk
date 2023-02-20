@@ -12,9 +12,9 @@
 MSdescr="measure semaphore latency"
 
 # Extended description
-MSdescr="create 2 streams and 2 processes
-process 1 waits on imA, pokes imB
-process 2 waits on imB, pokes imA
+MSdescr="creates 2 streams and 2 processes
+process AB waits on imA, pokes imB
+process BA waits on imB, pokes imA
 "
 
 # standard configuration
@@ -91,3 +91,10 @@ shmimpoke imA
 imseminfo imA
 exitCLI
 EOF
+
+
+# cleanup
+
+tmux kill-session -t loopAB
+milk-shmim-rm imA
+milk-shmim-rm imB
