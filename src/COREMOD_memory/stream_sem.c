@@ -220,6 +220,8 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 
     ID = image_ID(IDname);
 
+    printf("  cnt0 = %ld \n", data.image[ID].md->cnt0);
+    printf("  cnt1 = %ld \n", data.image[ID].md->cnt1);
     printf("  NB SEMAPHORES = %3d \n", data.image[ID].md[0].sem);
     printf(" semWritePID at %p\n", (void *) data.image[ID].semWritePID);
     printf(" semReadPID  at %p\n", (void *) data.image[ID].semReadPID);

@@ -50,6 +50,37 @@ set(SCRIPTS
 
 
 
+
+# TESTING
+
+include(CTest)
+
+# test module is loaded
+set(TESTNAME "CLIfunc-COREMOD_arith-module")
+add_test (NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
+set_property (TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
+set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
+set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_arith")
+
+
+# test that commands are registered
+
+list(APPEND commandlist "extractim" "extract3Dim" "setpix" "setpix1Drange" "setrow" "setcol" "imzero" "imtrunc" "merge3d" "cropmask")
+
+foreach(CLIcmdname IN LISTS commandlist)
+
+set(TESTCLIFUNC "${CLIcmdname}")
+set(TESTNAME "CLIfunc-COREMOD_arith-${TESTCLIFUNC}")
+add_test (NAME "${TESTNAME}" COMMAND milk-exec "-T" "cmd? ${CLIcmdname}")
+set_property (TEST "${TESTNAME}" PROPERTY LABELS "CLIfunc")
+set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
+set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
+
+endforeach()
+
+
+
+
 # DEFAULT SETTINGS
 # Do not change unless needed
 # =====================================================================
