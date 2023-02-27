@@ -47,7 +47,7 @@ errno_t import_wisdom()
     {
         if(fftwf_import_wisdom_from_file(fp) == 0)
         {
-            PRINT_ERROR("Error reading wisdom");
+            PRINT_WARNING("Error reading wisdom");
         }
         fclose(fp);
     }
@@ -70,7 +70,7 @@ errno_t import_wisdom()
     {
         if(fftw_import_wisdom_from_file(fp) == 0)
         {
-            PRINT_ERROR("Error reading wisdom");
+            PRINT_WARNING("Error reading wisdom");
         }
         fclose(fp);
     }
