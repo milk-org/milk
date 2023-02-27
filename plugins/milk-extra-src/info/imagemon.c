@@ -135,6 +135,7 @@ static errno_t compute_function()
 
         if((dispcnt == 0) && (TUIpause == 0))
         {
+            processinfo_WriteMessage(processinfo, "clear screen");
             erase();
 
             // Check for screen size change
@@ -152,7 +153,9 @@ static errno_t compute_function()
             if(TUIscreen == 2)
             {
                 processinfo->triggermode = PROCESSINFO_TRIGGERMODE_DELAY;
+                processinfo_WriteMessage(processinfo, "printstatus start");
                 printstatus(ID);
+                processinfo_WriteMessage(processinfo, "printstatus end");
             }
 
             if(TUIscreen == 3)
@@ -369,6 +372,9 @@ errno_t printstatus(imageID ID)
                     imtotal / image->md->nelement,
                     imtotal);
 
+
+
+
         vcnt = (long *) malloc(sizeof(long) * NBhistopt);
         if(vcnt == NULL)
         {
@@ -379,6 +385,8 @@ errno_t printstatus(imageID ID)
         {
             vcnt[h] = 0;
         }
+
+
 
         if(datatype == _DATATYPE_FLOAT)
         {
@@ -406,6 +414,7 @@ errno_t printstatus(imageID ID)
                 }
             }
         }
+
 
         if(datatype == _DATATYPE_DOUBLE)
         {
@@ -651,6 +660,7 @@ errno_t printstatus(imageID ID)
         }
 
 
+
         RMS   = sqrt(RMS / image->md->nelement);
         RMS01 = 0.9 * RMS01 + 0.1 * RMS; // wut
 
@@ -664,7 +674,8 @@ errno_t printstatus(imageID ID)
 
         if(image->md->nelement > 25)
         {
-            vcntmax = 0;
+            TUI_printfw("histogram %d levels\n", NBhistopt);
+            vcntmax = 1; // initialize at one to avoid division by zero
             for(h = 0; h < NBhistopt; h++)
                 if(vcnt[h] > vcntmax)
                 {
@@ -785,7 +796,9 @@ errno_t printstatus(imageID ID)
                                 (long) image->array.SI64[ii]);
                 }
             }
+
         }
+
 
         free(vcnt);
     }
