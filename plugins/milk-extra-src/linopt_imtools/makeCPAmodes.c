@@ -142,7 +142,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_FLOAT32,
         ".fpowerlaw_minf",
-        "frequency power law max freq",
+        "frequency power law min freq",
         "1.0",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &fpowerlaw_minf,
@@ -238,13 +238,6 @@ errno_t linopt_imtools_makeCPAmodes(
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s", ID_name);
 
-    imageID ID;
-    imageID IDx, IDy, IDr;
-    float   CPAx, CPAy;
-    float   x, y, r;
-    long    ii, jj;
-    long    k, k1;
-    long    NBmax;
     float  *CPAxarray;
     float  *CPAyarray;
     float  *CPArarray;
@@ -264,22 +257,25 @@ errno_t linopt_imtools_makeCPAmodes(
 
 
     size2 = sizex * sizey;
+    imageID IDx;
     FUNC_CHECK_RETURN(create_2Dimage_ID("cpa_tmpx", sizex, sizey, &IDx));
 
+    imageID IDy;
     FUNC_CHECK_RETURN(create_2Dimage_ID("cpa_tmpy", sizex, sizey, &IDy));
 
+    imageID IDr;
     FUNC_CHECK_RETURN(create_2Dimage_ID("cpa_tmpr", sizex, sizey, &IDr));
 
     printf("precomputing x, y, r\n");
     fflush(stdout);
 
-    for(ii = 0; ii < sizex; ii++)
+    for(uint32_t ii = 0; ii < sizex; ii++)
     {
-        x = (1.0 * ii - xcenter + 0.5) / radius;
-        for(jj = 0; jj < sizey; jj++)
+        float x = (1.0 * ii - xcenter + 0.5) / radius;
+        for(uint32_t jj = 0; jj < sizey; jj++)
         {
-            y = (1.0 * jj - ycenter + 0.5) / radius;
-            r = sqrt(x * x + y * y);
+            float y = (1.0 * jj - ycenter + 0.5) / radius;
+            float r = sqrt(x * x + y * y);
             data.image[IDx].array.F[jj * sizex + ii] = x;
             data.image[IDy].array.F[jj * sizex + ii] = y;
             data.image[IDr].array.F[jj * sizex + ii] = r;
@@ -289,8 +285,8 @@ errno_t linopt_imtools_makeCPAmodes(
     printf("CPA: max = %f   delta = %f\n", CPAmax, deltaCPA);
     fflush(stdout);
     NBfrequ = 0;
-    for(CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
-        for(CPAy = -CPAmax; CPAy < CPAmax; CPAy += deltaCPA)
+    for(float CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
+        for(float CPAy = -CPAmax; CPAy < CPAmax; CPAy += deltaCPA)
         {
             NBfrequ++;
         }
@@ -318,9 +314,9 @@ errno_t linopt_imtools_makeCPAmodes(
     NBfrequ = 0;
     //ydist = 2.0*deltaCPA;
     //y0 = 0.0;
-    for(CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
+    for(float CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
     {
-        for(CPAy = 0; CPAy < CPAmax; CPAy += deltaCPA)
+        for(float CPAy = 0; CPAy < CPAmax; CPAy += deltaCPA)
         {
             CPAxarray[NBfrequ] = CPAx;
             CPAyarray[NBfrequ] = CPAy;
@@ -329,7 +325,7 @@ errno_t linopt_imtools_makeCPAmodes(
         }
         if(CPAx > eps)
         {
-            for(CPAy = -deltaCPA; CPAy > -CPAmax; CPAy -= deltaCPA)
+            for(float CPAy = -deltaCPA; CPAy > -CPAmax; CPAy -= deltaCPA)
             {
                 CPAxarray[NBfrequ] = CPAx;
                 CPAyarray[NBfrequ] = CPAy;
@@ -347,7 +343,8 @@ errno_t linopt_imtools_makeCPAmodes(
 
     quick_sort3_float(CPArarray, CPAxarray, CPAyarray, NBfrequ);
 
-    NBmax = NBfrequ * 2;
+    long NBmax = NBfrequ * 2;
+    imageID ID;
     FUNC_CHECK_RETURN(create_3Dimage_ID(ID_name, sizex, sizey, NBmax - 1, &ID));
 
 
@@ -363,12 +360,12 @@ errno_t linopt_imtools_makeCPAmodes(
         fprintf(fp, "# Unit for x and y = radius [pixel]\n");
         fprintf(fp, "# \n");
         fprintf(fp, "%4ld %10.5f %10.5f    1.0\n", (long) 0, 0.0, 0.0);
-        k1 = 1;
-        k  = 2;
+        long k1 = 1;
+        long k  = 2;
         while(k < NBmax)
         {
-            CPAx = CPAxarray[k1];
-            CPAy = CPAyarray[k1];
+            float CPAx = CPAxarray[k1];
+            float CPAy = CPAyarray[k1];
             float frequency = sqrt(CPAx * CPAx + CPAy * CPAy);
 
 
@@ -450,19 +447,19 @@ errno_t linopt_imtools_makeCPAmodes(
 
     // mode 0 (piston)
     data.image[IDfreq].array.F[0] = 0.0;
-    for(ii = 0; ii < size2; ii++)
+    for(uint32_t ii = 0; ii < size2; ii++)
     {
-        x = data.image[IDx].array.F[ii];
-        y = data.image[IDy].array.F[ii];
-        r = data.image[IDr].array.F[ii];
+        float x = data.image[IDx].array.F[ii];
+        float y = data.image[IDy].array.F[ii];
+        float r = data.image[IDr].array.F[ii];
         if(r < radfactlim)
         {
             data.image[ID].array.F[ii] = 1.0;
         }
     }
 
-    k1 = 1;
-    k  = 2;
+    long k1 = 1;
+    long k  = 2;
     while(k < NBmax)
     {
         DEBUG_TRACEPOINT("k = %ld / %ld   k1 = %ld / %ld",
@@ -471,8 +468,8 @@ errno_t linopt_imtools_makeCPAmodes(
                          k1,
                          NBfrequ);
 
-        CPAx = CPAxarray[k1];
-        CPAy = CPAyarray[k1];
+        float CPAx = CPAxarray[k1];
+        float CPAy = CPAyarray[k1];
         DEBUG_TRACEPOINT("    %ld %f %f", k1, CPAx, CPAy);
 
         float frequency = sqrt(CPAx * CPAx + CPAy * CPAy);
@@ -492,11 +489,11 @@ errno_t linopt_imtools_makeCPAmodes(
             fampl = pow(f1, fpowerlaw);
         }
 
-        for(ii = 0; ii < size2; ii++)
+        for(uint32_t ii = 0; ii < size2; ii++)
         {
-            x                                 = data.image[IDx].array.F[ii];
-            y                                 = data.image[IDy].array.F[ii];
-            r                                 = data.image[IDr].array.F[ii];
+            float x                           = data.image[IDx].array.F[ii];
+            float y                           = data.image[IDy].array.F[ii];
+            float r                           = data.image[IDr].array.F[ii];
             data.image[IDfreq].array.F[k - 1] = frequency;
             data.image[IDfreq].array.F[k]     = frequency;
             if(r < radfactlim)
