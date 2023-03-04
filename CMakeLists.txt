@@ -35,10 +35,13 @@ endif(USE_CUDA)
 
 
 
-find_package(PkgConfig REQUIRED)
-find_package(MKL CONFIG)
-pkg_check_modules(OPENBLAS openblas)
 
+find_package(PkgConfig REQUIRED)
+#find_package(MKL CONFIG)
+
+pkg_check_modules(OPENBLAS openblas)
+pkg_check_modules(MKL mkl-sdl)
+#pkg_check_modules(MKL mkl-static-ilp64-gomp)
 
 enable_language(C)
 
