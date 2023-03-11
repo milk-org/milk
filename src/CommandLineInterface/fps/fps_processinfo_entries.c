@@ -18,7 +18,9 @@
  * This function is typically called within the FPCONF fps creation step.
  *
  */
-errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
+errno_t fps_add_processinfo_entries(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -140,7 +142,7 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  ".procinfo.loopcntMax",
                                  "max loop cnt",
                                  FPTYPE_INT64,
-                                 FPFLAG,
+                                 FPFLAG|FPFLAG_WRITERUN,
                                  &loopcntMax_default,
                                  NULL);
 
@@ -149,7 +151,7 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  ".procinfo.triggermode",
                                  "trigger mode",
                                  FPTYPE_INT64,
-                                 FPFLAG,
+                                 FPFLAG|FPFLAG_WRITERUN,
                                  &triggermode_default,
                                  NULL);
 
@@ -182,7 +184,7 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  ".procinfo.triggerdelay",
                                  "trigger delay",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG,
+                                 FPFLAG|FPFLAG_WRITERUN,
                                  &triggerdelay_default,
                                  NULL);
 
@@ -193,7 +195,7 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
                                  ".procinfo.triggertimeout",
                                  "trigger timeout",
                                  FPTYPE_TIMESPEC,
-                                 FPFLAG,
+                                 FPFLAG|FPFLAG_WRITERUN,
                                  &triggertimeout_default,
                                  NULL);
 
@@ -204,8 +206,10 @@ errno_t fps_add_processinfo_entries(FUNCTION_PARAMETER_STRUCT *fps)
 
 
 
-errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
-                           PROCESSINFO               *procinfo)
+errno_t fps_to_processinfo(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    PROCESSINFO               *procinfo
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -251,7 +255,6 @@ errno_t fps_to_processinfo(FUNCTION_PARAMETER_STRUCT *fps,
                 functionparameter_GetParamValue_INT64(fps,
                         ".procinfo.triggermode");
             procinfo->triggermode = triggermode;
-            printf(">>>>>>>>>>>>> SET TRIGGERMODE = %ld\n", triggermode);
         }
     }
 

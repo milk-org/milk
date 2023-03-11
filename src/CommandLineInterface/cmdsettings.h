@@ -15,18 +15,27 @@ typedef struct
     uint64_t flags;
 
     long procinfo_loopcntMax;
+    int64_t *procinfo_loopcntMax_ptr;
 
     // triggering
     int             triggermode;
+    int64_t        *triggermodeptr;
+
     char            triggerstreamname[STRINGMAXLEN_IMAGE_NAME];
+
     struct timespec triggerdelay;
+    struct timespec *triggerdelayptr;
+
     struct timespec triggertimeout;
+    struct timespec *triggertimeoutptr;
+
+
     int             semindexrequested;
 
-    int       RT_priority; // -1 if unused. 0-99 for higher priority
-    cpu_set_t CPUmask;
+    int             RT_priority; // -1 if unused. 0-99 for higher priority
+    cpu_set_t       CPUmask;
 
-    int procinfo_MeasureTiming;
+    int             procinfo_MeasureTiming;
 
 } CMDSETTINGS;
 

@@ -223,6 +223,12 @@ errno_t function_parameter_struct_create(
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default
     fps.md->msgcnt     = 0;
 
+    // initialize pointers
+    fps.cmdset.triggermodeptr = NULL;
+    fps.cmdset.procinfo_loopcntMax_ptr = NULL;
+    fps.cmdset.triggerdelayptr = NULL;
+    fps.cmdset.triggertimeoutptr = NULL;
+
     munmap(fps.md, sharedsize);
 
     return EXIT_SUCCESS;
