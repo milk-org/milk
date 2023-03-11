@@ -540,6 +540,14 @@ typedef struct
     CMDSETTINGS cmdset; // local copy of cmd settings
 } FUNCTION_PARAMETER_STRUCT;
 
+
+// mapping from FPS to procinfo
+typedef struct
+{
+    struct timespec triggerdelay[2];
+} FPS2PROCINFOMAP;
+
+
 //
 // Tasks can be sequenced
 // Typically these are read from command fifo
@@ -714,6 +722,8 @@ typedef struct
         }                                                                      \
     } while (0)
 
+
+
 /** @brief Connect to FPS
  *
  *
@@ -734,6 +744,9 @@ typedef struct
             return RETURN_FAILURE;                                             \
         }                                                                      \
     } while (0)
+
+
+
 
 /** @brief Start FPS configuration loop
  */
@@ -756,6 +769,8 @@ typedef struct
         }                                                                      \
         if (function_parameter_FPCONFloopstep(&fps) == 1)                      \
         {
+
+
 
 /** @brief End FPS configuration loop
  */

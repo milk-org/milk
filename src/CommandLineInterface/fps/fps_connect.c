@@ -228,6 +228,7 @@ long function_parameter_struct_connect(
 
         {
             // procinfo_loopcntMax
+            fps->cmdset.procinfo_loopcntMax_ptr = NULL;
             int pindex =
                 functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
             if(pindex > -1)
@@ -236,6 +237,8 @@ long function_parameter_struct_connect(
                 {
                     fps->cmdset.procinfo_loopcntMax =
                         fps->parray[pindex].val.i64[0];
+
+                    fps->cmdset.procinfo_loopcntMax_ptr = fps->parray[pindex].val.i64;
                 }
             }
         }
@@ -269,6 +272,7 @@ long function_parameter_struct_connect(
 
         {
             // triggermode
+            fps->cmdset.triggermodeptr = NULL;
             int pindex =
                 functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
             if(pindex > -1)
@@ -276,6 +280,8 @@ long function_parameter_struct_connect(
                 if(fps->parray[pindex].type == FPTYPE_INT64)
                 {
                     fps->cmdset.triggermode = fps->parray[pindex].val.i64[0];
+
+                    fps->cmdset.triggermodeptr = fps->parray[pindex].val.i64;
                 }
             }
         }
@@ -297,6 +303,7 @@ long function_parameter_struct_connect(
 
         {
             // triggerdelay
+            fps->cmdset.triggerdelayptr = NULL;
             int pindex =
                 functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
             if(pindex > -1)
@@ -307,12 +314,15 @@ long function_parameter_struct_connect(
                         fps->parray[pindex].val.ts[0].tv_sec;
                     fps->cmdset.triggerdelay.tv_nsec =
                         fps->parray[pindex].val.ts[0].tv_nsec;
+
+                    fps->cmdset.triggerdelayptr = fps->parray[pindex].val.ts;
                 }
             }
         }
 
         {
             // triggertimeout
+            fps->cmdset.triggertimeoutptr = NULL;
             int pindex =
                 functionparameter_GetParamIndex(fps,
                                                 ".procinfo.triggertimeout");
@@ -324,6 +334,8 @@ long function_parameter_struct_connect(
                         fps->parray[pindex].val.ts[0].tv_sec;
                     fps->cmdset.triggertimeout.tv_nsec =
                         fps->parray[pindex].val.ts[0].tv_nsec;
+
+                    fps->cmdset.triggertimeoutptr = fps->parray[pindex].val.ts;
                 }
             }
         }

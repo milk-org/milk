@@ -325,6 +325,8 @@ typedef struct
         processinfo_loopstart(processinfo);                                    \
     }
 
+
+
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                              \
     while (processloopOK == 1)                                                 \
     {                                                                          \
@@ -349,14 +351,28 @@ typedef struct
         if (processcompstatus == 1)                                            \
         {
 
+
+
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_START                                  \
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                       \
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+
+
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                    \
     }                                                                          \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
     {                                                                          \
+        if(data.fpsptr != NULL) {                                              \
+        if(data.fpsptr->cmdset.triggermodeptr != NULL){                        \
+        processinfo->triggermode = *data.fpsptr->cmdset.triggermodeptr;}       \
+        if(data.fpsptr->cmdset.procinfo_loopcntMax_ptr != NULL){               \
+        processinfo->loopcntMax = *data.fpsptr->cmdset.procinfo_loopcntMax_ptr;}    \
+        if(data.fpsptr->cmdset.triggerdelayptr != NULL){                       \
+        processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];}   \
+        if(data.fpsptr->cmdset.triggertimeoutptr != NULL){                     \
+        processinfo->triggertimeout = data.fpsptr->cmdset.triggertimeoutptr[0];}   \
+        }                                                                      \
         processinfo_exec_end(processinfo);                                     \
     }                                                                          \
     }                                                                          \
@@ -364,6 +380,17 @@ typedef struct
     {                                                                          \
         processinfo_cleanExit(processinfo);                                    \
     }
+
+
+
+/**
+ * 
+        if(data.fpsptr->cmdset.triggerdelayptr != NULL) {                      \
+        processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];}   \
+        if(data.fpsptr->cmdset.triggertimeoutptr != NULL) {                    \
+        processinfo->triggerdelay = data.fpsptr->cmdset.triggertimeoutptr[0];} \
+ * 
+ */
 
 /** @brief FPS run function
  *
@@ -448,7 +475,8 @@ typedef struct
     }
 
 #define INSERT_STD_FPSCLIfunctions                                             \
-    INSERT_STD_FPSCONFfunction INSERT_STD_FPSRUNfunction                       \
+    INSERT_STD_FPSCONFfunction                                                 \
+    INSERT_STD_FPSRUNfunction                                                  \
         INSERT_STD_FPSCLIfunction
 
 #define INSERT_STD_CLIREGISTERFUNC                                             \
