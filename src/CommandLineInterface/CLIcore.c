@@ -1096,7 +1096,7 @@ static int command_line_process_options(int argc, char **argv)
 
         c = getopt_long(argc,
                         argv,
-                        "hvidoe:m:n:p:fF:s:",
+                        "hvid:oe:m:n:p:fF:s:",
                         long_options,
                         &option_index);
 
@@ -1137,11 +1137,6 @@ static int command_line_process_options(int argc, char **argv)
                 exit(EXIT_SUCCESS);
                 break;
 
-            case 'd':
-                data.Debug = atoi(optarg);
-                printf("Debug = %d\n", data.Debug);
-                break;
-
             case 'o':
                 puts("CAUTION - WILL OVERWRITE EXISTING FITS FILES\n");
                 data.overwrite = 1;
@@ -1160,9 +1155,16 @@ static int command_line_process_options(int argc, char **argv)
                 }
                 break;
 
+
+            case 'd':
+                printf("debug level : '%s'\n", optarg);
+                data.Debug = atoi(optarg);
+                printf("Debug = %d\n", data.Debug);
+                break;
+
             case 'm':
                 printf("Starting memory monitor on '%s'\n", optarg);
-                memory_monitor(optarg);
+                //memory_monitor(optarg);
                 break;
 
             case 'n':
