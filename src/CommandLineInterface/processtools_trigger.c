@@ -27,10 +27,12 @@
  * and semindex = -1, which will automatically find a suitable semaphore
  *
  */
-errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
-        imageID      trigID,
-        int          triggermode,
-        int          semindexrequested)
+errno_t processinfo_waitoninputstream_init(
+    PROCESSINFO *processinfo,
+    imageID      trigID,
+    int          triggermode,
+    int          semindexrequested
+)
 {
     DEBUG_TRACE_FSTART("%ld %d %d", trigID, triggermode, semindexrequested);
     processinfo->triggerstreamID = trigID;
@@ -148,10 +150,12 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
     return RETURN_SUCCESS;
 }
 
+
+
+
 /** @brief Wait on a stream
  *
  */
-
 errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 {
     processinfo->triggermissedframe = 0;
