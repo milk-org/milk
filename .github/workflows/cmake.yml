@@ -25,6 +25,9 @@ jobs:
       - name: Install Dependencies
         run: sudo apt-get install -qq libcfitsio-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
 
+      - name: Install openblas with lapack
+        run: sudo apt-get install gfortran libopenblas-dev liblapacke-dev
+
       - name: Configure CMake
         # Use a bash shell so we can use the same syntax for environment variable
         # access regardless of the host operating system
