@@ -314,6 +314,11 @@ errno_t CLI_execute_line()
     struct timespec *thetime =
         (struct timespec *) malloc(sizeof(struct timespec));
 
+
+    if(data.Debug > 0) {
+        printf("Processing CLI input \"%s\"\n", data.CLIcmdline);
+    }
+
     add_history(data.CLIcmdline);
 
     //
@@ -513,9 +518,10 @@ errno_t CLI_execute_line()
         {
             if(data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
             {
-                if(data.Debug == 1)
+                if(data.Debug > 0)
                 {
-                    printf("EXECUTING COMMAND %ld (%s)\n",
+                    printf("DEBUG: %s: EXECUTING COMMAND %ld (%s)\n",
+                           __func__,
                            data.cmdindex,
                            data.cmd[data.cmdindex].key);
                 }
