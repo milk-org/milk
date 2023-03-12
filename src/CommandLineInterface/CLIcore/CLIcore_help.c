@@ -397,7 +397,8 @@ errno_t list_commands()
     for(unsigned int i = 0; i < data.NBcmd; i++)
     {
         strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
-        printf("   %-16s %-20s %-40s %-30s\n",
+        printf("%4u >   %-16s %-20s %-40s %-30s\n",
+               i,
                data.cmd[i].key,
                data.cmd[i].module,
                cmdinfoshort,
