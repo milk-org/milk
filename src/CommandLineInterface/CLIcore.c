@@ -444,6 +444,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     int            cliwaitus     = 100;
     struct timeval tv; // sleep 100 us after reading FIFO
 
+
+
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
     // Set CLI prompt
@@ -509,6 +511,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
+
+    if(data.Debug>0){printf("DEBUG: %s: start\n", __func__);}
 
     runCLI_cmd_init();
 
@@ -745,6 +749,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                 "CLI executing line: "
                                 "%s",
                                 data.CLIcmdline);
+                            if(data.Debug>0){printf("DEBUG: %s: execute line, fifo mode\n", __func__);}
                             CLI_execute_line();
                             DEBUG_TRACEPOINT("CLI line executed");
 
