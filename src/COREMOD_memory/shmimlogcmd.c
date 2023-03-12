@@ -32,8 +32,7 @@ static CLICMDARGDEF farg[] = {{
 
 // flag CLICMDFLAG_FPS enabled FPS capability
 static CLICMDDATA CLIcmddata = {"shmimlogcmd",
-                                "log shared memory stream command\n"
-                                "logon, logoff",
+                                "log shared memory stream command logon, logoff",
                                 CLICMD_FIELDS_NOFPS
                                };
 
