@@ -21,6 +21,7 @@ set(SOURCEFILES
 	PCA.c
 	printGPUMATMULTCONF.c
 	MVMextractModes.c
+	SingularValueDecomp.c
 )
 
 set(INCLUDEFILES
@@ -42,6 +43,7 @@ set(INCLUDEFILES
 	PCA.h
 	printGPUMATMULTCONF.h
 	MVMextractModes.h
+	SingularValueDecomp.h
 )
 
 
