@@ -402,9 +402,9 @@ errno_t CLI_execute_line()
         data.cmdNBarg = 0;
 
 
-    if(data.Debug > 0) {
-        printf("DEBUG: %s %d: extract words\n", __func__, __LINE__);
-    }
+        if(data.Debug > 0) {
+            printf("DEBUG: %s %d: extract words\n", __func__, __LINE__);
+        }
 
         // extract first word
 
@@ -434,7 +434,11 @@ errno_t CLI_execute_line()
                 while(cmdargstring != NULL)  // iterate on words
                 {
                     // printf("\t processing -- %s\n", cmdargstring);
+
                     snprintf(str, strmaxlen, "%s\n", cmdargstring);
+                    if(data.Debug>1){
+                        printf("DEBUG: %s %d: calling yy_scan_string on \"%s\"\n", __func__, __LINE__, str);
+                    }
                     yy_scan_string(str);
                     data.calctmp_imindex = 0;
                     yyparse();
@@ -457,9 +461,21 @@ errno_t CLI_execute_line()
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
+        if(data.Debug > 0){
+            printf("DEBUG: %s %d: data.cmdNBarg = %ld\n", __func__, __LINE__, data.cmdNBarg);
+        }
+
         if(data.Debug > 1)
         {
             long i = 0;
+
+            if(data.Debug>0) {
+                printf("DEBUG: %s %d: TOKEN %ld type : %d\n",
+                       __func__, __LINE__,
+                       i,
+                       data.cmdargtoken[i].type);
+            }
+
             while(data.cmdargtoken[i].type != 0)
             {
 
