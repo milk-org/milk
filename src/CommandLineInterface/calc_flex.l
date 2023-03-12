@@ -28,13 +28,13 @@ numberd	[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
 
 {numberl}	 {
 yylval.val_l = atol(yytext);
-if(data.Debug>0){printf("Found long number %s -> %ld\n", yytext, yylval.val_l);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a long number -> %ld\n", yytext, yylval.val_l);}
 return TKNUMl;
 }
 
 {numberd}	 {
 yylval.val_d = atof(yytext);
-if(data.Debug>0){printf("Found float number %s -> %f\n", yytext, yylval.val_d);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a float number -> %f\n", yytext, yylval.val_d);}
 return TKNUMd;
 }
 
@@ -42,86 +42,86 @@ return TKNUMd;
 
 
 "sin("	{
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = sin;
 return TKFUNC_d_d;
 }
 
 "cos("  {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = cos;
 return TKFUNC_d_d;
 }
 
 "exp("  {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = exp;
 return TKFUNC_d_d;
 }
 
 "ln("  {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = log;
 return TKFUNC_d_d;
 }
 
 "log("  {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = log10;
 return TKFUNC_d_d;
 }
 
 "tan(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = tan;
 return TKFUNC_d_d;
 }
 
 "atan("  {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = atan;
 return TKFUNC_d_d;
 }
 
 "sqrt("  {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = sqrt;
 return TKFUNC_d_d;
 }
 
 "cbrt(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = cbrt;
 return TKFUNC_d_d;
 }
 
 "ceil(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = ceil;
 return TKFUNC_d_d;
 }
 
 "floor(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = floor;
 return TKFUNC_d_d;
 }
 
 "asin(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = asin;
 return TKFUNC_d_d;
 }
 
 "acos(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = acos;
 return TKFUNC_d_d;
 }
 
 
 "posi(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = Ppositive;
 return TKFUNC_d_d;
 }
@@ -130,14 +130,14 @@ return TKFUNC_d_d;
 
 
 "atan2(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = atan2;
 return TKFUNC_dd_d;
 }
 
 
 "trunc(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = Ptrunc;
 return TKFUNC_ddd_d;
 }
@@ -147,25 +147,25 @@ return TKFUNC_ddd_d;
 
 
 "itot(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = arith_image_total;
 return TKFUNC_im_d;
 }
 
 "imin(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = arith_image_min;
 return TKFUNC_im_d;
 }
 
 "imax(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = arith_image_max;
 return TKFUNC_im_d;
 }
 
 "imean(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = arith_image_mean;
 return TKFUNC_im_d;
 }
@@ -175,54 +175,54 @@ return TKFUNC_im_d;
 
 
 "perc(" {
-if(data.Debug>0){printf("Found function %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a function\n", yytext);}
 yylval.fnctptr = arith_image_percentile;
 return TKFUNC_imd_d;
 }
 
 
-
 {string}      {
 if(data.Debug>0){printf("Found string %s\n", yytext);}
 strcpy(yylval.string, yytext);
-if(variable_ID(yytext)!=-1) {if(data.Debug>0){printf("THIS IS A VARIABLE\n");} return TKVAR;}
-if(image_ID(yytext)!=-1) {if(data.Debug>0){printf("THIS IS AN IMAGE\n");} return TKIMAGE;}
+if(variable_ID(yytext)!=-1) {if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS A VARIABLE\n", yytext);} return TKVAR;}
+if(image_ID(yytext)!=-1) {if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS AN IMAGE\n", yytext);} return TKIMAGE;}
 if(data.cmdNBarg==0)
 {
 data.cmdindex = -1;
  for(i=0;i<(long) data.NBcmd;i++)
   {
+  if(data.Debug>1){printf("DEBUG: FLEX: comparing string \"%s\" to command (%ld %s)\n", yytext, i, data.cmd[i].key);}
    if(!strcmp(yytext, data.cmd[i].key))
     {
      data.cmdindex = i;
-     if(data.Debug>0){printf("THIS IS A COMMAND (%ld)\n",i);}
+     if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS A COMMAND (cmd %ld)\n", yytext, i);}
      return TKCOMMAND;
     }
    }
   }
- if(data.Debug>0){printf("THIS IS A NEW VARIABLE\n");}
+ if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS A NEW VARIABLE\n", yytext);}
  return TKNVAR;
 }
 
 
 "+"|"-"|"*"|"/"|"^"	{
-if(data.Debug>0){printf("Found operator %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is an operator\n", yytext);}
 return ((int) yytext[0]);
 }
 
 "("|")"		{
-if(data.Debug>0){printf("Found parenthese %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a parenthese\n", yytext);}
 return ((int) yytext[0]);
 }
 
 ","	{
-if(data.Debug>0){printf("Found coma %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is a coma\n", yytext);}
 return ((int) yytext[0]);
 }
 
 
 "="	{
-if(data.Debug>0){printf("Found equal %s\n", yytext);}
+if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" is equal\n", yytext);}
 return ((int) yytext[0]);
 }
 
@@ -231,5 +231,5 @@ return ((int) yytext[0]);
 
 \n	{return ((int) yytext[0]);}
 
-.	printf("Unrecognized character: %s\n", yytext);
+.	printf("DEBUG: FLEX: \"%s\" Unrecognized character\n", yytext);
 %%
