@@ -8,8 +8,10 @@
  *
  */
 
-errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-        imageID      outstreamID)
+errno_t processinfo_update_output_stream(
+    PROCESSINFO *processinfo,
+    imageID      outstreamID
+)
 {
     if(data.image[outstreamID].md[0].shared == 1)
     {

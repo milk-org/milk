@@ -171,7 +171,7 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata =
 {
-    "mkPF", "make linear predictiv filter", CLICMD_FIELDS_DEFAULTS
+    "mkPF", "make linear predictive filter", CLICMD_FIELDS_DEFAULTS
 };
 
 
@@ -222,40 +222,40 @@ static errno_t compute_function()
     switch(imgin.md->naxis)
     {
 
-        case 2:
-            /// If 2D image:
-            /// - xysize <- size[0] is number of variables
-            /// - nbspl <- size[1] is number of samples
-            nbspl = imgin.md->size[1];
-            xsize = imgin.md->size[0];
-            ysize = 1;
-            // copy of image to avoid input change during computation
-            create_2Dimage_ID("PFin_cp",
-                              imgin.md->size[0],
-                              imgin.md->size[1],
-                              &IDincp);
-            inNBelem = imgin.md->size[0] * imgin.md->size[1];
-            break;
+    case 2:
+        /// If 2D image:
+        /// - xysize <- size[0] is number of variables
+        /// - nbspl <- size[1] is number of samples
+        nbspl = imgin.md->size[1];
+        xsize = imgin.md->size[0];
+        ysize = 1;
+        // copy of image to avoid input change during computation
+        create_2Dimage_ID("PFin_cp",
+                          imgin.md->size[0],
+                          imgin.md->size[1],
+                          &IDincp);
+        inNBelem = imgin.md->size[0] * imgin.md->size[1];
+        break;
 
-        case 3:
-            /// If 3D image
-            /// - xysize <- size[0] * size[1] is number of variables
-            /// - nbspl <- size[2] is number of samples
-            nbspl = imgin.md->size[2];
-            xsize = imgin.md->size[0];
-            ysize = imgin.md->size[1];
-            create_3Dimage_ID("PFin_copy",
-                              imgin.md->size[0],
-                              imgin.md->size[1],
-                              imgin.md->size[2],
-                              &IDincp);
+    case 3:
+        /// If 3D image
+        /// - xysize <- size[0] * size[1] is number of variables
+        /// - nbspl <- size[2] is number of samples
+        nbspl = imgin.md->size[2];
+        xsize = imgin.md->size[0];
+        ysize = imgin.md->size[1];
+        create_3Dimage_ID("PFin_copy",
+                          imgin.md->size[0],
+                          imgin.md->size[1],
+                          imgin.md->size[2],
+                          &IDincp);
 
-            inNBelem = imgin.md->size[0] * imgin.md->size[1] * imgin.md->size[2];
-            break;
+        inNBelem = imgin.md->size[0] * imgin.md->size[1] * imgin.md->size[2];
+        break;
 
-        default:
-            printf("Invalid image size\n");
-            break;
+    default:
+        printf("Invalid image size\n");
+        break;
     }
     uint64_t xysize = (uint64_t) xsize * ysize;
     printf("xysize = %lu\n", xysize);
@@ -621,6 +621,9 @@ static errno_t compute_function()
     long NB_SVD_Modes = 10000;
     int  LOOPmode     = 0; // 1 if re-use arrays
 
+    // TEST
+    //save_fl_fits("PFmatD", "PFmatD.fits");
+
 #ifdef HAVE_MAGMA
     printf("Using magma ...\n");
     CUDACOMP_magma_compute_SVDpseudoInverse("PFmatD",
@@ -643,6 +646,8 @@ static errno_t compute_function()
                                     NULL);
 #endif
 
+    // TEST
+    //save_fl_fits("PFmatC", "PFmatC.fits");
 
     // Result (pseudoinverse) is stored in image PFmatC\n
 
@@ -685,11 +690,9 @@ static errno_t compute_function()
                           NBpixin * *PForder,
                           NBpixout,
                           &IDoutPF2Dn);
-        for(
-            long PFpix = 0; PFpix < NBpixout;
-            PFpix++) // PFpix is the pixel for which the filter is created (axis 1 in cube, jj)
+        for(long PFpix = 0; PFpix < NBpixout; PFpix++)
         {
-
+            // PFpix is the pixel for which the filter is created (axis 1 in cube, jj)
             // loop on input values
             for(long pix = 0; pix < NBpixin; pix++)
             {
@@ -703,9 +706,7 @@ static errno_t compute_function()
                                data.image[IDfm].array.F[PFpix * NBmvec + m];
                     }
 
-                    data.image[IDoutPF2Dn]
-                    .array
-                    .F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix] =
+                    data.image[IDoutPF2Dn].array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix] =
                         val;
                 }
             }
@@ -725,6 +726,8 @@ static errno_t compute_function()
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
     data.image[IDoutPF2Draw].md[0].cnt0++;
     data.image[IDoutPF2Draw].md[0].write = 0;
+
+
 
     //printf("IDoutPF2D = %ld\n", IDoutPF2D);
     // Mix current PF with last one
@@ -759,6 +762,9 @@ static errno_t compute_function()
             }
     printf(" done\n");
     fflush(stdout);
+
+    delete_image_ID("psinvPFmat", DELETE_IMAGE_ERRMODE_ERROR);
+
 
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
     data.image[IDoutPF2D].md[0].cnt0++;
