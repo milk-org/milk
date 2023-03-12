@@ -316,7 +316,7 @@ errno_t CLI_execute_line()
 
 
     if(data.Debug > 0) {
-        printf("Processing CLI input \"%s\"\n", data.CLIcmdline);
+        printf("DEBUG: %s %d: Processing CLI input \"%s\"\n", __func__, __LINE__, data.CLIcmdline);
     }
 
     add_history(data.CLIcmdline);
@@ -401,6 +401,11 @@ errno_t CLI_execute_line()
         //
         data.cmdNBarg = 0;
 
+
+    if(data.Debug > 0) {
+        printf("DEBUG: %s %d: extract words\n", __func__, __LINE__);
+    }
+
         // extract first word
 
         // First, split double-quote strings out
@@ -451,13 +456,15 @@ errno_t CLI_execute_line()
         }
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
-        if(data.Debug == 1)
+
+        if(data.Debug > 1)
         {
             long i = 0;
             while(data.cmdargtoken[i].type != 0)
             {
 
-                printf("TOKEN %ld/%ld   \"%s\"  type : %d\n",
+                printf("DEBUG: %s %d: TOKEN %ld/%ld   \"%s\"  type : %d\n",
+                       __func__, __LINE__,
                        i,
                        data.cmdNBarg,
                        data.cmdargtoken[i].val.string,
@@ -514,14 +521,18 @@ errno_t CLI_execute_line()
             }
         }
 
+        printf("DEBUG: %s %d: data.parseerror = %d\n",
+               __func__, __LINE__,
+               data.parseerror);
+
         if(data.parseerror == 0)
         {
             if(data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
             {
                 if(data.Debug > 0)
                 {
-                    printf("DEBUG: %s: EXECUTING COMMAND %ld (%s)\n",
-                           __func__,
+                    printf("DEBUG: %s %d: EXECUTING COMMAND %ld (%s)\n",
+                           __func__, __LINE__,
                            data.cmdindex,
                            data.cmd[data.cmdindex].key);
                 }
