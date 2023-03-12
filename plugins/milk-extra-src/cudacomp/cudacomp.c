@@ -33,6 +33,10 @@
 #include "magma_compute_SVDpseudoInverse.h"
 #include "magma_compute_SVDpseudoInverse_SVD.h"
 
+#include "SingularValueDecomp.h"
+
+
+
 #include "PCA.h"
 
 // globals
@@ -99,6 +103,8 @@ static errno_t init_module_CLI()
 #endif
 
     CLIADDCMD_cudacomp__MVMextractModes();
+
+    CLIADDCMD_cudacomp__compSVD();
 
     // add atexit functions here
 
