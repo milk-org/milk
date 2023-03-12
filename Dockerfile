@@ -4,9 +4,9 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
         git \
-	make \
-	dpkg-dev \
-	libc6-dev \
+		make \
+		dpkg-dev \
+		libc6-dev \
         cmake \
         pkg-config \
         python3-dev \
@@ -19,9 +19,10 @@ RUN apt-get update && \
         libbison-dev \
         libfl-dev \
         libreadline-dev \
-	pkg-config \
-	gcc \
-	g++
+        gfortran libopenblas-dev liblapacke-dev \
+		pkg-config \
+		gcc \
+		g++
 
 #RUN rm /usr/bin/gcc /usr/bin/g++
 #RUN ln /usr/bin/gcc-10 /usr/bin/gcc
