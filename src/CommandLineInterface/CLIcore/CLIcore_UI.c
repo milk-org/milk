@@ -436,7 +436,7 @@ errno_t CLI_execute_line()
                     // printf("\t processing -- %s\n", cmdargstring);
 
                     snprintf(str, strmaxlen, "%s\n", cmdargstring);
-                    if(data.Debug>1){
+                    if(data.Debug>1) {
                         printf("DEBUG: %s %d: calling yy_scan_string on \"%s\"\n", __func__, __LINE__, str);
                     }
                     yy_scan_string(str);
@@ -461,7 +461,7 @@ errno_t CLI_execute_line()
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
-        if(data.Debug > 0){
+        if(data.Debug > 0) {
             printf("DEBUG: %s %d: data.cmdNBarg = %ld\n", __func__, __LINE__, data.cmdNBarg);
         }
 
@@ -537,9 +537,11 @@ errno_t CLI_execute_line()
             }
         }
 
-        printf("DEBUG: %s %d: data.parseerror = %d\n",
-               __func__, __LINE__,
-               data.parseerror);
+        if(data.Debug>0) {
+            printf("DEBUG: %s %d: data.parseerror = %d\n",
+                   __func__, __LINE__,
+                   data.parseerror);
+        }
 
         if(data.parseerror == 0)
         {
