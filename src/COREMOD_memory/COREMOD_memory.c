@@ -66,7 +66,6 @@
 #include "read_shmim_size.h"
 #include "read_shmimall.h"
 
-#include "shmimlog.h"
 #include "shmimlogcmd.h"
 
 #include "saveall.h"
@@ -176,7 +175,7 @@ static errno_t init_module_CLI()
     // DATA LOGGING
     logshmim_addCLIcmd();
 
-    CLIADDCMD_COREMOD_memory__shmimlog();
+    //CLIADDCMD_COREMOD_memory__shmimlog(); -- find deletion commit.
     CLIADDCMD_COREMOD_memory__shmimlogcmd();
 
     // add atexit functions here

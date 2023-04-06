@@ -43,7 +43,6 @@ set(SOURCEFILES
     read_shmim_size.c
     read_shmimall.c
     saveall.c
-    shmimlog.c
     shmimlogcmd.c
     shmim_purge.c
     shmim_setowner.c
@@ -103,7 +102,6 @@ set(INCLUDEFILES
     read_shmim_size.h
     read_shmimall.h
     saveall.h
-    shmimlog.h
     shmimlogcmd.h
     shmim_purge.h
     shmim_setowner.h
