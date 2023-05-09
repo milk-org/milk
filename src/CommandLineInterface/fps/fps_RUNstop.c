@@ -13,11 +13,11 @@ errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps)
 {
     // Move to correct launch directory
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
                            fps->md->name,
                            fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"fpsrunstop\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" fpsrunstop\" C-m",
                            fps->md->name);
 
     // Send C-c in case runstop command is not implemented
