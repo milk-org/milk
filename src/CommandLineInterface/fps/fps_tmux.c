@@ -126,30 +126,30 @@ errno_t functionparameter_FPS_tmux_init(
         strcpy(mloadstring, mloadstringcp);
     }
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"bash\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" bash\" C-m",
+                           fps->md->name); // This spins a bash-in-bash.
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"source fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" source fpstmuxenv\" C-m",
                            fps->md->name);
 
 
     // confstart
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"bash\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" bash\" C-m",
+                           fps->md->name); // This spins a bash-in-bash.
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"source  fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source  fpstmuxenv\" C-m",
                            fps->md->name);
 
 
     snprintf(functionstring,
              funcstring_maxlen,
-             "function fpsconfstart {\n"
+             " function fpsconfstart {\n"
              "echo \"STARTING CONF PROCESS\"\n"
              "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"%s%s _CONFSTART_ %s\\\"\n"
              "}\n",
@@ -159,23 +159,23 @@ errno_t functionparameter_FPS_tmux_init(
              fps->md->callfuncname,
              argstring);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"%s\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s\" C-m",
                            fps->md->name,
                            functionstring);
 
     // runstart
     //
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"bash\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" bash\" C-m",
+                           fps->md->name); // This spins a bash-in-bash.
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"source fpstmuxenv\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" source fpstmuxenv\" C-m",
                            fps->md->name);
 
     snprintf(functionstring,
              funcstring_maxlen,
-             "function fpsrunstart {\n"
+             " function fpsrunstart {\n"
              "echo \"STARTING RUN PROCESS\"\n"
              "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
              "_RUNSTART_ %s\\\"\n"
@@ -194,7 +194,7 @@ errno_t functionparameter_FPS_tmux_init(
     //
     snprintf(functionstring,
              funcstring_maxlen,
-             "function fpsrunstop {\n"
+             " function fpsrunstop {\n"
              "echo \"STOPPING RUN PROCESS\"\n"
              "%s-exec -n %s \\\"%s%s _RUNSTOP_ %s\\\"\n"
              "}\n",
