@@ -305,11 +305,11 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
 
             if(fps[fpsindex].parray[pindex].type == FPTYPE_EXECFILENAME)
             {
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"cd %s\" C-m",
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m",
                                        fps[fpsindex].md->name,
                                        fps[fpsindex].md->workdir);
                 EXECUTE_SYSTEM_COMMAND(
-                    "tmux send-keys -t %s:run \"%s %s/%s.fps\" C-m",
+                    "tmux send-keys -t %s:run \" %s %s/%s.fps\" C-m",
                     fps[fpsindex].md->name,
                     fps[fpsindex].parray[pindex].val.string[0],
                     fps[fpsindex].md->datadir,

@@ -74,20 +74,20 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
     */
 
     // terminate tmux sessions
-    // 2x exit required: first one to exit bash, second one to exit tmux
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
+    // 2x exit required: first one to exit bash, second one to exit tmux (there's a bash-in-bash running.)
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" exit\" C-m",
                            fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \"exit\" C-m",
-                           fps->md->name);
-
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \"exit\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" exit\" C-m",
                            fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" exit\" C-m",
                            fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m",
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" exit\" C-m",
+                           fps->md->name);
+
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" exit\" C-m",
+                           fps->md->name);
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" exit\" C-m",
                            fps->md->name);
 
     return RETURN_SUCCESS;
