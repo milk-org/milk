@@ -350,7 +350,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
         }
         else
         {
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
@@ -388,7 +388,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                     slice = 0;
                 }
 
-                //   clock_gettime(CLOCK_REALTIME, &tarray[slice]);
+                //   clock_gettime(CLOCK_MILK, &tarray[slice]);
                 //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
                 data.image[IDout].md[0].write = 1;
 

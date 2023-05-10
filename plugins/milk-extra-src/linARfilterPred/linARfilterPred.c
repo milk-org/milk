@@ -1288,7 +1288,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         /// *STEP: In loop mode, wait for input data to arrive*
 
         printf("WAITING FOR INPUT DATA ...... \n");
-        clock_gettime(CLOCK_REALTIME, &t0);
+        clock_gettime(CLOCK_MILK, &t0);
         if(LOOPmode == 1)
         {
             sem_wait(data.image[IDin].semptr[semtrig]);
@@ -1306,7 +1306,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         //save_fits("PFin_copy", "test_PFin_copy.fits");
         //save_fits(IDin_name, "test_PFin.fits");
 
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
 
         /// *STEP: if DC_MODE==1, compute average value from each variable*
         if(DC_MODE == 1)  // remove average
@@ -1631,7 +1631,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
         printf("DONE\n");
         fflush(stdout);
-        clock_gettime(CLOCK_REALTIME, &t2);
+        clock_gettime(CLOCK_MILK, &t2);
 
         tdiff    = timespec_diff(t0, t1);
         tdiffv01 = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
@@ -2267,7 +2267,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
     //	t = time(NULL);
     //    uttime = gmtime(&t);
-    //	clock_gettime(CLOCK_REALTIME, &timenow);
+    //	clock_gettime(CLOCK_MILK, &timenow);
     //	timesec0 = 3600.0*uttime->tm_hour  + 60.0*uttime->tm_min + 1.0*(timenow.tv_sec % 60) + 1.0e-9*timenow.tv_nsec;
 
     printf("Running on semaphore trigger %d of image %s\n",
@@ -2354,7 +2354,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             /// measure time
             //t = time(NULL);
             //uttime = gmtime(&t);
-            clock_gettime(CLOCK_REALTIME, &timenow);
+            clock_gettime(CLOCK_MILK, &timenow);
             timesec0 = 1.0 * timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
             // fprintf(fp, "%02d:%02d:%02ld.%09ld ", uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
@@ -2367,7 +2367,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
             //t = time(NULL);
             //uttime = gmtime(&t);
-            clock_gettime(CLOCK_REALTIME, &timenow);
+            clock_gettime(CLOCK_MILK, &timenow);
             timesec = 1.0 * timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
             kk = 0;

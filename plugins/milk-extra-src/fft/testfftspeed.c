@@ -94,14 +94,14 @@ int test_fftspeed(int nmax)
 #endif
 
 #if _POSIX_TIMERS > 0
-            clock_gettime(CLOCK_REALTIME, &tS0);
+            clock_gettime(CLOCK_MILK, &tS0);
 #else
             gettimeofday(&tv, NULL);
             tS0.tv_sec  = tv.tv_sec;
             tS0.tv_nsec = tv.tv_usec * 1000;
 #endif
 
-            //	  clock_gettime(CLOCK_REALTIME, &tS0);
+            //	  clock_gettime(CLOCK_MILK, &tS0);
             for(iter = 0; iter < nbiter; iter++)
             {
                 create_2DCimage_ID("tmp", size, size, NULL);
@@ -111,13 +111,13 @@ int test_fftspeed(int nmax)
             }
 
 #if _POSIX_TIMERS > 0
-            clock_gettime(CLOCK_REALTIME, &tS1);
+            clock_gettime(CLOCK_MILK, &tS1);
 #else
             gettimeofday(&tv, NULL);
             tS1.tv_sec  = tv.tv_sec;
             tS1.tv_nsec = tv.tv_usec * 1000;
 #endif
-            //	  clock_gettime(CLOCK_REALTIME, &tS1);
+            //	  clock_gettime(CLOCK_MILK, &tS1);
 
             for(iter = 0; iter < nbiter; iter++)
             {
@@ -126,13 +126,13 @@ int test_fftspeed(int nmax)
             }
 
 #if _POSIX_TIMERS > 0
-            clock_gettime(CLOCK_REALTIME, &tS2);
+            clock_gettime(CLOCK_MILK, &tS2);
 #else
             gettimeofday(&tv, NULL);
             tS2.tv_sec  = tv.tv_sec;
             tS2.tv_nsec = tv.tv_usec * 1000;
 #endif
-            //clock_gettime(CLOCK_REALTIME, &tS2);
+            //clock_gettime(CLOCK_MILK, &tS2);
 
             ti0 = 1.0 * tS0.tv_sec + 0.000000001 * tS0.tv_nsec;
             ti1 = 1.0 * tS1.tv_sec + 0.000000001 * tS1.tv_nsec;

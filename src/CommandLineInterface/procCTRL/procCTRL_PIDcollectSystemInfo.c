@@ -36,7 +36,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
     DEBUG_TRACEPOINT(" ");
 
-    clock_gettime(CLOCK_REALTIME, &t1);
+    clock_gettime(CLOCK_MILK, &t1);
 
     WRITE_FULLFILENAME(fname, "/proc/%d/task/%d/cpuset", PID, PID);
 
@@ -50,7 +50,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         PRINT_ERROR("fscanf returns value != 1");
     }
     fclose(fp);
-    clock_gettime(CLOCK_REALTIME, &t2);
+    clock_gettime(CLOCK_MILK, &t2);
     tdiff = timespec_diff(t1, t2);
     scantime_cpuset += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
@@ -62,7 +62,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 
     DEBUG_TRACEPOINT(" ");
 
-    clock_gettime(CLOCK_REALTIME, &t1);
+    clock_gettime(CLOCK_MILK, &t1);
     if(level == 0)
     {
         //FILE *fpout;
@@ -107,7 +107,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         // fprintf(stderr, "%d threads found\n", pinfodisp->NBsubprocesses);
         pinfodisp->threads = pinfodisp->NBsubprocesses;
     }
-    clock_gettime(CLOCK_REALTIME, &t2);
+    clock_gettime(CLOCK_MILK, &t2);
     tdiff = timespec_diff(t1, t2);
     scantime_pstree += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
@@ -115,7 +115,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
 #ifdef CMDPROC_PROCSTAT
     for(int spindex = 0; spindex < pinfodisp->NBsubprocesses; spindex++)
     {
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
         PID = pinfodisp->subprocPIDarray[spindex];
 
         WRITE_FULLFILENAME(fname, "/proc/%d/status", PID);
@@ -166,12 +166,12 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         line = NULL;
         len  = 0;
 
-        clock_gettime(CLOCK_REALTIME, &t2);
+        clock_gettime(CLOCK_MILK, &t2);
         tdiff = timespec_diff(t1, t2);
         scantime_status += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
         // read /proc/PID/stat
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
         WRITE_FULLFILENAME(fname, "/proc/%d/stat", PID);
 
         int  stat_pid; // (1) The process ID.
@@ -379,7 +379,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int level)
         pinfodisp->cpuloadcntarray[spindex] = (stat_utime + stat_stime);
         pinfodisp->memload                  = 0.0;
 
-        clock_gettime(CLOCK_REALTIME, &t2);
+        clock_gettime(CLOCK_MILK, &t2);
         tdiff = timespec_diff(t1, t2);
         scantime_stat += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
     }

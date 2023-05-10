@@ -167,7 +167,7 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
 
         struct timespec tnow;
         //        time_t now;
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         tvsec0 = tnow.tv_sec;
         uttime = gmtime(&tvsec0);
         fprintf_stdout(fpexit,

@@ -309,7 +309,7 @@ errno_t functionparameter_CTRLscreen(
 
     {
         struct timespec tnow = {0};
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         data.FPS_TIMESTAMP = tnow.tv_sec;
         strcpy(data.FPS_PROCESS_TYPE, "ctrl");
     }

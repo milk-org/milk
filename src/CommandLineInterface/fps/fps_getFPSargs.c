@@ -178,7 +178,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 
         {
             //struct timespec tnow = {0};
-            //clock_gettime(CLOCK_REALTIME, &tnow);
+            //clock_gettime(CLOCK_MILK, &tnow);
             //data.FPS_TIMESTAMP = tnow.tv_sec;
             //strcpy(data.FPS_PROCESS_TYPE, "undef");
         }

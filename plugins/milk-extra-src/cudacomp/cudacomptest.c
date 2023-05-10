@@ -187,7 +187,7 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
                            1,
                            0);
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     time1sec = 1.0 * ((long) tnow.tv_sec) + 1.0e-9 * tnow.tv_nsec;
 
     for(iter = 0; iter < NBiter; iter++)
@@ -195,7 +195,7 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
         status = 0;
         GPU_loop_MultMat_execute(0, &status, &GPUstatus[0], 1.0, 0.0, 1, 0);
     }
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     time2sec = 1.0 * ((long) tnow.tv_sec) + 1.0e-9 * tnow.tv_nsec;
 
     printf("Frequ = %12.3f Hz\n", 1.0 * NBiter / (time2sec - time1sec));

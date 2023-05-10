@@ -14,7 +14,7 @@ int processinfo_WriteMessage(
 
     DEBUG_TRACEPOINT(" ");
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     tmnow = gmtime(&tnow.tv_sec);
 
     strcpy(processinfo->statusmsg, msgstring);

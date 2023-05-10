@@ -120,7 +120,7 @@ errno_t list_image_ID_ncurses()
     struct timespec timenow;
     double          timediff;
 
-    clock_gettime(CLOCK_REALTIME, &timenow);
+    clock_gettime(CLOCK_MILK, &timenow);
 
     set_term(listim_scr);
 
@@ -186,7 +186,7 @@ errno_t list_image_ID_ncurses()
 
             attron(COLOR_PAIR(3));
 
-            n = snprintf(type, STYPESIZE, ImageStreamIO_typename_7(datatype));
+            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
 
             printw("%7s ", type);
 
@@ -316,7 +316,7 @@ errno_t list_image_ID_ofp(FILE *fo)
     sizeb = compute_image_memory();
     //minfo = mallinfo();
 
-    clock_gettime(CLOCK_REALTIME, &timenow);
+    clock_gettime(CLOCK_MILK, &timenow);
     //fprintf(fo, "time:  %ld.%09ld\n", timenow.tv_sec % 60, timenow.tv_nsec);
 
     fprintf(fo, "\n");
@@ -374,7 +374,7 @@ errno_t list_image_ID_ofp(FILE *fo)
 
             fprintf(fo, "%-32s", str);
 
-            n = snprintf(type, STYPESIZE, ImageStreamIO_typename_7(datatype));
+            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
 
             fprintf(fo, "%7s ", type);
 
@@ -530,7 +530,7 @@ errno_t list_image_ID_file(const char *fname)
                 fprintf(fp, " %ld", (long) data.image[i].md[0].size[j]);
             }
 
-            n = snprintf(type, STYPESIZE, ImageStreamIO_typename_7(datatype));
+            n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
 
             if(n >= STYPESIZE)
             {

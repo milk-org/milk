@@ -873,7 +873,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                 printf("%5d  Waiting for semaphore\n", __LINE__);
             }
 
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
@@ -1043,7 +1043,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
             /// measure time
             t           = time(NULL);
             uttimeStart = gmtime(&t);
-            clock_gettime(CLOCK_REALTIME, &timenowStart);
+            clock_gettime(CLOCK_MILK, &timenowStart);
 
             //     sprintf(fname,"%s/%s_%02d:%02d:%02ld.%09ld.fits", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
             //            sprintf(fnameascii,"%s/%s_%02d:%02d:%02ld.%09ld.txt", logdir, IDname, uttime->tm_hour, uttime->tm_min, timenow.tv_sec % 60, timenow.tv_nsec);
@@ -1071,7 +1071,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                 //   t = time(NULL);
                 //   uttime = gmtime(&t);
 
-                clock_gettime(CLOCK_REALTIME, &timenow);
+                clock_gettime(CLOCK_MILK, &timenow);
 
                 if(is3Dcube == 1)
                 {

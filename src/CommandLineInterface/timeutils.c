@@ -206,7 +206,7 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
     printf("TIME double     : %lf\n", timedouble);
 
     struct timespec tsnow;
-    clock_gettime(CLOCK_REALTIME, &tsnow);
+    clock_gettime(CLOCK_MILK, &tsnow);
     double tdoublenow = 1.0 * tsnow.tv_sec + 1.0e-9 * tsnow.tv_nsec;
     printf("TIME double NOW : %lf\n", tdoublenow);
 
