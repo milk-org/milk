@@ -107,7 +107,7 @@ PROCESSINFO *processinfo_shm_create(
     DEBUG_TRACEPOINT("created processinfo entry at %s\n", SM_fname);
     DEBUG_TRACEPOINT("shared memory space = %ld bytes\n", sharedsize);
 
-    clock_gettime(CLOCK_REALTIME, &pinfo->createtime);
+    clock_gettime(CLOCK_MILK, &pinfo->createtime);
     pinfolist->createtime[pindex] =
         1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
 
@@ -190,7 +190,7 @@ PROCESSINFO *processinfo_shm_create(
     //char logfilename[300];
     struct timespec tnow;
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
 
 #ifdef PROCESSINFO_LOGFILE
     {

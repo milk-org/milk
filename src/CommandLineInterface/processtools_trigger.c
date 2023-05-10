@@ -247,7 +247,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
         // get current time
         struct timespec ts;
-        if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+        if(clock_gettime(CLOCK_MILK, &ts) == -1)
         {
             perror("clock_gettime");
             exit(EXIT_FAILURE);
@@ -301,7 +301,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             // measure time spent waiting for input
             // get current time
             struct timespec ts1;
-            if(clock_gettime(CLOCK_REALTIME, &ts1) == -1)
+            if(clock_gettime(CLOCK_MILK, &ts1) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);

@@ -9,7 +9,7 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
     struct tm      *tstoptm;
     char            msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
-    clock_gettime(CLOCK_REALTIME, &tstop);
+    clock_gettime(CLOCK_MILK, &tstop);
     tstoptm = gmtime(&tstop.tv_sec);
 
     snprintf(timestring,

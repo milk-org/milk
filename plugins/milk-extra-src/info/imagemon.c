@@ -304,9 +304,9 @@ errno_t printstatus(imageID ID)
         struct timespec tdiff;
         double          tdiffv;
 
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         tdiff = info_time_diff(tlast, tnow);
-        clock_gettime(CLOCK_REALTIME, &tlast);
+        clock_gettime(CLOCK_MILK, &tlast);
 
         tdiffv  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         frequ   = (image->md->cnt0 - cntlast) / tdiffv;

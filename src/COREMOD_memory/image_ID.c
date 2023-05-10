@@ -25,7 +25,7 @@ imageID image_ID(const char *name)
             {
                 loopOK = 0;
                 tmpID  = i;
-                clock_gettime(CLOCK_REALTIME,
+                clock_gettime(CLOCK_MILK,
                               &data.image[i].md[0].lastaccesstime);
             }
         }

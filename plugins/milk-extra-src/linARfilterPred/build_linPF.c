@@ -222,40 +222,40 @@ static errno_t compute_function()
     switch(imgin.md->naxis)
     {
 
-    case 2:
-        /// If 2D image:
-        /// - xysize <- size[0] is number of variables
-        /// - nbspl <- size[1] is number of samples
-        nbspl = imgin.md->size[1];
-        xsize = imgin.md->size[0];
-        ysize = 1;
-        // copy of image to avoid input change during computation
-        create_2Dimage_ID("PFin_cp",
-                          imgin.md->size[0],
-                          imgin.md->size[1],
-                          &IDincp);
-        inNBelem = imgin.md->size[0] * imgin.md->size[1];
-        break;
+        case 2:
+            /// If 2D image:
+            /// - xysize <- size[0] is number of variables
+            /// - nbspl <- size[1] is number of samples
+            nbspl = imgin.md->size[1];
+            xsize = imgin.md->size[0];
+            ysize = 1;
+            // copy of image to avoid input change during computation
+            create_2Dimage_ID("PFin_cp",
+                              imgin.md->size[0],
+                              imgin.md->size[1],
+                              &IDincp);
+            inNBelem = imgin.md->size[0] * imgin.md->size[1];
+            break;
 
-    case 3:
-        /// If 3D image
-        /// - xysize <- size[0] * size[1] is number of variables
-        /// - nbspl <- size[2] is number of samples
-        nbspl = imgin.md->size[2];
-        xsize = imgin.md->size[0];
-        ysize = imgin.md->size[1];
-        create_3Dimage_ID("PFin_copy",
-                          imgin.md->size[0],
-                          imgin.md->size[1],
-                          imgin.md->size[2],
-                          &IDincp);
+        case 3:
+            /// If 3D image
+            /// - xysize <- size[0] * size[1] is number of variables
+            /// - nbspl <- size[2] is number of samples
+            nbspl = imgin.md->size[2];
+            xsize = imgin.md->size[0];
+            ysize = imgin.md->size[1];
+            create_3Dimage_ID("PFin_copy",
+                              imgin.md->size[0],
+                              imgin.md->size[1],
+                              imgin.md->size[2],
+                              &IDincp);
 
-        inNBelem = imgin.md->size[0] * imgin.md->size[1] * imgin.md->size[2];
-        break;
+            inNBelem = imgin.md->size[0] * imgin.md->size[1] * imgin.md->size[2];
+            break;
 
-    default:
-        printf("Invalid image size\n");
-        break;
+        default:
+            printf("Invalid image size\n");
+            break;
     }
     uint64_t xysize = (uint64_t) xsize * ysize;
     printf("xysize = %lu\n", xysize);
@@ -512,7 +512,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    clock_gettime(CLOCK_REALTIME, &t0);
+    clock_gettime(CLOCK_MILK, &t0);
 
     printf("=========== LOOP ITERATION %6ld =======\n", processinfo->loopcnt);
     printf("  PFlag     = %20f      ", *PFlatency);
@@ -706,8 +706,9 @@ static errno_t compute_function()
                                data.image[IDfm].array.F[PFpix * NBmvec + m];
                     }
 
-                    data.image[IDoutPF2Dn].array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix] =
-                        val;
+                    data.image[IDoutPF2Dn].array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin +
+                                                   pix] =
+                                                       val;
                 }
             }
         }
@@ -793,7 +794,7 @@ static errno_t compute_function()
 
 
     struct timespec t2;
-    clock_gettime(CLOCK_REALTIME, &t2);
+    clock_gettime(CLOCK_MILK, &t2);
 
     struct timespec tdiff = timespec_diff(t0, t2);
     double          texec = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;

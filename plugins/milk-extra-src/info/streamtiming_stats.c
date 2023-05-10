@@ -74,7 +74,7 @@ errno_t info_image_streamtiming_stats(
         sem_trywait(image->semptr[sem]);
     }
 
-    clock_gettime(CLOCK_REALTIME, &tstart);
+    clock_gettime(CLOCK_MILK, &tstart);
     t0 = tstart;
     t_timeout = t0;
     t_timeout.tv_sec += 2;
@@ -88,7 +88,7 @@ errno_t info_image_streamtiming_stats(
             return RETURN_FAILURE;
         }
 
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
         tdiff                 = info_time_diff(t0, t1);
         tdiffv                = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         tdiffvarray[framecnt] = tdiffv;

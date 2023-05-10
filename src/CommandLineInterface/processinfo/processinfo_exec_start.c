@@ -15,7 +15,7 @@ int processinfo_exec_start(PROCESSINFO *processinfo)
             processinfo->timingbuffercnt++;
         }
 
-        clock_gettime(CLOCK_REALTIME,
+        clock_gettime(CLOCK_MILK,
                       &processinfo->texecstart[processinfo->timerindex]);
 
         if(processinfo->dtiter_limit_enable != 0)

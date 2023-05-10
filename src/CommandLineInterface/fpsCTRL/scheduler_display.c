@@ -18,7 +18,7 @@ errno_t fpsCTRL_scheduler_display(
     struct timespec tnow;
     struct timespec tdiff;
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
 
 
     // Sort entries from most recent to most ancient, using inputindex

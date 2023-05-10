@@ -36,7 +36,7 @@ errno_t processinfo_update_output_stream(
 
             DEBUG_TRACEPOINT("timing");
             struct timespec ts;
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
