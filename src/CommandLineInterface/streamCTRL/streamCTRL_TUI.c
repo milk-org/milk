@@ -128,7 +128,7 @@ imageID image_ID_from_images(IMAGE *images, const char *restrict name)
             if((strncmp(name, images[i].name, strlen(name)) == 0) &&
                     (images[i].name[strlen(name)] == '\0'))
             {
-                clock_gettime(CLOCK_REALTIME, &images[i].md[0].lastaccesstime);
+                clock_gettime(CLOCK_MILK, &images[i].md[0].lastaccesstime);
                 return i;
             }
         }
@@ -433,7 +433,7 @@ void *streamCTRL_scan(void *argptr)
     {
 
         // timing measurement
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
         if(firstIter == 1)
         {
             tdiffv = 0.1;
@@ -443,7 +443,7 @@ void *streamCTRL_scan(void *argptr)
             tdiff  = timespec_diff(t0, t1);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         }
-        clock_gettime(CLOCK_REALTIME, &t0);
+        clock_gettime(CLOCK_MILK, &t0);
         streaminfoproc->dtscan = tdiffv;
 
         int mode = 0;
@@ -1316,7 +1316,7 @@ static errno_t streamCTRL_print_SPTRACE_details(
                 .ts_procstart.tv_nsec);
 
             struct timespec tnow;
-            clock_gettime(CLOCK_REALTIME, &tnow);
+            clock_gettime(CLOCK_MILK, &tnow);
             struct timespec tdiff;
 
             tdiff = timespec_diff(
@@ -2356,7 +2356,7 @@ errno_t streamCTRL_CTRLscreen()
                     }
                     else
                     {
-                        snprintf(string, stringlen,
+                        snprintf(string, stringlen, "%s",
                                  ImageStreamIO_typename_short(streaminfo[sindex].datatype));
                     }
                     TUI_printfw(string);

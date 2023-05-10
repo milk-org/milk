@@ -8,6 +8,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "CommandLineInterface/timeutils.h"
+
 /**
  * ## Purpose
  *
@@ -110,7 +112,7 @@ void CORE_logFunctionCall(const int                           funclevel,
         struct tm *uttime;
         tnow   = time(NULL);
         uttime = gmtime(&tnow);
-        clock_gettime(CLOCK_REALTIME, &timenow);
+        clock_gettime(CLOCK_MILK, &timenow);
         tid = syscall(SYS_gettid);
 
         // add custom parameter into string (optional)

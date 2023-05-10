@@ -28,7 +28,7 @@ int GetCPUloads(PROCINFOPROC *pinfop)
 
     static int cnt = 0;
 
-    clock_gettime(CLOCK_REALTIME, &t1);
+    clock_gettime(CLOCK_MILK, &t1);
 
     line = (char *) malloc(sizeof(char) * maxstrlen);
     if(line == NULL)
@@ -95,11 +95,11 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     }
     free(line);
     fclose(fp);
-    clock_gettime(CLOCK_REALTIME, &t2);
+    clock_gettime(CLOCK_MILK, &t2);
     tdiff = timespec_diff(t1, t2);
     scantime_CPUload += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
-    clock_gettime(CLOCK_REALTIME, &t1);
+    clock_gettime(CLOCK_MILK, &t1);
 
     // number of process per CPU -> we can get that from ps
     char command[STRINGMAXLEN_COMMAND];
@@ -168,7 +168,7 @@ int GetCPUloads(PROCINFOPROC *pinfop)
     }
     cnt++;
 
-    clock_gettime(CLOCK_REALTIME, &t2);
+    clock_gettime(CLOCK_MILK, &t2);
     tdiff = timespec_diff(t1, t2);
     scantime_CPUpcnt += 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 

@@ -101,7 +101,7 @@ void *processinfo_scan(void *thptr)
         DEBUG_TRACEPOINT(" ");
 
         // timing measurement
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
         if(firstIter == 1)
         {
             tdiffv    = 0.1;
@@ -112,7 +112,7 @@ void *processinfo_scan(void *thptr)
             tdiff  = timespec_diff(t0, t1);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
         }
-        clock_gettime(CLOCK_REALTIME, &t0);
+        clock_gettime(CLOCK_MILK, &t0);
         pinfop->dtscan = tdiffv;
 
         DEBUG_TRACEPOINT(" ");

@@ -474,7 +474,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                     data.image[IDin[cubeindex]].md[0].size[1] *
                     ImageStreamIO_typesize(datatype);
 
-        clock_gettime(CLOCK_REALTIME, &t0);
+        clock_gettime(CLOCK_MILK, &t0);
 
         ptr0                          = ptr0s + kk * framesize;
         data.image[IDout].md[0].write = 1;
@@ -494,7 +494,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         {
             usleep(twait1);
 
-            clock_gettime(CLOCK_REALTIME, &t1);
+            clock_gettime(CLOCK_MILK, &t1);
             tdiff  = timespec_diff(t0, t1);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
@@ -530,7 +530,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                 struct tm      *tstoptm;
                 char            msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
-                clock_gettime(CLOCK_REALTIME, &tstop);
+                clock_gettime(CLOCK_MILK, &tstop);
                 tstoptm = gmtime(&tstop.tv_sec);
 
                 sprintf(msgstring,

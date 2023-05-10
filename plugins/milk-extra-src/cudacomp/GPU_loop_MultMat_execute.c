@@ -112,7 +112,7 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
         //printf("====================================== gpumatmultconf[index].M = %d\n", gpumatmultconf[index].M);
         //fflush(stdout);
 
-        clock_gettime(CLOCK_REALTIME, &t00);
+        clock_gettime(CLOCK_MILK, &t00);
 
         // copy DM reference to output to prepare computation:   d_dmVec <- d_dmRef
         if(ComputeGPU_FLAG == 1)
@@ -165,7 +165,7 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
 
         thdata->t0->tv_sec  = t00.tv_sec;
         thdata->t0->tv_nsec = t00.tv_nsec;
-        clock_gettime(CLOCK_REALTIME, thdata->t1);
+        clock_gettime(CLOCK_MILK, thdata->t1);
 
         *ptrstat = 3; // transfer: prt0 -> d_wfsVec
         if(ComputeGPU_FLAG == 1)
@@ -196,7 +196,7 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
             }
         }
 
-        clock_gettime(CLOCK_REALTIME, thdata->t2);
+        clock_gettime(CLOCK_MILK, thdata->t2);
 
         if(gpumatmultconf[index].refWFSinit[device] ==
                 0) // compute DM reference (used when reference changes)
@@ -428,7 +428,7 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
                     exit(EXIT_FAILURE);
                 }
             }
-            clock_gettime(CLOCK_REALTIME, thdata->t3);
+            clock_gettime(CLOCK_MILK, thdata->t3);
 
             //
             // When computation is done on GPU, post semaphore #3
@@ -464,7 +464,7 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
                 }
             }
 
-            clock_gettime(CLOCK_REALTIME, thdata->t4);
+            clock_gettime(CLOCK_MILK, thdata->t4);
 
             //cudaMemcpy ( gpumatmultconf[index].dmVec_part[device], gpumatmultconf[index].d_dmVec[device], sizeof(float)*gpumatmultconf[index].M, cudaMemcpyDeviceToHost);
             // result is on gpumatmultconf[index].d_dmVec[device]
@@ -499,7 +499,7 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
             }
         }
 
-        clock_gettime(CLOCK_REALTIME, thdata->t5);
+        clock_gettime(CLOCK_MILK, thdata->t5);
         //
         // When data is ready on CPU, post semaphore #5
         //
@@ -650,7 +650,7 @@ int GPU_loop_MultMat_execute(int   index,
         struct timespec tnow;
 
         *status = *status + 1; // ->7
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
             timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
         data.image[IDtiming].array.F[TimerIndex] = tdiffv; //25
@@ -718,7 +718,7 @@ int GPU_loop_MultMat_execute(int   index,
         struct timespec tnow;
 
         *status = *status + 1; // -> 8
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
             timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
         data.image[IDtiming].array.F[TimerIndex] = tdiffv; //26
@@ -836,7 +836,7 @@ int GPU_loop_MultMat_execute(int   index,
         struct timespec tnow;
 
         *status = *status + 1; // -> 9
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
             timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
         data.image[IDtiming].array.F[TimerIndex] = tdiffv; //32
@@ -867,7 +867,7 @@ int GPU_loop_MultMat_execute(int   index,
             data.image[IDtiming].md[0].cnt1;
 
         *status = *status + 1; // -> 10
-        clock_gettime(CLOCK_REALTIME, &tnow);
+        clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
             timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
         data.image[IDtiming].array.F[TimerIndex] = tdiffv; //33

@@ -919,7 +919,7 @@ static errno_t compute_function()
 
 #ifdef BLASLIB
             struct timespec t0, t1;
-            clock_gettime(CLOCK_REALTIME, &t0);
+            clock_gettime(CLOCK_MILK, &t0);
             processinfo_WriteMessage_fmt(processinfo, "imgout %s ID %d", imgout.md->name,
                                          imgout.ID);
             if(imgout.ID == -1)
@@ -954,7 +954,7 @@ static errno_t compute_function()
                                 imgout.im->array.F, 1);
                 }
 
-                clock_gettime(CLOCK_REALTIME, &t1);
+                clock_gettime(CLOCK_MILK, &t1);
                 struct timespec tdiff;
                 tdiff = timespec_diff(t0, t1);
                 double t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
@@ -999,7 +999,7 @@ static errno_t compute_function()
 #ifdef HAVE_CUDA
 
             struct timespec t0, t1;
-            clock_gettime(CLOCK_REALTIME, &t0);
+            clock_gettime(CLOCK_MILK, &t0);
 
             // load in_stream to GPU
             if(initref == 0)
@@ -1139,7 +1139,7 @@ static errno_t compute_function()
 
 
 
-                clock_gettime(CLOCK_REALTIME, &t1);
+                clock_gettime(CLOCK_MILK, &t1);
                 struct timespec tdiff;
                 tdiff = timespec_diff(t0, t1);
                 double t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
