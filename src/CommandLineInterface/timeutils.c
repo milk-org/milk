@@ -7,9 +7,6 @@
 
 #include "timeutils.h"
 
-#define CLOCK_MILK CLOCK_TAI
-// handles leap seconds better than CLOCK_REALTIME
-
 
 
 errno_t milk_clock_gettime(struct timespec *tnow_p)
