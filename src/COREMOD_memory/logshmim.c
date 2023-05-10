@@ -280,46 +280,50 @@ void *save_fits_function(void *ptr)
     // Local time
 
     // get time zone
+    char tm_zone[] = "HST";
+    double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
+
+    /*// Causes a race condition with gettime in other thread, which result in occasional HST filenames...
     time_t t = time(NULL);
     // OVERRIDE localtime to HST
     putenv("TZ=Pacific/Honolulu");
     struct tm lt = *localtime(&t);
     printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
     putenv("TZ=");
-
     printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    //*/
 
-    //printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
-    //printf("The time zone is '%s'.\n", lt.tm_zone);
+    // printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
+    // printf("The time zone is '%s'.\n", lt.tm_zone);
 
-    sprintf(imkwarray[6].name, "%s", lt.tm_zone);
+    sprintf(imkwarray[6].name, "%s", TZ_MILK_STR);
     imkwarray[6].type = 'S';
     strcpy(imkwarray[6].value.valstr,
            timedouble_to_UTC_timeofdaystring(
                (0.5 * tmsg->arraytime[0] +
                 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
-               lt.tm_gmtoff));
+               TZ_MILK_UTC_OFF));
     sprintf(imkwarray[6].comment,
             "HH:MM:SS.SS typical %s at exposure",
-            lt.tm_zone);
+            TZ_MILK_STR);
 
-    sprintf(imkwarray[7].name, "%s-STR", lt.tm_zone);
+    sprintf(imkwarray[7].name, "%s-STR", TZ_MILK_STR);
     imkwarray[7].type = 'S';
     strcpy(
         imkwarray[7].value.valstr,
-        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + lt.tm_gmtoff));
+        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
     sprintf(imkwarray[7].comment,
             "HH:MM:SS.SS typical %s at exposure start",
-            lt.tm_zone);
+            TZ_MILK_STR);
 
-    sprintf(imkwarray[8].name, "%s-END", lt.tm_zone);
+    sprintf(imkwarray[8].name, "%s-END", TZ_MILK_STR);
     imkwarray[8].type = 'S';
     strcpy(imkwarray[8].value.valstr,
            timedouble_to_UTC_timeofdaystring(
-               tmsg->arraytime[tmsg->cubesize - 1] + lt.tm_gmtoff));
+               tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
     sprintf(imkwarray[8].comment,
             "HH:MM:SS.SS typical %s at exposure end",
-            lt.tm_zone);
+            TZ_MILK_STR);
 
     printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
 
