@@ -160,7 +160,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
         printf("\n");
         usleep(500);
 
-        sem_getvalue(img_p->semptr[semtrig], &semval);
+        semval = ImageStreamIO_semvalue(img_p, semtrig);
         snprintf(pinfomsg,
                  200,
                  "%ld TEST 0 semtrig %d  ID %ld  %d",
@@ -173,18 +173,18 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
 
         if(testmode == 0)
         {
-            rv = sem_wait(img_p->semptr[semtrig]);
+            rv = ImageStreamIO_semwait(img_p, semtrig);
         }
 
         if(testmode == 1)
         {
-            rv = sem_trywait(img_p->semptr[semtrig]);
+            rv = ImageStreamIO_semtrywait(img_p, semtrig);
         }
 
         if(testmode == 2)
         {
-            sem_post(img_p->semptr[semtrig]);
-            rv = sem_wait(img_p->semptr[semtrig]);
+            ImageStreamIO_sempost(img_p, semtrig);
+            rv = ImageStreamIO_semwait(img_p, semtrig);
         }
 
         if(rv == -1)
@@ -220,7 +220,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
             printf("    OK\n");
         }
 
-        sem_getvalue(img_p->semptr[semtrig], &semval);
+        semval = ImageStreamIO_semvalue(img_p, semtrig);
         snprintf(pinfomsg,
                  200,
                  "%ld TEST 1 semtrig %d  ID %ld  %d",
@@ -471,26 +471,26 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
             }
             ts.tv_sec += 2;
 
-            semr = sem_timedwait(img_p->semptr[semtrig], &ts);
+            semr = ImageStreamIO_semtimedwait(img_p, semtrig, &ts);
 
             if(iter == 0)
             {
                 processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
-                sem_getvalue(img_p->semptr[semtrig], &semval);
+                semval = ImageStreamIO_semvalue(img_p, semtrig);
                 int semvalcnt = semval;
                 for(scnt = 0; scnt < semvalcnt; scnt++)
                 {
-                    sem_getvalue(img_p->semptr[semtrig], &semval);
+                    semval = ImageStreamIO_semvalue(img_p, semtrig);
                     printf("sem = %d\n", semval);
                     fflush(stdout);
-                    sem_trywait(img_p->semptr[semtrig]);
+                    ImageStreamIO_semtrywait(img_p, semtrig);
                 }
                 printf("done\n");
                 fflush(stdout);
 
-                sem_getvalue(img_p->semptr[semtrig], &semval);
+                semval = ImageStreamIO_semvalue(img_p, semtrig);
                 printf("-> sem = %d\n", semval);
                 fflush(stdout);
 
@@ -1085,10 +1085,10 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             img_p->md[0].cnt0++;
             for(semnb = 0; semnb < img_p->md[0].sem; semnb++)
             {
-                sem_getvalue(img_p->semptr[semnb], &semval);
+                semval = ImageStreamIO_semvalue(img_p, semnb);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    sem_post(img_p->semptr[semnb]);
+                    ImageStreamIO_sempost(img_p, semnb);
                 }
             }
 
