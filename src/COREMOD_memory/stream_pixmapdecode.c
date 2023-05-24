@@ -368,10 +368,10 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
             if(processinfo->loopcnt == 0)
             {
-                sem_getvalue(data.image[IDin].semptr[in_semwaitindex], &semval);
+                semval = ImageStreamIO_semvalue(data.image+IDin, in_semwaitindex);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
-                    sem_trywait(data.image[IDin].semptr[in_semwaitindex]);
+                    ImageStreamIO_semtrywait(data.image+IDin, in_semwaitindex);
                 }
             }
         }
@@ -436,16 +436,16 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 data.image[IDout].md[0].cnt1 = slice;
 
-                sem_getvalue(data.image[IDout].semptr[2], &semval);
+                semval = ImageStreamIO_semvalue(data.image+IDout, 2);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    sem_post(data.image[IDout].semptr[2]);
+                    ImageStreamIO_sempost(data.image+IDout, 2);
                 }
 
-                sem_getvalue(data.image[IDout].semptr[3], &semval);
+                semval = ImageStreamIO_semvalue(data.image+IDout, 3);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    sem_post(data.image[IDout].semptr[3]);
+                    ImageStreamIO_sempost(data.image+IDout, 3);
                 }
 
                 data.image[IDout].md[0].write = 0;

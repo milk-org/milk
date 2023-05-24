@@ -130,7 +130,7 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
         }
         else
         {
-            sem_wait(data.image[ID0].semptr[semtrig]);
+            ImageStreamIO_semwait(data.image+ID0, semtrig);
         }
 
         data.image[IDout].md[0].write = 1;

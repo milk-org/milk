@@ -176,10 +176,10 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     }
     if(data.image[IDs].md[0].sem > 0)
     {
-        sem_getvalue(data.image[IDs].semptr[0], &semval);
+        semval = ImageStreamIO_semvalue(data.image+IDs, 0);
         if(semval < SEMAPHORE_MAXVAL)
         {
-            sem_post(data.image[IDs].semptr[0]);
+            ImageStreamIO_sempost(data.image+IDs, 0);
         }
     }
     data.image[IDs].md[0].write = 0;

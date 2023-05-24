@@ -1376,9 +1376,7 @@ errno_t streamCTRL_CTRLscreen()
                                         : 3;
                             for(s = 0; s < max_s; s++)
                             {
-                                int semval;
-                                sem_getvalue(streamCTRLimages[ID].semptr[s],
-                                             &semval);
+                                int semval = ImageStreamIO_semvalue(streamCTRLimages+ID, s);
                                 snprintf(string, stringlen, " %7d", semval);
                                 TUI_printfw(string);
                             }
