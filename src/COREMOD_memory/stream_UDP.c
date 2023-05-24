@@ -963,7 +963,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             data.image[ID].md[0].cnt0++;
             for(semnb = 0; semnb < data.image[ID].md[0].sem; semnb++)
             {
-                semval ImageStreamIO_semvalue(data.image+ID, semnb);
+                semval = ImageStreamIO_semvalue(data.image+ID, semnb);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
                     ImageStreamIO_sempost(data.image+ID, semnb);
