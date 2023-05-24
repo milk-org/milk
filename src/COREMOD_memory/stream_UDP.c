@@ -337,7 +337,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 printf("done\n");
                 fflush(stdout);
 
-                ImageStreamIO_semvalue(data.image+ID, semtrig);
+                semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
                 printf("-> sem = %d\n", semval);
                 fflush(stdout);
 
