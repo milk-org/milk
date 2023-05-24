@@ -173,7 +173,6 @@ int CUDACOMP_createModesLoop(const char *DMmodeval_stream, const char *DMmodes, 
     arraytmp[1] = 1;
     ID_modeval = create_image_ID(DMmodes_val, 2, arraytmp, _DATATYPE_FLOAT, 1, 0);
     free(arraytmp);
-    COREMOD_MEMORY_image_set_createsem(DMmodes_val, 2);
 
 
     cudaGetDeviceCount(&cuda_deviceCount);

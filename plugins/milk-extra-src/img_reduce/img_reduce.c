@@ -646,7 +646,6 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
                             0,
                             0,
                             &IDout);
-            COREMOD_MEMORY_image_set_createsem(IDoutname, 2);
         }
         else
         {
@@ -662,7 +661,6 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
     }
     if(streamMode == 1)
     {
-        COREMOD_MEMORY_image_set_createsem(IDoutname, 2);
     }
 
     if(badpixclean_init == 0)
