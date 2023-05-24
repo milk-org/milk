@@ -116,8 +116,6 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                         0,
                         0,
                         &IDout);
-        COREMOD_MEMORY_image_set_createsem(IDstreamout_name,
-                                           IMAGE_NB_SEMAPHORE);
     }
     free(arraysize);
 

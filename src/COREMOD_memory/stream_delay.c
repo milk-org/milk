@@ -358,7 +358,6 @@ CLIADDCMD_COREMOD_memory__streamdelay()
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
         create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
-        COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
         free(arraytmp);
     }
 
