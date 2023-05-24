@@ -190,7 +190,7 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
     {
         int semval;
 
-        sem_getvalue(data.image[ID].semptr[s], &semval);
+        semval = ImageStreamIO_semvalue(data.image_ID, s);
 
         printf("  %2d   %6d   %8d  %8d\n",
                s,
@@ -294,10 +294,10 @@ void *waitforsemID(void *ID)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     tid = pthread_self();
 
-    //    sem_getvalue(data.image[(long) ID].semptr, &semval);
+    //    semval = ImageStreamIO_semgetvalue(data.image+(long) ID, ?sem_index);
     //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, data.image[(long) ID].name);
     //    fflush(stdout);
-    sem_wait(data.image[(imageID) ID].semptr[0]);
+    ImageStreamIO_semwait(data.image+(imageID) ID, 0);
     //    printf("tid %u sem ID %ld done\n", (unsigned int) tid, (long) ID);
     //    fflush(stdout);
 
@@ -364,7 +364,7 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID)
     {
         for(s = 0; s < data.image[IDarray[i]].md[0].sem; s++)
         {
-            sem_getvalue(data.image[IDarray[i]].semptr[s], &semval);
+            semval = ImageStreamIO_semvalue(data.image+IDarray[i], s);
             printf("sem %d/%d of %s [%ld] = %d\n",
                    s,
                    data.image[IDarray[i]].md[0].sem,
@@ -374,7 +374,7 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID)
             fflush(stdout);
             for(cnt = 0; cnt < semval; cnt++)
             {
-                sem_trywait(data.image[IDarray[i]].semptr[s]);
+                ImageStreamIO_semtrywait(data.image+IDarray[i], s);
             }
         }
     }

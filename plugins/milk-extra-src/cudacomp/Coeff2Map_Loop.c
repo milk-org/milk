@@ -380,20 +380,20 @@ errno_t CUDACOMP_Coeff2Map_Loop(const char *IDmodes_name,
                 exit(EXIT_FAILURE);
             }
             ts.tv_sec += 1;
-            semr = sem_timedwait(data.image[IDcoeff].semptr[3], &ts);
+            semr = ImageStreamIO_semtimedwait(data.image+IDcoeff, 3, &ts);
 
             if(iter == 0)
             {
                 //  printf("driving semaphore to zero ... ");
                 // fflush(stdout);
-                sem_getvalue(data.image[IDcoeff].semptr[2], &semval);
+                semval = ImageStreamIO_semvalue(data.image+IDcoeff, 2);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
                     printf("WARNING %s %d  : sem_trywait on semptr2\n",
                            __FILE__,
                            __LINE__);
                     fflush(stdout);
-                    sem_trywait(data.image[IDcoeff].semptr[2]);
+                    ImageStreamIO_semtrywait(data.image+IDcoeff, 2);
                 }
                 // printf("done\n");
                 // fflush(stdout);
@@ -489,15 +489,15 @@ errno_t CUDACOMP_Coeff2Map_Loop(const char *IDmodes_name,
                                   d_outmap,
                                   sizeof(float) * mdim,
                                   cudaMemcpyDeviceToHost);
-            sem_getvalue(data.image[IDoutmap].semptr[0], &semval);
+            semval = ImageStreamIO_semvalue(data.image+IDoutmap, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                sem_post(data.image[IDoutmap].semptr[0]);
+                ImageStreamIO_sempost(data.image+IDoutmap, 0);
             }
-            sem_getvalue(data.image[IDoutmap].semptr[1], &semval);
+            semval = ImageStreamIO_semvalue(data.image+IDoutmap, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                sem_post(data.image[IDoutmap].semptr[1]);
+                ImageStreamIO_sempost(data.image+IDoutmap, 1);
             }
             data.image[IDoutmap].md[0].cnt0++;
             data.image[IDoutmap].md[0].write = 0;

@@ -324,7 +324,7 @@ errno_t printstatus(imageID ID)
         TUI_printfw("[%3ld sems ", image->md->sem);
         for(int s = 0; s < image->md->sem; s++)
         {
-            sem_getvalue(image->semptr[s], &semval);
+            semval = ImageStreamIO_semvalue(image, s);
             TUI_printfw(" %6d ", semval);
         }
         TUI_printfw("]\n");

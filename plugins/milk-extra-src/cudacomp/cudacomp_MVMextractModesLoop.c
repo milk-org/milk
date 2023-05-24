@@ -821,7 +821,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
         }
 
         // drive semaphore to zero
-        while(sem_trywait(data.image[ID_modeval].semptr[insem]) == 0)
+        while(ImageStreamIO_semtrywait(data.image+ID_modeval, insem) == 0)
         {
             printf("WARNING %s %d  : sem_trywait on ID_modeval\n",
                    __FILE__,
@@ -1413,7 +1413,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
         {
             // WAIT FOR NEW MODEVAL
             int rval;
-            rval = sem_wait(data.image[ID_modeval].semptr[insem]);
+            rval = ImageStreamIO_semwait(data.image+ID_modeval, insem);
             if(rval == -1)  // interrupt
             {
                 loopOK = 0;
@@ -1436,15 +1436,15 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
             }
             data.image[IDtrace].md[0].cnt1 = TRACEindex;
 
-            sem_getvalue(data.image[IDtrace].semptr[0], &semval);
+            semval = ImageStreamIO_semvalue(data.image+IDtrace, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                sem_post(data.image[IDtrace].semptr[0]);
+                ImageStreamIO_sempost(data.image+IDtrace, 0);
             }
-            sem_getvalue(data.image[IDtrace].semptr[1], &semval);
+            semval = ImageStreamIO_semvalue(data.image+IDtrace, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                sem_post(data.image[IDtrace].semptr[1]);
+                ImageStreamIO_sempost(data.image+IDtrace, 1);
             }
             data.image[IDtrace].md[0].cnt0++;
             data.image[IDtrace].md[0].write = 0;

@@ -136,17 +136,11 @@ errno_t delete_image(IMGID img, int errmode)
 
         if(data.image[ID].md[0].shared == 1)
         {
-            for(s = 0; s < data.image[ID].md[0].sem; s++)
-            {
-                sem_close(data.image[ID].semptr[s]);
-            }
-
-            free(data.image[ID].semptr);
+            free(data.image[ID].semptr); // ?
             data.image[ID].semptr = NULL;
 
             if(data.image[ID].semlog != NULL)
             {
-                sem_close(data.image[ID].semlog);
                 data.image[ID].semlog = NULL;
             }
 

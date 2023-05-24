@@ -291,15 +291,15 @@ int CUDACOMP_createModesLoop(const char *DMmodeval_stream, const char *DMmodes, 
                 exit(EXIT_FAILURE);
             }
             ts.tv_sec += 1;
-            semr = sem_timedwait(data.image[ID_DMact].semptr[0], &ts);
+            semr = ImageStreamIO_semtimedwait(data.image+ID_DMact, 0, &ts);
 
             if(iter == 0)
             {
                 printf("driving semaphore to zero ... ");
                 fflush(stdout);
-                sem_getvalue(data.image[ID_DMact].semptr[0], &semval);
+                semval = ImageStreamIO_semvalue(data.image+ID_DMact, 0);
                 for(scnt=0; scnt<semval; scnt++)
-                    sem_trywait(data.image[ID_DMact].semptr[0]);
+                    ImageStreamIO_semtrywait(data.image+ID_DMact, 0);
                 printf("done\n");
                 fflush(stdout);
             }
@@ -335,12 +335,12 @@ int CUDACOMP_createModesLoop(const char *DMmodeval_stream, const char *DMmodes, 
             // copy result
             data.image[ID_modeval].md[0].write = 1;
             cudaStat = cudaMemcpy(data.image[ID_modeval].array.F, d_modeval, sizeof(float)*NBmodes, cudaMemcpyDeviceToHost);
-            sem_getvalue(data.image[ID_modeval].semptr[0], &semval);
+            semval = ImageStreamIO_semvalue(data.image+ID_modeval, 0);
             if(semval<SEMAPHORE_MAXVAL)
-                sem_post(data.image[ID_modeval].semptr[0]);
-            sem_getvalue(data.image[ID_modeval].semptr[1], &semval);
+                ImageStreamIO_sempost(data.image+ID_modeval, 0);
+            semval = ImageStreamIO_semvalue(data.image+ID_modeval, 1);
             if(semval<SEMAPHORE_MAXVAL)
-                sem_post(data.image[ID_modeval].semptr[1]);
+                ImageStreamIO_sempost(data.image+ID_modeval, 1);
             data.image[ID_modeval].md[0].cnt0++;
             data.image[ID_modeval].md[0].write = 0;
         }

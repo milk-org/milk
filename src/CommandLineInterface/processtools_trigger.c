@@ -261,8 +261,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             // this should only run once, returning semr = -1 with errno = EAGAIN
             // otherwise, we're potentially missing frames
             DEBUG_TRACEPOINT("sem_trywait %ld", processinfo->triggerstreamID);
-            semr = sem_trywait(data.image[processinfo->triggerstreamID]
-                               .semptr[processinfo->triggersem]);
+            semr = ImageStreamIO_semtrywait(data.image+processinfo->triggerstreamID
+                               ,processinfo->triggersem);
             if(semr == 0)
             {
                 processinfo->triggermissedframe++;
@@ -285,8 +285,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                 ts.tv_sec++;
             }
 
-            semr = sem_timedwait(data.image[processinfo->triggerstreamID]
-                                 .semptr[processinfo->triggersem],
+            semr = ImageStreamIO_semtimedwait(data.image+processinfo->triggerstreamID
+                                 ,processinfo->triggersem,
                                  &ts);
             if(semr == -1)
             {

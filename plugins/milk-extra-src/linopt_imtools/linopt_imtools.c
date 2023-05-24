@@ -357,7 +357,7 @@ imageID linopt_imtools_image_construct_stream(
         }
         else
         {
-            sem_wait(data.image[IDcoeff].semptr[0]);
+            ImageStreamIO_semwait(data.image+IDcoeff, 0);
         }
 
         for(ii = 0; ii < sizexy; ii++)
@@ -372,10 +372,10 @@ imageID linopt_imtools_image_construct_stream(
                 data.image[IDout].array.F[ii] += data.image[IDcoeff].array.F[kk] *
                                                  data.image[IDmodes].array.F[kk * sizexy + ii];
             }
-        sem_getvalue(data.image[IDout].semptr[0], &semval);
+        semval = ImageStreamIO_semvalue(data.image+IDout, 0);
         if(semval < SEMAPHORE_MAXVAL)
         {
-            sem_post(data.image[IDout].semptr[0]);
+            ImageStreamIO_sempost(data.image+IDout, 0);
         }
 
         data.image[IDout].md[0].cnt0++;
