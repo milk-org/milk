@@ -190,7 +190,7 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
     {
         int semval;
 
-        semval = ImageStreamIO_semvalue(data.image_ID, s);
+        semval = ImageStreamIO_semvalue(data.image+ID, s);
 
         printf("  %2d   %6d   %8d  %8d\n",
                s,
