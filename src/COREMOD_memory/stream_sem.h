@@ -4,8 +4,6 @@
 
 errno_t stream_sem_addCLIcmd();
 
-imageID COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem);
-
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname);
 
 imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index);

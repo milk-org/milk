@@ -326,7 +326,6 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                         0,
                         0,
                         &IDout);
-        COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
         free(arraytmp);
     }
 
