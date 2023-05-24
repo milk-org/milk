@@ -383,6 +383,11 @@ static errno_t runCLI_initialize()
     sigemptyset(&data.sigact.sa_mask);
     data.sigact.sa_flags = 0;
 
+    // Request the kernel for a sigint if parent dies
+    // This is useful if stdin is a pipe from the parent process
+    // and the parent dies suddenly. This confuses libreadline.
+    prctl(PR_SET_PDEATHSIG, SIGINT);
+
     data.signal_USR1 = 0;
     data.signal_USR2 = 0;
     data.signal_TERM = 0;
@@ -512,7 +517,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
 
-    if(data.Debug>0){printf("DEBUG: %s: start\n", __func__);}
+    if(data.Debug > 0)
+    {
+        printf("DEBUG: %s: start\n", __func__);
+    }
 
     runCLI_cmd_init();
 
@@ -634,6 +642,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 fifofd,
                 &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
         }
+
         FD_SET(
             fileno(stdin),
             &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
@@ -661,6 +670,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         DEBUG_TRACEPOINT("loop entry");
         while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
+            // Special interrupt clause if CLI mode (not FIFO) AND stdin has been closed.
             if(data.signal_INT == 1)
             {
                 // stop CLI input loop
@@ -671,7 +681,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 // CLI loop delay to keep CPU load light
                 struct timespec nsts;
                 nsts.tv_sec  = 0;
-                nsts.tv_nsec = 300000; // 0.3 ms delay
+                nsts.tv_nsec = 3000000; // 3 ms delay
                 nanosleep(&nsts, NULL);
             }
 
@@ -749,7 +759,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                 "CLI executing line: "
                                 "%s",
                                 data.CLIcmdline);
-                            if(data.Debug>0){printf("DEBUG: %s: execute line, fifo mode\n", __func__);}
+                            if(data.Debug > 0)
+                            {
+                                printf("DEBUG: %s: execute line, fifo mode\n", __func__);
+                            }
                             CLI_execute_line();
                             DEBUG_TRACEPOINT("CLI line executed");
 
