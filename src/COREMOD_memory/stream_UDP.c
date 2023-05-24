@@ -318,26 +318,26 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
             }
             ts.tv_sec += 2;
 
-            semr = sem_timedwait(data.image[ID].semptr[semtrig], &ts);
+            semr = ImageStreamIO_semtimedwait(data.image+ID, semtrig, &ts);
 
             if(iter == 0)
             {
                 processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
                 int semvalcnt = semval;
                 for(scnt = 0; scnt < semvalcnt; scnt++)
                 {
-                    sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                    semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
                     printf("sem = %d\n", semval);
                     fflush(stdout);
-                    sem_trywait(data.image[ID].semptr[semtrig]);
+                    ImageStreamIO_semtrywait(data.image+ID, semtrig);
                 }
                 printf("done\n");
                 fflush(stdout);
 
-                sem_getvalue(data.image[ID].semptr[semtrig], &semval);
+                semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
                 printf("-> sem = %d\n", semval);
                 fflush(stdout);
 
@@ -963,10 +963,10 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             data.image[ID].md[0].cnt0++;
             for(semnb = 0; semnb < data.image[ID].md[0].sem; semnb++)
             {
-                sem_getvalue(data.image[ID].semptr[semnb], &semval);
+                semval = ImageStreamIO_semvalue(data.image+ID, semnb);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    sem_post(data.image[ID].semptr[semnb]);
+                    ImageStreamIO_sempost(data.image+ID, semnb);
                 }
             }
 

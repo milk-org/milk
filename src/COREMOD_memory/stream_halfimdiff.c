@@ -166,7 +166,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
         }
         else
         {
-            sem_wait(data.image[ID0].semptr[semtrig]);
+            ImageStreamIO_semwait(data.image+ID0, semtrig);
         }
 
         data.image[IDout].md[0].write = 1;

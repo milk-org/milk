@@ -219,14 +219,14 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     fflush(stdout);
 
     // drive semaphore to zero
-    while(sem_trywait(data.image[IDtrig].semptr[semtrig]) == 0)
+    while(ImageStreamIO_semtrywait(data.image+IDtrig, semtrig) == 0)
     {
     }
 
     frame = 0;
     while(frame < NBframes)
     {
-        sem_wait(data.image[IDtrig].semptr[semtrig]);
+        ImageStreamIO_semwait(data.image+IDtrig, semtrig);
         for(i = 0; i < imcnt; i++)
         {
             ID   = IDarray[i];
