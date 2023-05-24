@@ -294,7 +294,7 @@ void *waitforsemID(void *ID)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     tid = pthread_self();
 
-    //    semval = ImageStreamIO_semgetvalue(data.image+(long) ID, ?sem_index);
+    //    semval = ImageStreamIO_semvalue(data.image+(long) ID, ?sem_index);
     //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, data.image[(long) ID].name);
     //    fflush(stdout);
     ImageStreamIO_semwait(data.image+(imageID) ID, 0);
