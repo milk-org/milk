@@ -883,8 +883,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         printf("REUSING EXISTING IMAGE %s\n", imgmd[0].name);
     }
 
-    COREMOD_MEMORY_image_set_createsem(imgmd[0].name, IMAGE_NB_SEMAPHORE);
-
     xsize    = img_p->md[0].size[0];
     ysize    = img_p->md[0].size[1];
     NBslices = 1;

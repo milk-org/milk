@@ -730,8 +730,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         printf("REUSING EXISTING IMAGE %s\n", imgmd[0].name);
     }
 
-    COREMOD_MEMORY_image_set_createsem(imgmd[0].name, IMAGE_NB_SEMAPHORE);
-
     xsize    = data.image[ID].md[0].size[0];
     ysize    = data.image[ID].md[0].size[1];
     NBslices = 1;
