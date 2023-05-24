@@ -678,7 +678,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
             fflush(stdout);
             if(data.image[ID].md[0].sem > 0)
             {
-                sem_wait(data.image[ID].semptr[0]);
+                ImageStreamIO_semwait(data.image+ID, 0);
             }
             else
             {
@@ -731,7 +731,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
         {
             if(data.image[IDout].md[0].sem > 0)
             {
-                sem_post(data.image[IDout].semptr[0]);
+                ImageStreamIO_sempost(data.image+IDout, 0);
             }
         }
         data.image[IDout].md[0].write = 0;
