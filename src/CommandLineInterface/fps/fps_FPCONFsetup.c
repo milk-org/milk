@@ -30,7 +30,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
 
     // record timestamp
     struct timespec tnow = {0};
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     data.FPS_TIMESTAMP = tnow.tv_sec;
 
     strcpy(data.FPS_PROCESS_TYPE, "UNDEF");

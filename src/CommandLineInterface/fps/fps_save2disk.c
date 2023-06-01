@@ -66,7 +66,7 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
     struct timespec tnow;
     time_t          now;
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     now = tnow.tv_sec;
     struct tm *uttime;
     uttime = gmtime(&now);

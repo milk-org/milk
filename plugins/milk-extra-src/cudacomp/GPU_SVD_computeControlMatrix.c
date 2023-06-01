@@ -138,7 +138,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     printf(" done\n");
     fflush(stdout);
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     time1sec = 1.0 * ((long) tnow.tv_sec) + 1.0e-9 * tnow.tv_nsec;
 
     list_image_ID();
@@ -482,7 +482,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     cudaFree(d_M);
     cudaFree(d_U1);
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     time2sec = 1.0 * ((long) tnow.tv_sec) + 1.0e-9 * tnow.tv_nsec;
 
     printf("time = %8.3f s\n", 1.0 * (time2sec - time1sec));

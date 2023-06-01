@@ -141,7 +141,7 @@ int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
                         //   fpsctrltasklist[cmdindexExec].status &= ~FPSTASK_STATUS_SHOW; // and stop displaying
 
                         clock_gettime(
-                            CLOCK_REALTIME,
+                            CLOCK_MILK,
                             &fpsctrltasklist[cmdindexExec].completiontime);
                         queue_nexttask[qi] = QUEUE_SCANREADY;
                     }
@@ -164,7 +164,7 @@ int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
         abort();
     }
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     tnowd = 1.0 * tnow.tv_sec + 1.0e-9 * tnow.tv_nsec;
 
     long taskcnt = NB_FPSCTRL_TASK_MAX;
@@ -239,7 +239,7 @@ int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
             // update status form cmdline interpreter
             fpsctrltasklist[cmdindexExec].status |= taskstatus;
 
-            clock_gettime(CLOCK_REALTIME,
+            clock_gettime(CLOCK_MILK,
                           &fpsctrltasklist[cmdindexExec].activationtime);
 
             // update status to running
