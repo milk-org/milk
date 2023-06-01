@@ -604,7 +604,7 @@ errno_t processinfo_CTRLscreen()
         usleep((long)(1000000.0 / frequ));
         int ch = getch();
 
-        clock_gettime(CLOCK_REALTIME, &t1loop);
+        clock_gettime(CLOCK_MILK, &t1loop);
 
         scantime_cpuset  = 0.0;
         scantime_status  = 0.0;
@@ -1241,7 +1241,7 @@ errno_t processinfo_CTRLscreen()
                 }
                 break;
         }
-        clock_gettime(CLOCK_REALTIME, &t01loop);
+        clock_gettime(CLOCK_MILK, &t01loop);
 
         DEBUG_TRACEPOINT(" ");
 
@@ -1561,13 +1561,13 @@ errno_t processinfo_CTRLscreen()
 
                 TUI_newline();
 
-                clock_gettime(CLOCK_REALTIME, &t02loop);
+                clock_gettime(CLOCK_MILK, &t02loop);
 
                 DEBUG_TRACEPOINT(" ");
 
-                clock_gettime(CLOCK_REALTIME, &t03loop);
+                clock_gettime(CLOCK_MILK, &t03loop);
 
-                clock_gettime(CLOCK_REALTIME, &t04loop);
+                clock_gettime(CLOCK_MILK, &t04loop);
 
                 /** ### Display
                  *
@@ -1886,7 +1886,7 @@ errno_t processinfo_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
-                clock_gettime(CLOCK_REALTIME, &t05loop);
+                clock_gettime(CLOCK_MILK, &t05loop);
 
                 // ===========================================================================
                 // ============== PRINT INFORMATION FOR EACH PROCESS =========================
@@ -2989,11 +2989,11 @@ errno_t processinfo_CTRLscreen()
                 }
             }
 
-            clock_gettime(CLOCK_REALTIME, &t06loop);
+            clock_gettime(CLOCK_MILK, &t06loop);
 
             DEBUG_TRACEPOINT(" ");
 
-            //clock_gettime(CLOCK_REALTIME, &t07loop);
+            //clock_gettime(CLOCK_MILK, &t07loop);
 
             cnt++;
 
@@ -3002,7 +3002,7 @@ errno_t processinfo_CTRLscreen()
             double tdiffvloop = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
 
-            clock_gettime(CLOCK_REALTIME, &t2loop);
+            clock_gettime(CLOCK_MILK, &t2loop);
 
             tdiff             = timespec_diff(t1loop, t2loop);
             double tdiffvloopexec = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;

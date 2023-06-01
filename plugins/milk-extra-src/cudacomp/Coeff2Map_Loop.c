@@ -375,7 +375,7 @@ errno_t CUDACOMP_Coeff2Map_Loop(const char *IDmodes_name,
         else
         {
 
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);

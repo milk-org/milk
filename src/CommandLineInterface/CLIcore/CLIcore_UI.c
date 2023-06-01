@@ -315,8 +315,10 @@ errno_t CLI_execute_line()
         (struct timespec *) malloc(sizeof(struct timespec));
 
 
-    if(data.Debug > 0) {
-        printf("DEBUG: %s %d: Processing CLI input \"%s\"\n", __func__, __LINE__, data.CLIcmdline);
+    if(data.Debug > 0)
+    {
+        printf("DEBUG: %s %d: Processing CLI input \"%s\"\n", __func__, __LINE__,
+               data.CLIcmdline);
     }
 
     add_history(data.CLIcmdline);
@@ -355,7 +357,7 @@ errno_t CLI_execute_line()
         {
             t      = time(NULL);
             uttime = gmtime(&t);
-            clock_gettime(CLOCK_REALTIME, thetime);
+            clock_gettime(CLOCK_MILK, thetime);
 
             snprintf(data.CLIlogname,
                      STRINGMAXLEN_FULLFILENAME,
@@ -402,7 +404,8 @@ errno_t CLI_execute_line()
         data.cmdNBarg = 0;
 
 
-        if(data.Debug > 0) {
+        if(data.Debug > 0)
+        {
             printf("DEBUG: %s %d: extract words\n", __func__, __LINE__);
         }
 
@@ -436,8 +439,10 @@ errno_t CLI_execute_line()
                     // printf("\t processing -- %s\n", cmdargstring);
 
                     snprintf(str, strmaxlen, "%s\n", cmdargstring);
-                    if(data.Debug>1) {
-                        printf("DEBUG: %s %d: calling yy_scan_string on \"%s\"\n", __func__, __LINE__, str);
+                    if(data.Debug > 1)
+                    {
+                        printf("DEBUG: %s %d: calling yy_scan_string on \"%s\"\n", __func__, __LINE__,
+                               str);
                     }
                     yy_scan_string(str);
                     data.calctmp_imindex = 0;
@@ -461,15 +466,18 @@ errno_t CLI_execute_line()
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
-        if(data.Debug > 0) {
-            printf("DEBUG: %s %d: data.cmdNBarg = %ld\n", __func__, __LINE__, data.cmdNBarg);
+        if(data.Debug > 0)
+        {
+            printf("DEBUG: %s %d: data.cmdNBarg = %ld\n", __func__, __LINE__,
+                   data.cmdNBarg);
         }
 
         if(data.Debug > 1)
         {
             long i = 0;
 
-            if(data.Debug>0) {
+            if(data.Debug > 0)
+            {
                 printf("DEBUG: %s %d: TOKEN %ld type : %d\n",
                        __func__, __LINE__,
                        i,
@@ -537,7 +545,8 @@ errno_t CLI_execute_line()
             }
         }
 
-        if(data.Debug>0) {
+        if(data.Debug > 0)
+        {
             printf("DEBUG: %s %d: data.parseerror = %d\n",
                    __func__, __LINE__,
                    data.parseerror);

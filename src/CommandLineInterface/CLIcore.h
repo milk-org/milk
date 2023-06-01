@@ -54,6 +54,7 @@ typedef long variableID;
 
 #include "CommandLineInterface/function_parameters.h"
 #include "CommandLineInterface/processtools.h"
+#include "CommandLineInterface/timeutils.h"
 #include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
 
 #include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"

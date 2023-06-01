@@ -278,7 +278,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
         struct timespec errtime;
         struct tm      *errtm;
 
-        clock_gettime(CLOCK_REALTIME, &errtime);
+        clock_gettime(CLOCK_MILK, &errtime);
         errtm = gmtime(&errtime.tv_sec);
 
         fprintf(stderr,
@@ -337,7 +337,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     float *arraytmpf;
     arraytmpf = (float *) malloc(sizeof(float) * xsize * ysize);
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     for(kk = 0; kk < *zsize; kk++)
     {
         t0array[kk] = tnow;
@@ -389,7 +389,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
             //            cnt0 = data.image[IDin].md[0].cnt0;
 
             //            if(cnt0 != cnt0old) { // new frame
-            clock_gettime(CLOCK_REALTIME,
+            clock_gettime(CLOCK_MILK,
                           &t0array[*kkin]); // record time of input frame
 
             DEBUG_TRACEPOINT(" ");
@@ -406,7 +406,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                 (*kkin) = 0;
             }
 
-            clock_gettime(CLOCK_REALTIME, &tnow);
+            clock_gettime(CLOCK_MILK, &tnow);
             DEBUG_TRACEPOINT(" ");
 
             cntskip = 0;
