@@ -105,7 +105,7 @@ int processinfo_cleanExit(PROCESSINFO *processinfo)
         struct tm      *tstoptm;
         char            msgstring[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
 
-        clock_gettime(CLOCK_REALTIME, &tstop);
+        clock_gettime(CLOCK_MILK, &tstop);
         tstoptm = gmtime(&tstop.tv_sec);
 
         if(processinfo->CTRLval == 3)  // loop exit from processinfo control

@@ -639,7 +639,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
         struct timespec errtime;
         struct tm      *errtm;
 
-        clock_gettime(CLOCK_REALTIME, &errtime);
+        clock_gettime(CLOCK_MILK, &errtime);
         errtm = gmtime(&errtime.tv_sec);
 
         fprintf(stderr,
@@ -1212,7 +1212,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
 
         loopOK = processinfo_loopstep(processinfo);
 
-        clock_gettime(CLOCK_REALTIME, &t0);
+        clock_gettime(CLOCK_MILK, &t0);
 
         // We either compute the result in this function (MODEVALCOMPUTE = 1)
         // or we read it from ID_modeval stream (MODEVALCOMPUTE = 0)
@@ -1256,7 +1256,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
             }
 
             //t00OK = 1;
-            clock_gettime(CLOCK_REALTIME, &t00);
+            clock_gettime(CLOCK_MILK, &t00);
 
             processinfo_exec_start(processinfo);
 
@@ -1288,7 +1288,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
                 }
 
                 //t01OK = 1;
-                clock_gettime(CLOCK_REALTIME, &t01);
+                clock_gettime(CLOCK_MILK, &t01);
 
                 if(BETAMODE == 1)
                 {
@@ -1300,7 +1300,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
                 }
 
                 //t02OK = 1;
-                clock_gettime(CLOCK_REALTIME, &t02);
+                clock_gettime(CLOCK_MILK, &t02);
 
                 // compute
                 cublas_status = cublasSgemv(cublasH,
@@ -1357,7 +1357,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
                 data.image[ID_modeval].md[0].write = 1;
 
                 //t03OK = 1;
-                clock_gettime(CLOCK_REALTIME, &t03);
+                clock_gettime(CLOCK_MILK, &t03);
 
                 if(initref == 0)
                 {
@@ -1428,7 +1428,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
         }
 
         //t04OK = 1;
-        clock_gettime(CLOCK_REALTIME, &t04);
+        clock_gettime(CLOCK_MILK, &t04);
 
         if(TRACEMODE == 1)
         {
@@ -1463,7 +1463,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
         }
 
         //t05OK = 1;
-        clock_gettime(CLOCK_REALTIME, &t05);
+        clock_gettime(CLOCK_MILK, &t05);
 
         if(PROCESS == 1)
         {
@@ -1503,7 +1503,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
         }
 
         //t06OK = 1;
-        clock_gettime(CLOCK_REALTIME, &t06);
+        clock_gettime(CLOCK_MILK, &t06);
 
         processinfo_exec_end(processinfo);
 
@@ -1521,7 +1521,7 @@ errno_t __attribute__((hot)) CUDACOMP_MVMextractModesLoop_RUN()
             nanosleep(&treq, &trem);
         }
 
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
         tdiff  = timespec_diff(t0, t1);
         tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 

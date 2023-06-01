@@ -197,7 +197,7 @@ int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
                         FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_SHOW;
                     fpsctrltasklist[cmdindex].inputindex = cmdinputcnt;
                     fpsctrltasklist[cmdindex].queue      = queue;
-                    clock_gettime(CLOCK_REALTIME,
+                    clock_gettime(CLOCK_MILK,
                                   &fpsctrltasklist[cmdindex].creationtime);
 
                     // waiting to be processed

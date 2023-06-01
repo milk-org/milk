@@ -148,7 +148,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t0);
+        clock_gettime(CLOCK_MILK, &t0);
     }
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -221,7 +221,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t1);
+        clock_gettime(CLOCK_MILK, &t1);
     }
 
     /* compute DtraD */
@@ -249,7 +249,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t2);
+        clock_gettime(CLOCK_MILK, &t2);
     }
 
     /* compute the inverse of DtraD */
@@ -264,7 +264,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t3);
+        clock_gettime(CLOCK_MILK, &t3);
     }
 
     gsl_eigen_symmv_sort(matrix_DtraD_eval,
@@ -273,7 +273,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t4);
+        clock_gettime(CLOCK_MILK, &t4);
     }
 
     //  printf("Eigenvalues\n");
@@ -392,7 +392,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t5);
+        clock_gettime(CLOCK_MILK, &t5);
     }
 
     /* third, compute the "inverse" of DtraD */
@@ -458,7 +458,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t6);
+        clock_gettime(CLOCK_MILK, &t6);
     }
 
     /* write result */
@@ -488,7 +488,7 @@ linopt_compute_SVDpseudoInverse(
 
     if(timing == 1)
     {
-        clock_gettime(CLOCK_REALTIME, &t7);
+        clock_gettime(CLOCK_MILK, &t7);
     }
 
     gsl_vector_free(matrix_DtraD_eval);

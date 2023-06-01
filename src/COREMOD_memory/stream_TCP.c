@@ -464,7 +464,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         }
         else
         {
-            if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+            if(clock_gettime(CLOCK_MILK, &ts) == -1)
             {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);

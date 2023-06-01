@@ -162,7 +162,7 @@ static errno_t streamdelay(IMGID            inimg,
 
     // get current time
     struct timespec tnow;
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
 
     // update circular buffer if new frame has arrived
     if(cnt0prev != inimg.md->cnt0)
@@ -268,7 +268,7 @@ static errno_t compute_function()
         (struct timespec *) malloc(sizeof(struct timespec) * (*timebuffsize));
     // get current time
     struct timespec tnow;
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     for(uint64_t i = 0; i < *timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
@@ -370,7 +370,7 @@ CLIADDCMD_COREMOD_memory__streamdelay()
     float *arraytmpf;
     arraytmpf = (float *) malloc(sizeof(float) * xsize * ysize);
 
-    clock_gettime(CLOCK_REALTIME, &tnow);
+    clock_gettime(CLOCK_MILK, &tnow);
     for(kk = 0; kk < *zsize; kk++)
     {
         t0array[kk] = tnow;
@@ -424,7 +424,7 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 //            cnt0 = data.image[IDin].md[0].cnt0;
 
 //            if(cnt0 != cnt0old) { // new frame
-            clock_gettime(CLOCK_REALTIME, &t0array[*kkin]);  // record time of input frame
+            clock_gettime(CLOCK_MILK, &t0array[*kkin]);  // record time of input frame
 
             DEBUG_TRACEPOINT(" ");
             for(ii = 0; ii < xysize; ii++)
@@ -441,7 +441,7 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 
 
 
-            clock_gettime(CLOCK_REALTIME, &tnow);
+            clock_gettime(CLOCK_MILK, &tnow);
             DEBUG_TRACEPOINT(" ");
 
 

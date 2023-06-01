@@ -10,7 +10,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
                      processinfo->MeasureTiming);
     if(processinfo->MeasureTiming == 1)
     {
-        clock_gettime(CLOCK_REALTIME,
+        clock_gettime(CLOCK_MILK,
                       &processinfo->texecend[processinfo->timerindex]);
 
         if(processinfo->dtexec_limit_enable != 0)

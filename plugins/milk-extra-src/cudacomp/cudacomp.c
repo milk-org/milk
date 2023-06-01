@@ -287,7 +287,7 @@ int CUDACOMP_createModesLoop(const char *DMmodeval_stream, const char *DMmodes, 
         }
         else
         {
-            if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+            if (clock_gettime(CLOCK_MILK, &ts) == -1) {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }

@@ -336,7 +336,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     int dAinvMODE = 0;
 
     //  if(timing==1)
-    clock_gettime(CLOCK_REALTIME, &t0);
+    clock_gettime(CLOCK_MILK, &t0);
 
     /**
      *
@@ -528,7 +528,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     // if(timing==1)
     magma_queue_sync(magmaqueue);
-    clock_gettime(CLOCK_REALTIME, &t1);
+    clock_gettime(CLOCK_MILK, &t1);
 
 
     // ****************************************************
@@ -667,7 +667,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         // START STD MAGMA ===============================================
 
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t2);
+        clock_gettime(CLOCK_MILK, &t2);
 
         // ****************************************************
         // STEP 3 :   Compute trans(A) x A    : magmaf_d_A x magmaf_d_A      -> magmaf_d_AtA      (NxN matrix on device)
@@ -756,7 +756,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         //if(timing==1)
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t3);
+        clock_gettime(CLOCK_MILK, &t3);
 
         // ****************************************************
         // STEP 4 :   Compute eigenvalues and eigenvectors of AT A   -> magmaf_d_AtA      (NxN matrix on device)
@@ -865,7 +865,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         //if(timing==1)
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t4);
+        clock_gettime(CLOCK_MILK, &t4);
 
         if(MAGMAfloat == 1)
         {
@@ -960,7 +960,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         //if(timing==1)
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t5);
+        clock_gettime(CLOCK_MILK, &t5);
 
 
         if(testmode == 1)
@@ -1183,7 +1183,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         //if(timing==1)
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t6);
+        clock_gettime(CLOCK_MILK, &t6);
 
         // ****************************************************
         // STEP 8 :   Compute M2 = VT1 VT = (AT A)^-1
@@ -1305,7 +1305,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         //if(timing==1)
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t7);
+        clock_gettime(CLOCK_MILK, &t7);
 
         // ****************************************************
         // STEP 9 :   Compute Ainv = M2 A = (AT A)^-1 A
@@ -1378,7 +1378,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         //if(timing==1)
         magma_queue_sync(magmaqueue);
-        clock_gettime(CLOCK_REALTIME, &t8);
+        clock_gettime(CLOCK_MILK, &t8);
 
         DEBUG_TRACEPOINT("set result");
         if(MAGMAfloat == 1)
@@ -1445,7 +1445,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     //if(timing==1)
     magma_queue_sync(magmaqueue);
-    clock_gettime(CLOCK_REALTIME, &t9);
+    clock_gettime(CLOCK_MILK, &t9);
 
     if(MAGMAloop_iter == 0)
     {
@@ -1482,7 +1482,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
 
     magma_queue_sync(magmaqueue);
-    clock_gettime(CLOCK_REALTIME, &t10);
+    clock_gettime(CLOCK_MILK, &t10);
 
     if(VERBOSE_CUDACOMP_magma_compute_SVDpseudoInverse == 1)
     {
@@ -1528,7 +1528,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     //if(timing==1)
     magma_queue_sync(magmaqueue);
-    clock_gettime(CLOCK_REALTIME, &t11);
+    clock_gettime(CLOCK_MILK, &t11);
 
     if(testmode == 1)  // compute product of Ainv with A
     {
@@ -1626,7 +1626,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
 
     magma_queue_sync(magmaqueue);
-    clock_gettime(CLOCK_REALTIME, &t12);
+    clock_gettime(CLOCK_MILK, &t12);
 
     ID_PFfmdat = image_ID("PFfmdat");
     if(ID_PFfmdat != -1)
@@ -1690,7 +1690,7 @@ errno_t CUDACOMP_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
 
     magma_queue_sync(magmaqueue);
-    clock_gettime(CLOCK_REALTIME, &t13);
+    clock_gettime(CLOCK_MILK, &t13);
 
     if(LOOPmode ==
             0) /// if pseudo-inverse is only computed once, these arrays can be freed
