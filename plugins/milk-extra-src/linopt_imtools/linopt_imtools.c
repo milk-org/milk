@@ -51,7 +51,7 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-#include "cudacomp/cudacomp.h"
+#include "linalgebra/linalgebra.h"
 #include "info/info.h"
 #include "linopt_imtools/linopt_imtools.h"
 #include "statistic/statistic.h"
