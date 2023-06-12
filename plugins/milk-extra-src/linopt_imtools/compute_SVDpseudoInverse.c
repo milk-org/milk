@@ -8,7 +8,7 @@
 
 #include "COREMOD_iofits/savefits.h"
 #include "CommandLineInterface/timeutils.h"
-#include "cudacomp/cudacomp.h"
+#include "linalgebra/linalgebra.h"
 
 // Local variables pointers
 static char   *inimname;
@@ -390,6 +390,7 @@ linopt_compute_SVDpseudoInverse(
     // printf("Compute inverse\n");
     // fflush(stdout);
 
+
     if(timing == 1)
     {
         clock_gettime(CLOCK_MILK, &t5);
@@ -569,7 +570,7 @@ static errno_t compute_function()
     {
         printf("==== GPU =====\n");
 #ifdef HAVE_MAGMA
-        CUDACOMP_magma_compute_SVDpseudoInverse(inimname,
+        LINALGEBRA_magma_compute_SVDpseudoInverse(inimname,
                                                 outimname,
                                                 *SVD_epsilon,
                                                 *max_NBmodes,

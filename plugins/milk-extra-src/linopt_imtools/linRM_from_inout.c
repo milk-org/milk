@@ -5,7 +5,7 @@
 #include "COREMOD_iofits/savefits.h"
 
 #include "compute_SVDpseudoInverse.h"
-#include "cudacomp/magma_compute_SVDpseudoInverse.h"
+#include "linalgebra/magma_compute_SVDpseudoInverse.h"
 
 // Local variables pointers
 static char *inputimname;
@@ -190,7 +190,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
 
     // compute pokeM pseudo-inverse
 #ifdef HAVE_MAGMA
-    CUDACOMP_magma_compute_SVDpseudoInverse("pokeM",
+    LINALGEBRA_magma_compute_SVDpseudoInverse("pokeM",
                                             "pokeMinv",
                                             SVDeps,
                                             insize,

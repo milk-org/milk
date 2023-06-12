@@ -12,7 +12,7 @@
 
 
 #ifdef HAVE_CUDA
-#include "cudacomp/cudacomp.h"
+#include "linalgebra/linalgebra.h"
 #endif
 
 

@@ -13,8 +13,32 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
 
+
+// Use MKL if available
+// Otherwise use openBLAS
+//
+#ifdef HAVE_MKL
+#include "mkl.h"
+#define BLASLIB "IntelMKL"
+#else
+#ifdef HAVE_OPENBLAS
+#include <cblas.h>
+#include <lapacke.h>
+#define BLASLIB "OpenBLAS"
+#endif
+#endif
+
+
+
+
 #ifdef HAVE_CUDA
-#include "cudacomp/cudacomp.h"
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <cusolverDn.h>
+#include <device_types.h>
+#include <pthread.h>
+#include "linalgebra/linalgebra.h"
 #endif
 
 
@@ -222,40 +246,40 @@ static errno_t compute_function()
     switch(imgin.md->naxis)
     {
 
-        case 2:
-            /// If 2D image:
-            /// - xysize <- size[0] is number of variables
-            /// - nbspl <- size[1] is number of samples
-            nbspl = imgin.md->size[1];
-            xsize = imgin.md->size[0];
-            ysize = 1;
-            // copy of image to avoid input change during computation
-            create_2Dimage_ID("PFin_cp",
-                              imgin.md->size[0],
-                              imgin.md->size[1],
-                              &IDincp);
-            inNBelem = imgin.md->size[0] * imgin.md->size[1];
-            break;
+    case 2:
+        /// If 2D image:
+        /// - xysize <- size[0] is number of variables
+        /// - nbspl <- size[1] is number of samples
+        nbspl = imgin.md->size[1];
+        xsize = imgin.md->size[0];
+        ysize = 1;
+        // copy of image to avoid input change during computation
+        create_2Dimage_ID("PFin_cp",
+                          imgin.md->size[0],
+                          imgin.md->size[1],
+                          &IDincp);
+        inNBelem = imgin.md->size[0] * imgin.md->size[1];
+        break;
 
-        case 3:
-            /// If 3D image
-            /// - xysize <- size[0] * size[1] is number of variables
-            /// - nbspl <- size[2] is number of samples
-            nbspl = imgin.md->size[2];
-            xsize = imgin.md->size[0];
-            ysize = imgin.md->size[1];
-            create_3Dimage_ID("PFin_copy",
-                              imgin.md->size[0],
-                              imgin.md->size[1],
-                              imgin.md->size[2],
-                              &IDincp);
+    case 3:
+        /// If 3D image
+        /// - xysize <- size[0] * size[1] is number of variables
+        /// - nbspl <- size[2] is number of samples
+        nbspl = imgin.md->size[2];
+        xsize = imgin.md->size[0];
+        ysize = imgin.md->size[1];
+        create_3Dimage_ID("PFin_copy",
+                          imgin.md->size[0],
+                          imgin.md->size[1],
+                          imgin.md->size[2],
+                          &IDincp);
 
-            inNBelem = imgin.md->size[0] * imgin.md->size[1] * imgin.md->size[2];
-            break;
+        inNBelem = imgin.md->size[0] * imgin.md->size[1] * imgin.md->size[2];
+        break;
 
-        default:
-            printf("Invalid image size\n");
-            break;
+    default:
+        printf("Invalid image size\n");
+        break;
     }
     uint64_t xysize = (uint64_t) xsize * ysize;
     printf("xysize = %lu\n", xysize);
@@ -402,7 +426,8 @@ static errno_t compute_function()
     /// - NBmvec is the number of telemetry vectors (each corresponding to a different time) in the data matrix.
     /// - mvecsize is the size of each vector, equal to NBpixin times PForder
     ///
-    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse in linopt_imtools (CPU mode) or in cudacomp (GPU mode)\n
+    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse 
+    // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
     ///
     long NBmvec =
         nbspl - *PForder - (int)(*PFlatency) -
@@ -615,7 +640,7 @@ static errno_t compute_function()
         }
     //save_fits("PFfmdat", "PFfmdat.fits");
 
-    /// If using MAGMA, call function CUDACOMP_magma_compute_SVDpseudoInverse()\n
+    /// If using MAGMA, call function LINALGEBRA_magma_compute_SVDpseudoInverse()\n
     /// Otherwise, call function linopt_compute_SVDpseudoInverse()\n
 
     long NB_SVD_Modes = 10000;
@@ -624,9 +649,10 @@ static errno_t compute_function()
     // TEST
     //save_fl_fits("PFmatD", "PFmatD.fits");
 
+
 #ifdef HAVE_MAGMA
     printf("Using magma ...\n");
-    CUDACOMP_magma_compute_SVDpseudoInverse("PFmatD",
+    LINALGEBRA_magma_compute_SVDpseudoInverse("PFmatD",
                                             "PFmatC",
                                             *SVDeps,
                                             NB_SVD_Modes,
@@ -644,7 +670,271 @@ static errno_t compute_function()
                                     NB_SVD_Modes,
                                     "PF_VTmat",
                                     NULL);
+
+
+    {
+#ifdef HAVE_OPENBLAS
+        printf("OpenBLASS  YES\n");
+#else
+        printf("OpenBLASS  NO\n");
 #endif
+
+#ifdef HAVE_MKL
+        printf("MKL        YES\n");
+#else
+        printf("MKL        NO\n");
+#endif
+
+
+#ifdef HAVE_CUDA
+        printf("CUDA       YES\n");
+#else
+        printf("CUDA       NO\n");
+#endif
+    }
+
+
+
+
+
+
+
+
+
+    {
+        printf("========== %5d ===========\n", __LINE__);
+        fflush(stdout);
+        // input PFmatD is stored as 2D array
+        //
+
+        IMGID imgin = mkIMGID_from_name("PFmatD");
+        resolveIMGID(&imgin, ERRMODE_ABORT);
+
+
+
+        printf("Number of samples  : %d\n", imgin.md->size[1]);
+        printf("Number of WFS pix  : %d\n", imgin.md->size[0]);
+
+        int nbmode = imgin.md->size[1];
+        int nbwfspix = imgin.md->size[0];
+
+        // create eigenvectors array
+        IMGID imgevec = makeIMGID_2D("eigenvec", nbmode, nbmode);
+        createimagefromIMGID(&imgevec);
+
+        // create eigenvalues array
+        IMGID imgeval = makeIMGID_2D("eigenval", nbmode, 1);
+        createimagefromIMGID(&imgeval);
+
+        printf("========== %5d ===========\n", __LINE__);
+        fflush(stdout);
+
+
+        {
+            processinfo_WriteMessage(processinfo, "Create ATA");
+            // create ATA
+            IMGID imgATA = makeIMGID_2D("ATA", nbmode, nbmode);
+            createimagefromIMGID(&imgATA);
+
+            {
+                int SGEMMcomputed = 0;
+                if((*GPUdevice >= 0) && (*GPUdevice <= 99))
+                {
+#ifdef HAVE_CUDA
+                    printf("Running SGEMM 1 on GPU device %d\n", *GPUdevice);
+                    fflush(stdout);
+
+                    const float alf = 1;
+                    const float bet = 0;
+                    const float *alpha = &alf;
+                    const float *beta = &bet;
+
+                    float *d_RMWFS;
+                    cudaMalloc((void **)&d_RMWFS, imgin.md->nelement * sizeof(float));
+                    cudaMemcpy(d_RMWFS, imgin.im->array.F, imgin.md->nelement * sizeof(float),
+                               cudaMemcpyHostToDevice);
+
+                    float *d_ATA;
+                    cudaMalloc((void **)&d_ATA, imgATA.md->nelement * sizeof(float));
+
+                    cublasHandle_t handle;
+                    cublasCreate(&handle);
+
+                    // Do the actual multiplication
+                    cublasSgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N,
+                                nbmode, nbmode, nbwfspix, alpha, d_RMWFS, nbwfspix, d_RMWFS, nbwfspix, beta,
+                                d_ATA, nbmode);
+
+                    cublasDestroy(handle);
+
+                    cudaMemcpy(imgATA.im->array.F, d_ATA, imgATA.md->nelement * sizeof(float),
+                               cudaMemcpyDeviceToHost);
+
+                    cudaFree(d_RMWFS);
+                    cudaFree(d_ATA);
+
+                    SGEMMcomputed = 1;
+#endif
+                }
+                if(SGEMMcomputed == 0)
+                {
+                    printf("Running SGEMM 1 on CPU\n");
+                    fflush(stdout);
+
+                    cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+                                nbmode, nbmode, nbwfspix, 1.0, imgin.im->array.F, nbwfspix,
+                                imgin.im->array.F, nbwfspix, 0.0, imgATA.im->array.F, nbmode);
+                }
+            }
+
+
+
+            clock_gettime(CLOCK_MILK, &t1);
+            //save_fits("ATA", "compstrCM-ATA.fits");
+
+
+            //nbmode = 100;
+            //float *a = (float*) malloc(sizeof(float)*nbmode*nbmode);
+            float *d = (float *) malloc(sizeof(float) * nbmode);
+            float *e = (float *) malloc(sizeof(float) * nbmode);
+            float *t = (float *) malloc(sizeof(float) * nbmode);
+
+
+#ifdef HAVE_MKL
+            mkl_set_interface_layer(MKL_INTERFACE_LP64);
+#endif
+
+            LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', nbmode, (float *) imgATA.im->array.F, nbmode, d, e, t);
+
+
+            // Assemble Q matrix
+            LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', nbmode, imgATA.im->array.F, nbmode, t);
+
+
+
+
+            processinfo_WriteMessage(processinfo, "comp eigenv");
+
+            memcpy(imgevec.im->array.F, imgATA.im->array.F, sizeof(float)*nbmode * nbmode);
+            LAPACKE_ssteqr(LAPACK_COL_MAJOR, 'V', nbmode, d, e, imgevec.im->array.F, nbmode);
+            memcpy(imgeval.im->array.F, d, sizeof(float)*nbmode);
+
+
+            free(d);
+            free(e);
+            free(t);
+
+            //save_fits("eigenvec", "./mkmodestmp/eigenvec.fits");
+        }
+
+        list_image_ID();
+
+        printf("========== %5d ===========\n", __LINE__);
+        fflush(stdout);
+
+
+
+
+
+        // create CM WFS
+
+        processinfo_WriteMessage(processinfo, "create CM WFS");
+
+        IMGID imgCMWFSall = makeIMGID_2D("CMmodesWFSall",
+                                         imgin.md->size[0],
+                                         imgin.md->size[1]);
+        createimagefromIMGID(&imgCMWFSall);
+
+
+
+
+
+        // Compute WFS modes
+        // Multiply RMmodesWFS by Vmat
+        //
+
+        {
+            int SGEMMcomputed = 0;
+            if((*GPUdevice >= 0) && (*GPUdevice <= 99))
+            {
+#ifdef HAVE_CUDA
+                printf("Running SGEMM 2 on GPU device %d\n", *GPUdevice);
+                fflush(stdout);
+
+                const float alf = 1;
+                const float bet = 0;
+                const float *alpha = &alf;
+                const float *beta = &bet;
+
+                float *d_RMWFS;
+                cudaMalloc((void **)&d_RMWFS, imgin.md->nelement * sizeof(float));
+                cudaMemcpy(d_RMWFS, imgin.im->array.F, imgin.md->nelement * sizeof(float),
+                           cudaMemcpyHostToDevice);
+
+                float *d_evec;
+                cudaMalloc((void **)&d_evec, imgevec.md->nelement * sizeof(float));
+                cudaMemcpy(d_evec, imgevec.im->array.F, imgevec.md->nelement * sizeof(float),
+                           cudaMemcpyHostToDevice);
+
+                float *d_CMWFSall;
+                cudaMalloc((void **)&d_CMWFSall, imgCMWFSall.md->nelement * sizeof(float));
+                //cudaMemcpy(d_RMWFS,imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
+
+                // Create a handle for CUBLAS
+                cublasHandle_t handle;
+                cublasCreate(&handle);
+
+                // Do the actual multiplication
+                cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                            nbwfspix, nbmode, nbmode, alpha, d_RMWFS, nbwfspix, d_evec, nbmode, beta,
+                            d_CMWFSall, nbwfspix);
+
+                // Destroy the handle
+                cublasDestroy(handle);
+
+                cudaMemcpy(imgCMWFSall.im->array.F, d_CMWFSall,
+                           imgCMWFSall.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
+
+                cudaFree(d_RMWFS);
+                cudaFree(d_evec);
+                cudaFree(d_CMWFSall);
+
+                SGEMMcomputed = 1;
+#endif
+            }
+
+            if(SGEMMcomputed == 0)
+            {
+
+                printf("Running SGEMM 2 on CPU\n");
+                fflush(stdout);
+
+                cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+                            nbwfspix, nbmode, nbmode, 1.0, imgin.im->array.F, nbwfspix,
+                            imgevec.im->array.F, nbmode, 0.0, imgCMWFSall.im->array.F, nbwfspix);
+
+            }
+        }
+
+
+        save_fits("eigenvec", "eigenvec.fits");
+        save_fits("PF_VTmat", "PF_VTmat.fits");
+
+
+        save_fits("CMmodesWFSall", "CMmodesWFSall.fits");
+        save_fits("PFmatC", "PFmatC.fits");
+
+    }
+
+
+
+#endif
+
+
+    list_image_ID();
+
+    printf("========== %5d ===========\n", __LINE__);
+    fflush(stdout);
 
     // TEST
     //save_fl_fits("PFmatC", "PFmatC.fits");

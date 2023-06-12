@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-MILKCLI_APPNAME="milk-all" MILKCLI_ADD_LIBS="$MILKCLI_ADD_LIBS;milkcudacomp,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milkmoduleexample,milkOpticsMaterials,milkpsf,milkstatistic,milkWFpropagate,milkZernikePolyn" milk "$@"
+MILKCLI_APPNAME="milk-all" MILKCLI_ADD_LIBS="$MILKCLI_ADD_LIBS;milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milkmoduleexample,milkOpticsMaterials,milkpsf,milkstatistic,milkWFpropagate,milkZernikePolyn" milk "$@"

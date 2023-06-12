@@ -65,7 +65,7 @@
 
 
 #ifdef HAVE_CUDA
-#include "cudacomp/cudacomp.h"
+#include "linalgebra/linalgebra.h"
 #endif
 
 /* ================================================================== */
@@ -1195,7 +1195,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// - NBmvec is the number of telemetry vectors (each corresponding to a different time) in the data matrix.
     /// - mvecsize is the size of each vector, equal to NBpixin times PForder
     ///
-    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse in linopt_imtools (CPU mode) or in cudacomp (GPU mode)\n
+    /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse 
+    // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
     ///
     NBmvec =
         nbspl - PForder -
@@ -1400,14 +1401,14 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             }
         save_fits("PFfmdat", "PFfmdat.fits");
 
-        /// If using MAGMA, call function CUDACOMP_magma_compute_SVDpseudoInverse()\n
+        /// If using MAGMA, call function LINALGEBRA_magma_compute_SVDpseudoInverse()\n
         /// Otherwise, call function linopt_compute_SVDpseudoInverse()\n
 
         NB_SVD_Modes = 10000;
 
 #ifdef HAVE_MAGMA
         printf("Using magma ...\n");
-        CUDACOMP_magma_compute_SVDpseudoInverse("PFmatD",
+        LINALGEBRA_magma_compute_SVDpseudoInverse("PFmatD",
                                                 "PFmatC",
                                                 SVDeps_run,
                                                 NB_SVD_Modes,
