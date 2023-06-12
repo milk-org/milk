@@ -10,7 +10,7 @@
 #include "mask_to_pixtable.h"
 
 #include "compute_SVDpseudoInverse.h"
-#include "cudacomp/magma_compute_SVDpseudoInverse.h"
+#include "linalgebra/magma_compute_SVDpseudoInverse.h"
 
 static int fmInit = 0;
 
@@ -133,7 +133,7 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
 
 #ifdef HAVE_MAGMA
         FUNC_CHECK_RETURN(
-            CUDACOMP_magma_compute_SVDpseudoInverse("_fm_respm",
+            LINALGEBRA_magma_compute_SVDpseudoInverse("_fm_respm",
                     "_fm_recm",
                     SVDeps,
                     10000,
