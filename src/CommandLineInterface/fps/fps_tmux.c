@@ -131,6 +131,10 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
+    // source rootdir fpstmuxenv first
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" source ../fpstmuxenv\" C-m",
+                           fps->md->name);
+    // then local fpstmuxenv
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" source fpstmuxenv\" C-m",
                            fps->md->name);
 
@@ -142,7 +146,8 @@ errno_t functionparameter_FPS_tmux_init(
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
 
-
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source ../fpstmuxenv\" C-m",
+                           fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" source  fpstmuxenv\" C-m",
                            fps->md->name);
 
@@ -169,7 +174,8 @@ errno_t functionparameter_FPS_tmux_init(
                            fps->md->name); // This spins a bash-in-bash.
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m",
                            fps->md->name, fps->md->workdir);
-
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" source ../fpstmuxenv\" C-m",
+                           fps->md->name);
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" source fpstmuxenv\" C-m",
                            fps->md->name);
 
