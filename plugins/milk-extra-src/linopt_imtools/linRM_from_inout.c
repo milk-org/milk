@@ -69,11 +69,13 @@ static errno_t help_function()
 // initial value of RM should be best guess
 // inmask = 0 over input that are known to produce no response
 //
-errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
-                                        const char *IDinmask_name,
-                                        const char *IDoutput_name,
-                                        const char *IDRM_name,
-                                        imageID    *outID)
+errno_t linopt_compute_linRM_from_inout(
+    const char *IDinput_name,
+    const char *IDinmask_name,
+    const char *IDoutput_name,
+    const char *IDRM_name,
+    imageID    *outID
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -191,15 +193,15 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
     // compute pokeM pseudo-inverse
 #ifdef HAVE_MAGMA
     LINALGEBRA_magma_compute_SVDpseudoInverse("pokeM",
-                                            "pokeMinv",
-                                            SVDeps,
-                                            insize,
-                                            "VTmat",
-                                            0,
-                                            0,
-                                            64,
-                                            0, // GPU device
-                                            NULL);
+            "pokeMinv",
+            SVDeps,
+            insize,
+            "VTmat",
+            0,
+            0,
+            64,
+            0, // GPU device
+            NULL);
 #else
     linopt_compute_SVDpseudoInverse("pokeM",
                                     "pokeMinv",
