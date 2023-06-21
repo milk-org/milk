@@ -2799,16 +2799,6 @@ errno_t streamCTRL_CTRLscreen()
                                         (int) streamCTRLimages[ID].md->inode);
                             TUI_newline();
                             TUI_printfw("md.sem              %10d\n", (int) streamCTRLimages[ID].md->sem);
-                            for(int semindex = 0; semindex < streamCTRLimages[ID].md->sem; semindex++)
-                            {
-                                TUI_printfw(" %2d   %6ld  %s\n",
-                                            semindex,
-                                            streamCTRLimages[ID].semfile[semindex].inode,
-                                            streamCTRLimages[ID].semfile[semindex].fname);
-                            }
-
-
-
                         }
                     }
                 }

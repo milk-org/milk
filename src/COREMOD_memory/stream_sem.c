@@ -196,6 +196,7 @@ errno_t stream_sem_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+
 /**
  * @see ImageStreamIO_createsem
  */
@@ -208,7 +209,7 @@ imageID COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem)
 
     if(ID != -1)
     {
-        ImageStreamIO_createsem(&data.image[ID], NBsem);
+        // ImageStreamIO_createsem(&data.image[ID], NBsem);
     }
 
     return ID;
