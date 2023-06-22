@@ -186,13 +186,13 @@ void *save_fits_function(void *ptr)
     STREAMSAVE_THREAD_MESSAGE *tmsg;
 
     uint32_t *imsizearray;
-    uint32_t  xsize, ysize;
-    uint8_t   datatype;
+    //uint32_t  xsize, ysize;
+    //uint8_t   datatype;
 
-    imageID IDc;
-    long    framesize; // in bytes
-    char   *ptr0;      // source pointer
-    char   *ptr1;      // destination pointer
+    //imageID IDc;
+    //long    framesize; // in bytes
+    //char   *ptr0;      // source pointer
+    //char   *ptr1;      // destination pointer
     long    k;
     FILE   *fp;
 
@@ -280,8 +280,8 @@ void *save_fits_function(void *ptr)
     // Local time
 
     // get time zone
-    char tm_zone[] = "HST";
-    double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
+    //char tm_zone[] = "HST";
+    //double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
 
     /*// Causes a race condition with gettime in other thread, which result in occasional HST filenames...
     time_t t = time(NULL);

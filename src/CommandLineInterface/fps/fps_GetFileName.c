@@ -46,7 +46,7 @@ int functionparameter_GetFileName(
     }
 
     char ffname1[STRINGMAXLEN_FULLFILENAME]; // full filename
-    snprintf(ffname1, STRINGMAXLEN_FULLFILENAME, "%s%s", ffname, fname1);
+    WRITE_FULLFILENAME(ffname1,  "%s%s", ffname, fname1);
 
     strcpy(outfname, ffname1);
 

@@ -14,7 +14,7 @@
 typedef int errno_t;
 #endif
 
-static int CTRLscreenExitLine = 0; // for debugging
+//static int CTRLscreenExitLine = 0; // for debugging
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -269,13 +269,15 @@ static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 }
 
 
-static void processinfo_CTRLscreen_atexit()
+
+/*static void processinfo_CTRLscreen_atexit()
 {
     //echo();
     //endwin();
 
     printf("EXIT from processinfo_CTRLscreen at line %d\n", CTRLscreenExitLine);
 }
+*/
 
 
 /**
@@ -315,7 +317,7 @@ errno_t processinfo_CTRLscreen()
     struct timespec t04loop;
     struct timespec t05loop;
     struct timespec t06loop;
-    struct timespec t07loop;
+//    struct timespec t07loop;
 
     float frequ = 32.0; // Hz
     int monstringlen = 200;
