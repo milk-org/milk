@@ -215,7 +215,7 @@ errno_t info_image_streamtiming_stats_disp(
         {
             attron(A_BOLD);
             printw(
-                "%2d/%2d  %6.3f% \%  %6.3f% \%  [%6ld] [%6ld]    %10.3f us\n",
+                "%2d/%2d  %6.3f %%  %6.3f %%  [%6ld] [%6ld]    %10.3f us\n",
                 percbin,
                 NBpercbin,
                 100.0 * percarray[percbin],
@@ -244,7 +244,7 @@ errno_t info_image_streamtiming_stats_disp(
             }
 
             printw(
-                "%2d/%2d  %6.3f% \%  %6.3f% \%  [%6ld] [%6ld]    %10.3f us   "
+                "%2d/%2d  %6.3f %%  %6.3f %%  [%6ld] [%6ld]    %10.3f us   "
                 " %+10.3f us\n",
                 percbin,
                 NBpercbin,
@@ -262,7 +262,7 @@ errno_t info_image_streamtiming_stats_disp(
     printw("\n  Average Time Interval = %10.3f us    -> frequ = %10.3f Hz\n",
            1.0e6 * AVEval,
            1.0 / AVEval);
-    printw("                    RMS = %10.3f us  ( %5.3f \%)\n",
+    printw("                    RMS = %10.3f us  ( %5.3f %%)\n",
            1.0e6 * RMSval,
            100.0 * RMSval / AVEval);
     printw("  Max delay : %10.3f us   frame # %ld\n",

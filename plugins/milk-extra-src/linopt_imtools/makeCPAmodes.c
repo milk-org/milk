@@ -449,8 +449,8 @@ errno_t linopt_imtools_makeCPAmodes(
     data.image[IDfreq].array.F[0] = 0.0;
     for(uint32_t ii = 0; ii < size2; ii++)
     {
-        float x = data.image[IDx].array.F[ii];
-        float y = data.image[IDy].array.F[ii];
+        //float x = data.image[IDx].array.F[ii];
+        //float y = data.image[IDy].array.F[ii];
         float r = data.image[IDr].array.F[ii];
         if(r < radfactlim)
         {
