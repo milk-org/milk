@@ -116,7 +116,7 @@ int zernike_init()
             }
             long Noll_n = n * (n + 1) / 2;
             int nmod = n % 4;
-            Zernike.Zer_Nollindex[j] = Noll_n + abs(m);
+            Zernike.Zer_Nollindex[j] = Noll_n + abs((int) m);
             if((nmod == 0) || (nmod == 1))
             {
                 if(m <= 0)

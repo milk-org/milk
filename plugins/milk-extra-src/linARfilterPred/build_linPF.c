@@ -645,8 +645,8 @@ static errno_t compute_function()
 
 
 
-    long NB_SVD_Modes = 10000;
-    int  LOOPmode     = 0; // 1 if re-use arrays
+    //long NB_SVD_Modes = 10000;
+    //int  LOOPmode     = 0; // 1 if re-use arrays
 
 
 
@@ -689,8 +689,8 @@ static errno_t compute_function()
         printf("Number of samples         : %d\n", imgin.md->size[0]);
         printf("Dimension of each sample  : %d\n", imgin.md->size[1]);
 
-        int nbsample = imgin.md->size[0];
-        int sampledim = imgin.md->size[1];
+        //int nbsample = imgin.md->size[0];
+        //int sampledim = imgin.md->size[1];
 
         // eigenvectors array
         IMGID imgevec = mkIMGID_from_name("eigenvec");
