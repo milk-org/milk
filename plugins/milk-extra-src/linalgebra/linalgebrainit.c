@@ -24,6 +24,8 @@ int LINALGEBRA_init();
 // Command line interface wrapper function(s)
 // ==========================================
 
+
+/*
 static errno_t delete_image_ID__cli()
 {
     long i = 1;
@@ -44,6 +46,8 @@ static errno_t delete_image_ID__cli()
 
     return CLICMD_SUCCESS;
 }
+*/
+
 
 // ==========================================
 // Register CLI command(s)

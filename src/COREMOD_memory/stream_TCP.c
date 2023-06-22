@@ -628,7 +628,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     long                 framesizefull; // pixel data + metadata + kw
     char                *buff;          // buffer
 
-    size_t flushsize;
+    //size_t flushsize;
     char *socket_flush_buff;
 
 

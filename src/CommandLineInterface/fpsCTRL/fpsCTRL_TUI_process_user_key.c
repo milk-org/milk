@@ -37,12 +37,11 @@ int fpsCTRL_TUI_process_user_key(int                        ch,
 {
     DEBUG_TRACE_FSTART();
 
-    int stringmaxlen = 500;
     int loopOK       = 1;
     int fpsindex;
     int pindex;
 
-    char msg[stringmaxlen];
+    //char msg[stringmaxlen];
 
     char fname[STRINGMAXLEN_FULLFILENAME];
 

@@ -10,18 +10,19 @@ int processinfo_WriteMessage(
 )
 {
     struct timespec tnow;
-    struct tm      *tmnow;
 
     DEBUG_TRACEPOINT(" ");
 
     clock_gettime(CLOCK_MILK, &tnow);
-    tmnow = gmtime(&tnow.tv_sec);
+
 
     strcpy(processinfo->statusmsg, msgstring);
 
     DEBUG_TRACEPOINT(" ");
 
 #ifdef PROCESSINFO_LOGFILE
+    struct tm      *tmnow;
+    tmnow = gmtime(&tnow.tv_sec);
     fprintf(processinfo->logFile,
             "%02d:%02d:%02d.%06d  %8ld.%09ld  %06d  %s\n",
             tmnow->tm_hour,

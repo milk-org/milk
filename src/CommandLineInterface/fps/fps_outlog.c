@@ -46,16 +46,16 @@ errno_t functionparameter_outlog_file(
     uttime = gmtime(&now);
 
     char timestring[TIMESTRINGLEN];
-    snprintf(timestring,
-             TIMESTRINGLEN,
-             "%04d%02d%02dT%02d%02d%02d.%09ld",
-             1900 + uttime->tm_year,
-             1 + uttime->tm_mon,
-             uttime->tm_mday,
-             uttime->tm_hour,
-             uttime->tm_min,
-             uttime->tm_sec,
-             tnow.tv_nsec);
+    SNPRINTF_CHECK(timestring,
+                   TIMESTRINGLEN,
+                   "%04d%02d%02dT%02d%02d%02d.%09ld",
+                   1900 + uttime->tm_year,
+                   1 + uttime->tm_mon,
+                   uttime->tm_mday,
+                   uttime->tm_hour,
+                   uttime->tm_min,
+                   uttime->tm_sec,
+                   tnow.tv_nsec);
 
     fprintf(fpout, "%s %-12s %s\n", timestring, keyw, msgstring);
     fflush(fpout);
@@ -108,16 +108,16 @@ errno_t functionparameter_outlog(
     uttime = gmtime(&now);
 
     char timestring[TIMESTRINGLEN];
-    snprintf(timestring,
-             TIMESTRINGLEN,
-             "%04d%02d%02dT%02d%02d%02d.%09ld",
-             1900 + uttime->tm_year,
-             1 + uttime->tm_mon,
-             uttime->tm_mday,
-             uttime->tm_hour,
-             uttime->tm_min,
-             uttime->tm_sec,
-             tnow.tv_nsec);
+    SNPRINTF_CHECK(timestring,
+                   TIMESTRINGLEN,
+                   "%04d%02d%02dT%02d%02d%02d.%09ld",
+                   1900 + uttime->tm_year,
+                   1 + uttime->tm_mon,
+                   uttime->tm_mday,
+                   uttime->tm_hour,
+                   uttime->tm_min,
+                   uttime->tm_sec,
+                   tnow.tv_nsec);
 
     fprintf(fpout, "%s %-12s ", timestring, keyw);
 

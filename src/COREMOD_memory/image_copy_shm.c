@@ -109,8 +109,8 @@ static errno_t image_copy_shm(IMGID img, char *outshmname)
 
     data.image[IDshm].md[0].write = 1;
 
-    char *ptr1;
-    char *ptr2;
+    //char *ptr1;
+    //char *ptr2;
 
     memcpy(data.image[IDshm].array.raw,
            data.image[ID].array.raw,

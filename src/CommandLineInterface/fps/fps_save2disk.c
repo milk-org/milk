@@ -71,16 +71,16 @@ int functionparameter_SaveFPS2disk_dir(FUNCTION_PARAMETER_STRUCT *fpsentry,
     struct tm *uttime;
     uttime = gmtime(&now);
 
-    snprintf(timestring,
-             TIMESTRINGLEN,
-             "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
-             1900 + uttime->tm_year,
-             1 + uttime->tm_mon,
-             uttime->tm_mday,
-             uttime->tm_hour,
-             uttime->tm_min,
-             uttime->tm_sec,
-             tnow.tv_nsec);
+    SNPRINTF_CHECK(timestring,
+                   TIMESTRINGLEN,
+                   "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
+                   1900 + uttime->tm_year,
+                   1 + uttime->tm_mon,
+                   uttime->tm_mday,
+                   uttime->tm_hour,
+                   uttime->tm_min,
+                   uttime->tm_sec,
+                   tnow.tv_nsec);
 
     fprintf(fpoutval, "# TIMESTRING %s\n", timestring);
     fprintf(fpoutval, "# PID        %d\n", getpid());

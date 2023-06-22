@@ -8,7 +8,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-static int cmdindex;
+//static int cmdindex;
 
 // required for create_2Dimage_ID()
 //#include "COREMOD_memory/COREMOD_memory.h"

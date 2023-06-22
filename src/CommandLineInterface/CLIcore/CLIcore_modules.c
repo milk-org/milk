@@ -346,7 +346,7 @@ errno_t RegisterModule(const char *__restrict FileName,
     {
         OKmsg = 1;
         DEBUG_TRACEPOINT(
-            "  %02ld  Found unloaded shared object in ./libs/ -> LOADING "
+            "  %02d  Found unloaded shared object in ./libs/ -> LOADING "
             "%10s  module %40s",
             moduleindex,
             PackageName,

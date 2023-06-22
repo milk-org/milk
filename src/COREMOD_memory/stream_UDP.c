@@ -123,7 +123,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
     struct sockaddr_in sock_server;
     int                fds_client;
     int                flag = 1;
-    int                result;
+    //int                result;
     unsigned long long cnt  = 0;
     long long          iter = 0;
     long               framesize; // pixel data only
@@ -455,13 +455,13 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     struct sockaddr_in sock_server;
     struct sockaddr_in sock_client;
     int                fds_server;
-    int                fds_client;
+    //int                fds_client;
     socklen_t          slen_client = (socklen_t) sizeof(sock_client);
 
     int  flag = 1;
     long recvsize;
-    int  result;
-    int  MAXPENDING = 5;
+    //int  result;
+    //int  MAXPENDING = 5;
 
     IMAGE_METADATA *imgmd;
     IMAGE_METADATA *imgmd_remote;
@@ -472,7 +472,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     char           *ptr_dest_data_root; // Dest ISIO data buffer
     char           *ptr_dest_data_sliceroot; // Dest ISIO data buffer
-    char           *ptr_dest_data_current; // Dest ISIO data buffer
+//    char           *ptr_dest_data_current; // Dest ISIO data buffer
 
     char           *ptr_buff_metadata; // socket-side buffer at metadata offset
     char           *ptr_buff_data; // socket-side buffer at data offset
@@ -1044,7 +1044,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     free(buff);
     free(buff_udp);
 
-    close(fds_client);
+    //close(fds_client);
 
     printf("port %d closed\n", port);
     fflush(stdout);

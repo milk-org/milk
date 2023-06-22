@@ -197,7 +197,7 @@ errno_t functionparameter_scan_fps(uint32_t                   mode,
                 char        shmdname[STRINGMAXLEN_DIRNAME];
                 function_parameter_struct_shmdirname(shmdname);
 
-                snprintf(fullname, STRINGMAXLEN_FULLFILENAME, "%s/%s", shmdname, dir->d_name);
+                WRITE_FULLFILENAME(fullname, "%s/%s", shmdname, dir->d_name);
 
                 retv = lstat(fullname, &buf);
                 if(retv == -1)

@@ -90,7 +90,7 @@ void *processinfo_scan(void *thptr)
     PROCESSINFO_SCAN_DEBUGLOG("START\n");
 
 
-    long loopcnt = 0;
+    //long loopcnt = 0;
     while(pinfop->loop == 1)
     {
 
@@ -155,13 +155,13 @@ void *processinfo_scan(void *thptr)
         // pinfolistindex is index in PROCESSINFOLIST
         {
             long pinfolistindex = 0;
-            long pinfodispindex = 0;
+            //long pinfodispindex = 0;
             while(pinfolistindex < PROCESSINFOLISTSIZE)
             {
 
                 if(pinfop->loop == 1)
                 {
-                    DEBUG_TRACEPOINT("pinfolistindex %ld / %ld",
+                    DEBUG_TRACEPOINT("pinfolistindex %ld / %d",
                                      pinfolistindex,
                                      PROCESSINFOLISTSIZE);
 
@@ -303,7 +303,7 @@ void *processinfo_scan(void *thptr)
             }
 
 
-            int listcnt = 0;
+            //int listcnt = 0;
             for(int pinfoactindex = 0; pinfoactindex < pinfop->NBpindexActive;
                     pinfoactindex++)
             {
@@ -608,11 +608,11 @@ void *processinfo_scan(void *thptr)
                                                     cpumax < pinfop->NBcpus;
                                                     cpumax++)
                                             {
-                                                snprintf(cpustring,
-                                                         16,
-                                                         ",%d-%d,",
-                                                         cpumin,
-                                                         cpumax);
+                                                SNPRINTF_CHECK(cpustring,
+                                                               16,
+                                                               ",%d-%d,",
+                                                               cpumin,
+                                                               cpumax);
                                                 if(strstr(cpuliststring,
                                                           cpustring) != NULL)
                                                 {

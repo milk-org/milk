@@ -230,7 +230,7 @@ inline static void fpsCTRLscreen_print_FPShelp(
 
     {
         FILE *fp = NULL;
-        int status = 0;
+        //int status = 0;
         int LINESLEN = 200;
         char line[LINESLEN];
         memset(line, 0, sizeof(line));
