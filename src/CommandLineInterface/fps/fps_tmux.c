@@ -49,6 +49,7 @@ errno_t functionparameter_FPS_tmux_attach(
     // This should hang until the tmux is detached,
     // and then return to the current fpsCTRL window.
     EXECUTE_SYSTEM_COMMAND("tmux attach -t %s", fps->md->name);
+    return RETURN_SUCCESS;
 }
 
 

@@ -242,13 +242,12 @@ errno_t printstatus(imageID ID)
     long         *vcnt;
     long          h;
     unsigned long cnt;
-    long          i;
 
     int customcolor;
 
     float  minPV = 60000;
     float  maxPV = 0;
-    float charval;
+    //float charval;
     double average;
     double imtotal;
 
@@ -700,7 +699,7 @@ errno_t printstatus(imageID ID)
                 attron(COLOR_PAIR(customcolor));
 
                 cnt = vcnt[h] * (wcol - 2 - strlen(line1)) / vcntmax;
-                for(i = 0; i < cnt; ++i)
+                for(unsigned long i = 0; i < cnt; ++i)
                 {
                     TUI_printfw(" ");
                 }

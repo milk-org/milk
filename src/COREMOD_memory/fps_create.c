@@ -62,7 +62,7 @@ errno_t function_parameter_struct_create(
     const char *name
 )
 {
-    int                       index;
+    //int                       index;
     char                     *mapv = NULL;
     FUNCTION_PARAMETER_STRUCT fps = {0};
 
