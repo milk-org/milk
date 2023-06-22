@@ -317,7 +317,6 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         FUNC_RETURN_FAILURE(" ");
     }
 
-    DEBUG_TRACEPOINT(" ");
 
     DEBUG_TRACEPOINT("Adding optional header");
     // HEADER
@@ -433,7 +432,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 
 
 
-    // Add FITS keywords from image keywords
+    DEBUG_TRACEPOINT("Add FITS keywords from image keywords");
     // Skip keywords that start with a "!"
     // These are technical keywords that shouldn't be propagated to FITS.
 
@@ -531,7 +530,7 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         }
     }
 
-    // add custom keywords
+    DEBUG_TRACEPOINT("add custom keywords");
 
     if((kwarraysize > 0) && (kwarray != NULL))
     {
@@ -636,6 +635,8 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
             FUNC_RETURN_FAILURE(" ");
         }
     }
+
+    DEBUG_TRACEPOINT(" ");
 
     COREMOD_iofits_data.FITSIO_status = 0;
     fits_write_date(fptr, &COREMOD_iofits_data.FITSIO_status);
