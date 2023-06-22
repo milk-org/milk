@@ -394,39 +394,47 @@ errno_t compute_SVD(
                 const float *alpha = &alf;
                 const float *beta = &bet;
 
-                cudaError_t cudaStat;
-                cublasStatus_t stat;
+                //cudaError_t cudaStat;
+                //cublasStatus_t stat;
 
                 float *d_inmat;
 
-                cudaStat = cudaMalloc((void **)&d_inmat, imgin.md->nelement * sizeof(float));
-                if (cudaStat != cudaSuccess) {
-                    printf ("device memory allocation failed");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t cudaStat = cudaMalloc((void **)&d_inmat, imgin.md->nelement * sizeof(float));
+                    if (cudaStat != cudaSuccess) {
+                        printf ("device memory allocation failed");
+                        return EXIT_FAILURE;
+                    }
                 }
 
 
-                stat = cudaMemcpy(d_inmat, imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cudaMemcpy failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t stat = cudaMemcpy(d_inmat, imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
+                    if (stat != cudaSuccess) {
+                        printf ("cudaMemcpy failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
 
                 float *d_ATA;
-                cudaStat = cudaMalloc((void **)&d_ATA, imgATA.md->nelement * sizeof(float));
-                if (cudaStat != cudaSuccess) {
-                    printf ("device memory allocation failed");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t cudaStat = cudaMalloc((void **)&d_ATA, imgATA.md->nelement * sizeof(float));
+                    if (cudaStat != cudaSuccess) {
+                        printf ("device memory allocation failed");
+                        return EXIT_FAILURE;
+                    }
                 }
 
 
                 // Create a handle for CUBLAS
                 cublasHandle_t handle;
-                stat = cublasCreate(&handle);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cublasCreate failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cublasStatus_t stat = cublasCreate(&handle);
+                    if (stat != CUBLAS_STATUS_SUCCESS) {
+                        printf ("cublasCreate failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
 
@@ -448,23 +456,28 @@ errno_t compute_SVD(
                 fflush(stdout);
 
 
-                stat = cublasSgemm(handle, OP0, OP1,
-                                   Ndim, Ndim, Mdim, alpha,
-                                   d_inmat, inMdim,
-                                   d_inmat, inMdim,
-                                   beta, d_ATA, Ndim);
+                {
+                    cublasStatus_t stat = cublasSgemm(handle, OP0, OP1,
+                                                   Ndim, Ndim, Mdim, alpha,
+                                                   d_inmat, inMdim,
+                                                   d_inmat, inMdim,
+                                                   beta, d_ATA, Ndim);
 
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cublasSgemm failed\n");
-                    return EXIT_FAILURE;
+                    if (stat != CUBLAS_STATUS_SUCCESS) {
+                        printf ("cublasSgemm failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 cublasDestroy(handle);
 
-                stat = cudaMemcpy(imgATA.im->array.F, d_ATA, imgATA.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cudaMemcpy failed\n");
-                    return EXIT_FAILURE;
+
+                {
+                    cudaError_t stat = cudaMemcpy(imgATA.im->array.F, d_ATA, imgATA.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
+                    if (stat != cudaSuccess) {
+                        printf ("cudaMemcpy failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 cudaFree(d_inmat);
@@ -616,48 +629,61 @@ errno_t compute_SVD(
                 const float *alpha = &alf;
                 const float *beta = &bet;
 
-                cudaError_t cudaStat;
-                cublasStatus_t stat;
+                //cudaError_t cudaStat;
+                //cublasStatus_t stat;
 
                 float *d_inmat;
-                cudaStat = cudaMalloc((void **)&d_inmat, imgin.md->nelement * sizeof(float));
-                if (cudaStat != cudaSuccess) {
-                    printf ("device memory allocation failed");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t cudaStat = cudaMalloc((void **)&d_inmat, imgin.md->nelement * sizeof(float));
+                    if (cudaStat != cudaSuccess) {
+                        printf ("device memory allocation failed");
+                        return EXIT_FAILURE;
+                    }
                 }
 
-                stat = cudaMemcpy(d_inmat, imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cudaMemcpy failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t stat = cudaMemcpy(d_inmat, imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
+                    if (stat != cudaSuccess) {
+                        printf ("cudaMemcpy failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 float *d_mNsvec;
-                cudaStat = cudaMalloc((void **)&d_mNsvec, imgmNsvec->md->nelement * sizeof(float));
-                if (cudaStat != cudaSuccess) {
-                    printf ("device memory allocation failed");
-                    return EXIT_FAILURE;
+
+                {
+                    cudaError_t cudaStat = cudaMalloc((void **)&d_mNsvec, imgmNsvec->md->nelement * sizeof(float));
+                    if (cudaStat != cudaSuccess) {
+                        printf ("device memory allocation failed");
+                        return EXIT_FAILURE;
+                    }
                 }
 
 
-                stat = cudaMemcpy(d_mNsvec, imgmNsvec->im->array.F, imgmNsvec->md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cudaMemcpy failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t stat = cudaMemcpy(d_mNsvec, imgmNsvec->im->array.F, imgmNsvec->md->nelement * sizeof(float), cudaMemcpyHostToDevice);
+                    if (stat != cudaSuccess) {
+                        printf ("cudaMemcpy failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 float *d_mMsvec;
-                cudaStat = cudaMalloc((void **)&d_mMsvec, imgmMsvec->md->nelement * sizeof(float));
-                if (cudaStat != cudaSuccess) {
-                    printf ("device memory allocation failed");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t cudaStat = cudaMalloc((void **)&d_mMsvec, imgmMsvec->md->nelement * sizeof(float));
+                    if (cudaStat != cudaSuccess) {
+                        printf ("device memory allocation failed");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 cublasHandle_t handle;
-                stat = cublasCreate(&handle);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cublasCreate failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cublasStatus_t stat = cublasCreate(&handle);
+                    if (stat != CUBLAS_STATUS_SUCCESS) {
+                        printf ("cublasCreate failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 cublasOperation_t OP0 = CUBLAS_OP_N;
@@ -669,30 +695,36 @@ errno_t compute_SVD(
                 printf("comp >> ");
                 fflush(stdout);
 
-                stat = cublasSgemm(handle, OP0, CUBLAS_OP_N,
-                                   Mdim, Ndim, Ndim, alpha,
-                                   d_inmat, inMdim,
-                                   d_mNsvec, Ndim,
-                                   beta, d_mMsvec, Mdim);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cublasSgemm failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cublasStatus_t stat = cublasSgemm(handle, OP0, CUBLAS_OP_N,
+                                                      Mdim, Ndim, Ndim, alpha,
+                                                      d_inmat, inMdim,
+                                                      d_mNsvec, Ndim,
+                                                      beta, d_mMsvec, Mdim);
+                    if (stat != CUBLAS_STATUS_SUCCESS) {
+                        printf ("cublasSgemm failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
                 printf(" >> done\n");
                 fflush(stdout);
 
 
-                stat = cublasDestroy(handle);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cublasCreate failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cublasStatus_t stat = cublasDestroy(handle);
+                    if (stat != CUBLAS_STATUS_SUCCESS) {
+                        printf ("cublasCreate failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
-                stat = cudaMemcpy(imgmMsvec->im->array.F, d_mMsvec, imgmMsvec->md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-                if (stat != CUBLAS_STATUS_SUCCESS) {
-                    printf ("cudaMemcpy failed\n");
-                    return EXIT_FAILURE;
+                {
+                    cudaError_t stat = cudaMemcpy(imgmMsvec->im->array.F, d_mMsvec, imgmMsvec->md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
+                    if (stat != cudaSuccess) {
+                        printf ("cudaMemcpy failed\n");
+                        return EXIT_FAILURE;
+                    }
                 }
 
 
@@ -811,51 +843,64 @@ errno_t compute_SVD(
                     const float *alpha = &alf;
                     const float *beta = &bet;
 
-                    cudaError_t cudaStat;
-                    cublasStatus_t stat;
+                    //cudaError_t cudaStat;
+                    //cublasStatus_t stat;
 
                     float *d_mNsvec1;
-                    cudaStat = cudaMalloc((void **)&d_mNsvec1, imgmNsvec1.md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
+
+                    {
+                        cudaError_t cudaStat = cudaMalloc((void **)&d_mNsvec1, imgmNsvec1.md->nelement * sizeof(float));
+                        if (cudaStat != cudaSuccess) {
+                            printf ("device memory allocation failed");
+                            return EXIT_FAILURE;
+                        }
                     }
 
-                    stat = cudaMemcpy(d_mNsvec1, imgmNsvec1.im->array.F, imgmNsvec1.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
+                    {
+                        cudaError_t stat = cudaMemcpy(d_mNsvec1, imgmNsvec1.im->array.F, imgmNsvec1.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
+                        if (stat != cudaSuccess) {
+                            printf ("cudaMemcpy failed\n");
+                            return EXIT_FAILURE;
+                        }
                     }
 
 
                     float *d_mMsvec;
-                    cudaStat = cudaMalloc((void **)&d_mMsvec, imgmMsvec->md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
+                    {
+                        cudaError_t cudaStat = cudaMalloc((void **)&d_mMsvec, imgmMsvec->md->nelement * sizeof(float));
+                        if (cudaStat != cudaSuccess) {
+                            printf ("device memory allocation failed");
+                            return EXIT_FAILURE;
+                        }
                     }
 
-                    stat = cudaMemcpy(d_mMsvec, imgmMsvec->im->array.F, imgmMsvec->md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
+                    {
+                        cudaError_t stat = cudaMemcpy(d_mMsvec, imgmMsvec->im->array.F, imgmMsvec->md->nelement * sizeof(float), cudaMemcpyHostToDevice);
+                        if (stat != cudaSuccess) {
+                            printf ("cudaMemcpy failed\n");
+                            return EXIT_FAILURE;
+                        }
                     }
 
 
                     float *d_mpsinv;
-                    cudaStat = cudaMalloc((void **)&d_mpsinv, imgpsinv.md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
+                    {
+                        cudaError_t cudaStat = cudaMalloc((void **)&d_mpsinv, imgpsinv.md->nelement * sizeof(float));
+                        if (cudaStat != cudaSuccess) {
+                            printf ("device memory allocation failed");
+                            return EXIT_FAILURE;
+                        }
                     }
 
 
 
                     cublasHandle_t handle;
-                    stat = cublasCreate(&handle);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasCreate failed\n");
-                        return EXIT_FAILURE;
+                    {
+                        cublasStatus_t stat = cublasCreate(&handle);
+                        if (stat != CUBLAS_STATUS_SUCCESS) {
+                            printf ("cublasCreate failed\n");
+                            return EXIT_FAILURE;
+                        }
                     }
 
 
@@ -863,30 +908,37 @@ errno_t compute_SVD(
                     printf("comp >> ");
                     fflush(stdout);
 
-                    stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
-                                       Ndim, Mdim, Ndim, alpha,
-                                       d_mNsvec1, Ndim,
-                                       d_mMsvec, Mdim,
-                                       beta, d_mpsinv, Ndim);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasSgemm failed\n");
-                        return EXIT_FAILURE;
+                    {
+                        cublasStatus_t stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
+                                                          Ndim, Mdim, Ndim, alpha,
+                                                          d_mNsvec1, Ndim,
+                                                          d_mMsvec, Mdim,
+                                                          beta, d_mpsinv, Ndim);
+                        if (stat != CUBLAS_STATUS_SUCCESS) {
+                            printf ("cublasSgemm failed\n");
+                            return EXIT_FAILURE;
+                        }
                     }
 
                     printf(" >> done\n");
                     fflush(stdout);
 
 
-                    stat = cublasDestroy(handle);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasCreate failed\n");
-                        return EXIT_FAILURE;
+                    {
+                        cublasStatus_t stat = cublasDestroy(handle);
+                        if (stat != CUBLAS_STATUS_SUCCESS) {
+                            printf ("cublasCreate failed\n");
+                            return EXIT_FAILURE;
+                        }
                     }
 
-                    stat = cudaMemcpy(imgpsinv.im->array.F, d_mpsinv, imgpsinv.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
+
+                    {
+                        cudaError_t stat = cudaMemcpy(imgpsinv.im->array.F, d_mpsinv, imgpsinv.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
+                        if (stat != cudaSuccess) {
+                            printf ("cudaMemcpy failed\n");
+                            return EXIT_FAILURE;
+                        }
                     }
 
 
