@@ -178,7 +178,7 @@ errno_t LINALGEBRA_MVMextractModesLoop_FPCONF()
 
     FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE); // sets up fps
 
-    FPS2PROCINFOMAP fps2procinfo;
+    //FPS2PROCINFOMAP fps2procinfo;
     fps_add_processinfo_entries(&fps);
 
     // ===========================
