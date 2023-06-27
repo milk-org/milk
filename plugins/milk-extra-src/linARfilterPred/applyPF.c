@@ -27,6 +27,9 @@ static char *PFmat;
 static char *outdata;
 static char *outmask;
 
+// shared by muplitple processes to keep track
+static char *outPFstat;
+
 
 static char *GPUsetstr;
 static long  fpi_GPUsetstr;
@@ -99,6 +102,16 @@ static CLICMDARGDEF farg[] =
         "outmask",
         CLIARG_VISIBLE_DEFAULT,
         (void **) &outmask,
+        NULL
+    },
+    {
+        // Output update
+        CLIARG_STR,
+        ".outPFstat",
+        "output PF stats image",
+        "outPFstat",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outPFstat,
         NULL
     },
     {
@@ -310,6 +323,16 @@ static errno_t compute_function()
 
 
 
+    // output update
+    // set values to 1 when updated
+    //
+    IMGID imgoutPFstat;
+    {
+        imgoutPFstat = stream_connect_create_2Df32(outPFstat, NBmodeINmax, 1);
+    }
+
+
+
     // If both outdata and outmask exist, check they are consistent
     if((imgout.ID != -1) && (imgoutmask.ID != -1))
     {
@@ -493,9 +516,11 @@ static errno_t compute_function()
         (double *) malloc(sizeof(double) * NBPFstep * NBPFstep);
 
 
-
+    struct timespec t0, t1;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    clock_gettime(CLOCK_MILK, &t0);
 
     // Fill in input buffer most recent measurement
     // At this point, the older measurements have already been moved down
@@ -508,6 +533,7 @@ static errno_t compute_function()
 
     if(NBGPU > 0)  // if using GPU
     {
+
 
 #ifdef HAVE_CUDA
         if(processinfo->loopcnt == 0)
@@ -563,11 +589,20 @@ static errno_t compute_function()
     for(long mi = 0; mi < NBmodeOUT; mi++)
     {
         imgout.im->array.F[outmaskindex[mi]] = imgoutbuff.im->array.F[mi];
+        imgoutPFstat.im->array.F[outmaskindex[mi]] = 1.0;
     }
+    processinfo_update_output_stream(processinfo, imgoutPFstat.ID);
     processinfo_update_output_stream(processinfo, imgout.ID);
 
 
 
+    clock_gettime(CLOCK_MILK, &t1);
+    struct timespec tdiff;
+    tdiff = timespec_diff(t0, t1);
+    double t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+
+    processinfo_WriteMessage_fmt(processinfo, "%dx%d->%d MVM %.3f us",
+                                 NBmodeIN, NBPFstep, NBmodeOUT, t01d * 1e6);
 
     if(*compOLresidual == 1)
     {

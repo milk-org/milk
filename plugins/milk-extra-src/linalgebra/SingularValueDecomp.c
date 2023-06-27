@@ -207,6 +207,7 @@ errno_t compute_SVD(
     IMGID imgU,
     IMGID imgeigenval,
     IMGID imgV,
+    float SVlimit,
     int GPUdev,
     uint64_t compSVDmode
 )
@@ -248,8 +249,6 @@ errno_t compute_SVD(
     //
 
 
-    printf("========== SVD %5d ===========\n", __LINE__);
-    fflush(stdout);
 
     enum matrix_shape {inMshape_tall, inMshape_wide} mshape;
 
@@ -302,9 +301,6 @@ errno_t compute_SVD(
 
     // from here on, Mdim > Ndim
 
-
-    printf("========== SVD %5d ===========\n", __LINE__);
-    fflush(stdout);
 
 
     // create eigenvalues array if needed
@@ -375,10 +371,7 @@ errno_t compute_SVD(
         list_image_ID();
 
 
-        printf("========== SVD %5d ===========\n", __LINE__);
-        fflush(stdout);
-
-        printf("========== GPUdev %5d ===========\n", GPUdev);
+        printf("========== GPUdev %5d\n", GPUdev);
         fflush(stdout);
 
         {
@@ -458,10 +451,10 @@ errno_t compute_SVD(
 
                 {
                     cublasStatus_t stat = cublasSgemm(handle, OP0, OP1,
-                                                   Ndim, Ndim, Mdim, alpha,
-                                                   d_inmat, inMdim,
-                                                   d_inmat, inMdim,
-                                                   beta, d_ATA, Ndim);
+                                                      Ndim, Ndim, Mdim, alpha,
+                                                      d_inmat, inMdim,
+                                                      d_inmat, inMdim,
+                                                      beta, d_ATA, Ndim);
 
                     if (stat != CUBLAS_STATUS_SUCCESS) {
                         printf ("cublasSgemm failed\n");
@@ -507,11 +500,7 @@ errno_t compute_SVD(
             }
         }
 
-        save_fits("ATA", "SVD_ATA.fits"); //TEST
-
-        printf("========== SVD %5d ===========\n", __LINE__);
-        fflush(stdout);
-
+        //save_fits("ATA", "SVD_ATA.fits"); //TEST
 
         float *d = (float*) malloc(sizeof(float)*Ndim);
         float *e = (float*) malloc(sizeof(float)*Ndim);
@@ -528,10 +517,6 @@ errno_t compute_SVD(
         // Assemble Q matrix
         LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', Ndim, imgATA.im->array.F, Ndim, t );
 
-
-
-        printf("========== SVD %5d ===========\n", __LINE__);
-        fflush(stdout);
 
 
 
@@ -757,17 +742,41 @@ errno_t compute_SVD(
 
 
 
+        // find largest eigenvalue
+        //
+        float evalmax = fabs(imgeigenval.im->array.F[0]);
+        for(uint32_t jj=1; jj<Ndim; jj++)
+        {
+            float eval = fabs(imgeigenval.im->array.F[jj]);
+            if(eval > evalmax)
+            {
+                evalmax = eval;
+            }
+        }
 
 
         // normalize cols of imgmMsvec
+        // Report number of modes kept
+        //
+        long SVkeptcnt = 0;
         for(uint32_t jj=0; jj<Ndim; jj++)
         {
+
+            float normfact = 0.0;
+            float eval = fabs(imgeigenval.im->array.F[jj]);
+            float evaln = eval / evalmax;
+            if( evaln > SVlimit*SVlimit )
+            {
+                normfact = 1.0 / sqrt(eval);
+                SVkeptcnt ++;
+            }
+
             for(uint32_t ii=0; ii< Mdim; ii++)
             {
-                imgmMsvec->im->array.F[jj*Mdim+ii] /=
-                    sqrt(imgeigenval.im->array.F[jj]);
+                imgmMsvec->im->array.F[jj*Mdim+ii] *= normfact;
             }
         }
+        printf("Keeping %ld / %u modes\n", SVkeptcnt, Ndim);
 
 
 
@@ -813,12 +822,29 @@ errno_t compute_SVD(
 
 
             // multiply by inverse of singular values
+            //
             for(uint32_t jj=0; jj<Ndim; jj++)
             {
+                float normfact = 0.0;
+                float eval = fabs(imgeigenval.im->array.F[jj]);
+                float evaln = eval / evalmax;
+                if( evaln > SVlimit*SVlimit )
+                {
+                    normfact = 1.0 / sqrt(eval);
+
+                }
+/*
+                printf("Eigenvalue %4d = %10g  -> %10g   scaling = %10g\n",
+                       jj,
+                       imgeigenval.im->array.F[jj],
+                       evaln,
+                       normfact);
+*/
                 for(uint32_t ii=0; ii < Ndim; ii++)
                 {
                     imgmNsvec1.im->array.F[jj*Ndim+ii] =
-                        imgmNsvec->im->array.F[jj*Ndim+ii] / sqrt(imgeigenval.im->array.F[jj]);
+                        imgmNsvec->im->array.F[jj*Ndim+ii] * normfact;
+                        // / sqrt(imgeigenval.im->array.F[jj]);
                 }
             }
 
@@ -1029,7 +1055,7 @@ static errno_t compute_function()
     {
 
 
-        compute_SVD(imginM, imgU, imgev, imgV, *GPUdevice, 0);
+        compute_SVD(imginM, imgU, imgev, imgV, 0.0, *GPUdevice, 0);
 
 
     }
