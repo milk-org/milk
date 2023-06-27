@@ -645,11 +645,6 @@ static errno_t compute_function()
 
 
 
-    //long NB_SVD_Modes = 10000;
-    //int  LOOPmode     = 0; // 1 if re-use arrays
-
-
-
     {
 #ifdef HAVE_OPENBLAS
         printf("OpenBLASS  YES\n");
@@ -677,8 +672,6 @@ static errno_t compute_function()
 
 
     {
-        printf("========== %5d ===========\n", __LINE__);
-        fflush(stdout);
         // input PFmatD is stored as 2D array
         //
         IMGID imgin = mkIMGID_from_name("PFmatD");
@@ -707,48 +700,43 @@ static errno_t compute_function()
 
         int GPUdev = 0;
 
-        uint64_t SVDflag = COMPSVD_COMP_PSINV; //COMPSVD_COMP_PSINV | COMPSVD_COMP_CHECKPSINV; // COMPSVD_SKIP_BIGMAT;
+        // set flag to compute SVD-based pseudoinverse
+        // stored as psinv
+        //
+        uint64_t SVDflag = COMPSVD_COMP_PSINV; // | COMPSVD_COMP_CHECKPSINV; // COMPSVD_SKIP_BIGMAT;
 
         compute_SVD(
             imgin,
             imgU,
             imgeval,
             imgevec,
+            (*SVDeps),
             GPUdev,
             SVDflag
         );
 
-        printf("========== %5d ===========\n", __LINE__);
-        fflush(stdout);
-
 
         list_image_ID();
+/*
+        save_fits("PFmatD", "SVD_PFmatD.fits");
+        save_fits("matU", "SVD_matU.fits");
+        save_fits("eigenvec", "SVD_eigenvec.fits");
 
-        /*        save_fits("PFmatD", "SVD_PFmatD.fits");
-                save_fits("matU", "SVD_matU.fits");
-                save_fits("eigenvec", "SVD_eigenvec.fits");
+        save_fits("PF_VTmat", "SVD_PF_VTmat.fits");
+        save_fits("PFmatC", "SVD_PFmatC.fits");
 
-                save_fits("PF_VTmat", "SVD_PF_VTmat.fits");
-                save_fits("PFmatC", "SVD_PFmatC.fits");
-
-                save_fits("psinv", "SVD_psinv.fits");
-                save_fits("psinvcheck", "SVD_psinvcheck.fits");
-                */
+        save_fits("psinv", "SVD_psinv.fits");
+        save_fits("psinvcheck", "SVD_psinvcheck.fits");
+*/
     }
 
 
 
-//#endif
-
-
-    list_image_ID();
-
-    printf("========== %5d ===========\n", __LINE__);
-    fflush(stdout);
 
 
 
-    // Result (pseudoinverse) is stored in image PFmatC\n
+
+
 
 
     imageID IDmatC = image_ID("psinv");
@@ -756,8 +744,6 @@ static errno_t compute_function()
     ///
     /// ### Assemble Predictive Filter
     ///
-    //printf("Compute filters\n");
-    //fflush(stdout);
 
     if(system("mkdir -p pixfilters") != 0)
     {
