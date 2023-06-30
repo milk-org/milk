@@ -15,8 +15,20 @@ function customcleanup()
     echo "default cleanup"
 }
 
+function milkdatestring()
+{
+	# ISO 8601 compliant date string
+	# UNIX time
+	date -u +'%Y-%m-%dT%H:%M:%S.%6NZ %s.%6N'
+}
+
+milkcmdstring="$(basename $0) $@"
 
 
+function milkscriptcmdlog()
+{
+	echo "$(milkdatestring) CMD ${USER}@$(pwd) ${milkcmdstring}" >> milkscriptcmd.log
+}
 
 
 # background color using ANSI escape
