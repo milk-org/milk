@@ -428,3 +428,7 @@ settrap
 if [ ${EXITSTATUS} = 1 ]; then
 exit
 fi
+
+# log command
+milkscriptcmdlog
+
