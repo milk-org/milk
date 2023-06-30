@@ -28,72 +28,11 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     fps.CMDmode = CMDmode;
     fps.SMfd    = -1;
 
-    // record timestamp
-    struct timespec tnow = {0};
-    clock_gettime(CLOCK_MILK, &tnow);
-    data.FPS_TIMESTAMP = tnow.tv_sec;
 
+    data.FPS_TIMESTAMP = 0;
     strcpy(data.FPS_PROCESS_TYPE, "UNDEF");
-    //	char ptstring[STRINGMAXLEN_FPSPROCESSTYPE];
 
-    switch(CMDmode)
-    {
-        case FPSCMDCODE_CONFSTART:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "confstart-%s",
-                     fpsname);
-            break;
 
-        case FPSCMDCODE_CONFSTOP:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "confstop-%s",
-                     fpsname);
-            break;
-
-        case FPSCMDCODE_FPSINIT:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "fpsinit-%s",
-                     fpsname);
-            break;
-
-        case FPSCMDCODE_FPSINITCREATE:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "fpsinitcreate-%s",
-                     fpsname);
-            break;
-
-        case FPSCMDCODE_RUNSTART:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "runstart-%s",
-                     fpsname);
-            break;
-
-        case FPSCMDCODE_RUNSTOP:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "runstop-%s",
-                     fpsname);
-            break;
-
-        case FPSCMDCODE_TMUXSTART:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "tmuxstart-%s",
-                     fpsname);
-            break;
-
-        case FPSCMDCODE_TMUXSTOP:
-            snprintf(data.FPS_PROCESS_TYPE,
-                     STRINGMAXLEN_FPSPROCESSTYPE,
-                     "tmuxstop-%s",
-                     fpsname);
-            break;
-    }
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
     {
