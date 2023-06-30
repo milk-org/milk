@@ -701,7 +701,7 @@ typedef struct
  * @param[in] VARCMDmode command code
  */
 #define FPS_SETUP_INIT(VARfpsname, VARCMDmode)                                 \
-    FUNCTION_PARAMETER_STRUCT fps;                                       \
+    FUNCTION_PARAMETER_STRUCT fps;                                             \
     do                                                                         \
     {                                                                          \
         fps.SMfd = -1;                                                         \
@@ -718,7 +718,6 @@ typedef struct
                            fps.md->sourcefname,                                \
                            fps.md->sourceline);                                \
             functionparameter_outlog("FPSINIT", msgstring);                    \
-            functionparameter_outlog_namelink();                               \
         }                                                                      \
     } while (0)
 

@@ -14,6 +14,7 @@
 #include "fps_shmdirname.h"
 
 
+#include "timeutils.h"
 
 
 /** @brief Connect to function parameter structure
@@ -23,7 +24,7 @@
  *
  * fpsconnectmode can take following value
  *
- * FPSCONNECT_SIMPLE : simple connect, don't try load streams
+ * FPSCONNECT_SIMPLE : connect only, don't try load streams
  * FPSCONNECT_CONF   : connect as CONF process
  * FPSCONNECT_RUN    : connect as RUN process
  *
@@ -42,6 +43,49 @@ long function_parameter_struct_connect(
     char *mapv;
 
     char shmdname[stringmaxlen];
+
+
+
+    if( data.FPS_TIMESTAMP == 0 )
+    {
+        {
+            struct timespec tnow = {0};
+            clock_gettime(CLOCK_MILK, &tnow);
+            data.FPS_TIMESTAMP = tnow.tv_sec;
+        }
+
+        switch( fpsconnectmode )
+        {
+
+        case FPSCONNECT_CONF:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "conf-%s",
+                     name);
+            break;
+
+        case FPSCONNECT_RUN:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "run-%s",
+                     name);
+            break;
+
+        case FPSCONNECT_SIMPLE:
+            snprintf(data.FPS_PROCESS_TYPE,
+                     STRINGMAXLEN_FPSPROCESSTYPE,
+                     "init-%s",
+                     name);
+            break;
+
+        }
+
+
+        functionparameter_outlog("CONNECTION", ">>>>");
+        functionparameter_outlog_namelink();
+    }
+
+
 
     DEBUG_TRACEPOINT("Connect to fps %s\n", name);
 
