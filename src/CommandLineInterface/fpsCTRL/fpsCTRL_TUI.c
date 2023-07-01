@@ -8,6 +8,10 @@
 #include <math.h>
 #include <time.h>
 
+#include <unistd.h>
+#include <stdio.h>
+
+
 #include "CommandLineInterface/CLIcore.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -314,7 +318,16 @@ errno_t functionparameter_CTRLscreen(
         strcpy(data.FPS_PROCESS_TYPE, "ctrl");
     }
 
-    functionparameter_outlog("FPSCTRL", "START\n");
+
+    {
+        char cwd[PATH_MAX];
+        if ( getcwd(cwd, sizeof(cwd)) == NULL )
+        {
+            strcpy(cwd, "ERROR");
+        }
+        functionparameter_outlog("FPSCTRLSTART", "%s", cwd);
+    }
+
 
     DEBUG_TRACEPOINT("function start");
 
@@ -676,8 +689,16 @@ errno_t functionparameter_CTRLscreen(
     }
 
 
-    functionparameter_outlog("FPSCTRL", "STOP");
 
+
+    {
+        char cwd[PATH_MAX];
+        if ( getcwd(cwd, sizeof(cwd)) == NULL )
+        {
+            strcpy(cwd, "ERROR");
+        }
+        functionparameter_outlog("FPSCTRLSTOP", "%s", cwd);
+    }
 
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for(int fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)

@@ -12,8 +12,10 @@
 #include "TUItools.h"
 
 errno_t
-functionparameter_PrintParameterInfo(FUNCTION_PARAMETER_STRUCT *fpsentry,
-                                     int                        pindex)
+functionparameter_PrintParameterInfo(
+    FUNCTION_PARAMETER_STRUCT *fpsentry,
+    int                        pindex
+)
 {
     printf("%s\n", fpsentry->parray[pindex].description);
     printf("\n");
