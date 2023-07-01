@@ -123,7 +123,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.i32[0] = lval;
-                    functionparameter_outlog("SETVAL", "%s  INT32  %ld", fpsentry->parray[pindex].keywordfull, lval);
+                    functionparameter_outlog("SETVAL", "%s INT32 %ld", fpsentry->parray[pindex].keywordfull, lval);
                 }
                 break;
 
@@ -157,7 +157,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.ui32[0] = lval;
-                    functionparameter_outlog("SETVAL", "%s  UINT32  %ld", fpsentry->parray[pindex].keywordfull, lval);
+                    functionparameter_outlog("SETVAL", "%s UINT32 %ld", fpsentry->parray[pindex].keywordfull, lval);
                 }
                 break;
 
@@ -185,7 +185,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.i64[0] = lval;
-                    functionparameter_outlog("SETVAL", "%s  INT64  %ld", fpsentry->parray[pindex].keywordfull, lval);
+                    functionparameter_outlog("SETVAL", "%s INT64 %ld", fpsentry->parray[pindex].keywordfull, lval);
                 }
                 break;
 
@@ -219,7 +219,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.ui64[0] = lval;
-                    functionparameter_outlog("SETVAL", "%s  UINT64  %ld", fpsentry->parray[pindex].keywordfull, lval);
+                    functionparameter_outlog("SETVAL", "%s UINT64 %ld", fpsentry->parray[pindex].keywordfull, lval);
                 }
                 break;
 
@@ -245,7 +245,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.f64[0] = fval;
-                    functionparameter_outlog("SETVAL", "%s  FLOAT64  %g", fpsentry->parray[pindex].keywordfull, fval);
+                    functionparameter_outlog("SETVAL", "%s FLOAT64 %g", fpsentry->parray[pindex].keywordfull, fval);
                 }
                 break;
 
@@ -271,7 +271,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.f32[0] = fval;
-                    functionparameter_outlog("SETVAL", "%s  FLOAT32  %g", fpsentry->parray[pindex].keywordfull, fval);
+                    functionparameter_outlog("SETVAL", "%s FLOAT32 %g", fpsentry->parray[pindex].keywordfull, fval);
                 }
                 break;
 
@@ -304,7 +304,7 @@ int functionparameter_UserInputSetParamValue(
                     fpsentry->parray[pindex].val.ts[0].tv_nsec =
                         (long)(1.0e9 * fractional + 0.1);
 
-                    functionparameter_outlog("SETVAL", "%s  TIMESPEC  %ld.%09ld", fpsentry->parray[pindex].keywordfull,
+                    functionparameter_outlog("SETVAL", "%s TIMESPEC %ld.%09ld", fpsentry->parray[pindex].keywordfull,
                                              fpsentry->parray[pindex].val.ts[0].tv_sec,
                                              fpsentry->parray[pindex].val.ts[0].tv_nsec );
                 }
@@ -334,7 +334,7 @@ int functionparameter_UserInputSetParamValue(
                 if(vOK == 1)
                 {
                     fpsentry->parray[pindex].val.pid[0] = (pid_t) lval;
-                    functionparameter_outlog("SETVAL", "%s  PID  %ld", fpsentry->parray[pindex].keywordfull, lval);
+                    functionparameter_outlog("SETVAL", "%s PID %ld", fpsentry->parray[pindex].keywordfull, lval);
                 }
                 break;
 
@@ -348,7 +348,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  FILENAME  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s FILENAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
 
@@ -362,7 +362,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  FITSFILENAME  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s FITSFILENAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
 
@@ -376,7 +376,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  EXECFILENAME  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s EXECFILENAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
 
@@ -390,7 +390,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  DIRNAME  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s DIRNAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
 
@@ -404,7 +404,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  STREAMNAME  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s STREAMNAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
 
@@ -418,7 +418,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  STRING  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s STRING %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
 
@@ -432,7 +432,7 @@ int functionparameter_UserInputSetParamValue(
                 }
                 else
                 {
-                    functionparameter_outlog("SETVAL", "%s  FPSNAME  %s", fpsentry->parray[pindex].keywordfull, buff);
+                    functionparameter_outlog("SETVAL", "%s FPSNAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
             }
