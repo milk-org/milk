@@ -13,9 +13,10 @@
 
 
 // set to 1 if logging
+// toggles to 0 (don't log), 1 (log to shmdir) or 2 (custom log file)
 //
-static int FLAG_FPSOUTLOG = -1; // toggles to 0 (don't log) or 1 (log)
-
+static int FLAG_FPSOUTLOG = -1;
+static char *fps_customfilename;
 
 
 static errno_t get_FLAG_FPSOUTLOG()
@@ -33,6 +34,12 @@ static errno_t get_FLAG_FPSOUTLOG()
         }
     }
 
+    if( getenv("MILK_FPS_LOGFILE") )
+    {
+        FLAG_FPSOUTLOG = 2;
+        fps_customfilename = getenv("MILK_FPS_LOGFILE");
+    }
+
     return RETURN_SUCCESS;
 }
 
@@ -48,15 +55,25 @@ errno_t getFPSlogfname(
     char *logfname
 )
 {
-    char shmdname[STRINGMAXLEN_SHMDIRNAME];
-    function_parameter_struct_shmdirname(shmdname);
+    get_FLAG_FPSOUTLOG();
 
-    WRITE_FULLFILENAME(logfname,
-                       "%s/fpslog.%ld.%07d.%s",
-                       shmdname,
-                       data.FPS_TIMESTAMP,
-                       getpid(),
-                       data.FPS_PROCESS_TYPE);
+    if ( FLAG_FPSOUTLOG == 2 )
+    {
+        WRITE_FULLFILENAME(logfname, "%s", fps_customfilename);
+
+    }
+    else
+    {
+        char shmdname[STRINGMAXLEN_SHMDIRNAME];
+        function_parameter_struct_shmdirname(shmdname);
+
+        WRITE_FULLFILENAME(logfname,
+                           "%s/fpslog.%ld.%07d.%s",
+                           shmdname,
+                           data.FPS_TIMESTAMP,
+                           getpid(),
+                           data.FPS_PROCESS_TYPE);
+    }
 
     return RETURN_SUCCESS;
 }
@@ -69,7 +86,7 @@ errno_t functionparameter_outlog_file(
     FILE *fpout
 )
 {
-    get_FLAG_FPSOUTLOG();
+    //get_FLAG_FPSOUTLOG();
 
     if ( FLAG_FPSOUTLOG )
     {
@@ -116,7 +133,7 @@ errno_t functionparameter_outlog(
     char *keyw,
     const char *fmt, ...)
 {
-    get_FLAG_FPSOUTLOG();
+    //get_FLAG_FPSOUTLOG();
 
     if ( FLAG_FPSOUTLOG )
     {
@@ -185,7 +202,10 @@ errno_t functionparameter_outlog(
                 fclose(fpout);
                 LogOutOpen = 0;
             }
-            remove(logfname);
+            if ( FLAG_FPSOUTLOG == 1 )
+            {
+                remove(logfname);
+            }
         }
     }
 
@@ -202,9 +222,9 @@ errno_t functionparameter_outlog(
  */
 errno_t functionparameter_outlog_namelink()
 {
-    get_FLAG_FPSOUTLOG();
+    //get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG )
+    if ( FLAG_FPSOUTLOG == 1 )
     {
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
