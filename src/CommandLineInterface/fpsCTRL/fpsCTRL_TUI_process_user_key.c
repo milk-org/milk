@@ -360,7 +360,77 @@ int fpsCTRL_TUI_process_user_key(
         functionparameter_CONFstop(&fps[fpsindex]);
         break;
 
-    case 'l': // list all parameters
+    case 'l': // log conf and run status
+        // status of processes
+        //
+        for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
+        {
+            int fpsindex = keywnode[kwnindex].fpsindex;
+            if(keywnode[kwnindex].leaf == 0)
+            {
+                if(keywnode[kwnindex].keywordlevel == 1)
+                {
+                    // at root
+                    pid_t pid;
+
+                    pid = data.fpsarray[fpsindex].md->confpid;
+                    if((getpgid(pid) >= 0) && (pid > 0))
+                    {
+                        functionparameter_outlog("STATUS",
+                                                 "CONFPID ALIVE %s %ld",
+                                                 keywnode[kwnindex].keywordfull,
+                                                 pid  );
+                    }
+                    else // PID not active
+                    {
+                        if(data.fpsarray[fpsindex].md->status &
+                                FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+                        {
+                            functionparameter_outlog("STATUS",
+                                                     "CONFPID CRASHED %s %ld",
+                                                     keywnode[kwnindex].keywordfull,
+                                                     pid  );
+                        }
+                        else
+                        {
+                            functionparameter_outlog("STATUS",
+                                                     "CONFPID STOPPED %s %ld",
+                                                     keywnode[kwnindex].keywordfull,
+                                                     pid  );
+                        }
+                    }
+
+                    pid = data.fpsarray[fpsindex].md->runpid;
+                    if((getpgid(pid) >= 0) && (pid > 0))
+                    {
+                        functionparameter_outlog("STATUS",
+                                                 "RUNPID ALIVE %s %ld",
+                                                 keywnode[kwnindex].keywordfull,
+                                                 pid  );
+                    }
+                    else // PID not active
+                    {
+                        if(data.fpsarray[fpsindex].md->status &
+                                FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+                        {
+                            functionparameter_outlog("STATUS",
+                                                     "RUNPID CRASHED %s %ld",
+                                                     keywnode[kwnindex].keywordfull,
+                                                     pid  );
+                        }
+                        else
+                        {
+                            functionparameter_outlog("STATUS",
+                                                     "RUNPID STOPPED %s %ld",
+                                                     keywnode[kwnindex].keywordfull,
+                                                     pid  );
+                        }
+                    }
+                }
+            }
+        }
+        /*
+        // list all parameters
         TUI_exit();
         if(system("clear") != 0)
         {
@@ -383,17 +453,19 @@ int fpsCTRL_TUI_process_user_key(
         printf("Press Enter to Continue\n");
         getchar();
 
-        TUI_init_terminal(&wrow, &wcol);
+        TUI_init_terminal(&wrow, &wcol);*/
 
         break;
 
 
     case 'L': // log all parameters
+        // status of parameters
+        //
         for(int kwnindex = 0; kwnindex < fpsCTRLvar->NBkwn; kwnindex++)
         {
+            int fpsindex = keywnode[kwnindex].fpsindex;
             if(keywnode[kwnindex].leaf == 1)
             {
-                int fpsindex = keywnode[kwnindex].fpsindex;
                 int pindex = keywnode[kwnindex].pindex;
 
                 char msgstring[STRINGMAXLEN_FPS_LOGMSG];
