@@ -32,12 +32,13 @@ static errno_t get_FLAG_FPSOUTLOG()
         {
             FLAG_FPSOUTLOG = 0;
         }
-    }
 
-    if( getenv("MILK_FPS_LOGFILE") )
-    {
-        FLAG_FPSOUTLOG = 2;
-        fps_customfilename = getenv("MILK_FPS_LOGFILE");
+
+        if( getenv("MILK_FPS_LOGFILE") )
+        {
+            FLAG_FPSOUTLOG = 2;
+            fps_customfilename = getenv("MILK_FPS_LOGFILE");
+        }
     }
 
     return RETURN_SUCCESS;
@@ -133,7 +134,7 @@ errno_t functionparameter_outlog(
     char *keyw,
     const char *fmt, ...)
 {
-    //get_FLAG_FPSOUTLOG();
+    get_FLAG_FPSOUTLOG();
 
     if ( FLAG_FPSOUTLOG )
     {
