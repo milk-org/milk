@@ -333,30 +333,30 @@ int fpsCTRL_TUI_process_user_key(
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         fps[fpsindex].md->signal |=
             FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
-        functionparameter_outlog("UPDATE", "%s", fps[fpsindex].md->name);
+        functionparameter_outlog("FPSCTRL", "UPDATE %s", fps[fpsindex].md->name);
         break;
 
     case 'R': // start run process if possible
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-        functionparameter_outlog("RUNSTART", "%s", fps[fpsindex].md->name);
+        functionparameter_outlog("FPSCTRL", "RUNSTART %s", fps[fpsindex].md->name);
         functionparameter_RUNstart(&fps[fpsindex]);
         break;
 
     case ctrl('r'): // stop run process
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-        functionparameter_outlog("RUNSTOP", "%s", fps[fpsindex].md->name);
+        functionparameter_outlog("FPSCTRL", "RUNSTOP %s", fps[fpsindex].md->name);
         functionparameter_RUNstop(&fps[fpsindex]);
         break;
 
     case 'O': // start conf process
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-        functionparameter_outlog("CONFSTART", "%s", fps[fpsindex].md->name);
+        functionparameter_outlog("FPSCTRL", "CONFSTART %s", fps[fpsindex].md->name);
         functionparameter_CONFstart(&fps[fpsindex]);
         break;
 
     case ctrl('o'): // kill conf process
         fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-        functionparameter_outlog("CONFSTOP", "%s", fps[fpsindex].md->name);
+        functionparameter_outlog("FPSCTRL", "CONFSTOP %s", fps[fpsindex].md->name);
         functionparameter_CONFstop(&fps[fpsindex]);
         break;
 
