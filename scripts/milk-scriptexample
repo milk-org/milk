@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 
-MSdescr="Example script"
+# standard configuration
+# provides useful functions :
+# - startspin and stopspin
+# -milkdatestring
+source milk-script-std-config
 
+
+MSdescr="Example script"
 
 MSextdescr="Example script long description
 Can span muliple lines
-"
 
-# standard configuration
-#
-source milk-script-std-config
+$(tput bold)EXAMPLES:$(tput sgr0)
+	${pname} infname 100 outfname 
+
+"
 
 
 # prerequisites
@@ -64,12 +70,14 @@ function stressfunc() {
 }
 
 # parse arguments
+# provides functions:
+# - checkFile, checkPipe, checkDir, cmdexists, checkCommand, printHELP
 source milk-argparse
 
 # pull paramters
 infile="${inputMSargARRAY[0]}"
 
-
+# checkFile "otherfileneeded.txt"
 
 
 
