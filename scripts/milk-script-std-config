@@ -2,7 +2,7 @@
 
 # ======================= PROCESS NAME =================================
 pnamefull=`echo "$0" | sed "s/\.\///g"`
-pname=$( basename ${pnamefull} )
+pname=${pnamefull##*/} 
 
 # Attempt to use undefined variable outputs error message, and forces an exit
 set -o nounset
