@@ -74,6 +74,12 @@ txEndStand=$(tput rmso)   # exit standout
 txReset=$(tput sgr0)   # reset attributes
 
 
+if [ "$1" = "-hs" ]; then
+	printf "%s\n" "${MSdescr}"
+exit
+fi
+
+
 MSopt+=( "h:help:printHELP::print help and exit" )
 MSopt+=( "hs:helpshort:printHELPshort::print 1-line help and exit" )
 MSopt+=( "chkp:check-prerequ:checkallprerequisitesExit::check all prerequisites and exit" )
