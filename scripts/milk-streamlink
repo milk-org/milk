@@ -81,7 +81,7 @@ if [ -e $file ]; then
         rm ${fulllinkname}  # remove dest
     fi
 
-    ln -s $SHMDIR/${streamname}.im.shm ${fulllinkname} # establish link
+    ln -sf $SHMDIR/${streamname}.im.shm ${fulllinkname} # establish link
 
 
 echo "    Linking ${linkstreamname}: ln -s $SHMDIR/${streamname}.im.shm ${fulllinkname}"
