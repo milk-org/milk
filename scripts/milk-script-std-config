@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+MILKSCRIPTMODE=""
+if [ "$#" -ge 1 ]; then
+
+	# Print one line help and exit
+	if [ "$1" = "-hs" ]; then
+		printf "%s\n" "${MSdescr}"
+	exit
+	fi
+
+	if [ "$1" = "-h" ]; then
+		MILKSCRIPTMODE="help"
+	fi
+
+fi
+
+
+
+
 # ======================= PROCESS NAME =================================
 pnamefull=`echo "$0" | sed "s/\.\///g"`
 pname=${pnamefull##*/} 
@@ -12,7 +30,8 @@ set -o pipefail
 
 function customcleanup()
 {
-    echo "default cleanup"
+	echo ""
+    #echo "default cleanup"
 }
 
 function milkdatestring()
@@ -74,10 +93,6 @@ txEndStand=$(tput rmso)   # exit standout
 txReset=$(tput sgr0)   # reset attributes
 
 
-if [ "$1" = "-hs" ]; then
-	printf "%s\n" "${MSdescr}"
-exit
-fi
 
 
 MSopt+=( "h:help:printHELP::print help and exit" )

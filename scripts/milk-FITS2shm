@@ -115,8 +115,8 @@ fi
 #
 if [ -L "$FITSfname" ]; then
     flink=$( readlink -f $FITSfname )
-    rm $FITSfname
-    rsync -auL $flink $FITSfname
+    rm -f ${FITSfname}
+    rsync -auL ${flink} ${FITSfname}
 fi
 
 
@@ -267,7 +267,7 @@ EOF
     # copy imsize to conf
     # cp ${logSMstatdir}/${STREAMname0}.imsize ./conf/shmim.${STREAMname0}.imsize.txt
     # add link to conf
-    rm ./conf/shmim.${STREAMname0}.fits
+    rm -f ./conf/shmim.${STREAMname0}.fits
     ln -s ${PWD}/${FITSfname} ./conf/shmim.${STREAMname0}.fits
 
 	if [ "$UPDATEMODE" = "1" ]; then
@@ -286,7 +286,7 @@ else
 	
 	if [ "$UPDATEMODE" = "1" ]; then
 		touch ${logSMstatdir}/${STREAMname0}.kept
-		rm ${logSMstatdir}/${STREAMname0}.changed &> /dev/null
+		rm -f ${logSMstatdir}/${STREAMname0}.changed &> /dev/null
 		cat ${logSMstatdir}/${STREAMname0}.SMinfo
 	fi
 
