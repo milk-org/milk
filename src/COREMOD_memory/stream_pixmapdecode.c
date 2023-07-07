@@ -75,20 +75,25 @@ errno_t stream_pixmapdecode_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+
+
+
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame
 // sem1 gets updated for each slice
 // cnt1 contains the slice index that was just written
 //
-imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
-                                      uint32_t    xsizeim,
-                                      uint32_t    ysizeim,
-                                      const char *NBpix_fname,
-                                      const char *IDmap_name,
-                                      const char *IDout_name,
-                                      const char *IDout_pixslice_fname,
-                                      uint32_t    reverse)
+imageID COREMOD_MEMORY_PixMapDecode_U(
+    const char *inputstream_name,
+    uint32_t    xsizeim,
+    uint32_t    ysizeim,
+    const char *NBpix_fname,
+    const char *IDmap_name,
+    const char *IDout_name,
+    const char *IDout_pixslice_fname,
+    uint32_t    reverse
+)
 {
     imageID            IDout = -1;
     imageID            IDin;
@@ -326,6 +331,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
         delete_image_ID("outpixsl", DELETE_IMAGE_ERRMODE_WARNING);
     }
 
+
+    processinfo->loopcntMax = -1;
     processinfo_WriteMessage(processinfo, "Starting loop");
 
     // ==================================
