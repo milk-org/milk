@@ -1,54 +1,7 @@
 #!/usr/bin/env bash
 
-MILKSCRIPTMODE=""
-if [ "$#" -ge 1 ]; then
 
-	# Print one line help and exit
-	if [ "$1" = "-hs" ]; then
-		printf "%s\n" "${MSdescr}"
-	exit
-	fi
-
-	if [ "$1" = "-h" ]; then
-		MILKSCRIPTMODE="help"
-	fi
-
-fi
-
-
-
-
-# ======================= PROCESS NAME =================================
-pnamefull=`echo "$0" | sed "s/\.\///g"`
-pname=${pnamefull##*/} 
-
-# Attempt to use undefined variable outputs error message, and forces an exit
-set -o nounset
-set -o errexit
-set -o pipefail
-
-
-function customcleanup()
-{
-	echo ""
-    #echo "default cleanup"
-}
-
-function milkdatestring()
-{
-	# ISO 8601 compliant date string
-	# UNIX time
-	date -u +'%Y-%m-%dT%H:%M:%S.%6NZ %s.%6N'
-}
-
-milkcmdstring="$(basename $0) $@"
-
-
-function milkscriptcmdlog()
-{
-	echo "$(milkdatestring) CMD ${USER}@$(pwd) ${milkcmdstring}" >> milkscriptcmd.log
-}
-
+MILK_SCRIPT_ARGPARSE=1
 
 # background color using ANSI escape
 
@@ -91,6 +44,77 @@ txReverse=$(tput rev)    # reverse
 txStandout=$(tput smso)   # standout
 txEndStand=$(tput rmso)   # exit standout
 txReset=$(tput sgr0)   # reset attributes
+
+
+
+MILKSCRIPTMODE=""
+if [ "$#" -ge 1 ]; then
+
+	# Print one line help and exit
+	if [ "$1" = "-hs" ]; then
+		printf "%s\n" "${MSdescr}"
+	exit 0
+	fi
+
+	if [ "$1" = "-h" ]; then
+		MILKSCRIPTMODE="help"
+	fi
+
+fi
+
+
+
+
+# ======================= PROCESS NAME =================================
+pnamefull=`echo "$0" | sed "s/\.\///g"`
+pname=${pnamefull##*/} 
+
+# Attempt to use undefined variable outputs error message, and forces an exit
+set -o nounset
+set -o errexit
+set -o pipefail
+
+
+
+set -eE -o functrace
+failure() {
+  local lineno=$1
+  local msg=$2
+  echo "SCRIPT $0 ${bgRed}${fgBWhite}${txBold} Failed ${txReset} at line $lineno: $msg"
+}
+trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
+
+onexitfunc() {
+	local exitcode=$?
+	if [ $exitcode = 0 ]; then
+		echo "SCRIPT $0 ${bgGreen}${fgBLack}${txBold} Success ${txReset}"
+	else
+		echo "SCRIPT $0 ${bgRed}${fgBWhite}${txBold} EXIT CODE $exitcode ${txReset}"
+		#echo "SCRIPT $0 ${bgGreen}${fgBLack}${txBold} Success ${txReset} CODE: $?"
+	fi
+}
+trap 'onexitfunc' EXIT
+
+
+
+
+function milkdatestring()
+{
+	# ISO 8601 compliant date string
+	# UNIX time
+	date -u +'%Y-%m-%dT%H:%M:%S.%6NZ %s.%6N'
+}
+
+milkcmdstring="$(basename $0) $@"
+
+
+function milkscriptcmdlog()
+{
+	echo "$(milkdatestring) CMD ${USER}@$(pwd) ${milkcmdstring}" >> milkscriptcmd.log
+}
+
+
+
 
 
 

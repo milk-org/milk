@@ -148,11 +148,15 @@ function printHELP {
     done
 
     argliststring=""
-    argindex=0
-    while [ $argindex -lt ${NBarg} ]; do
-        argliststring="${argliststring} ${inputMSargnameARRAY[$argindex]}"
-        let argindex+=1
-    done
+    if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+		argindex=0
+		while [ $argindex -lt ${NBarg} ]; do
+			argliststring="${argliststring} ${inputMSargnameARRAY[$argindex]}"
+			let argindex+=1
+		done
+	else
+		argliststring="<argument sting>"
+	fi
 
 
     echo "------------------------------------------------------------------------"
@@ -172,11 +176,15 @@ function printHELP {
     echo "     option(s): ${optlistshort}"
     echo ""
     echo " $(tput bold)ARGUMENTS:$(tput sgr0)"
-    argindex=0
-    while [ $argindex -lt ${NBarg} ]; do
-        printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${inputMSargdescrARRAY[$argindex]}"
-        let argindex+=1
-    done
+    if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+		argindex=0
+		while [ $argindex -lt ${NBarg} ]; do
+			printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${inputMSargdescrARRAY[$argindex]}"
+			let argindex+=1
+		done
+	else
+		echo "	no argument parsing"
+	fi
     echo ""
     echo " $(tput bold)OPTIONS:$(tput sgr0)"
     optindex=0
@@ -186,7 +194,7 @@ function printHELP {
         let optindex+=1
     done
     echo ""
-    exit
+    exit 0
 }
 
 
@@ -194,7 +202,7 @@ function printHELP {
 printHELPshort ()
 {
     printf "%20s       ${MSdescr}\n" "$0"
-    exit
+    exit 0
 }
 
 
@@ -234,7 +242,7 @@ function checkallprerequisites()
 function checkallprerequisitesExit()
 {
     checkallprerequisites
-    exit
+    exit 0
 }
 
 
@@ -254,19 +262,20 @@ inputMSargtypeARRAY=( )
 inputMSargdescrARRAY=( )
 
 NBarg=0
-if (( ${#MSarg[@]} )); then
-for argdat in "${MSarg[@]}";do
-    #echo "Argument ${NBarg}: $argdat"
-    IFS=':' read -r -a argarray <<< "$argdat"
-    inputMSargnameARRAY+=( ${argarray[0]} )
-    inputMSargtypeARRAY+=( ${argarray[1]} )
-    inputMSargdescrARRAY+=( "${argarray[2]}" )
-    #echo "    ${inputMSargnameARRAY[$NBarg]}"
-    let NBarg+=1
-done
-fi
+if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+	if (( ${#MSarg[@]} )); then
+	for argdat in "${MSarg[@]}";do
+		#echo "Argument ${NBarg}: $argdat"
+		IFS=':' read -r -a argarray <<< "$argdat"
+		inputMSargnameARRAY+=( ${argarray[0]} )
+		inputMSargtypeARRAY+=( ${argarray[1]} )
+		inputMSargdescrARRAY+=( "${argarray[2]}" )
+		#echo "    ${inputMSargnameARRAY[$NBarg]}"
+		let NBarg+=1
+	done
+	fi
 #echo "NBarg = ${NBarg}"
-
+fi
 
 
 
@@ -389,44 +398,25 @@ fi
 
 checkallprerequisites
 
+if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
+	NBargin=0
+	#for MSarg in "${inputMSargARRAY[@]}";do
+	if (( ${#inputParamString[@]} )); then
+		for MSarg in "${inputParamString[@]}";do
+			#  echo "   input argument ${NBargin} : $MSarg"
+			let NBargin+=1
+		done
+	fi
 
-NBargin=0
-#for MSarg in "${inputMSargARRAY[@]}";do
-if (( ${#inputParamString[@]} )); then
-for MSarg in "${inputParamString[@]}";do
-    #  echo "   input argument ${NBargin} : $MSarg"
-    let NBargin+=1
-done
+	if [[ ${NBargin} -ne ${NBarg} ]]; then
+		echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
+		exit 1
+	fi
 fi
 
-if [[ ${NBargin} -ne ${NBarg} ]]; then
-    echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
-    exit
-fi
-
-
-
-
-
-function cleanup()
-{
-    echo ""
-    # optional custom cleanup provided by application
-    customcleanup
-    echo "Exiting script ${pname}"
-    echo ""
-}
-
-function settrap()
-{
-    trap cleanup EXIT
-}
-
-# call settrap function
-settrap
 
 if [ ${EXITSTATUS} = 1 ]; then
-exit
+	exit 1
 fi
 
 # log command
