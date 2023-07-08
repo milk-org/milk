@@ -165,9 +165,23 @@ endif()
 
 install(TARGETS CLIcore DESTINATION lib)
 
+
 install(FILES CLIcore.h
-              CLIcore/CLIcore_utils.h
-              CLIcore/CLIcore_UI.h
+              IMGID.h
+              TUItools.h
+              calc.h
+              calc_bison.h
+              cmdsettings.h
+              function_parameters.h
+              milkDebugTools.h
+              processinfo.h
+              processtools.h
+              processtools_trigger.h
+              standalone_dependencies.h
+              timeutils.h
+              DESTINATION include/${SRCNAME})
+              
+install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_checkargs.h
               CLIcore/CLIcore_datainit.h
               CLIcore/CLIcore_help.h
@@ -175,52 +189,78 @@ install(FILES CLIcore.h
               CLIcore/CLIcore_modules.h
               CLIcore/CLIcore_setSHMdir.h
               CLIcore/CLIcore_signals.h
-              fpsCTRL/fpsCTRL_TUI.h
-              fpsCTRL/fpsCTRL_TUI_process_user_key.h
-              processinfo.h
-              streamCTRL/streamCTRL_TUI.h
-              cmdsettings.h
-              milkDebugTools.h
-              processinfo.h
-              processtools_trigger.h
-              timeutils.h
-              function_parameters.h
-              fps/fps_add_entry.h
-              fps/fps_checkparameter.h
-              fps/fps_CONFstart.h
+              CLIcore/CLIcore_utils.h
+              DESTINATION include/${SRCNAME}/CLIcore)
+              
+install(FILES fps/fps_CONFstart.h
               fps/fps_CONFstop.h
-              fps/fps_connect.h
-              fps/fps_connectExternalFPS.h
-              fps/fps_disconnect.h
-              fps/fps_execFPScmd.h
               fps/fps_FPCONFexit.h
               fps/fps_FPCONFloopstep.h
               fps/fps_FPCONFsetup.h
               fps/fps_FPSremove.h
               fps/fps_GetFileName.h
-              fps/fps_getFPSargs.h
               fps/fps_GetParamIndex.h
               fps/fps_GetTypeString.h
+              fps/fps_PrintParameterInfo.h
+              fps/fps_RUNexit.h
+              fps/fps_RUNstart.h
+              fps/fps_RUNstop.h
+              fps/fps_WriteParameterToDisk.h
+              fps/fps_add_entry.h
+              fps/fps_checkparameter.h
+              fps/fps_connect.h
+              fps/fps_connectExternalFPS.h
+              fps/fps_disconnect.h
+              fps/fps_execFPScmd.h
+              fps/fps_getFPSargs.h
               fps/fps_load.h
               fps/fps_loadstream.h
               fps/fps_outlog.h
               fps/fps_paramvalue.h
-              fps/fps_PrintParameterInfo.h
               fps/fps_printparameter_valuestring.h
-              fps/fps_processcmdline.h
               fps/fps_process_fpsCMDarray.h
+              fps/fps_processcmdline.h
               fps/fps_processinfo_entries.h
               fps/fps_read_fpsCMD_fifo.h
-              fps/fps_RUNexit.h
-              fps/fps_RUNstart.h
-              fps/fps_RUNstop.h
               fps/fps_save2disk.h
               fps/fps_scan.h
               fps/fps_shmdirname.h
               fps/fps_tmux.h
               fps/fps_userinputsetparamvalue.h
-              IMGID.h
-              DESTINATION include/${SRCNAME})
+              DESTINATION include/${SRCNAME}/fps)
+              
+install(FILES fpsCTRL/fpsCTRL_FPSdisplay.h
+              fpsCTRL/fpsCTRL_TUI.h
+              fpsCTRL/fpsCTRL_TUI_process_user_key.h
+              fpsCTRL/level0node_summary.h
+              fpsCTRL/print_nodeinfo.h
+              fpsCTRL/scheduler_display.h
+              DESTINATION include/${SRCNAME}/fpsCTRL)
+              
+install(FILES procCTRL/procCTRL_GetCPUloads.h
+              procCTRL/procCTRL_GetNumberCPUs.h
+              procCTRL/procCTRL_PIDcollectSystemInfo.h
+              procCTRL/procCTRL_TUI.h
+              procCTRL/procCTRL_processinfo_scan.h
+              DESTINATION include/${SRCNAME}/procCTRL)
+              
+install(FILES processinfo/processinfo_SIGexit.h
+              processinfo/processinfo_WriteMessage.h
+              processinfo/processinfo_exec_end.h
+              processinfo/processinfo_exec_start.h
+              processinfo/processinfo_loopstep.h
+              processinfo/processinfo_procdirname.h
+              processinfo/processinfo_setup.h
+              processinfo/processinfo_shm_close.h
+              processinfo/processinfo_shm_create.h
+              processinfo/processinfo_shm_link.h
+              processinfo/processinfo_shm_list_create.h
+              processinfo/processinfo_signals.h
+              processinfo/processinfo_update_output_stream.h              
+              DESTINATION include/${SRCNAME}/processinfo)
+              
+install(FILES streamCTRL/streamCTRL_TUI.h
+              DESTINATION include/${SRCNAME}/streamCTRL)
 
 
 
