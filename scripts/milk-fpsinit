@@ -184,14 +184,16 @@ do
 	# check if tmux session exists
 	#
 	set +o errexit
-    tmux has-session -t ${FPSname} 2>/dev/null
-    if [ $? = 0 ]; then
+	set +eE 
+    tmuxstatuserr=$( tmux has-session -t ${FPSname} 2>/dev/null; echo $? )
+    if [ $tmuxstatuserr = 0 ]; then
       TMUXSTATUS="FOUND"
       TMUXSTATUSARRAY+=( "FOUND" )
     else
       TMUXSTATUS="MISSING"
       TMUXSTATUSARRAY+=( "MISSING" )
     fi
+    set -eE
     set -o errexit
 
     # update status
@@ -343,6 +345,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 
       fi
     fi
+
 
   fi
 done
