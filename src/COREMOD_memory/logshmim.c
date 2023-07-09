@@ -241,13 +241,13 @@ void *save_fits_function(
 
     // UT time
 
-    strcpy(imkwarray[0].name, "UT");
-    imkwarray[0].type = 'S';
-    strcpy(imkwarray[0].value.valstr,
+    strcpy(imkwarray->name, "UT");
+    imkwarray->type = 'S';
+    strcpy(imkwarray->value.valstr,
            timedouble_to_UTC_timeofdaystring(
                0.5 * tmsg->arraytime[0] +
                0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
-    strcpy(imkwarray[0].comment, "HH:MM:SS.SS typical UTC at exposure");
+    strcpy(imkwarray->comment, "HH:MM:SS.SS typical UTC at exposure");
 
     strcpy(imkwarray[1].name, "UT-STR");
     imkwarray[1].type = 'S';
@@ -463,12 +463,12 @@ LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
         exit(0);
     }
 
-    map[0].on       = 0;
-    map[0].cnt      = 0;
-    map[0].filecnt  = 0;
-    map[0].interval = 1;
-    map[0].logexit  = 0;
-    strcpy(map[0].fname, SM_fname);
+    map->on       = 0;
+    map->cnt      = 0;
+    map->filecnt  = 0;
+    map->interval = 1;
+    map->logexit  = 0;
+    strcpy(map->fname, SM_fname);
 
     return map;
 }
@@ -509,11 +509,11 @@ errno_t COREMOD_MEMORY_logshim_printstatus(const char *IDname)
             exit(0);
         }
 
-        printf("LOG   on = %d\n", map[0].on);
-        printf("    cnt  = %lld\n", map[0].cnt);
-        printf(" filecnt = %lld\n", map[0].filecnt);
-        printf("interval = %ld\n", map[0].interval);
-        printf("logexit  = %d\n", map[0].logexit);
+        printf("LOG   on = %d\n", map->on);
+        printf("    cnt  = %lld\n", map->cnt);
+        printf(" filecnt = %lld\n", map->filecnt);
+        printf("interval = %ld\n", map->interval);
+        printf("logexit  = %d\n", map->logexit);
 
         if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
@@ -562,7 +562,7 @@ errno_t COREMOD_MEMORY_logshim_set_on(const char *IDname, int setv)
             exit(0);
         }
 
-        map[0].on = setv;
+        map->on = setv;
 
         if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
@@ -611,7 +611,7 @@ errno_t COREMOD_MEMORY_logshim_set_logexit(const char *IDname, int setv)
             exit(0);
         }
 
-        map[0].logexit = setv;
+        map->logexit = setv;
 
         if(munmap(map, sizeof(LOGSHIM_CONF)) == -1)
         {
@@ -734,7 +734,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     IDlogdata = image_ID(IDlogdata_name);
     if(IDlogdata != -1)
     {
-        if(data.image[IDlogdata].md[0].datatype != _DATATYPE_FLOAT)
+        if(data.image[IDlogdata].md->datatype != _DATATYPE_FLOAT)
         {
             IDlogdata = -1;
         }
@@ -743,21 +743,21 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
 
     logshimconf = COREMOD_MEMORY_logshim_create_SHMconf(IDname);
 
-    logshimconf[0].on       = 1;
-    logshimconf[0].cnt      = 0;
-    logshimconf[0].filecnt  = 0;
-    logshimconf[0].logexit  = 0;
-    logshimconf[0].interval = 1;
+    logshimconf->on       = 1;
+    logshimconf->cnt      = 0;
+    logshimconf->filecnt  = 0;
+    logshimconf->logexit  = 0;
+    logshimconf->interval = 1;
 
     imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
     read_sharedmem_image(IDname);
     ID       = image_ID(IDname);
-    datatype = data.image[ID].md[0].datatype;
-    xsize    = data.image[ID].md[0].size[0];
-    ysize    = data.image[ID].md[0].size[1];
+    datatype = data.image[ID].md->datatype;
+    xsize    = data.image[ID].md->size[0];
+    ysize    = data.image[ID].md->size[1];
 
-    if(data.image[ID].md[0].naxis == 3)
+    if(data.image[ID].md->naxis == 3)
     {
         is3Dcube = 1;
     }
@@ -776,7 +776,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                     imsizearray,
                     datatype,
                     1,
-                    data.image[ID].md[0].NBkw,
+                    data.image[ID].md->NBkw,
                     0,
                     &IDb0);
     create_image_ID(logb1name,
@@ -784,7 +784,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                     imsizearray,
                     datatype,
                     1,
-                    data.image[ID].md[0].NBkw,
+                    data.image[ID].md->NBkw,
                     0,
                     &IDb1);
 
@@ -792,16 +792,16 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
     {
         memcpy(data.image[IDb0].kw,
                data.image[ID].kw,
-               sizeof(IMAGE_KEYWORD) * data.image[ID].md[0].NBkw);
+               sizeof(IMAGE_KEYWORD) * data.image[ID].md->NBkw);
         memcpy(data.image[IDb1].kw,
                data.image[ID].kw,
-               sizeof(IMAGE_KEYWORD) * data.image[ID].md[0].NBkw);
+               sizeof(IMAGE_KEYWORD) * data.image[ID].md->NBkw);
     }
 
     // find creation time keyword
     // _MAQTIME
     int aqtimekwi = -1;
-    for(int kwi = 0; kwi < data.image[ID].md[0].NBkw; kwi++)
+    for(int kwi = 0; kwi < data.image[ID].md->NBkw; kwi++)
     {
         if(strcmp(data.image[ID].kw[kwi].name, "_MAQTIME") == 0)
         {
@@ -835,7 +835,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
 
     ptr1_0 = (char *) data.image[IDb].array.raw;
 
-    cnt = data.image[ID].md[0].cnt0 - 1;
+    cnt = data.image[ID].md->cnt0 - 1;
 
     buffer = 0;
     index  = 0;
@@ -862,7 +862,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
         }
     }
 
-    while((logshimconf[0].filecnt != NBfiles) && (logshimconf[0].logexit == 0))
+    while((logshimconf->filecnt != NBfiles) && (logshimconf->logexit == 0))
     {
         int timeout; // 1 if timeout has occurred
 
@@ -988,8 +988,8 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                        __LINE__);
             }
 
-            while(((cnt == data.image[ID].md[0].cnt0) ||
-                    (logshimconf[0].on == 0)) &&
+            while(((cnt == data.image[ID].md->cnt0) ||
+                    (logshimconf->on == 0)) &&
                     (wOK == 1))
             {
                 if(VERBOSE > 1)
@@ -1064,12 +1064,12 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
 
         if(VERBOSE > 1)
         {
-            printf("%5d  logshimconf[0].on = %d\n",
+            printf("%5d  logshimconf->on = %d\n",
                    __LINE__,
-                   logshimconf[0].on);
+                   logshimconf->on);
         }
 
-        if(likely(logshimconf[0].on == 1))
+        if(likely(logshimconf->on == 1))
         {
             if(likely(wOK == 1))  // normal step: a frame has arrived
             {
@@ -1088,7 +1088,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
 
                 if(is3Dcube == 1)
                 {
-                    ptr0 = ptr0_0 + framesize * data.image[ID].md[0].cnt1;
+                    ptr0 = ptr0_0 + framesize * data.image[ID].md->cnt1;
                 }
                 else
                 {
@@ -1111,8 +1111,8 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                     printf("%5d  memcpy done\n", __LINE__);
                 }
 
-                array_cnt0[index] = data.image[ID].md[0].cnt0;
-                array_cnt1[index] = data.image[ID].md[0].cnt1;
+                array_cnt0[index] = data.image[ID].md->cnt0;
+                array_cnt1[index] = data.image[ID].md->cnt1;
                 //array_time[index] = uttime->tm_hour*3600.0 + uttime->tm_min*60.0 + timenow.tv_sec % 60 + 1.0e-9*timenow.tv_nsec;
                 array_time[index] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
                 if(aqtimekwi != -1)
@@ -1144,9 +1144,9 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
         // cases:
         //   index>zsize-1  buffer full
         //   timeout==1 && index>0 : partial due to timeout
-        //   logshimconf[0].on == 0 && index>0 : partial due to logshimoff
+        //   logshimconf->on == 0 && index>0 : partial due to logshimoff
         if((index > zsize - 1) || ((timeout == 1) && (index > 0)) ||
-                ((logshimconf[0].on == 0) && (index > 0)))
+                ((logshimconf->on == 0) && (index > 0)))
         {
             long NBframemissing;
 
@@ -1175,7 +1175,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
             // update buffer content
             memcpy(data.image[IDb].kw,
                    data.image[ID].kw,
-                   sizeof(IMAGE_KEYWORD) * data.image[ID].md[0].NBkw);
+                   sizeof(IMAGE_KEYWORD) * data.image[ID].md->NBkw);
 
             if(VERBOSE > 0)
             {
@@ -1231,7 +1231,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
             }
 
             {
-                long cnt0start = data.image[ID].md[0].cnt0;
+                long cnt0start = data.image[ID].md->cnt0;
 
                 // Wait for save thread to complete to launch next one
                 if(tOK == 1)
@@ -1269,12 +1269,12 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                 }
 
                 printf("\n ************** MISSED = %ld\n",
-                       data.image[ID].md[0].cnt0 - cnt0start);
+                       data.image[ID].md->cnt0 - cnt0start);
             }
 
             COREMOD_MEMORY_image_set_sempost_byID(IDb, -1);
-            data.image[IDb].md[0].cnt0++;
-            data.image[IDb].md[0].write = 0;
+            data.image[IDb].md->cnt0++;
+            data.image[IDb].md->write = 0;
 
             tmsg->cubesize = index;
             strcpy(tmsg->iname, iname);
@@ -1292,7 +1292,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
             printf(
                 "=>=>=>=>= CUBE %8lld   Number of missed frames = %8ld "
                 " / %ld  / %8ld ====\n",
-                logshimconf[0].filecnt,
+                logshimconf->filecnt,
                 NBframemissing,
                 index,
                 (long) zsize);
@@ -1318,7 +1318,7 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
                                            save_fits_function,
                                            tmsg);
 
-            logshimconf[0].cnt++;
+            logshimconf->cnt++;
 
             tOK = 1;
             if(iret_savefits)
@@ -1348,11 +1348,11 @@ COREMOD_MEMORY_sharedMem_2Dim_log(const char *IDname,
 
             ptr1_0 = (char *) data.image[IDb].array.raw;
 
-            data.image[IDb].md[0].write = 1;
-            logshimconf[0].filecnt++;
+            data.image[IDb].md->write = 1;
+            logshimconf->filecnt++;
         }
 
-        cnt = data.image[ID].md[0].cnt0;
+        cnt = data.image[ID].md->cnt0;
     }
 
     free(imsizearray);
