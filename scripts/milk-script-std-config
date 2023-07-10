@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
 
+# do not source if already sourced
+if [ -z ${MILK_SCRIPT_STD_CONFIG_SOURCED+x} ]; then
+MILK_SCRIPT_STD_CONFIG_SOURCED="1"
+
+
 MILK_SCRIPT_ARGPARSE=1
 
 # background color using ANSI escape
@@ -180,3 +185,5 @@ stopspin()
     tput cnorm
     #settrap
 }
+
+fi
