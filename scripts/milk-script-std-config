@@ -3,6 +3,7 @@
 
 # do not source if already sourced
 if [ -z ${MILK_SCRIPT_STD_CONFIG_SOURCED+x} ]; then
+echo "RUNNING milk-script-std-config"
 MILK_SCRIPT_STD_CONFIG_SOURCED="1"
 
 
