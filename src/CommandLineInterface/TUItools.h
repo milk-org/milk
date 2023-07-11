@@ -74,7 +74,7 @@
 #define COLOR_OK        2
 #define COLOR_WARNING   3
 #define COLOR_ERROR     4
-#define COLOR_DIRECTORY 5
+#define COLOR_DIRECTORY 6
 
 
 
