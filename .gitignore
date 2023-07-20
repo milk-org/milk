@@ -7,8 +7,18 @@ local
 _tmplist.txt
 .vscode
 
-plugins/cacao-src
-plugins/coffee-src
+#
+# ignore all plugins by default
+#
+plugins/**
+
+#plugins/cacao-src
+#plugins/coffee-src
+
+#
+# un-ignore milk-extra-src
+#
+!plugins/milk-extra-src/
 
 plugins/milk-extra-src/AtmosphereModel
 plugins/milk-extra-src/AtmosphericTurbulence
