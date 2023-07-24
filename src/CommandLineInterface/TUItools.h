@@ -74,7 +74,13 @@
 #define COLOR_OK        2
 #define COLOR_WARNING   3
 #define COLOR_ERROR     4
-#define COLOR_DIRECTORY 6
+#define COLOR_DIRECTORY 7
+
+// 5 : cyan bg
+// 6 : green fg
+// 7 : yellow fg
+// 8 : red fg
+// 9 : ref bg
 
 
 
