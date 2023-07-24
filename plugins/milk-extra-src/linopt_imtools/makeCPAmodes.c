@@ -20,6 +20,11 @@ long fpi_centered;
 static float *xcent;
 static float *ycent;
 
+// Radial CPA
+static float *rCPAminval;
+static float *rCPAmaxval;
+
+// sampling xy CPA
 static float *CPAmaxval;
 
 static float *deltaCPAval;
@@ -92,6 +97,24 @@ static CLICMDARGDEF farg[] =
         "200",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &ycent,
+        NULL
+    },
+    {
+        CLIARG_FLOAT32,
+        ".rCPAmin",
+        "minimum radial cycle per aperture",
+        "0.0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &rCPAminval,
+        NULL
+    },
+    {
+        CLIARG_FLOAT32,
+        ".rCPAmax",
+        "maximum radial cycle per aperture",
+        "8.0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &rCPAmaxval,
         NULL
     },
     {
@@ -224,6 +247,8 @@ errno_t linopt_imtools_makeCPAmodes(
     uint32_t        sizey,
     float       xcenter,
     float       ycenter,
+    float       rCPAmin,
+    float       rCPAmax,
     float       CPAmax,
     float       deltaCPA,
     float       radius,
@@ -250,6 +275,8 @@ errno_t linopt_imtools_makeCPAmodes(
 
     eps = 0.1 * deltaCPA;
     printf("size       = %u %u\n", sizex, sizey);
+    printf("rCPAmin     = %f\n", rCPAmin);
+    printf("rCPAmax     = %f\n", rCPAmax);
     printf("CPAmax     = %f\n", CPAmax);
     printf("deltaCPA   = %f\n", deltaCPA);
     printf("radius     = %f\n", radius);
@@ -544,6 +571,8 @@ static errno_t compute_function()
 
     printf("outimname                %s\n", outimname);
     printf("sizeout                  %u %u\n", *sizexout, *sizeyout);
+    printf("rCPAminval                %f\n", *rCPAminval);
+    printf("rCPAmaxval                %f\n", *rCPAmaxval);
     printf("CPAmaxval                %f\n", *CPAmaxval);
     printf("deltaCPAval              %f\n", *deltaCPAval);
     printf("radiusval                %f\n", *radiusval);
@@ -579,6 +608,8 @@ static errno_t compute_function()
                                     *sizeyout,
                                     x0,
                                     y0,
+                                    *rCPAminval,
+                                    *rCPAmaxval,
                                     *CPAmaxval,
                                     *deltaCPAval,
                                     *radiusval,

@@ -19,6 +19,7 @@ plugins/**
 # un-ignore milk-extra-src
 #
 !plugins/milk-extra-src/
+!plugins/milk-extra-src/**
 
 plugins/milk-extra-src/AtmosphereModel
 plugins/milk-extra-src/AtmosphericTurbulence
