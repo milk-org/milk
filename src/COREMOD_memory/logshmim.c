@@ -172,13 +172,19 @@ errno_t logshmim_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+
+
+
+
 /**
  * ## Purpose
  *
  * Save telemetry stream data
  *
  */
-void *save_fits_function(void *ptr)
+void *save_fits_function(
+    void *ptr
+)
 {
     imageID ID;
 
@@ -398,10 +404,17 @@ void *save_fits_function(void *ptr)
     pthread_exit(&tret);
 }
 
+
+
+
+
+
 /** @brief creates logshimconf shared memory and loads it
  *
  */
-LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(const char *logshimname)
+LOGSHIM_CONF *COREMOD_MEMORY_logshim_create_SHMconf(
+    const char *logshimname
+)
 {
     int           SM_fd;
     size_t        sharedsize = 0; // shared memory size in bytes
