@@ -11,7 +11,9 @@
  * @param processinfo
  * @return int loop status
  */
-int processinfo_loopstep(PROCESSINFO *processinfo)
+int processinfo_loopstep(
+    PROCESSINFO *processinfo
+)
 {
     int loopstatus = 1;
 
