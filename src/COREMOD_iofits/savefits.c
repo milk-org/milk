@@ -26,6 +26,8 @@ static char *outfname;
 static int  *outbitpix;
 static char *inheader; // import header from this file
 
+
+
 // CLI function arguments and parameters
 static CLICMDARGDEF farg[] = {{
         CLIARG_IMG,
@@ -68,6 +70,8 @@ static CLICMDARGDEF farg[] = {{
         NULL
     }
 };
+
+
 
 // CLI function initialization data
 static CLICMDDATA CLIcmddata =
@@ -702,26 +706,30 @@ errno_t saveFITS_opt_trunc(
  * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
  * @return errno_t
  */
-errno_t saveFITS(const char *__restrict inputimname,
-                 const char *__restrict outputFITSname,
-                 int outputbitpix,
-                 const char *__restrict importheaderfile,
-                 IMAGE_KEYWORD *kwarray,
-                 int            kwarraysize)
+errno_t saveFITS(
+    const char *__restrict inputimname,
+    const char *__restrict outputFITSname,
+    int outputbitpix,
+    const char *__restrict importheaderfile,
+    IMAGE_KEYWORD *kwarray,
+    int            kwarraysize)
 {
-    return saveFITS_opt_trunc(inputimname,
-                              -1,
-                              outputFITSname,
-                              outputbitpix,
-                              importheaderfile,
-                              kwarray,
-                              kwarraysize);
+    return saveFITS_opt_trunc(
+               inputimname,
+               -1,
+               outputFITSname,
+               outputbitpix,
+               importheaderfile,
+               kwarray,
+               kwarraysize);
 }
 
 
 
 
-errno_t saveall_fits(const char *__restrict savedirname)
+errno_t saveall_fits(
+    const char *__restrict savedirname
+)
 {
     DEBUG_TRACE_FSTART();
     char fname[STRINGMAXLEN_FULLFILENAME];
@@ -743,8 +751,12 @@ errno_t saveall_fits(const char *__restrict savedirname)
     return RETURN_SUCCESS;
 }
 
-errno_t save_fits(const char *__restrict savedirname,
-                  const char *__restrict outputFITSname)
+
+
+errno_t save_fits(
+    const char *__restrict savedirname,
+    const char *__restrict outputFITSname
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -754,8 +766,11 @@ errno_t save_fits(const char *__restrict savedirname,
     return RETURN_SUCCESS;
 }
 
-errno_t save_fl_fits(const char *__restrict savedirname,
-                     const char *__restrict outputFITSname)
+
+errno_t save_fl_fits(
+    const char *__restrict savedirname,
+    const char *__restrict outputFITSname
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -765,8 +780,11 @@ errno_t save_fl_fits(const char *__restrict savedirname,
     return RETURN_SUCCESS;
 }
 
-errno_t save_db_fits(const char *__restrict savedirname,
-                     const char *__restrict outputFITSname)
+
+errno_t save_db_fits(
+    const char *__restrict savedirname,
+    const char *__restrict outputFITSname
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -775,6 +793,7 @@ errno_t save_db_fits(const char *__restrict savedirname,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 static errno_t compute_function()
 {
