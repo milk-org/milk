@@ -101,13 +101,15 @@ static errno_t help_function()
  * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
  * @return errno_t
  */
-errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
-                           int truncate,
-                           const char *__restrict outputFITSname,
-                           int outputbitpix,
-                           const char *__restrict importheaderfile,
-                           IMAGE_KEYWORD *kwarray,
-                           int            kwarraysize)
+errno_t saveFITS_opt_trunc(
+    const char *__restrict inputimname,
+    int truncate,
+    const char *__restrict outputFITSname,
+    int outputbitpix,
+    const char *__restrict importheaderfile,
+    IMAGE_KEYWORD *kwarray,
+    int            kwarraysize
+)
 {
 
 
@@ -152,57 +154,56 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
 
     // data types
     uint8_t datatype       = imgin.md->datatype;
-    int     FITSIOdatatype = ImageStreamIO_FITSIOdatatype(datatype);
     char *datainptr = (char *) imgin.im->array.raw;
 
     int     bitpix;
 
-    switch(outputbitpix)
+    switch( outputbitpix )
     {
-        case 8:
-            bitpix = BYTE_IMG;
-            printf("    output data type: BYTE_IMG\n");
-            break;
-        case 10:
-            bitpix = SBYTE_IMG;
-            printf("    output data type: SBYTE_IMG\n");
-            break;
+    case 8:
+        bitpix = BYTE_IMG;
+        printf("    output data type: BYTE_IMG\n");
+        break;
+    case 10:
+        bitpix = SBYTE_IMG;
+        printf("    output data type: SBYTE_IMG\n");
+        break;
 
-        case 16:
-            bitpix = SHORT_IMG;
-            printf("    output data type: SHORT_IMG\n");
-            break;
-        case 20:
-            bitpix = USHORT_IMG;
-            printf("    output data type: USHORT_IMG\n");
-            break;
+    case 16:
+        bitpix = SHORT_IMG;
+        printf("    output data type: SHORT_IMG\n");
+        break;
+    case 20:
+        bitpix = USHORT_IMG;
+        printf("    output data type: USHORT_IMG\n");
+        break;
 
-        case 32:
-            bitpix = LONG_IMG;
-            printf("    output data type: LONG_IMG\n");
-            break;
-        case 40:
-            bitpix = ULONG_IMG;
-            printf("    output data type: ULONG_IMG\n");
-            break;
+    case 32:
+        bitpix = LONG_IMG;
+        printf("    output data type: LONG_IMG\n");
+        break;
+    case 40:
+        bitpix = ULONG_IMG;
+        printf("    output data type: ULONG_IMG\n");
+        break;
 
-        case 64:
-            bitpix = LONGLONG_IMG;
-            printf("    output data type: LONGLONG_IMG\n");
-            break;
-        case 80:
-            bitpix = ULONGLONG_IMG;
-            printf("    output data type: ULONGLONG_IMG\n");
-            break;
+    case 64:
+        bitpix = LONGLONG_IMG;
+        printf("    output data type: LONGLONG_IMG\n");
+        break;
+    case 80:
+        bitpix = ULONGLONG_IMG;
+        printf("    output data type: ULONGLONG_IMG\n");
+        break;
 
-        case -32:
-            bitpix = FLOAT_IMG;
-            printf("    output data type: FLOAT_IMG\n");
-            break;
-        case -64:
-            bitpix = DOUBLE_IMG;
-            printf("    output data type: DOUBLE_IMG\n");
-            break;
+    case -32:
+        bitpix = FLOAT_IMG;
+        printf("    output data type: FLOAT_IMG\n");
+        break;
+    case -64:
+        bitpix = DOUBLE_IMG;
+        printf("    output data type: DOUBLE_IMG\n");
+        break;
     }
 
     if(outputbitpix == 0)
@@ -211,51 +212,51 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         switch(datatype)
         {
 
-            case _DATATYPE_INT8:
-                bitpix = SBYTE_IMG;
-                break;
+        case _DATATYPE_INT8:
+            bitpix = SBYTE_IMG;
+            break;
 
-            case _DATATYPE_UINT8:
-                bitpix = BYTE_IMG;
-                break;
-
-
-            case _DATATYPE_INT16:
-                bitpix = SHORT_IMG;
-                break;
-
-            case _DATATYPE_UINT16:
-                bitpix = USHORT_IMG;
-                break;
-
-            case _DATATYPE_INT32:
-                bitpix = LONG_IMG;
-                break;
-
-            case _DATATYPE_UINT32:
-                bitpix = ULONG_IMG;
-                break;
-
-            case _DATATYPE_INT64:
-                bitpix = LONGLONG_IMG;
-                break;
-
-            case _DATATYPE_UINT64:
-                bitpix = ULONGLONG_IMG;
-                break;
-
-            case _DATATYPE_FLOAT:
-                bitpix = FLOAT_IMG;
-                break;
+        case _DATATYPE_UINT8:
+            bitpix = BYTE_IMG;
+            break;
 
 
-            case _DATATYPE_DOUBLE:
-                bitpix = DOUBLE_IMG;
-                break;
+        case _DATATYPE_INT16:
+            bitpix = SHORT_IMG;
+            break;
 
-            default:
-                bitpix = FLOAT_IMG;
-                break;
+        case _DATATYPE_UINT16:
+            bitpix = USHORT_IMG;
+            break;
+
+        case _DATATYPE_INT32:
+            bitpix = LONG_IMG;
+            break;
+
+        case _DATATYPE_UINT32:
+            bitpix = ULONG_IMG;
+            break;
+
+        case _DATATYPE_INT64:
+            bitpix = LONGLONG_IMG;
+            break;
+
+        case _DATATYPE_UINT64:
+            bitpix = ULONGLONG_IMG;
+            break;
+
+        case _DATATYPE_FLOAT:
+            bitpix = FLOAT_IMG;
+            break;
+
+
+        case _DATATYPE_DOUBLE:
+            bitpix = DOUBLE_IMG;
+            break;
+
+        default:
+            bitpix = FLOAT_IMG;
+            break;
 
         }
     }
@@ -453,72 +454,72 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
             // On the existing type in the auxfitsheader. If any at all?
             switch(imgin.im->kw[kw].type)
             {
-                case 'L':
-                    printf("writing keyword [L] %-8s= %20ld / %s\n",
-                           imgin.im->kw[kw].name,
-                           imgin.im->kw[kw].value.numl,
-                           imgin.im->kw[kw].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
+            case 'L':
+                printf("writing keyword [L] %-8s= %20ld / %s\n",
+                       imgin.im->kw[kw].name,
+                       imgin.im->kw[kw].value.numl,
+                       imgin.im->kw[kw].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr,
+                                TLONG,
+                                imgin.im->kw[kw].name,
+                                &imgin.im->kw[kw].value.numl,
+                                imgin.im->kw[kw].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                kwcnt++;
+                break;
+
+            case 'D':
+                printf("writing keyword [D] %-8s= %20g / %s\n",
+                       imgin.im->kw[kw].name,
+                       imgin.im->kw[kw].value.numf,
+                       imgin.im->kw[kw].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr,
+                                TDOUBLE,
+                                imgin.im->kw[kw].name,
+                                &imgin.im->kw[kw].value.numf,
+                                imgin.im->kw[kw].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                kwcnt++;
+                break;
+
+            case 'S':
+                snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
+                printf("writing keyword [S] %-8s= %20s / %s\n",
+                       imgin.im->kw[kw].name,
+                       tmpkwvalstr,
+                       imgin.im->kw[kw].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN snprintf!!
+                if((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
+                        (strncmp("'#FALSE#'", tmpkwvalstr, 9) == 0))
+                {
+                    // Booleans through magic strings
+                    int tmpval_is_true =
+                        strncmp("'#TRUE#'", tmpkwvalstr, 6) == 0;
                     fits_update_key(fptr,
-                                    TLONG,
+                                    TLOGICAL,
                                     imgin.im->kw[kw].name,
-                                    &imgin.im->kw[kw].value.numl,
+                                    &tmpval_is_true,
                                     imgin.im->kw[kw].comment,
                                     &COREMOD_iofits_data.FITSIO_status);
-                    kwcnt++;
-                    break;
-
-                case 'D':
-                    printf("writing keyword [D] %-8s= %20g / %s\n",
-                           imgin.im->kw[kw].name,
-                           imgin.im->kw[kw].value.numf,
-                           imgin.im->kw[kw].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
+                }
+                else
+                {
+                    // Normal string
                     fits_update_key(fptr,
-                                    TDOUBLE,
+                                    TSTRING,
                                     imgin.im->kw[kw].name,
-                                    &imgin.im->kw[kw].value.numf,
+                                    imgin.im->kw[kw].value.valstr,
                                     imgin.im->kw[kw].comment,
                                     &COREMOD_iofits_data.FITSIO_status);
-                    kwcnt++;
-                    break;
+                }
+                kwcnt++;
+                break;
 
-                case 'S':
-                    snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
-                    printf("writing keyword [S] %-8s= %20s / %s\n",
-                           imgin.im->kw[kw].name,
-                           tmpkwvalstr,
-                           imgin.im->kw[kw].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN snprintf!!
-                    if((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
-                            (strncmp("'#FALSE#'", tmpkwvalstr, 9) == 0))
-                    {
-                        // Booleans through magic strings
-                        int tmpval_is_true =
-                            strncmp("'#TRUE#'", tmpkwvalstr, 6) == 0;
-                        fits_update_key(fptr,
-                                        TLOGICAL,
-                                        imgin.im->kw[kw].name,
-                                        &tmpval_is_true,
-                                        imgin.im->kw[kw].comment,
-                                        &COREMOD_iofits_data.FITSIO_status);
-                    }
-                    else
-                    {
-                        // Normal string
-                        fits_update_key(fptr,
-                                        TSTRING,
-                                        imgin.im->kw[kw].name,
-                                        imgin.im->kw[kw].value.valstr,
-                                        imgin.im->kw[kw].comment,
-                                        &COREMOD_iofits_data.FITSIO_status);
-                    }
-                    kwcnt++;
-                    break;
-
-                default:
-                    break;
+            default:
+                break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -541,47 +542,47 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
             char tmpkwvalstr[81];
             switch(kwarray[kwi].type)
             {
-                case 'L':
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr,
-                                    TLONG,
-                                    kwarray[kwi].name,
-                                    &kwarray[kwi].value.numl,
-                                    kwarray[kwi].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    break;
+            case 'L':
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr,
+                                TLONG,
+                                kwarray[kwi].name,
+                                &kwarray[kwi].value.numl,
+                                kwarray[kwi].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                break;
 
-                case 'D':
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    printf("writing keyword [D] %-8s= %20g / %s\n",
-                           kwarray[kwi].name,
-                           kwarray[kwi].value.numf,
-                           kwarray[kwi].comment);
-                    fits_update_key(fptr,
-                                    TDOUBLE,
-                                    kwarray[kwi].name,
-                                    &kwarray[kwi].value.numf,
-                                    kwarray[kwi].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    break;
+            case 'D':
+                COREMOD_iofits_data.FITSIO_status = 0;
+                printf("writing keyword [D] %-8s= %20g / %s\n",
+                       kwarray[kwi].name,
+                       kwarray[kwi].value.numf,
+                       kwarray[kwi].comment);
+                fits_update_key(fptr,
+                                TDOUBLE,
+                                kwarray[kwi].name,
+                                &kwarray[kwi].value.numf,
+                                kwarray[kwi].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                break;
 
-                case 'S':
-                    snprintf(tmpkwvalstr, 81, "'%s'", kwarray[kwi].value.valstr);
-                    printf("writing keyword [S] %-8s= %20s / %s\n",
-                           kwarray[kwi].name,
-                           tmpkwvalstr,
-                           kwarray[kwi].comment);
-                    COREMOD_iofits_data.FITSIO_status = 0;
-                    fits_update_key(fptr,
-                                    TSTRING,
-                                    kwarray[kwi].name,
-                                    kwarray[kwi].value.valstr,
-                                    kwarray[kwi].comment,
-                                    &COREMOD_iofits_data.FITSIO_status);
-                    break;
+            case 'S':
+                snprintf(tmpkwvalstr, 81, "'%s'", kwarray[kwi].value.valstr);
+                printf("writing keyword [S] %-8s= %20s / %s\n",
+                       kwarray[kwi].name,
+                       tmpkwvalstr,
+                       kwarray[kwi].comment);
+                COREMOD_iofits_data.FITSIO_status = 0;
+                fits_update_key(fptr,
+                                TSTRING,
+                                kwarray[kwi].name,
+                                kwarray[kwi].value.valstr,
+                                kwarray[kwi].comment,
+                                &COREMOD_iofits_data.FITSIO_status);
+                break;
 
-                default:
-                    break;
+            default:
+                break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -593,9 +594,31 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
         }
     }
 
-
+    // default (for floats, signed)
     float bscaleval = 1.0;
     float bzeroval  = 0.0;
+
+    int     FITSIOdatatype = ImageStreamIO_FITSIOdatatype(datatype);
+    switch ( FITSIOdatatype )
+    {
+    case TBYTE :
+        bzeroval  = 128.0;
+        break;
+
+    case TUSHORT :
+        bzeroval  = 32768.0;
+        break;
+
+    case TUINT :
+        bzeroval  = 2147483648.0;
+        break;
+
+    case TULONG :
+        bzeroval  = 4294967296.0*2147483648.0;
+        break;
+
+    }
+
 
     fits_update_key(fptr,
                     TFLOAT,
