@@ -587,6 +587,7 @@ errno_t fpsCTRL_FPSdisplay(
                         if(child_index[fpsCTRLvar->currentlevel + 1] <
                                 keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
                         {
+                            screenprint_setbold();
                             screenprint_setcolor(COLOR_DIRECTORY);
 
                             TUI_printfw(
@@ -598,6 +599,7 @@ errno_t fpsCTRL_FPSdisplay(
                             {
                                 screenprint_unsetreverse();
                             }
+                            screenprint_unsetbold();
                         }
                         else
                         {
