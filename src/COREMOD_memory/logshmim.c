@@ -34,7 +34,7 @@
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
-static long tret; // thread return value
+static long tret = 0; // thread return value
 
 
 
@@ -308,15 +308,15 @@ static void *save_telemetry_fits_function(
     void *ptr
 )
 {
-    STREAMSAVE_THREAD_MESSAGE *tmsg = malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+    STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
     printf(">>>>>>>> [%5d] tmsg->iname     = \"%s\"\n", __LINE__, tmsg->iname);
     printf(">>>>>>>> [%5d] tmsg->fname     = \"%s\"\n", __LINE__, tmsg->fname);
     printf(">>>>>>>> [%5d] tmsg->cubesize  = %ld\n", __LINE__, tmsg->cubesize);
 
-    struct timespec tstart;
-    clock_gettime(CLOCK_MILK, &tstart);
+//    struct timespec tstart;
+//    clock_gettime(CLOCK_MILK, &tstart);
 
     /*
 
@@ -1690,7 +1690,7 @@ static errno_t compute_function()
 
                     // Fill up thread message
                     //
-                    strcpy(tmsg->fname, FITSffilename);
+                   /* strcpy(tmsg->fname, FITSffilename);
                     strcpy(tmsg->fnameascii, ASCIITIMEffilename);
                     tmsg->saveascii = 1;
                     tmsg->cubesize = (*frameindex);
@@ -1703,9 +1703,12 @@ static errno_t compute_function()
                     {
                         tmsg->partial = 0;
                     }
+*/
 
 
-
+                    // test
+                    strcpy(tmsg->iname, imgbuff0.md->name);
+                    /*
                     if(buffindex == 0 )
                     {
                         strcpy(tmsg->iname, imgbuff0.md->name);
@@ -1729,17 +1732,17 @@ static errno_t compute_function()
                                    "%s/%s.aux.fits",
                                    data.shmdir,
                                    streamname);
+                    */
 
-
-               /*     if ( (*compressON) == 0 )
-                    {
-                        strcpy(tmsg->compress_string, "");
-                    }
-                    else
-                    {
-                        strcpy(tmsg->compress_string, "[compress R 1,1,10000]");
-                    }
-*/
+                    /*     if ( (*compressON) == 0 )
+                         {
+                             strcpy(tmsg->compress_string, "");
+                         }
+                         else
+                         {
+                             strcpy(tmsg->compress_string, "[compress R 1,1,10000]");
+                         }
+                    */
 
 
                     // Wait for save thread to complete to launch next one
@@ -1792,14 +1795,14 @@ static errno_t compute_function()
                                                    tmsg);
 
                     thread_initialized = 1;
-                    if(iret_savefits)
-                    {
-                        fprintf(stderr,
-                                "Error - pthread_create() return code: %d\n",
-                                iret_savefits);
-                        exit(EXIT_FAILURE);
-                    }
-
+                    /*  if(iret_savefits)
+                      {
+                          fprintf(stderr,
+                                  "Error - pthread_create() return code: %d\n",
+                                  iret_savefits);
+                          exit(EXIT_FAILURE);
+                      }
+                    */
                     free(tmsg);
 
                 }
@@ -1812,15 +1815,15 @@ static errno_t compute_function()
 
             // report buffer is ready
             //
-            if(buffindex == 0 )
-            {
-                processinfo_update_output_stream(processinfo, imgbuff0.ID);
-            }
-            else
-            {
-                processinfo_update_output_stream(processinfo, imgbuff1.ID);
-            }
-
+            /*            if(buffindex == 0 )
+                        {
+                            processinfo_update_output_stream(processinfo, imgbuff0.ID);
+                        }
+                        else
+                        {
+                            processinfo_update_output_stream(processinfo, imgbuff1.ID);
+                        }
+            */
 
             // increment counters
             //
