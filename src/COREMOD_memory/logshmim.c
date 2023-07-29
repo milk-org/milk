@@ -1339,7 +1339,7 @@ static errno_t compute_function()
     // 1: print statements outside fast loop
     // 2: print everything
 
-
+    STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE*) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
 
 
     IMGID inimg = mkIMGID_from_name(streamname);
@@ -1437,10 +1437,10 @@ static errno_t compute_function()
 
     // array are zsize * 2 long to hold double buffer
     //
-    double * array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    double * array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    uint64_t * array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
-    uint64_t * array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
+    //double * array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    //double * array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    //uint64_t * array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
+    //uint64_t * array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
 
 
 
@@ -1686,24 +1686,24 @@ static errno_t compute_function()
                 {
                     static pthread_t                  thread_savefits;
                     static int                        iret_savefits;
-                    STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE*) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+
 
                     // Fill up thread message
                     //
-                   /* strcpy(tmsg->fname, FITSffilename);
-                    strcpy(tmsg->fnameascii, ASCIITIMEffilename);
-                    tmsg->saveascii = 1;
-                    tmsg->cubesize = (*frameindex);
+                    /* strcpy(tmsg->fname, FITSffilename);
+                     strcpy(tmsg->fnameascii, ASCIITIMEffilename);
+                     tmsg->saveascii = 1;
+                     tmsg->cubesize = (*frameindex);
 
-                    if((*frameindex) != (*cubesize))
-                    {
-                        tmsg->partial = 1;
-                    }
-                    else
-                    {
-                        tmsg->partial = 0;
-                    }
-*/
+                     if((*frameindex) != (*cubesize))
+                     {
+                         tmsg->partial = 1;
+                     }
+                     else
+                     {
+                         tmsg->partial = 0;
+                     }
+                    */
 
 
                     // test
@@ -1780,7 +1780,7 @@ static errno_t compute_function()
                                     __LINE__);
                             }
                         }
-                      //  (*savetime) = tmsg->timespan;
+                        //  (*savetime) = tmsg->timespan;
                         printf("\n ************** MISSED  %ld frames\n", inimg.md->cnt0 - cnt0start);
                     }
 
@@ -1803,7 +1803,6 @@ static errno_t compute_function()
                           exit(EXIT_FAILURE);
                       }
                     */
-                    free(tmsg);
 
                 }
 
@@ -1852,11 +1851,12 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    free(array_time);
-    free(array_aqtime);
-    free(array_cnt0);
-    free(array_cnt1);
+    //free(array_time);
+    //free(array_aqtime);
+    //free(array_cnt0);
+    //free(array_cnt1);
 
+    free(tmsg);
 
 
     DEBUG_TRACE_FEXIT();
