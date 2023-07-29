@@ -341,6 +341,10 @@ static void *save_telemetry_fits_function(
 
     */
 
+
+
+
+/*
     // Add custom keywords
     int            NBcustomKW = 9;
     IMAGE_KEYWORD *imkwarray =
@@ -528,7 +532,7 @@ static void *save_telemetry_fits_function(
                       1.0e-9 * (tend.tv_nsec - tstart.tv_nsec);
     tmsg->timespan = timediff;
 
-
+*/
     pthread_exit(&tret);
 }
 
