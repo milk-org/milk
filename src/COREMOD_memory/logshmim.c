@@ -1362,7 +1362,7 @@ static errno_t compute_function()
 
     // Create 2 log buffers
     //
-    IMGID imgbuff0;
+    /*IMGID imgbuff0;
     {
         char name[STRINGMAXLEN_STREAMNAME];
         WRITE_IMAGENAME(name, "%s_logbuff0", streamname);
@@ -1375,7 +1375,7 @@ static errno_t compute_function()
         WRITE_IMAGENAME(name, "%s_logbuff1", streamname);
         imgbuff1 =
             stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
-    }
+    }*/
 
 
 
@@ -1707,7 +1707,7 @@ static errno_t compute_function()
 
 
                     // test
-                    strcpy(tmsg->iname, imgbuff0.md->name);
+                    strcpy(tmsg->iname, "staticn_amehere"); //imgbuff0.md->name);
                     /*
                     if(buffindex == 0 )
                     {
