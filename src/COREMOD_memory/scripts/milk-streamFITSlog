@@ -135,12 +135,12 @@ function set_nbcube()
 }
 
 update_cubetimeout=0
-cubetimeout="2"
-MSopt+=( "t:cubetimeout:set_cubetimeout:cubetimeout[float]:timeout to end cube [s]" )
+cubetimeout="2.0"
+MSopt+=( "t:cubetimeout:set_cubetimeout:cubetimeout[float]:timeout to end cube. must include dec point [s]" )
 function set_cubetimeout()
 {
 	update_cubetimeout=1
-	set_cubetimeout="$1"
+	cubetimeout="$1"
 }
 
 resetsettings=0
