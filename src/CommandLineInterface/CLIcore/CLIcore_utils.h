@@ -520,7 +520,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     char  namestring[200];
     strncpy(namestring, name, 199);
 
-    pch1 = pch;
+    pch1 = namestring;
     if(strlen(namestring) != 0)
     {
         pch = strtok(namestring, ">");
