@@ -85,19 +85,23 @@ MSarg+=( "action:string:action" )
 
 
 
-
+update_logdir=0
+update_rootlogdir=0
 logdirectory="."
 fulllogdir="${logdirectory}"
 MSopt+=( "d:logdir:set_logdirectory:directory[string]:construct logging directory from root, date and stream" )
 function set_logdirectory()
 {
+	update_logdir=1
+	# defer assembly of fulllogdir for after we have steamname
+	update_rootlogdir=1
 	logdirectory="$1"
-	fulllogdir="${logdirectory}/${daystring}/${STREAMNAME}"
 }
 
 MSopt+=( "D:logdir:set_fulllogdirectory:directory[string]:full logging directory" )
-function set_logdirectory()
+function set_fulllogdirectory()
 {
+	update_logdir=1
 	logdirectory="$1"
 	fulllogdir="${logdirectory}"
 }
@@ -149,8 +153,6 @@ function set_resetsettings()
 
 
 
-
-
 source milk-argparse
 
 STREAMNAME="${inputMSargARRAY[0]}"
@@ -168,6 +170,9 @@ fi
 
 
 
+if [ $update_rootlogdir == 1 ]; then
+	fulllogdir="${logdirectory}/${daystring}/${STREAMNAME}"
+fi
 mkdir -p ${fulllogdir}
 
 
@@ -193,6 +198,10 @@ function logtmuxsessionstart()
 
 function runupdatesfps()
 {
+	if [$update_logdir == 1]; then
+		echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
+	fi
+	
 	if [ $update_cubesize == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
 	fi
@@ -236,14 +245,17 @@ if [ ${ACTION} == "pstart" ]; then
 	# setup FPS instance
 
 milk << EOF
-readshmim aol7_wfsim
+readshmim ${STREAMNAME}
 streamFITSlog ..procinfo 1
 streamFITSlog ..loopcntMax -1
 streamFITSlog ..triggermode 3
 streamFITSlog ..triggersname ${STREAMNAME}
+streamFITSlog ..triggertimeout ${cubetimeout}
 streamFITSlog .sname ${STREAMNAME}
-streamFITSlog .cubesize 2000
-streamFITSlog .dirname "/mnt/data1/logAO/wfsim"
+streamFITSlog .cubesize ${cubesize}
+streamFITSlog .dirname "${fulllogdir}"
+streamFITSlog .maxframecnt ${nbframe}"
+streamFITSlog .maxfilecnt ${nbcube}"
 streamFITSlog _FPSINIT_ "${STREAMNAME}"
 streamFITSlog _TMUXSTART_ "${STREAMNAME}"
 exitCLI
@@ -263,15 +275,8 @@ EOF
 	echo "echo \"confstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 
 	echo "confstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
-	echo "setval streamFITSlog-${STREAMNAME}.maxframecnt ${nbframe}" >> ${fifoname}
-	echo "setval streamFITSlog-${STREAMNAME}.maxfilecnt ${nbcube}" >> ${fifoname}
-
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
-
-	echo "setval streamFITSlog-${STREAMNAME}.procinfo.triggertimeout ${cubetimeout}" >> ${fifoname}
-	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
 fi
 
 
