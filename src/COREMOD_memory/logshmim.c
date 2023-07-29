@@ -311,7 +311,9 @@ static void *save_telemetry_fits_function(
     STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
-    printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
+    printf(">>>>>>>> [%5d] tmsg->iname     = \"%s\"\n", __LINE__, tmsg->iname);
+    printf(">>>>>>>> [%5d] tmsg->fname     = \"%s\"\n", __LINE__, tmsg->fname);
+    printf(">>>>>>>> [%5d] tmsg->cubesize  = %ld\n", __LINE__, tmsg->cubesize);
 
     struct timespec tstart;
     clock_gettime(CLOCK_MILK, &tstart);
