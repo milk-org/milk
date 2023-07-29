@@ -198,7 +198,7 @@ function logtmuxsessionstart()
 
 function runupdatesfps()
 {
-	if [$update_logdir == 1]; then
+	if [ $update_logdir == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
 		mkdir -p ${fulllogdir}
 	fi
@@ -296,6 +296,7 @@ if [ ${ACTION} == "on" ]; then
 	echo "action = on"
 	ACTIONOK=1
 	runupdatesfps
+	echo "setval streamFITSlog-${STREAMNAME}.saveON ON"
 	echo "setval streamFITSlog-${STREAMNAME}.saveON ON" >> ${fifoname}
 
 fi
