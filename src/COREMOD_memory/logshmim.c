@@ -1495,7 +1495,7 @@ static errno_t compute_function()
 
             if ( (*saveON) == 1 )
             {
-                if((*frameindex) == 0)
+                /*if((*frameindex) == 0)
                 {
                     // measure time at cube start
                     // construc filenames
@@ -1535,7 +1535,7 @@ static errno_t compute_function()
                     {
                         printf("[%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
                     }
-                }
+                }*/
 
 
                 // timing buffer index
@@ -1686,7 +1686,7 @@ static errno_t compute_function()
                 {
                     static pthread_t                  thread_savefits;
                     static int                        iret_savefits;
-                    STREAMSAVE_THREAD_MESSAGE *tmsg = malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+                    STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE*) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
 
                     // Fill up thread message
                     //
@@ -1780,7 +1780,7 @@ static errno_t compute_function()
                                     __LINE__);
                             }
                         }
-                        (*savetime) = tmsg->timespan;
+                      //  (*savetime) = tmsg->timespan;
                         printf("\n ************** MISSED  %ld frames\n", inimg.md->cnt0 - cnt0start);
                     }
 
