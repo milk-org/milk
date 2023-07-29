@@ -14,7 +14,10 @@ typedef struct
     char fname[STRINGMAXLEN_FULLFILENAME];
     int  partial;  // 1 if partial cube
     long cubesize; // size of the cube
-    float timespan; // execution time for saving
+
+    float timespan; // measured execution time for saving
+    int writerRTprio; // writer real-time priority
+
 
     int saveascii;
     // 0 : Not saving ascii

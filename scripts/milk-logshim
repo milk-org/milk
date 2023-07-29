@@ -179,7 +179,7 @@ fi
 mkdir -p $3
 
 
-milk-streamFITSlog -D "$3" -z $2 $1 pstart
+milk-streamFITSlog -cset "${CPUset}" -D "$3" -z $2 $1 pstart
 milk-streamFITSlog $1 on
 
 

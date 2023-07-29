@@ -42,9 +42,6 @@ static long tret = 0; // thread return value
 
 
 
-
-
-
 // stream to save
 //
 static char *streamname;
@@ -99,8 +96,14 @@ static long     fpi_savetime = -1;
 
 
 
-
 static char *outfname;
+
+
+
+static uint32_t *writerRTprio;
+static long fpi_writerRTprio;
+
+
 
 
 
@@ -231,7 +234,16 @@ static CLICMDARGDEF farg[] =
         CLIARG_OUTPUT_DEFAULT,
         (void **) &savetime,
         &fpi_savetime
-    }
+    },
+    {
+        CLIARG_UINT32,
+        ".writerRTprio",
+        "writer real-time priority",
+        "10",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &writerRTprio,
+        &fpi_writerRTprio
+    },
 };
 
 
@@ -251,6 +263,8 @@ static errno_t customCONFsetup()
         data.fpsptr->parray[fpi_maxfilecnt].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxframecnt].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
+
+        data.fpsptr->parray[fpi_writerRTprio].fpflag |= FPFLAG_WRITERUN;
     }
 
     return RETURN_SUCCESS;
@@ -311,35 +325,32 @@ static void *save_telemetry_fits_function(
     STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
-    printf(">>>>>>>> [%5d] tmsg->iname     = \"%s\"\n", __LINE__, tmsg->iname);
-    printf(">>>>>>>> [%5d] tmsg->fname     = \"%s\"\n", __LINE__, tmsg->fname);
-    printf(">>>>>>>> [%5d] tmsg->cubesize  = %ld\n", __LINE__, tmsg->cubesize);
 
     struct timespec tstart;
     clock_gettime(CLOCK_MILK, &tstart);
 
-    /*
 
-        // Set save function to RT priority 0
-        // This is meant to be lower priority than the data collection into buffers
-        //
-        int                RT_priority = 0;
-        struct sched_param schedpar;
 
-        schedpar.sched_priority = RT_priority;
-        if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
-        sched_setscheduler(0,
-                           SCHED_FIFO,
-                           &schedpar); //other option is SCHED_RR, might be faster
-        if(seteuid(data.ruid) != 0)    //Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
+    // Set save function to RT priority 0
+    // This is meant to be lower priority than the data collection into buffers
+    //
+    int                RT_priority = tmsg->writerRTprio;
+    struct sched_param schedpar;
 
-    */
+    schedpar.sched_priority = RT_priority;
+    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+    {
+        PRINT_ERROR("seteuid error");
+    }
+    sched_setscheduler(0,
+                       SCHED_FIFO,
+                       &schedpar); //other option is SCHED_RR, might be faster
+    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
+    {
+        PRINT_ERROR("seteuid error");
+    }
+
+
 
 
 
@@ -1782,7 +1793,7 @@ static errno_t compute_function()
 
                     // start thread
                     //
-                    printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
+                    tmsg->writerRTprio = (*writerRTprio);
                     iret_savefits = pthread_create(&thread_savefits,
                                                    NULL,
                                                    save_telemetry_fits_function,
