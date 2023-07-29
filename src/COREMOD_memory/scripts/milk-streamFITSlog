@@ -1,0 +1,336 @@
+#!/usr/bin/env bash
+
+MSdescr="log stream to disk as FITS files"
+
+source milk-script-std-config
+
+# default values
+#
+logdirectory="/mnt/streamlog"
+cubesize=30000
+nbcube=1000000
+nbframe=100000000
+cubetimeout="100"
+
+
+datestring="$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')"
+daystring="$(date -u +'%Y%m%d')"
+
+TMUXNAME="milkFITSlogger"
+fifoname="${MILK_SHM_DIR}/milkFITSlogger.fifo"
+
+milkFITSloggerdir="${MILK_SHM_DIR}/FITSlogger"
+mkdir -p ${milkFITSloggerdir}
+cd ${milkFITSloggerdir}
+
+
+
+MSextdescr="
+List of actions:
+	pstart  start log process
+	pstop   stop log process
+	on      set logging ON
+	off     set logging OFF
+	offc    set logging OFF after cube complete
+
+Logs stream to filesystem as FITS cubes.
+Example use:
+
+Start logging process, 1000-deep cubes :
+$> $(basename $0) -d \"/mnt/log\" -z 1000  sname pstart
+Files will appear in: /mnt/log/YYYYMMDD/sname
+where TTTMMDD is the current UT day (${daystring}) and sname is the stream name.
+
+$> $(basename $0) -D \"/mnt/log/ustom\" -z 1000  sname pstart
+Files will appear in: /mnt/log/custom
+
+Turn logging on :
+$> $(basename $0) im on
+
+Turn logging on, save 100 cubes :
+$> $(basename $0) -c 100 im on
+
+Turn logging on, save 100 frames into 2 cubes of 50 frames :
+$> $(basename $0) -z 50 -c 2 im on
+
+Turn logging off:
+$> $(basename $0) im off
+
+Turn logging off, but complete last cube:
+$> $(basename $0) im offc
+
+LOW-LEVEL CONTROL FROM TUI :
+$> FPS_FILTSTRING_NAME=\"streamFITSlog\" milk-fpsCTRL
+
+NOTES:
+- All paths relative to directory ${milkFITSloggerdir}
+- The cube size (-z) can only be decreased after the pstart step
+
+"
+
+
+
+
+
+# prerequisites
+#
+RequiredCommands=( tmux milk )
+RequiredFiles=( )
+RequiredDirs=( )
+
+MSarg+=( "stream:string:stream name" )
+
+# actions
+MSarg+=( "action:string:action" )
+
+
+
+
+logdirectory="."
+fulllogdir="${logdirectory}"
+MSopt+=( "d:logdir:set_logdirectory:directory[string]:construct logging directory from root, date and stream" )
+function set_logdirectory()
+{
+	logdirectory="$1"
+	fulllogdir="${logdirectory}/${daystring}/${STREAMNAME}"
+}
+
+MSopt+=( "D:logdir:set_fulllogdirectory:directory[string]:full logging directory" )
+function set_logdirectory()
+{
+	logdirectory="$1"
+	fulllogdir="${logdirectory}"
+}
+
+
+
+
+update_cubesize=0
+MSopt+=( "z:cubesize:set_cubesize:csize[int]:max cube size (default ${cubesize})" )
+function set_cubesize()
+{
+	update_cubesize=1
+	cubesize=$1
+}
+
+
+update_nbframe=0
+MSopt+=( "n:nbframe:set_nbframe:nbframe[int]:max number of frames to log (default ${nbframe})" )
+function set_nbframe()
+{
+	update_nbframe=1
+	nbframe=$1
+}
+
+update_nbcube=0
+MSopt+=( "c:nbcube:set_nbcube:nbcube[int]:max number of cubes to log (default ${nbcube})" )
+function set_nbcube()
+{
+	update_nbcube=1
+	nbcube=$1
+}
+
+update_cubetimeout=0
+cubetimeout="2"
+MSopt+=( "t:cubetimeout:set_cubetimeout:cubetimeout[float]:timeout to end cube [s]" )
+function set_cubetimeout()
+{
+	update_cubetimeout=1
+	set_cubetimeout="$1"
+}
+
+resetsettings=0
+MSopt+=( "r:resetsettings:set_resetsettings::reset to default settings, otherwise keep from previous call" )
+function set_resetsettings()
+{
+	set_resetsettings=1
+}
+
+
+
+
+
+
+source milk-argparse
+
+STREAMNAME="${inputMSargARRAY[0]}"
+ACTION="${inputMSargARRAY[1]}"
+ACTIONOK=0
+
+
+checkFile "${MILK_SHM_DIR}/${STREAMNAME}.im.shm"
+
+
+if [ ${EXITSTATUS} = 1 ]; then
+	exit 1
+fi
+
+
+
+
+mkdir -p ${fulllogdir}
+
+
+
+function logtmuxsessionstart()
+{
+	# check if tmux session exists
+	#
+	set +o pipefail
+	{ tmux has-session -t ${TMUXNAME} 2>/dev/null; retstatus=$?; } || :
+	set -o pipefail
+	#echo "retstatus = $retstatus"
+	if [ "${retstatus}" = "0" ]; then
+		# found
+		echo "FOUND SESSION  ${TMUXNAME} : keep it"
+	else
+		tmux new-session -d -s ${TMUXNAME}
+		tmux send-keys -t ${TMUXNAME} "bash" C-m
+		tmux send-keys -t ${TMUXNAME} " FPS_FILTSTRING_NAME=\"streamFITSlog\" milk-fpsCTRL -s -f ${fifoname}" C-m
+	fi
+}
+
+
+function runupdatesfps()
+{
+	if [ $update_cubesize == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
+	fi
+
+	if [ $update_nbframe == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.maxframecnt ${nbframe}" >> ${fifoname}
+	fi
+
+	if [ $update_nbcube == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.maxfilecnt ${nbcube}" >> ${fifoname}
+	fi
+
+	if [ $update_cubetimeout == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.procinfo.triggertimeout ${cubetimeout}" >> ${fifoname}
+	fi
+	
+	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
+}
+
+
+function logresetdefault()
+{
+	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
+	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
+	
+}
+
+
+
+#tmux kill-session -t ${TMUXNAME} > /dev/null || :
+
+
+logtmuxsessionstart
+
+
+
+
+if [ ${ACTION} == "pstart" ]; then
+	echo "action = pstart"
+	ACTIONOK=1
+	# setup FPS instance
+
+milk << EOF
+readshmim aol7_wfsim
+streamFITSlog ..procinfo 1
+streamFITSlog ..loopcntMax -1
+streamFITSlog ..triggermode 3
+streamFITSlog ..triggersname ${STREAMNAME}
+streamFITSlog .sname ${STREAMNAME}
+streamFITSlog .cubesize 2000
+streamFITSlog .dirname "/mnt/data1/logAO/wfsim"
+streamFITSlog _FPSINIT_ "${STREAMNAME}"
+streamFITSlog _TMUXSTART_ "${STREAMNAME}"
+exitCLI
+EOF
+
+	tmux send-keys -t ${TMUXNAME} "s"
+
+	# give time to fpsCTRL to create fifo
+	echo "waiting for fifo \"${fifoname}\" ..."
+	until [ -p "${fifoname}" ]
+	do
+		sleep 0.05
+		echo -n "."
+	done
+	echo "found fifo -> continuing"
+
+	echo "echo \"confstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
+
+	echo "confstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
+	echo "setval streamFITSlog-${STREAMNAME}.maxframecnt ${nbframe}" >> ${fifoname}
+	echo "setval streamFITSlog-${STREAMNAME}.maxfilecnt ${nbcube}" >> ${fifoname}
+
+	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
+
+	echo "setval streamFITSlog-${STREAMNAME}.procinfo.triggertimeout ${cubetimeout}" >> ${fifoname}
+	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
+fi
+
+
+
+if [ ${ACTION} == "pstop" ]; then
+	echo "action = pstop"
+	ACTIONOK=1
+	runupdatesfps
+	echo "runstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
+fi
+
+
+
+
+if [ ${ACTION} == "on" ]; then
+	echo "action = on"
+	ACTIONOK=1
+	runupdatesfps
+	echo "setval streamFITSlog-${STREAMNAME}.saveON ON" >> ${fifoname}
+
+fi
+
+
+if [ ${ACTION} == "off" ]; then
+	echo "action = off"
+	ACTIONOK=1
+	runupdatesfps
+	echo "setval streamFITSlog-${STREAMNAME}.saveON OFF" >> ${fifoname}
+fi
+
+
+if [ ${ACTION} == "offc" ]; then
+	echo "action = offc"
+	ACTIONOK=1
+	runupdatesfps
+	echo "setval streamFITSlog-${STREAMNAME}.lastcubeON ON" >> ${fifoname}
+fi
+
+
+
+if [ ${ACTION} == "get" ]; then
+	echo "action = get"
+	ACTIONOK=1
+	runupdatesfps
+fi
+
+
+if [ ${ACTIONOK} == 0 ]; then
+	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] ACTION $ACTION undefined"
+	exit 1
+fi
+
+
+
+
+
+
+
+exit
+
+
+FPS_FILTSTRING_NAME="streamFITSlog" milk-fpsCTRL

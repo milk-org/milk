@@ -131,6 +131,7 @@ set(SCRIPTFILES
 	scripts/milk-shmimpoke
 	scripts/milk-shmimpoke-semtrig
 	scripts/milk-semloopspeed
+  scripts/milk-streamFITSlog
 )
 
 

@@ -103,6 +103,7 @@ static errno_t help_function()
  * @param importheaderfile  optional FITS file from which to read keywords
  * @param kwarray           optional keyword array. Set to NULL if unused
  * @param kwarraysize       number of keywords in optional keyword array. Set to 0 if unused.
+ * @param FITSIOext         extension to pass instructions to FITSIO
  * @return errno_t
  */
 errno_t saveFITS_opt_trunc(
@@ -112,7 +113,8 @@ errno_t saveFITS_opt_trunc(
     int outputbitpix,
     const char *__restrict importheaderfile,
     IMAGE_KEYWORD *kwarray,
-    int            kwarraysize
+    int            kwarraysize,
+    const char *__restrict FITSIOext
 )
 {
 
@@ -139,12 +141,22 @@ errno_t saveFITS_opt_trunc(
                        (int) getpid(),
                        (long) self_id);
     */
+
     WRITE_FILENAME(fnametmp,
                    "%s.%d.%ld.tmp",
                    outputFITSname,
                    (int) getpid(),
                    (long) self_id);
     printf("temp name : %s\n", fnametmp);
+
+    // extended filename to pass instructions to FITSIO
+    // For example, FITSIOext = [compress R 1,1,10000]
+    char fnametmpext[STRINGMAXLEN_FILENAME];
+    WRITE_FILENAME(fnametmpext,
+                   "%s%s",
+                   fnametmp,
+                   FITSIOext
+                  );
 
     IMGID imgin = mkIMGID_from_name(inputimname);
     resolveIMGID(&imgin, ERRMODE_WARN);
@@ -272,8 +284,8 @@ errno_t saveFITS_opt_trunc(
 
     fitsfile *fptr;
     COREMOD_iofits_data.FITSIO_status = 0;
-    DEBUG_TRACEPOINT("creating FITS file %s", fnametmp);
-    fits_create_file(&fptr, fnametmp, &COREMOD_iofits_data.FITSIO_status);
+    DEBUG_TRACEPOINT("creating FITS file %s", fnametmpext);
+    fits_create_file(&fptr, fnametmpext, &COREMOD_iofits_data.FITSIO_status);
     DEBUG_TRACEPOINT(" ");
 
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -285,7 +297,7 @@ errno_t saveFITS_opt_trunc(
         }
         PRINT_ERROR("fits_create_file error %d on file %s %s",
                     COREMOD_iofits_data.FITSIO_status,
-                    fnametmp,
+                    fnametmpext,
                     errstring);
         abort();
     }
@@ -295,10 +307,12 @@ errno_t saveFITS_opt_trunc(
     for(int i = 0; i < naxis; i++)
     {
         naxesl[i] = (long) imgin.md->size[i];
+        printf("-------------- SIZE %d = %ld\n", i, naxesl[i]);
     }
     if(truncate >= 0)
     {
         naxesl[naxis - 1] = truncate;
+        printf("-------------- TRUNCATE TO %d\n", truncate);
     }
 
     long nelements = 1;
@@ -317,7 +331,7 @@ errno_t saveFITS_opt_trunc(
                     &COREMOD_iofits_data.FITSIO_status);
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
     {
-        PRINT_ERROR("fits_create_img error on file %s", fnametmp);
+        PRINT_ERROR("fits_create_img error on file %s", fnametmpext);
         EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
         FUNC_RETURN_FAILURE(" ");
     }
@@ -657,7 +671,7 @@ errno_t saveFITS_opt_trunc(
         {
             PRINT_ERROR("fits_write_img error %d on file %s",
                         errcode,
-                        fnametmp);
+                        fnametmpext);
             EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
             FUNC_RETURN_FAILURE(" ");
         }
@@ -672,10 +686,11 @@ errno_t saveFITS_opt_trunc(
     fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
     if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
     {
-        PRINT_ERROR("fits_close_file error on file %s", fnametmp);
+        PRINT_ERROR("fits_close_file error on file %s", fnametmpext);
         EXECUTE_SYSTEM_COMMAND("rm %s", fnametmp);
         FUNC_RETURN_FAILURE(" ");
     }
+
 
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("mv %s %s", fnametmp, outputFITSname);
 
@@ -721,7 +736,8 @@ errno_t saveFITS(
                outputbitpix,
                importheaderfile,
                kwarray,
-               kwarraysize);
+               kwarraysize,
+               "");
 }
 
 

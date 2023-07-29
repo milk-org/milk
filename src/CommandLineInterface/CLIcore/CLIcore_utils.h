@@ -384,12 +384,12 @@ typedef struct
 
 
 /**
- * 
+ *
         if(data.fpsptr->cmdset.triggerdelayptr != NULL) {                      \
         processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];}   \
         if(data.fpsptr->cmdset.triggertimeoutptr != NULL) {                    \
         processinfo->triggerdelay = data.fpsptr->cmdset.triggertimeoutptr[0];} \
- * 
+ *
  */
 
 /** @brief FPS run function
@@ -510,7 +510,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     img.size[0]  = 1;
     img.size[1]  = 1;
     img.shared   = 0;
-    img.NBkw     = 100;
+    img.NBkw     = NB_KEYWNODE_MAX;
     img.CBsize   = 0;
 
     char *pch;
@@ -520,6 +520,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
     char  namestring[200];
     strncpy(namestring, name, 199);
 
+    pch1 = pch;
     if(strlen(namestring) != 0)
     {
         pch = strtok(namestring, ">");
@@ -1007,7 +1008,7 @@ stream_connect_create_2Df32(
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
 
-        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, 10, 0, &img.ID);
+        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, NB_KEYWNODE_MAX, 0, &img.ID);
         free(arraytmp);
     }
 
@@ -1070,7 +1071,7 @@ static inline IMGID stream_connect_create_2D(char    *imname,
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
 
-        create_image_ID(imname, 2, arraytmp, datatype, 1, 0, 0, &img.ID);
+        create_image_ID(imname, 2, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
         free(arraytmp);
     }
 
@@ -1101,10 +1102,11 @@ static inline IMGID stream_connect_create_2D(char    *imname,
  * @param zsize   z size
  * @return IMGID
  */
-static inline IMGID stream_connect_create_3Df32(char    *imname,
-        uint32_t xsize,
-        uint32_t ysize,
-        uint32_t zsize)
+static inline IMGID stream_connect_create_3Df32(
+    char    *imname,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint32_t zsize)
 {
     printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
@@ -1149,7 +1151,7 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
         arraytmp[1] = ysize;
         arraytmp[2] = zsize;
 
-        create_image_ID(imname, 3, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &img.ID);
+        create_image_ID(imname, 3, arraytmp, _DATATYPE_FLOAT, 1, NB_KEYWNODE_MAX, 0, &img.ID);
         free(arraytmp);
     }
 
@@ -1168,11 +1170,13 @@ static inline IMGID stream_connect_create_3Df32(char    *imname,
 
 
 
-static inline IMGID stream_connect_create_3D(char    *imname,
-        uint32_t xsize,
-        uint32_t ysize,
-        uint32_t zsize,
-        uint8_t  datatype)
+static inline IMGID stream_connect_create_3D(
+    char    *imname,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint32_t zsize,
+    uint8_t  datatype
+)
 {
     printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
@@ -1217,7 +1221,7 @@ static inline IMGID stream_connect_create_3D(char    *imname,
         arraytmp[1] = ysize;
         arraytmp[2] = zsize;
 
-        create_image_ID(imname, 3, arraytmp, datatype, 1, 0, 0, &img.ID);
+        create_image_ID(imname, 3, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
         free(arraytmp);
     }
 

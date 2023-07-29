@@ -68,6 +68,8 @@
 
 #include "shmimlogcmd.h"
 
+#include "logshmim.h"
+
 #include "saveall.h"
 #include "shmim_purge.h"
 #include "shmim_setowner.h"
@@ -173,10 +175,11 @@ static errno_t init_module_CLI()
     stream_monitorlimits_addCLIcmd();
 
     // DATA LOGGING
-    logshmim_addCLIcmd();
+    //logshmim_addCLIcmd();
 
     //CLIADDCMD_COREMOD_memory__shmimlog(); -- find deletion commit.
-    CLIADDCMD_COREMOD_memory__shmimlogcmd();
+    //CLIADDCMD_COREMOD_memory__shmimlogcmd();
+    CLIADDCMD_COREMOD_MEMORY__logshmim();
 
     // add atexit functions here
 
