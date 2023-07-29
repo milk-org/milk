@@ -10,6 +10,7 @@
 
 typedef struct
 {
+    char bogusfname[STRINGMAXLEN_FULLFILENAME];
     char iname[STRINGMAXLEN_IMGNAME];
     char fname[STRINGMAXLEN_FULLFILENAME];
     int  partial;  // 1 if partial cube
