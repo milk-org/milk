@@ -1380,7 +1380,7 @@ static errno_t compute_function()
 
 
     // copy keywords
-/*    {
+    {
         printf("Cppying %d keywords\n", inimg.md->NBkw);
         if( inimg.md->NBkw > 0 )
         {
@@ -1392,13 +1392,13 @@ static errno_t compute_function()
                    sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
         }
     }
-    */
-    
-    
+
+
+
     // find creation time keyword
     // _MAQTIME
     int aqtimekwi = -1;
-    /*for(int kwi = 0; kwi < inimg.md->NBkw; kwi++)
+    for(int kwi = 0; kwi < inimg.md->NBkw; kwi++)
     {
         if(strcmp(inimg.im->kw[kwi].name, "_MAQTIME") == 0)
         {
@@ -1409,7 +1409,7 @@ static errno_t compute_function()
     {
         printf("[%5d] aqtimekwi = %d\n", __LINE__, aqtimekwi);
     }
-*/
+
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
