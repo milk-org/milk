@@ -22,7 +22,8 @@ errno_t saveFITS_opt_trunc(const char *__restrict inputimname,
                            int outputbitpix,
                            const char *__restrict importheaderfile,
                            IMAGE_KEYWORD *kwarray,
-                           int            kwarraysize);
+                           int            kwarraysize,
+                           const char *__restrict FITSIOext);
 
 errno_t save_fits(const char *__restrict inputimname,
                   const char *__restrict outputFITSname);

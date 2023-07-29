@@ -1,4 +1,7 @@
-#! /bin/bash
+#!/usr/bin/env bash
+
+
+
 
 
 
@@ -176,6 +179,13 @@ fi
 mkdir -p $3
 
 
+milk-streamFITSlog -D "$3" -z $2 $1 pstart
+milk-streamFITSlog $1 on
+
+
+
+
+exit
 #csetpmove ${CPUset}
 milk -n $pname << EOF
 shmimstreamlog $1 $2 "$3"

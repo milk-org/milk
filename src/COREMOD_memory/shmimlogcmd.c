@@ -38,6 +38,7 @@ static CLICMDDATA CLIcmddata = {"shmimlogcmd",
 
 // set the on field in logshim
 // IDname is name of image logged
+/*
 static errno_t logshim_cmd(const char *logshimname, const char *cmd)
 {
     LOGSHIM_CONF *map;
@@ -127,3 +128,4 @@ CLIADDCMD_COREMOD_memory__shmimlogcmd()
 
     return RETURN_SUCCESS;
 }
+*/
