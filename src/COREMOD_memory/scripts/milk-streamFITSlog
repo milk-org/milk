@@ -200,6 +200,7 @@ function runupdatesfps()
 {
 	if [$update_logdir == 1]; then
 		echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
+		mkdir -p ${fulllogdir}
 	fi
 	
 	if [ $update_cubesize == 1 ]; then
