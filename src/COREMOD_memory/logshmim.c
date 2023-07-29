@@ -308,7 +308,7 @@ static void *save_telemetry_fits_function(
     void *ptr
 )
 {
-    STREAMSAVE_THREAD_MESSAGE *tmsg;
+    STREAMSAVE_THREAD_MESSAGE *tmsg = malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
     printf(">>>>>>>> [%5d] tmsg->iname     = \"%s\"\n", __LINE__, tmsg->iname);
@@ -1731,7 +1731,7 @@ static errno_t compute_function()
                                    streamname);
 
 
-                    if ( (*compressON) == 0 )
+               /*     if ( (*compressON) == 0 )
                     {
                         strcpy(tmsg->compress_string, "");
                     }
@@ -1739,7 +1739,7 @@ static errno_t compute_function()
                     {
                         strcpy(tmsg->compress_string, "[compress R 1,1,10000]");
                     }
-
+*/
 
 
                     // Wait for save thread to complete to launch next one
