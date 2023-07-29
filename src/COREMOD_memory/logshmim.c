@@ -315,8 +315,8 @@ static void *save_telemetry_fits_function(
     printf(">>>>>>>> [%5d] tmsg->fname     = \"%s\"\n", __LINE__, tmsg->fname);
     printf(">>>>>>>> [%5d] tmsg->cubesize  = %ld\n", __LINE__, tmsg->cubesize);
 
-//    struct timespec tstart;
-//    clock_gettime(CLOCK_MILK, &tstart);
+    struct timespec tstart;
+    clock_gettime(CLOCK_MILK, &tstart);
 
     /*
 
@@ -344,195 +344,194 @@ static void *save_telemetry_fits_function(
 
 
 
-    /*
-        // Add custom keywords
-        int            NBcustomKW = 9;
-        IMAGE_KEYWORD *imkwarray =
-            (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
+
+    // Add custom keywords
+    int            NBcustomKW = 9;
+    IMAGE_KEYWORD *imkwarray =
+        (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
 
 
-        // UT time
+    // UT time
 
-        strcpy(imkwarray->name, "UT");
-        imkwarray->type = 'S';
-
-
-        strcpy(imkwarray->value.valstr,
-               timedouble_to_UTC_timeofdaystring(
-                   0.5 * tmsg->arraytime[0] +
-                   0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
-        strcpy(imkwarray->comment, "HH:MM:SS.SS typical UTC at exposure");
+    strcpy(imkwarray->name, "UT");
+    imkwarray->type = 'S';
 
 
-        strcpy(imkwarray[1].name, "UT-STR");
-        imkwarray[1].type = 'S';
-        strcpy(imkwarray[1].value.valstr,
-               timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0]));
-        strcpy(imkwarray[1].comment, "HH:MM:SS.SS UTC at exposure start");
-
-        strcpy(imkwarray[2].name, "UT-END");
-        imkwarray[2].type = 'S';
-        strcpy(
-            imkwarray[2].value.valstr,
-            timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
-        strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure end");
-
-        // Modified Julian Date (MJD)
+    strcpy(imkwarray->value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               0.5 * tmsg->arraytime[0] +
+               0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
+    strcpy(imkwarray->comment, "HH:MM:SS.SS typical UTC at exposure");
 
 
-        strcpy(imkwarray[3].name, "MJD");
-        imkwarray[3].type = 'D';
-        imkwarray[3].value.numf =
-            (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) /
-            86400.0 +
-            40587.0;
-        strcpy(imkwarray[3].comment, "Modified Julian Day at exposure");
+    strcpy(imkwarray[1].name, "UT-STR");
+    imkwarray[1].type = 'S';
+    strcpy(imkwarray[1].value.valstr,
+           timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0]));
+    strcpy(imkwarray[1].comment, "HH:MM:SS.SS UTC at exposure start");
+
+    strcpy(imkwarray[2].name, "UT-END");
+    imkwarray[2].type = 'S';
+    strcpy(
+        imkwarray[2].value.valstr,
+        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[tmsg->cubesize - 1]));
+    strcpy(imkwarray[2].comment, "HH:MM:SS.SS UTC at exposure end");
+
+    // Modified Julian Date (MJD)
 
 
-        strcpy(imkwarray[4].name, "MJD-STR");
-        imkwarray[4].type       = 'D';
-        imkwarray[4].value.numf = tmsg->arraytime[0] / 86400.0 + 40587.0;
-        strcpy(imkwarray[4].comment, "Modified Julian Day at exposure start");
-
-        strcpy(imkwarray[5].name, "MJD-END");
-        imkwarray[5].type = 'D';
-        imkwarray[5].value.numf =
-            (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) + 40587.0;
-        strcpy(imkwarray[5].comment, "Modified Julian Day at exposure end");
-
-        // Local time
-
-        // get time zone
-        //char tm_zone[] = "HST";
-        //double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
+    strcpy(imkwarray[3].name, "MJD");
+    imkwarray[3].type = 'D';
+    imkwarray[3].value.numf =
+        (0.5 * tmsg->arraytime[0] + 0.5 * tmsg->arraytime[tmsg->cubesize - 1]) /
+        86400.0 +
+        40587.0;
+    strcpy(imkwarray[3].comment, "Modified Julian Day at exposure");
 
 
-        // Causes a race condition with gettime in other thread, which result in occasional HST filenames...
-        //time_t t = time(NULL);
-        // OVERRIDE localtime to HST
-        //putenv("TZ=Pacific/Honolulu");
-        //struct tm lt = *localtime(&t);
-        //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
-        //putenv("TZ=");
-        //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    strcpy(imkwarray[4].name, "MJD-STR");
+    imkwarray[4].type       = 'D';
+    imkwarray[4].value.numf = tmsg->arraytime[0] / 86400.0 + 40587.0;
+    strcpy(imkwarray[4].comment, "Modified Julian Day at exposure start");
+
+    strcpy(imkwarray[5].name, "MJD-END");
+    imkwarray[5].type = 'D';
+    imkwarray[5].value.numf =
+        (tmsg->arraytime[tmsg->cubesize - 1] / 86400.0) + 40587.0;
+    strcpy(imkwarray[5].comment, "Modified Julian Day at exposure end");
+
+    // Local time
+
+    // get time zone
+    //char tm_zone[] = "HST";
+    //double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
 
 
-        // printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
-        // printf("The time zone is '%s'.\n", lt.tm_zone);
+    // Causes a race condition with gettime in other thread, which result in occasional HST filenames...
+    //time_t t = time(NULL);
+    // OVERRIDE localtime to HST
+    //putenv("TZ=Pacific/Honolulu");
+    //struct tm lt = *localtime(&t);
+    //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
+    //putenv("TZ=");
+    //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
 
 
-        sprintf(imkwarray[6].name, "%s", TZ_MILK_STR);
-        imkwarray[6].type = 'S';
-        strcpy(imkwarray[6].value.valstr,
-               timedouble_to_UTC_timeofdaystring(
-                   (0.5 * tmsg->arraytime[0] +
-                    0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
-                   TZ_MILK_UTC_OFF));
-        sprintf(imkwarray[6].comment,
-                "HH:MM:SS.SS typical %s at exposure",
-                TZ_MILK_STR);
-
-        sprintf(imkwarray[7].name, "%s-STR", TZ_MILK_STR);
-        imkwarray[7].type = 'S';
-        strcpy(
-            imkwarray[7].value.valstr,
-            timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
-        sprintf(imkwarray[7].comment,
-                "HH:MM:SS.SS typical %s at exposure start",
-                TZ_MILK_STR);
-
-        sprintf(imkwarray[8].name, "%s-END", TZ_MILK_STR);
-        imkwarray[8].type = 'S';
-        strcpy(imkwarray[8].value.valstr,
-               timedouble_to_UTC_timeofdaystring(
-                   tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
-        sprintf(imkwarray[8].comment,
-                "HH:MM:SS.SS typical %s at exposure end",
-                TZ_MILK_STR);
+    // printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
+    // printf("The time zone is '%s'.\n", lt.tm_zone);
 
 
+    sprintf(imkwarray[6].name, "%s", TZ_MILK_STR);
+    imkwarray[6].type = 'S';
+    strcpy(imkwarray[6].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               (0.5 * tmsg->arraytime[0] +
+                0.5 * tmsg->arraytime[tmsg->cubesize - 1]) +
+               TZ_MILK_UTC_OFF));
+    sprintf(imkwarray[6].comment,
+            "HH:MM:SS.SS typical %s at exposure",
+            TZ_MILK_STR);
 
-        //printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
-        printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
+    sprintf(imkwarray[7].name, "%s-STR", TZ_MILK_STR);
+    imkwarray[7].type = 'S';
+    strcpy(
+        imkwarray[7].value.valstr,
+        timedouble_to_UTC_timeofdaystring(tmsg->arraytime[0] + TZ_MILK_UTC_OFF));
+    sprintf(imkwarray[7].comment,
+            "HH:MM:SS.SS typical %s at exposure start",
+            TZ_MILK_STR);
+
+    sprintf(imkwarray[8].name, "%s-END", TZ_MILK_STR);
+    imkwarray[8].type = 'S';
+    strcpy(imkwarray[8].value.valstr,
+           timedouble_to_UTC_timeofdaystring(
+               tmsg->arraytime[tmsg->cubesize - 1] + TZ_MILK_UTC_OFF));
+    sprintf(imkwarray[8].comment,
+            "HH:MM:SS.SS typical %s at exposure end",
+            TZ_MILK_STR);
 
 
-        saveFITS_opt_trunc(tmsg->iname,
-                           tmsg->partial ? tmsg->cubesize : -1,
-                           tmsg->fname,
-                           0,
-                           tmsg->fname_auxFITSheader,
-                           imkwarray,
-                           NBcustomKW,
-                           tmsg->compress_string);
+
+    //printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+    printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
 
 
-        free(imkwarray);
+    saveFITS_opt_trunc(tmsg->iname,
+                       tmsg->partial ? tmsg->cubesize : -1,
+                       tmsg->fname,
+                       0,
+                       tmsg->fname_auxFITSheader,
+                       imkwarray,
+                       NBcustomKW,
+                       tmsg->compress_string);
 
 
-        if(tmsg->saveascii == 1)
+    free(imkwarray);
+
+
+    if(tmsg->saveascii == 1)
+    {
+        FILE *fp;
+
+        if((fp = fopen(tmsg->fnameascii, "w")) == NULL)
         {
-            FILE *fp;
-
-            if((fp = fopen(tmsg->fnameascii, "w")) == NULL)
-            {
-                printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
-                exit(0);
-            }
-
-            fprintf(fp, "# Telemetry stream timing data \n");
-            fprintf(fp,
-                    "# File written by function %s in file %s\n",
-                    __FUNCTION__,
-                    __FILE__);
-            fprintf(fp, "# \n");
-            fprintf(fp, "# col1 : datacube frame index\n");
-            fprintf(fp, "# col2 : Main index\n");
-            fprintf(fp, "# col3 : Time since cube origin (logging)\n");
-            fprintf(fp, "# col4 : Absolute time (logging)\n");
-            fprintf(fp, "# col5 : Absolute time (acquisition)\n");
-            fprintf(fp, "# col6 : stream cnt0 index\n");
-            fprintf(fp, "# col7 : stream cnt1 index\n");
-            fprintf(fp, "# \n");
-
-            double t0; // time reference
-            t0 = tmsg->arraytime[0];
-            for(long k = 0; k < tmsg->cubesize; k++)
-            {
-                //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
-
-                // entries are:
-                // - index within cube
-                // - loop index (if applicable)
-                // - time since cube start
-                // - time (absolute)
-                // - cnt0
-                // - cnt1
-
-                fprintf(
-                    fp,
-                    "%10ld  %10lu  %15.9lf   %20.9lf  %17.6lf   %10ld   %10ld\n",
-                    k,
-                    tmsg->arrayindex[k],
-                    tmsg->arraytime[k] - t0,
-                    tmsg->arraytime[k],
-                    tmsg->arrayaqtime[k],
-                    tmsg->arraycnt0[k],
-                    tmsg->arraycnt1[k]);
-            }
-            fclose(fp);
+            printf("ERROR: cannot create file \"%s\"\n", tmsg->fnameascii);
+            exit(0);
         }
 
+        fprintf(fp, "# Telemetry stream timing data \n");
+        fprintf(fp,
+                "# File written by function %s in file %s\n",
+                __FUNCTION__,
+                __FILE__);
+        fprintf(fp, "# \n");
+        fprintf(fp, "# col1 : datacube frame index\n");
+        fprintf(fp, "# col2 : Main index\n");
+        fprintf(fp, "# col3 : Time since cube origin (logging)\n");
+        fprintf(fp, "# col4 : Absolute time (logging)\n");
+        fprintf(fp, "# col5 : Absolute time (acquisition)\n");
+        fprintf(fp, "# col6 : stream cnt0 index\n");
+        fprintf(fp, "# col7 : stream cnt1 index\n");
+        fprintf(fp, "# \n");
 
-        tret = image_ID(tmsg->iname);
+        double t0; // time reference
+        t0 = tmsg->arraytime[0];
+        for(long k = 0; k < tmsg->cubesize; k++)
+        {
+            //fprintf(fp, "%6ld   %10lu  %10lu   %15.9lf\n", k, tmsg->arraycnt0[k], tmsg->arraycnt1[k], tmsg->arraytime[k]);
 
-        struct timespec tend;
-        clock_gettime(CLOCK_MILK, &tend);
+            // entries are:
+            // - index within cube
+            // - loop index (if applicable)
+            // - time since cube start
+            // - time (absolute)
+            // - cnt0
+            // - cnt1
 
-        double timediff = 1.0 * (tend.tv_sec - tstart.tv_sec) +
-                          1.0e-9 * (tend.tv_nsec - tstart.tv_nsec);
-        tmsg->timespan = timediff;
+            fprintf(
+                fp,
+                "%10ld  %10lu  %15.9lf   %20.9lf  %17.6lf   %10ld   %10ld\n",
+                k,
+                tmsg->arrayindex[k],
+                tmsg->arraytime[k] - t0,
+                tmsg->arraytime[k],
+                tmsg->arrayaqtime[k],
+                tmsg->arraycnt0[k],
+                tmsg->arraycnt1[k]);
+        }
+        fclose(fp);
+    }
 
-    */
+
+    tret = image_ID(tmsg->iname);
+
+    struct timespec tend;
+    clock_gettime(CLOCK_MILK, &tend);
+
+    double timediff = 1.0 * (tend.tv_sec - tstart.tv_sec) +
+                      1.0e-9 * (tend.tv_nsec - tstart.tv_nsec);
+    tmsg->timespan = timediff;
+
     pthread_exit(&tret);
 }
 
@@ -1362,7 +1361,7 @@ static errno_t compute_function()
 
     // Create 2 log buffers
     //
-    /*IMGID imgbuff0;
+    IMGID imgbuff0;
     {
         char name[STRINGMAXLEN_STREAMNAME];
         WRITE_IMAGENAME(name, "%s_logbuff0", streamname);
@@ -1375,7 +1374,7 @@ static errno_t compute_function()
         WRITE_IMAGENAME(name, "%s_logbuff1", streamname);
         imgbuff1 =
             stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
-    }*/
+    }
 
 
 
@@ -1383,25 +1382,24 @@ static errno_t compute_function()
 
 
     // copy keywords
-    /*  {
-          printf("Cppying %d keywords\n", inimg.md->NBkw);
-          if( inimg.md->NBkw > 0 )
-          {
-              memcpy(imgbuff0.im->kw,
-                     inimg.im->kw,
-                     sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
-              memcpy(imgbuff1.im->kw,
-                     inimg.im->kw,
-                     sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
-          }
-      }
-    */
+    {
+        printf("Cppying %d keywords\n", inimg.md->NBkw);
+        if( inimg.md->NBkw > 0 )
+        {
+            memcpy(imgbuff0.im->kw,
+                   inimg.im->kw,
+                   sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+            memcpy(imgbuff1.im->kw,
+                   inimg.im->kw,
+                   sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+        }
+    }
 
 
     // find creation time keyword
     // _MAQTIME
     int aqtimekwi = -1;
-    /*
+
     for(int kwi = 0; kwi < inimg.md->NBkw; kwi++)
     {
         if(strcmp(inimg.im->kw[kwi].name, "_MAQTIME") == 0)
@@ -1413,7 +1411,7 @@ static errno_t compute_function()
     {
         printf("[%5d] aqtimekwi = %d\n", __LINE__, aqtimekwi);
     }
-    */
+
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -1437,10 +1435,10 @@ static errno_t compute_function()
 
     // array are zsize * 2 long to hold double buffer
     //
-    //double * array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    //double * array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    //uint64_t * array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
-    //uint64_t * array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
+    double * array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    double * array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    uint64_t * array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
+    uint64_t * array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
 
 
 
@@ -1495,7 +1493,7 @@ static errno_t compute_function()
 
             if ( (*saveON) == 1 )
             {
-                /*if((*frameindex) == 0)
+                if((*frameindex) == 0)
                 {
                     // measure time at cube start
                     // construc filenames
@@ -1535,11 +1533,11 @@ static errno_t compute_function()
                     {
                         printf("[%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
                     }
-                }*/
+                }
 
 
                 // timing buffer index
-                /*{
+                {
                     long tindex = (*frameindex) + buffindex*(*cubesize);
                     {
                         array_cnt0[tindex] = inimg.md->cnt0;
@@ -1560,11 +1558,11 @@ static errno_t compute_function()
                             array_aqtime[tindex] = 0.0;
                         }
                     }
-                }*/
+                }
 
 
                 // copy frame to buffer
-                /*
+
                 {
                     long framesize = typesize * xsize * ysize;
 
@@ -1597,7 +1595,7 @@ static errno_t compute_function()
 
 
                     memcpy((void *) ptr1, (void *) ptr0, framesize);
-                }*/
+                }
 
 
 
@@ -1667,7 +1665,7 @@ static errno_t compute_function()
 
 
                 // update buffer content
-                /*
+
                 if(buffindex == 0 )
                 {
                     memcpy(imgbuff0.im->kw,
@@ -1679,7 +1677,7 @@ static errno_t compute_function()
                     memcpy(imgbuff1.im->kw,
                            inimg.im->kw,
                            sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
-                }*/
+                }
 
 
 
@@ -1690,25 +1688,21 @@ static errno_t compute_function()
 
                     // Fill up thread message
                     //
-                    /* strcpy(tmsg->fname, FITSffilename);
-                     strcpy(tmsg->fnameascii, ASCIITIMEffilename);
-                     tmsg->saveascii = 1;
-                     tmsg->cubesize = (*frameindex);
+                    strcpy(tmsg->fname, FITSffilename);
+                    strcpy(tmsg->fnameascii, ASCIITIMEffilename);
+                    tmsg->saveascii = 1;
+                    tmsg->cubesize = (*frameindex);
 
-                     if((*frameindex) != (*cubesize))
-                     {
-                         tmsg->partial = 1;
-                     }
-                     else
-                     {
-                         tmsg->partial = 0;
-                     }
-                    */
+                    if((*frameindex) != (*cubesize))
+                    {
+                        tmsg->partial = 1;
+                    }
+                    else
+                    {
+                        tmsg->partial = 0;
+                    }
 
 
-                    // test
-                    strcpy(tmsg->iname, "staticn_amehere"); //imgbuff0.md->name);
-                    /*
                     if(buffindex == 0 )
                     {
                         strcpy(tmsg->iname, imgbuff0.md->name);
@@ -1732,17 +1726,17 @@ static errno_t compute_function()
                                    "%s/%s.aux.fits",
                                    data.shmdir,
                                    streamname);
-                    */
 
-                    /*     if ( (*compressON) == 0 )
-                         {
-                             strcpy(tmsg->compress_string, "");
-                         }
-                         else
-                         {
-                             strcpy(tmsg->compress_string, "[compress R 1,1,10000]");
-                         }
-                    */
+
+                    if ( (*compressON) == 0 )
+                    {
+                        strcpy(tmsg->compress_string, "");
+                    }
+                    else
+                    {
+                        strcpy(tmsg->compress_string, "[compress R 1,1,10000]");
+                    }
+
 
 
                     // Wait for save thread to complete to launch next one
@@ -1780,7 +1774,7 @@ static errno_t compute_function()
                                     __LINE__);
                             }
                         }
-                        //  (*savetime) = tmsg->timespan;
+                        (*savetime) = tmsg->timespan;
                         printf("\n ************** MISSED  %ld frames\n", inimg.md->cnt0 - cnt0start);
                     }
 
@@ -1795,14 +1789,14 @@ static errno_t compute_function()
                                                    tmsg);
 
                     thread_initialized = 1;
-                    /*  if(iret_savefits)
-                      {
-                          fprintf(stderr,
-                                  "Error - pthread_create() return code: %d\n",
-                                  iret_savefits);
-                          exit(EXIT_FAILURE);
-                      }
-                    */
+                    if(iret_savefits)
+                    {
+                        fprintf(stderr,
+                                "Error - pthread_create() return code: %d\n",
+                                iret_savefits);
+                        exit(EXIT_FAILURE);
+                    }
+
 
                 }
 
@@ -1814,15 +1808,15 @@ static errno_t compute_function()
 
             // report buffer is ready
             //
-            /*            if(buffindex == 0 )
-                        {
-                            processinfo_update_output_stream(processinfo, imgbuff0.ID);
-                        }
-                        else
-                        {
-                            processinfo_update_output_stream(processinfo, imgbuff1.ID);
-                        }
-            */
+            if(buffindex == 0 )
+            {
+                processinfo_update_output_stream(processinfo, imgbuff0.ID);
+            }
+            else
+            {
+                processinfo_update_output_stream(processinfo, imgbuff1.ID);
+            }
+
 
             // increment counters
             //
@@ -1851,10 +1845,10 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    //free(array_time);
-    //free(array_aqtime);
-    //free(array_cnt0);
-    //free(array_cnt1);
+    free(array_time);
+    free(array_aqtime);
+    free(array_cnt0);
+    free(array_cnt1);
 
     free(tmsg);
 
