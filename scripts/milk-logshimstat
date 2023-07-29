@@ -19,6 +19,9 @@ fi
 pname="logshimstat-$1"
 echo "$pname"
 
+
+exit
+
 milk -n $pname << EOF
 shmimslogstat $1
 exit

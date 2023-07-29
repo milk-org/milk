@@ -19,6 +19,12 @@ fi
 pname="$0-$1"
 echo "$pname"
 
+
+
+milk-streamFITSlog $1 off
+
+exit
+
 milk -n $pname << EOF
 shmimslogonset $1 0
 exit
