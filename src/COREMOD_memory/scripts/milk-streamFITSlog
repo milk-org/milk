@@ -10,8 +10,10 @@ logdirectory="/mnt/streamlog"
 cubesize=30000
 nbcube=1000000
 nbframe=100000000
-cubetimeout="100"
-
+cubetimeout="10.0"
+realtimeprio=20
+writerrealtimeprio=30
+cset="system"
 
 datestring="$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')"
 daystring="$(date -u +'%Y%m%d')"
@@ -29,9 +31,11 @@ MSextdescr="
 List of actions:
 	pstart  start log process
 	pstop   stop log process
+	kill    kill log process and tmux   
 	on      set logging ON
 	off     set logging OFF
 	offc    set logging OFF after cube complete
+	set     set parameters, no other action
 
 Logs stream to filesystem as FITS cubes.
 Example use:
@@ -152,6 +156,34 @@ function set_resetsettings()
 
 
 
+update_realtimeprio=0
+MSopt+=( "rtp:realtimeprio:set_realtimeprio:realtimeprio[int]:real-time priority (default ${realtimeprio}))" )
+function set_realtimeprio()
+{
+	update_realtimeprio=1
+	realtimeprio=$1
+}
+
+
+update_writerrealtimeprio=0
+MSopt+=( "wrtp:writerrealtimeprio:set_writerrealtimeprio:writerrealtimeprio[int]:writer real-time priority (default ${writerrealtimeprio}))" )
+function set_writerrealtimeprio()
+{
+	update_writerrealtimeprio=1
+	writerrealtimeprio=$1
+}
+
+
+
+update_cset=0
+MSopt+=( "cset:CPUset:set_cset:cset[string]:CPU set (default ${cset}))" )
+function set_cset()
+{
+	update_cset=1
+	cset=$1
+}
+
+
 
 source milk-argparse
 
@@ -218,6 +250,19 @@ function runupdatesfps()
 	if [ $update_cubetimeout == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.procinfo.triggertimeout ${cubetimeout}" >> ${fifoname}
 	fi
+
+	if [ $update_realtimeprio == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.procinfo.RTprio ${realtimeprio}" >> ${fifoname}
+	fi
+
+	if [ $update_writerrealtimeprio == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.writerRTprio ${writerrealtimeprio}" >> ${fifoname}
+	fi
+
+	if [ $update_cset == 1 ]; then
+		echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
+	fi
+	
 	
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 }
@@ -245,6 +290,7 @@ if [ ${ACTION} == "pstart" ]; then
 	ACTIONOK=1
 	# setup FPS instance
 
+echo ""
 milk << EOF
 readshmim ${STREAMNAME}
 streamFITSlog ..procinfo 1
@@ -252,11 +298,14 @@ streamFITSlog ..loopcntMax -1
 streamFITSlog ..triggermode 3
 streamFITSlog ..triggersname ${STREAMNAME}
 streamFITSlog ..triggertimeout ${cubetimeout}
+streamFITSlog ..RTprio ${realtimeprio}
+streamFITSlog ..cset ${cset}
 streamFITSlog .sname ${STREAMNAME}
 streamFITSlog .cubesize ${cubesize}
 streamFITSlog .dirname "${fulllogdir}"
-streamFITSlog .maxframecnt ${nbframe}"
-streamFITSlog .maxfilecnt ${nbcube}"
+streamFITSlog .maxframecnt ${nbframe}
+streamFITSlog .maxfilecnt ${nbcube}
+streamFITSlog .writerRTprio ${writerrealtimeprio}
 streamFITSlog _FPSINIT_ "${STREAMNAME}"
 streamFITSlog _TMUXSTART_ "${STREAMNAME}"
 exitCLI
@@ -281,12 +330,20 @@ EOF
 fi
 
 
+if [ ${ACTION} == "set" ]; then
+	echo "action = set"
+	ACTIONOK=1
+	runupdatesfps
+fi
+
+
+
 
 if [ ${ACTION} == "pstop" ]; then
 	echo "action = pstop"
 	ACTIONOK=1
-	runupdatesfps
 	echo "runstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	runupdatesfps
 fi
 
 
@@ -315,6 +372,17 @@ if [ ${ACTION} == "offc" ]; then
 	ACTIONOK=1
 	runupdatesfps
 	echo "setval streamFITSlog-${STREAMNAME}.lastcubeON ON" >> ${fifoname}
+fi
+
+
+if [ ${ACTION} == "kill" ]; then
+	echo "action = kill"
+	ACTIONOK=1
+	echo "runstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "confstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "tmuxstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "fpsrm streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "rescan" >> ${fifoname}
 fi
 
 
