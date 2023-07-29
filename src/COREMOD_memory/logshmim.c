@@ -311,6 +311,8 @@ static void *save_telemetry_fits_function(
     STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
+    printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
+
     struct timespec tstart;
     clock_gettime(CLOCK_MILK, &tstart);
 
@@ -445,6 +447,7 @@ static void *save_telemetry_fits_function(
 
 
     //printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
+    printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
 
 
     saveFITS_opt_trunc(tmsg->iname,
@@ -1765,6 +1768,7 @@ static errno_t compute_function()
 
                     // start thread
                     //
+                    printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
                     iret_savefits = pthread_create(&thread_savefits,
                                                    NULL,
                                                    save_telemetry_fits_function,
