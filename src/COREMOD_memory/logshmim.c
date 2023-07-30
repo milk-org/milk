@@ -690,6 +690,8 @@ static errno_t compute_function()
         }
         else
         {
+            printf("[[%ld]] ", inimg.md->cnt0);
+            
             // new frame has arrived
 
             if( (saveON_last == 0) && ((*saveON) == 1) )
