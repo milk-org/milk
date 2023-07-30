@@ -681,6 +681,10 @@ static errno_t compute_function()
     // set to 1 if we're on the last cube
     int lastcube = 0;
 
+    uint64_t lastcnt0 = 0;
+    int IsNewFrame = 0;
+
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
@@ -690,174 +694,188 @@ static errno_t compute_function()
         }
         else
         {
-
-            printf("<<<<<<<<<<<<<<<<<<<< RECEIVED FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
-            fflush(stdout);
-
-            // new frame has arrived
-
-            if( (saveON_last == 0) && ((*saveON) == 1) )
+            if( lastcnt0 != inimg.md->cnt0)
             {
-                // We just turned on saving
-                lastcube = 0;
-                (*framecnt) = 0;
-                (*filecnt) = 0;
-            }
+                // new frame has arrived
+                IsNewFrame = 1;
 
+                printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
+                fflush(stdout);
 
-
-            if ((*framecnt) >= (*maxframecnt))
-            {
-                // we've logged the requested number of frames
-                (*saveON) = 0;
-                data.fpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
-            }
-
-
-            if ((*filecnt) >= (*maxfilecnt)-1 )
-            {
-                // last cube
-                lastcube = 1;
-            }
-
-
-
-
-
-            if ( (*saveON) == 1 )
-            {
-                if((*frameindex) == 0)
-                {
-                    // measure time at cube start
-                    // construc filenames
-
-                    printf("================= CONSTRUCT FILE NAMES ===================================\n");
-                    fflush(stdout);
-
-
-                    time_t          t;
-                    struct tm      *uttimeStart;
-                    t           = time(NULL);
-                    uttimeStart = gmtime(&t);
-                    struct timespec timenowStart;
-                    clock_gettime(CLOCK_MILK, &timenowStart);
-
-                    WRITE_FULLFILENAME(FITSffilename,
-                                       "%s/%s_%02d:%02d:%02ld.%09ld.fits",
-                                       savedirname,
-                                       streamname,
-                                       uttimeStart->tm_hour,
-                                       uttimeStart->tm_min,
-                                       timenowStart.tv_sec % 60,
-                                       timenowStart.tv_nsec);
-
-                    if(VERBOSE > 0)
-                    {
-                        printf("    [%5d] FITSffilename = %s\n", __LINE__, FITSffilename);
-                    }
-
-
-                    WRITE_FULLFILENAME(ASCIITIMEffilename,
-                                       "%s/%s_%02d:%02d:%02ld.%09ld.txt",
-                                       savedirname,
-                                       streamname,
-                                       uttimeStart->tm_hour,
-                                       uttimeStart->tm_min,
-                                       timenowStart.tv_sec % 60,
-                                       timenowStart.tv_nsec);
-
-                    if(VERBOSE > 0)
-                    {
-                        printf("    [%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
-                    }
-
-                    printf("================= CONSTRUCT FILE NAMES ===================================\n");
-                    fflush(stdout);
-                }
-
-
-                // timing buffer index
-                {
-                    long tindex = (*frameindex) + buffindex*(*cubesize);
-                    {
-                        array_cnt0[tindex] = inimg.md->cnt0;
-                        array_cnt1[tindex] = inimg.md->cnt1;
-
-                        // get current time
-                        struct timespec timenow;
-                        clock_gettime(CLOCK_MILK, &timenow);
-                        array_time[tindex] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
-
-                        if(aqtimekwi != -1)
-                        {
-                            array_aqtime[tindex] =
-                                1.0e-6 * inimg.im->kw[aqtimekwi].value.numl;
-                        }
-                        else
-                        {
-                            array_aqtime[tindex] = 0.0;
-                        }
-                    }
-                }
-
-
-                // copy frame to buffer
-
-                {
-
-                    printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
-                    fflush(stdout);
-
-
-                    long framesize = typesize * xsize * ysize;
-
-                    char *ptr0_0; // source image data
-                    char *ptr0;   // source image data, after offset
-
-                    ptr0_0 = (char *) inimg.im->array.raw;
-                    if( inimg.md->naxis == 3)
-                    {
-                        // this is a rolling buffer
-                        ptr0 = ptr0_0 + framesize * inimg.md->cnt1;
-                    }
-                    else
-                    {
-                        ptr0 = ptr0_0;
-                    }
-
-
-                    char *ptr1_0; // destination image data
-                    char *ptr1;   // destination image data, after offset
-                    if(buffindex == 0 )
-                    {
-                        ptr1_0 = (char *) imgbuff0.im->array.raw;
-                    }
-                    else
-                    {
-                        ptr1_0 = (char *) imgbuff1.im->array.raw;
-                    }
-                    ptr1 = ptr1_0 + framesize * (*frameindex);
-
-
-                    memcpy((void *) ptr1, (void *) ptr0, framesize);
-                }
-
-
-
-
-                processinfo_WriteMessage_fmt(
-                    processinfo,
-                    "buff %d file %lu frameindex %lu",
-                    buffindex,
-                    (*filecnt),
-                    (*frameindex));
-
-                (*frameindex) ++;
-                (*framecnt) ++;
+                lastcnt0 = inimg.md->cnt0;
             }
             else
             {
-                processinfo_WriteMessage(processinfo, "save = OFF");
+                // same frame as before
+                IsNewFrame = 0;
+            }
+
+            if( IsNewFrame == 1 )
+            {
+
+                if( (saveON_last == 0) && ((*saveON) == 1) )
+                {
+                    // We just turned on saving
+                    lastcube = 0;
+                    (*framecnt) = 0;
+                    (*filecnt) = 0;
+                }
+
+
+
+                if ((*framecnt) >= (*maxframecnt))
+                {
+                    // we've logged the requested number of frames
+                    (*saveON) = 0;
+                    data.fpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
+                }
+
+
+                if ((*filecnt) >= (*maxfilecnt)-1 )
+                {
+                    // last cube
+                    lastcube = 1;
+                }
+
+
+
+
+
+                if ( (*saveON) == 1 )
+                {
+                    if((*frameindex) == 0)
+                    {
+                        // measure time at cube start
+                        // construc filenames
+
+                        printf("================= CONSTRUCT FILE NAMES ===================================\n");
+                        fflush(stdout);
+
+
+                        time_t          t;
+                        struct tm      *uttimeStart;
+                        t           = time(NULL);
+                        uttimeStart = gmtime(&t);
+                        struct timespec timenowStart;
+                        clock_gettime(CLOCK_MILK, &timenowStart);
+
+                        WRITE_FULLFILENAME(FITSffilename,
+                                           "%s/%s_%02d:%02d:%02ld.%09ld.fits",
+                                           savedirname,
+                                           streamname,
+                                           uttimeStart->tm_hour,
+                                           uttimeStart->tm_min,
+                                           timenowStart.tv_sec % 60,
+                                           timenowStart.tv_nsec);
+
+                        if(VERBOSE > 0)
+                        {
+                            printf("    [%5d] FITSffilename = %s\n", __LINE__, FITSffilename);
+                        }
+
+
+                        WRITE_FULLFILENAME(ASCIITIMEffilename,
+                                           "%s/%s_%02d:%02d:%02ld.%09ld.txt",
+                                           savedirname,
+                                           streamname,
+                                           uttimeStart->tm_hour,
+                                           uttimeStart->tm_min,
+                                           timenowStart.tv_sec % 60,
+                                           timenowStart.tv_nsec);
+
+                        if(VERBOSE > 0)
+                        {
+                            printf("    [%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
+                        }
+
+                        printf("================= CONSTRUCT FILE NAMES ===================================\n");
+                        fflush(stdout);
+                    }
+
+
+                    // timing buffer index
+                    {
+                        long tindex = (*frameindex) + buffindex*(*cubesize);
+                        {
+                            array_cnt0[tindex] = inimg.md->cnt0;
+                            array_cnt1[tindex] = inimg.md->cnt1;
+
+                            // get current time
+                            struct timespec timenow;
+                            clock_gettime(CLOCK_MILK, &timenow);
+                            array_time[tindex] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
+
+                            if(aqtimekwi != -1)
+                            {
+                                array_aqtime[tindex] =
+                                    1.0e-6 * inimg.im->kw[aqtimekwi].value.numl;
+                            }
+                            else
+                            {
+                                array_aqtime[tindex] = 0.0;
+                            }
+                        }
+                    }
+
+
+                    // copy frame to buffer
+
+                    {
+
+                        printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
+                        fflush(stdout);
+
+
+                        long framesize = typesize * xsize * ysize;
+
+                        char *ptr0_0; // source image data
+                        char *ptr0;   // source image data, after offset
+
+                        ptr0_0 = (char *) inimg.im->array.raw;
+                        if( inimg.md->naxis == 3)
+                        {
+                            // this is a rolling buffer
+                            ptr0 = ptr0_0 + framesize * inimg.md->cnt1;
+                        }
+                        else
+                        {
+                            ptr0 = ptr0_0;
+                        }
+
+
+                        char *ptr1_0; // destination image data
+                        char *ptr1;   // destination image data, after offset
+                        if(buffindex == 0 )
+                        {
+                            ptr1_0 = (char *) imgbuff0.im->array.raw;
+                        }
+                        else
+                        {
+                            ptr1_0 = (char *) imgbuff1.im->array.raw;
+                        }
+                        ptr1 = ptr1_0 + framesize * (*frameindex);
+
+
+                        memcpy((void *) ptr1, (void *) ptr0, framesize);
+                    }
+
+
+
+
+                    processinfo_WriteMessage_fmt(
+                        processinfo,
+                        "buff %d file %lu frameindex %lu",
+                        buffindex,
+                        (*filecnt),
+                        (*frameindex));
+
+                    (*frameindex) ++;
+                    (*framecnt) ++;
+                }
+                else
+                {
+                    processinfo_WriteMessage(processinfo, "save = OFF");
+                }
             }
         }
 
