@@ -699,8 +699,8 @@ static errno_t compute_function()
                 // new frame has arrived
                 IsNewFrame = 1;
 
-                printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
-                fflush(stdout);
+              //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
+              //  fflush(stdout);
 
                 lastcnt0 = inimg.md->cnt0;
             }
@@ -822,8 +822,8 @@ static errno_t compute_function()
 
                     {
 
-                        printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
-                        fflush(stdout);
+                       // printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
+                       // fflush(stdout);
 
 
                         long framesize = typesize * xsize * ysize;
