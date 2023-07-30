@@ -325,7 +325,10 @@ EOF
 	echo "echo \"confstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 
 	echo "confstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	
+	echo "echo \"setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}\" >> ${fifoname}"
 	echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
+	
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
 fi
