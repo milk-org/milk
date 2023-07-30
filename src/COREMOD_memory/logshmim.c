@@ -1071,14 +1071,14 @@ static errno_t compute_function()
 
             // report buffer is ready
             //
-            /*if(buffindex == 0 )
+            if(buffindex == 0 )
             {
                 processinfo_update_output_stream(processinfo, imgbuff0.ID);
             }
             else
             {
                 processinfo_update_output_stream(processinfo, imgbuff1.ID);
-            }*/
+            }
 
 
             // increment counters
