@@ -1370,6 +1370,9 @@ static errno_t compute_function()
 
     int buffindex = 0;
 
+
+    printf(">>>>>>>>>>>>>>>>>> zsize = %u\n", (*cubesize));
+    printf(">>>>>>>>>>>>>>>>>> zsize = %u\n", zsize);
     // Create 2 log buffers
     //
     IMGID imgbuff0;
