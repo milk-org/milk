@@ -1221,6 +1221,8 @@ static inline IMGID stream_connect_create_3D(
         arraytmp[1] = ysize;
         arraytmp[2] = zsize;
 
+        printf("CREATING image size %u %u %u\n", xsize, ysize, zsize);
+
         create_image_ID(imname, 3, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
         free(arraytmp);
     }
