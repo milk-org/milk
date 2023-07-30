@@ -22,6 +22,8 @@ echo "$pname"
 
 
 milk-streamFITSlog $1 pstop
+sleep 0.5
+milk-streamFITSlog $1 kill
 
 exit
 
