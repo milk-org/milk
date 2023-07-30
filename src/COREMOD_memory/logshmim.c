@@ -690,8 +690,7 @@ static errno_t compute_function()
         }
         else
         {
-            printf("[[%ld]] ", inimg.md->cnt0);
-            
+
             // new frame has arrived
 
             if( (saveON_last == 0) && ((*saveON) == 1) )
@@ -795,6 +794,11 @@ static errno_t compute_function()
                 // copy frame to buffer
 
                 {
+
+                    printf("[[copy frame %ld to buffer %d]] ", inimg.md->cnt0, buffindex);
+                    fflush(stdout);
+
+
                     long framesize = typesize * xsize * ysize;
 
                     char *ptr0_0; // source image data
