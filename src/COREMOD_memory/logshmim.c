@@ -691,6 +691,9 @@ static errno_t compute_function()
         else
         {
 
+            printf("<<<<<<<<<<<<<<<<<<<< RECEIVED FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
+            fflush(stdout);
+
             // new frame has arrived
 
             if( (saveON_last == 0) && ((*saveON) == 1) )
