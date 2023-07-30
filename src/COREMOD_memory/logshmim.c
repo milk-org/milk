@@ -770,7 +770,7 @@ static errno_t compute_function()
 
                         if(VERBOSE > 0)
                         {
-                            printf("    [%5d] FITSffilename = %s\n", __LINE__, FITSffilename);
+                            printf("    [%5d] FITSffilename      = %s\n", __LINE__, FITSffilename);
                         }
 
 
