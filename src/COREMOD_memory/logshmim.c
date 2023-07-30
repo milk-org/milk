@@ -795,7 +795,7 @@ static errno_t compute_function()
 
                 {
 
-                    printf("[[copy frame %ld to frame %ld of buffer %d]] ", inimg.md->cnt0, (*frameindex), buffindex);
+                    printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
                     fflush(stdout);
 
 
