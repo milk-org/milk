@@ -728,6 +728,10 @@ static errno_t compute_function()
                     // measure time at cube start
                     // construc filenames
 
+                    printf("================= CONSTRUCT FILE NAMES ===================================\n");
+                    fflush(stdout);
+
+
                     time_t          t;
                     struct tm      *uttimeStart;
                     t           = time(NULL);
@@ -746,7 +750,7 @@ static errno_t compute_function()
 
                     if(VERBOSE > 0)
                     {
-                        printf("[%5d] FITSffilename = %s\n", __LINE__, FITSffilename);
+                        printf("    [%5d] FITSffilename = %s\n", __LINE__, FITSffilename);
                     }
 
 
@@ -761,8 +765,11 @@ static errno_t compute_function()
 
                     if(VERBOSE > 0)
                     {
-                        printf("[%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
+                        printf("    [%5d] ASCIITIMEffilename = %s\n", __LINE__, ASCIITIMEffilename);
                     }
+
+                    printf("================= CONSTRUCT FILE NAMES ===================================\n");
+                    fflush(stdout);
                 }
 
 
@@ -795,7 +802,7 @@ static errno_t compute_function()
 
                 {
 
-                    printf("\n      [[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
+                    printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
                     fflush(stdout);
 
 
