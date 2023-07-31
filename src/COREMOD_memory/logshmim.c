@@ -945,8 +945,8 @@ static errno_t compute_function()
 
 
                 {
-                    static pthread_t                  thread_savefits;
-                    static int                        iret_savefits;
+                    static pthread_t  thread_savefits;
+                    static int        iret_savefits;
 
 
                     // Fill up thread message
