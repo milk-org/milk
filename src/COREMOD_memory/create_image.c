@@ -214,9 +214,6 @@ static errno_t create_image_shared__cli() // default precision
                 break;
         }
         free(imsize);
-        printf("Creating 10 semaphores\n");
-        COREMOD_MEMORY_image_set_createsem(data.cmdargtoken[1].val.string,
-                                           IMAGE_NB_SEMAPHORE);
         return CLICMD_SUCCESS;
     }
     else
