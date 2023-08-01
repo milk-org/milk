@@ -656,7 +656,6 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
     }
 
     m = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1];
-    COREMOD_MEMORY_image_set_createsem(in_stream, 10);
 
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
@@ -801,7 +800,6 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                         0,
                         0,
                         &ID_modeval);
-        COREMOD_MEMORY_image_set_createsem(IDmodes_val_name, 10);
         MODEVALCOMPUTE = 1;
     }
     else
@@ -990,7 +988,6 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                             0,
                             &IDtrace);
         }
-        COREMOD_MEMORY_image_set_createsem(traceim_name, 10);
         free(sizearraytmp);
     }
 
@@ -1043,7 +1040,6 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                             0,
                             &IDprocave);
         }
-        COREMOD_MEMORY_image_set_createsem(process_ave_name, 10);
         free(sizearraytmp);
 
         sizearraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
@@ -1093,7 +1089,6 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                             0,
                             &IDprocrms);
         }
-        COREMOD_MEMORY_image_set_createsem(process_rms_name, 10);
         free(sizearraytmp);
     }
 

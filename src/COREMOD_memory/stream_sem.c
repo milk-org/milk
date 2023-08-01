@@ -17,8 +17,6 @@ static long       NB_thrarray_semwait;
 // Forward declaration(s)
 // ==========================================
 
-imageID COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem);
-
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname);
 
 imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index);
@@ -45,20 +43,6 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
 // ==========================================
 // Command line interface wrapper function(s)
 // ==========================================
-
-static errno_t COREMOD_MEMORY_image_set_createsem__cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
-    {
-        COREMOD_MEMORY_image_set_createsem(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
 
 static errno_t COREMOD_MEMORY_image_seminfo__cli()
 {
@@ -138,15 +122,6 @@ static errno_t COREMOD_MEMORY_image_set_semflush__cli()
 
 errno_t stream_sem_addCLIcmd()
 {
-    RegisterCLIcommand("imsetcreatesem",
-                       __FILE__,
-                       COREMOD_MEMORY_image_set_createsem__cli,
-                       "create image semaphore",
-                       "<image> <NBsem>",
-                       "imsetcreatesem im1 5",
-                       "long COREMOD_MEMORY_image_set_createsem(const char "
-                       "*IDname, long NBsem)");
-
     RegisterCLIcommand("imseminfo",
                        __FILE__,
                        COREMOD_MEMORY_image_seminfo__cli,
@@ -194,24 +169,6 @@ errno_t stream_sem_addCLIcmd()
                        "*IDname, long index)");
 
     return RETURN_SUCCESS;
-}
-
-/**
- * @see ImageStreamIO_createsem
- */
-
-imageID COREMOD_MEMORY_image_set_createsem(const char *IDname, long NBsem)
-{
-    imageID ID;
-
-    ID = image_ID(IDname);
-
-    if(ID != -1)
-    {
-        ImageStreamIO_createsem(&data.image[ID], NBsem);
-    }
-
-    return ID;
 }
 
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname)

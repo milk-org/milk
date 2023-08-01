@@ -391,7 +391,6 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     if(IDout == -1)
     {
         create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
-        COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
     cubeindex = 0;
@@ -614,7 +613,6 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     if(IDout == -1)
     {
         create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
-        COREMOD_MEMORY_image_set_createsem(IDoutname, IMAGE_NB_SEMAPHORE);
     }
 
     ptr0s     = (char *) data.image[IDin].array.raw;
