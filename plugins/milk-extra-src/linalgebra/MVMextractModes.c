@@ -704,7 +704,6 @@ static errno_t compute_function()
                             0,
                             &IDtrace);
         }
-        COREMOD_MEMORY_image_set_createsem(traceim_name, 10);
         free(sizearraytmp);
     }
 
@@ -762,7 +761,6 @@ static errno_t compute_function()
                             0,
                             &IDprocave);
         }
-        COREMOD_MEMORY_image_set_createsem(process_ave_name, 10);
         free(sizearraytmp);
 
         sizearraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
@@ -812,7 +810,6 @@ static errno_t compute_function()
                             0,
                             &IDprocrms);
         }
-        COREMOD_MEMORY_image_set_createsem(process_rms_name, 10);
         free(sizearraytmp);
     }
 

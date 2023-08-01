@@ -240,8 +240,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                data.image[IDin].kw[kw].comment);
     }
 
-    COREMOD_MEMORY_image_set_createsem(IDout_name, IMAGE_NB_SEMAPHORE);
-
     dtarray = (double *) malloc(sizeof(double) * NBslice);
     if(dtarray == NULL)
     {
