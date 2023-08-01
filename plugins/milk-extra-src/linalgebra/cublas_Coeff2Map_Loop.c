@@ -172,7 +172,6 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         printf("ERROR: missing output stream\n");
         exit(0);
     }
-    COREMOD_MEMORY_image_set_createsem(IDoutmap_name, 5);
 
     cudaGetDeviceCount(&cuda_deviceCount);
     printf("%s : %d devices found\n", __func__, cuda_deviceCount);
