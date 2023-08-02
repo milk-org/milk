@@ -223,9 +223,9 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     create_image_ID(IDout_name,
                     2,
                     sizearray,
-                    data.image[IDin].md[0].datatype,
+                    data.image[IDin].md->datatype,
                     1,
-                    25,
+                    data.image[IDin].md->NBkw,
                     0,
                     &IDout);
 
