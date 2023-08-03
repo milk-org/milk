@@ -49,26 +49,26 @@ static errno_t create_image__cli()
         }
         switch(data.precision)
         {
-            case 0:
-                create_image_ID(data.cmdargtoken[1].val.string,
-                                naxis,
-                                imsize,
-                                _DATATYPE_FLOAT,
-                                data.SHARED_DFT,
-                                data.NBKEYWORD_DFT,
-                                0,
-                                NULL);
-                break;
-            case 1:
-                create_image_ID(data.cmdargtoken[1].val.string,
-                                naxis,
-                                imsize,
-                                _DATATYPE_DOUBLE,
-                                data.SHARED_DFT,
-                                data.NBKEYWORD_DFT,
-                                0,
-                                NULL);
-                break;
+        case 0:
+            create_image_ID(data.cmdargtoken[1].val.string,
+                            naxis,
+                            imsize,
+                            _DATATYPE_FLOAT,
+                            data.SHARED_DFT,
+                            data.NBKEYWORD_DFT,
+                            0,
+                            NULL);
+            break;
+        case 1:
+            create_image_ID(data.cmdargtoken[1].val.string,
+                            naxis,
+                            imsize,
+                            _DATATYPE_DOUBLE,
+                            data.SHARED_DFT,
+                            data.NBKEYWORD_DFT,
+                            0,
+                            NULL);
+            break;
         }
         free(imsize);
         return CLICMD_SUCCESS;
@@ -192,26 +192,26 @@ static errno_t create_image_shared__cli() // default precision
         }
         switch(data.precision)
         {
-            case 0:
-                create_image_ID(data.cmdargtoken[1].val.string,
-                                naxis,
-                                imsize,
-                                _DATATYPE_FLOAT,
-                                1,
-                                data.NBKEYWORD_DFT,
-                                0,
-                                NULL);
-                break;
-            case 1:
-                create_image_ID(data.cmdargtoken[1].val.string,
-                                naxis,
-                                imsize,
-                                _DATATYPE_DOUBLE,
-                                1,
-                                data.NBKEYWORD_DFT,
-                                0,
-                                NULL);
-                break;
+        case 0:
+            create_image_ID(data.cmdargtoken[1].val.string,
+                            naxis,
+                            imsize,
+                            _DATATYPE_FLOAT,
+                            1,
+                            data.NBKEYWORD_DFT,
+                            0,
+                            NULL);
+            break;
+        case 1:
+            create_image_ID(data.cmdargtoken[1].val.string,
+                            naxis,
+                            imsize,
+                            _DATATYPE_DOUBLE,
+                            1,
+                            data.NBKEYWORD_DFT,
+                            0,
+                            NULL);
+            break;
         }
         free(imsize);
         return CLICMD_SUCCESS;
@@ -547,19 +547,19 @@ errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
     return RETURN_SUCCESS;
 }
 
-errno_t create_2Dimage_ID(const char *ID_name,
-                          uint32_t    xsize,
-                          uint32_t    ysize,
-                          imageID    *outID)
+
+
+errno_t create_2Dimage_ID(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID  ID    = -1;
     long     naxis = 2;
-    uint32_t naxes[2];
-
-    naxes[0] = xsize;
-    naxes[1] = ysize;
+    uint32_t naxes[2] = { xsize, ysize };
 
     if(data.precision == 0)
     {
@@ -611,19 +611,19 @@ errno_t create_2Dimage_ID(const char *ID_name,
     return RETURN_SUCCESS;
 }
 
-errno_t create_2Dimage_ID_double(const char *ID_name,
-                                 uint32_t    xsize,
-                                 uint32_t    ysize,
-                                 imageID    *outID)
+
+errno_t create_2Dimage_ID_double(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID  ID    = -1;
     long     naxis = 2;
-    uint32_t naxes[2];
+    uint32_t naxes[2] = { xsize, ysize };
 
-    naxes[0] = xsize;
-    naxes[1] = ysize;
 
     FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                       naxis,
@@ -644,19 +644,17 @@ errno_t create_2Dimage_ID_double(const char *ID_name,
 }
 
 /* 2D complex image */
-errno_t create_2DCimage_ID(const char *ID_name,
-                           uint32_t    xsize,
-                           uint32_t    ysize,
-                           imageID    *outID)
+errno_t create_2DCimage_ID(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID  ID    = -1;
     long     naxis = 2;
-    uint32_t naxes[2];
-
-    naxes[0] = xsize;
-    naxes[1] = ysize;
+    uint32_t naxes[2] = { xsize, ysize };
 
     if(data.precision == 0)
     {
@@ -692,20 +690,21 @@ errno_t create_2DCimage_ID(const char *ID_name,
     return RETURN_SUCCESS;
 }
 
+
+
 /* 2D complex image */
-errno_t create_2DCimage_ID_double(const char *ID_name,
-                                  uint32_t    xsize,
-                                  uint32_t    ysize,
-                                  imageID    *outID)
+errno_t create_2DCimage_ID_double(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID  ID    = -1;
     long     naxis = 2;
-    uint32_t naxes[2];
+    uint32_t naxes[2]  = { xsize, ysize };
 
-    naxes[0] = xsize;
-    naxes[1] = ysize;
 
     FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                       naxis,
@@ -726,21 +725,18 @@ errno_t create_2DCimage_ID_double(const char *ID_name,
 }
 
 /* 3D image, single precision */
-errno_t create_3Dimage_ID_float(const char *ID_name,
-                                uint32_t    xsize,
-                                uint32_t    ysize,
-                                uint32_t    zsize,
-                                imageID    *outID)
+errno_t create_3Dimage_ID_float(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    uint32_t    zsize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID  ID    = -1;
     long     naxis = 3;
-    uint32_t naxes[3];
-
-    naxes[0] = xsize;
-    naxes[1] = ysize;
-    naxes[2] = zsize;
+    uint32_t naxes[3] = { xsize, ysize, zsize };
 
     //  printf("CREATING 3D IMAGE: %s %ld %ld %ld\n", ID_name, xsize, ysize, zsize);
     //  fflush(stdout);
@@ -767,21 +763,18 @@ errno_t create_3Dimage_ID_float(const char *ID_name,
 }
 
 /* 3D image, double precision */
-errno_t create_3Dimage_ID_double(const char *ID_name,
-                                 uint32_t    xsize,
-                                 uint32_t    ysize,
-                                 uint32_t    zsize,
-                                 imageID    *outID)
+errno_t create_3Dimage_ID_double(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    uint32_t    zsize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID  ID;
     long     naxis = 3;
-    uint32_t naxes[3];
-
-    naxes[0] = xsize;
-    naxes[1] = ysize;
-    naxes[2] = zsize;
+    uint32_t naxes[3] = { xsize, ysize, zsize };
 
     FUNC_CHECK_RETURN(create_image_ID(ID_name,
                                       naxis,
@@ -805,22 +798,22 @@ errno_t create_3Dimage_ID_double(const char *ID_name,
 
 
 /* 3D image, default precision */
-errno_t create_3Dimage_ID(const char *ID_name,
-                          uint32_t    xsize,
-                          uint32_t    ysize,
-                          uint32_t    zsize,
-                          imageID    *outID)
+errno_t create_3Dimage_ID(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    uint32_t    zsize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID   ID    = -1;
     long      naxis = 3;
-    uint32_t *naxes;
 
-    naxes    = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    naxes[0] = xsize;
-    naxes[1] = ysize;
-    naxes[2] = zsize;
+    uint32_t naxes[3] = { xsize, ysize, zsize };
+
+
+    printf("CREATE 3D IMAGE SIZE %u %u %u\n", xsize, ysize, zsize);
 
     if(data.precision == 0)
     {
@@ -848,8 +841,6 @@ errno_t create_3Dimage_ID(const char *ID_name,
                                           &ID));
     }
 
-    free(naxes);
-
     if(outID != NULL)
     {
         *outID = ID;
@@ -860,22 +851,18 @@ errno_t create_3Dimage_ID(const char *ID_name,
 }
 
 /* 3D complex image */
-errno_t create_3DCimage_ID(const char *ID_name,
-                           uint32_t    xsize,
-                           uint32_t    ysize,
-                           uint32_t    zsize,
-                           imageID    *outID)
+errno_t create_3DCimage_ID(
+    const char * restrict ID_name,
+    uint32_t    xsize,
+    uint32_t    ysize,
+    uint32_t    zsize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
     imageID   ID    = -1;
     long      naxis = 3;
-    uint32_t *naxes;
-
-    naxes    = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    naxes[0] = xsize;
-    naxes[1] = ysize;
-    naxes[2] = zsize;
+    uint32_t naxes[3] = { xsize, ysize, zsize };
 
     if(data.precision == 0)
     {
@@ -903,7 +890,6 @@ errno_t create_3DCimage_ID(const char *ID_name,
                                           &ID));
     }
 
-    free(naxes);
 
     if(outID != NULL)
     {
