@@ -469,10 +469,10 @@ int fpsCTRL_TUI_process_user_key(
                 int pindex = keywnode[kwnindex].pindex;
 
                 char msgstring[STRINGMAXLEN_FPS_LOGMSG];
-                int ret = functionparameter_PrintParameter_ValueString(
-                              &fps[fpsindex].parray[pindex],
-                              msgstring,
-                              STRINGMAXLEN_FPS_LOGMSG);
+                functionparameter_PrintParameter_ValueString(
+                    &fps[fpsindex].parray[pindex],
+                    msgstring,
+                    STRINGMAXLEN_FPS_LOGMSG);
                 functionparameter_outlog("STATUS",
                                          "%s",
                                          msgstring);
