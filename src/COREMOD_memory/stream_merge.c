@@ -82,8 +82,22 @@ static errno_t compute_function()
     // Perform some data offset computations.
     // So that we know WHERE the memcopies should go and how big they should be.
     int32_t *offset_bytes = (int32_t *) malloc(n_input * sizeof(int32_t));
+    if(offset_bytes == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (n_input * sizeof(int32_t)));
+        abort();
+    }
+
     int32_t *size_bytes = (int32_t *) malloc(n_input * sizeof(int32_t));
+    if(size_bytes == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (n_input * sizeof(int32_t)));
+        abort();
+    }
+
     int32_t *sem_idxs = (int32_t *) malloc(n_input * sizeof(int32_t));
+    if(sem_idxs == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (n_input * sizeof(int32_t)));
+        abort();
+    }
 
     int acc = 0;
     for(int kk = 0;  kk < n_input; ++kk)

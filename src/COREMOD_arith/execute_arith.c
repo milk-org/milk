@@ -368,7 +368,7 @@ int execute_arith(const char *cmd1)
 
             case '+':
             case '-':
-                if(((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) &&
+                if((i>1) &&((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) &&
                         (isdigit(cmd[i - 2])) && (isdigit(cmd[i + 1])))
                 {
                     // + or - is part of exponent
