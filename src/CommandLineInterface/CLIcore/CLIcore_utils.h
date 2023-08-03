@@ -361,19 +361,20 @@ typedef struct
 
 #define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                    \
     }                                                                          \
-    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
-    {                                                                          \
-        if(data.fpsptr != NULL) {                                              \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {                 \
+     if(processinfo != NULL) {                                                 \
+      if(data.fpsptr != NULL) {                                                \
         if(data.fpsptr->cmdset.triggermodeptr != NULL){                        \
-        processinfo->triggermode = *data.fpsptr->cmdset.triggermodeptr;}       \
+          processinfo->triggermode = *data.fpsptr->cmdset.triggermodeptr;}     \
         if(data.fpsptr->cmdset.procinfo_loopcntMax_ptr != NULL){               \
-        processinfo->loopcntMax = *data.fpsptr->cmdset.procinfo_loopcntMax_ptr;}    \
+          processinfo->loopcntMax = *data.fpsptr->cmdset.procinfo_loopcntMax_ptr;}  \
         if(data.fpsptr->cmdset.triggerdelayptr != NULL){                       \
-        processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];}   \
+          processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];} \
         if(data.fpsptr->cmdset.triggertimeoutptr != NULL){                     \
-        processinfo->triggertimeout = data.fpsptr->cmdset.triggertimeoutptr[0];}   \
-        }                                                                      \
-        processinfo_exec_end(processinfo);                                     \
+          processinfo->triggertimeout = data.fpsptr->cmdset.triggertimeoutptr[0];} \
+        }}                                                                     \
+    if(processinfo != NULL) {                                              \
+          processinfo_exec_end(processinfo);}                                  \
     }                                                                          \
     }                                                                          \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \

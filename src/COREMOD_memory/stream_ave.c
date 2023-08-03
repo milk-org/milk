@@ -178,8 +178,17 @@ static errno_t compute_function()
     }
 
     DEBUG_TRACEPOINT("Allocating summation array");
-    double *imdataarray    = (double *) malloc(sizeof(double) * xysize);
-    double *imdataarrayPOW = (double *) malloc(sizeof(double) * xysize);
+    double * restrict imdataarray    = (double *) malloc(sizeof(double) * xysize);
+    if(imdataarray == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (sizeof(double) * xysize));
+        abort();
+    }
+
+    double * restrict imdataarrayPOW = (double *) malloc(sizeof(double) * xysize);
+    if(imdataarrayPOW == NULL) {
+        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (sizeof(double) * xysize));
+        abort();
+    }
 
     *cntindex = 0;
 
@@ -197,53 +206,68 @@ static errno_t compute_function()
         switch(inimg.datatype)
         {
 
-            case _DATATYPE_FLOAT :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] = inimg.im->array.F[pixi];
-                }
-                break;
+        case _DATATYPE_FLOAT :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = inimg.im->array.F[pixi];
+            }
+            break;
 
-            case _DATATYPE_DOUBLE :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] = inimg.im->array.D[pixi];
-                }
-                break;
+        case _DATATYPE_DOUBLE :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = inimg.im->array.D[pixi];
+            }
+            break;
 
-            case _DATATYPE_INT16 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] = (float) inimg.im->array.SI16[pixi];
-                }
-                break;
+        case _DATATYPE_INT16 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = (double) inimg.im->array.SI16[pixi];
+            }
+            break;
 
-            case _DATATYPE_UINT16 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] = (float) inimg.im->array.UI16[pixi];
-                }
-                break;
+        case _DATATYPE_UINT16 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = (double) inimg.im->array.UI16[pixi];
+            }
+            break;
 
-            case _DATATYPE_INT32 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] = (float) inimg.im->array.SI32[pixi];
-                }
-                break;
+        case _DATATYPE_INT32 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = (double) inimg.im->array.SI32[pixi];
+            }
+            break;
 
-            case _DATATYPE_UINT32 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] = (float) inimg.im->array.UI32[pixi];
-                }
-                break;
+        case _DATATYPE_UINT32 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = (double) inimg.im->array.UI32[pixi];
+            }
+            break;
+
+        case _DATATYPE_INT64 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = (double) inimg.im->array.SI64[pixi];
+            }
+            break;
+
+        case _DATATYPE_UINT64 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] = (double) inimg.im->array.UI64[pixi];
+            }
+            break;
+
 
         }
 
         if(*comprms == 1)
         {
-            for(uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
             {
                 imdataarrayPOW[pixi] = imdataarray[pixi] * imdataarray[pixi];
             }
@@ -255,54 +279,67 @@ static errno_t compute_function()
 
         switch(inimg.datatype)
         {
-            case _DATATYPE_FLOAT :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] += inimg.im->array.F[pixi];
-                }
-                break;
+        case _DATATYPE_FLOAT :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += inimg.im->array.F[pixi];
+            }
+            break;
 
-            case _DATATYPE_DOUBLE :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] += inimg.im->array.D[pixi];
-                }
-                break;
+        case _DATATYPE_DOUBLE :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += inimg.im->array.D[pixi];
+            }
+            break;
 
-            case _DATATYPE_INT16 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] += (float) inimg.im->array.SI16[pixi];
-                }
-                break;
+        case _DATATYPE_INT16 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += (double) inimg.im->array.SI16[pixi];
+            }
+            break;
 
-            case _DATATYPE_UINT16 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] += (float) inimg.im->array.UI16[pixi];
-                }
-                break;
+        case _DATATYPE_UINT16 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += (double) inimg.im->array.UI16[pixi];
+            }
+            break;
 
-            case _DATATYPE_INT32 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] += (float) inimg.im->array.SI32[pixi];
-                }
-                break;
+        case _DATATYPE_INT32 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += (double) inimg.im->array.SI32[pixi];
+            }
+            break;
 
-            case _DATATYPE_UINT32 :
-                for(uint64_t pixi = 0; pixi < xysize; pixi++)
-                {
-                    imdataarray[pixi] += (float) inimg.im->array.UI32[pixi];
-                }
-                break;
+        case _DATATYPE_UINT32 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += (double) inimg.im->array.UI32[pixi];
+            }
+            break;
 
+        case _DATATYPE_INT64 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += (double) inimg.im->array.SI64[pixi];
+            }
+            break;
+
+        case _DATATYPE_UINT64 :
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
+            {
+                imdataarray[pixi] += (double) inimg.im->array.UI64[pixi];
+            }
+            break;
         }
 
 
         if(*comprms == 1)
         {
-            for(uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
             {
                 imdataarrayPOW[pixi] += imdataarray[pixi] * imdataarray[pixi];
             }
@@ -318,7 +355,7 @@ static errno_t compute_function()
         {
             DEBUG_TRACEPOINT("Writing output AVE image");
 
-            for(uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
             {
                 outimgave.im->array.F[pixi] = imdataarray[pixi] / (*cntindex);
             }
@@ -329,7 +366,7 @@ static errno_t compute_function()
         if(*comprms == 1)
         {
             DEBUG_TRACEPOINT("Writing output RMS image");
-            for(uint64_t pixi = 0; pixi < xysize; pixi++)
+            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
             {
                 outimgrms.im->array.F[pixi] =
                     sqrt(imdataarrayPOW[pixi]) / (*cntindex);

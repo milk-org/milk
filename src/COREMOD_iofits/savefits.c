@@ -172,7 +172,8 @@ errno_t saveFITS_opt_trunc(
     uint8_t datatype       = imgin.md->datatype;
     char *datainptr = (char *) imgin.im->array.raw;
 
-    int     bitpix;
+    // default
+    int     bitpix = FLOAT_IMG;
 
     switch( outputbitpix )
     {
@@ -303,22 +304,18 @@ errno_t saveFITS_opt_trunc(
     }
 
     int  naxis = imgin.md->naxis;
+    long nelements = 1;
     long naxesl[3];
     for(int i = 0; i < naxis; i++)
     {
         naxesl[i] = (long) imgin.md->size[i];
+        nelements *= naxesl[i];
         printf("-------------- SIZE %d = %ld\n", i, naxesl[i]);
     }
     if(truncate >= 0)
     {
         naxesl[naxis - 1] = truncate;
         printf("-------------- TRUNCATE TO %d\n", truncate);
-    }
-
-    long nelements = 1;
-    for(int i = 0; i < naxis; i++)
-    {
-        nelements *= naxesl[i];
     }
 
 
