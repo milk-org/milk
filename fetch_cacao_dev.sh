@@ -12,6 +12,6 @@ fi
 topdir="$(dirname $0)"
 mkl_sdl=$(grep '^[\t ]*pkg_check_modules( *MKL  *mkl-sdl *) *$' "$topdir/CMakeLists.txt")
 [ "$mkl_sdl" ] \
-&& sed -i -e '/^[	 ]*lapacke$/s/lapacke/#&/' plugins/cacao-src/computeCalib/CMakeLists.txt \
+&& sed -i -e '/^[	 ]*lapacke$/s/lapacke/#&/' "$topdir/plugins/cacao-src/computeCalib/CMakeLists.txt" \
 && echo "Updated plugins/cacao-src/computeCalib/CMakeLists.txt to remove lapacke library" \
 || true
