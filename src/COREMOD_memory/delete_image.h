@@ -8,7 +8,7 @@
 
 errno_t CLIADDCMD_COREMOD_memory__delete_image();
 
-errno_t delete_image(IMGID img, int errmode);
+errno_t delete_image(IMGID *img, int errmode);
 
 errno_t delete_image_ID(const char *imname, int errmode);
 

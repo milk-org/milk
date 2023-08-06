@@ -719,8 +719,10 @@ static inline imageID createimagefromIMGID(IMGID *img)
 
 /** Create image according to IMGID entries of existing image
  */
-static inline imageID imcreatelikewiseIMGID(IMGID *target_img,
-        IMGID *source_img)
+static inline imageID imcreatelikewiseIMGID(
+    IMGID *target_img,
+    IMGID *source_img
+)
 {
     if(target_img->ID == -1)
     {
@@ -873,7 +875,10 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
  * @brief Check if img complies to imgtemplate
  *
  */
-static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
+static inline uint64_t IMGIDcompare(
+    IMGID img,
+    IMGID imgtemplate
+)
 {
     int compErr = 0;
 
@@ -949,6 +954,97 @@ static inline uint64_t IMGIDcompare(IMGID img, IMGID imgtemplate)
 
     return compErr;
 }
+
+
+
+
+/**
+ * @brief Check if img complies to imgtemplate
+ *
+ */
+static inline uint64_t IMGIDmdcompare(
+    IMGID img,
+    IMGID imgtemplate
+)
+{
+    int compErr = 0;
+
+    printf("COMPARING %s %s\n", img.name, imgtemplate.name);
+    
+    if(imgtemplate.md->datatype != _DATATYPE_UNINITIALIZED)
+    {
+        printf("Checking md->datatype       ");
+        if(imgtemplate.md->datatype != img.md->datatype)
+        {
+            printf("FAIL\n");
+            compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
+        }
+    }
+
+    if(imgtemplate.md->naxis != -1)
+    {
+        printf("Checking md->naxis  %d %d    ", imgtemplate.md->naxis, img.md->naxis);
+        if(imgtemplate.md->naxis != img.md->naxis)
+        {
+            printf("FAIL\n");
+            compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
+        }
+    }
+
+    if(imgtemplate.md->size[0] != 0)
+    {
+        printf("Checking md->size[0]        ");
+        if(imgtemplate.md->size[0] != img.md->size[0])
+        {
+            printf("FAIL\n");
+            compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
+        }
+    }
+
+    if(imgtemplate.md->size[1] != 0)
+    {
+        printf("Checking md->size[1]        ");
+        if(imgtemplate.md->size[1] != img.md->size[1])
+        {
+            printf("FAIL\n");
+            compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
+        }
+    }
+
+    if(imgtemplate.md->size[2] != 0)
+    {
+        printf("Checking md->size[2]        ");
+        if(imgtemplate.md->size[2] != img.md->size[2])
+        {
+            printf("FAIL\n");
+            compErr++;
+        }
+        else
+        {
+            printf("PASS\n");
+        }
+    }
+
+    return compErr;
+}
+
+
 
 
 
