@@ -401,11 +401,11 @@ errno_t create_image_ID(const char *name,
                      CBsize);
 
     imageID ID;
+    static int cnt = 1;
 
-    ID = -1;
     if(image_ID(name) == -1)
     {
-        ID = next_avail_image_ID();
+        ID = next_avail_image_ID(*outID);
 
         ImageStreamIO_createIm(&data.image[ID],
                                name,
