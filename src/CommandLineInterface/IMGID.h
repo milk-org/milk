@@ -20,23 +20,24 @@ typedef struct
     // increments when image created, used to check if re-resolving needed
     int64_t createcnt;
 
+    // used to resolve if needed
+    char            name[STRINGMAXLEN_IMAGE_NAME];
 
-    char            name[STRINGMAXLEN_IMAGE_NAME]; // used to resolve if needed
+    // image content, data and metadata
     IMAGE          *im;
-    IMAGE_METADATA *md; // pointer to metadata
+    // md points at im.md
+    IMAGE_METADATA *md;
 
     // Requested image params
     // Used to create image or test if existing image matches
-
-    uint8_t datatype;
-
+    // These fields do not always match the image content
+    //
+    uint8_t  datatype;
     int      naxis;
     uint32_t size[3];
-
-    int shared;
-
+    int      shared;
     // number of keywords
-    int NBkw;
+    int      NBkw;
 
     // fast circular buffer size
     int CBsize;

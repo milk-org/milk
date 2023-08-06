@@ -18,7 +18,7 @@ MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 imgen.mkdisk imd1 256 256 128 128 50
 
 # Copy to shared memory stream
-cpsh imd1 ims1
+imcpshm imd1 ims1
 
 # List loaded images
 listim

@@ -15,10 +15,10 @@ MILK_QUIET="1" MILKCLI_ADD_LIBS=\"milkmoduleexample,milkimagegen\" milk
 imgen.mkdisk imd1 256 256 128 128 50
 
 # Make it a stream
-cpsh imd1 ims1
+imcpshm imd1 ims1
 
 # Make a separate stream which will be used as trigger input
-cpsh imd1 imtrig
+imcpshm imd1 imtrig
 
 # Set up imsum2 function with processinfo
 modex.imsum2 ..procinfo 1

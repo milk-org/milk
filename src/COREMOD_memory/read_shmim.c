@@ -42,55 +42,103 @@ static errno_t help_function()
 
 
 
-imageID read_sharedmem_image(
-    const char *sname
+
+
+IMGID read_sharedmem_img(
+    const char * restrict sname
 )
 {
-    imageID ID    = -1;
-    imageID IDmem = 0;
-    IMAGE  *image;
+    IMGID img;
+    img.ID = -1;
 
     if(strlen(sname) != 0)
     {
-        DEBUG_TRACEPOINT("looking for next ID");
-        IDmem = next_avail_image_ID();
-        DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
-
-        image = &data.image[IDmem];
+        IMAGE  *image;
+        img.ID = next_avail_image_ID(-1);
+        image = &data.image[img.ID];
 
         if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
                 IMAGESTREAMIO_SUCCESS)
         {
             printf("read shared mem image failed -> ID = -1\n");
             fflush(stdout);
-            ID = -1;
+            img.ID = -1;
         }
         else
         {
-            IMGID img = mkIMGID_from_name(sname);
-            //DEBUG_TRACEPOINT("resolving image");
-            //ID = resolveIMGID(&img, ERRMODE_ABORT);
-            img.ID = IDmem;
-
-            //ID = image_ID(sname);
-            printf("read shared mem image success -> ID = %ld\n", img.ID);
-            ID = img.ID;
-            fflush(stdout);
-
-            image_keywords_list(img);
+            img.im = &data.image[img.ID];
+            img.md = &data.image[img.ID].md[0];
+            strcpy(img.name, sname);
         }
+    }
 
-        if(data.MEM_MONITOR == 1)
-        {
-            list_image_ID_ncurses();
-        }
-        return ID;
+    return(img);
+}
+
+
+
+
+
+
+
+imageID read_sharedmem_image(
+    const char * restrict sname
+)
+{
+    IMGID img = read_sharedmem_img(sname);
+    return(img.ID);
+}
+
+
+
+
+
+/*
+imageID ID    = -1;
+imageID IDmem = 0;
+IMAGE  *image;
+
+if(strlen(sname) != 0)
+{
+    DEBUG_TRACEPOINT("looking for next ID");
+    IDmem = next_avail_image_ID();
+    DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
+
+    image = &data.image[IDmem];
+
+    if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
+            IMAGESTREAMIO_SUCCESS)
+    {
+        printf("read shared mem image failed -> ID = -1\n");
+        fflush(stdout);
+        ID = -1;
     }
     else
     {
-        return -1;
+        IMGID img = mkIMGID_from_name(sname);
+        //DEBUG_TRACEPOINT("resolving image");
+        //ID = resolveIMGID(&img, ERRMODE_ABORT);
+        img.ID = IDmem;
+
+        //ID = image_ID(sname);
+        printf("read shared mem image success -> ID = %ld\n", img.ID);
+        ID = img.ID;
+        fflush(stdout);
+
+        image_keywords_list(img);
     }
+
+    if(data.MEM_MONITOR == 1)
+    {
+        list_image_ID_ncurses();
+    }
+    return ID;
 }
+else
+{
+    return -1;
+}*/
+
 
 
 
