@@ -259,7 +259,7 @@ if [ "$LOADfile" = "1" ]; then
 MILK_QUIET=1 milk -n $pname << EOF
 loadfits "${FITSfname}" im
 readshmim "${STREAMname}"
-cpsh im "${STREAMname}"
+imcpshm im "${STREAMname}"
 exitCLI
 EOF
 
