@@ -53,22 +53,37 @@ IMGID read_sharedmem_img(
 
     if(strlen(sname) != 0)
     {
-        IMAGE  *image;
-        img.ID = next_avail_image_ID(-1);
-        image = &data.image[img.ID];
-
-        if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
-                IMAGESTREAMIO_SUCCESS)
+        // check if already loaded
+        imageID ID = image_ID(sname);
+        if(ID == -1)
         {
-            printf("read shared mem image failed -> ID = -1\n");
-            fflush(stdout);
-            img.ID = -1;
+            IMAGE  *image;
+            img.ID = next_avail_image_ID(-1);
+            image = &data.image[img.ID];
+
+            if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
+                    IMAGESTREAMIO_SUCCESS)
+            {
+                printf("read shared mem image failed -> ID = -1\n");
+                fflush(stdout);
+                img.ID = -1;
+            }
+            else
+            {
+                img.im = &data.image[img.ID];
+                img.md = &data.image[img.ID].md[0];
+                strcpy(img.name, sname);
+            }
         }
         else
         {
-            img.im = &data.image[img.ID];
-            img.md = &data.image[img.ID].md[0];
+            img.ID = ID;
             strcpy(img.name, sname);
+            img.im        = &data.image[img.ID];
+            img.md        = &data.image[img.ID].md[0];
+            img.createcnt = data.image[img.ID].createcnt;
+            // Populate the IMGID from the imageID metadata
+            updateIMGIDcreationparams(&img);
         }
     }
 
