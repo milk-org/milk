@@ -202,8 +202,10 @@ static errno_t help_function()
     printf(" 0    1  Skip big matrix (U or V) computation\n");
     printf(" 1    2  Compute pseudo-inverse, using svdlim for regularization\n");
     printf("         Inverse stored as image psinv\n");
+    printf("         Only supported for tall input matrix\n");
     printf(" 2    4  Check pseudo-inverse: compute input x psinv product\n");
     printf("         result stored as image psinvcheck\n");
+    printf("         Only supported for tall input matrix\n");
     printf("\n");
     printf("Example: compmode=6 will compute psinv and check it\n");
     printf("\n");
@@ -242,24 +244,24 @@ static errno_t computeSGEMM(
 
     if(imginA.md->naxis == 3)
     {
-        printf("inA_Mdim   : %d x %d\n", imginA.md->size[0], imginA.md->size[1]);
+        //printf("inA_Mdim   : %d x %d\n", imginA.md->size[0], imginA.md->size[1]);
         inA_Mdim = imginA.md->size[0] * imginA.md->size[1];
         inA_Mdim0 = imginA.md->size[0];
         inA_Mdim1 = imginA.md->size[1];
 
-        printf("inA_Ndim    : %d\n", imginA.md->size[2]);
+        //printf("inA_Ndim    : %d\n", imginA.md->size[2]);
         inA_Ndim = imginA.md->size[2];
         inA_Ndim0 = imginA.md->size[2];
         inA_Ndim1 = 1;
     }
     else
     {
-        printf("inA_Mdim   : %d\n", imginA.md->size[0]);
+        //printf("inA_Mdim   : %d\n", imginA.md->size[0]);
         inA_Mdim = imginA.md->size[0];
         inA_Mdim0 = imginA.md->size[1];
         inA_Mdim1 = 1;
 
-        printf("inNdim    : %d\n", imginA.md->size[1]);
+        //printf("inNdim    : %d\n", imginA.md->size[1]);
         inA_Ndim = imginA.md->size[1];
         inA_Ndim0 = imginA.md->size[1];
         inA_Ndim1 = 1;
@@ -275,24 +277,24 @@ static errno_t computeSGEMM(
 
     if(imginB.md->naxis == 3)
     {
-        printf("inB_Mdim   : %d x %d\n", imginB.md->size[0], imginB.md->size[1]);
+        //printf("inB_Mdim   : %d x %d\n", imginB.md->size[0], imginB.md->size[1]);
         inB_Mdim = imginB.md->size[0] * imginB.md->size[1];
         inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = imginB.md->size[1];
 
-        printf("inB_Ndim    : %d\n", imginB.md->size[2]);
+        //printf("inB_Ndim    : %d\n", imginB.md->size[2]);
         inB_Ndim = imginB.md->size[2];
         inB_Ndim0 = imginB.md->size[2];
         inB_Ndim1 = 1;
     }
     else
     {
-        printf("inB_Mdim   : %d\n", imginB.md->size[0]);
+        //printf("inB_Mdim   : %d\n", imginB.md->size[0]);
         inB_Mdim = imginB.md->size[0];
         inB_Mdim0 = imginB.md->size[1];
         inB_Mdim1 = 1;
 
-        printf("inB_Ndim    : %d\n", imginB.md->size[1]);
+        //printf("inB_Ndim    : %d\n", imginB.md->size[1]);
         inB_Ndim = imginB.md->size[1];
         inB_Ndim0 = imginB.md->size[1];
         inB_Ndim1 = 1;
@@ -332,7 +334,7 @@ static errno_t computeSGEMM(
         Ndim1 = inB_Mdim1;
     }
 
-    printf("T %d %d  -> SGEMM  M=%d, N=%d, K=%d\n", TranspA, TranspB, Mdim, Ndim, Kdim);
+    //printf("T %d %d  -> SGEMM  M=%d, N=%d, K=%d\n", TranspA, TranspB, Mdim, Ndim, Kdim);
 
 
     // Create output
@@ -367,8 +369,8 @@ static errno_t computeSGEMM(
     if( (GPUdev >= 0) && (GPUdev <= 99))
     {
 #ifdef HAVE_CUDA
-        printf("Running SGEMM on GPU device %d\n", GPUdev);
-        fflush(stdout);
+        //printf("Running SGEMM on GPU device %d\n", GPUdev);
+        //fflush(stdout);
 
         const float alf = 1;
         const float bet = 0;
@@ -457,12 +459,6 @@ static errno_t computeSGEMM(
             OPB = CUBLAS_OP_T;
         }
 
-        printf("imginA.md->nelement   = %ld\n", imginA.md->nelement);
-        fflush(stdout);
-
-        printf("imgout->md->nelement  = %ld\n", outimg->md->nelement);
-        fflush(stdout);
-
 
         {
             cublasStatus_t stat = cublasSgemm(handle, OPA, OPB,
@@ -501,8 +497,8 @@ static errno_t computeSGEMM(
 
     if ( SGEMMcomputed == 0)
     {
-        printf("Running SGEMM on CPU\n");
-        fflush(stdout);
+//        printf("Running SGEMM on CPU\n");
+//        fflush(stdout);
 
         CBLAS_TRANSPOSE OPA = CblasNoTrans;
         if(TranspA == 1 )
@@ -516,21 +512,11 @@ static errno_t computeSGEMM(
             OPB = CblasTrans;
         }
 
-        list_image_ID();
-
-        printf("Mdim = %d\n", Mdim);
-        printf("Ndim = %d\n", Ndim);
-        printf("Kdim = %d\n", Kdim);
-
-        printf("outMdim = %d\n", outMdim);
-
         cblas_sgemm(CblasColMajor, OPA, OPB,
                     Mdim, Ndim, Kdim, 1.0,
                     imginA.im->array.F, inA_Mdim,
                     imginB.im->array.F, inB_Mdim,
                     0.0, outimg->im->array.F, outMdim);
-
-        list_image_ID();
     }
 
 
@@ -578,24 +564,24 @@ errno_t compute_SVD(
 
     if(imgin.md->naxis == 3)
     {
-        printf("inMdim   : %d x %d\n", imgin.md->size[0], imgin.md->size[1]);
+        //printf("inMdim   : %d x %d\n", imgin.md->size[0], imgin.md->size[1]);
         inMdim = imgin.md->size[0] * imgin.md->size[1];
         inMdim0 = imgin.md->size[0];
         inMdim1 = imgin.md->size[1];
 
-        printf("inNdim    : %d\n", imgin.md->size[2]);
+        //printf("inNdim    : %d\n", imgin.md->size[2]);
         inNdim = imgin.md->size[2];
         inNdim0 = imgin.md->size[2];
         inNdim1 = 1;
     }
     else
     {
-        printf("inMdim   : %d\n", imgin.md->size[0]);
+        //printf("inMdim   : %d\n", imgin.md->size[0]);
         inMdim = imgin.md->size[0];
         inMdim0 = imgin.md->size[1];
         inMdim1 = 1;
 
-        printf("inNdim    : %d\n", imgin.md->size[1]);
+        //printf("inNdim    : %d\n", imgin.md->size[1]);
         inNdim = imgin.md->size[1];
         inNdim0 = imgin.md->size[1];
         inNdim1 = 1;
@@ -623,7 +609,7 @@ errno_t compute_SVD(
         // this is the default
         // notations follow this case
         //
-        printf("CASE inNdim < inMdim (tall)\n");
+        //printf("CASE inNdim < inMdim (tall)\n");
         mshape = inMshape_tall;
 
         Mdim = inMdim;
@@ -636,7 +622,7 @@ errno_t compute_SVD(
     }
     else
     {
-        printf("CASE inNdim > inMdim (wide)\n");
+        //printf("CASE inNdim > inMdim (wide)\n");
         mshape = inMshape_wide;
 
         Mdim = inNdim;
@@ -649,11 +635,11 @@ errno_t compute_SVD(
     }
 
 
-    printf("inNdim               = %d  (%d x %d)\n", inNdim, inNdim0, inNdim1);
-    printf("inMdim               = %d  (%d x %d)\n", inMdim, inMdim0, inMdim1);
+    //printf("inNdim               = %d  (%d x %d)\n", inNdim, inNdim0, inNdim1);
+    //printf("inMdim               = %d  (%d x %d)\n", inMdim, inMdim0, inMdim1);
 
-    printf("  Ndim               = %d  (%d x %d)\n",   Ndim, Ndim0, Ndim1);
-    printf("  Mdim               = %d  (%d x %d)\n",   Mdim, Mdim0, Mdim1);
+    //printf("  Ndim               = %d  (%d x %d)\n",   Ndim, Ndim0, Ndim1);
+    //printf("  Mdim               = %d  (%d x %d)\n",   Mdim, Mdim0, Mdim1);
 
 
     // from here on, Mdim > Ndim
@@ -766,7 +752,6 @@ errno_t compute_SVD(
     }
 
 
-    list_image_ID();
 
     if( !(compSVDmode & COMPSVD_SKIP_BIGMAT) )
     {
@@ -847,8 +832,6 @@ errno_t compute_SVD(
         //
         if( (compSVDmode & COMPSVD_COMP_PSINV) )
         {
-            printf("COMPUTING psinv\n");
-            fflush(stdout);
             // assumes tall matrix
             //
 
@@ -910,8 +893,6 @@ errno_t compute_SVD(
             //
             if( (compSVDmode & COMPSVD_COMP_CHECKPSINV) )
             {
-                printf("CHECKING psinv\n");
-                fflush(stdout);
 
                 IMGID imgpsinvcheck = mkIMGID_from_name("psinvcheck");
                 if(mshape == inMshape_tall)
@@ -919,12 +900,6 @@ errno_t compute_SVD(
                     // inNdim < inMdim
                     computeSGEMM(imgpsinv, imgin, &imgpsinvcheck, 0, 0, GPUdev);
                 }
-            }
-            else
-            {
-                printf("NOT CHECKING psinv\n");
-                fflush(stdout);
-
             }
         }
 
