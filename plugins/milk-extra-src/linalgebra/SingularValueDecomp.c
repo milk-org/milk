@@ -837,7 +837,7 @@ errno_t compute_SVD(
                 imgmMsvec->im->array.F[jj*Mdim+ii] *= normfact;
             }
         }
-        printf("Keeping %ld / %u modes\n", SVkeptcnt, Ndim);
+        printf("LIMIT = %g  - Keeping %ld / %u modes\n", SVlimit, SVkeptcnt, Ndim);
 
 
 
@@ -960,7 +960,7 @@ static errno_t compute_function()
     {
 
 
-        compute_SVD(imginM, imgU, imgev, imgV, 0.0, *GPUdevice, *compmode);
+        compute_SVD(imginM, imgU, imgev, imgV, *svdlim, *GPUdevice, *compmode);
 
 
     }
