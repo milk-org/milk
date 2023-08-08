@@ -36,7 +36,7 @@ set -u
 SF="${SFDIR}/milkCLIstartup.${pname}.$$"
 echo "loadfits \"${fname}[*, *, ${slice}:${slice}]\" im" > $SF
 echo "readshmim ${sname}" >> $SF
-echo "cpsh im ${sname}" >> $SF
+echo "imcpshm im ${sname}" >> $SF
 echo "exitCLI" >> $SF
 
 

@@ -35,6 +35,7 @@ static CLICMDDATA CLIcmddata = {"PCAdecomp",
 // detailed help
 static errno_t help_function()
 {
+    printf("cublas implementation only\n");
     return RETURN_SUCCESS;
 }
 
