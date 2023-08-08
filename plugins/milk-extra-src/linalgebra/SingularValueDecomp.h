@@ -15,6 +15,7 @@ errno_t compute_SVD(
     IMGID imgeigenval,
     IMGID imgV,
     float SVlimit,
+    uint32_t SVDmaxNBmode,
     int GPUdev,
     uint64_t compSVDmode
 );

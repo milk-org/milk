@@ -73,6 +73,10 @@ static long  fpi_outV;
 static float *svdlim;
 static long   fpi_svdlim;
 
+static uint32_t *maxNBmode;
+static long   fpi_maxNBmode;
+
+
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
 
@@ -132,6 +136,15 @@ static CLICMDARGDEF farg[] =
         CLIARG_VISIBLE_DEFAULT,
         (void **) &svdlim,
         &fpi_svdlim
+    },
+    {
+        CLIARG_UINT32,
+        ".maxNBmode",
+        "Maximum number of modes",
+        "10000",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &maxNBmode,
+        &fpi_maxNBmode
     },
     {
         // using GPU (99 : no GPU, otherwise GPU device)
@@ -552,6 +565,7 @@ errno_t compute_SVD(
     IMGID    imgeigenval,
     IMGID    imgV,
     float    SVlimit,
+    uint32_t SVDmaxNBmode,
     int      GPUdev,
     uint64_t compSVDmode
 )
@@ -713,15 +727,21 @@ errno_t compute_SVD(
 
         // How many modes to keep ?
         evalmax = d[Ndim-1];
-        long modecnt = 0;
-        for(int k=0; k<Ndim; k++)
         {
-            if( d[k] > SVlimit*SVlimit*evalmax )
+            long modecnt = 0;
+            for(int k=0; k<Ndim; k++)
             {
-                modecnt++;
+                if( d[k] > SVlimit*SVlimit*evalmax )
+                {
+                    modecnt++;
+                }
+            }
+            NBmode = modecnt;
+            if ( modecnt > SVDmaxNBmode )
+            {
+                NBmode = SVDmaxNBmode;
             }
         }
-        NBmode = modecnt;
         printf("KEEPING %ld MODES\n", NBmode);
 
 
@@ -734,7 +754,7 @@ errno_t compute_SVD(
             {
                 imgV.naxis = 2;
                 imgV.size[0] = inNdim;
-                imgV.size[1] = modecnt; //inNdim;
+                imgV.size[1] = NBmode; //inNdim;
                 createimagefromIMGID(&imgV);
             }
         }
@@ -749,12 +769,12 @@ errno_t compute_SVD(
                 {
                     imgU.size[0] = inMdim0;
                     imgU.size[1] = inMdim1;
-                    imgU.size[2] = modecnt; //inMdim;
+                    imgU.size[2] = NBmode; //inMdim;
                 }
                 else
                 {
                     imgU.size[0] = inMdim;
-                    imgU.size[1] = modecnt; //inMdim;
+                    imgU.size[1] = NBmode; //inMdim;
                 }
                 createimagefromIMGID(&imgU);
             }
@@ -762,7 +782,7 @@ errno_t compute_SVD(
 
 
         // re-order from largest to smallest
-        for(int k=0; k<modecnt; k++)
+        for(int k=0; k<NBmode; k++)
         {
             char * ptr0 = (char*) &imgATA.im->array.F[(Ndim-k-1)*Ndim];
             char * ptr1 = (char*) &imgmNsvec->im->array.F[k*Ndim];
@@ -1004,7 +1024,7 @@ static errno_t compute_function()
     {
 
 
-        compute_SVD(imginM, imgU, imgev, imgV, *svdlim, *GPUdevice, *compmode);
+        compute_SVD(imginM, imgU, imgev, imgV, *svdlim, *maxNBmode, *GPUdevice, *compmode);
 
 
     }
