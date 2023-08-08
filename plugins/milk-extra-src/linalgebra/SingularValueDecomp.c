@@ -206,6 +206,7 @@ static errno_t help_function()
     printf(" 2    4  Check pseudo-inverse: compute input x psinv product\n");
     printf("         result stored as image psinvcheck\n");
     printf("         Only supported for tall input matrix\n");
+    printf(" 3    8  Reconstruct original image\n");
     printf("\n");
     printf("Example: compmode=6 will compute psinv and check it\n");
     printf("\n");
@@ -555,7 +556,6 @@ errno_t compute_SVD(
     uint64_t compSVDmode
 )
 {
-
     // input dimensions
     // input matrix is inMdim x inNdim, column-major
     //
@@ -660,48 +660,12 @@ errno_t compute_SVD(
 
 
 
-    // singular vectors array, small dimension
-    // matrix (U or V) is square
-    //
-    IMGID *imgmNsvec;
-
-    if(mshape == inMshape_tall)
-    {
-        imgmNsvec = &imgV;
-
-        if( imgV.ID == -1)
-        {
-            imgV.naxis = 2;
-            imgV.size[0] = inNdim;
-            imgV.size[1] = inNdim;
-            createimagefromIMGID(&imgV);
-        }
-    }
-    else
-    {
-        imgmNsvec = &imgU;
-
-        if( imgU.ID == -1)
-        {
-            imgU.naxis = imgin.md->naxis;
-            if(imgin.md->naxis == 3)
-            {
-                imgU.size[0] = inMdim0;
-                imgU.size[1] = inMdim1;
-                imgU.size[2] = inMdim;
-            }
-            else
-            {
-                imgU.size[0] = inMdim;
-                imgU.size[1] = inMdim;
-            }
-            createimagefromIMGID(&imgU);
-        }
-    }
 
 
 
 
+
+    IMGID imgATA;
     {
         // create ATA
         // note that this is AAT if inNdim > inMdim (inMshape_wide)
@@ -713,49 +677,121 @@ errno_t compute_SVD(
             TranspA = 0;
             TranspB = 1;
         }
-        IMGID imgATA;
         strcpy(imgATA.name, "ATA");
         computeSGEMM(imgin, imgin, &imgATA, TranspA, TranspB, GPUdev);
+    }
 
 
 
 
+    // singular vectors array, small dimension
+    // matrix (U or V) is square
+    //
+    IMGID *imgmNsvec;
+    float evalmax;
+    long NBmode = 0;
+    {
+        // eigendecomposition
+        //
         float *d = (float*) malloc(sizeof(float)*Ndim);
         float *e = (float*) malloc(sizeof(float)*Ndim);
         float *t = (float*) malloc(sizeof(float)*Ndim);
 
-
 #ifdef HAVE_MKL
         mkl_set_interface_layer(MKL_INTERFACE_ILP64);
 #endif
-
         LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', Ndim, (float*) imgATA.im->array.F, Ndim, d, e, t);
 
         // Assemble Q matrix
         LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', Ndim, imgATA.im->array.F, Ndim, t );
 
-
         // compute all eigenvalues and eivenvectors -> imgmV
         //
-        memcpy(imgmNsvec->im->array.F, imgATA.im->array.F, sizeof(float)*Ndim*Ndim);
-        LAPACKE_ssteqr(LAPACK_COL_MAJOR, 'V', Ndim, d, e, imgmNsvec->im->array.F, Ndim);
-        memcpy(imgeigenval.im->array.F, d, sizeof(float)*Ndim);
+        //memcpy(imgmNsvec->im->array.F, imgATA.im->array.F, sizeof(float)*Ndim*Ndim);
+        LAPACKE_ssteqr(LAPACK_COL_MAJOR, 'V', Ndim, d, e, imgATA.im->array.F, Ndim);
+
+
+        // How many modes to keep ?
+        evalmax = d[Ndim-1];
+        long modecnt = 0;
+        for(int k=0; k<Ndim; k++)
+        {
+            if( d[k] > SVlimit*SVlimit*evalmax )
+            {
+                modecnt++;
+            }
+        }
+        NBmode = modecnt;
+        printf("KEEPING %ld MODES\n", NBmode);
+
+
+
+        if(mshape == inMshape_tall)
+        {
+            imgmNsvec = &imgV;
+
+            if( imgV.ID == -1)
+            {
+                imgV.naxis = 2;
+                imgV.size[0] = inNdim;
+                imgV.size[1] = modecnt; //inNdim;
+                createimagefromIMGID(&imgV);
+            }
+        }
+        else
+        {
+            imgmNsvec = &imgU;
+
+            if( imgU.ID == -1)
+            {
+                imgU.naxis = imgin.md->naxis;
+                if(imgin.md->naxis == 3)
+                {
+                    imgU.size[0] = inMdim0;
+                    imgU.size[1] = inMdim1;
+                    imgU.size[2] = modecnt; //inMdim;
+                }
+                else
+                {
+                    imgU.size[0] = inMdim;
+                    imgU.size[1] = modecnt; //inMdim;
+                }
+                createimagefromIMGID(&imgU);
+            }
+        }
+
+
+        // re-order from largest to smallest
+        for(int k=0; k<modecnt; k++)
+        {
+            char * ptr0 = (char*) &imgATA.im->array.F[(Ndim-k-1)*Ndim];
+            char * ptr1 = (char*) &imgmNsvec->im->array.F[k*Ndim];
+
+            memcpy(ptr1, ptr0, sizeof(float)*Ndim);
+
+            imgeigenval.im->array.F[k] = d[Ndim-k-1];
+        }
 
 
         free(d);
         free(e);
         free(t);
 
-        delete_image(&imgATA, DELETE_IMAGE_ERRMODE_EXIT);
-
         // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
     }
+    delete_image(&imgATA, DELETE_IMAGE_ERRMODE_EXIT);
+
+
+
+
+
+
+
 
 
 
     if( !(compSVDmode & COMPSVD_SKIP_BIGMAT) )
     {
-
         // create mU (if inMshape_tall)
         // create mV (if inMshape_wide)
         // (only non-zero part allocated)
@@ -790,6 +826,7 @@ errno_t compute_SVD(
 
         // find largest eigenvalue
         //
+        /*
         float evalmax = fabs(imgeigenval.im->array.F[0]);
         for(uint32_t jj=1; jj<Ndim; jj++)
         {
@@ -798,14 +835,14 @@ errno_t compute_SVD(
             {
                 evalmax = eval;
             }
-        }
+        }*/
 
 
         // normalize cols of imgmMsvec
         // Report number of modes kept
         //
         long SVkeptcnt = 0;
-        for(uint32_t jj=0; jj<Ndim; jj++)
+        for(uint32_t jj=0; jj<NBmode; jj++)
         {
 
             float normfact = 0.0;
@@ -841,7 +878,7 @@ errno_t compute_SVD(
                 imgmNsvec1.naxis = 2;
 
                 imgmNsvec1.size[0] = Ndim;
-                imgmNsvec1.size[1] = Ndim;
+                imgmNsvec1.size[1] = NBmode;
 
                 createimagefromIMGID(&imgmNsvec1);
             }
@@ -849,7 +886,7 @@ errno_t compute_SVD(
 
             // multiply by inverse of singular values
             //
-            for(uint32_t jj=0; jj<Ndim; jj++)
+            for(uint32_t jj=0; jj<NBmode; jj++)
             {
                 float normfact = 0.0;
                 float eval = fabs(imgeigenval.im->array.F[jj]);
@@ -859,13 +896,7 @@ errno_t compute_SVD(
                     normfact = 1.0 / sqrt(eval);
 
                 }
-                /*
-                                printf("Eigenvalue %4d = %10g  -> %10g   scaling = %10g\n",
-                                       jj,
-                                       imgeigenval.im->array.F[jj],
-                                       evaln,
-                                       normfact);
-                */
+
                 for(uint32_t ii=0; ii < Ndim; ii++)
                 {
                     imgmNsvec1.im->array.F[jj*Ndim+ii] =
@@ -904,6 +935,44 @@ errno_t compute_SVD(
         }
 
     }
+
+
+
+    // Compute un-normalized modes U
+    // Singular Values included in modes U
+    //
+    if ( imgU.ID != -1 )
+    {
+        // un-normalized modes
+        IMGID imgunmodes = mkIMGID_from_name("SVDunmodes");
+        imgunmodes.naxis = imgU.md->naxis;
+        imgunmodes.datatype = imgU.md->datatype;
+        imgunmodes.size[0] = imgU.md->size[0];
+        imgunmodes.size[1] = imgU.md->size[1];
+        imgunmodes.size[2] = imgU.md->size[2];
+        createimagefromIMGID(&imgunmodes);
+
+        int lastaxis = imgunmodes.naxis-1;
+        long framesize = imgunmodes.size[0];
+        if(lastaxis==2)
+        {
+            framesize *= imgunmodes.size[1];
+        }
+
+        for(int kk=0; kk<imgunmodes.size[lastaxis]; kk++)
+        {
+            float mfact = sqrt(imgeigenval.im->array.F[kk]);
+            for(long ii=0; ii<framesize; ii++)
+            {
+                imgunmodes.im->array.F[kk*framesize+ii] = imgU.im->array.F[kk*framesize+ii] * mfact;
+            }
+        }
+
+        IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        computeSGEMM(imgunmodes, imgV, &iminrec, 0, 1, GPUdev);
+    }
+
+
 
     return RETURN_SUCCESS;
 }
