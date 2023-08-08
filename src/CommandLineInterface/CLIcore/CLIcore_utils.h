@@ -952,6 +952,18 @@ static inline uint64_t IMGIDcompare(
         }
     }
 
+    printf("Checking NBkw           ");
+    if(imgtemplate.NBkw != img.NBkw)
+    {
+        printf("FAIL\n");
+        compErr++;
+    }
+    else
+    {
+        printf("PASS\n");
+    }
+
+
     return compErr;
 }
 
@@ -970,7 +982,7 @@ static inline uint64_t IMGIDmdcompare(
     int compErr = 0;
 
     printf("COMPARING %s %s\n", img.name, imgtemplate.name);
-    
+
     if(imgtemplate.md->datatype != _DATATYPE_UNINITIALIZED)
     {
         printf("Checking md->datatype       ");
@@ -1039,6 +1051,17 @@ static inline uint64_t IMGIDmdcompare(
         {
             printf("PASS\n");
         }
+    }
+
+    printf("Checking NBkw           ");
+    if(imgtemplate.md->NBkw != img.md->NBkw)
+    {
+        printf("FAIL\n");
+        compErr++;
+    }
+    else
+    {
+        printf("PASS\n");
     }
 
     return compErr;
