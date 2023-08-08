@@ -18,9 +18,15 @@
 
 imageID copy_image_ID(const char *name, const char *newname, int shared);
 
+
+
 imageID chname_image_ID(const char *ID_name, const char *new_name);
 
+
+
 errno_t COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname);
+
+
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -99,7 +105,7 @@ errno_t image_copy_addCLIcmd()
         "cp im1 im4",
         "long copy_image_ID(const char *name, const char *newname, 0)");
 
-    RegisterCLIcommand(
+  /*  RegisterCLIcommand(
         "cpsh",
         __FILE__,
         copy_image_ID_sharedmem__cli,
@@ -107,6 +113,8 @@ errno_t image_copy_addCLIcmd()
         "source, dest",
         "cp im1 im4",
         "long copy_image_ID(const char *name, const char *newname, 1)");
+*/
+
 
     RegisterCLIcommand(
         "mv",
@@ -129,7 +137,13 @@ errno_t image_copy_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-imageID copy_image_ID(const char *name, const char *newname, int shared)
+
+
+imageID copy_image_ID(
+    const char * restrict name,
+    const char * restrict newname,
+    int shared
+)
 {
     imageID   ID;
     imageID   IDout;
@@ -177,6 +191,7 @@ imageID copy_image_ID(const char *name, const char *newname, int shared)
                     newname);
             newim = 1;
         }
+
         if(data.image[ID].md[0].datatype != data.image[IDout].md[0].datatype)
         {
             fprintf(stderr,
@@ -244,7 +259,13 @@ imageID copy_image_ID(const char *name, const char *newname, int shared)
     return IDout;
 }
 
-imageID chname_image_ID(const char *ID_name, const char *new_name)
+
+
+
+imageID chname_image_ID(
+    const char * restrict ID_name,
+    const char * restrict new_name
+)
 {
     imageID ID;
 
@@ -270,11 +291,16 @@ imageID chname_image_ID(const char *ID_name, const char *new_name)
     return ID;
 }
 
+
+
 /** copy an image to shared memory
  *
  *
  */
-errno_t COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname)
+errno_t COREMOD_MEMORY_cp2shm(
+    const char * restrict IDname,
+    const char * restrict IDshmname
+)
 {
     imageID   ID;
     imageID   IDshm;

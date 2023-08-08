@@ -5,8 +5,8 @@
  *
  */
 
-#define MODULE_SHORTNAME_DEFAULT "cuda"
-#define MODULE_DESCRIPTION       "CUDA wrapper"
+#define MODULE_SHORTNAME_DEFAULT "linalg"
+#define MODULE_DESCRIPTION       "linear algebra"
 
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>

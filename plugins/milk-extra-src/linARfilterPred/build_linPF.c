@@ -711,6 +711,7 @@ static errno_t compute_function()
             imgeval,
             imgevec,
             (*SVDeps),
+            10000000,
             GPUdev,
             SVDflag
         );

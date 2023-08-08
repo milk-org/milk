@@ -2,9 +2,10 @@
 #define LINALGEBRA_COMPSVD_H
 
 
-#define COMPSVD_SKIP_BIGMAT     0x00000001
-#define COMPSVD_COMP_PSINV      0x00000002
-#define COMPSVD_COMP_CHECKPSINV 0x00000004
+#define COMPSVD_SKIP_BIGMAT      0x00000001UL
+#define COMPSVD_COMP_PSINV       0x00000002UL
+#define COMPSVD_COMP_CHECKPSINV  0x00000004UL
+#define COMPSVD_COMP_RECONSTRUCT 0x00000008UL
 
 errno_t CLIADDCMD_linalgebra__compSVD();
 
@@ -14,6 +15,7 @@ errno_t compute_SVD(
     IMGID imgeigenval,
     IMGID imgV,
     float SVlimit,
+    uint32_t SVDmaxNBmode,
     int GPUdev,
     uint64_t compSVDmode
 );

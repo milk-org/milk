@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "CommandLineInterface/CLIcore.h"
 
 #include "create_image.h"
@@ -33,98 +35,72 @@ static CLICMDDATA CLIcmddata =
     "imcpshm", "copy image to shm", CLICMD_FIELDS_DEFAULTS
 };
 
+
+
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
 
-// Computation code
-static errno_t image_copy_shm(IMGID img, char *outshmname)
+
+
+// copy image to shared memory
+static errno_t image_copy_shm(
+    IMGID img,
+    const char * restrict outshmname
+)
 {
-    resolveIMGID(&img, ERRMODE_ABORT);
-    imageID ID = img.ID;
+    imageID ID = resolveIMGID(&img, ERRMODE_ABORT);
 
-    uint8_t   naxis     = data.image[ID].md[0].naxis;
-    uint32_t *sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    uint8_t   datatype  = data.image[ID].md[0].datatype;
-    for(uint8_t k = 0; k < naxis; k++)
+    // check if shared memory destination exists
+    IMGID imgshm = read_sharedmem_img(outshmname);
+    if( imgshm.ID != -1)
     {
-        sizearray[k] = data.image[ID].md[0].size[k];
-    }
-    uint16_t NBkw = data.image[ID].md[0].NBkw;
-
-    int shmOK = 1;
-
-    DEBUG_TRACEPOINT("reading = %s", outshmname);
-    imageID IDshm = read_sharedmem_image(outshmname);
-    DEBUG_TRACEPOINT("IDshm = %ld", IDshm);
-
-    if(IDshm != -1)
-    {
-        // verify type and size
-        if(data.image[ID].md[0].naxis != data.image[IDshm].md[0].naxis)
+        // image exists - checking if compatible size and type
+        if( IMGIDmdcompare(img, imgshm) > 0 )
         {
-            shmOK = 0;
+            // image formats are incompatible
+            // delete output
+            printf("Image %s already exist in shm, but wrong size/format -> deleting\n", outshmname);
+
+            ImageStreamIO_destroyIm(imgshm.im);
+            imgshm.ID = -1;
         }
-        if(shmOK == 1)
+        else
         {
-            for(uint8_t axis = 0; axis < data.image[IDshm].md[0].naxis; axis++)
-                if(data.image[ID].md[0].size[axis] !=
-                        data.image[IDshm].md[0].size[axis])
-                {
-                    shmOK = 0;
-                }
-        }
-        if(data.image[ID].md[0].datatype != data.image[IDshm].md[0].datatype)
-        {
-            shmOK = 0;
-        }
-
-        if(shmOK == 0)
-        {
-            delete_image_ID(outshmname, DELETE_IMAGE_ERRMODE_WARNING);
-            IDshm = -1;
+            printf("re-using existing shm %s\n", outshmname);
         }
     }
 
-    if(IDshm == -1)
+
+    if ( imgshm.ID == -1 )
     {
-        DEBUG_TRACEPOINT("Creating image");
-        create_image_ID(outshmname,
-                        naxis,
-                        sizearray,
-                        datatype,
-                        1,
-                        NBkw,
-                        0,
-                        &IDshm);
+        copyIMGID( &img, &imgshm );
+        strcpy(imgshm.name, outshmname);
+        imgshm.shared = 1;
+
+        createimagefromIMGID(&imgshm);
     }
-    free(sizearray);
 
-    //data.image[IDshm].md[0].nelement = data.image[ID].md[0].nelement;
-    //printf("======= %ld %ld ============\n", data.image[ID].md[0].nelement, data.image[IDshm].md[0].nelement);
 
-    DEBUG_TRACEPOINT("Writing memory");
-
-    data.image[IDshm].md[0].write = 1;
-
-    //char *ptr1;
-    //char *ptr2;
-
-    memcpy(data.image[IDshm].array.raw,
-           data.image[ID].array.raw,
-           ImageStreamIO_typesize(datatype));
-
+    imgshm.md->write = 1;
+    // copy data array
+    memcpy(imgshm.im->array.raw,
+           img.im->array.raw,
+           ImageStreamIO_typesize(img.md->datatype)* img.md->nelement);
     // copy keywords
-    memcpy(data.image[IDshm].kw, data.image[ID].kw, sizeof(IMAGE_KEYWORD) * NBkw);
+    memcpy(imgshm.im->kw, img.im->kw, sizeof(IMAGE_KEYWORD) * img.md->NBkw);
 
-    COREMOD_MEMORY_image_set_sempost_byID(IDshm, -1);
-    data.image[IDshm].md[0].cnt0++;
-    data.image[IDshm].md[0].write = 0;
+    COREMOD_MEMORY_image_set_sempost_byID(imgshm.ID, -1);
+    imgshm.md->cnt0++;
+    imgshm.md->write = 0;
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()
@@ -133,7 +109,9 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_copy_shm(mkIMGID_from_name(inimname), outimname);
+    image_copy_shm(
+        mkIMGID_from_name(inimname),
+        outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

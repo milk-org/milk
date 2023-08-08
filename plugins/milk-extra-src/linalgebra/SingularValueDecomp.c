@@ -73,10 +73,15 @@ static long  fpi_outV;
 static float *svdlim;
 static long   fpi_svdlim;
 
+static uint32_t *maxNBmode;
+static long   fpi_maxNBmode;
+
+
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
 
-
+static uint64_t *compmode;
+static long     fpi_compmode;
 
 
 
@@ -133,6 +138,15 @@ static CLICMDARGDEF farg[] =
         &fpi_svdlim
     },
     {
+        CLIARG_UINT32,
+        ".maxNBmode",
+        "Maximum number of modes",
+        "10000",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &maxNBmode,
+        &fpi_maxNBmode
+    },
+    {
         // using GPU (99 : no GPU, otherwise GPU device)
         CLIARG_INT32,
         ".GPUdevice",
@@ -141,6 +155,16 @@ static CLICMDARGDEF farg[] =
         CLIARG_HIDDEN_DEFAULT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
+    },
+    {
+        // optional computations
+        CLIARG_UINT64,
+        ".compmode",
+        "flag: optional computations and checks",
+        "0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &compmode,
+        &fpi_compmode
     }
 };
 
@@ -184,8 +208,340 @@ static CLICMDDATA CLIcmddata =
 // detailed help
 static errno_t help_function()
 {
+    printf("CPU or GPU. Set .GPIdevice to -1 for CPU\n");
+
+    printf("Optional computations and checks specified by bitmask flag .compmode :\n");
+    printf("bit dec  description\n");
+    printf(" 0    1  Skip big matrix (U or V) computation\n");
+    printf(" 1    2  Compute pseudo-inverse, using svdlim for regularization\n");
+    printf("         Inverse stored as image psinv\n");
+    printf("         Only supported for tall input matrix\n");
+    printf(" 2    4  Check pseudo-inverse: compute input x psinv product\n");
+    printf("         result stored as image psinvcheck\n");
+    printf("         Only supported for tall input matrix\n");
+    printf(" 3    8  Reconstruct original image\n");
+    printf("\n");
+    printf("Example: compmode=6 will compute psinv and check it\n");
+    printf("\n");
+    printf("To run PCA on a sequence of images, input should be 3D cube of images\n");
+    printf("datacube U contains principal components\n");
+    printf("vextor outev are eigenvalues (magnitude) of each component\n");
+    printf("datacube V is decoding matrix\n");
+
     return RETURN_SUCCESS;
 }
+
+
+
+
+static errno_t computeSGEMM(
+    IMGID imginA,
+    IMGID imginB,
+    IMGID *outimg,
+    int TranspA,
+    int TranspB,
+    int GPUdev
+)
+{
+
+    int SGEMMcomputed = 0;
+
+    // Get input matrices A and B sizes (MxN)
+    // if 3D cubes, group first 2 dimensions into M
+
+    int inA_Mdim;
+    int inA_Mdim0;
+    int inA_Mdim1;
+    int inA_Ndim;
+    int inA_Ndim0;
+    int inA_Ndim1;
+
+    if(imginA.md->naxis == 3)
+    {
+        //printf("inA_Mdim   : %d x %d\n", imginA.md->size[0], imginA.md->size[1]);
+        inA_Mdim = imginA.md->size[0] * imginA.md->size[1];
+        inA_Mdim0 = imginA.md->size[0];
+        inA_Mdim1 = imginA.md->size[1];
+
+        //printf("inA_Ndim    : %d\n", imginA.md->size[2]);
+        inA_Ndim = imginA.md->size[2];
+        inA_Ndim0 = imginA.md->size[2];
+        inA_Ndim1 = 1;
+    }
+    else
+    {
+        //printf("inA_Mdim   : %d\n", imginA.md->size[0]);
+        inA_Mdim = imginA.md->size[0];
+        inA_Mdim0 = imginA.md->size[1];
+        inA_Mdim1 = 1;
+
+        //printf("inNdim    : %d\n", imginA.md->size[1]);
+        inA_Ndim = imginA.md->size[1];
+        inA_Ndim0 = imginA.md->size[1];
+        inA_Ndim1 = 1;
+    }
+
+
+    int inB_Mdim;
+    int inB_Mdim0;
+    int inB_Mdim1;
+    int inB_Ndim;
+    int inB_Ndim0;
+    int inB_Ndim1;
+
+    if(imginB.md->naxis == 3)
+    {
+        //printf("inB_Mdim   : %d x %d\n", imginB.md->size[0], imginB.md->size[1]);
+        inB_Mdim = imginB.md->size[0] * imginB.md->size[1];
+        inB_Mdim0 = imginB.md->size[0];
+        inB_Mdim1 = imginB.md->size[1];
+
+        //printf("inB_Ndim    : %d\n", imginB.md->size[2]);
+        inB_Ndim = imginB.md->size[2];
+        inB_Ndim0 = imginB.md->size[2];
+        inB_Ndim1 = 1;
+    }
+    else
+    {
+        //printf("inB_Mdim   : %d\n", imginB.md->size[0]);
+        inB_Mdim = imginB.md->size[0];
+        inB_Mdim0 = imginB.md->size[1];
+        inB_Mdim1 = 1;
+
+        //printf("inB_Ndim    : %d\n", imginB.md->size[1]);
+        inB_Ndim = imginB.md->size[1];
+        inB_Ndim0 = imginB.md->size[1];
+        inB_Ndim1 = 1;
+    }
+
+
+    // input to SGEMM function
+    int Mdim, Ndim, Kdim;
+    int Mdim0, Ndim0, Kdim0;
+    int Mdim1, Ndim1, Kdim1;
+
+
+    // if no transpose
+    Mdim = inA_Mdim;
+    Mdim0 = inA_Mdim0;
+    Mdim1 = inA_Mdim1;
+
+    Ndim  = inB_Ndim;
+    Ndim0 = inB_Ndim0;
+    Ndim1 = inB_Ndim1;
+
+    Kdim = inA_Ndim;
+
+    if ( TranspA == 1 )
+    {
+        Mdim = inA_Ndim;
+        Mdim0 = inA_Ndim0;
+        Mdim1 = inA_Ndim1;
+
+        Kdim = inA_Mdim;
+
+    }
+    if ( TranspB == 1 )
+    {
+        Ndim  = inB_Mdim;
+        Ndim0 = inB_Mdim0;
+        Ndim1 = inB_Mdim1;
+    }
+
+    //printf("T %d %d  -> SGEMM  M=%d, N=%d, K=%d\n", TranspA, TranspB, Mdim, Ndim, Kdim);
+
+
+    // Create output
+    //
+    int outMdim = Mdim;
+    int outNdim = Ndim;
+    if( Mdim1 == 1)
+    {
+        // 2D output
+        outimg->naxis = 2;
+        outimg->size[0] = outMdim;
+        outimg->size[1] = outNdim;
+        outimg->size[2] = 1;
+
+    }
+    else
+    {
+        // 3D output
+        outimg->naxis = 3;
+        outimg->size[0] = Mdim0;
+        outimg->size[1] = Mdim1;
+        outimg->size[2] = outNdim;
+    }
+    outimg->datatype = _DATATYPE_FLOAT;
+    createimagefromIMGID(outimg);
+
+
+
+
+
+
+    if( (GPUdev >= 0) && (GPUdev <= 99))
+    {
+#ifdef HAVE_CUDA
+        //printf("Running SGEMM on GPU device %d\n", GPUdev);
+        //fflush(stdout);
+
+        const float alf = 1;
+        const float bet = 0;
+        const float *alpha = &alf;
+        const float *beta = &bet;
+
+
+        float *d_inmatA;
+
+        {
+            cudaError_t cudaStat = cudaMalloc((void **)&d_inmatA, imginA.md->nelement * sizeof(float));
+            if (cudaStat != cudaSuccess) {
+                printf ("device memory allocation failed");
+                return EXIT_FAILURE;
+            }
+        }
+
+
+        {
+            cudaError_t stat = cudaMemcpy(d_inmatA, imginA.im->array.F, imginA.md->nelement * sizeof(float),
+                                          cudaMemcpyHostToDevice);
+            if (stat != cudaSuccess) {
+                printf ("cudaMemcpy failed\n");
+                return EXIT_FAILURE;
+            }
+        }
+
+
+
+
+        float *d_inmatB;
+
+        {
+            cudaError_t cudaStat = cudaMalloc((void **)&d_inmatB, imginB.md->nelement * sizeof(float));
+            if (cudaStat != cudaSuccess) {
+                printf ("device memory allocation failed");
+                return EXIT_FAILURE;
+            }
+        }
+
+
+        {
+            cudaError_t stat = cudaMemcpy(d_inmatB, imginB.im->array.F, imginB.md->nelement * sizeof(float),
+                                          cudaMemcpyHostToDevice);
+            if (stat != cudaSuccess) {
+                printf ("cudaMemcpy failed\n");
+                return EXIT_FAILURE;
+            }
+        }
+
+
+
+
+
+        float *d_outmat;
+        {
+            cudaError_t cudaStat = cudaMalloc((void **)&d_outmat, outimg->md->nelement * sizeof(float));
+            if (cudaStat != cudaSuccess) {
+                printf ("device memory allocation failed");
+                return EXIT_FAILURE;
+            }
+        }
+
+
+        // Create a handle for CUBLAS
+        cublasHandle_t handle;
+        {
+            cublasStatus_t stat = cublasCreate(&handle);
+            if (stat != CUBLAS_STATUS_SUCCESS) {
+                printf ("cublasCreate failed\n");
+                return EXIT_FAILURE;
+            }
+        }
+
+
+        // Do the actual multiplication
+
+        cublasOperation_t OPA = CUBLAS_OP_N;
+        cublasOperation_t OPB = CUBLAS_OP_N;
+        if ( TranspA == 1 )
+        {
+            OPA = CUBLAS_OP_T;
+        }
+        if ( TranspB == 1 )
+        {
+            OPB = CUBLAS_OP_T;
+        }
+
+
+        {
+            cublasStatus_t stat = cublasSgemm(handle, OPA, OPB,
+                                              Mdim, Ndim, Kdim, alpha,
+                                              d_inmatA, inA_Mdim,
+                                              d_inmatB, inB_Mdim,
+                                              beta, d_outmat, outMdim);
+
+            if (stat != CUBLAS_STATUS_SUCCESS) {
+                printf ("cublasSgemm failed\n");
+                return EXIT_FAILURE;
+            }
+        }
+
+        cublasDestroy(handle);
+
+
+        {
+            cudaError_t stat = cudaMemcpy(outimg->im->array.F, d_outmat,
+                                          outimg->md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
+            if (stat != cudaSuccess) {
+                printf ("cudaMemcpy failed\n");
+                return EXIT_FAILURE;
+            }
+        }
+
+        cudaFree(d_inmatA);
+        cudaFree(d_inmatB);
+        cudaFree(d_outmat);
+
+        SGEMMcomputed = 1;
+
+#endif
+    }
+
+
+    if ( SGEMMcomputed == 0)
+    {
+//        printf("Running SGEMM on CPU\n");
+//        fflush(stdout);
+
+        CBLAS_TRANSPOSE OPA = CblasNoTrans;
+        if(TranspA == 1 )
+        {
+            OPA = CblasTrans;
+        }
+
+        CBLAS_TRANSPOSE OPB = CblasNoTrans;
+        if(TranspB == 1 )
+        {
+            OPB = CblasTrans;
+        }
+
+        cblas_sgemm(CblasColMajor, OPA, OPB,
+                    Mdim, Ndim, Kdim, 1.0,
+                    imginA.im->array.F, inA_Mdim,
+                    imginB.im->array.F, inB_Mdim,
+                    0.0, outimg->im->array.F, outMdim);
+    }
+
+
+
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
 
 
 
@@ -204,16 +560,16 @@ static errno_t help_function()
  * COMPSVD_SKIP_BIGMAT  skip big (U of V) matrix computation
  */
 errno_t compute_SVD(
-    IMGID imgin,
-    IMGID imgU,
-    IMGID imgeigenval,
-    IMGID imgV,
-    float SVlimit,
-    int GPUdev,
+    IMGID    imgin,
+    IMGID    imgU,
+    IMGID    imgeigenval,
+    IMGID    imgV,
+    float    SVlimit,
+    uint32_t SVDmaxNBmode,
+    int      GPUdev,
     uint64_t compSVDmode
 )
 {
-
     // input dimensions
     // input matrix is inMdim x inNdim, column-major
     //
@@ -222,24 +578,24 @@ errno_t compute_SVD(
 
     if(imgin.md->naxis == 3)
     {
-        printf("inMdim   : %d x %d\n", imgin.md->size[0], imgin.md->size[1]);
+        //printf("inMdim   : %d x %d\n", imgin.md->size[0], imgin.md->size[1]);
         inMdim = imgin.md->size[0] * imgin.md->size[1];
         inMdim0 = imgin.md->size[0];
         inMdim1 = imgin.md->size[1];
 
-        printf("inNdim    : %d\n", imgin.md->size[2]);
+        //printf("inNdim    : %d\n", imgin.md->size[2]);
         inNdim = imgin.md->size[2];
         inNdim0 = imgin.md->size[2];
         inNdim1 = 1;
     }
     else
     {
-        printf("inMdim   : %d\n", imgin.md->size[0]);
+        //printf("inMdim   : %d\n", imgin.md->size[0]);
         inMdim = imgin.md->size[0];
         inMdim0 = imgin.md->size[1];
         inMdim1 = 1;
 
-        printf("inNdim    : %d\n", imgin.md->size[1]);
+        //printf("inNdim    : %d\n", imgin.md->size[1]);
         inNdim = imgin.md->size[1];
         inNdim0 = imgin.md->size[1];
         inNdim1 = 1;
@@ -267,7 +623,7 @@ errno_t compute_SVD(
         // this is the default
         // notations follow this case
         //
-        printf("CASE inNdim < inMdim (tall)\n");
+        //printf("CASE inNdim < inMdim (tall)\n");
         mshape = inMshape_tall;
 
         Mdim = inMdim;
@@ -280,7 +636,7 @@ errno_t compute_SVD(
     }
     else
     {
-        printf("CASE inNdim > inMdim (wide)\n");
+        //printf("CASE inNdim > inMdim (wide)\n");
         mshape = inMshape_wide;
 
         Mdim = inNdim;
@@ -293,11 +649,11 @@ errno_t compute_SVD(
     }
 
 
-    printf("inNdim               = %d  (%d x %d)\n", inNdim, inNdim0, inNdim1);
-    printf("inMdim               = %d  (%d x %d)\n", inMdim, inMdim0, inMdim1);
+    //printf("inNdim               = %d  (%d x %d)\n", inNdim, inNdim0, inNdim1);
+    //printf("inMdim               = %d  (%d x %d)\n", inMdim, inMdim0, inMdim1);
 
-    printf("  Ndim               = %d  (%d x %d)\n",   Ndim, Ndim0, Ndim1);
-    printf("  Mdim               = %d  (%d x %d)\n",   Mdim, Mdim0, Mdim1);
+    //printf("  Ndim               = %d  (%d x %d)\n",   Ndim, Ndim0, Ndim1);
+    //printf("  Mdim               = %d  (%d x %d)\n",   Mdim, Mdim0, Mdim1);
 
 
     // from here on, Mdim > Ndim
@@ -320,243 +676,91 @@ errno_t compute_SVD(
 
 
 
-    // singular vectors array, small dimension
-    // matrix (U or V) is square
-    //
-    IMGID *imgmNsvec;
-
-    if(mshape == inMshape_tall)
-    {
-        imgmNsvec = &imgV;
-
-        if( imgV.ID == -1)
-        {
-            imgV.naxis = 2;
-            imgV.size[0] = inNdim;
-            imgV.size[1] = inNdim;
-            createimagefromIMGID(&imgV);
-        }
-    }
-    else
-    {
-        imgmNsvec = &imgU;
-
-        if( imgU.ID == -1)
-        {
-            imgU.naxis = imgin.md->naxis;
-            if(imgin.md->naxis == 3)
-            {
-                imgU.size[0] = inMdim0;
-                imgU.size[1] = inMdim1;
-                imgU.size[2] = inMdim;
-            }
-            else
-            {
-                imgU.size[0] = inMdim;
-                imgU.size[1] = inMdim;
-            }
-            createimagefromIMGID(&imgU);
-        }
-    }
 
 
 
-
+    IMGID imgATA;
     {
         // create ATA
         // note that this is AAT if inNdim > inMdim (inMshape_wide)
         //
-        IMGID imgATA = makeIMGID_2D("ATA", Ndim, Ndim);
-        createimagefromIMGID(&imgATA);
-
-        list_image_ID();
-
-
-        printf("========== GPUdev %5d\n", GPUdev);
-        fflush(stdout);
-
+        int TranspA = 1;
+        int TranspB = 0;
+        if ( mshape == inMshape_wide )
         {
-            int SGEMMcomputed = 0;
-            if( (GPUdev >= 0) && (GPUdev <= 99))
-            {
-#ifdef HAVE_CUDA
-                printf("Running SGEMM 1 on GPU device %d\n", GPUdev);
-                fflush(stdout);
-
-                const float alf = 1;
-                const float bet = 0;
-                const float *alpha = &alf;
-                const float *beta = &bet;
-
-                //cudaError_t cudaStat;
-                //cublasStatus_t stat;
-
-                float *d_inmat;
-
-                {
-                    cudaError_t cudaStat = cudaMalloc((void **)&d_inmat, imgin.md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-
-                {
-                    cudaError_t stat = cudaMemcpy(d_inmat, imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                    if (stat != cudaSuccess) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-
-                float *d_ATA;
-                {
-                    cudaError_t cudaStat = cudaMalloc((void **)&d_ATA, imgATA.md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-
-                // Create a handle for CUBLAS
-                cublasHandle_t handle;
-                {
-                    cublasStatus_t stat = cublasCreate(&handle);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasCreate failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-
-                // Do the actual multiplication
-                cublasOperation_t OP0 = CUBLAS_OP_T;
-                cublasOperation_t OP1 = CUBLAS_OP_N;
-                if ( mshape == inMshape_wide )
-                {
-                    OP0 = CUBLAS_OP_N;
-                    OP1 = CUBLAS_OP_T;
-                }
-
-
-
-                printf("imgin.md->nelement   = %ld\n", imgin.md->nelement);
-                fflush(stdout);
-
-                printf("imgATA.md->nelement  = %ld\n", imgATA.md->nelement);
-                fflush(stdout);
-
-
-                {
-                    cublasStatus_t stat = cublasSgemm(handle, OP0, OP1,
-                                                      Ndim, Ndim, Mdim, alpha,
-                                                      d_inmat, inMdim,
-                                                      d_inmat, inMdim,
-                                                      beta, d_ATA, Ndim);
-
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasSgemm failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                cublasDestroy(handle);
-
-
-                {
-                    cudaError_t stat = cudaMemcpy(imgATA.im->array.F, d_ATA, imgATA.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-                    if (stat != cudaSuccess) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                cudaFree(d_inmat);
-                cudaFree(d_ATA);
-
-                SGEMMcomputed = 1;
-#endif
-            }
-            if ( SGEMMcomputed == 0)
-            {
-                printf("Running SGEMM 1 on CPU\n");
-                fflush(stdout);
-
-                CBLAS_TRANSPOSE OP0 = CblasTrans;
-                CBLAS_TRANSPOSE OP1 = CblasNoTrans;
-                if ( mshape == inMshape_wide )
-                {
-                    OP0 = CblasNoTrans;
-                    OP1 = CblasTrans;
-                }
-
-                cblas_sgemm(CblasColMajor, OP0, OP1,
-                            Ndim, Ndim, Mdim, 1.0,
-                            imgin.im->array.F, inMdim,
-                            imgin.im->array.F, inMdim,
-                            0.0, imgATA.im->array.F, Ndim);
-            }
+            TranspA = 0;
+            TranspB = 1;
         }
-
-        //save_fits("ATA", "SVD_ATA.fits"); //TEST
-
-        float *d = (float*) malloc(sizeof(float)*Ndim);
-        float *e = (float*) malloc(sizeof(float)*Ndim);
-        float *t = (float*) malloc(sizeof(float)*Ndim);
-
-
-#ifdef HAVE_MKL
-        mkl_set_interface_layer(MKL_INTERFACE_ILP64);
-#endif
-
-        LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', Ndim, (float*) imgATA.im->array.F, Ndim, d, e, t);
-
-
-        // Assemble Q matrix
-        LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', Ndim, imgATA.im->array.F, Ndim, t );
-
-
-
-
-        // compute all eigenvalues and eivenvectors -> imgmV
-        //
-
-
-
-        memcpy(imgmNsvec->im->array.F, imgATA.im->array.F, sizeof(float)*Ndim*Ndim);
-        LAPACKE_ssteqr(LAPACK_COL_MAJOR, 'V', Ndim, d, e, imgmNsvec->im->array.F, Ndim);
-        memcpy(imgeigenval.im->array.F, d, sizeof(float)*Ndim);
-
-
-        free(d);
-        free(e);
-        free(t);
-
-        delete_image(imgATA, DELETE_IMAGE_ERRMODE_EXIT);
-
-        // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
+        strcpy(imgATA.name, "ATA");
+        computeSGEMM(imgin, imgin, &imgATA, TranspA, TranspB, GPUdev);
     }
 
 
 
 
-    if( !(compSVDmode & COMPSVD_SKIP_BIGMAT) )
+    // singular vectors array, small dimension
+    // matrix (U or V) is square
+    //
+    IMGID *imgmNsvec;
+    float evalmax;
+    long NBmode = 0;
     {
-
-        // create mU (if inMshape_tall)
-        // create mV (if inMshape_wide)
-        // (only non-zero part allocated)
+        // eigendecomposition
         //
+        float *d = (float*) malloc(sizeof(float)*Ndim);
+        float *e = (float*) malloc(sizeof(float)*Ndim);
+        float *t = (float*) malloc(sizeof(float)*Ndim);
 
-        IMGID *imgmMsvec;
+#ifdef HAVE_MKL
+        mkl_set_interface_layer(MKL_INTERFACE_ILP64);
+#endif
+        LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', Ndim, (float*) imgATA.im->array.F, Ndim, d, e, t);
+
+        // Assemble Q matrix
+        LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', Ndim, imgATA.im->array.F, Ndim, t );
+
+        // compute all eigenvalues and eivenvectors -> imgmV
+        //
+        //memcpy(imgmNsvec->im->array.F, imgATA.im->array.F, sizeof(float)*Ndim*Ndim);
+        LAPACKE_ssteqr(LAPACK_COL_MAJOR, 'V', Ndim, d, e, imgATA.im->array.F, Ndim);
+
+
+        // How many modes to keep ?
+        evalmax = d[Ndim-1];
+        {
+            long modecnt = 0;
+            for(int k=0; k<Ndim; k++)
+            {
+                if( d[k] > SVlimit*SVlimit*evalmax )
+                {
+                    modecnt++;
+                }
+            }
+            NBmode = modecnt;
+            if ( modecnt > SVDmaxNBmode )
+            {
+                NBmode = SVDmaxNBmode;
+            }
+        }
+        printf("KEEPING %ld MODES\n", NBmode);
+
+
 
         if(mshape == inMshape_tall)
         {
-            // inNdim < inMdim
-            imgmMsvec = &imgU;
+            imgmNsvec = &imgV;
+
+            if( imgV.ID == -1)
+            {
+                imgV.naxis = 2;
+                imgV.size[0] = inNdim;
+                imgV.size[1] = NBmode; //inNdim;
+                createimagefromIMGID(&imgV);
+            }
+        }
+        else
+        {
+            imgmNsvec = &imgU;
 
             if( imgU.ID == -1)
             {
@@ -565,186 +769,84 @@ errno_t compute_SVD(
                 {
                     imgU.size[0] = inMdim0;
                     imgU.size[1] = inMdim1;
-
-                    // truncate to remove zero area
-                    imgU.size[2] = inNdim;
+                    imgU.size[2] = NBmode; //inMdim;
                 }
                 else
                 {
                     imgU.size[0] = inMdim;
-
-                    // truncate to remove zero area
-                    imgU.size[1] = inNdim;
+                    imgU.size[1] = NBmode; //inMdim;
                 }
                 createimagefromIMGID(&imgU);
             }
         }
-        else
+
+
+        // re-order from largest to smallest
+        for(int k=0; k<NBmode; k++)
         {
-            // inNdim > inMdim
-            imgmMsvec = &imgV;
+            char * ptr0 = (char*) &imgATA.im->array.F[(Ndim-k-1)*Ndim];
+            char * ptr1 = (char*) &imgmNsvec->im->array.F[k*Ndim];
 
-            if( imgV.ID == -1)
-            {
-                imgV.naxis = 2;
-                imgV.size[0] = inNdim;
+            memcpy(ptr1, ptr0, sizeof(float)*Ndim);
 
-                // TO BE DONE: check transpose or not, truncate accordingly
-                imgV.size[1] = inNdim;
-                createimagefromIMGID(&imgV);
-            }
+            imgeigenval.im->array.F[k] = d[Ndim-k-1];
         }
 
 
+        free(d);
+        free(e);
+        free(t);
+
+        // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
+    }
+    delete_image(&imgATA, DELETE_IMAGE_ERRMODE_EXIT);
+
+
+
+
+
+
+
+
+
+
+    if( !(compSVDmode & COMPSVD_SKIP_BIGMAT) )
+    {
+        // create mU (if inMshape_tall)
+        // create mV (if inMshape_wide)
+        // (only non-zero part allocated)
+        //
 
 
         // Compute mU (only non-zero part allocated)
-        // Multiply RMmodesDM by Vmat
         //
-
+        IMGID *imgmMsvec;
         {
-            int SGEMMcomputed = 0;
-            if( (GPUdev >= 0) && (GPUdev <= 99))
+            int TranspA = 0;
+            int TranspB = 0;
+            if ( mshape == inMshape_wide )
             {
-#ifdef HAVE_CUDA
-                printf("Running SGEMM 2 on GPU device %d  (%u %u %u)\n", GPUdev, Mdim, Ndim, Ndim);
-                fflush(stdout);
-
-                const float alf = 1;
-                const float bet = 0;
-                const float *alpha = &alf;
-                const float *beta = &bet;
-
-                //cudaError_t cudaStat;
-                //cublasStatus_t stat;
-
-                float *d_inmat;
-                {
-                    cudaError_t cudaStat = cudaMalloc((void **)&d_inmat, imgin.md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                {
-                    cudaError_t stat = cudaMemcpy(d_inmat, imgin.im->array.F, imgin.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                    if (stat != cudaSuccess) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                float *d_mNsvec;
-
-                {
-                    cudaError_t cudaStat = cudaMalloc((void **)&d_mNsvec, imgmNsvec->md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-
-                {
-                    cudaError_t stat = cudaMemcpy(d_mNsvec, imgmNsvec->im->array.F, imgmNsvec->md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                    if (stat != cudaSuccess) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                float *d_mMsvec;
-                {
-                    cudaError_t cudaStat = cudaMalloc((void **)&d_mMsvec, imgmMsvec->md->nelement * sizeof(float));
-                    if (cudaStat != cudaSuccess) {
-                        printf ("device memory allocation failed");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                cublasHandle_t handle;
-                {
-                    cublasStatus_t stat = cublasCreate(&handle);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasCreate failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                cublasOperation_t OP0 = CUBLAS_OP_N;
-                if ( mshape == inMshape_wide )
-                {
-                    OP0 = CUBLAS_OP_T;
-                }
-
-                printf("comp >> ");
-                fflush(stdout);
-
-                {
-                    cublasStatus_t stat = cublasSgemm(handle, OP0, CUBLAS_OP_N,
-                                                      Mdim, Ndim, Ndim, alpha,
-                                                      d_inmat, inMdim,
-                                                      d_mNsvec, Ndim,
-                                                      beta, d_mMsvec, Mdim);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasSgemm failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                printf(" >> done\n");
-                fflush(stdout);
-
-
-                {
-                    cublasStatus_t stat = cublasDestroy(handle);
-                    if (stat != CUBLAS_STATUS_SUCCESS) {
-                        printf ("cublasCreate failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-                {
-                    cudaError_t stat = cudaMemcpy(imgmMsvec->im->array.F, d_mMsvec, imgmMsvec->md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-                    if (stat != cudaSuccess) {
-                        printf ("cudaMemcpy failed\n");
-                        return EXIT_FAILURE;
-                    }
-                }
-
-
-                cudaFree(d_inmat);
-                cudaFree(d_mNsvec);
-                cudaFree(d_mMsvec);
-
-                SGEMMcomputed = 1;
-#endif
+                TranspA = 1;
             }
 
-            if ( SGEMMcomputed == 0 )
+            if(mshape == inMshape_tall)
             {
-                printf("Running SGEMM 2 on CPU\n");
-                fflush(stdout);
-
-                CBLAS_TRANSPOSE OP0 = CblasNoTrans;
-                if ( mshape == inMshape_wide )
-                {
-                    OP0 = CblasTrans;
-                }
-
-                cblas_sgemm (CblasColMajor, OP0, CblasNoTrans,
-                             Mdim, Ndim, Ndim, 1.0,
-                             imgin.im->array.F, inMdim,
-                             imgmNsvec->im->array.F, Ndim,
-                             0.0, imgmMsvec->im->array.F, Mdim);
+                computeSGEMM(imgin, *imgmNsvec, &imgU, TranspA, TranspB, GPUdev);
+                imgmMsvec = &imgU;
+            }
+            else
+            {
+                computeSGEMM(imgin, *imgmNsvec, &imgV, TranspA, TranspB, GPUdev);
+                imgmMsvec = &imgV;
             }
         }
+
 
 
 
         // find largest eigenvalue
         //
+        /*
         float evalmax = fabs(imgeigenval.im->array.F[0]);
         for(uint32_t jj=1; jj<Ndim; jj++)
         {
@@ -753,14 +855,14 @@ errno_t compute_SVD(
             {
                 evalmax = eval;
             }
-        }
+        }*/
 
 
         // normalize cols of imgmMsvec
         // Report number of modes kept
         //
         long SVkeptcnt = 0;
-        for(uint32_t jj=0; jj<Ndim; jj++)
+        for(uint32_t jj=0; jj<NBmode; jj++)
         {
 
             float normfact = 0.0;
@@ -777,7 +879,7 @@ errno_t compute_SVD(
                 imgmMsvec->im->array.F[jj*Mdim+ii] *= normfact;
             }
         }
-        printf("Keeping %ld / %u modes\n", SVkeptcnt, Ndim);
+        printf("LIMIT = %g  - Keeping %ld / %u modes\n", SVlimit, SVkeptcnt, Ndim);
 
 
 
@@ -787,28 +889,8 @@ errno_t compute_SVD(
         //
         if( (compSVDmode & COMPSVD_COMP_PSINV) )
         {
-            printf("COMPUTING psinv\n");
-            fflush(stdout);
             // assumes tall matrix
             //
-
-            IMGID imgpsinv = mkIMGID_from_name("psinv");
-
-            if(mshape == inMshape_tall)
-            {
-                // inNdim < inMdim
-                // N < M
-
-                if( imgpsinv.ID == -1)
-                {
-                    imgpsinv.naxis = 2;
-
-                    imgpsinv.size[0] = inNdim;
-                    imgpsinv.size[1] = inMdim;
-
-                    createimagefromIMGID(&imgpsinv);
-                }
-            }
 
             IMGID imgmNsvec1 = mkIMGID_from_name("matNtemp");
             if( imgmNsvec1.ID == -1)
@@ -816,7 +898,7 @@ errno_t compute_SVD(
                 imgmNsvec1.naxis = 2;
 
                 imgmNsvec1.size[0] = Ndim;
-                imgmNsvec1.size[1] = Ndim;
+                imgmNsvec1.size[1] = NBmode;
 
                 createimagefromIMGID(&imgmNsvec1);
             }
@@ -824,7 +906,7 @@ errno_t compute_SVD(
 
             // multiply by inverse of singular values
             //
-            for(uint32_t jj=0; jj<Ndim; jj++)
+            for(uint32_t jj=0; jj<NBmode; jj++)
             {
                 float normfact = 0.0;
                 float eval = fabs(imgeigenval.im->array.F[jj]);
@@ -834,160 +916,25 @@ errno_t compute_SVD(
                     normfact = 1.0 / sqrt(eval);
 
                 }
-/*
-                printf("Eigenvalue %4d = %10g  -> %10g   scaling = %10g\n",
-                       jj,
-                       imgeigenval.im->array.F[jj],
-                       evaln,
-                       normfact);
-*/
+
                 for(uint32_t ii=0; ii < Ndim; ii++)
                 {
                     imgmNsvec1.im->array.F[jj*Ndim+ii] =
                         imgmNsvec->im->array.F[jj*Ndim+ii] * normfact;
-                        // / sqrt(imgeigenval.im->array.F[jj]);
+                    // / sqrt(imgeigenval.im->array.F[jj]);
                 }
             }
 
 
 
-
-
-
-
-
-
+            IMGID imgpsinv;
             {
-                int SGEMMcomputed = 0;
-                if( (GPUdev >= 0) && (GPUdev <= 99))
-                {
-#ifdef HAVE_CUDA
-                    printf("Running SGEMM 2 on GPU device %d  (%u %u %u)\n", GPUdev, Mdim, Ndim, Ndim);
-                    fflush(stdout);
+                int TranspA = 0;
+                int TranspB = 1;
+                strcpy(imgpsinv.name, "psinv");
+                computeSGEMM(imgmNsvec1, *imgmMsvec, &imgpsinv, TranspA, TranspB, GPUdev);
 
-                    const float alf = 1;
-                    const float bet = 0;
-                    const float *alpha = &alf;
-                    const float *beta = &bet;
-
-                    //cudaError_t cudaStat;
-                    //cublasStatus_t stat;
-
-                    float *d_mNsvec1;
-
-                    {
-                        cudaError_t cudaStat = cudaMalloc((void **)&d_mNsvec1, imgmNsvec1.md->nelement * sizeof(float));
-                        if (cudaStat != cudaSuccess) {
-                            printf ("device memory allocation failed");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-                    {
-                        cudaError_t stat = cudaMemcpy(d_mNsvec1, imgmNsvec1.im->array.F, imgmNsvec1.md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                        if (stat != cudaSuccess) {
-                            printf ("cudaMemcpy failed\n");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-
-                    float *d_mMsvec;
-                    {
-                        cudaError_t cudaStat = cudaMalloc((void **)&d_mMsvec, imgmMsvec->md->nelement * sizeof(float));
-                        if (cudaStat != cudaSuccess) {
-                            printf ("device memory allocation failed");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-                    {
-                        cudaError_t stat = cudaMemcpy(d_mMsvec, imgmMsvec->im->array.F, imgmMsvec->md->nelement * sizeof(float), cudaMemcpyHostToDevice);
-                        if (stat != cudaSuccess) {
-                            printf ("cudaMemcpy failed\n");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-
-                    float *d_mpsinv;
-                    {
-                        cudaError_t cudaStat = cudaMalloc((void **)&d_mpsinv, imgpsinv.md->nelement * sizeof(float));
-                        if (cudaStat != cudaSuccess) {
-                            printf ("device memory allocation failed");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-
-
-                    cublasHandle_t handle;
-                    {
-                        cublasStatus_t stat = cublasCreate(&handle);
-                        if (stat != CUBLAS_STATUS_SUCCESS) {
-                            printf ("cublasCreate failed\n");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-
-
-                    printf("comp >> ");
-                    fflush(stdout);
-
-                    {
-                        cublasStatus_t stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
-                                                          Ndim, Mdim, Ndim, alpha,
-                                                          d_mNsvec1, Ndim,
-                                                          d_mMsvec, Mdim,
-                                                          beta, d_mpsinv, Ndim);
-                        if (stat != CUBLAS_STATUS_SUCCESS) {
-                            printf ("cublasSgemm failed\n");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-                    printf(" >> done\n");
-                    fflush(stdout);
-
-
-                    {
-                        cublasStatus_t stat = cublasDestroy(handle);
-                        if (stat != CUBLAS_STATUS_SUCCESS) {
-                            printf ("cublasCreate failed\n");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-
-                    {
-                        cudaError_t stat = cudaMemcpy(imgpsinv.im->array.F, d_mpsinv, imgpsinv.md->nelement * sizeof(float), cudaMemcpyDeviceToHost);
-                        if (stat != cudaSuccess) {
-                            printf ("cudaMemcpy failed\n");
-                            return EXIT_FAILURE;
-                        }
-                    }
-
-
-                    cudaFree(d_mNsvec1);
-                    cudaFree(d_mMsvec);
-                    cudaFree(d_mpsinv);
-
-                    SGEMMcomputed = 1;
-#endif
-                }
-
-                if ( SGEMMcomputed == 0 )
-                {
-                    printf("Running SGEMM on CPU\n");
-                    fflush(stdout);
-
-                    cblas_sgemm (CblasColMajor, CblasNoTrans, CblasTrans,
-                                 Ndim, Mdim, Ndim, 1.0,
-                                 imgmNsvec1.im->array.F, Ndim,
-                                 imgmMsvec->im->array.F, Mdim,
-                                 0.0, imgpsinv.im->array.F, Ndim);
-                }
+                delete_image(&imgmNsvec1, DELETE_IMAGE_ERRMODE_EXIT);
             }
 
 
@@ -997,34 +944,55 @@ errno_t compute_SVD(
             //
             if( (compSVDmode & COMPSVD_COMP_CHECKPSINV) )
             {
-                printf("CHECKING psinv\n");
-                fflush(stdout);
 
                 IMGID imgpsinvcheck = mkIMGID_from_name("psinvcheck");
                 if(mshape == inMshape_tall)
                 {
                     // inNdim < inMdim
-
-                    if( imgpsinvcheck.ID == -1)
-                    {
-                        imgpsinvcheck.naxis = 2;
-
-                        imgpsinvcheck.size[0] = inNdim;
-                        imgpsinvcheck.size[1] = inNdim;
-
-                        createimagefromIMGID(&imgpsinvcheck);
-
-                        cblas_sgemm (CblasColMajor, CblasNoTrans, CblasNoTrans,
-                                     Ndim, Ndim, Mdim, 1.0,
-                                     imgpsinv.im->array.F, Ndim,
-                                     imgin.im->array.F, Mdim,
-                                     0.0, imgpsinvcheck.im->array.F, Ndim);
-                    }
+                    computeSGEMM(imgpsinv, imgin, &imgpsinvcheck, 0, 0, GPUdev);
                 }
             }
         }
 
     }
+
+
+
+    // Compute un-normalized modes U
+    // Singular Values included in modes U
+    //
+    if ( imgU.ID != -1 )
+    {
+        // un-normalized modes
+        IMGID imgunmodes = mkIMGID_from_name("SVDunmodes");
+        imgunmodes.naxis = imgU.md->naxis;
+        imgunmodes.datatype = imgU.md->datatype;
+        imgunmodes.size[0] = imgU.md->size[0];
+        imgunmodes.size[1] = imgU.md->size[1];
+        imgunmodes.size[2] = imgU.md->size[2];
+        createimagefromIMGID(&imgunmodes);
+
+        int lastaxis = imgunmodes.naxis-1;
+        long framesize = imgunmodes.size[0];
+        if(lastaxis==2)
+        {
+            framesize *= imgunmodes.size[1];
+        }
+
+        for(int kk=0; kk<imgunmodes.size[lastaxis]; kk++)
+        {
+            float mfact = sqrt(imgeigenval.im->array.F[kk]);
+            for(long ii=0; ii<framesize; ii++)
+            {
+                imgunmodes.im->array.F[kk*framesize+ii] = imgU.im->array.F[kk*framesize+ii] * mfact;
+            }
+        }
+
+        IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        computeSGEMM(imgunmodes, imgV, &iminrec, 0, 1, GPUdev);
+    }
+
+
 
     return RETURN_SUCCESS;
 }
@@ -1056,7 +1024,7 @@ static errno_t compute_function()
     {
 
 
-        compute_SVD(imginM, imgU, imgev, imgV, 0.0, *GPUdevice, 0);
+        compute_SVD(imginM, imgU, imgev, imgV, *svdlim, *maxNBmode, *GPUdevice, *compmode);
 
 
     }
