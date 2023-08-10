@@ -997,7 +997,7 @@ static inline uint64_t IMGIDmdcompare(
         }
     }
 
-    if(imgtemplate.md->naxis != -1)
+    if(imgtemplate.md->naxis != 0)
     {
         printf("Checking md->naxis  %d %d    ", imgtemplate.md->naxis, img.md->naxis);
         if(imgtemplate.md->naxis != img.md->naxis)
