@@ -51,7 +51,7 @@ static errno_t image_copy_shm(
     const char * restrict outshmname
 )
 {
-    imageID ID = resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT);
 
     // check if shared memory destination exists
     IMGID imgshm = read_sharedmem_img(outshmname);

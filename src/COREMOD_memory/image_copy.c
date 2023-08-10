@@ -47,20 +47,6 @@ static errno_t copy_image_ID__cli()
     return CLICMD_SUCCESS;
 }
 
-static errno_t copy_image_ID_sharedmem__cli()
-{
-    if(data.cmdargtoken[1].type != CLIARG_IMG)
-    {
-        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
-        return CLICMD_INVALID_ARG;
-    }
-
-    copy_image_ID(data.cmdargtoken[1].val.string,
-                  data.cmdargtoken[2].val.string,
-                  1);
-
-    return CLICMD_SUCCESS;
-}
 
 static errno_t chname_image_ID__cli()
 {
