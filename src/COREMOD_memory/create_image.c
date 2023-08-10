@@ -401,8 +401,6 @@ errno_t create_image_ID(const char *name,
                      CBsize);
 
     imageID ID;
-    static int cnt = 1;
-
     if(image_ID(name) == -1)
     {
         ID = next_avail_image_ID(*outID);
@@ -459,7 +457,13 @@ errno_t create_image_ID(const char *name,
     return RETURN_SUCCESS;
 }
 
-errno_t create_1Dimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
+
+
+errno_t create_1Dimage_ID(
+    const char * restrict ID_name,
+    uint32_t xsize,
+    imageID *outID
+)
 {
     DEBUG_TRACE_FSTART();
 
