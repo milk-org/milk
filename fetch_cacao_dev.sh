@@ -9,9 +9,13 @@ else
     echo ""
 fi
 
-topdir="$(dirname $0)"
-mkl_sdl=$(grep '^[\t ]*pkg_check_modules( *MKL  *mkl-sdl *) *$' "$topdir/CMakeLists.txt")
-[ "$mkl_sdl" ] \
-&& sed -i -e '/^[	 ]*lapacke$/s/lapacke/#&/' "$topdir/plugins/cacao-src/computeCalib/CMakeLists.txt" \
-&& echo "Updated plugins/cacao-src/computeCalib/CMakeLists.txt to remove lapacke library" \
-|| true
+PATCHFN=patch_cacao_lapacke_optional.txt
+( [ -r  "./$PATCHFN" ] \
+  && cd plugins/cacao-src/computeCalib/ \
+  && PATCHPATH="../../../$PATCHFN" \
+  && [ -r  "$PATCHPATH" ] \
+  && patch -s --reject-file=- -f -p 2 < "$PATCHPATH" \
+  && echo "Successfully patched CACAO computeCalib/CMakeList.txt" \
+  || echo "Failed to patch CACAO computeCalib/CMakeList.txt" \
+  || true
+)
