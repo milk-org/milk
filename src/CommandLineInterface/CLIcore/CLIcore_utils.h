@@ -956,6 +956,8 @@ static inline uint64_t IMGIDcompare(
     if(imgtemplate.NBkw != img.NBkw)
     {
         printf("FAIL\n");
+        printf("    template : %u\n", imgtemplate.NBkw);
+        printf("    dest     : %u\n", img.NBkw);
         compErr++;
     }
     else
@@ -1057,6 +1059,8 @@ static inline uint64_t IMGIDmdcompare(
     if(imgtemplate.md->NBkw != img.md->NBkw)
     {
         printf("FAIL\n");
+        printf("    template : %u\n", imgtemplate.md->NBkw);
+        printf("    dest     : %u\n", img.md->NBkw);
         compErr++;
     }
     else
@@ -1084,7 +1088,7 @@ static inline uint64_t IMGIDmdcompare(
  */
 static inline IMGID
 stream_connect_create_2Df32(
-    char *imname,
+    char * __restrict imname,
     uint32_t xsize,
     uint32_t ysize
 )
@@ -1108,6 +1112,7 @@ stream_connect_create_2Df32(
         imgc.naxis      = 2;
         imgc.size[0]    = xsize;
         imgc.size[1]    = ysize;
+        imgc.NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = IMGIDcompare(img, imgc);
         printf("%lu errors\n", imgerr);
 
@@ -1144,10 +1149,12 @@ stream_connect_create_2Df32(
 }
 
 
-static inline IMGID stream_connect_create_2D(char    *imname,
-        uint32_t xsize,
-        uint32_t ysize,
-        uint8_t  datatype)
+static inline IMGID stream_connect_create_2D(
+    char * __restrict imname,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint8_t  datatype
+)
 {
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
@@ -1169,6 +1176,7 @@ static inline IMGID stream_connect_create_2D(char    *imname,
         imgc.naxis      = 2;
         imgc.size[0]    = xsize;
         imgc.size[1]    = ysize;
+        imgc.NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = IMGIDcompare(img, imgc);
         printf("%lu errors\n", imgerr);
 
@@ -1219,7 +1227,7 @@ static inline IMGID stream_connect_create_2D(char    *imname,
  * @return IMGID
  */
 static inline IMGID stream_connect_create_3Df32(
-    char    *imname,
+    char * __restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint32_t zsize)
@@ -1246,6 +1254,7 @@ static inline IMGID stream_connect_create_3Df32(
         imgc.size[0]    = xsize;
         imgc.size[1]    = ysize;
         imgc.size[2]    = zsize;
+        imgc.NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = IMGIDcompare(img, imgc);
         printf("%lu errors\n", imgerr);
 
@@ -1285,7 +1294,7 @@ static inline IMGID stream_connect_create_3Df32(
 
 
 static inline IMGID stream_connect_create_3D(
-    char    *imname,
+    char * __restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint32_t zsize,
@@ -1314,6 +1323,7 @@ static inline IMGID stream_connect_create_3D(
         imgc.size[0]    = xsize;
         imgc.size[1]    = ysize;
         imgc.size[2]    = zsize;
+        imgc.NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = IMGIDcompare(img, imgc);
         printf("%lu errors\n", imgerr);
 
