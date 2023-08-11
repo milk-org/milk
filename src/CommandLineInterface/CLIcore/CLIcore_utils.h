@@ -1122,14 +1122,12 @@ stream_connect_create_2Df32(
     // if not in local memory, (re)-create
     if(img.ID == -1)
     {
-        uint32_t *arraytmp;
-        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+        uint32_t arraytmp[2];
 
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
 
         create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, NB_KEYWNODE_MAX, 0, &img.ID);
-        free(arraytmp);
     }
 
 
@@ -1185,14 +1183,12 @@ static inline IMGID stream_connect_create_2D(char    *imname,
     // if not in local memory, (re)-create
     if(img.ID == -1)
     {
-        uint32_t *arraytmp;
-        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+        uint32_t arraytmp[2];
 
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
 
         create_image_ID(imname, 2, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
-        free(arraytmp);
     }
 
 
@@ -1264,15 +1260,13 @@ static inline IMGID stream_connect_create_3Df32(
     // if not in local memory, (re)-create
     if(img.ID == -1)
     {
-        uint32_t *arraytmp;
-        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+        uint32_t arraytmp[3];
 
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
         arraytmp[2] = zsize;
 
         create_image_ID(imname, 3, arraytmp, _DATATYPE_FLOAT, 1, NB_KEYWNODE_MAX, 0, &img.ID);
-        free(arraytmp);
     }
 
 
@@ -1334,8 +1328,7 @@ static inline IMGID stream_connect_create_3D(
     // if not in local memory, (re)-create
     if(img.ID == -1)
     {
-        uint32_t *arraytmp;
-        arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
+        uint32_t arraytmp[3];
 
         arraytmp[0] = xsize;
         arraytmp[1] = ysize;
@@ -1344,7 +1337,6 @@ static inline IMGID stream_connect_create_3D(
         printf("CREATING image size %u %u %u\n", xsize, ysize, zsize);
 
         create_image_ID(imname, 3, arraytmp, datatype, 1, NB_KEYWNODE_MAX, 0, &img.ID);
-        free(arraytmp);
     }
 
 
