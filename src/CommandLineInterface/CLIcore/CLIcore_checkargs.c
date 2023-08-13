@@ -198,7 +198,7 @@ static int CLI_checkarg0(
         case CLIARG_UINT64: // should be uint64
         case CLIARG_ONOFF:  // should be on/off (= uint64)
         case CLIARG_LONG: // to be deprecated
-            printf("ARG is CLIARG_XINTXX\n");
+            DEBUG_TRACEPOINT("ARG is CLIARG_XINTXX\n");
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
