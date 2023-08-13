@@ -124,8 +124,6 @@ errno_t load_fits(const char *restrict file_name,
         {
             if(fileOK == 0)
             {
-
-                printf(">>>>>>> loadfits file \"%s\"\n", file_name);
                 int status = 0;
                 fits_open_file(&fptr, file_name, READONLY, &status);
 
@@ -166,7 +164,7 @@ errno_t load_fits(const char *restrict file_name,
                 }
             }
         }
-        printf("fileOK = %d\n", fileOK);
+        //printf("fileOK = %d\n", fileOK);
 
         if(fileOK == 0)
         {
@@ -234,7 +232,6 @@ errno_t load_fits(const char *restrict file_name,
         fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment, &status);
         FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS", file_name);
     }
-    printf("naxis = %ld\n", naxis);
     DEBUG_TRACEPOINT("naxis = %ld", naxis);
 
     for(long i = 0; i < naxis; i++)
@@ -281,17 +278,6 @@ errno_t load_fits(const char *restrict file_name,
         int status = 0;
         fits_set_bscale(fptr, bscale, bzero, &status);
         FITSIO_CHECK_ERROR(status, errmode, "bscake set errror");
-    }
-
-    if(1)
-    {
-        printf("[%ld", (long) naxes[0]);
-        for(long i = 1; i < naxis; i++)
-        {
-            printf(",%ld", (long) naxes[i]);
-        }
-        printf("] %d %f %f\n", bitpix, bscale, bzero);
-        fflush(stdout);
     }
 
     nelements = 1;
@@ -534,7 +520,7 @@ errno_t load_fits(const char *restrict file_name,
                              "BZERO",
                              0
                             };
-    printf("%d FITS keywords detected\n", nbFITSkeys);
+    //printf("%d FITS keywords detected\n", nbFITSkeys);
     for(int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
     {
         char keyname[9];
@@ -575,11 +561,11 @@ errno_t load_fits(const char *restrict file_name,
             if(strlen(tailstr) == 0)
             {
                 kwtypeOK = 1;
-                printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
+                /*printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
                        kwnum,
                        keyname,
                        kwlongval,
-                       kwcomment);
+                       kwcomment);*/
                 image_keyword_addL(img, keyname, kwlongval, kwcomment);
             }
 
@@ -590,22 +576,22 @@ errno_t load_fits(const char *restrict file_name,
                 if(strlen(tailstr) == 0)
                 {
                     kwtypeOK = 1;
-                    printf("%3d FITS KEYW [D] %-8s= %20g / %s\n",
+                    /*printf("%3d FITS KEYW [D] %-8s= %20g / %s\n",
                            kwnum,
                            keyname,
                            kwdoubleval,
-                           kwcomment);
+                           kwcomment);*/
                     image_keyword_addD(img, keyname, kwdoubleval, kwcomment);
                 }
 
                 if(kwtypeOK == 0)
                 {
                     // default to string
-                    printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n",
+                    /*printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n",
                            kwnum,
                            keyname,
                            kwvaluestr,
-                           kwcomment);
+                           kwcomment);*/
                     // remove leading and trailing '
                     kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
