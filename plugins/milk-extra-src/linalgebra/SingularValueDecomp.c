@@ -13,31 +13,8 @@
 #include "SingularValueDecomp.h"
 #include "SGEMM.h"
 
-// Use MKL if available
-// Otherwise use openBLAS
-//
-#ifdef HAVE_MKL
-#include "mkl.h"
-#define BLASLIB "IntelMKL"
-#else
-#ifdef HAVE_OPENBLAS
-#include <cblas.h>
-#include <lapacke.h>
-#define BLASLIB "OpenBLAS"
-#endif
-#endif
 
 
-
-
-#ifdef HAVE_CUDA
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <device_types.h>
-#include <pthread.h>
-#endif
 
 
 // CPU mode: Use MKL if available
