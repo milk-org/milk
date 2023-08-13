@@ -13,21 +13,6 @@
 #include "SGEMM.h"
 
 
-// Use MKL if available
-// Otherwise use openBLAS
-//
-#ifdef HAVE_MKL
-#include "mkl.h"
-#define BLASLIB "IntelMKL"
-#else
-#ifdef HAVE_OPENBLAS
-#include <cblas.h>
-#include <lapacke.h>
-#define BLASLIB "OpenBLAS"
-#endif
-#endif
-
-
 
 
 #ifdef HAVE_CUDA
