@@ -7,7 +7,6 @@
 #define COMPSVD_COMP_CHECKPSINV  0x00000004UL
 #define COMPSVD_COMP_RECONSTRUCT 0x00000008UL
 
-errno_t CLIADDCMD_linalgebra__compSVD();
 
 errno_t compute_SVD(
     IMGID imgin,
@@ -19,5 +18,8 @@ errno_t compute_SVD(
     int GPUdev,
     uint64_t compSVDmode
 );
+
+errno_t CLIADDCMD_linalgebra__compSVD();
+
 
 #endif
