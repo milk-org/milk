@@ -120,7 +120,7 @@ errno_t saveFITS_opt_trunc(
 
 
     DEBUG_TRACE_FSTART();
-    printf("Saving image %s to file %s, bitpix = %d, slice truncation %d\n",
+    DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d, slice truncation %d\n",
            inputimname,
            outputFITSname,
            outputbitpix,
@@ -133,7 +133,7 @@ errno_t saveFITS_opt_trunc(
 
     char fnametmp[STRINGMAXLEN_FILENAME];
 
-    printf(">> saving %s to %s\n", inputimname, outputFITSname);
+    DEBUG_TRACEPOINT(">> saving %s to %s\n", inputimname, outputFITSname);
     /*
         WRITE_FILENAME(fnametmp,
                        "_savefits_atomic_%s_%d_%ld.tmp.fits",
@@ -147,7 +147,7 @@ errno_t saveFITS_opt_trunc(
                    outputFITSname,
                    (int) getpid(),
                    (long) self_id);
-    printf("temp name : %s\n", fnametmp);
+    DEBUG_TRACEPOINT("temp name : %s\n", fnametmp);
 
     // extended filename to pass instructions to FITSIO
     // For example, FITSIOext = [compress R 1,1,10000]
@@ -179,47 +179,47 @@ errno_t saveFITS_opt_trunc(
     {
     case 8:
         bitpix = BYTE_IMG;
-        printf("    output data type: BYTE_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: BYTE_IMG\n");
         break;
     case 10:
         bitpix = SBYTE_IMG;
-        printf("    output data type: SBYTE_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: SBYTE_IMG\n");
         break;
 
     case 16:
         bitpix = SHORT_IMG;
-        printf("    output data type: SHORT_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: SHORT_IMG\n");
         break;
     case 20:
         bitpix = USHORT_IMG;
-        printf("    output data type: USHORT_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: USHORT_IMG\n");
         break;
 
     case 32:
         bitpix = LONG_IMG;
-        printf("    output data type: LONG_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: LONG_IMG\n");
         break;
     case 40:
         bitpix = ULONG_IMG;
-        printf("    output data type: ULONG_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: ULONG_IMG\n");
         break;
 
     case 64:
         bitpix = LONGLONG_IMG;
-        printf("    output data type: LONGLONG_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: LONGLONG_IMG\n");
         break;
     case 80:
         bitpix = ULONGLONG_IMG;
-        printf("    output data type: ULONGLONG_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: ULONGLONG_IMG\n");
         break;
 
     case -32:
         bitpix = FLOAT_IMG;
-        printf("    output data type: FLOAT_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: FLOAT_IMG\n");
         break;
     case -64:
         bitpix = DOUBLE_IMG;
-        printf("    output data type: DOUBLE_IMG\n");
+        DEBUG_TRACEPOINT("    output data type: DOUBLE_IMG\n");
         break;
     }
 
@@ -280,7 +280,7 @@ errno_t saveFITS_opt_trunc(
 
 
 
-    printf("%d -> bitpix = %d\n", outputbitpix, bitpix);
+    DEBUG_TRACEPOINT("%d -> bitpix = %d\n", outputbitpix, bitpix);
     fflush(stdout);
 
     fitsfile *fptr;
@@ -310,12 +310,12 @@ errno_t saveFITS_opt_trunc(
     {
         naxesl[i] = (long) imgin.md->size[i];
         nelements *= naxesl[i];
-        printf("-------------- SIZE %d = %ld\n", i, naxesl[i]);
+        DEBUG_TRACEPOINT("-------------- SIZE %d = %ld\n", i, naxesl[i]);
     }
     if(truncate >= 0)
     {
         naxesl[naxis - 1] = truncate;
-        printf("-------------- TRUNCATE TO %d\n", truncate);
+        DEBUG_TRACEPOINT("-------------- TRUNCATE TO %d\n", truncate);
     }
 
 
@@ -342,7 +342,7 @@ errno_t saveFITS_opt_trunc(
     {
         if(is_fits_file(importheaderfile) == 1)
         {
-            printf("Importing FITS header entries from : %s\n",
+            DEBUG_TRACEPOINT("Importing FITS header entries from : %s\n",
                    importheaderfile);
 
             fitsfile *fptr_header = NULL;
@@ -375,7 +375,7 @@ errno_t saveFITS_opt_trunc(
                 PRINT_ERROR("fits_hdr2str erroron file %s", importheaderfile);
                 abort();
             }
-            printf("imported %d header cards\n", nkeys);
+            DEBUG_TRACEPOINT("imported %d header cards\n", nkeys);
 
             char *hptr; // pointer to header
             hptr = header;
@@ -400,7 +400,7 @@ errno_t saveFITS_opt_trunc(
                     if(strncmp(keyexcl[ki], fitscard, strlen(keyexcl[ki])) ==
                             0)
                     {
-                        printf("EXCLUDING %s\n", fitscard);
+                        DEBUG_TRACEPOINT("EXCLUDING %s\n", fitscard);
                         writecard = 0;
                         break;
                     }
@@ -455,7 +455,7 @@ errno_t saveFITS_opt_trunc(
     {
         int NBkw  = imgin.md->NBkw;
         int kwcnt = 0;
-        printf("----------- NUMBER KW = %d ---------------\n", NBkw);
+        DEBUG_TRACEPOINT("----------- NUMBER KW = %d ---------------\n", NBkw);
         for(int kw = 0; kw < NBkw; kw++)
         {
             if(imgin.im->kw[kw].name[0] == '_')
@@ -470,7 +470,7 @@ errno_t saveFITS_opt_trunc(
             switch(imgin.im->kw[kw].type)
             {
             case 'L':
-                printf("writing keyword [L] %-8s= %20ld / %s\n",
+                DEBUG_TRACEPOINT("writing keyword [L] %-8s= %20ld / %s\n",
                        imgin.im->kw[kw].name,
                        imgin.im->kw[kw].value.numl,
                        imgin.im->kw[kw].comment);
@@ -485,7 +485,7 @@ errno_t saveFITS_opt_trunc(
                 break;
 
             case 'D':
-                printf("writing keyword [D] %-8s= %20g / %s\n",
+                DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
                        imgin.im->kw[kw].name,
                        imgin.im->kw[kw].value.numf,
                        imgin.im->kw[kw].comment);
@@ -501,7 +501,7 @@ errno_t saveFITS_opt_trunc(
 
             case 'S':
                 snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
-                printf("writing keyword [S] %-8s= %20s / %s\n",
+                DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
                        imgin.im->kw[kw].name,
                        tmpkwvalstr,
                        imgin.im->kw[kw].comment);
@@ -550,7 +550,7 @@ errno_t saveFITS_opt_trunc(
 
     if((kwarraysize > 0) && (kwarray != NULL))
     {
-        printf("----------- NUMBER CUSTOM KW = %d ---------------\n",
+        DEBUG_TRACEPOINT("----------- NUMBER CUSTOM KW = %d ---------------\n",
                kwarraysize);
         for(int kwi = 0; kwi < kwarraysize; kwi++)
         {
@@ -569,7 +569,7 @@ errno_t saveFITS_opt_trunc(
 
             case 'D':
                 COREMOD_iofits_data.FITSIO_status = 0;
-                printf("writing keyword [D] %-8s= %20g / %s\n",
+                DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
                        kwarray[kwi].name,
                        kwarray[kwi].value.numf,
                        kwarray[kwi].comment);
@@ -583,7 +583,7 @@ errno_t saveFITS_opt_trunc(
 
             case 'S':
                 snprintf(tmpkwvalstr, 81, "'%s'", kwarray[kwi].value.valstr);
-                printf("writing keyword [S] %-8s= %20s / %s\n",
+                DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
                        kwarray[kwi].name,
                        tmpkwvalstr,
                        kwarray[kwi].comment);
