@@ -228,6 +228,128 @@ errno_t image_marge(
         switch ( outimg->datatype )
         {
 
+        case _DATATYPE_UINT8 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.UI8[pixiout], &inimg0.im->array.UI8[pixiin0],
+                       sizeof(uint8_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.UI8[pixiout], &inimg1.im->array.UI8[pixiin1],
+                       sizeof(uint8_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+        case _DATATYPE_INT8 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.SI8[pixiout], &inimg0.im->array.SI8[pixiin0],
+                       sizeof(int8_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.SI8[pixiout], &inimg1.im->array.SI8[pixiin1],
+                       sizeof(int8_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+        case _DATATYPE_UINT16 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.UI16[pixiout], &inimg0.im->array.UI16[pixiin0],
+                       sizeof(uint16_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.UI16[pixiout], &inimg1.im->array.UI16[pixiin1],
+                       sizeof(uint16_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+        case _DATATYPE_INT16 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.SI16[pixiout], &inimg0.im->array.SI16[pixiin0],
+                       sizeof(int16_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.SI16[pixiout], &inimg1.im->array.SI16[pixiin1],
+                       sizeof(int16_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+        case _DATATYPE_UINT32 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.UI32[pixiout], &inimg0.im->array.UI32[pixiin0],
+                       sizeof(uint32_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.UI32[pixiout], &inimg1.im->array.UI32[pixiin1],
+                       sizeof(uint32_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+        case _DATATYPE_INT32 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.SI32[pixiout], &inimg0.im->array.SI32[pixiin0],
+                       sizeof(int32_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.SI32[pixiout], &inimg1.im->array.SI32[pixiin1],
+                       sizeof(int32_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+
+        case _DATATYPE_UINT64 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.UI64[pixiout], &inimg0.im->array.UI64[pixiin0],
+                       sizeof(uint64_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.UI64[pixiout], &inimg1.im->array.UI64[pixiin1],
+                       sizeof(uint64_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+        case _DATATYPE_INT64 :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.SI64[pixiout], &inimg0.im->array.SI64[pixiin0],
+                       sizeof(int64_t)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.SI64[pixiout], &inimg1.im->array.SI64[pixiin1],
+                       sizeof(int64_t)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
+
         case _DATATYPE_FLOAT :
             while ( pixiout < outimg->md->nelement)
             {
@@ -242,6 +364,22 @@ errno_t image_marge(
                 pixiout += blocksize_in1;
             }
             break;
+
+        case _DATATYPE_DOUBLE :
+            while ( pixiout < outimg->md->nelement)
+            {
+                memcpy(&outimg->im->array.D[pixiout], &inimg0.im->array.D[pixiin0],
+                       sizeof(double)*blocksize_in0);
+                pixiin0 += blocksize_in0;
+                pixiout += blocksize_in0;
+
+                memcpy(&outimg->im->array.D[pixiout], &inimg1.im->array.D[pixiin1],
+                       sizeof(double)*blocksize_in1);
+                pixiin1 += blocksize_in1;
+                pixiout += blocksize_in1;
+            }
+            break;
+
 
         default:
             PRINT_ERROR("datatype %u not supported", outimg->datatype );
