@@ -202,7 +202,7 @@ imageID copy_image_ID(
                         size,
                         datatype,
                         shared,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         NULL);
         IDout = image_ID(newname);

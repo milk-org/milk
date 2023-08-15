@@ -55,7 +55,7 @@ static errno_t create_image__cli()
                             imsize,
                             _DATATYPE_FLOAT,
                             data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
+                            NB_KEYWNODE_MAX,
                             0,
                             NULL);
             break;
@@ -65,7 +65,7 @@ static errno_t create_image__cli()
                             imsize,
                             _DATATYPE_DOUBLE,
                             data.SHARED_DFT,
-                            data.NBKEYWORD_DFT,
+                            NB_KEYWNODE_MAX,
                             0,
                             NULL);
             break;
@@ -158,7 +158,7 @@ static errno_t create_image__cli()
                         imsize,
                         datatype,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         NULL);
 
@@ -198,7 +198,7 @@ static errno_t create_image_shared__cli() // default precision
                             imsize,
                             _DATATYPE_FLOAT,
                             1,
-                            data.NBKEYWORD_DFT,
+                            NB_KEYWNODE_MAX,
                             0,
                             NULL);
             break;
@@ -208,7 +208,7 @@ static errno_t create_image_shared__cli() // default precision
                             imsize,
                             _DATATYPE_DOUBLE,
                             1,
-                            data.NBKEYWORD_DFT,
+                            NB_KEYWNODE_MAX,
                             0,
                             NULL);
             break;
@@ -246,7 +246,7 @@ static errno_t create_ushort_image_shared__cli() // default precision
                         imsize,
                         _DATATYPE_UINT16,
                         1,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         NULL);
 
@@ -283,7 +283,7 @@ static errno_t create_sshort_image_shared__cli() // default precision
                         imsize,
                         _DATATYPE_INT16,
                         1,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         NULL);
 
@@ -315,7 +315,7 @@ static errno_t create_3Dimage_float()
                     imsize,
                     _DATATYPE_FLOAT,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     NULL);
 
@@ -484,7 +484,7 @@ errno_t create_1Dimage_ID(
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -496,7 +496,7 @@ errno_t create_1Dimage_ID(
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -528,7 +528,7 @@ errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
                                           naxes,
                                           _DATATYPE_COMPLEX_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -540,7 +540,7 @@ errno_t create_1DCimage_ID(const char *ID_name, uint32_t xsize, imageID *outID)
                                           naxes,
                                           _DATATYPE_COMPLEX_DOUBLE,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -576,7 +576,7 @@ errno_t create_2Dimage_ID(
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -588,7 +588,7 @@ errno_t create_2Dimage_ID(
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -604,7 +604,7 @@ errno_t create_2Dimage_ID(
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -637,7 +637,7 @@ errno_t create_2Dimage_ID_double(
                                       naxes,
                                       _DATATYPE_DOUBLE,
                                       data.SHARED_DFT,
-                                      data.NBKEYWORD_DFT,
+                                      NB_KEYWNODE_MAX,
                                       0,
                                       &ID));
 
@@ -671,7 +671,7 @@ errno_t create_2DCimage_ID(
                                           naxes,
                                           _DATATYPE_COMPLEX_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -683,7 +683,7 @@ errno_t create_2DCimage_ID(
                                           naxes,
                                           _DATATYPE_COMPLEX_DOUBLE,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -718,7 +718,7 @@ errno_t create_2DCimage_ID_double(
                                       naxes,
                                       _DATATYPE_COMPLEX_DOUBLE,
                                       data.SHARED_DFT,
-                                      data.NBKEYWORD_DFT,
+                                      NB_KEYWNODE_MAX,
                                       0,
                                       &ID));
 
@@ -753,7 +753,7 @@ errno_t create_3Dimage_ID_float(
                                       naxes,
                                       _DATATYPE_FLOAT,
                                       data.SHARED_DFT,
-                                      data.NBKEYWORD_DFT,
+                                      NB_KEYWNODE_MAX,
                                       0,
                                       &ID));
 
@@ -788,7 +788,7 @@ errno_t create_3Dimage_ID_double(
                                       naxes,
                                       _DATATYPE_DOUBLE,
                                       data.SHARED_DFT,
-                                      data.NBKEYWORD_DFT,
+                                      NB_KEYWNODE_MAX,
                                       0,
                                       &ID));
 
@@ -830,7 +830,7 @@ errno_t create_3Dimage_ID(
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -843,7 +843,7 @@ errno_t create_3Dimage_ID(
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -879,7 +879,7 @@ errno_t create_3DCimage_ID(
                                           naxes,
                                           _DATATYPE_COMPLEX_FLOAT,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }
@@ -892,7 +892,7 @@ errno_t create_3DCimage_ID(
                                           naxes,
                                           _DATATYPE_COMPLEX_DOUBLE,
                                           data.SHARED_DFT,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &ID));
     }

@@ -294,7 +294,7 @@ errno_t load_fits(const char *restrict file_name,
                         naxes,
                         _DATATYPE_FLOAT,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &ID);
 
@@ -323,7 +323,7 @@ errno_t load_fits(const char *restrict file_name,
                         naxes,
                         _DATATYPE_DOUBLE,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &ID);
 
@@ -353,7 +353,7 @@ errno_t load_fits(const char *restrict file_name,
                         naxes,
                         _DATATYPE_UINT16,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &ID);
 
@@ -383,7 +383,7 @@ errno_t load_fits(const char *restrict file_name,
                         naxes,
                         _DATATYPE_INT32,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &ID);
         larray = (long *) malloc(sizeof(long) * nelements);
@@ -425,7 +425,7 @@ errno_t load_fits(const char *restrict file_name,
                         naxes,
                         _DATATYPE_INT64,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &ID);
         larray = (long *) malloc(sizeof(long) * nelements);
@@ -468,7 +468,7 @@ errno_t load_fits(const char *restrict file_name,
                         naxes,
                         _DATATYPE_FLOAT,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &ID);
         barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] *
