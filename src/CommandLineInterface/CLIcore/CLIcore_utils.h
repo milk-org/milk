@@ -1075,6 +1075,35 @@ static inline uint64_t IMGIDmdcompare(
 
 
 
+/**
+ * @brief Connnect to stream
+ *
+ * @param imname  stream name
+ * @return IMGID
+ */
+static inline IMGID
+stream_connect(
+    char * __restrict imname
+)
+{
+    IMGID img = mkIMGID_from_name(imname);
+    resolveIMGID(&img, ERRMODE_WARN);
+
+    if(img.ID == -1)
+    {
+        // try to connect to shared memory if not in local memory already
+        read_sharedmem_image(imname);
+        resolveIMGID(&img, ERRMODE_WARN);
+    }
+
+    return img;
+}
+
+
+
+
+
+
 
 /**
  * @brief Connnect to stream or create if doesn't exist
