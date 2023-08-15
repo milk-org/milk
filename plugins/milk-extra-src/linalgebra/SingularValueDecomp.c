@@ -41,8 +41,8 @@ static long  fpi_inM;
 static char *outU;
 static long  fpi_outU;
 
-static char *outev;
-static long  fpi_outev;
+static char *outS;
+static long  fpi_outS;
 
 static char *outV;
 static long  fpi_outV;
@@ -85,14 +85,13 @@ static CLICMDARGDEF farg[] =
         &fpi_outU
     },
     {
-        // output ev
         CLIARG_STR,
-        ".outev",
-        "output eigenval",
-        "outev",
+        ".outS",
+        "output ingular values",
+        "outS",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &outev,
-        &fpi_outev
+        (void **) &outS,
+        &fpi_outS
     },
     {
         // output V
@@ -229,7 +228,7 @@ static errno_t help_function()
 errno_t compute_SVD(
     IMGID    imgin,
     IMGID    imgU,
-    IMGID    imgeigenval,
+    IMGID    imgS,
     IMGID    imgV,
     float    SVlimit,
     uint32_t SVDmaxNBmode,
@@ -237,6 +236,9 @@ errno_t compute_SVD(
     uint64_t compSVDmode
 )
 {
+    DEBUG_TRACE_FSTART();
+
+
     // input dimensions
     // input matrix is inMdim x inNdim, column-major
     //
@@ -328,12 +330,12 @@ errno_t compute_SVD(
 
 
     // create eigenvalues array if needed
-    if( imgeigenval.ID == -1)
+    if( imgS.ID == -1)
     {
-        imgeigenval.naxis   = 2;
-        imgeigenval.size[0] = Ndim;
-        imgeigenval.size[1] = 1;
-        createimagefromIMGID(&imgeigenval);
+        imgS.naxis   = 2;
+        imgS.size[0] = Ndim;
+        imgS.size[1] = 1;
+        createimagefromIMGID(&imgS);
     }
 
 
@@ -369,14 +371,14 @@ errno_t compute_SVD(
     // matrix (U or V) is square
     //
     IMGID *imgmNsvec;
-    float evalmax;
+    float svalmax;
     long NBmode = 0;
     {
         // eigendecomposition
         //
-        float *d = (float*) malloc(sizeof(float)*Ndim);
-        float *e = (float*) malloc(sizeof(float)*Ndim);
-        float *t = (float*) malloc(sizeof(float)*Ndim);
+        float * __restrict d = (float*) malloc(sizeof(float)*Ndim);
+        float * __restrict e = (float*) malloc(sizeof(float)*Ndim);
+        float * __restrict t = (float*) malloc(sizeof(float)*Ndim);
 
 #ifdef HAVE_MKL
         mkl_set_interface_layer(MKL_INTERFACE_ILP64);
@@ -393,12 +395,12 @@ errno_t compute_SVD(
 
 
         // How many modes to keep ?
-        evalmax = d[Ndim-1];
+        svalmax = sqrt(d[Ndim-1]);
         {
             long modecnt = 0;
             for(int k=0; k<Ndim; k++)
             {
-                if( d[k] > SVlimit*SVlimit*evalmax )
+                if( sqrt(d[k]) > SVlimit*svalmax )
                 {
                     modecnt++;
                 }
@@ -456,7 +458,7 @@ errno_t compute_SVD(
 
             memcpy(ptr1, ptr0, sizeof(float)*Ndim);
 
-            imgeigenval.im->array.F[k] = d[Ndim-k-1];
+            imgS.im->array.F[k] = sqrt(d[Ndim-k-1]);
         }
 
 
@@ -518,11 +520,11 @@ errno_t compute_SVD(
         {
 
             float normfact = 0.0;
-            float eval = fabs(imgeigenval.im->array.F[jj]);
-            float evaln = eval / evalmax;
-            if( evaln > SVlimit*SVlimit )
+            float sval = imgS.im->array.F[jj];
+            float svaln = sval / svalmax;
+            if( svaln > SVlimit )
             {
-                normfact = 1.0 / sqrt(eval);
+                normfact = 1.0 / sval;
                 SVkeptcnt ++;
             }
 
@@ -561,11 +563,11 @@ errno_t compute_SVD(
             for(uint32_t jj=0; jj<NBmode; jj++)
             {
                 float normfact = 0.0;
-                float eval = fabs(imgeigenval.im->array.F[jj]);
-                float evaln = eval / evalmax;
-                if( evaln > SVlimit*SVlimit )
+                float sval = imgS.im->array.F[jj];
+                float svaln = sval / svalmax;
+                if( svaln > SVlimit )
                 {
-                    normfact = 1.0 / sqrt(eval);
+                    normfact = 1.0 / sval;
 
                 }
 
@@ -573,7 +575,6 @@ errno_t compute_SVD(
                 {
                     imgmNsvec1.im->array.F[jj*Ndim+ii] =
                         imgmNsvec->im->array.F[jj*Ndim+ii] * normfact;
-                    // / sqrt(imgeigenval.im->array.F[jj]);
                 }
             }
 
@@ -633,7 +634,7 @@ errno_t compute_SVD(
 
         for(int kk=0; kk<imgunmodes.size[lastaxis]; kk++)
         {
-            float mfact = sqrt(imgeigenval.im->array.F[kk]);
+            float mfact = imgS.im->array.F[kk];
             for(long ii=0; ii<framesize; ii++)
             {
                 imgunmodes.im->array.F[kk*framesize+ii] = imgU.im->array.F[kk*framesize+ii] * mfact;
@@ -645,7 +646,7 @@ errno_t compute_SVD(
     }
 
 
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
@@ -666,7 +667,7 @@ static errno_t compute_function()
 
 
     IMGID imgU  = mkIMGID_from_name(outU);
-    IMGID imgev = mkIMGID_from_name(outev);
+    IMGID imgS  = mkIMGID_from_name(outS);
     IMGID imgV  = mkIMGID_from_name(outV);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -676,7 +677,7 @@ static errno_t compute_function()
     {
 
 
-        compute_SVD(imginM, imgU, imgev, imgV, *svdlim, *maxNBmode, *GPUdevice, *compmode);
+        compute_SVD(imginM, imgU, imgS, imgV, *svdlim, *maxNBmode, *GPUdevice, *compmode);
 
 
     }

@@ -380,16 +380,19 @@ errno_t create_image_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+
 /* creates an image ID */
 /* all images should be created by this function */
-errno_t create_image_ID(const char *name,
-                        long        naxis,
-                        uint32_t   *size,
-                        uint8_t     datatype,
-                        int         shared,
-                        int         NBkw,
-                        int         CBsize,
-                        imageID    *outID)
+errno_t create_image_ID(
+    const char * __restrict name,
+    long        naxis,
+    uint32_t   *size,
+    uint8_t     datatype,
+    int         shared,
+    int         NBkw,
+    int         CBsize,
+    imageID    *outID
+)
 {
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s %ld %d %d %d %d",
@@ -419,26 +422,26 @@ errno_t create_image_ID(const char *name,
         // Cannot create image : name already in use
         ID = image_ID(name);
 
-        if(data.image[ID].md[0].datatype != datatype)
+        if(data.image[ID].md->datatype != datatype)
         {
             FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong type",
                                 name);
         }
-        if(data.image[ID].md[0].naxis != naxis)
+        if(data.image[ID].md->naxis != naxis)
         {
             FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong naxis",
                                 name);
         }
 
         for(int i = 0; i < naxis; i++)
-            if(data.image[ID].md[0].size[i] != size[i])
+            if(data.image[ID].md->size[i] != size[i])
             {
                 FUNC_RETURN_FAILURE(
                     "Pre-existing image \"%s\" has wrong size: axis %d "
                     ":  %ld  %ld",
                     name,
                     i,
-                    (long) data.image[ID].md[0].size[i],
+                    (long) data.image[ID].md->size[i],
                     (long) size[i]);
             }
     }

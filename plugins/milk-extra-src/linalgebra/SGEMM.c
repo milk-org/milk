@@ -146,6 +146,7 @@ errno_t computeSGEMM(
     int GPUdev
 )
 {
+    DEBUG_TRACE_FSTART();
 
     int SGEMMcomputed = 0;
 
@@ -437,7 +438,7 @@ errno_t computeSGEMM(
     }
 
 
-
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
