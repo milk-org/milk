@@ -85,7 +85,7 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
 
@@ -119,7 +119,7 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         data.image[IDout].md[0].write = 1;
@@ -152,7 +152,7 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         data.image[IDout].md[0].write = 1;
@@ -185,7 +185,7 @@ errno_t mk_complex_from_amph(const char *am_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         data.image[IDout].md[0].write = 1;

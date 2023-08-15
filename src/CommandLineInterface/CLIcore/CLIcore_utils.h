@@ -956,8 +956,8 @@ static inline uint64_t IMGIDcompare(
     if(imgtemplate.NBkw != img.NBkw)
     {
         printf("FAIL\n");
-        printf("    template : %u\n", imgtemplate.NBkw);
-        printf("    dest     : %u\n", img.NBkw);
+        printf("   %4u  %s\n", imgtemplate.NBkw, imgtemplate.name);
+        printf("   %4u  %s\n", img.NBkw, img.name);
         compErr++;
     }
     else
@@ -1059,8 +1059,8 @@ static inline uint64_t IMGIDmdcompare(
     if(imgtemplate.md->NBkw != img.md->NBkw)
     {
         printf("FAIL\n");
-        printf("    template : %u\n", imgtemplate.md->NBkw);
-        printf("    dest     : %u\n", img.md->NBkw);
+        printf("   %4u  %s\n", imgtemplate.md->NBkw, imgtemplate.md->name);
+        printf("   %4u  %s\n", img.md->NBkw, img.md->name);
         compErr++;
     }
     else

@@ -210,7 +210,7 @@ imageID FFT_do1dfft(const char *__restrict in_name,
                     naxesl,
                     datatype,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -469,7 +469,7 @@ imageID do1drfft(const char *__restrict in_name,
                         naxesout,
                         _DATATYPE_COMPLEX_DOUBLE,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &IDout);
     }
@@ -480,7 +480,7 @@ imageID do1drfft(const char *__restrict in_name,
                         naxesout,
                         _DATATYPE_COMPLEX_FLOAT,
                         data.SHARED_DFT,
-                        data.NBKEYWORD_DFT,
+                        NB_KEYWNODE_MAX,
                         0,
                         &IDout);
     }
@@ -790,7 +790,7 @@ imageID FFT_do2dfft(const char *in_name, const char *out_name, int dir)
                     naxesl,
                     datatype,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -1101,7 +1101,7 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                     naxestmp,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDtmp);
 
@@ -1110,7 +1110,7 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                     naxesl,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
