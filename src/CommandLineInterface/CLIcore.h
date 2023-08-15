@@ -538,9 +538,6 @@ typedef struct
     // shared memory default
     int SHARED_DFT;
 
-    // Number of keyword per image default
-    int NBKEYWORD_DFT;
-
     // VARIABLES
     // =================================================
 

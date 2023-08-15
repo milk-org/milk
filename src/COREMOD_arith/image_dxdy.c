@@ -43,7 +43,7 @@ imageID arith_image_dx(const char *ID_name, const char *IDout_name)
                     naxes,
                     datatype,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
@@ -99,7 +99,7 @@ imageID arith_image_dy(const char *ID_name, const char *IDout_name)
                     naxes,
                     datatype,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     for(uint32_t ii = 0; ii < naxes[0]; ii++)

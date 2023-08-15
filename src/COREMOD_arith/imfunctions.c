@@ -64,7 +64,7 @@ errno_t arith_image_function_im_im__d_d(
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -242,7 +242,7 @@ errno_t arith_image_function_imd_im__dd_d(
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -427,7 +427,7 @@ errno_t arith_image_function_imdd_im__ddd_d(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -786,7 +786,7 @@ errno_t arith_image_function_1_1(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -1306,7 +1306,7 @@ errno_t arith_image_function_2_1(const char *ID_name1,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -4597,7 +4597,7 @@ errno_t arith_image_function_CF_CF__CF(
                     naxes,
                     datatype1,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -4660,7 +4660,7 @@ errno_t arith_image_function_CD_CD__CD(
                     naxes,
                     datatype1,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -4728,7 +4728,7 @@ int arith_image_function_1f_1(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -5050,7 +5050,7 @@ int arith_image_function_1ff_1(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
