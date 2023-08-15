@@ -17,12 +17,15 @@ set(SOURCEFILES
 	magma_compute_SVDpseudoInverse_SVD.c
 	magma_compute_SVDpseudoInverse.c
 	magma_MatMatMult_testPseudoInverse.c
+	modalremap.c
 	MVM_CPU.c
 	cublas_PCA.c
 	printGPUMATMULTCONF.c
 	MVMextractModes.c
 	SGEMM.c
 	SingularValueDecomp.c
+	SingularValueDecomp_mkM.c
+	SingularValueDecomp_mkU.c
 )
 
 set(INCLUDEFILES
@@ -40,12 +43,15 @@ set(INCLUDEFILES
 	magma_compute_SVDpseudoInverse_SVD.h
 	magma_compute_SVDpseudoInverse.h
 	magma_MatMatMult_testPseudoInverse.h
+	modalremap.h
 	MVM_CPU.h
 	cublas_PCA.h
 	printGPUMATMULTCONF.h
 	MVMextractModes.h
 	SGEMM.h
 	SingularValueDecomp.h
+	SingularValueDecomp_mkM.h
+	SingularValueDecomp_mkU.h
 )
 
 
