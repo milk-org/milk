@@ -120,7 +120,6 @@ static errno_t init_module_CLI()
     read_shmimall_addCLIcmd();
 
     // CREATE IMAGE
-    create_image_addCLIcmd();
     CLIADDCMD_COREMOD_memory__mk2Dim();
     CLIADDCMD_COREMOD_memory__mk3Dim();
 
