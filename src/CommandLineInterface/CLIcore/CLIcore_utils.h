@@ -1061,6 +1061,8 @@ static inline uint64_t IMGIDmdcompare(
         printf("FAIL\n");
         printf("   %4u  %s\n", imgtemplate.md->NBkw, imgtemplate.md->name);
         printf("   %4u  %s\n", img.md->NBkw, img.md->name);
+        printf("    template : %u\n", imgtemplate.md->NBkw);
+        printf("    dest     : %u\n", img.md->NBkw);
         compErr++;
     }
     else
