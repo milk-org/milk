@@ -129,12 +129,79 @@ errno_t ModalRemap(
     // Decompose inM according to U0
     computeSGEMM(imgU0, imgM0, &imgC0, 1, 0, GPUdev);
 
-    list_image_ID();
 
     printf("Reconstruct %s %s -> %s\n", imgU1.name, imgC0.name, imgM1->name);
     fflush(stdout);
     // Project to output space
     computeSGEMM(imgU1, imgC0, imgM1, 0, 0, GPUdev);
+
+
+
+    // evaluate fit quality
+    {
+        IMGID imgM1comp = mkIMGID_from_name("imsig");
+        resolveIMGID(&imgM1comp, ERRMODE_ABORT);
+
+        FILE *fp = fopen("modalremap.log", "w");
+
+        // Expand back to original space
+        IMGID imgM0m  = mkIMGID_from_name("imM0m");
+        computeSGEMM(imgU0, imgC0, &imgM0m, 0, 0, GPUdev);
+
+        // compute residual for each frame, and total
+        double res0_total = 0.0;
+        double res1_total = 0.0;
+
+        uint64_t NBframe = imgM0.md->size[imgM0.md->naxis-1];
+        uint64_t framesize0 = imgM0.md->nelement / NBframe;
+        uint64_t framesize1 = imgM1->md->nelement / NBframe;
+
+
+
+        for( uint_fast32_t frame = 0; frame < NBframe; frame ++ )
+        {
+
+            double res0_frame = 0.0;
+            for( uint64_t ii = 0; ii < framesize0; ii++ )
+            {
+                float v0 = imgM0.im->array.F[frame*framesize0 + ii];
+                float v1 = imgM0m.im->array.F[frame*framesize0 + ii];
+                double vd = (v0-v1);
+                res0_frame += vd*vd;
+            }
+
+            double res1_frame = 0.0;
+            for( uint64_t ii = 0; ii < framesize1; ii++ )
+            {
+                float v0 = imgM1->im->array.F[frame*framesize1 + ii];
+                float v1 = imgM1comp.im->array.F[frame*framesize1 + ii];
+                double vd = (v0-v1);
+                res1_frame += vd*vd;
+            }
+
+            double vecC0n2 = 0.0;
+            double vecC0n4 = 0.0;
+            for( uint64_t ii = 0; ii < imgC0.md->size[0]; ii++ )
+            {
+                double vecval = imgC0.im->array.F[imgC0.md->size[0]*frame + ii];
+                double vecval2 = vecval*vecval;
+                double vecval4 = vecval2*vecval2;
+                vecC0n2 += vecval2;
+                vecC0n4 += vecval4;
+            }
+
+
+            fprintf(fp, "%5ld %20g %20g  %20g %20g\n", frame, res0_frame, res1_frame, vecC0n2, vecC0n4);
+            res0_total += res0_frame;
+            res1_total += res1_frame;
+        }
+        double res0_average = res0_total / NBframe;
+        double res1_average = res1_total / NBframe;
+        fprintf(fp, "# AVERAGE %5d %20g %20g\n", -1, res0_average, res1_average);
+
+        fclose(fp);
+    }
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
