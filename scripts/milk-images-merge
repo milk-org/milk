@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+
+MSdescr="Merge images"
+
+MSextdescr="Merge list of images.
+"
+
+source milk-script-std-config
+
+RequiredCommands=(milk)
+RequiredFiles=()
+RequiredDirs=()
+
+
+MSarg+=( "imlistfile:string:list of files to merge" )
+MSarg+=( "mergeaxis:int:merge axis" )
+MSarg+=( "outFITSfile:string:output name" )
+
+source milk-argparse
+
+
+
+
+
+imlistfile="${inputMSargARRAY[0]}"
+mergeaxis="${inputMSargARRAY[1]}"
+outFITSfile="${inputMSargARRAY[2]}"
+
+
+
+set +u
+if [ -w "${MILK_SHM_DIR}/" ];
+then
+SFDIR="${MILK_SHM_DIR}/"
+else
+SFDIR="/tmp"
+fi
+set -u
+
+SF="${SFDIR}/milkCLIstartup.${pname}.$$"
+echo "" > $SF
+
+i=0
+initmerge=0
+while IFS= read -r filename; do
+  if [ -f ${filename} ]; then
+  if [ ${#filename} -gt 2 ]; then
+    echo "FILE ${filename} found"
+    if [ "${initmerge}" = 0 ]; then
+      echo "loadfits \"${filename}\" mergedim" >> $SF
+    else
+      echo "loadfits \"${filename}\" inimmerge${i}" >> $SF
+      echo "immerge mergedim inimmerge${i} mergedim1 ${mergeaxis}" >> $SF
+      echo "rm mergedim" >> $SF
+      echo "mv mergedim1 mergedim" >> $SF      
+    fi
+    ((i=i+1))
+    initmerge=1
+  fi
+  else
+    echo "FILE ${filename} not found"
+  fi
+done < ${imlistfile}
+
+echo "listim" >> $SF
+echo "saveFITS mergedim \"${outFITSfile}\"" >> $SF
+echo "exitCLI" >> $SF
+
+MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
+
+rm ${SF}

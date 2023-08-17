@@ -338,6 +338,7 @@ install(PROGRAMS
 			scripts/milk-logshimstat
 			scripts/milk-makecsetandrt
 			scripts/merge3DfitsTelemetry
+      scripts/milk-images-merge
 			scripts/milk-scriptexample
 			scripts/milk-script-std-config
 			scripts/milk-streamlink
