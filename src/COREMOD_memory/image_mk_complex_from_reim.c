@@ -91,7 +91,7 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         for(uint64_t ii = 0; ii < nelement; ii++)
@@ -109,7 +109,7 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         for(uint64_t ii = 0; ii < nelement; ii++)
@@ -127,7 +127,7 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         for(uint64_t ii = 0; ii < nelement; ii++)
@@ -145,7 +145,7 @@ errno_t mk_complex_from_reim(const char *re_name,
                                           naxes,
                                           datatype_out,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDout));
         for(uint64_t ii = 0; ii < nelement; ii++)

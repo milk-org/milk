@@ -3,8 +3,13 @@
  *
  */
 
-errno_t image_merge3D_addCLIcmd();
 
-imageID arith_image_merge3D(const char *ID_name1,
-                            const char *ID_name2,
-                            const char *IDout_name);
+#ifndef COREMOD_ARITH__IMAGE_MERGE_H
+#define COREMOD_ARITH__IMAGE_MERGE_H
+
+
+
+errno_t
+CLIADDCMD_COREMOD_arith__image_merge();
+
+#endif

@@ -28,36 +28,27 @@
 
   ------------------------------------------------------------------------- */
 
-errno_t arith_image_function_im_im__d_d(const char *ID_name,
-                                        const char *ID_out,
-                                        double (*pt2function)(double))
+errno_t arith_image_function_im_im__d_d(
+    const char * __restrict ID_name,
+    const char * __restrict ID_out,
+    double (*pt2function)(double))
 {
     imageID   ID;
     imageID   IDout;
-    uint32_t *naxes = NULL;
     long      naxis;
-    long      ii;
-    long      nelement;
-    uint8_t   datatype, datatypeout;
-    long      i;
 
-    if(data.Debug > 0)
-    {
-        printf("arith_image_function_d_d  %s %s\n", ID_name, ID_out);
-        fflush(stdout);
-    }
+    uint8_t   datatype, datatypeout;
+
+
+    DEBUG_TRACEPOINT("arith_image_function_d_d  %s %s\n", ID_name, ID_out);
 
     ID       = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
     naxis    = data.image[ID].md[0].naxis;
-    naxes    = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes == NULL)
-    {
-        PRINT_ERROR("malloc() error");
-        exit(0);
-    }
+    uint32_t naxes[3];
 
-    for(i = 0; i < naxis; i++)
+
+    for(uint8_t i = 0; i < naxis; i++)
     {
         naxes[i] = data.image[ID].md[0].size[i];
     }
@@ -73,12 +64,12 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
-    free(naxes);
 
-    nelement = data.image[ID].md[0].nelement;
+
+    uint_fast64_t nelement = data.image[ID].md[0].nelement;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
@@ -90,7 +81,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.UI8[ii]));
@@ -101,7 +92,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.UI16[ii]));
@@ -112,7 +103,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.UI32[ii]));
@@ -123,7 +114,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.UI64[ii]));
@@ -135,7 +126,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.SI8[ii]));
@@ -146,7 +137,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.SI16[ii]));
@@ -157,7 +148,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.SI32[ii]));
@@ -168,7 +159,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] = (float) pt2function(
                                                     (double)(data.image[ID].array.SI64[ii]));
@@ -180,7 +171,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.F[ii] =
                     (float) pt2function((double)(data.image[ID].array.F[ii]));
@@ -191,7 +182,7 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
 #ifdef _OPENMP
             #pragma omp for
 #endif
-            for(ii = 0; ii < nelement; ii++)
+            for(uint_fast64_t ii = 0; ii < nelement; ii++)
             {
                 data.image[IDout].array.D[ii] =
                     pt2function(data.image[ID].array.D[ii]);
@@ -201,19 +192,20 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
     }
 #endif
 
-    if(data.Debug > 0)
-    {
-        printf("arith_image_function_d_d  DONE\n");
-        fflush(stdout);
-    }
+    DEBUG_TRACEPOINT("arith_image_function_d_d  DONE\n");
 
     return RETURN_SUCCESS;
 }
 
-errno_t arith_image_function_imd_im__dd_d(const char *ID_name,
-        double      v0,
-        const char *ID_out,
-        double (*pt2function)(double, double))
+
+
+
+
+errno_t arith_image_function_imd_im__dd_d(
+    const char * __restrict ID_name,
+    double      v0,
+    const char * __restrict ID_out,
+    double (*pt2function)(double, double))
 {
     imageID   ID;
     imageID   IDout;
@@ -250,7 +242,7 @@ errno_t arith_image_function_imd_im__dd_d(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -387,11 +379,7 @@ errno_t arith_image_function_imd_im__dd_d(const char *ID_name,
     }
 #endif
 
-    if(data.Debug > 0)
-    {
-        printf("arith_image_function_d_d  DONE\n");
-        fflush(stdout);
-    }
+    DEBUG_TRACEPOINT("arith_image_function_d_d  DONE\n");
 
     return RETURN_SUCCESS;
 }
@@ -439,7 +427,7 @@ errno_t arith_image_function_imdd_im__ddd_d(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -585,11 +573,7 @@ errno_t arith_image_function_imdd_im__ddd_d(const char *ID_name,
     }
 #endif
 
-    if(data.Debug > 0)
-    {
-        printf("arith_image_function_d_d  DONE\n");
-        fflush(stdout);
-    }
+    DEBUG_TRACEPOINT("arith_image_function_d_d  DONE\n");
 
     return RETURN_SUCCESS;
 }
@@ -802,7 +786,7 @@ errno_t arith_image_function_1_1(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -1259,7 +1243,7 @@ errno_t arith_image_function_2_1(const char *ID_name1,
     ID2 = image_ID(ID_name2);
 
     //list_image_ID(); //TEST
-    printf("%s  IDs : %ld %ld\n", __FUNCTION__, ID1, ID2);
+    DEBUG_TRACEPOINT("%s  IDs : %ld %ld\n", __FUNCTION__, ID1, ID2);
 
     if(ID1 == -1)
     {
@@ -1322,7 +1306,7 @@ errno_t arith_image_function_2_1(const char *ID_name1,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -1335,18 +1319,16 @@ errno_t arith_image_function_2_1(const char *ID_name1,
     xysize     = 0;
     if((naxis == 3) && (naxis2 == 2))
     {
-        printf("naxes:  %ld %ld     %ld %ld\n",
+        DEBUG_TRACEPOINT("naxes:  %ld %ld     %ld %ld\n",
                (long) naxes[0],
                (long) naxes2[0],
                (long) naxes[1],
                (long) naxes2[1]);
-        fflush(stdout);
         if((naxes[0] == naxes2[0]) && (naxes[1] == naxes2[1]))
         {
             op3D2Dto3D = 1;
             xysize     = naxes[0] * naxes[1];
-            printf("input : 3D im, 2D im -> output : 3D im\n");
-            fflush(stdout);
+            DEBUG_TRACEPOINT("input : 3D im, 2D im -> output : 3D im\n");
             //list_image_ID();
         }
     }
@@ -4615,7 +4597,7 @@ errno_t arith_image_function_CF_CF__CF(
                     naxes,
                     datatype1,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -4678,7 +4660,7 @@ errno_t arith_image_function_CD_CD__CD(
                     naxes,
                     datatype1,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);
@@ -4746,7 +4728,7 @@ int arith_image_function_1f_1(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
@@ -5068,7 +5050,7 @@ int arith_image_function_1ff_1(const char *ID_name,
                     naxes,
                     datatypeout,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
     free(naxes);

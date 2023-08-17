@@ -31,7 +31,11 @@
 #include "magma_compute_SVDpseudoInverse_SVD.h"
 
 #include "SingularValueDecomp.h"
+#include "SingularValueDecomp_mkU.h"
+#include "SingularValueDecomp_mkM.h"
+#include "SGEMM.h"
 
+#include "modalremap.h"
 
 
 #include "cublas_PCA.h"
@@ -102,6 +106,12 @@ static errno_t init_module_CLI()
     CLIADDCMD_linalgebra__MVMextractModes();
 
     CLIADDCMD_linalgebra__compSVD();
+    CLIADDCMD_linalgebra__compSVDU();
+    CLIADDCMD_linalgebra__SVDmkM();
+
+    CLIADDCMD_linalgebra__SGEMM();
+
+    CLIADDCMD_linalgebra__ModalRemap();
 
     // add atexit functions here
 
