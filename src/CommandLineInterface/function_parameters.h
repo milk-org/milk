@@ -641,7 +641,7 @@ typedef struct
     int      scheduler_wrowstart;
 } FPSCTRL_PROCESS_VARS;
 
-#define NB_KEYWNODE_MAX 10000
+#define NB_KEYWNODE_MAX 1000
 #define MAX_NB_CHILD    500
 
 typedef struct

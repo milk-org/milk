@@ -13,7 +13,7 @@ errno_t processinfo_update_output_stream(
     imageID      outstreamID
 )
 {
-    if(data.image[outstreamID].md[0].shared == 1)
+    if(data.image[outstreamID].md->shared == 1)
     {
         imageID IDin;
 

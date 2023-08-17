@@ -183,7 +183,7 @@ imageID arith_image_crop(const char *ID_name,
                     naxesout,
                     datatype,
                     data.SHARED_DFT,
-                    data.NBKEYWORD_DFT,
+                    NB_KEYWNODE_MAX,
                     0,
                     &IDout);
 
