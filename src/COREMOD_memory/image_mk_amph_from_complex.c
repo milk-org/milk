@@ -77,7 +77,7 @@ errno_t mk_amph_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDam));
 
@@ -86,7 +86,7 @@ errno_t mk_amph_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDph));
 
@@ -131,7 +131,7 @@ errno_t mk_amph_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDam));
 
@@ -140,7 +140,7 @@ errno_t mk_amph_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDph));
 

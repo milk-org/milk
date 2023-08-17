@@ -79,7 +79,7 @@ errno_t mk_reim_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDre));
 
@@ -88,7 +88,7 @@ errno_t mk_reim_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_FLOAT,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDim));
 
@@ -124,7 +124,7 @@ errno_t mk_reim_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDre));
 
@@ -133,7 +133,7 @@ errno_t mk_reim_from_complex(const char *in_name,
                                           naxes,
                                           _DATATYPE_DOUBLE,
                                           sharedmem,
-                                          data.NBKEYWORD_DFT,
+                                          NB_KEYWNODE_MAX,
                                           0,
                                           &IDim));
         data.image[IDre].md[0].write = 1;

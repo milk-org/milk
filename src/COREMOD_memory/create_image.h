@@ -2,8 +2,6 @@
  * @file    create_image.h
  */
 
-errno_t create_image_addCLIcmd();
-
 errno_t create_image_ID(const char *name,
                         long        naxis,
                         uint32_t   *size,

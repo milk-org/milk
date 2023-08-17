@@ -334,6 +334,11 @@ static errno_t compute_function()
                 imdataarray[pixi] += (double) inimg.im->array.UI64[pixi];
             }
             break;
+
+        default :
+            PRINT_ERROR("Invalid datatype");
+            abort();
+            break;
         }
 
 
