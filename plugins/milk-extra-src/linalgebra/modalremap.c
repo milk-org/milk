@@ -110,7 +110,22 @@ static errno_t help_function()
 
 
 
-
+/**
+ * @brief Remap input M0 in space U0 to output M1 in space U1
+ *
+ * U0 and U1 are each an orthonormal modal basis defining respectively input and output spaces
+ * M0 is projected onto space U0
+ * The coefficients of this decomposition are used to reconstruct M1 by expansion according to U1
+ *
+ * If image imsig exists, it is used to evaluate output reconstruction quality, by comparing M1 to imsig
+ *
+ * @param imgM0 input data
+ * @param imgU0 input modal basis
+ * @param imgU1 output modal basis
+ * @param imgM1 output data
+ * @param GPUdev GPU device
+ * @return errno_t
+ */
 errno_t ModalRemap(
     IMGID    imgM0,
     IMGID    imgU0,
@@ -140,9 +155,15 @@ errno_t ModalRemap(
     // evaluate fit quality
     {
         IMGID imgM1comp = mkIMGID_from_name("imsig");
-        resolveIMGID(&imgM1comp, ERRMODE_ABORT);
+        resolveIMGID(&imgM1comp, ERRMODE_NULL);
 
         FILE *fp = fopen("modalremap.log", "w");
+        fprintf(fp, "# col1   frame index\n");
+        fprintf(fp, "# col2   input space residual (part of input M0 that cannot be represented by U0)\n");
+        fprintf(fp, "# col3   output space residual (part of ouput M1 that differs from imsig)\n");
+        fprintf(fp, "# col4   decomposition vector norm 2\n");
+        fprintf(fp, "# col5   decomposition vector norm 4\n");
+
 
         // Expand back to original space
         IMGID imgM0m  = mkIMGID_from_name("imM0m");
@@ -171,12 +192,15 @@ errno_t ModalRemap(
             }
 
             double res1_frame = 0.0;
-            for( uint64_t ii = 0; ii < framesize1; ii++ )
+            if(imgM1comp.ID != -1)
             {
-                float v0 = imgM1->im->array.F[frame*framesize1 + ii];
-                float v1 = imgM1comp.im->array.F[frame*framesize1 + ii];
-                double vd = (v0-v1);
-                res1_frame += vd*vd;
+                for( uint64_t ii = 0; ii < framesize1; ii++ )
+                {
+                    float v0 = imgM1->im->array.F[frame*framesize1 + ii];
+                    float v1 = imgM1comp.im->array.F[frame*framesize1 + ii];
+                    double vd = (v0-v1);
+                    res1_frame += vd*vd;
+                }
             }
 
             double vecC0n2 = 0.0;
