@@ -26,6 +26,8 @@ static long  fpi_invecS;
 static char *outmatU;
 static long  fpi_outmatU;
 
+static char *outmatUS;
+static long  fpi_outmatUS;
 
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
@@ -74,6 +76,16 @@ static CLICMDARGDEF farg[] =
         &fpi_outmatU
     },
     {
+        // output US
+        CLIARG_STR,
+        ".outUS",
+        "output US",
+        "outU",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outmatUS,
+        &fpi_outmatUS
+    },
+    {
         // using GPU (99 : no GPU, otherwise GPU device)
         CLIARG_INT32,
         ".GPUdevice",
@@ -109,6 +121,7 @@ errno_t compute_SVDU(
     IMGID    imgV,
     IMGID    imgS,
     IMGID    *imgU,
+    IMGID    *imgUS,
     int      GPUdev
 )
 {
@@ -117,37 +130,53 @@ errno_t compute_SVDU(
     computeSGEMM(
         imgM,
         imgV,
-        imgU,
+        imgUS,
         0,
         0,
         GPUdev
     );
 
+    printf("SGEMM DONE\n");
+    fflush(stdout);
+    list_image_ID();
+
     uint32_t Ndim = imgV.md->size[imgV.md->naxis-1];
     uint64_t framesize;
     uint32_t nbframe;
-    switch ( imgU->md->naxis )
+    imgU->naxis = imgUS->naxis;
+    imgU->datatype = imgUS->md->datatype;
+    switch ( imgUS->md->naxis )
     {
     case 2 :
-        framesize = imgU->md->size[0];
-        nbframe = imgU->md->size[1];
+        imgU->size[0] = imgUS->md->size[0];
+        imgU->size[1] = imgUS->md->size[1];
+        framesize = imgUS->md->size[0];
+        nbframe = imgUS->md->size[1];
         break;
 
     case 3 :
-        framesize = imgU->md->size[0] * imgU->md->size[1];
-        nbframe = imgU->md->size[2];
+        imgU->size[0] = imgUS->md->size[0];
+        imgU->size[1] = imgUS->md->size[1];
+        imgU->size[2] = imgUS->md->size[2];
+        framesize = imgUS->md->size[0] * imgUS->md->size[1];
+        nbframe = imgUS->md->size[2];
         break;
 
     default :
         PRINT_ERROR("Invalid dimension");
         abort();
     }
+    printf("CREATING imgU\n");
+    fflush(stdout);
+    createimagefromIMGID(imgU);
+
+    list_image_ID();
 
     for(uint32_t frame=0; frame<nbframe; frame++)
     {
         for(uint64_t ii=0; ii<framesize; ii++)
         {
-            imgU->im->array.F[frame*framesize + ii] /= imgS.im->array.F[frame];
+            imgU->im->array.F[frame*framesize + ii] =  imgUS->im->array.F[frame*framesize + ii] / imgS.im->array.F[frame];
         }
     }
 
@@ -175,6 +204,7 @@ static errno_t compute_function()
 
 
     IMGID imgoutU  = mkIMGID_from_name(outmatU);
+    IMGID imgoutUS  = mkIMGID_from_name(outmatUS);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -183,8 +213,9 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        compute_SVDU(imginM, imginV, imginS, &imgoutU, *GPUdevice);
+        compute_SVDU(imginM, imginV, imginS, &imgoutU, &imgoutUS, *GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutU.ID);
+        processinfo_update_output_stream(processinfo, imgoutUS.ID);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

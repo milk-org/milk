@@ -8,6 +8,7 @@ errno_t compute_SVDU(
     IMGID    imgV,
     IMGID    imgS,
     IMGID    *imgU,
+    IMGID    *imgUS,
     int      GPUdev
 );
 
