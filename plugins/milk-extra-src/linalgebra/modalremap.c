@@ -8,6 +8,7 @@
 #include <math.h>
 
 #include "CommandLineInterface/CLIcore.h"
+#include "COREMOD_tools/COREMOD_tools.h"
 
 #include "SGEMM.h"
 
@@ -177,16 +178,20 @@ errno_t ModalRemap(
         uint64_t framesize0 = imgM0.md->nelement / NBframe;
         uint64_t framesize1 = imgM1->md->nelement / NBframe;
 
-
+        double * __restrict res0array = (double*) malloc(sizeof(double)*NBframe);
+        double * __restrict res1array = (double*) malloc(sizeof(double)*NBframe);
 
         for( uint_fast32_t frame = 0; frame < NBframe; frame ++ )
         {
+            double flux0 = 0.0;
+            double flux1 = 0.0;
 
             double res0_frame = 0.0;
             for( uint64_t ii = 0; ii < framesize0; ii++ )
             {
                 float v0 = imgM0.im->array.F[frame*framesize0 + ii];
                 float v1 = imgM0m.im->array.F[frame*framesize0 + ii];
+                flux0 += v0;
                 double vd = (v0-v1);
                 res0_frame += vd*vd;
             }
@@ -198,9 +203,14 @@ errno_t ModalRemap(
                 {
                     float v0 = imgM1->im->array.F[frame*framesize1 + ii];
                     float v1 = imgM1comp.im->array.F[frame*framesize1 + ii];
+                    flux1 += v0;
                     double vd = (v0-v1);
                     res1_frame += vd*vd;
                 }
+            }
+            else
+            {
+                flux1 = 1.0;
             }
 
             double vecC0n2 = 0.0;
@@ -214,14 +224,31 @@ errno_t ModalRemap(
                 vecC0n4 += vecval4;
             }
 
+            // flux-normalize residuals
+            //
+            res0_frame /= (flux0*flux0);
+            res1_frame /= (flux1*flux1);
+
 
             fprintf(fp, "%5ld %20g %20g  %20g %20g\n", frame, res0_frame, res1_frame, vecC0n2, vecC0n4);
+
+            res0array[frame] = res0_frame;
+            res1array[frame] = res1_frame;
+
             res0_total += res0_frame;
             res1_total += res1_frame;
         }
         double res0_average = res0_total / NBframe;
         double res1_average = res1_total / NBframe;
-        fprintf(fp, "# AVERAGE %5d %20g %20g\n", -1, res0_average, res1_average);
+
+        quick_sort_double(res0array, NBframe);
+        quick_sort_double(res1array, NBframe);
+
+        fprintf(fp, "# AVERAGE  %20g  %20g   MEDIAN  %20g  %20g\n",
+                res0_average, res1_average, res0array[NBframe/2], res1array[NBframe/2]);
+
+        free(res0array);
+        free(res1array);
 
         fclose(fp);
     }

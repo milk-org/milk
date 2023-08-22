@@ -415,8 +415,8 @@ errno_t computeSGEMM(
 
     if ( SGEMMcomputed == 0)
     {
-//        printf("Running SGEMM on CPU\n");
-//        fflush(stdout);
+        //printf("[%d] Running SGEMM on CPU\n", GPUdev);
+        //fflush(stdout);
 
         CBLAS_TRANSPOSE OPA = CblasNoTrans;
         if(TranspA == 1 )
