@@ -30,6 +30,8 @@
 #include "magma_compute_SVDpseudoInverse.h"
 #include "magma_compute_SVDpseudoInverse_SVD.h"
 
+#include "PCAmatch.h"
+
 #include "SingularValueDecomp.h"
 #include "SingularValueDecomp_mkU.h"
 #include "SingularValueDecomp_mkM.h"
@@ -104,6 +106,8 @@ static errno_t init_module_CLI()
 #endif
 
     CLIADDCMD_linalgebra__MVMextractModes();
+
+    CLIADDCMD_linalgebra__PCAmatch();
 
     CLIADDCMD_linalgebra__compSVD();
     CLIADDCMD_linalgebra__compSVDU();

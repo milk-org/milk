@@ -588,7 +588,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
                 img.datatype = _DATATYPE_DOUBLE;
             }
 
-            if(pch[0] == 'k')
+/*            if(pch[0] == 'k')
             {
                 int nbkw;
                 sscanf(pch, "k%d", &nbkw);
@@ -603,7 +603,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
                 printf("    %d circular buffer size\n", cbsize);
                 img.CBsize = cbsize;
             }
-
+*/
             pch = strtok(NULL, ">");
             nbword++;
         }
