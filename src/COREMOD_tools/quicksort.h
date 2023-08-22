@@ -2,57 +2,130 @@
  * @file quicksort.h
  */
 
-int bubble_sort(double *array, unsigned long count);
+int bubble_sort(
+    double * __restrict array,
+    unsigned long count
+);
 
-void qs_float(float *array, unsigned long left, unsigned long right);
-void qs_long(long *array, unsigned long left, unsigned long right);
-void qs_double(double *array, unsigned long left, unsigned long right);
-void qs_ushort(unsigned short *array, unsigned long left, unsigned long right);
+void qs_float(
+    float * __restrict array,
+    unsigned long left,
+    unsigned long right
+);
 
-void quick_sort_float(float *array, unsigned long count);
-void quick_sort_long(long *array, unsigned long count);
-void quick_sort_double(double *array, unsigned long count);
-void quick_sort_ushort(unsigned short *array, unsigned long count);
+void qs_long(
+    long * __restrict array,
+    unsigned long left,
+    unsigned long right
+);
 
-void qs3(double       *array,
-         double       *array1,
-         double       *array2,
-         unsigned long left,
-         unsigned long right);
+void qs_double(
+    double * __restrict array,
+    unsigned long left,
+    unsigned long right
+);
 
-void qs3_double(double       *array,
-                double       *array1,
-                double       *array2,
-                unsigned long left,
-                unsigned long right);
+void qs_ushort(
+    unsigned short * __restrict array,
+    unsigned long left,
+    unsigned long right
+);
 
-void quick_sort3(double       *array,
-                 double       *array1,
-                 double       *array2,
-                 unsigned long count);
-void quick_sort3_float(float        *array,
-                       float        *array1,
-                       float        *array2,
-                       unsigned long count);
-void quick_sort3_double(double       *array,
-                        double       *array1,
-                        double       *array2,
-                        unsigned long count);
+void quick_sort_float(
+    float * __restrict array,
+    unsigned long count
+);
 
-void qs2l(double *array, long *array1, unsigned long left, unsigned long right);
+void quick_sort_long(
+    long * __restrict array,
+    unsigned long count
+);
 
-void quick_sort2l(double *array, long *array1, unsigned long count);
+void quick_sort_double(
+    double * __restrict array,
+    unsigned long count
+);
 
-void quick_sort2l_double(double *array, long *array1, unsigned long count);
-void quick_sort2ul_double(double        *array,
-                          unsigned long *array1,
-                          unsigned long  count);
+void quick_sort_ushort(
+    unsigned short * __restrict array,
+    unsigned long count
+);
 
-void quick_sort3ll_double(double       *array,
-                          long         *array1,
-                          long         *array2,
-                          unsigned long count);
-void quick_sort3ulul_double(double        *array,
-                            unsigned long *array1,
-                            unsigned long *array2,
-                            unsigned long  count);
+void qs3(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long left,
+    unsigned long right
+);
+
+void qs3_double(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long left,
+    unsigned long right
+);
+
+void quick_sort3(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long count
+);
+
+void quick_sort3_float(
+    float        * __restrict array,
+    float        * __restrict array1,
+    float        * __restrict array2,
+    unsigned long count
+);
+
+void quick_sort3_double(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long count
+);
+
+void qs2l(
+    double * __restrict array,
+    long   * __restrict array1,
+    unsigned long left,
+    unsigned long right
+);
+
+void quick_sort2l(
+    double * __restrict array,
+    long   * __restrict array1,
+    unsigned long count
+);
+
+
+
+void quick_sort2l_double(
+    double * __restrict array,
+    long   * __restrict array1,
+    unsigned long count
+);
+
+
+void quick_sort2ul_double(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long  count
+);
+
+void quick_sort3ll_double(
+    double       * __restrict array,
+    long         * __restrict array1,
+    long         * __restrict array2,
+    unsigned long count
+);
+
+void quick_sort3ulul_double(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long * __restrict array2,
+    unsigned long  count
+);
