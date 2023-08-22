@@ -2,7 +2,10 @@
  * @file quicksort.c
  */
 
-int bubble_sort(double *array, unsigned long count)
+int bubble_sort(
+    double * __restrict array,
+    unsigned long count
+)
 {
     unsigned long a, b;
     double        t;
@@ -19,7 +22,11 @@ int bubble_sort(double *array, unsigned long count)
     return (0);
 }
 
-void qs_float(float *array, unsigned long left, unsigned long right)
+void qs_float(
+    float * __restrict array,
+    unsigned long left,
+    unsigned long right
+)
 {
     unsigned long i, j;
     float         x, y;
@@ -63,7 +70,11 @@ void qs_float(float *array, unsigned long left, unsigned long right)
     }
 }
 
-void qs_long(long *array, unsigned long left, unsigned long right)
+void qs_long(
+    long * __restrict array,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     long                   x, y;
@@ -107,7 +118,11 @@ void qs_long(long *array, unsigned long left, unsigned long right)
     }
 }
 
-void qs_double(double *array, unsigned long left, unsigned long right)
+void qs_double(
+    double * __restrict array,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -152,7 +167,11 @@ void qs_double(double *array, unsigned long left, unsigned long right)
     }
 }
 
-void qs_ushort(unsigned short *array, unsigned long left, unsigned long right)
+void qs_ushort(
+    unsigned short * __restrict array,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     unsigned short         x, y;
@@ -197,11 +216,13 @@ void qs_ushort(unsigned short *array, unsigned long left, unsigned long right)
     }
 }
 
-void qs3(double       *array,
-         double       *array1,
-         double       *array2,
-         unsigned long left,
-         unsigned long right)
+void qs3(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -256,11 +277,13 @@ void qs3(double       *array,
     }
 }
 
-void qs3_float(float        *array,
-               float        *array1,
-               float        *array2,
-               unsigned long left,
-               unsigned long right)
+void qs3_float(
+    float        * __restrict array,
+    float        * __restrict array1,
+    float        * __restrict array2,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     float                  x, y;
@@ -315,11 +338,13 @@ void qs3_float(float        *array,
     }
 }
 
-void qs3_double(double       *array,
-                double       *array1,
-                double       *array2,
-                unsigned long left,
-                unsigned long right)
+void qs3_double(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -374,7 +399,12 @@ void qs3_double(double       *array,
     }
 }
 
-void qs2l(double *array, long *array1, unsigned long left, unsigned long right)
+void qs2l(
+    double * __restrict array,
+    long   * __restrict array1,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -425,10 +455,11 @@ void qs2l(double *array, long *array1, unsigned long left, unsigned long right)
     }
 }
 
-void qs2ul(double        *array,
-           unsigned long *array1,
-           unsigned long  left,
-           unsigned long  right)
+void qs2ul(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long  left,
+    unsigned long  right)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -478,10 +509,12 @@ void qs2ul(double        *array,
     }
 }
 
-void qs2l_double(double       *array,
-                 long         *array1,
-                 unsigned long left,
-                 unsigned long right)
+void qs2l_double(
+    double       * __restrict array,
+    long         * __restrict array1,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -532,10 +565,12 @@ void qs2l_double(double       *array,
     }
 }
 
-void qs2ul_double(double        *array,
-                  unsigned long *array1,
-                  unsigned long  left,
-                  unsigned long  right)
+void qs2ul_double(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long  left,
+    unsigned long  right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -586,11 +621,13 @@ void qs2ul_double(double        *array,
     }
 }
 
-void qs3ll_double(double       *array,
-                  long         *array1,
-                  long         *array2,
-                  unsigned long left,
-                  unsigned long right)
+void qs3ll_double(
+    double       * __restrict array,
+    long         * __restrict array1,
+    long         * __restrict array2,
+    unsigned long left,
+    unsigned long right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -644,11 +681,13 @@ void qs3ll_double(double       *array,
     }
 }
 
-void qs3ulul_double(double        *array,
-                    unsigned long *array1,
-                    unsigned long *array2,
-                    unsigned long  left,
-                    unsigned long  right)
+void qs3ulul_double(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long * __restrict array2,
+    unsigned long  left,
+    unsigned long  right
+)
 {
     register unsigned long i, j;
     double                 x, y;
@@ -703,84 +742,133 @@ void qs3ulul_double(double        *array,
     }
 }
 
-void quick_sort_float(float *array, unsigned long count)
+
+void quick_sort_float(
+    float * __restrict array,
+    unsigned long count
+)
 {
     qs_float(array, 0, count - 1);
 }
 
-void quick_sort_long(long *array, unsigned long count)
+
+void quick_sort_long(
+    long * __restrict array,
+    unsigned long count
+)
 {
     qs_long(array, 0, count - 1);
 }
 
-void quick_sort_double(double *array, unsigned long count)
+
+void quick_sort_double(
+    double * __restrict array,
+    unsigned long count
+)
 {
     qs_double(array, 0, count - 1);
 }
 
-void quick_sort_ushort(unsigned short *array, unsigned long count)
+
+void quick_sort_ushort(
+    unsigned short * __restrict array,
+    unsigned long count
+)
 {
     qs_ushort(array, 0, count - 1);
 }
 
-void quick_sort3(double       *array,
-                 double       *array1,
-                 double       *array2,
-                 unsigned long count)
+
+void quick_sort3(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long count
+)
 {
     qs3(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3_float(float        *array,
-                       float        *array1,
-                       float        *array2,
-                       unsigned long count)
+
+void quick_sort3_float(
+    float        * __restrict array,
+    float        * __restrict array1,
+    float        * __restrict array2,
+    unsigned long count
+)
 {
     qs3_float(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3_double(double       *array,
-                        double       *array1,
-                        double       *array2,
-                        unsigned long count)
+
+void quick_sort3_double(
+    double       * __restrict array,
+    double       * __restrict array1,
+    double       * __restrict array2,
+    unsigned long count
+)
 {
     qs3_double(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort2l(double *array, long *array1, unsigned long count)
+
+void quick_sort2l(
+    double * __restrict array,
+    long * __restrict array1,
+    unsigned long count
+)
 {
     qs2l(array, array1, 0, count - 1);
 }
 
-void quick_sort2ul(double *array, unsigned long *array1, unsigned long count)
+
+void quick_sort2ul(
+    double * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long count
+)
 {
     qs2ul(array, array1, 0, count - 1);
 }
 
-void quick_sort2l_double(double *array, long *array1, unsigned long count)
+
+void quick_sort2l_double(
+    double * __restrict array,
+    long * __restrict array1,
+    unsigned long count
+)
 {
     qs2l_double(array, array1, 0, count - 1);
 }
 
-void quick_sort2ul_double(double        *array,
-                          unsigned long *array1,
-                          unsigned long  count)
+
+void quick_sort2ul_double(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long  count
+)
 {
     qs2ul_double(array, array1, 0, count - 1);
 }
 
-void quick_sort3ll_double(double       *array,
-                          long         *array1,
-                          long         *array2,
-                          unsigned long count)
+
+void quick_sort3ll_double(
+    double       * __restrict array,
+    long         * __restrict array1,
+    long         * __restrict array2,
+    unsigned long count
+)
 {
     qs3ll_double(array, array1, array2, 0, count - 1);
 }
 
-void quick_sort3ulul_double(double        *array,
-                            unsigned long *array1,
-                            unsigned long *array2,
-                            unsigned long  count)
+
+void quick_sort3ulul_double(
+    double        * __restrict array,
+    unsigned long * __restrict array1,
+    unsigned long * __restrict array2,
+    unsigned long  count
+)
 {
     qs3ulul_double(array, array1, array2, 0, count - 1);
 }
