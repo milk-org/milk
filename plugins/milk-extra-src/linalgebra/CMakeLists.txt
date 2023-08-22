@@ -19,6 +19,7 @@ set(SOURCEFILES
 	magma_MatMatMult_testPseudoInverse.c
 	modalremap.c
 	MVM_CPU.c
+	PCAmatch.c
 	cublas_PCA.c
 	printGPUMATMULTCONF.c
 	MVMextractModes.c
@@ -45,6 +46,7 @@ set(INCLUDEFILES
 	magma_MatMatMult_testPseudoInverse.h
 	modalremap.h
 	MVM_CPU.h
+	PCAmatch.h
 	cublas_PCA.h
 	printGPUMATMULTCONF.h
 	MVMextractModes.h
