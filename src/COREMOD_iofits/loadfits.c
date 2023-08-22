@@ -82,10 +82,12 @@ static errno_t help_function()
 /// LOADFITS_ERRMODE_ERROR   (2) return error
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
-errno_t load_fits(const char *restrict file_name,
-                  const char *restrict ID_name,
-                  int      errmode,
-                  imageID *IDout)
+errno_t load_fits(
+    const char * __restrict file_name,
+    const char * __restrict ID_name,
+    int      errmode,
+    imageID *IDout
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -610,8 +612,6 @@ errno_t load_fits(const char *restrict file_name,
                            "fits_close_file error in image %s",
                            file_name);
     }
-
-    list_image_ID();
 
     if(IDout != NULL)
     {
