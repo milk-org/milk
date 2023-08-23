@@ -1,0 +1,16 @@
+diff --git a/computeCalib/CMakeLists.txt b/computeCalib/CMakeLists.txt
+index 15b1646b..6a07c81f 100644
+--- a/computeCalib/CMakeLists.txt
++++ b/computeCalib/CMakeLists.txt
+@@ -44,8 +44,10 @@ set(LINKLIBS
+ 	CLIcore
+ 	milkinfo
+ 	cacaoAOloopControl
+-	lapacke
+ )
++if(NOT MKL_FOUND)
++  list(APPEND LINKLIBS lapacke)
++endif()
+ 
+ 
+ 
