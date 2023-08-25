@@ -49,8 +49,8 @@ SEMTRIG="3"
 
 
 milk << EOF
-creaimshm imA 100 100
-creaimshm imB 100 100
+mk2Dim "s>imA" 100 100
+mk2Dim "s>imB" 100 100
 imsetsempost imA -1
 imsetsempost imB -1
 exitCLI
