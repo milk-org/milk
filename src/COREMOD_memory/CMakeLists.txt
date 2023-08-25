@@ -149,7 +149,7 @@ set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_memor
 
 # test that commands are registered
 
-list(APPEND commandlist "creaim" "creaimshm" "listim" "mmon" "rmall")
+list(APPEND commandlist "mk2Dim" "mk3Dim" "listim" "mmon" "rmall")
 
 foreach(CLIcmdname IN LISTS commandlist)
 
@@ -170,7 +170,7 @@ set(TESTNAME "milksemloopspeed")
 add_test (NAME "${TESTNAME}" COMMAND milk-semloopspeed "123456")
 set_property (TEST "${TESTNAME}" PROPERTY LABELS "perf")
 set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
-set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "cnt0 = 123456")
+set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "cnt0 = 123457")
 
 
 
