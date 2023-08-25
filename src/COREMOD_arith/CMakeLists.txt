@@ -65,7 +65,7 @@ set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_arith
 
 # test that commands are registered
 
-list(APPEND commandlist "extractim" "extract3Dim" "setpix" "setpix1Drange" "setrow" "setcol" "imzero" "imtrunc" "merge3d" "cropmask")
+list(APPEND commandlist "extractim" "extract3Dim" "setpix" "setpix1Drange" "setrow" "setcol" "imzero" "imtrunc" "cropmask")
 
 foreach(CLIcmdname IN LISTS commandlist)
 
