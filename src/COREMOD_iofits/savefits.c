@@ -237,7 +237,6 @@ errno_t saveFITS_opt_trunc(
             bitpix = BYTE_IMG;
             break;
 
-
         case _DATATYPE_INT16:
             bitpix = SHORT_IMG;
             break;
@@ -309,15 +308,13 @@ errno_t saveFITS_opt_trunc(
     for(int i = 0; i < naxis; i++)
     {
         naxesl[i] = (long) imgin.md->size[i];
+        if (truncate >= 0 && i == naxis -1) {
+            naxesl[naxis - 1] = truncate;
+            DEBUG_TRACEPOINT("-------------- TRUNCATE TO %d\n", truncate);
+        }
         nelements *= naxesl[i];
         DEBUG_TRACEPOINT("-------------- SIZE %d = %ld\n", i, naxesl[i]);
     }
-    if(truncate >= 0)
-    {
-        naxesl[naxis - 1] = truncate;
-        DEBUG_TRACEPOINT("-------------- TRUNCATE TO %d\n", truncate);
-    }
-
 
     //printf(">>>>>>>> bitpix = %d\n", bitpix);
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -377,9 +374,7 @@ errno_t saveFITS_opt_trunc(
             }
             DEBUG_TRACEPOINT("imported %d header cards\n", nkeys);
 
-            char *hptr; // pointer to header
-            hptr = header;
-            while(*hptr)
+            for (char* hptr = header; strncmp(hptr, "END ", 4) != 0; hptr += 80)
             {
                 char fitscard[81];
                 snprintf(fitscard, 81, "%.80s", hptr);
@@ -423,7 +418,6 @@ errno_t saveFITS_opt_trunc(
                         abort();
                     }
                 }
-                hptr += 80;
             }
 
             COREMOD_iofits_data.FITSIO_status = 0;
@@ -449,7 +443,7 @@ errno_t saveFITS_opt_trunc(
 
 
     DEBUG_TRACEPOINT("Add FITS keywords from image keywords");
-    // Skip keywords that start with a "!"
+    // Skip keywords that start with a "_"
     // These are technical keywords that shouldn't be propagated to FITS.
 
     {
@@ -463,10 +457,13 @@ errno_t saveFITS_opt_trunc(
                 // Skip keywords that start with a "_"
                 continue;
             }
+            if(imgin.im->kw[kw].name[0] == ' ')
+            {
+                // Abort when we hit an empty keyword.
+                break;
+            }
 
             char tmpkwvalstr[81];
-            // Don't rely on the stream keyword type, but instead rely
-            // On the existing type in the auxfitsheader. If any at all?
             switch(imgin.im->kw[kw].type)
             {
             case 'L':
@@ -539,7 +536,7 @@ errno_t saveFITS_opt_trunc(
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
             {
-                PRINT_ERROR("fits_write_record error on keyword %s",
+                PRINT_ERROR("fits_update_key error on keyword %s",
                             imgin.im->kw[kw].name);
                 abort();
             }
