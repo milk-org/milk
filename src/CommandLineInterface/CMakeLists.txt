@@ -51,7 +51,6 @@ add_library(CLIcore
             fpsCTRL/print_nodeinfo.c
             fpsCTRL/level0node_summary.c
             fpsCTRL/scheduler_display.c
-            streamCTRL/streamCTRL_TUI.c
             timeutils.c
             fps/fps_add_entry.c
             fps/fps_checkparameter.c
@@ -108,6 +107,13 @@ add_library(CLIcore
             processinfo/processinfo_SIGexit.c
             processinfo/processinfo_update_output_stream.c
             processinfo/processinfo_WriteMessage.c
+            streamCTRL/streamCTRL_TUI.c
+            streamCTRL/streamCTRL_find_streams.c
+            streamCTRL/streamCTRL_print_inode.c
+            streamCTRL/streamCTRL_print_procpid.c
+            streamCTRL/streamCTRL_print_trace.c
+            streamCTRL/streamCTRL_scan.c
+            streamCTRL/streamCTRL_utilfuncs.c
             TUItools.c
             ${CORE_FILES})
 

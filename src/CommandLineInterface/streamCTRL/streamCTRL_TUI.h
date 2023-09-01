@@ -11,20 +11,12 @@
 #ifndef _STREAMCTRL_H
 #define _STREAMCTRL_H
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                        HEADER FILES                                             */
-/* =============================================================================================== */
-/* =============================================================================================== */
+
 
 #include <stdint.h>
 #include <unistd.h> // getpid()
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                      DEFINES, MACROS                                            */
-/* =============================================================================================== */
-/* =============================================================================================== */
+
 
 #define STRINGLENMAX 32
 
@@ -35,11 +27,39 @@
 
 #define PIDnameStringLen 12
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                  GLOBAL DATA DECLARATION                                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
+
+
+
+
+
+
+
+
+// shared memory access permission
+#define FILEMODE 0666
+
+#define STRINGLENMAX 32
+
+#define streamOpenNBpid_MAX 100
+#define nameNBchar          100
+#define PIDnameStringLen    12
+
+#define DISPLAY_MODE_HELP     1
+#define DISPLAY_MODE_SUMMARY  2
+#define DISPLAY_MODE_WRITE    3
+#define DISPLAY_MODE_READ     4
+#define DISPLAY_MODE_SPTRACE  5
+#define DISPLAY_MODE_FUSER    6
+
+#define PRINT_PID_DEFAULT          0
+#define PRINT_PID_FORCE_NOUPSTREAM 1
+
+#define NO_DOWNSTREAM_INDEX 100
+
+
+
+
+
 
 typedef struct
 {
@@ -65,6 +85,8 @@ typedef struct
 
 } STREAMINFO;
 
+
+
 typedef struct
 {
     int    twaitus; // sleep time between scans
@@ -78,7 +100,7 @@ typedef struct
 
     int WriteFlistToFile; // 1 if output to file
 
-    STREAMINFO *sinfo;
+    //STREAMINFO *sinfo;
     long        NBstream;
     int         fuserUpdate;
     int         fuserUpdate0;
@@ -87,48 +109,34 @@ typedef struct
 
 } STREAMINFOPROC;
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                    FUNCTIONS SOURCE CODE                                        */
-/* =============================================================================================== */
-/* =============================================================================================== */
+
+
+
+// strructure holding data required for streamCTRL
+typedef struct
+{
+    STREAMINFO *sinfo;
+
+    STREAMINFOPROC *streaminfoproc;
+
+    // pointers to images
+    IMAGE          *images;
+
+} streamCTRLarg_struct;
+
+
+
+
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-/**
-* INITIALIZE ncurses
-*
-*/
-
-int get_process_name_by_pid(const int pid, char *pname);
-
-int streamCTRL_CatchSignals();
-
-int
-find_streams(STREAMINFO *streaminfo, int filter, const char *namefilter);
-
-void *streamCTRL_scan(void *thptr);
-
-/**
-* ## Purpose
-*
-* Control screen for stream structures
-*
-* ## Description
-*
-* Relies on ncurses for display\n
-*
-*
-*/
 
 errno_t streamCTRL_CTRLscreen();
 
-long image_ID_from_images(IMAGE *images, const char *name);
 
-long image_get_first_ID_available_from_images(IMAGE *images);
 
 #ifdef __cplusplus
 }
