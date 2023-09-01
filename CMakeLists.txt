@@ -120,7 +120,9 @@ list(APPEND libname CLIcore)
 list(APPEND libsrcdir src/ImageStreamIO)
 list(APPEND libname ImageStreamIO m)
 
+
 list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
+
 foreach(mname IN LISTS modulelist)
 string(REPLACE "_" "" mname1 "${mname}")
 list(APPEND libsrcdir src/${mname})
@@ -218,6 +220,10 @@ endforeach()
 
 # add example module
 add_subdirectory(src/milk_module_example)
+
+# add isio-tools
+add_subdirectory(src/isio-tools)
+
 
 # main
 add_executable(milk src/CLImain.c)
@@ -342,6 +348,7 @@ install(PROGRAMS
 			scripts/milk-scriptexample
 			scripts/milk-script-std-config
 			scripts/milk-streamlink
+      scripts/milk-stream-scan
 			scripts/milk-shm2FITS
 			scripts/milk-shm2FITSloop
 			scripts/milk-shmim-rm
