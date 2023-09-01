@@ -191,9 +191,9 @@ STREAMNAME="${inputMSargARRAY[0]}"
 ACTION="${inputMSargARRAY[1]}"
 ACTIONOK=0
 
-
-checkFile "${MILK_SHM_DIR}/${STREAMNAME}.im.shm"
-
+if [ ${ACTION} == "pstart" ]; then
+  checkFile "${MILK_SHM_DIR}/${STREAMNAME}.im.shm"
+fi
 
 if [ ${EXITSTATUS} = 1 ]; then
 	exit 1
@@ -387,6 +387,8 @@ if [ ${ACTION} == "kill" ]; then
 	echo "tmuxstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
 	echo "fpsrm streamFITSlog-${STREAMNAME}" >> ${fifoname}
 	echo "rescan" >> ${fifoname}
+	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff0.im.shm
+	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff1.im.shm
 fi
 
 
