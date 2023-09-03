@@ -32,8 +32,9 @@ void *streamCTRL_scan(
     void *argptr
 )
 {
+    static long scaniter = 0;
+
     long NBsindex = 0;
-    long sindex   = 0;
     long scancnt  = 0;
 
     STREAMINFO *streaminfo;
@@ -62,9 +63,10 @@ void *streamCTRL_scan(
 
     FILE *fpfscan;
 
+
+
     while(streaminfoproc->loop == 1)
     {
-
         // timing measurement
         clock_gettime(CLOCK_MILK, &t1);
         if(firstIter == 1)
@@ -79,72 +81,80 @@ void *streamCTRL_scan(
         clock_gettime(CLOCK_MILK, &t0);
         streaminfoproc->dtscan = tdiffv;
 
-        int mode = 0;
-        if(mode == 0)  // preferred mode
+        NBsindex = find_streams(streaminfo,
+                                streaminfoproc->filter,
+                                streaminfoproc->namefilter);
+
+        // write stream list to file if applicable
+        // ususally used for debugging only
+        //
+        if(streaminfoproc->WriteFlistToFile == 1)
         {
-            NBsindex = find_streams(streaminfo,
-                                    streaminfoproc->filter,
-                                    streaminfoproc->namefilter);
+            fpfscan = fopen("streamCTRL_filescan.dat", "w");
+            fprintf(fpfscan, "# stream scan result\n");
+            fprintf(fpfscan,
+                    "filter: %d %s\n",
+                    streaminfoproc->filter,
+                    streaminfoproc->namefilter);
+            fprintf(fpfscan, "NBsindex = %ld\n", NBsindex);
 
-            // write stream list to file if applicable
-            // ususally used for debugging only
-            //
-            if(streaminfoproc->WriteFlistToFile == 1)
+            for(long sindex = 0; sindex < NBsindex; sindex++)
             {
-                fpfscan = fopen("streamCTRL_filescan.dat", "w");
-                fprintf(fpfscan, "# stream scan result\n");
-                fprintf(fpfscan,
-                        "filter: %d %s\n",
-                        streaminfoproc->filter,
-                        streaminfoproc->namefilter);
-                fprintf(fpfscan, "NBsindex = %ld\n", NBsindex);
+                //fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
 
-                for(sindex = 0; sindex < NBsindex; sindex++)
+                if(streaminfo[sindex].SymLink == 1)
                 {
-                    //fprintf(fpfscan, "%4ld  %20s ", sindex, dir->d_name);
-
-                    if(streaminfo[sindex].SymLink == 1)
-                    {
-                        fprintf(fpfscan,
-                                "| %12s -> [ %12s ] ",
-                                streaminfo[sindex].sname,
-                                streaminfo[sindex].linkname);
-                    }
-                    else
-                    {
-                        fprintf(fpfscan,
-                                "| %12s -> [ %12s ] ",
-                                streaminfo[sindex].sname,
-                                " ");
-                    }
-                    fprintf(fpfscan, "\n");
+                    fprintf(fpfscan,
+                            "| %12s -> [ %12s ] ",
+                            streaminfo[sindex].sname,
+                            streaminfo[sindex].linkname);
                 }
-                fclose(fpfscan);
-            }
-
-            // Load into memory
-            for(sindex = 0; sindex < NBsindex; sindex++)
-            {
-                imageID ID;
-
-                ID = image_ID_from_images(images, streaminfo[sindex].sname);
-
-                // connect to stream
-                if(ID == -1)
+                else
                 {
-                    ID = image_get_first_ID_available_from_images(images);
-                    if(ID < 0)
-                    {
-                        return NULL;
-                    }
+                    fprintf(fpfscan,
+                            "| %12s -> [ %12s ] ",
+                            streaminfo[sindex].sname,
+                            " ");
+                }
+                fprintf(fpfscan, "\n");
+            }
+            fclose(fpfscan);
+        }
+
+        // Load into memory
+        for(long sindex = 0; sindex < NBsindex; sindex++)
+        {
+            imageID ID;
+
+            ID = image_ID_from_images(images, streaminfo[sindex].sname);
+
+            // connect to stream
+            if(ID == -1)
+            {
+                ID = image_get_first_ID_available_from_images(images);
+                if(ID < 0)
+                {
+                    return NULL;
+                }
+
+                streaminfo[sindex].ISIOretval =
                     ImageStreamIO_read_sharedmem_image_toIMAGE(
                         streaminfo[sindex].sname,
                         &images[ID]);
-                    streaminfo[sindex].deltacnt0          = 1;
-                    streaminfo[sindex].updatevalue        = 1.0;
-                    streaminfo[sindex].updatevalue_frozen = 1.0;
-                }
-                else
+
+                // force used to be 1 even if load fails, so we can keep track of attempted loads
+                images[ID].used = 1;
+                // keep track of name
+                strncpy(images[ID].name, streaminfo[sindex].sname, STRINGMAXLEN_IMAGE_NAME - 1);
+                images[ID].name[STRINGMAXLEN_IMAGE_NAME-1] = '\0';
+
+                streaminfo[sindex].deltacnt0          = 1;
+                streaminfo[sindex].updatevalue        = 1.0;
+                streaminfo[sindex].updatevalue_frozen = 1.0;
+            }
+            else
+            {
+                if(streaminfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS )
                 {
                     float gainv = 1.0;
                     if(firstIter == 0)
@@ -157,264 +167,23 @@ void *streamCTRL_scan(
                             (1.0 * streaminfo[sindex].deltacnt0 / tdiffv);
                     }
 
-                    streaminfo[sindex].cnt0 =
-                        images[ID].md[0].cnt0; // keep memory of cnt0
-                    streaminfo[sindex].ID       = ID;
-                    streaminfo[sindex].datatype = images[ID].md[0].datatype;
+                    // keep memory of cnt0
+                    streaminfo[sindex].cnt0 = images[ID].md->cnt0;
+                    streaminfo[sindex].datatype = images[ID].md->datatype;
                 }
             }
+            streaminfo[sindex].ID       = ID;
+
+            scaniter++;
         }
-        else // candidate for removal
-        {
-            //---------------------------------------
-            DIR           *d;
-            struct dirent *dir;
+        DEBUG_TRACEPOINT(" ");
 
-            d = opendir(SHAREDSHMDIR);
-            if(d)
-            {
-                sindex = 0;
-
-                while(((dir = readdir(d)) != NULL))
-                {
-                    int   scanentryOK = 1;
-                    char *pch         = strstr(dir->d_name, ".im.shm");
-
-                    int matchOK = 0;
-
-                    // name filtering
-                    if(streaminfoproc->filter == 1)
-                    {
-                        if(strstr(dir->d_name, streaminfoproc->namefilter) !=
-                                NULL)
-                        {
-                            matchOK = 1;
-                        }
-                    }
-                    else
-                    {
-                        matchOK = 1;
-                    }
-
-                    if((pch) && (matchOK == 1))
-                    {
-                        imageID ID;
-
-                        // is file sym link ?
-                        struct stat buf;
-                        int         retv;
-                        char        fullname[STRINGMAXLEN_FULLFILENAME];
-
-                        if(streaminfoproc->WriteFlistToFile == 1)
-                        {
-                            fprintf(fpfscan,
-                                    "%4ld  %20s ",
-                                    sindex,
-                                    dir->d_name);
-                        }
-
-                        WRITE_FULLFILENAME(fullname,
-                                           "%s/%s",
-                                           SHAREDSHMDIR,
-                                           dir->d_name);
-                        retv = lstat(fullname, &buf);
-                        if(retv == -1)
-                        {
-                            endwin();
-                            printf("File \"%s\"", dir->d_name);
-                            perror(
-                                "Error running lstat "
-                                "on file ");
-                            exit(EXIT_FAILURE);
-                        }
-
-                        if(S_ISLNK(buf.st_mode))  // resolve link name
-                        {
-                            char  fullname[STRINGMAXLEN_FULLFILENAME];
-                            char *linknamefull;
-                            char  linkname[STRINGMAXLEN_FULLFILENAME];
-                            int   pathOK = 1;
-
-                            streaminfo[sindex].SymLink = 1;
-                            WRITE_FULLFILENAME(fullname,
-                                               "%s/%s",
-                                               SHAREDSHMDIR,
-                                               dir->d_name);
-                            //                        readlink (fullname, linknamefull, 200-1);
-                            linknamefull = realpath(fullname, NULL);
-
-                            if(linknamefull == NULL)
-                            {
-                                pathOK = 0;
-                            }
-                            else if(access(linknamefull,
-                                           R_OK)) // file cannot be read
-                            {
-                                pathOK = 0;
-                            }
-
-                            if(pathOK == 0)  // file cannot be read
-                            {
-                                if(streaminfoproc->WriteFlistToFile == 1)
-                                {
-                                    fprintf(fpfscan,
-                                            " %s "
-                                            "<-> "
-                                            "LINK "
-                                            "%s "
-                                            "CANNOT"
-                                            " BE "
-                                            "READ "
-                                            "-> "
-                                            "off",
-                                            fullname,
-                                            linknamefull);
-                                }
-                                scanentryOK = 0;
-                            }
-                            else
-                            {
-                                strcpy(linkname, basename(linknamefull));
-
-                                int          lOK = 1;
-                                unsigned int ii  = 0;
-                                while((lOK == 1) && (ii < strlen(linkname)))
-                                {
-                                    if(linkname[ii] == '.')
-                                    {
-                                        linkname[ii] = '\0';
-                                        lOK          = 0;
-                                    }
-                                    ii++;
-                                }
-                                strncpy(streaminfo[sindex].linkname,
-                                        linkname,
-                                        STRINGMAXLEN_STREAMINFO_NAME - 1);
-                            }
-
-                            if(linknamefull != NULL)
-                            {
-                                free(linknamefull);
-                            }
-                        }
-                        else
-                        {
-                            streaminfo[sindex].SymLink = 0;
-                        }
-
-                        // get stream name and ID
-                        if(scanentryOK == 1)
-                        {
-                            int strlencp1 = STRINGMAXLEN_STREAMINFO_NAME;
-                            int strlencp =
-                                strlen(dir->d_name) - strlen(".im.shm");
-                            if(strlencp < strlencp1)
-                            {
-                                strlencp1 = strlencp;
-                            }
-                            strncpy(streaminfo[sindex].sname,
-                                    dir->d_name,
-                                    strlencp1);
-                            streaminfo[sindex].sname[strlen(dir->d_name) -
-                                                     strlen(".im.shm")] = '\0';
-
-                            if(streaminfoproc->WriteFlistToFile == 1)
-                            {
-                                if(streaminfo[sindex].SymLink == 1)
-                                {
-                                    fprintf(fpfscan,
-                                            "| "
-                                            "%12s "
-                                            "-> [ "
-                                            "%12s "
-                                            "] ",
-                                            streaminfo[sindex].sname,
-                                            streaminfo[sindex].linkname);
-                                }
-                                else
-                                {
-                                    fprintf(fpfscan,
-                                            "| "
-                                            "%12s "
-                                            "-> [ "
-                                            "%12s "
-                                            "] ",
-                                            streaminfo[sindex].sname,
-                                            " ");
-                                }
-                            }
-                        }
-
-                        if(scanentryOK == 1)
-                        {
-
-                            ID = image_ID_from_images(images,
-                                                      streaminfo[sindex].sname);
-
-                            // connect to stream
-                            if(ID == -1)
-                            {
-                                ID = image_get_first_ID_available_from_images(
-                                         images);
-                                if(ID < 0)
-                                {
-                                    return NULL;
-                                }
-                                ImageStreamIO_read_sharedmem_image_toIMAGE(
-                                    streaminfo[sindex].sname,
-                                    &images[ID]);
-                                streaminfo[sindex].deltacnt0          = 1;
-                                streaminfo[sindex].updatevalue        = 1.0;
-                                streaminfo[sindex].updatevalue_frozen = 1.0;
-                            }
-                            else
-                            {
-                                float gainv = 1.0;
-                                if(firstIter == 0)
-                                {
-                                    streaminfo[sindex].deltacnt0 =
-                                        images[ID].md[0].cnt0 -
-                                        streaminfo[sindex].cnt0;
-                                    streaminfo[sindex].updatevalue =
-                                        (1.0 - gainv) *
-                                        streaminfo[sindex].updatevalue +
-                                        gainv * (1.0 *
-                                                 streaminfo[sindex].deltacnt0 /
-                                                 tdiffv);
-                                }
-
-                                streaminfo[sindex].cnt0 =
-                                    images[ID]
-                                    .md[0]
-                                    .cnt0; // keep memory of cnt0
-                                streaminfo[sindex].ID = ID;
-                                streaminfo[sindex].datatype =
-                                    images[ID].md[0].datatype;
-
-                                sindex++;
-                            }
-                        }
-                        if(streaminfoproc->WriteFlistToFile == 1)
-                        {
-                            fprintf(fpfscan, "\n");
-                        }
-                    }
-                }
-
-                NBsindex = sindex;
-            }
-            closedir(d);
-
-            if(streaminfoproc->WriteFlistToFile == 1)
-            {
-                fclose(fpfscan);
-            }
-            //---------------------------------------
-        }
 
         streaminfoproc->WriteFlistToFile = 0;
 
         firstIter = 0;
+
+
 
         if(streaminfoproc->fuserUpdate == 1)
         {
@@ -589,6 +358,8 @@ void *streamCTRL_scan(
 
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
+
+
 
         usleep(streaminfoproc->twaitus);
 

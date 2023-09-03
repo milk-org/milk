@@ -13,15 +13,12 @@
 #include "list_image.h"
 #include "read_shmim.h"
 
-// ==========================================
-// forward declaration
-// ==========================================
+#include "CommandLineInterface/streamCTRL/streamCTRL_find_streams.h"
+
+
 
 errno_t read_sharedmem_image_all(const char *name);
 
-// ==========================================
-// command line interface wrapper functions
-// ==========================================
 
 static errno_t read_sharedmem_image_all__cli()
 {
@@ -38,9 +35,6 @@ static errno_t read_sharedmem_image_all__cli()
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
 
 errno_t read_shmimall_addCLIcmd()
 {

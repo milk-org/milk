@@ -137,7 +137,7 @@ endforeach()
 # Set Release build flags
 # cmake -DCMAKE_BUILD_TYPE=Debug
 # option: add -fanalyzer if gcc10+ (warning: this will take a while to run)
-set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra -fanalyzer")
+set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra")
 
 # Set Release build flags
 # cmake -DCMAKE_BUILD_TYPE=Release

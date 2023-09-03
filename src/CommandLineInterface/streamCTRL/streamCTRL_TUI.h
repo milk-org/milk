@@ -59,14 +59,17 @@
 
 
 
-
-
 typedef struct
 {
     char sname[STRINGMAXLEN_STREAMINFO_NAME]; // stream name
     int  SymLink;
-    char linkname
-    [STRINGMAXLEN_STREAMINFO_NAME]; // if stream is sym link, resolve link name
+
+    // if stream is sym link, resolve link name
+    char linkname[STRINGMAXLEN_STREAMINFO_NAME];
+
+    // ISIO return value from command
+    // ImageStreamIO_read_sharedmem_image_toIMAGE
+    int ISIOretval;
 
     imageID ID;
 
