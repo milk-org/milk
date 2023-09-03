@@ -174,13 +174,16 @@ static errno_t streamCTRL_keyinput_process(
     // ============ ACTIONS
 
     case ctrl('e'): // erase stream
-        sindex = sTUIparam.ssindex[sTUIparam.dindexSelected];
-        DEBUG_TRACEPOINT("removing stream sindex = %ld", sindex);
-        DEBUG_TRACEPOINT("removing stream ID = %ld", streaminfo[sindex].ID);
+        if(sTUIparam.dindexSelected >= 0)
+        {
+            sindex = sTUIparam.ssindex[sTUIparam.dindexSelected];
+            DEBUG_TRACEPOINT("removing stream sindex = %ld", sindex);
+            DEBUG_TRACEPOINT("removing stream ID = %ld", streaminfo[sindex].ID);
 
-        ImageStreamIO_destroyIm(&streamCTRLdata->images[streamCTRLdata->sinfo[sindex].ID]);
+            ImageStreamIO_destroyIm(&streamCTRLdata->images[streamCTRLdata->sinfo[sindex].ID]);
 
-        DEBUG_TRACEPOINT("%d", sTUIparam.dindexSelected);
+            DEBUG_TRACEPOINT("%d", sTUIparam.dindexSelected);
+        }
         break;
 
     // ============ SCANNING
@@ -720,15 +723,23 @@ errno_t streamCTRL_CTRLscreen()
                 lastindex = 0;
             }
 
-            TUI_printfw(
-                "%4d streams    Currently displaying %4d-%4d   "
-                "Selected %d  ID = %d  inode = %d",
-                sTUIparam.NBsindex,
-                doffsetindex,
-                lastindex,
-                sTUIparam.dindexSelected,
-                sTUIparam.ssindex[sTUIparam.dindexSelected],
-                (int) inodeselected);
+            {
+                int ssIDselected = -1;
+                if(sTUIparam.dindexSelected >= 0)
+                {
+                    ssIDselected = sTUIparam.ssindex[sTUIparam.dindexSelected];
+                }
+
+                TUI_printfw(
+                    "%4d streams    Currently displaying %4d-%4d   "
+                    "Selected %d  ID = %d  inode = %d",
+                    sTUIparam.NBsindex,
+                    doffsetindex,
+                    lastindex,
+                    sTUIparam.dindexSelected,
+                    ssIDselected,
+                    (int) inodeselected);
+            }
 
             if(streaminfoproc.filter == 1)
             {
