@@ -56,7 +56,7 @@ int streamCTRL_print_procpid(
         {
             if(procpid > 0)
             {
-                activitycolorcode = 4;
+                activitycolorcode = 0;
             }
         }
     }
@@ -66,7 +66,6 @@ int streamCTRL_print_procpid(
         if(activitycolorcode != 2)
         {
             screenprint_setreverse();
-            //attron(A_REVERSE);
         }
         else
         {
@@ -77,7 +76,6 @@ int streamCTRL_print_procpid(
     if(activitycolorcode > 0)
     {
         screenprint_setcolor(activitycolorcode);
-        //attron(COLOR_PAIR(activitycolorcode));
     }
 
     if(is_upstream)
@@ -94,13 +92,11 @@ int streamCTRL_print_procpid(
     if(activitycolorcode > 0)
     {
         screenprint_unsetcolor(activitycolorcode);
-        //attroff(COLOR_PAIR(activitycolorcode));
     }
 
     if((activitycolorcode != 2) && (is_upstream == 1))
     {
         screenprint_unsetreverse();
-        //attroff(A_REVERSE);
     }
 
     return DispPID_NBchar;

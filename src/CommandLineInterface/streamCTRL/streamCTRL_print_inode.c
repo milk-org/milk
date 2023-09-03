@@ -47,10 +47,8 @@ int streamCTRL_print_inode(
 
         if(is_upstream)
         {
-            //attron(COLOR_PAIR(colorcode));
             screenprint_setcolor(colorcode);
             TUI_printfw("%02d >", upstreamindex);
-            //attroff(COLOR_PAIR(colorcode));
             screenprint_unsetcolor(colorcode);
         }
         else
@@ -68,10 +66,8 @@ int streamCTRL_print_inode(
                 colorcode = 7;
             }
 
-            //attron(COLOR_PAIR(colorcode));
             screenprint_setcolor(colorcode);
             TUI_printfw("> %02d", downstreamindex);
-            //attroff(COLOR_PAIR(colorcode));
             screenprint_unsetcolor(colorcode);
         }
         else

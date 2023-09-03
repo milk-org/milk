@@ -14,8 +14,8 @@
  * @return imageID
  */
 imageID image_ID_from_images(
-    IMAGE *images, const
-    char * __restrict name
+    IMAGE *images,
+    const char * __restrict name
 )
 {
     imageID i;
@@ -28,7 +28,10 @@ imageID image_ID_from_images(
             if((strncmp(name, images[i].name, strlen(name)) == 0) &&
                     (images[i].name[strlen(name)] == '\0'))
             {
-                clock_gettime(CLOCK_MILK, &images[i].md[0].lastaccesstime);
+                if(images[i].md != NULL)
+                {
+                    clock_gettime(CLOCK_MILK, &images[i].md->lastaccesstime);
+                }
                 return i;
             }
         }
