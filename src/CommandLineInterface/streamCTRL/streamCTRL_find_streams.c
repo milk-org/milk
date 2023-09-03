@@ -45,20 +45,23 @@ int find_streams(
             int   scanentryOK = 1;
             char *pch         = strstr(dir->d_name, ".im.shm");
 
-            int matchOK = 0;
+            int matchOK = 1;
+
+            // check that .im.shm terminates the string
+            if( pch - dir->d_name != strlen(dir->d_name) - 7 )
+            {
+                matchOK = 0;
+            }
 
             // name filtering (first pass, not exclusive to stream name, includes path and extension
             if(filter == 1)
             {
-                if(strstr(dir->d_name, namefilter) != NULL)
+                if(strstr(dir->d_name, namefilter) == NULL)
                 {
-                    matchOK = 1;
+                    matchOK = 0;
                 }
             }
-            else
-            {
-                matchOK = 1;
-            }
+
 
             if((pch) && (matchOK == 1))
             {
@@ -148,13 +151,11 @@ int find_streams(
                         strlencp1 = strlencp;
                     }
                     strncpy(streaminfo[sindex].sname, dir->d_name, strlencp1);
-                    streaminfo[sindex]
-                    .sname[strlen(dir->d_name) - strlen(".im.shm")] = '\0';
+                    streaminfo[sindex].sname[strlen(dir->d_name) - strlen(".im.shm")] = '\0';
 
                     if(filter == 1)
                     {
-                        if(strstr(streaminfo[sindex].sname, namefilter) !=
-                                NULL)
+                        if(strstr(streaminfo[sindex].sname, namefilter) != NULL)
                         {
                             sindex++;
                         }
