@@ -8,6 +8,7 @@ typedef int errno_t;
 #include "CLIcore.h"
 #include "TUItools.h"
 #include "streamCTRL_TUI.h"
+#include "streamCTRL_print_procpid.h"
 
 
 
@@ -32,6 +33,8 @@ errno_t streamCTRL_print_SPTRACE_details(
     // suppress unused parameter warning
     (void) print_pid_mode;
 
+    DEBUG_TRACEPOINT(" ");
+
     TUI_newline();
     TUI_printfw("   %*s %*s %*s",
                 Disp_inode_NBchar,
@@ -46,8 +49,11 @@ errno_t streamCTRL_print_SPTRACE_details(
                 "type");
     TUI_newline();
 
-    for(int spti = 0; spti < streamCTRLimages[ID].md[0].NBproctrace; spti++)
+    DEBUG_TRACEPOINT(" ");
+
+    for(int spti = 0; spti < streamCTRLimages[ID].md->NBproctrace; spti++)
     {
+        DEBUG_TRACEPOINT("spti %d", spti);
         ino_t inode = streamCTRLimages[ID].streamproctrace[spti].trigger_inode;
         int   sem   = streamCTRLimages[ID].streamproctrace[spti].trigsemindex;
         pid_t pid   = streamCTRLimages[ID].streamproctrace[spti].procwrite_PID;
@@ -58,20 +64,26 @@ errno_t streamCTRL_print_SPTRACE_details(
 
         TUI_printfw(" %*lu", Disp_inode_NBchar, inode);
 
+        DEBUG_TRACEPOINT("spti %d", spti);
+
         // look for ID corresponding to inode
         int IDscan  = 0;
         int IDfound = -1;
         while((IDfound == -1) && (IDscan < streamNBID_MAX))
         {
-            if(streamCTRLimages[IDscan].used == 1)
+            if( (streamCTRLimages[IDscan].used == 1) && (streamCTRLimages[IDscan].md != NULL) )
             {
-                if(streamCTRLimages[IDscan].md[0].inode == inode)
+                if(streamCTRLimages[IDscan].md->inode == inode)
                 {
                     IDfound = IDscan;
                 }
             }
             IDscan++;
         }
+
+        DEBUG_TRACEPOINT("spti %d", spti);
+
+
         if(IDfound == -1)
         {
             TUI_printfw(" %*s", Disp_sname_NBchar, "???");
@@ -195,6 +207,8 @@ errno_t streamCTRL_print_SPTRACE_details(
 
         TUI_newline();
     }
+
+    DEBUG_TRACEPOINT(" ");
 
     return RETURN_SUCCESS;
 }
