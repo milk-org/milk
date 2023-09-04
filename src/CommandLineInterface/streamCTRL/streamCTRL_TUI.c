@@ -166,9 +166,6 @@ static errno_t streamCTRL_keyinput_process(
         }
 
         sTUIparam.DisplayMode = DISPLAY_MODE_FUSER;
-        //erase();
-        //TUI_printfw("SCANNING PROCESSES AND FILESYSTEM: PLEASE WAIT ...\n");
-        //refresh();
         break;
 
     // ============ ACTIONS
@@ -320,7 +317,6 @@ static errno_t streamCTRL_keyinput_process(
  */
 errno_t streamCTRL_CTRLscreen()
 {
-
     // initialize sCTRLTUIparams
     sTUIparam.loopOK = 1;
     sTUIparam.dindexSelected = 0;
@@ -1537,21 +1533,27 @@ errno_t streamCTRL_CTRLscreen()
                         }
                     }
 
+                    DEBUG_TRACEPOINT(" ");
+
                     if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                     {
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_SPTRACE) &&
                                 (DisplayFlag == 1))
                         {
+                            DEBUG_TRACEPOINT("show stream process trace");
+                            DEBUG_TRACEPOINT("NBproctrace = %d", streamCTRLimages[ID].md->NBproctrace);
+
                             snprintf(string,
                                      stringlen,
                                      " %2d ",
-                                     streamCTRLimages[ID].md[0].NBproctrace);
+                                     streamCTRLimages[ID].md->NBproctrace);
                             TUI_printfw(string);
 
                             for(int spti = 0;
-                                    spti < streamCTRLimages[ID].md[0].NBproctrace;
+                                    spti < streamCTRLimages[ID].md->NBproctrace;
                                     spti++)
                             {
+                                DEBUG_TRACEPOINT("stream process trace step %d", spti);
                                 ino_t inode = streamCTRLimages[ID]
                                               .streamproctrace[spti]
                                               .trigger_inode;
@@ -1561,6 +1563,9 @@ errno_t streamCTRL_CTRLscreen()
                                 pid_t pid = streamCTRLimages[ID]
                                             .streamproctrace[spti]
                                             .procwrite_PID;
+
+
+                                DEBUG_TRACEPOINT("stream process trace step %d: triggermode", spti);
 
                                 switch(streamCTRLimages[ID]
                                         .streamproctrace[spti]
@@ -1591,24 +1596,33 @@ errno_t streamCTRL_CTRLscreen()
                                     break;
                                 }
                                 TUI_printfw(string);
+
+                                DEBUG_TRACEPOINT(" ");
+
                                 streamCTRL_print_procpid(8,
                                                          pid,
                                                          upstreamproc,
                                                          NBupstreamproc,
                                                          print_pid_mode);
                                 TUI_printfw(")> ");
+                                DEBUG_TRACEPOINT(" ");
                             }
 
                             if(sTUIparam.DisplayDetailLevel == 1)
                             {
+                                DEBUG_TRACEPOINT(" ");
                                 TUI_newline();
                                 streamCTRL_print_SPTRACE_details(streamCTRLimages,
                                                                  ID,
                                                                  upstreamproc,
                                                                  NBupstreamproc,
                                                                  PRINT_PID_DEFAULT);
+                                DEBUG_TRACEPOINT(" ");
                             }
                         }
+
+
+                        DEBUG_TRACEPOINT(" ");
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_SUMMARY) &&
                                 (DisplayFlag == 1))
                         {
@@ -1654,7 +1668,10 @@ errno_t streamCTRL_CTRLscreen()
                                 TUI_printfw("md.sem              %10d\n", (int) streamCTRLimages[ID].md->sem);
                             }
                         }
+                        DEBUG_TRACEPOINT(" ");
                     }
+
+                    DEBUG_TRACEPOINT(" ");
 
                     if((sTUIparam.DisplayMode == DISPLAY_MODE_FUSER) &&
                             (DisplayFlag ==
