@@ -33,63 +33,70 @@ void *streamCTRL_scan(
 )
 {
     static long scaniter = 0;
+    static int  firstIter = 1;
 
-    long NBsindex = 0;
-    long scancnt  = 0;
-
-    STREAMINFO *streaminfo;
-    char      **PIDname_array;
-
-    // timing
-    static int             firstIter = 1;
-    static struct timespec t0;
-    struct timespec        t1;
-    double                 tdiffv;
-    struct timespec        tdiff;
-
+    // get input pointers
     streamCTRLarg_struct *streamCTRLdata =
         (streamCTRLarg_struct *) argptr;
 
     STREAMINFOPROC *streaminfoproc = streamCTRLdata->streaminfoproc;
     IMAGE          *images         = streamCTRLdata->images;
-    streaminfo    = streamCTRLdata->sinfo;
-
-    PIDname_array = streaminfoproc->PIDtable;
+    STREAMINFO *streaminfo         = streamCTRLdata->sinfo;
+    char **PIDname_array           = streaminfoproc->PIDtable;
 
     streaminfoproc->loopcnt = 0;
 
     // if set, write file list to file on first scan
     //int WriteFlistToFile = 1;
 
-    FILE *fpfscan;
 
 
 
     while(streaminfoproc->loop == 1)
     {
-        // timing measurement
-        clock_gettime(CLOCK_MILK, &t1);
-        if(firstIter == 1)
-        {
-            tdiffv = 0.1;
-        }
-        else
-        {
-            tdiff  = timespec_diff(t0, t1);
-            tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-        }
-        clock_gettime(CLOCK_MILK, &t0);
-        streaminfoproc->dtscan = tdiffv;
+        EXECUTE_SYSTEM_COMMAND("echo \" \" >> IDlog.txt");
+        EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopSTART\" >> IDlog.txt", scaniter);
 
+        long NBsindex = 0;
+
+        double  tdiffv;
+        {
+            // timing measurement
+
+            static struct timespec t0;
+            struct timespec        t1;
+            struct timespec        tdiff;
+
+            clock_gettime(CLOCK_MILK, &t1);
+            if(firstIter == 1)
+            {
+                tdiffv = 0.1;
+            }
+            else
+            {
+                tdiff  = timespec_diff(t0, t1);
+                tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+            }
+            clock_gettime(CLOCK_MILK, &t0);
+            streaminfoproc->dtscan = tdiffv;
+        }
+
+
+        // look for streams on filesystem
+        // NBsindex is total nymber of streams found
+        //
         NBsindex = find_streams(streaminfo,
                                 streaminfoproc->filter,
                                 streaminfoproc->namefilter);
+
+        EXECUTE_SYSTEM_COMMAND("echo \"NBsindex = %ld\" >> IDlog.txt", NBsindex);
 
         // write stream list to file if applicable
         // ususally used for debugging only
         //
         if(streaminfoproc->WriteFlistToFile == 1)
         {
+            FILE *fpfscan;
             fpfscan = fopen("streamCTRL_filescan.dat", "w");
             fprintf(fpfscan, "# stream scan result\n");
             fprintf(fpfscan,
@@ -126,22 +133,37 @@ void *streamCTRL_scan(
         {
             imageID ID;
 
-            ID = image_ID_from_images(images, streaminfo[sindex].sname);
+            //streaminfo[sindex].ISIOretval = IMAGESTREAMIO_FILEOPEN;
 
-            // connect to stream
+            // Check if already in memory
+            //
+            ID = image_ID_from_images(images, streaminfo[sindex].sname);
+            EXECUTE_SYSTEM_COMMAND("echo \"  %ld %s : ID = %ld\" >> IDlog.txt",
+                                   sindex,
+                                   streaminfo[sindex].sname,
+                                   ID);
+
+            // if not in local memory, try to connect to stream
+            //
             if(ID == -1)
             {
+                // if not in memory, try to load
+                //
                 ID = image_get_first_ID_available_from_images(images);
                 if(ID < 0)
                 {
                     return NULL;
                 }
+                EXECUTE_SYSTEM_COMMAND("echo \"  %ld get ID = %ld\" >> IDlog.txt",
+                                       sindex, ID);
+
 
                 streaminfo[sindex].ISIOretval =
                     ImageStreamIO_read_sharedmem_image_toIMAGE(
                         streaminfo[sindex].sname,
                         &images[ID]);
 
+                // images[ID] used to keep track of each stream, even if not successfully loaded
                 // force used to be 1 even if load fails, so we can keep track of attempted loads
                 images[ID].used = 1;
                 // keep track of name
@@ -154,8 +176,22 @@ void *streamCTRL_scan(
             }
             else
             {
+                // if in memory, check if image data has been loaded
+                //
+                if ( images[ID].array.raw == NULL )
+                {
+                    streaminfo[sindex].ISIOretval = IMAGESTREAMIO_FILEOPEN;
+                }
+                else
+                {
+                    streaminfo[sindex].ISIOretval = IMAGESTREAMIO_SUCCESS;
+                }
+
                 if(streaminfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS )
                 {
+                    EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO OK\" >> IDlog.txt",
+                                           sindex);
+
                     float gainv = 1.0;
                     if(firstIter == 0)
                     {
@@ -171,12 +207,20 @@ void *streamCTRL_scan(
                     streaminfo[sindex].cnt0 = images[ID].md->cnt0;
                     streaminfo[sindex].datatype = images[ID].md->datatype;
                 }
+                else
+                {
+                    EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO NOTOK\" >> IDlog.txt",
+                                           sindex);
+                }
             }
-            streaminfo[sindex].ID       = ID;
 
-            scaniter++;
+            streaminfo[sindex].ID = ID;
         }
         DEBUG_TRACEPOINT(" ");
+
+        // remove stale IDs
+
+
 
 
         streaminfoproc->WriteFlistToFile = 0;
@@ -359,11 +403,11 @@ void *streamCTRL_scan(
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
 
+        EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopEND\" >> IDlog.txt", scaniter);
+        scaniter++;
 
 
         usleep(streaminfoproc->twaitus);
-
-        scancnt++;
     }
 
     return NULL;
